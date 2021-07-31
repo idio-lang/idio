@@ -246,6 +246,8 @@ file-handle-error-load "file-handle-errors/find-lib-bad-type.idio" "bad paramete
    chdir cwd
  }))
 
+file-handle-error-load "file-handle-errors/find-lib-abs-file-PATH_MAX.idio" "File name too long" "/file.idio libname length"
+
 file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-1.idio" "File name too long" "IDIOLIB+file.idio libname length"
 IDIOLIB = OIDIOLIB
 
@@ -272,4 +274,4 @@ if (and (environ? 'GITLAB_CI)
 }
 
 ;; all done?
-Tests? (file-handle-error0 + 101)
+Tests? (file-handle-error0 + 103)

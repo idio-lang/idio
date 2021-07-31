@@ -35,6 +35,7 @@
 #include <sys/resource.h>
 
 #include <assert.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <ffi.h>
@@ -72,10 +73,17 @@
 #include "util.h"
 #include "vm.h"
 
+#define IDIO_IDIO_EXT	".idio"
+#define IDIO_MODE_R	"r"
+#define IDIO_MODE_RE	"re"
+#define IDIO_MODE_W	"w"
+#define IDIO_MODE_WE	"we"
+
 static IDIO idio_file_handles = idio_S_nil;
 static IDIO idio_stdin = idio_S_nil;
 static IDIO idio_stdout = idio_S_nil;
 static IDIO idio_stderr = idio_S_nil;
+static IDIO idio_dl_handles = idio_S_nil;
 
 static idio_handle_methods_t idio_file_handle_file_methods = {
     idio_free_file_handle,
@@ -426,7 +434,7 @@ void idio_file_handle_mode_format_error (char *circumstance, char *msg, IDIO mod
     /* notreached */
 }
 
-char *idio_file_handle_string_C (IDIO val, char *op_C, char *kind, int *free_me_p, IDIO c_location)
+char *idio_file_handle_string_C (IDIO val, char *op_C, char *kind, size_t *sizep, int *free_me_p, IDIO c_location)
 {
     IDIO_ASSERT (val);
     IDIO_C_ASSERT (op_C);
@@ -436,12 +444,13 @@ char *idio_file_handle_string_C (IDIO val, char *op_C, char *kind, int *free_me_
     *free_me_p = 0;
 
     if (idio_isa_symbol (val)) {
-	return IDIO_SYMBOL_S (val);
+	char *s = IDIO_SYMBOL_S (val);
+	*sizep = strlen (s);
+	return s;
     } else if (idio_isa_string (val)) {
-	size_t size = 0;
-	char *val_C = idio_string_as_C (val, &size);
+	char *val_C = idio_string_as_C (val, sizep);
 	size_t C_size = strlen (val_C);
-	if (C_size != size) {
+	if (C_size != *sizep) {
 	    IDIO_GC_FREE (val_C);
 
 	    idio_file_handle_format_error (op_C, kind, "contains an ASCII NUL", val, c_location);
@@ -463,22 +472,22 @@ char *idio_file_handle_string_C (IDIO val, char *op_C, char *kind, int *free_me_
     }
 }
 
-char *idio_file_handle_filename_string_C (IDIO val, char *op_C, int *free_me_p, IDIO c_location)
+char *idio_file_handle_filename_string_C (IDIO val, char *op_C, size_t *sizep, int *free_me_p, IDIO c_location)
 {
     IDIO_ASSERT (val);
     IDIO_C_ASSERT (op_C);
     IDIO_C_ASSERT (free_me_p);
 
-    return idio_file_handle_string_C (val, op_C, "filename", free_me_p, c_location);
+    return idio_file_handle_string_C (val, op_C, "filename", sizep, free_me_p, c_location);
 }
 
-char *idio_file_handle_mode_string_C (IDIO val, char *op_C, int *free_me_p, IDIO c_location)
+char *idio_file_handle_mode_string_C (IDIO val, char *op_C, size_t *sizep, int *free_me_p, IDIO c_location)
 {
     IDIO_ASSERT (val);
     IDIO_C_ASSERT (op_C);
     IDIO_C_ASSERT (free_me_p);
 
-    return idio_file_handle_string_C (val, op_C, "mode", free_me_p, c_location);
+    return idio_file_handle_string_C (val, op_C, "mode", sizep, free_me_p, c_location);
 }
 
 static IDIO idio_open_file_handle (IDIO filename, char *pathname, int fd, int h_type, int h_flags, int s_flags)
@@ -551,9 +560,9 @@ static IDIO idio_open_file_handle (IDIO filename, char *pathname, int fd, int h_
  * fopen(3) implementation deliberately limits the mode string to 5
  * (or 6 or 7) characters.
  */
-static int idio_file_handle_validate_mode_flags (char *mode_str, int *sflagsp, int *fs_flagsp, int *fd_flagsp)
+static int idio_file_handle_validate_mode_flags (char *mode_str, const size_t mode_str_len, int *sflagsp, int *fs_flagsp, int *fd_flagsp)
 {
-    if (strnlen (mode_str, 1) < 1) {
+    if (mode_str_len < 1) {
 	return -1;
     }
 
@@ -571,7 +580,7 @@ static int idio_file_handle_validate_mode_flags (char *mode_str, int *sflagsp, i
 	return -1;
     }
 
-    for (size_t i = 1; i < strlen (mode_str); i++) {
+    for (size_t i = 1; i < mode_str_len; i++) {
 	switch (mode_str[i]) {
 	case 'b':
 	    /*
@@ -600,7 +609,7 @@ static int idio_file_handle_validate_mode_flags (char *mode_str, int *sflagsp, i
     return 0;
 }
 
-static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char *func, char *def_mode_str, int def_mode, int plus_mode)
+static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char *func, char *def_mode_str, const size_t dms_len, int def_mode, int plus_mode)
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
@@ -645,9 +654,10 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	     *
 	     * open-file-from-fd (stdin-fileno) (join-string (make-string 1 #U+0) '("hello" "world"))
 	     */
-	    char *name_C = idio_file_handle_filename_string_C (name, func, &free_name_C, IDIO_C_FUNC_LOCATION ());
+	    size_t name_C_len = 0;
+	    char *name_C = idio_file_handle_filename_string_C (name, func, &name_C_len, &free_name_C, IDIO_C_FUNC_LOCATION ());
 
-	    if (strlen (name_C) >= PATH_MAX) {
+	    if (name_C_len >= PATH_MAX) {
 		/*
 		 * Test Cases:
 		 *
@@ -691,6 +701,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 
     int free_mode_C = 0;
     char *mode_C = def_mode_str;
+    size_t mode_C_len = dms_len;
 
     if (idio_S_nil != args) {
 	IDIO mode = IDIO_PAIR_H (args);
@@ -704,7 +715,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	     *
 	     * open-file-from-fd (stdin-fileno) "bob" (join-string (make-string 1 #U+0) '("r" "w"))
 	     */
-	    mode_C = idio_file_handle_mode_string_C (mode, func, &free_mode_C, IDIO_C_FUNC_LOCATION ());
+	    mode_C = idio_file_handle_mode_string_C (mode, func, &mode_C_len, &free_mode_C, IDIO_C_FUNC_LOCATION ());
 	} else {
 	    /*
 	     * Test Cases:
@@ -750,7 +761,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
     int s_flags = IDIO_FILE_HANDLE_FLAG_NONE;
     int req_fs_flags = 0;
     int req_fd_flags = 0;
-    if (-1 == idio_file_handle_validate_mode_flags (mode_C, &s_flags, &req_fs_flags, &req_fd_flags)) {
+    if (-1 == idio_file_handle_validate_mode_flags (mode_C, mode_C_len, &s_flags, &req_fs_flags, &req_fd_flags)) {
 	/*
 	 * Test Cases:
 	 *
@@ -946,7 +957,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
     }
 
     int hflags = def_mode;
-    if (strchr (mode_C, '+') != NULL) {
+    if (memchr (mode_C, '+', mode_C_len) != NULL) {
 	hflags |= plus_mode;
     }
 
@@ -978,7 +989,7 @@ Use #n for ``name`` if you only want to set ``mode``	\n\
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-file-from-fd", "r", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
+    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-file-from-fd", IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-input-file-from-fd", open_input_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
@@ -1002,7 +1013,7 @@ Use #n for ``name`` if you only want to set ``mode``	\n\
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-input-file-from-fd", "r", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
+    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-input-file-from-fd", IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-output-file-from-fd", open_output_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
@@ -1026,7 +1037,7 @@ Use #n for ``name`` if you only want to set ``mode``	\n\
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-output-file-from-fd", "w", IDIO_HANDLE_FLAG_WRITE, IDIO_HANDLE_FLAG_READ);
+    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-output-file-from-fd", IDIO_MODE_W, sizeof (IDIO_MODE_W) - 1, IDIO_HANDLE_FLAG_WRITE, IDIO_HANDLE_FLAG_READ);
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-input-pipe", open_input_pipe_handle, (IDIO ifd, IDIO args), "fd [name]", "\
@@ -1053,7 +1064,7 @@ Use #n for ``name`` if you only want to set ``mode``	\n\
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    IDIO ph = idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_PIPE, "open-input-pipe", "r", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_NONE);
+    IDIO ph = idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_PIPE, "open-input-pipe", IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_NONE);
 
     return ph;
 }
@@ -1082,12 +1093,12 @@ Use #n for ``name`` if you only want to set ``mode``	\n\
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    IDIO ph = idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_PIPE, "open-output-pipe", "w", IDIO_HANDLE_FLAG_WRITE, IDIO_HANDLE_FLAG_NONE);
+    IDIO ph = idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_PIPE, "open-output-pipe", IDIO_MODE_W, sizeof (IDIO_MODE_W) - 1, IDIO_HANDLE_FLAG_WRITE, IDIO_HANDLE_FLAG_NONE);
 
     return ph;
 }
 
-IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int free_pathname, char *mode_str, int free_mode_str, int user_mode)
+IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, size_t pathname_len, int free_pathname, char *mode_str, size_t mode_str_len, int free_mode_str, int user_mode)
 {
     IDIO_C_ASSERT (func);
     IDIO_ASSERT (filename);	/* the user supplied name */
@@ -1101,14 +1112,14 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
     switch (mode_str[0]) {
     case 'r':
 	h_flags = IDIO_HANDLE_FLAG_READ;
-	if (strchr (mode_str, '+') != NULL) {
+	if (memchr (mode_str, '+', mode_str_len) != NULL) {
 	    h_flags |= IDIO_HANDLE_FLAG_WRITE;
 	}
 	break;
     case 'a':
     case 'w':
 	h_flags = IDIO_HANDLE_FLAG_WRITE;
-	if (strchr (mode_str, '+') != NULL) {
+	if (memchr (mode_str, '+', mode_str_len) != NULL) {
 	    h_flags |= IDIO_HANDLE_FLAG_READ;
 	}
 	break;
@@ -1140,7 +1151,7 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
     int s_flags = IDIO_FILE_HANDLE_FLAG_NONE;
     int req_fs_flags = 0;
     int req_fd_flags = 0;
-    if (-1 == idio_file_handle_validate_mode_flags (mode_str, &s_flags, &req_fs_flags, &req_fd_flags)) {
+    if (-1 == idio_file_handle_validate_mode_flags (mode_str, mode_str_len, &s_flags, &req_fs_flags, &req_fd_flags)) {
 	/*
 	 * Test Cases:
 	 *
@@ -1440,13 +1451,14 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 /*
  * imode, if not #n, is used in preferance.
  */
-static IDIO idio_file_handle_open_file (char *func, IDIO name, IDIO mode, char *def_mode)
+static IDIO idio_file_handle_open_file (char *func, IDIO name, IDIO mode, char *def_mode, size_t dm_len)
 {
     IDIO_C_ASSERT (func);
     IDIO_ASSERT (name);
     IDIO_ASSERT (mode);
 
     int free_name_C = 0;
+    size_t name_C_len = 0;
     char *name_C;
 
     switch (idio_type (name)) {
@@ -1461,7 +1473,7 @@ static IDIO idio_file_handle_open_file (char *func, IDIO name, IDIO mode, char *
 	 *
 	 * open-file (join-string (make-string 1 #U+0) '("hello" "world")) "re"
 	 */
-	name_C = idio_file_handle_filename_string_C (name, func, &free_name_C, IDIO_C_FUNC_LOCATION ());
+	name_C = idio_file_handle_filename_string_C (name, func, &name_C_len, &free_name_C, IDIO_C_FUNC_LOCATION ());
 	break;
     default:
 	/*
@@ -1481,6 +1493,7 @@ static IDIO idio_file_handle_open_file (char *func, IDIO name, IDIO mode, char *
 
     int free_mode_C = 0;
     char *mode_C = def_mode;
+    size_t mode_C_len = dm_len;
 
     switch (idio_type (mode)) {
     case IDIO_TYPE_STRING:
@@ -1491,7 +1504,7 @@ static IDIO idio_file_handle_open_file (char *func, IDIO name, IDIO mode, char *
 	 * open-file "bob" (join-string (make-string 1 #U+0) '("r" "w"))
 	 *
 	 */
-	mode_C = idio_file_handle_mode_string_C (mode, func, &free_mode_C, IDIO_C_FUNC_LOCATION ());
+	mode_C = idio_file_handle_mode_string_C (mode, func, &mode_C_len, &free_mode_C, IDIO_C_FUNC_LOCATION ());
 	break;
     default:
 	if (idio_S_nil != mode ||
@@ -1510,7 +1523,7 @@ static IDIO idio_file_handle_open_file (char *func, IDIO name, IDIO mode, char *
 	break;
     }
 
-    return idio_open_file_handle_C (func, name, name_C, 1, mode_C, free_mode_C, (idio_S_nil != mode));
+    return idio_open_file_handle_C (func, name, name_C, name_C_len, 1, mode_C, mode_C_len, free_mode_C, (idio_S_nil != mode));
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("open-file", open_file_handle, (IDIO name, IDIO mode), "name mode", "\
@@ -1528,7 +1541,7 @@ open input file `name` using mode `mode`		\n\
     IDIO_ASSERT (name);
     IDIO_ASSERT (mode);
 
-    return idio_file_handle_open_file ("open-file", name, mode, NULL);
+    return idio_file_handle_open_file ("open-file", name, mode, NULL, 0);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("open-input-file", open_input_file_handle, (IDIO name), "name", "\
@@ -1543,7 +1556,7 @@ open input file `name`					\n\
 {
     IDIO_ASSERT (name);
 
-    return idio_file_handle_open_file ("open-input-file", name, idio_S_nil, "re");
+    return idio_file_handle_open_file ("open-input-file", name, idio_S_nil, IDIO_MODE_RE, sizeof (IDIO_MODE_RE) - 1);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("open-output-file", open_output_file_handle, (IDIO name), "name", "\
@@ -1558,7 +1571,7 @@ open output file `name`					\n\
 {
     IDIO_ASSERT (name);
 
-    return idio_file_handle_open_file ("open-output-file", name, idio_S_nil, "we");
+    return idio_file_handle_open_file ("open-output-file", name, idio_S_nil, IDIO_MODE_WE, sizeof (IDIO_MODE_WE) - 1);
 }
 
 static IDIO idio_open_std_file_handle (FILE *filep)
@@ -2746,25 +2759,146 @@ fd handle `fh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
     return idio_C_int (r);
 }
 
+/*
+ * Dynamic Library loader
+ *
+ * Use a dummy "reader" as a placeholder/test with the actual loader
+ * after this
+ */
+IDIO idio_dl_read (IDIO h)
+{
+    return idio_S_notreached;
+}
+
+void idio_dl_handle_finalizer (IDIO h)
+{
+    IDIO_ASSERT (h);
+    IDIO_TYPE_ASSERT (C_pointer, h);
+
+    void *handle = IDIO_C_TYPE_POINTER_P (h);
+
+    if (dlclose (handle)) {
+	fprintf (stderr, "dlclose () => %s\n", dlerror ());
+	perror ("dlclose");
+    }
+}
+
+IDIO idio_load_dl_library (char *filename, size_t filename_len, char *libname, size_t libname_len, IDIO cs)
+{
+    /*
+     * string lengths.  We *should* be being called with filename as
+     * ".../libX.so" which we want to turn into ".../X.idio" which is
+     * a character shorter.  Often safe.
+     *
+     * If someone has called us with inconsistent values (notably
+     * filename not being in that format and/or libname not being "X"
+     * or either of the *_len values not being strlen(*)) then we
+     * don't defend very well against that.
+     */
+    char *filename_slash = memrchr (filename, '/', filename_len);
+
+    if (NULL == filename_slash) {
+	/*
+	 * Test Case: Coding error
+	 */
+
+	idio_error_system ("file.so libname missing /", NULL, idio_string_C (filename), ENOENT, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    if ((filename_slash - filename) + 1 + libname_len + 1 >= PATH_MAX) {
+	/*
+	 * Test Case: Coding error
+	 */
+
+	idio_error_system ("file.so libname length", NULL, IDIO_LIST2 (idio_string_C (filename), idio_string_C (libname)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return NULL;
+    }
+
+    void *handle = dlopen (filename, RTLD_LAZY);
+    if (NULL == handle) {
+	fprintf (stderr, "dlopen (%s) => %s\n", filename, dlerror ());
+	perror ("dlopen");
+	return idio_S_notreached;
+    }
+
+    idio_gc_register_finalizer (idio_C_pointer (handle), idio_dl_handle_finalizer);
+
+    char func[PATH_MAX];
+    sprintf (func, "idio_init_%s", libname);
+
+    dlerror ();
+    void (*lib_init) (void);
+    lib_init = (void (*) (void)) dlsym (handle, func);
+
+    char *error = dlerror ();
+    if (NULL != error) {
+	fprintf (stderr, "dlsym (%s, %s) => %s\n", libname, func, error);
+	perror ("dlsym");
+	return idio_S_notreached;
+    }
+
+    (*lib_init) ();
+
+    /*
+     * Having loaded a specific .so we can look to load any *adjacent*
+     * .idio file.
+     *
+     * NB This does not want to load a {libname}.idio in some other
+     * directory.  They must be adjacent.
+     */
+    char lib_idio[PATH_MAX];
+    size_t lib_idio_len = filename_slash - filename + 1;
+    memcpy (lib_idio, filename, lib_idio_len); /* ".../" */
+    memcpy (lib_idio + lib_idio_len, libname, libname_len + 1);
+    lib_idio_len += libname_len;
+    memcpy (lib_idio + lib_idio_len, IDIO_IDIO_EXT, sizeof (IDIO_IDIO_EXT));
+
+    IDIO r = idio_S_unspec;
+
+    if (access (lib_idio, R_OK) == 0) {
+	IDIO lib_idio_C = idio_string_C (lib_idio);
+	idio_gc_protect (lib_idio_C);
+	r = idio_load_file_name (lib_idio_C, cs);
+	idio_gc_expose (lib_idio_C);
+    }
+
+    return r;
+}
+
+/*
+ * Map various extensions to reader/evaluator.
+ *
+ * In addition {prefix} and {suffix} may be added to the name.  The
+ * obvious {prefix} is "lib" for an {ext} of ".so" giving libX.so.
+ *
+ * There must be some {suffix}s...
+ */
 typedef struct idio_file_extension_s {
-    char *ext;
+    char *prefix;		/* X -> {prefix}X */
+    char *suffix;		/* X -> X{suffix} */
+    char *ext;			/* X -> X{ext} */
     IDIO (*reader) (IDIO h);
     IDIO (*evaluator) (IDIO e, IDIO cs);
     IDIO (*modulep) (void);
 } idio_file_extension_t;
 
 static idio_file_extension_t idio_file_extensions[] = {
-    { NULL, idio_read, idio_evaluate, idio_Idio_module_instance },
-    { ".idio", idio_read, idio_evaluate, idio_Idio_module_instance },
+    { NULL,  NULL, NULL,    idio_read, idio_evaluate, idio_Idio_module_instance },
+    { "lib", NULL, ".so",   idio_dl_read, idio_evaluate, idio_Idio_module_instance },
+    { NULL,  NULL, IDIO_IDIO_EXT, idio_read, idio_evaluate, idio_Idio_module_instance },
     /* { ".scm", idio_scm_read, idio_scm_evaluate, idio_main_scm_module_instance }, */
     { NULL, NULL, NULL }
 };
 
-char *idio_libfile_find_C (char *file)
+char *idio_libfile_find_C (char *file, size_t *liblen)
 {
     IDIO_C_ASSERT (file);
 
-    size_t filelen = strlen (file);
+    const size_t filelen = strlen (file);
 
     IDIO IDIOLIB = idio_module_current_symbol_value_recurse (idio_env_IDIOLIB_sym, idio_S_nil);
 
@@ -2793,7 +2927,7 @@ char *idio_libfile_find_C (char *file)
     } else {
 	size_t size = 0;
 	idiolib_copy_C = idio_string_as_C (IDIOLIB, &size);
-	size_t C_size = strlen (idiolib_copy_C);
+	const size_t C_size = strlen (idiolib_copy_C);
 	if (C_size != size) {
 	    /*
 	     * Test Case: file-handle-errors/find-lib-IDIOLIB-format.idio
@@ -2810,11 +2944,11 @@ char *idio_libfile_find_C (char *file)
 	}
 
 	idiolib = idiolib_copy_C;
-	idiolibe = idiolib + idio_string_len (IDIOLIB);
+	idiolibe = idiolib + C_size;
     }
 
     /*
-     * find the longest filename extension -- so we don't overrun
+     * find the longest filename construction -- so we don't overrun
      * PATH_MAX
      */
     size_t max_ext_len = 0;
@@ -2823,6 +2957,12 @@ char *idio_libfile_find_C (char *file)
     for (;NULL != fe->reader;fe++) {
 	if (NULL != fe->ext) {
 	    size_t el = strlen (fe->ext);
+	    if (NULL != fe->prefix) {
+		el += strlen (fe->prefix);
+	    }
+	    if (NULL != fe->suffix) {
+		el += strlen (fe->suffix);
+	    }
 	    if (el > max_ext_len) {
 		max_ext_len = el;
 	    }
@@ -2833,6 +2973,8 @@ char *idio_libfile_find_C (char *file)
      * See comment in libc-wrap.c re: getcwd(3)
      */
     char libname[PATH_MAX];
+    libname[0] = '\0';
+    size_t libnamelen = 0;
     char cwd[PATH_MAX];
     if (idio_getcwd ("find/getcwd", cwd, PATH_MAX) == NULL) {
 	/*
@@ -2853,10 +2995,28 @@ char *idio_libfile_find_C (char *file)
 	return NULL;
     }
 
-    size_t cwdlen = strlen (cwd);
+    const size_t cwdlen = strlen (cwd);
 
     if ('/' == file[0]) {
-	strcpy (libname, file);
+	if ((filelen + 1) >= PATH_MAX) {
+	    /*
+	     * Test Case: file-handle-errors/find-lib-abs-file-PATH_MAX.idio
+	     *
+	     * find-lib (append-string "/" (make-string (C/->integer PATH_MAX) #\A))
+	     */
+
+	    if (free_idiolib_copy_C) {
+		IDIO_GC_FREE (idiolib_copy_C);
+	    }
+
+	    idio_error_system ("/file.idio libname length", NULL, IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return NULL;
+	}
+
+	memcpy (libname, file, filelen + 1);
+	libnamelen = filelen;
     } else {
 	int done = 0;
 	while (! done) {
@@ -2892,8 +3052,8 @@ char *idio_libfile_find_C (char *file)
 		    return NULL;
 		}
 
-		memcpy (libname, idiolib, idioliblen);
-		libname[idioliblen] = '\0';
+		memcpy (libname, idiolib, idioliblen + 1);
+		libnamelen = idioliblen;
 	    } else {
 		size_t dirlen = colon - idiolib;
 
@@ -2922,7 +3082,8 @@ char *idio_libfile_find_C (char *file)
 			return NULL;
 		    }
 
-		    strcpy (libname, cwd);
+		    memcpy (libname, cwd, cwdlen + 1);
+		    libnamelen = cwdlen;
 		} else {
 		    if ((dirlen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
 			/*
@@ -2942,48 +3103,43 @@ char *idio_libfile_find_C (char *file)
 			return NULL;
 		    }
 
-		    memcpy (libname, idiolib, dirlen);
-		    libname[dirlen] = '\0';
+		    memcpy (libname, idiolib, dirlen + 1);
+		    libnamelen = dirlen;
 		}
 	    }
 
-	    strcat (libname, "/");
-	    strcat (libname, file);
+	    libname[libnamelen++] = '/';
+	    libname[libnamelen] = '\0';
 
 	    /*
-	     * libname now contains "/path/to/file".
+	     * {libname} now contains "/path/to/".
 	     *
-	     * We now try each extension in turn by maintaining lne which
-	     * points at the end of the current value of libname.  That
-	     * is, it points at the '\0' at the end of "/path/to/file".
+	     * We now try each construction in turn by maintaining
+	     * {lne} which points at the end of the current value of
+	     * {libname}.  That is, it points at the '\0' at the end of
+	     * "/path/to/".
 	     */
-	    size_t lnlen = strlen (libname);
-	    char *lne = strrchr (libname, '\0');
-
+	    char *lne = libname + libnamelen;
 	    fe = idio_file_extensions;
 
 	    for (;NULL != fe->reader;fe++) {
-		if (NULL != fe->ext) {
-
-		    if ((lnlen + strlen (fe->ext)) >= PATH_MAX) {
-			/*
-			 * Test Case: ??
-			 *
-			 * Can we get here if we checked with max_ext_len
-			 * in the above cases?
-			 */
-			if (free_idiolib_copy_C) {
-			    IDIO_GC_FREE (idiolib_copy_C);
-			}
-
-			idio_file_handle_malformed_filename_error ("name too long", idio_string_C (libname), IDIO_C_FUNC_LOCATION ());
-
-			/* notreached */
-			return NULL;
+		if (NULL == fe->ext) {
+		    memcpy (lne, file, filelen + 1);
+		} else {
+		    char *end = lne;
+		    if (NULL != fe->prefix) {
+			const size_t pl = strlen (fe->prefix);
+			memcpy (end, fe->prefix, pl + 1);
+			end += pl;
 		    }
-
-		    strncpy (lne, fe->ext, PATH_MAX - lnlen);
-		    lne[PATH_MAX - lnlen - 1] = '\0';
+		    memcpy (end, file, filelen + 1);
+		    end += filelen;
+		    if (NULL != fe->suffix) {
+			const size_t sl = strlen (fe->prefix);
+			memcpy (end, fe->suffix, sl + 1);
+			end += sl;
+		    }
+		    memcpy (end, fe->ext, strlen (fe->ext) + 1);
 		}
 
 		if (access (libname, R_OK) == 0) {
@@ -3015,7 +3171,7 @@ char *idio_libfile_find_C (char *file)
 		 * Unless that was the last thing we tried.
 		 */
 		size_t dl = strlen (idio_env_IDIOLIB_default);
-		if (strncmp (libname, idio_env_IDIOLIB_default, dl) == 0 &&
+		if (memcmp (libname, idio_env_IDIOLIB_default, dl) == 0 &&
 		    '/' == libname[dl]) {
 		    done = 1;
 		    libname[0] = '\0';
@@ -3032,10 +3188,12 @@ char *idio_libfile_find_C (char *file)
     }
 
     char *idiolibname = NULL;
+    *liblen = 0;
 
     if (0 != libname[0]) {
-	idiolibname = idio_alloc (strlen (libname) + 1);
-	strcpy (idiolibname, libname);
+	*liblen = strlen (libname);
+	idiolibname = idio_alloc (*liblen + 1);
+	memcpy (idiolibname, libname, *liblen + 1);
     }
 
     if (free_idiolib_copy_C) {
@@ -3051,15 +3209,17 @@ char *idio_libfile_find (IDIO file)
     IDIO_TYPE_ASSERT (string, file);
 
     int free_file_C = 0;
+    size_t file_C_len = 0;
 
     /*
      * Test Case: file-handle-errors/find-lib-format.idio
      *
      * find-lib (join-string (make-string 1 #U+0) '("hello" "world"))
      */
-    char *file_C = idio_file_handle_filename_string_C (file, "find-lib", &free_file_C, IDIO_C_FUNC_LOCATION ());
+    char *file_C = idio_file_handle_filename_string_C (file, "find-lib", &file_C_len, &free_file_C, IDIO_C_FUNC_LOCATION ());
 
-    char *r = idio_libfile_find_C (file_C);
+    size_t liblen = 0;
+    char *r = idio_libfile_find_C (file_C, &liblen);
 
     if (free_file_C) {
 	IDIO_GC_FREE (file_C);
@@ -3120,17 +3280,17 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     IDIO_TYPE_ASSERT (array, cs);
 
     int free_filename_C = 0;
+    size_t filename_C_len = 0;
 
     /*
      * Test Case: file-handle-errors/load-format.idio
      *
      * load (join-string (make-string 1 #U+0) '("hello" "world"))
      */
-    char *filename_C = idio_file_handle_filename_string_C (filename, "load", &free_filename_C, IDIO_C_FUNC_LOCATION ());
+    char *filename_C = idio_file_handle_filename_string_C (filename, "load", &filename_C_len, &free_filename_C, IDIO_C_FUNC_LOCATION ());
 
-    char lfn[PATH_MAX];
-
-    char *libfile = idio_libfile_find_C (filename_C);
+    size_t libfilelen = 0;
+    char *libfile = idio_libfile_find_C (filename_C, &libfilelen);
 
     if (NULL == libfile) {
 	/*
@@ -3149,20 +3309,21 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 	return idio_S_notreached;
     }
 
-    strncpy (lfn, libfile, PATH_MAX);
+    char lfn[PATH_MAX];
+    memcpy (lfn, libfile, libfilelen + 1);
     lfn[PATH_MAX - 1] = '\0';
     IDIO_GC_FREE (libfile);
 
-    char *filename_slash = strrchr (filename_C, '/');
+    char *filename_slash = memrchr (filename_C, '/', filename_C_len);
     if (NULL == filename_slash) {
 	filename_slash = filename_C;
     }
 
-    char *filename_dot = strrchr (filename_slash, '.');
+    char *filename_dot = memrchr (filename_slash, '.', filename_C_len - (filename_slash - filename_C));
 
-    char *lfn_slash = strrchr (lfn, '/');
+    char *lfn_slash = memrchr (lfn, '/', libfilelen);
 
-    char *lfn_dot = strrchr (lfn_slash, '.');
+    char *lfn_dot = memrchr (lfn_slash, '.', libfilelen - (lfn_slash - lfn));
 
     IDIO (*reader) (IDIO h) = idio_read;
     IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate;
@@ -3174,7 +3335,8 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     if (NULL != lfn_dot) {
 	for (;NULL != fe->reader;fe++) {
 	    if (NULL != fe->ext) {
-		if (strncmp (lfn_dot, fe->ext, strlen (fe->ext)) == 0) {
+		const size_t el = strlen (fe->ext);
+		if (memcmp (lfn_dot, fe->ext, el) == 0) {
 		    reader = fe->reader;
 		    evaluator = fe->evaluator;
 
@@ -3183,7 +3345,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 		     * us then tack it on the end
 		     */
 		    if (NULL == filename_dot ||
-			strncmp (filename_dot, fe->ext, strlen (fe->ext))) {
+			memcmp (filename_dot, fe->ext, el)) {
 
 			char *ss[] = { filename_C, fe->ext };
 
@@ -3191,14 +3353,40 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 
 			idio_array_push (stack, filename_ext);
 		    }
-		    break;
+
+		    if (access (lfn, R_OK) == 0) {
+
+			if (idio_dl_read == reader) {
+			    IDIO r = idio_load_dl_library (lfn, libfilelen, filename_C, filename_C_len, cs);
+
+			    if (free_filename_C) {
+				IDIO_GC_FREE (filename_C);
+			    }
+
+			    if (filename_ext != filename) {
+				idio_array_pop (stack);
+			    }
+
+			    return r;
+			} else {
+			    IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, libfilelen, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
+
+			    if (free_filename_C) {
+				IDIO_GC_FREE (filename_C);
+			    }
+
+			    if (filename_ext != filename) {
+				idio_array_pop (stack);
+			    }
+
+			    return idio_load_handle_C (fh, reader, evaluator, cs);
+			}
+		    }
 		}
 	    }
 	}
-    }
-
-    if (access (lfn, R_OK) == 0) {
-	IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, 0, "r", 0, 0);
+    } else {
+	IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, libfilelen, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
 
 	if (free_filename_C) {
 	    IDIO_GC_FREE (filename_C);
@@ -3208,7 +3396,6 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 	    idio_array_pop (stack);
 	}
 
-	/* idio_thread_set_current_module ((*fe->modulep) ()); */
 	return idio_load_handle_C (fh, reader, evaluator, cs);
     }
 
@@ -3289,13 +3476,14 @@ does `remove (filename)` succeed?		\n\
     IDIO_USER_TYPE_ASSERT (string, filename);
 
     int free_filename_C = 0;
+    size_t filename_C_len = 0;
 
     /*
      * Test Case: file-handle-errors/delete-file-format.idio
      *
      * delete-file (join-string (make-string 1 #U+0) '("hello" "world"))
      */
-    char *filename_C = idio_file_handle_filename_string_C (filename, "delete-file", &free_filename_C, IDIO_C_FUNC_LOCATION ());
+    char *filename_C = idio_file_handle_filename_string_C (filename, "delete-file", &filename_C_len, &free_filename_C, IDIO_C_FUNC_LOCATION ());
 
     IDIO r = idio_S_false;
 
@@ -3391,5 +3579,7 @@ void idio_init_file_handle ()
     idio_gc_protect_auto (idio_stdout);
     idio_stderr = idio_open_std_file_handle (stderr);
     idio_gc_protect_auto (idio_stderr);
-}
 
+    idio_dl_handles = idio_pair (idio_S_nil, idio_S_nil);
+    idio_gc_protect_auto (idio_dl_handles);
+}
