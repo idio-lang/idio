@@ -98,5 +98,11 @@ array-error-load "array-errors/array-unshift-bad-type.idio" "bad parameter type:
 array-error-load "array-errors/array-shift-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
 array-error-load "array-errors/array2list-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
 
+array-error-load "array-errors/array-for-each-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
+array-error-load "array-errors/array-for-each-set-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function"
+
+array-error-load "array-errors/fold-array-bad-array-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
+array-error-load "array-errors/fold-array-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function"
+
 ;; all done?
-Tests? (array-error0 + 26)
+Tests? (array-error0 + 30)

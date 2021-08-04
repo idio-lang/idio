@@ -298,7 +298,7 @@ test-load "test-job-control.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? 6019
+Tests? 6021
 
 if (e? testfile) (delete-file testfile)
 

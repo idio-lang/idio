@@ -350,7 +350,7 @@ Return the largest Unicode Plane used by this char-set.
 " {
   (cond
    ((sparse-char-set? cs) (unicode->plane (integer->unicode ((sparse-char-set-size cs) - 1))))
-   (else (error 'sparse-char-set-planes "not a char-set" cs)))
+   (else (error 'count-sparse-char-set-planes "not a char-set" cs)))
 }
 
 define char-set-planes count-sparse-char-set-planes
@@ -502,7 +502,7 @@ define (ucs-range->char-set s e & base?) {
     cs? := ph base?
     if (char-set? cs?) {
       cs = copy-char-set cs?
-    } (error 'string->char-set "not a char-set" cs?)
+    } (error 'ucs-range->char-set "not a char-set" cs?)
   } {
     cs = copy-char-set char-set:empty
   }
@@ -543,11 +543,11 @@ Is the code point cp in the character set cs?
 
   (cond
    ((sparse-char-set? cs) {
-     if (ge (unicode->integer cp) (sparse-char-set-size cs)) (error 'char-set-set! "cp greater than char-set size" cp (sparse-char-set-size cs))
+     if (ge (unicode->integer cp) (sparse-char-set-size cs)) (error 'char-set-ref "cp greater than char-set size" cp (sparse-char-set-size cs))
 
      bs := array-ref (sparse-char-set-planes cs) (unicode->plane cp)
      if bs {
-       bitset-ref bs cp
+       bitset-ref bs (unicode->plane-codepoint cp)
      } #f
    })
    (else (error 'char-set-ref "not a char-set" cs)))

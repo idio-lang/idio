@@ -98,8 +98,8 @@ hash-error-load "hash-errors/hash-update-bad-type.idio" "bad parameter type: '#t
 hash-error-load "hash-errors/hash-walk-bad-hash-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
 hash-error-load "hash-errors/hash-walk-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function"
 
-hash-error-load "hash-errors/hash-fold-bad-hash-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
-hash-error-load "hash-errors/hash-fold-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function"
+hash-error-load "hash-errors/fold-hash-bad-hash-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/fold-hash-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function"
 
 hash-error-load "hash-errors/copy-hash-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
 hash-error-load "hash-errors/copy-hash-bad-depth-value.idio" "copy-hash depth='completely': should be 'deep or 'shallow"

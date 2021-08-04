@@ -504,7 +504,7 @@ define (posse-for-each proc posse) {
   hash-walk posse (function (key val) (proc val))
 }
 define (posse-every pred posse) {
-  hash-fold posse (function (key val acc) (and acc (pred val))) #t
+  fold-hash posse (function (key val acc) (and acc (pred val))) #t
 }
 
 define (posse->list posse) {

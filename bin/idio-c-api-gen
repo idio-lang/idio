@@ -297,9 +297,6 @@ define pid_t?                         __pid_t?
 
 *#
 
-printf "%s: ARGC=%d: ARGV=%s\n" ARGV0 ARGC ARGV
-printf "IDIOLIB %s\n" IDIOLIB
-
 ext-dirs := #n
 for-each (function (d) {
 	    (regex-case
