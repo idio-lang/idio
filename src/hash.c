@@ -1951,9 +1951,9 @@ call ``func`` for each ``key` in hash table ``ht``		\n\
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE3_DS ("hash-fold", hash_fold, (IDIO ht, IDIO func, IDIO val), "ht func val", "\
-call ``func`` for each ``key` in hash table ``ht`` with arguments:	\n\
-``key``, the value indexed by ``key`` and ``val``		\n\
+IDIO_DEFINE_PRIMITIVE3_DS ("fold-hash", fold_hash, (IDIO ht, IDIO func, IDIO val), "ht func val", "\
+call ``func`` for each ``key`` in hash table ``ht`` with	\n\
+arguments: ``key``, the value indexed by ``key`` and ``val``	\n\
 								\n\
 ``val`` is updated to the value returned by ``func``		\n\
 								\n\
@@ -1974,15 +1974,15 @@ The final value of ``val`` is returned				\n\
     IDIO_ASSERT (val);
 
     /*
-     * Test Case: hash-errors/hash-fold-bad-hash-type.idio
+     * Test Case: hash-errors/fold-hash-bad-hash-type.idio
      *
-     * hash-fold #t #t #t
+     * fold-hash #t #t #t
      */
     IDIO_USER_TYPE_ASSERT (hash, ht);
     /*
-     * Test Case: hash-errors/hash-fold-bad-func-type.idio
+     * Test Case: hash-errors/fold-hash-bad-func-type.idio
      *
-     * hash-fold #{} #t #t
+     * fold-hash #{} #t #t
      */
     IDIO_USER_TYPE_ASSERT (function, func);
 
@@ -1991,7 +1991,7 @@ The final value of ``val`` is returned				\n\
      * could perturb the hash so pull the keys from the hash then in a
      * separate loop, invoke the function per key.
      *
-     * As we're re-enetering the VM, protect the (C-land) list of keys
+     * As we're re-entering the VM, protect the (C-land) list of keys
      * from the GC.
      */
     IDIO keys = idio_hash_keys_to_list (ht);
@@ -2269,7 +2269,7 @@ void idio_hash_add_primitives ()
     IDIO_ADD_PRIMITIVE (hash_keys);
     IDIO_ADD_PRIMITIVE (hash_values);
     IDIO_ADD_PRIMITIVE (hash_walk);
-    IDIO_ADD_PRIMITIVE (hash_fold);
+    IDIO_ADD_PRIMITIVE (fold_hash);
     IDIO_ADD_PRIMITIVE (copy_hash);
     IDIO_ADD_PRIMITIVE (merge_hash);
 #ifdef IDIO_DEBUG

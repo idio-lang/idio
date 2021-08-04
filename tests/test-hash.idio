@@ -98,31 +98,31 @@ addv := function (k v) {
 hash-walk ht addv
 test sum 114
 
-;; hash-fold
+;; fold-hash
 accv := function (k v i) {
 	  i + v
 }
 
-test (hash-fold ht accv 0) 114
+test (fold-hash ht accv 0) 114
 
 ;; copy-hash
 nht := copy-hash ht
 
 test (hash-size nht) 2
-test (hash-fold nht accv 0) 114
+test (fold-hash nht accv 0) 114
 
 hash-set! nht 'a 3
 test (hash-size nht) 3
-test (hash-fold nht accv 0) 117
+test (fold-hash nht accv 0) 117
 
 ;; check we have not changed ht
 test (hash-size ht) 2
-test (hash-fold ht accv 0) 114
+test (fold-hash ht accv 0) 114
 
 ;; merge-hash
 ht = merge-hash! ht nht
 test (hash-size ht) 3
-test (hash-fold ht accv 0) 117
+test (fold-hash ht accv 0) 117
 
 ;; Other forms of creation:
 
@@ -131,14 +131,14 @@ ht = alist->hash '((b & 5) (c & 109))
 test (hash-exists? ht 'a) #f
 test (hash-exists? ht 'b) #t
 test (hash-size ht) 2
-test (hash-fold ht accv 0) 114
+test (fold-hash ht accv 0) 114
 
 ;; #{ ... }
 ht = #{ (b & 5) (c & 109) }
 test (hash-exists? ht 'a) #f
 test (hash-exists? ht 'b) #t
 test (hash-size ht) 2
-test (hash-fold ht accv 0) 114
+test (fold-hash ht accv 0) 114
 
 ;; equivalence functions
 

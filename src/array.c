@@ -63,16 +63,19 @@
 
 #include "array.h"
 #include "bignum.h"
+#include "closure.h"
 #include "condition.h"
 #include "error.h"
 #include "evaluate.h"
 #include "fixnum.h"
 #include "handle.h"
+#include "idio.h"
 #include "idio-string.h"
 #include "pair.h"
 #include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
+#include "thread.h"
 #include "util.h"
 #include "vm.h"
 
@@ -1371,6 +1374,93 @@ convert `a` to a list				\n\
     return idio_array_to_list (a);
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("array-for-each-set", array_for_each_set, (IDIO a, IDIO func), "a func", "\
+call ``func`` for each element in array table ``a`` with	\n\
+a non-default value with arguments: ``index`` the value at that	\n\
+index								\n\
+								\n\
+:param a: array table						\n\
+:type a: array table						\n\
+:param func: func to be called with each index, value tuple	\n\
+:type func: 2-ary function					\n\
+:return: #unspec						\n\
+")
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (func);
+
+    /*
+     * Test Case: array-errors/array-for-each-set-bad-array-type.idio
+     *
+     * array-for-each-set #t #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (array, a);
+    /*
+     * Test Case: array-errors/array-for-each-set-bad-func-type.idio
+     *
+     * array-for-each-set #[] #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (function, func);
+
+    idio_ai_t al = IDIO_ARRAY_USIZE (a);
+    idio_ai_t ai;
+
+    for (ai = 0; ai < al - 1; ai++) {
+	IDIO v = idio_array_ref_index (a, ai);
+	if (! idio_equal (v, IDIO_ARRAY_DV (a), IDIO_EQUAL_EQUALP)) {
+	    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (func, idio_integer (ai), v));
+	}
+    }
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE3_DS ("fold-array", fold_array, (IDIO a, IDIO func, IDIO val), "a func val", "\
+call ``func`` for each element in array table ``a`` with	\n\
+arguments:``index``, the value at that index and ``val``	\n\
+								\n\
+``val`` is updated to the value returned by ``func``		\n\
+								\n\
+The final value of ``val`` is returned				\n\
+								\n\
+:param a: array table						\n\
+:type a: array table						\n\
+:param func: func to be called with each index, value, val tuple\n\
+:type func: 3-ary function					\n\
+:param val: initial value for ``val``				\n\
+:type func: value						\n\
+								\n\
+:return: final value of ``val``					\n\
+")
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (func);
+    IDIO_ASSERT (val);
+
+    /*
+     * Test Case: array-errors/fold-array-bad-array-type.idio
+     *
+     * fold-array #t #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (array, a);
+    /*
+     * Test Case: array-errors/fold-array-bad-func-type.idio
+     *
+     * fold-array #[] #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (function, func);
+
+    idio_ai_t al = IDIO_ARRAY_USIZE (a);
+    idio_ai_t ai;
+
+    for (ai = 0; ai < al - 1; ai++) {
+	IDIO v = idio_array_ref_index (a, ai);
+	val = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST4 (func, idio_integer (ai), v, val));
+    }
+
+    return val;
+}
+
 void idio_array_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (arrayp);
@@ -1385,6 +1475,8 @@ void idio_array_add_primitives ()
     IDIO_ADD_PRIMITIVE (array_unshift);
     IDIO_ADD_PRIMITIVE (array_shift);
     IDIO_ADD_PRIMITIVE (array2list);
+    IDIO_ADD_PRIMITIVE (array_for_each_set);
+    IDIO_ADD_PRIMITIVE (fold_array);
 }
 
 void idio_init_array ()
