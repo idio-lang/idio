@@ -829,8 +829,7 @@ typedef enum \{
 }
 
 for-each (function (fl) {
-	    c-flag := collect-output echo fl | tr "[[:lower:]]" "[[:upper:]]"
-	    c-flag = append-string "IDIO_USI_FLAG_" c-flag
+	    c-flag := append-string "IDIO_USI_FLAG_" (if (string? fl) fl (symbol->string fl))
 	    c-comment := (cond
 			  ((memq fl gc-flag-list) {
 			    append-string "Category " (symbol->string fl)
@@ -850,17 +849,18 @@ for-each (function (fl) {
 			  }))
 
 	    hprintf s-h-fh "  %-35s = %8dUL,	/* %s */\n" c-flag (hash-ref flag-map fl) c-comment
-	    }
-) all-flags
+}) all-flags
 
 hprintf s-h-fh #S{
 \} idio_USI_flag_t;
+
+#define IDIO_USI_FLAG_COUNT ${flag-map-index}
 
 }
 
 hprintf s-h-fh #S{
 typedef enum \{
-  IDIO_USI_CATEGORY_INVALID,
+  IDIO_USI_CATEGORY_Invalid,
 }
 
 for-each (function (cat) {
@@ -891,7 +891,9 @@ typedef struct idio_USI_s \{
   \};
 \} idio_USI_t;
 
-extern const char *idio_USI_Categories[];
+extern const char *idio_USI_flag_names[];
+
+extern const char *idio_USI_Category_names[];
 
 extern const idio_USI_t idio_USI_variants[];
 
@@ -937,7 +939,15 @@ hprintf s-c-fh #S{
 
 }
 
-hprintf s-c-fh "const char *idio_USI_Categories[] = {\n"
+hprintf s-c-fh "const char *idio_USI_flag_names[] = {\n"
+
+for-each (function (fl) {
+	    hprintf s-c-fh "  \"%s\",\n" (symbol->string fl)
+}) all-flags
+
+hprintf s-c-fh "};\n\n"
+
+hprintf s-c-fh "const char *idio_USI_Category_names[] = {\n"
 hprintf s-c-fh "  [IDIO_USI_CATEGORY_INVALID] = \"\",\n"
 
 for-each (function (cat) {

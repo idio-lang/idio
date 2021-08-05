@@ -74,6 +74,7 @@
 #include "symbol.h"
 #include "thread.h"
 #include "unicode.h"
+#include "usi-wrap.h"
 #include "util.h"
 #include "vars.h"
 #include "vm.h"
@@ -220,6 +221,7 @@ void idio_init (void)
     idio_init_closure ();
     idio_init_error ();
     idio_init_keyword ();
+    idio_init_usi_wrap ();
     idio_init_read ();
     idio_init_vars ();
     idio_init_env ();

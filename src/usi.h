@@ -14,37 +14,39 @@
 #define IDIO_USI_PAGE_MASK	((1 << 7) - 1)
 
 typedef enum {
-  IDIO_USI_FLAG_INVALID               =        0UL,	/* Invalid */
-  IDIO_USI_FLAG_TITLECASE_LETTER      =        1UL,	/* Category Titlecase_Letter */
-  IDIO_USI_FLAG_LETTER                =        2UL,	/* Category Letter */
-  IDIO_USI_FLAG_MARK                  =        4UL,	/* Category Mark */
-  IDIO_USI_FLAG_DECIMAL_NUMBER        =        8UL,	/* Category Decimal_Number */
-  IDIO_USI_FLAG_NUMBER                =       16UL,	/* Category Number */
-  IDIO_USI_FLAG_PUNCTUATION           =       32UL,	/* Category Punctuation */
-  IDIO_USI_FLAG_SYMBOL                =       64UL,	/* Category Symbol */
-  IDIO_USI_FLAG_SEPARATOR             =      128UL,	/* Category Separator */
-  IDIO_USI_FLAG_LOWERCASE             =      256UL,	/* Property Lowercase */
-  IDIO_USI_FLAG_UPPERCASE             =      512UL,	/* Property Uppercase */
-  IDIO_USI_FLAG_ALPHABETIC            =     1024UL,	/* Property Alphabetic */
-  IDIO_USI_FLAG_WHITE_SPACE           =     2048UL,	/* Property White_Space */
-  IDIO_USI_FLAG_ASCII_HEX_DIGIT       =     4096UL,	/* Property ASCII_Hex_Digit */
-  IDIO_USI_FLAG_CONTROL               =     8192UL,	/* Property Control */
-  IDIO_USI_FLAG_REGIONAL_INDICATOR    =    16384UL,	/* Property Regional_Indicator */
-  IDIO_USI_FLAG_EXTEND                =    32768UL,	/* Property Extend */
-  IDIO_USI_FLAG_SPACINGMARK           =    65536UL,	/* Property SpacingMark */
+  IDIO_USI_FLAG_Invalid               =        0UL,	/* Invalid */
+  IDIO_USI_FLAG_Titlecase_Letter      =        1UL,	/* Category Titlecase_Letter */
+  IDIO_USI_FLAG_Letter                =        2UL,	/* Category Letter */
+  IDIO_USI_FLAG_Mark                  =        4UL,	/* Category Mark */
+  IDIO_USI_FLAG_Decimal_Number        =        8UL,	/* Category Decimal_Number */
+  IDIO_USI_FLAG_Number                =       16UL,	/* Category Number */
+  IDIO_USI_FLAG_Punctuation           =       32UL,	/* Category Punctuation */
+  IDIO_USI_FLAG_Symbol                =       64UL,	/* Category Symbol */
+  IDIO_USI_FLAG_Separator             =      128UL,	/* Category Separator */
+  IDIO_USI_FLAG_Lowercase             =      256UL,	/* Property Lowercase */
+  IDIO_USI_FLAG_Uppercase             =      512UL,	/* Property Uppercase */
+  IDIO_USI_FLAG_Alphabetic            =     1024UL,	/* Property Alphabetic */
+  IDIO_USI_FLAG_White_Space           =     2048UL,	/* Property White_Space */
+  IDIO_USI_FLAG_ASCII_Hex_Digit       =     4096UL,	/* Property ASCII_Hex_Digit */
+  IDIO_USI_FLAG_Control               =     8192UL,	/* Property Control */
+  IDIO_USI_FLAG_Regional_Indicator    =    16384UL,	/* Property Regional_Indicator */
+  IDIO_USI_FLAG_Extend                =    32768UL,	/* Property Extend */
+  IDIO_USI_FLAG_SpacingMark           =    65536UL,	/* Property SpacingMark */
   IDIO_USI_FLAG_L                     =   131072UL,	/* Property L */
   IDIO_USI_FLAG_V                     =   262144UL,	/* Property V */
   IDIO_USI_FLAG_T                     =   524288UL,	/* Property T */
   IDIO_USI_FLAG_LV                    =  1048576UL,	/* Property LV */
   IDIO_USI_FLAG_LVT                   =  2097152UL,	/* Property LVT */
   IDIO_USI_FLAG_ZWJ                   =  4194304UL,	/* Property ZWJ */
-  IDIO_USI_FLAG_FRACTIONAL_NUMBER     =  8388608UL,	/* Fractional_Number */
+  IDIO_USI_FLAG_Fractional_Number     =  8388608UL,	/* Fractional_Number */
 
 } idio_USI_flag_t;
 
+#define IDIO_USI_FLAG_COUNT 24
+
 
 typedef enum {
-  IDIO_USI_CATEGORY_INVALID,
+  IDIO_USI_CATEGORY_Invalid,
   IDIO_USI_CATEGORY_Lu,
   IDIO_USI_CATEGORY_Ll,
   IDIO_USI_CATEGORY_Lt,
@@ -97,7 +99,9 @@ typedef struct idio_USI_s {
   };
 } idio_USI_t;
 
-extern const char *idio_USI_Categories[];
+extern const char *idio_USI_flag_names[];
+
+extern const char *idio_USI_Category_names[];
 
 extern const idio_USI_t idio_USI_variants[];
 

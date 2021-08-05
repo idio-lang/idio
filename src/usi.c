@@ -11,7 +11,35 @@
 
 #include "usi.h"
 
-const char *idio_USI_Categories[] = {
+const char *idio_USI_flag_names[] = {
+  "Invalid",
+  "Titlecase_Letter",
+  "Letter",
+  "Mark",
+  "Decimal_Number",
+  "Number",
+  "Punctuation",
+  "Symbol",
+  "Separator",
+  "Lowercase",
+  "Uppercase",
+  "Alphabetic",
+  "White_Space",
+  "ASCII_Hex_Digit",
+  "Control",
+  "Regional_Indicator",
+  "Extend",
+  "SpacingMark",
+  "L",
+  "V",
+  "T",
+  "LV",
+  "LVT",
+  "ZWJ",
+  "Fractional_Number",
+};
+
+const char *idio_USI_Category_names[] = {
   [IDIO_USI_CATEGORY_INVALID] = "",
   [IDIO_USI_CATEGORY_Lu] = "Lu",
   [IDIO_USI_CATEGORY_Ll] = "Ll",
