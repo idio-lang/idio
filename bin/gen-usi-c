@@ -1,0 +1,1006 @@
+#! /usr/bin/env idio
+
+#*
+
+Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+------------------------------
+
+gen-usi-c	generate Unicode Summary Information C code
+
+This follows the ideas in Simon Schoenenberger's unicode-table work,
+https://github.com/detomon/unicode-table.
+
+The basic premise is that you can walk through UnicodeData.txt and
+extract the General Category, the *relative* Uppercase, Lowercase and
+Titlecase mappings and Numeric Value and discover that, instead of
+~34k entries in UnicodeData.txt (representing 150k valid code points),
+there are just 430 variations(*).  For example, the usual ASCII
+uppercase characters all become: "Lu 0 32 0 0" where the 32 means the
+lowercase equivalent can be derived from this by adding 32.
+Similarly, the ASCII lowercase characters all become "Ll -32 0 -32 0".
+
+In fact, there are 194 such Lu Unicode code points and 204 such Ll
+Unicode code points if we're just using UnicodeData.txt.  Similarly,
+there are 76 Lu and Ll code points where the uppercase and lowercase
+character differ by 40.
+
+(*) 430 will increase by several tens or so when we start getting
+picky about Properties etc..  For example, the ASCII_Hex_Digit
+Property affects ASCII a-f and ASCII A-F and therefore makes them
+unlike the remaining ASCII lowercase and uppercase letters.
+
+Whilst 430 variations sounds good, we still have to get from a code
+point to there -- and we don't want a 1114112 (#x110000) entry lookup
+table.
+
+At this point Schoenenberger splits the code points into pages of 256
+code points and does a double indirection from a PageIndex[cp >> 8]
+into an InfoIndex[page][cp & 0xff] to reference one of the 430 (529 in
+his case) variations.  Those two tables come to some 43k words, which
+is a fraction of the nominal size.
+
+The trick he's pulling here is that when you divide the entire code
+point table up into groups of 256 code points then even those groups
+of 256, of what you might think were fairly random collection of
+references to the 430 unique variations, end up with duplicates.  And
+this isn't talking about Planes 4 through 13 which will all map to an
+Invalid variation.
+
+------------------------------
+
+http://www.unicode.org/reports/tr44/
+
+Broadly, Unicode have defined 17 Planes each with a potential for
+65,536 code points.  That makes any mapping be at least 1114109
+entries long.  Blocks within those Planes are assigned for groups of
+code points with a common ancestry.  For example, code points U+0000
+through U+007F are ASCII.  Some of those blocks are complete because
+the group is well defined, eg. ASCII, whereas others include
+unassigned code points leaving room for later additions.  The order in
+which those blocks are assigned is (probably) an editorial whim.
+
+Note: even though Unicode Planes 4-13 are currently unassigned, see
+https://en.wikipedia.org/wiki/Plane_(Unicode), it isn't clear that
+Unicode will stick to 17 planes.  Given that we have to read the
+Unicode UCD files we might as well leave the actual number of Unicode
+code points/Planes dynamic based on reading the files.
+
+Further note: given that those 10 planes are unassigned, perhaps we
+should invent a sparse bitset format for charsets saving at least 650k
+bits per charset.
+
+UnicodeData.txt is a long list (34k entries as of Unicode 13.0.0) of
+individual code points and code point ranges (whose individual code
+point properties are derivable within the range).  Each code point has
+a primary Category: Letter lowercase, "Ll", Letter uppercase, "Lu",
+Number digit, "Nd", Symbol Math, "Sm" etc.
+
+The set of code points is not contiguous and the current highest
+numbered code point is 10FFFD, Plane 16 Private Use, Last.
+
+DerivedCoreProperties.txt is a fairly long list (12k lines) which
+summaries collections of code points which share a common Property:
+Alphabetic, Math, etc..  For example, the Property Lowercase is the
+collection of the Category Ll plus the Property Other_Lowercase.
+
+Other_Lowercase includes 00AA, FEMININE ORDINAL INDICATOR and 00BA,
+MASCULINE ORDINAL INDICATOR, for example.
+
+DerivedCoreProperties.txt defines other Properties such as
+ID_Start (the first code point of an identifier) and
+ID_Continue (subsequent code points for identifiers).  I'm not sure
+where they get their information from as surely such a set is
+language-specific?  You are welcome to read
+http://www.unicode.org/reports/tr31/ to understand their thinking.
+
+PropList.txt is a fairly short file with more Properties.  Here we're
+specifically looking to pick up on the White_Space Property.
+
+If you did trust their ID_Start then you might want to be aware of
+their Other_ID_Start too.
+
+Again, it's hard to see how they can clearly define a
+Pattern_White_Space and Pattern_Syntax Properties.
+
+GraphemeBreakProperty.txt is a fairly short file with more
+breaks-between-things Properties.  
+
+----
+
+Across these four files there are 65 Properties: 
+
+  ASCII_Hex_Digit Alphabetic Bidi_Control CR Case_Ignorable Cased
+  Changes_When_Casefolded Changes_When_Casemapped
+  Changes_When_Lowercased Changes_When_Titlecased
+  Changes_When_Uppercased Control Dash Default_Ignorable_Code_Point
+  Deprecated Diacritic Extend Extender Grapheme_Base Grapheme_Extend
+  Grapheme_Link Hex_Digit Hyphen IDS_Binary_Operator
+  IDS_Trinary_Operator ID_Continue ID_Start Ideographic Join_Control L
+  LF LV LVT Logical_Order_Exception Lowercase Math
+  Noncharacter_Code_Point Other_Alphabetic
+  Other_Default_Ignorable_Code_Point Other_Grapheme_Extend
+  Other_ID_Continue Other_ID_Start Other_Lowercase Other_Math
+  Other_Uppercase Pattern_Syntax Pattern_White_Space Prepend
+  Prepended_Concatenation_Mark Quotation_Mark Radical
+  Regional_Indicator Sentence_Terminal Soft_Dotted SpacingMark T
+  Terminal_Punctuation Unified_Ideograph Uppercase V
+  Variation_Selector White_Space XID_Continue XID_Start ZWJ
+
+and (the) 29 Categories commonly seen.
+
+The 65 Properties is vexing.  Firstly, they wouldn't fit as bit-fields
+in a 64-bit integer but also we need to take care as the groupings of
+Categories, such as Letter, are, presumably, slightly disjoint from
+from the Property Alphabetic (in DerivedCoreProperties.txt) which is
+defined as "Uppercase + Lowercase + Lt + Lm + Lo + Nl +
+Other_Alphabetic".
+
+Ultimately, we're looking to define a set of testable C bitfields for
+*our* various purposes, not necessarily serving any Unicode question.
+
+SRFI-14 asks for quite a lot of char-sets which are derived as (with P
+for Property, C for Category):
+
+  lower-case			P Lowercase
+  upper-case			P Uppercase
+  title-case			C Lt
+  letter			P Alphabetic
+  digit				C Nd
+  graphic			C L* + C N* + C M* + C S* + C P*
+  white-space			P White_Space
+  punctuation			C P*
+  symbol			C S*
+  hex-digit			P ASCII_Hex_Digit
+  blank				C Z* + 0009
+  control			P Control
+  regional-indicator		P Regional_Indicator
+  extend-or-spacing-mark	P Extend + P SpacingMark
+  hangul-l			P L
+  hangul-v			P V
+  hangul-t			P T
+  hangul-lv			P LV
+  hangul-lvt			P LVT
+
+JSON5 through ECMAScript and, in particular, the definition of
+Identifier (https://262.ecma-international.org/5.1/#sec-7.6), wants to
+know Categories Lu Ll Lt Lm Lo Nl Mn Mc Nd Pc and Property ZWJ (and
+ZWNJ) although it defines those last two as fixed values.
+
+Schoenenberger also distingushes:
+
+* between decimal and fractional numeric values as the fractional part
+  is to be represented by a string, say, "1/4"
+
+  That's useful.
+
+  Note that:
+
+    (8) If the character has the property value Numeric_Type=Numeric,
+    then the Numeric_Value of that character is represented with a
+    positive or negative integer or rational number in this field
+
+  and that, as of 13.0.0, there are no negative integers and a single
+  negative rational.
+
+* where the upper/lower/title case causes an expansion in the number
+  of code points
+
+  We'll skip that, today.
+
+Across these we have 24 or so distinguishable flags (27 if we
+included "expands") plus "Invalid".  Plenty of room in a 32-bit flags
+bit-field.
+
+----
+
+We can create nominal C bit-field flags for those and then create
+our (originally 430) variations by generating the stringified static C
+structure elements, "{ flags, Category, UC offset, LC offset, TC
+offset, Numeric Value }", to get 463 "summary" code points.
+
+As there's more than 256, references to these must be two bytes, that
+is the entire page table must be uint16_t.  Even without the flags
+field we still had the original 430, again, more than 256.
+
+We now need a page indirection table to get us from a code point (one
+of #x110000) to a page in the page table and this indirection table
+will be #110000 / page-size entries.
+
+When we generate page tables (of 256 references to the 463 variants)
+we get some duplication of the "used" pages -- used by valid code
+points -- sometimes dramatically different (see the #pg vs used pages
+columns below).
+
+Again, depending on how many unique pages we have determines whether
+one or two bytes is required for the page indirection table references
+into the page table.
+
+We can calculate the number of entries in the page table (unique pages
+* bytes per page ref * page size).
+
+The total number of bytes we require in the C code point to variation
+implementation is the sum of those two tables.
+
+----
+
+The next question comes about that choice of a page size of 256.  What
+if we vary it a bit?  Let's try some numbers:
+
+pgsz  pages #pg/used  bytes
+1024   1088  55/  62 113728 (  1088 * 1 +  55 * 2 * 1024)
+ 512   2176  89/ 104  93312 (  2176 * 1 +  89 * 2 *  512)
+ 256   4352 146/ 183  79104 (  4352 * 1 + 146 * 2 *  256)
+ 128   8704 242/ 329  70656 (  8704 * 1 + 242 * 2 *  128)
+  64  17408 398/ 616  85760 ( 17408 * 2 + 398 * 2 *   64)
+  32  34816 595/1175 107712 ( 34816 * 2 + 595 * 2 *   32)
+  16  69632 745/2286 163104 ( 69632 * 2 + 745 * 2 *   16)
+
+From which we can see a sweet spot, for this arrangement of flags
+etc., around a page size of 128 requiring 70656 bytes in C static
+tables.  Schoenenberger used a page size of 256 for his arrangement.
+
+The final sizing element is fairly fixed as it is 463 times the size
+of an idio_USI_t holding the summarised code point information.  For
+the upper/lower/title case offsets, some of the relative numbers are
+over 32k meaning we can't use an int16_t, therefore it must be an
+int32_t which wastes a bit of space as the vast majority are 0 or
+small offsets.
+
+An idio_USI_t, then, is 32 bytes, and therefore the variants tables is
+463 times that, 14816 bytes.
+
+So a grand total of 85472 bytes (70656 + 14816) to store everything
+*we* need to know about Unicode.
+
+*#
+
+module unicode/gen
+import SRFI-14
+
+; The source for most of these files is
+; https://www.unicode.org/Public/UCD/latest/ucd/ and
+; https://www.unicode.org/Public/UCD/latest/ucd/auxiliary/GraphemeBreakProperty.txt
+UD := "UnicodeData.txt"
+DCP := "DerivedCoreProperties.txt"
+PL := "PropList.txt"
+GBP := "GraphemeBreakProperty.txt"
+
+UD-file := #f
+
+if (ARGC eq 0) {
+  (regex-case
+   ARGV0
+   ("(.+)/[^/]+" {
+     UD-file = sprintf "%s/Unicode/%s" r.1 UD
+     eprintf "%s: trying %s\n" ARGV0 UD-file
+   })
+   (else {
+     if (f? UD) {
+       UD-file = UD
+     } {
+       eprintf "%s: no UnicodeData.txt supplied and can't derive one\n" ARGV0
+       exit 1
+     }
+   }))
+} {
+  UD-file = array-ref ARGV 0
+}
+
+if (not (f? UD-file)) {
+  eprintf "%s: no UnicodeData.txt\n" ARGV0
+  exit 1
+}
+
+DCP-file := #f
+PL-file := #f
+GBP-file := #f
+
+(regex-case
+ UD-file
+ ("(.+)/[^/]+" {
+   DCP-file = sprintf "%s/%s" r.1 DCP
+   if (not (f? DCP-file)) {
+     eprintf "%s: no DerivedCoreProperties.txt: %s\n" ARGV0 DCP-file
+     exit 1
+   }
+   PL-file = sprintf "%s/%s" r.1 PL
+   if (not (f? PL-file)) {
+     eprintf "%s: no PropList.txt: %s\n" ARGV0 PL-file
+     exit 1
+   }
+   GBP-file = sprintf "%s/%s" r.1 GBP
+   if (not (f? GBP-file)) {
+     eprintf "%s: no GraphemeBreakProperty.txt: %s\n" ARGV0 GBP-file
+     exit 1
+   }
+ }))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; General Category Values: Table 12
+; https://www.unicode.org/reports/tr44/#General_Category_Values
+gc-list := '(
+	      "Lu"
+	      "Ll"
+	      "Lt"
+	      "Lm"
+	      "Lo"
+	      "Mn"
+	      "Mc"
+	      "Me"
+	      "Nd"
+	      "Nl"
+	      "No"
+	      "Pc"
+	      "Pd"
+	      "Ps"
+	      "Pe"
+	      "Pi"
+	      "Pf"
+	      "Po"
+	      "Sm"
+	      "Sc"
+	      "Sk"
+	      "So"
+	      "Zs"
+	      "Zl"
+	      "Zp"
+	      "Cc"
+	      "Cf"
+	      "Cs"
+	      "Co"
+	      "Cn"
+)
+
+gc-map := #{
+  ("" & 0)
+}
+gc-map-index := 1
+for-each (function (cat) {
+	   hash-set! gc-map cat gc-map-index
+	   gc-map-index = gc-map-index + 1
+}) gc-list
+
+; gc-flag-list are those Categories that we want as C-testable flags
+gc-flag-list := '(
+		   Titlecase_Letter
+		   Letter
+		   Mark
+		   Decimal_Number
+		   Number
+		   Punctuation
+		   Symbol
+		   Separator
+)
+
+; p-flag-list are those Properties that we want as C-testable flags
+p-flag-list := '(
+		  Lowercase
+		  Uppercase
+		  Alphabetic
+		  White_Space
+		  ASCII_Hex_Digit
+		  Control
+		  Regional_Indicator
+		  Extend
+		  SpacingMark
+		  L
+		  V
+		  T
+		  LV
+		  LVT
+		  ZWJ
+)
+
+all-flags := append '(Invalid) gc-flag-list p-flag-list '(Fractional_Number)
+
+; flag-map is a C bit-map of all-flags
+flag-map-index := 0
+flag-map := #{}
+for-each (function (k) {
+	    if (eq? k 'Invalid) {
+	      hash-set! flag-map k 0
+	    } {
+	      hash-set! flag-map k (expt 2 flag-map-index)
+	      flag-map-index = flag-map-index + 1
+	    }
+}) all-flags
+
+; Having defined unique values for the flags we need those values as
+; local variables to speed up access!
+Lt-flag                 := hash-ref flag-map 'Titlecase_Letter
+L-flag                  := hash-ref flag-map 'Letter
+M-flag                  := hash-ref flag-map 'Mark
+Nd-flag                 := hash-ref flag-map 'Decimal_Number
+N-flag                  := hash-ref flag-map 'Number
+P-flag                  := hash-ref flag-map 'Punctuation
+S-flag                  := hash-ref flag-map 'Symbol
+Z-flag                  := hash-ref flag-map 'Separator
+
+Lowercase-flag          := hash-ref flag-map 'Lowercase
+Uppercase-flag          := hash-ref flag-map 'Uppercase
+Alphabetic-flag         := hash-ref flag-map 'Alphabetic
+White_Space-flag        := hash-ref flag-map 'White_Space
+ASCII_Hex_Digit-flag    := hash-ref flag-map 'ASCII_Hex_Digit
+Control-flag            := hash-ref flag-map 'Control
+Regional_Indicator-flag := hash-ref flag-map 'Regional_Indicator
+Extend-flag             := hash-ref flag-map 'Extend
+SpacingMark-flag        := hash-ref flag-map 'SpacingMark
+L-flag                  := hash-ref flag-map 'L
+V-flag                  := hash-ref flag-map 'V
+T-flag                  := hash-ref flag-map 'T
+LV-flag                 := hash-ref flag-map 'LV
+LVT-flag                := hash-ref flag-map 'LVT
+ZWJ-flag                := hash-ref flag-map 'ZWJ
+
+Fractional_Number-flag  := hash-ref flag-map 'Fractional_Number
+
+; as we read in the Unicode source files we need to build "char-sets"
+; of all the Properties and Categories we see -- char-sets are a handy
+; route to a bitset
+prop-char-set-map     := #{}
+cat-char-set-map      := #{}
+unicode-char-set-size := #x110000
+
+; One of these files will tell use the Unicode version, 13.0.0 or
+; similar.
+unicode-version := #f
+
+define (prop-list-reader file) {
+  fh := open-input-file file
+
+  loop :+ function (fh) {
+	    if (not (eof? fh)) {
+	      line := read-line fh
+	      if ((string-length line) gt 0) {
+		(regex-case
+		 line
+		 ("^([[:xdigit:]]{4,6})\\.\\.([[:xdigit:]]{4,6})[[:space:]]+;[[:space:]]([[:alnum:]_]+)" {
+		   fcp := read-number r.1 16
+		   lcp := read-number r.2 16
+		   prop := r.3
+
+		   ; Property "char-set"
+		   cs := #f
+		   if (not (hash-exists? prop-char-set-map prop)) {
+		     cs = make-sparse-char-set unicode-char-set-size
+		     hash-set! prop-char-set-map prop cs
+		   } {
+		     cs = hash-ref prop-char-set-map prop
+		   }
+		   loop :+ (function (cp) {
+			      if (cp gt lcp) #n {
+				char-set-set! cs cp
+				loop (cp + 1)
+			      }
+		   })
+		   loop fcp
+		 })
+		 ("^([[:xdigit:]]{4,6})[[:space:]]+;[[:space:]]([[:alnum:]_]+)" {
+		   cp := read-number r.1 16
+		   prop := r.2
+		   cs := #f
+		   if (not (hash-exists? prop-char-set-map prop)) {
+		     cs = make-sparse-char-set unicode-char-set-size
+		     hash-set! prop-char-set-map prop cs
+		   } {
+		     cs = hash-ref prop-char-set-map prop
+		   }
+		   char-set-set! cs cp
+		 })
+		 ("# [^-]+-(.+)\\.txt" {
+		   if (not unicode-version) {
+		     unicode-version = r.1
+		   }
+		 }))
+	      }
+	      loop fh
+	    }
+  }
+  loop fh
+
+  close-handle fh
+}
+
+prop-list-reader DCP-file
+
+prop-list-reader PL-file
+
+prop-list-reader GBP-file
+
+; again, speed up access with local variables
+Lowercase-cs          := hash-ref prop-char-set-map "Lowercase"
+Uppercase-cs          := hash-ref prop-char-set-map "Uppercase"
+Alphabetic-cs         := hash-ref prop-char-set-map "Alphabetic"
+White_Space-cs        := hash-ref prop-char-set-map "White_Space"
+ASCII_Hex_Digit-cs    := hash-ref prop-char-set-map "ASCII_Hex_Digit"
+Control-cs            := hash-ref prop-char-set-map "Control"
+Regional_Indicator-cs := hash-ref prop-char-set-map "Regional_Indicator"
+Extend-cs             := hash-ref prop-char-set-map "Extend"
+SpacingMark-cs        := hash-ref prop-char-set-map "SpacingMark"
+L-cs                  := hash-ref prop-char-set-map "L"
+V-cs                  := hash-ref prop-char-set-map "V"
+T-cs                  := hash-ref prop-char-set-map "T"
+LV-cs                 := hash-ref prop-char-set-map "LV"
+LVT-cs                := hash-ref prop-char-set-map "LVT"
+ZWJ-cs                := hash-ref prop-char-set-map "ZWJ"
+
+; Turning a Category into a set of flags is fairly easy
+define (cat-flags gc) {
+  (case
+   gc
+   (("Lt") {
+     Lt-flag + L-flag
+   })
+   (("Lu" "Ll" "Lm" "Lo") {
+     L-flag
+   })
+   (("Mn" "Mc" "Me") {
+     M-flag
+   })
+   (("Nd") {
+     Nd-flag + N-flag
+   })
+   (("Nl" "No") {
+     N-flag
+   })
+   (("Pc" "Pd" "Ps" "Pe" "Pi" "Pf" "Po") {
+     P-flag
+   })
+   (("Sm" "Sc" "Sk" "So" ) {
+     S-flag
+   })
+   (("Zs" "Zl" "Zp") {
+     Z-flag
+   })
+   (else {
+     0
+   }))
+}
+
+; Turning a code point into a set of Property flags requires checking
+; each property
+define (prop-flags cp) {
+  (+
+   (if (char-set-ref Lowercase-cs cp)          Lowercase-flag          0)
+   (if (char-set-ref Uppercase-cs cp)          Uppercase-flag          0)
+   (if (char-set-ref Alphabetic-cs cp)         Alphabetic-flag         0)
+   (if (char-set-ref White_Space-cs cp)        White_Space-flag        0)
+   (if (char-set-ref ASCII_Hex_Digit-cs cp)    ASCII_Hex_Digit-flag    0)
+   (if (char-set-ref Control-cs cp)            Control-flag            0)
+   (if (char-set-ref Regional_Indicator-cs cp) Regional_Indicator-flag 0)
+   (if (char-set-ref Extend-cs cp)             Extend-flag             0)
+   (if (char-set-ref SpacingMark-cs cp)        SpacingMark-flag        0)
+   (if (char-set-ref L-cs cp)                  L-flag                  0)
+   (if (char-set-ref V-cs cp)                  V-flag                  0)
+   (if (char-set-ref T-cs cp)                  T-flag                  0)
+   (if (char-set-ref LV-cs cp)                 LV-flag                 0)
+   (if (char-set-ref LVT-cs cp)                LVT-flag                0)
+   (if (char-set-ref ZWJ-cs cp)                ZWJ-flag                0)
+  ) 
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; As we walk through UnicodeData.txt we'll figure out the stringified
+; C static initialiser and look it up in scp-map's table of
+; (previously seen) summarized code points.  We can initialize scp-map
+; with the stringified Invalid summarized code point (all zeroes).
+
+; summary code points
+scp-map := #{
+  ("{         0,  0, {      0,      0,      0 }, {0} }" & 0)
+}
+scp-map-index := 0
+
+define (get-scp-index scp) {
+  if (hash-exists? scp-map scp) {
+    hash-ref scp-map scp
+  } {
+    scp-map-index = scp-map-index + 1
+    hash-set! scp-map scp scp-map-index
+    scp-map-index
+  }
+}
+
+; cp-table holds our mapping from code point to summarised code point
+cp-table := make-array unicode-char-set-size
+
+; page-size is going to be 128 but we want the n in 2^n for later
+page-shift := 7
+page-size := expt 2 page-shift
+used-pages-table := make-array (unicode-char-set-size / page-size)
+
+; scp-C-fmt is the line-by-line C static initialisation format
+scp-C-fmt := "{%10d, %2d, { %6d, %6d, %6d }, {%s} }"
+
+define (UD-reader file) {
+  fh := open-input-file UD-file
+
+  loop :+ function (fh) {
+	    if (not (eof? fh)) {
+	      line := read-line fh
+	      if ((string-length line) gt 0) {
+		(regex-case
+		 line
+		 ("([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)" {
+
+		   ;; we're about to run another regex-case so save r
+		   line-r := r
+		   gc := line-r.3
+
+		   ;; integer->unicode (in char-set-set!) will
+		   ;; complain about surrogates being invalid!
+		   if (not (string=? gc "Cs")) {
+		     cp := read-number line-r.1 16
+
+		     name := line-r.2
+
+		     ;; mark a page as having been used, we'll replace
+		     ;; #t with the summary page index after we've
+		     ;; seen all the pages
+		     pi := quotient cp page-size
+		     array-set! used-pages-table pi #t
+
+		     ; Category "char-set"
+		     cs := #f
+		     if (not (hash-exists? cat-char-set-map gc)) {
+		       cs = make-sparse-char-set unicode-char-set-size
+		       hash-set! cat-char-set-map gc cs
+		     } {
+		       cs = hash-ref cat-char-set-map gc
+		     }
+
+		     flags := (cat-flags gc) + (prop-flags cp)
+
+		     (regex-case
+		      name
+		      ("First>$" {
+			line = read-line fh
+			parts := split-string-exactly line ";"
+			lcp := read-number (ph parts) 16
+
+			;; can we guarantee these will have no
+			;; uc/lc/tc or numeric value?
+			scp := sprintf scp-C-fmt flags (hash-ref gc-map gc) 0 0 0 0
+			scp-i := get-scp-index scp
+
+			loop :+ function (cp) {
+				  if (cp gt lcp) #n {
+				    array-set! cp-table cp scp-i
+				    char-set-set! cs cp
+				    loop (cp + 1)
+				  }
+			}
+
+			loop cp
+		      })
+		      (else {
+			char-set-set! cs cp
+
+			nvs := line-r.9
+			nv := 0
+			if ((string-length nvs) gt 0) {
+			  (regex-case
+			   nvs
+			   ("/" {
+			     nv = sprintf ".frac=\"%s\"" nvs
+			     flags = flags + Fractional_Number-flag
+			   })
+			   (else {
+			     nv = read-number nvs 10
+			   }))
+			}
+
+			ucs := line-r.13
+			ucd := 0
+			if ((string-length ucs) gt 0) {
+			  ucn := read-number ucs 16
+			  ucd = ucn - cp
+			}
+
+			lcs := line-r.14
+			lcd := 0
+			if ((string-length lcs) gt 0) {
+			  lcn := read-number lcs 16
+			  lcd = lcn - cp
+			}
+
+			tcs := line-r.15
+			tcd := 0
+			if ((string-length tcs) gt 0) {
+			  tcn := read-number tcs 16
+			  tcd = tcn - cp
+			}
+
+			scp := sprintf scp-C-fmt flags (hash-ref gc-map gc) ucd lcd tcd nv
+			scp-i := get-scp-index scp
+
+			array-set! cp-table cp scp-i
+		      }))
+		   }
+		 }))
+	      }
+	      loop fh
+	    }
+  }
+  loop fh
+
+  close-handle fh
+}
+
+UD-reader UD-file
+
+printf "%2d attributes generate %4d summary code points in %ds\n" flag-map-index scp-map-index SECONDS
+
+; sp-map is the summary page map
+sp-map := #{}
+sp-map-index := 0
+
+define (get-sp-index page) {
+  if (hash-exists? sp-map page) {
+    hash-ref sp-map page
+  } {
+    sp-map-index = sp-map-index + 1
+    hash-set! sp-map page sp-map-index
+    sp-map-index
+  }
+}
+
+define (range s e) {
+  loop :+ function (c r) {
+	    if (c lt s) r {
+	      loop (c - 1) (pair c r)
+	    }
+  }
+
+  loop e #n
+}
+
+used-page-count := 0
+array-for-each-set used-pages-table (function (i v) {
+				       used-page-count = used-page-count + 1
+				       page := concatenate-string (map (function (cp) {
+									  scpi := array-ref cp-table cp
+									  if (not scpi) {
+									    scpi = 0
+									  }
+									  sprintf "%s%3d," (if ((remainder cp 16) eq 0) "\n    " "") scpi
+				       }) (range (i * page-size) (((i + 1) * page-size) - 1)))
+
+				       page = append-string "{" page "\n  }"
+				       spi := get-sp-index page
+				       array-set! used-pages-table i spi
+})
+
+page-count := quotient unicode-char-set-size page-size
+
+printf "%4s %6s %3s/%4s %6d\n" "pgsz" "pages" "#pg" "used" "words"
+
+pi-bytes := 1
+if (sp-map-index ge 256) {
+  pi-bytes = 2
+}
+
+printf "%4d %6d %3d/%4d %6d (%6d * %d + %3d * 2 * %4d) in %ds\n" page-size page-count sp-map-index used-page-count (page-count * pi-bytes + sp-map-index * 2 * page-size)  page-count pi-bytes sp-map-index page-size SECONDS
+
+api-bn := "usi"
+s-h-fn := append-string api-bn ".h"
+s-c-fn := append-string api-bn ".c"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; usi.h
+
+s-h-fh := open-output-file s-h-fn
+
+s-h-define := collect-output echo s-h-fn | sed -e "s/[^[:alnum:]]/_/g" | tr "[[:lower:]]" "[[:upper:]]"
+
+hprintf s-h-fh #S{
+/*
+ * Generated by ${ARGV0} 
+ * Unicode version ${unicode-version} 
+ *
+ * Taking after Simon Schoenenberger's https://github.com/detomon/unicode-table
+ */
+
+#ifndef ${s-h-define}
+#define ${s-h-define}
+
+#define IDIO_USI_MAX_CP		${unicode-char-set-size}
+#define IDIO_USI_PAGE_SHIFT	${page-shift}
+#define IDIO_USI_PAGE_MASK	((1 << ${page-shift}) - 1)
+}
+
+hprintf s-h-fh #S{
+typedef enum \{
+}
+
+for-each (function (fl) {
+	    c-flag := collect-output echo fl | tr "[[:lower:]]" "[[:upper:]]"
+	    c-flag = append-string "IDIO_USI_FLAG_" c-flag
+	    c-comment := (cond
+			  ((memq fl gc-flag-list) {
+			    append-string "Category " (symbol->string fl)
+			  })
+			  ((memq fl p-flag-list) {
+			    append-string "Property " (symbol->string fl)
+			  })
+			  ((eq? fl 'Invalid) {
+			    symbol->string fl
+			  })
+			  ((eq? fl 'Fractional_Number) {
+			    symbol->string fl
+			  })
+			  (else {
+			    eprintf "flag %s is unexpected\n" fl
+			    sprintf "Unexpected flag: %s" fl
+			  }))
+
+	    hprintf s-h-fh "  %-35s = %8dUL,	/* %s */\n" c-flag (hash-ref flag-map fl) c-comment
+	    }
+) all-flags
+
+hprintf s-h-fh #S{
+\} idio_USI_flag_t;
+
+}
+
+hprintf s-h-fh #S{
+typedef enum \{
+  IDIO_USI_CATEGORY_INVALID,
+}
+
+for-each (function (cat) {
+	    hprintf s-h-fh "  %s,\n" (append-string "IDIO_USI_CATEGORY_" cat)
+}) gc-list
+
+hprintf s-h-fh #S{
+\} idio_USI_Category_t;
+
+}
+
+hprintf s-h-fh #S{
+typedef enum \{
+  IDIO_USI_UPPERCASE_OFFSET = 0,
+  IDIO_USI_LOWERCASE_OFFSET = 1,
+  IDIO_USI_TITLECASE_OFFSET = 2,
+\} idio_USI_Case_t;
+
+typedef uint32_t idio_USI_codepoint_t;
+
+typedef struct idio_USI_s \{
+  uint32_t flags;
+  idio_USI_Category_t category;
+  int32_t  cases[3];
+  union \{
+    const int64_t dec;
+    const char *frac;
+  \};
+\} idio_USI_t;
+
+extern const char *idio_USI_Categories[];
+
+extern const idio_USI_t idio_USI_variants[];
+
+extern const uint8_t idio_USI_page_index[];
+
+extern const uint16_t idio_USI_pages[][${page-size}];
+
+static inline const idio_USI_t *idio_USI_codepoint (idio_USI_codepoint_t cp) \{
+  uint16_t variant = 0;
+
+  if (cp < IDIO_USI_MAX_CP) \{
+    uint8_t page = idio_USI_page_index[cp >> IDIO_USI_PAGE_SHIFT];
+    variant = idio_USI_pages[page][cp & IDIO_USI_PAGE_MASK];
+  \}
+
+  return &(idio_USI_variants[variant]);
+\}
+}
+
+hprintf s-h-fh #S{
+#endif
+}
+
+close-handle s-h-fh
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; usi.c
+
+s-c-fh := open-output-file s-c-fn
+
+hprintf s-c-fh #S{
+/*
+ * Generated by ${ARGV0} 
+ * Unicode version ${unicode-version} 
+ *
+ *
+ * Taking after Simon Schoenenberger's https://github.com/detomon/unicode-table
+ */
+
+#include <stdint.h>
+
+#include "${s-h-fn}"
+
+}
+
+hprintf s-c-fh "const char *idio_USI_Categories[] = {\n"
+hprintf s-c-fh "  [IDIO_USI_CATEGORY_INVALID] = \"\",\n"
+
+for-each (function (cat) {
+	    designator := append-string "[IDIO_USI_CATEGORY_" cat "]"
+	    hprintf s-c-fh "  %-22s = \"%s\",\n" designator cat
+}) gc-list
+
+hprintf s-c-fh "};\n\n"
+
+hprintf s-c-fh "const idio_USI_t idio_USI_variants[] = {\n"
+
+for-each (function (var) {
+	    hprintf s-c-fh "  %-64s,	/* %d */\n" var (get-scp-index var)
+}) (sort (hash-keys scp-map) \lt (function (var) (get-scp-index var)))
+
+hprintf s-c-fh "};\n\n"
+
+hprintf s-c-fh "const uint8_t idio_USI_page_index[] = {\n"
+
+fold-array used-pages-table (function (i v val) {
+			 ;; line break every 16
+			 if ((remainder i 16) eq 0) {
+			   hprintf s-c-fh "\n  "
+			 }
+			 spi := 0
+			 if v {
+			   spi = v
+			 }
+			 hprintf s-c-fh "%3d," spi
+			 val
+}) 0
+
+hprintf s-c-fh "\n};\n\n"
+
+hprintf s-c-fh "const uint16_t idio_USI_pages[][%d] = {\n" page-size
+
+; first page is for invalids
+hprintf s-c-fh "  /* invalid code points */\n"
+hprintf s-c-fh "  {\n"
+
+for-each (function (i) {
+	    ;; line break every 16
+	    if ((remainder i 16) eq 0) {
+	      hprintf s-c-fh "\n    "
+	    }
+	    hprintf s-c-fh "%3d," 0
+}) (range 0 (page-size - 1))
+
+hprintf s-c-fh "\n  },\n"
+
+for-each (function (page) {
+	    hprintf s-c-fh "  /* %d */\n" (get-sp-index page)
+	    hprintf s-c-fh "  %s,\n" page
+}) (sort (hash-keys sp-map) \lt (function (page) (get-sp-index page)))
+
+hprintf s-c-fh "\n};\n\n"
+
+
+close-handle s-c-fh
+
+printf "Complete in %ds\n" SECONDS
+
+;Local Variables:
+;mode: Idio
+;buffer-file-coding-system: undecided-unix
+;End:
