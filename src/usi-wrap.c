@@ -23,7 +23,10 @@
 #define _GNU_SOURCE
 
 #include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
+#include <assert.h>
 #include <ffi.h>
 #include <inttypes.h>
 #include <setjmp.h>
@@ -35,9 +38,12 @@
 
 #include "error.h"
 #include "evaluate.h"
+#include "fixnum.h"
+#include "handle.h"
 #include "idio-string.h"
 #include "module.h"
 #include "symbol.h"
+#include "thread.h"
 #include "unicode.h"
 #include "usi.h"
 #include "vm.h"
@@ -111,7 +117,7 @@ int idio_usi_isa (IDIO o, int flag)
 
 		const idio_USI_t *var = idio_USI_codepoint (cp);
 		if (0 == (var->flags & flag)) {
-		    break;
+		    return 0;
 		}
 	    }
 
@@ -140,36 +146,58 @@ void idio_usi_describe_code_point (idio_unicode_t cp)
 	"Titlecase",
     };
 
+    IDIO oh = idio_thread_current_output_handle ();
+
     const idio_USI_t *usi = idio_USI_codepoint (cp);
-    printf ("%04X %2s ", cp, idio_USI_Categories[usi->category]);
-    for (int i = 0; i < 3; i++) {
-	if (usi->cases[i]) {
-	    printf ("%s=%04X ", case_names[i], cp + usi->cases[i]);
+    char buf[10];
+    snprintf (buf, 10, "%04X ", cp);
+    idio_display_C (buf, oh);
+    if (usi->category) {
+	idio_display_C (idio_USI_Category_names[usi->category], oh);
+	idio_display_C (" ", oh);
+	for (int i = 0; i < 3; i++) {
+	    if (usi->cases[i]) {
+		idio_display_C (case_names[i], oh);
+		snprintf (buf, 10, "=%04X ", cp + usi->cases[i]);
+		idio_display_C (buf, oh);
+	    }
 	}
-    }
-    for (int i = 0 ; i < IDIO_USI_FLAG_COUNT; i++) {
-	int printed = 0;
+	for (int i = 0 ; i < IDIO_USI_FLAG_COUNT; i++) {
+	    int printed = 0;
 
-	if (usi->flags & (1 << i)) {
-	    printf ("%s", idio_USI_flag_names[i]);
+	    if (usi->flags & (1 << i)) {
+		idio_display_C (idio_USI_flag_names[i], oh);
 
-	    switch (1 << i) {
-	    case IDIO_USI_FLAG_Fractional_Number:
-		printf ("=%s", usi->frac);
-		break;
-	    case IDIO_USI_FLAG_Decimal_Number:
-		printf ("=%" PRId64, usi->dec);
-		break;
+		/*
+		 * Hmm, a 64-bit decimal number can be ~19 digits but
+		 * a fraction can be an arbitrary length albeit the
+		 * ones in 13.0.0 are, at most, five characters:
+		 * 1/320, say.
+		 */
+		char buf[30];
+		switch (1 << i) {
+		case IDIO_USI_FLAG_Fractional_Number:
+		    snprintf (buf, 30, "=%s", usi->frac);
+		    idio_display_C (buf, oh);
+		    break;
+		case IDIO_USI_FLAG_Number:
+		    if (0 == (usi->flags & IDIO_USI_FLAG_Fractional_Number)) {
+			snprintf (buf, 30, "=%" PRId64, usi->dec);
+		    }
+		    break;
+		}
+
+		printed = 1;
 	    }
 
-	    printed = 1;
+	    if (printed) {
+		idio_display_C (" ", oh);
+	    }
 	}
-
-	if (printed) {
-	    printf (" ");
-	}
+    } else {
+	idio_display_C ("Invalid", oh);
     }
-    printf ("\n");
+    idio_display_C ("\n", oh);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("describe", usi_describe, (IDIO o), "o", "\
@@ -259,7 +287,7 @@ print the Unicode attributes of ``o``		\n\
 }
 
 #define IDIO_USI_PREDICATE(name)					\
-    IDIO_DEFINE_PRIMITIVE1 (#name "?",  usi_ ## name ## _p, (IDIO o))		\
+    IDIO_DEFINE_PRIMITIVE1 (#name "?",  usi_ ## name ## _p, (IDIO o))	\
     {									\
     IDIO_ASSERT (o);							\
     IDIO r = idio_S_false;						\
@@ -294,6 +322,48 @@ IDIO_USI_PREDICATE (LVT)
 IDIO_USI_PREDICATE (ZWJ)
 IDIO_USI_PREDICATE (Fractional_Number)
 
+IDIO_DEFINE_PRIMITIVE1_DS ("numeric-value", usi_numeric_value, (IDIO cp), "cp", "\
+return the Numeric_Value of ``cp``		\n\
+						\n\
+:param cp: code point				\n\
+:type cp: unicode				\n\
+:return: integer or string			\n\
+						\n\
+Unicode Numeric_Value can be a decimal integer	\n\
+or a rational which is returned as a string	\n\
+						\n\
+A consition is raised if ``cp`` is not Numeric.	\n\
+")
+{
+    IDIO_ASSERT (cp);
+
+    /*
+     * Test Case: usi-wrap-errors/numeric-value-bad-type.idio
+     *
+     * numeric-value #t
+     */
+    IDIO_USER_TYPE_ASSERT (unicode, cp);
+
+    const idio_USI_t *usi = idio_USI_codepoint (IDIO_UNICODE_VAL (cp));
+
+    if (usi->flags & IDIO_USI_FLAG_Fractional_Number) {
+	return idio_string_C (usi->frac);
+    } else if (usi->flags & IDIO_USI_FLAG_Number) {
+	return idio_integer (usi->dec);
+    } else {
+	/*
+	 * Test Case: usi-wrap-errors/numeric-value-not-a-number.idio
+	 *
+	 * numeric-value #\a
+	 */
+	idio_error_param_value_msg ("numeric-value", "code point", cp, "is not a number", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_S_unspec;
+}
+
 void idio_usi_wrap_add_primitives ()
 {
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_unicode_module, usi_describe);
@@ -321,6 +391,7 @@ void idio_usi_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_unicode_module, usi_LVT_p);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_unicode_module, usi_ZWJ_p);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_unicode_module, usi_Fractional_Number_p);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_unicode_module, usi_numeric_value);
 }
 
 void idio_final_usi_wrap ()

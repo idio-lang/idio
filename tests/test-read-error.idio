@@ -148,7 +148,8 @@ read-error-load "read-errors/string-eof-emb.idio" "string: EOF" 2
 ; invalid UTF-8 sequences are replaced with U+FFFD (REPLACEMENT CHARACTER)
 ;string-error-load "read-errors/string-invalid-utf8.idio" "string UTF-8 decode: not well-formed" 1
 
-read-error-load "read-errors/string-unicode-invalid-code-point-1.idio" "string: Unicode code point U+D800 is invalid" 1
+; Hmm surroagtes are valid Unicode code points, just not valid characters (for printing)
+;read-error-load "read-errors/string-unicode-invalid-code-point-1.idio" "string: Unicode code point U+D800 is invalid" 1
 read-error-load "read-errors/string-unicode-invalid-code-point-2.idio" "string: Unicode code point U+A92021 is invalid" 1
 
 read-error-load "read-errors/character-eof.idio" "UTF-8 decode: EOF" 1
@@ -302,4 +303,4 @@ read-error-load "read-errors/op-eof.idio" "EOF in list" 3
 read-error-load "read-errors/op-eof-emb.idio" "EOF in list" 4
 
 ;; all done?
-Tests? (read-error0 + 234)
+Tests? (read-error0 + 232)

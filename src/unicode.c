@@ -128,10 +128,7 @@ int idio_unicode_valid_code_point (idio_unicode_t cp)
     if (/* too big */
 	cp > 0x10FFFF ||
 	/* too small */
-	cp < 0 ||
-	/* high-surrogate & low-surrogate */
-	(cp >= 0xD800 &&
-	 cp <= 0xDFFF)) {
+	cp < 0) {
 	return 0;
     }
 
@@ -148,6 +145,9 @@ int idio_unicode_character_code_point (idio_unicode_t cp)
 	/* non-characters */
 	(cp >= 0xFDD0 &&
 	 cp <= 0xFDEF) ||
+	/* high-surrogate & low-surrogate */
+	(cp >= 0xD800 &&
+	 cp <= 0xDFFF) ||
 	/* 0xFFFE (byte-order) & 0xFFFF in any plane */
 	((cp & 0xFFFF) == 0xFFFE) ||
 	((cp & 0xFFFF) == 0xFFFF)) {

@@ -1,0 +1,216 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-usi.idio
+;;
+
+module tests/usi-wrap
+import unicode
+
+usi0 := Tests
+
+test (Titlecase_Letter? #\a)	#f
+test (Titlecase_Letter? #U+1C5)	#t	; 01C5;LATIN CAPITAL LETTER D WITH SMALL LETTER Z WITH CARON;Lt
+test (Titlecase_Letter? "\u1c5")	#t
+test (Titlecase_Letter? "\u1c5z")	#f
+
+test (Letter? #\A)		#t
+test (Letter? #\a)		#t
+test (Letter? #U+1C5)		#t	; 01C5;LATIN CAPITAL LETTER D WITH SMALL LETTER Z WITH CARON;Lt
+test (Letter? #U+2B0)		#t	; 02B0;MODIFIER LETTER SMALL H;Lm
+test (Letter? #U+AA)		#t	; 00AA;FEMININE ORDINAL INDICATOR;Lo
+test (Letter? #\3)		#f
+test (Letter? "Aa\u1c5\u2b0\uaa")	#t
+test (Letter? "Aa\u1c5\u2b0\uaa\3")	#f
+
+test (Mark? #\a)		#f
+test (Mark? #U+300)		#t	; 0300;COMBINING GRAVE ACCENT;Mn
+test (Mark? #U+1d165)		#t	; 1D165;MUSICAL SYMBOL COMBINING STEM;Mc
+test (Mark? #U+20DD)		#t	; 20DD;COMBINING ENCLOSING CIRCLE;Me
+test (Mark? "\u300\U1d165\u20DD")	#t
+test (Mark? "\u300\U1d165\u20DDz")	#f
+
+test (Decimal_Number? #\a)	#f
+test (Decimal_Number? #\3)	#t
+test (Decimal_Number? #U+2164)	#f	; 2164;ROMAN NUMERAL FIVE;Nl
+test (Decimal_Number? #U+B2)	#f	; 00B2;SUPERSCRIPT TWO;No
+test (Decimal_Number? "34")	#t
+test (Decimal_Number? "3a")	#f
+
+test (Number? #\a)		#f
+test (Number? #\3)		#t
+test (Number? #U+2164)		#t	; 2164;ROMAN NUMERAL FIVE;Nl
+test (Number? #U+B2)		#t	; 00B2;SUPERSCRIPT TWO;No
+test (Number? "3\u2164\ub2")	#t
+test (Number? "3\u2164\ub2z")	#f
+
+test (Punctuation? #\a)		#f
+test (Punctuation? #U+5F)	#t	; 005F;LOW LINE;Pc
+test (Punctuation? #U+2D)	#t	; 002D;HYPHEN-MINUS;Pd
+test (Punctuation? #U+28)	#t	; 0028;LEFT PARENTHESIS;Ps
+test (Punctuation? #U+29)	#t	; 0029;RIGHT PARENTHESIS;Pe
+test (Punctuation? #U+ab)	#t	; 00AB;LEFT-POINTING DOUBLE ANGLE QUOTATION MARK;Pi
+test (Punctuation? #U+bb)	#t	; 00BB;RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK;Pf
+test (Punctuation? #\%)		#t	; 0025;PERCENT SIGN;Po
+test (Punctuation? "\u5f\u2d\u28\u29\uab\ubb%")		#t
+test (Punctuation? "\u5f\u2d\u28\u29\uab\ubb%z")	#f
+
+test (Symbol? #\a)		#f
+test (Symbol? #\+)		#t	; 002B;PLUS SIGN;Sm
+test (Symbol? #\$)		#t	; 0024;DOLLAR SIGN;Sc
+test (Symbol? #U+5e)		#t	; 005E;CIRCUMFLEX ACCENT;Sk
+test (Symbol? #U+A9)		#t	; 00A9;COPYRIGHT SIGN;So
+test (Symbol? "+$\u5e\ua9")	#t
+test (Symbol? "+$\u5e\ua9z")	#f
+
+test (Separator? #\a)		#f
+test (Separator? #\{space})	#t	; 0020;SPACE;Zs
+test (Separator? #U+2028)	#t	; 2028;LINE SEPARATOR;Zl
+test (Separator? #U+2029)	#t	; 2029;PARAGRAPH SEPARATOR;Zp
+test (Separator? " \u2028\u2029")	#t
+test (Separator? " \u2028\u2029z")	#f
+
+test (Lowercase? #\a)		#t
+test (Lowercase? #\A)		#f
+test (Lowercase? "abc")		#t
+test (Lowercase? "abC")		#f
+
+test (Uppercase? #\a)		#f
+test (Uppercase? #\A)		#t
+test (Uppercase? "ABC")		#t
+test (Uppercase? "ABc")		#f
+
+test (Alphabetic? #\a)		#t
+test (Alphabetic? #\3)		#f
+test (Alphabetic? "aB")		#t
+test (Alphabetic? "aB3")	#f
+
+test (White_Space? #\a)		#f
+test (White_Space? #\{space})	#t
+test (White_Space? "  ")	#t
+test (White_Space? "  a")	#f
+
+test (ASCII_Hex_Digit? #\a)	#t
+test (ASCII_Hex_Digit? #\3)	#t
+test (ASCII_Hex_Digit? #\z)	#f
+test (ASCII_Hex_Digit? "1a2b")	#t
+test (ASCII_Hex_Digit? "1a2bg")	#f
+
+test (Control? #\a)		#f
+test (Control? #U+0)		#t	; 0000;<control>;Cc
+test (Control? #U+ad)		#t	; 00AD;SOFT HYPHEN;Cf
+test (Control? "\x0\uad")	#t
+test (Control? "\x0\uadz")	#f
+
+;; XXX careful, these have a Category C* but are not Property Control
+test (Control? #U+D800)		#f	; D800;<Non Private Use High Surrogate, First>;Cs
+test (Control? #U+E000)		#f	; E000;<Private Use, First>;Co
+test (Control? #U+40000)	#f	; unassigned (start of Plane 4)
+
+test (Regional_Indicator? #\a)	#f
+test (Regional_Indicator? #U+1f1e6) #t	; 1F1E6;REGIONAL INDICATOR SYMBOL LETTER A;So
+test (Regional_Indicator? "\U1f1e6")	#t
+test (Regional_Indicator? "\U1f1e6z")	#f
+
+test (Extend? #\a)		#f
+test (Extend? #U+36F)		#t	; 036F;COMBINING LATIN SMALL LETTER X;Mn
+test (Extend? "\u36f")		#t
+test (Extend? "\u36fz")		#f
+
+test (SpacingMark? #\a)		#f
+test (SpacingMark? #U+1D16D)	#t	; 1D16D;MUSICAL SYMBOL COMBINING AUGMENTATION DOT;Mc
+test (SpacingMark? "\U1D16D")	#t
+test (SpacingMark? "\U1D16Dz")	#f
+
+; L V T LV LVT ZWJ are defined in GraphemeBreakProperty.txt
+test (L? #\a)			#f
+test (L? #U+1100)		#t	; 1100;HANGUL CHOSEONG KIYEOK;Lo
+test (L? "\u1100")		#t
+test (L? "\u1100z")		#f
+
+test (V? #\a)			#f
+test (V? #U+1160)		#t	; 1160;HANGUL JUNGSEONG FILLER;Lo
+test (V? "\u1160")		#t
+test (V? "\u1160z")		#f
+
+test (T? #\a)			#f
+test (T? #U+11A8)		#t	; 11A8;HANGUL JONGSEONG KIYEOK;Lo
+test (T? "\u11A8")		#t
+test (T? "\u11A8z")		#f
+
+test (LV? #\a)			#f
+test (LV? #U+AC00)		#t	; AC00;HANGUL SYLLABLE GA;Lo
+test (LV? "\uAC00")		#t
+test (LV? "\uAC00z")		#f
+
+test (LVT? #\a)			#f
+test (LVT? #U+AC01)		#t	; AC01;HANGUL SYLLABLE GAG;Lo
+test (LVT? "\uAC01")		#t
+test (LVT? "\uAC01z")		#f
+
+test (ZWJ? #\a)			#f
+test (ZWJ? #U+200d)		#t	; 200D;ZERO WIDTH JOINER;Cf
+test (ZWJ? "\u200d")		#t
+test (ZWJ? "\u200dz")		#f
+
+test (Fractional_Number? #\a)	#f
+test (Fractional_Number? #U+F32) #t	; 0F32;TIBETAN DIGIT HALF NINE;No
+test (Fractional_Number? "\uF32")	#t
+test (Fractional_Number? "\uF32z")	#f
+
+test (numeric-value #U+2164)	5	; 2164;ROMAN NUMERAL FIVE;Nl
+test (numeric-value #U+F32)	"17/2"	; 0F32;TIBETAN DIGIT HALF NINE;No
+
+; code coverage for substrings
+; 1-byte substring
+test (Uppercase? (substring "ABC" 0 2))	#t
+; 2-byte substring, 0126;LATIN CAPITAL LETTER H WITH STROKE
+test (Uppercase? (substring "\u126yz" 0 1))	#t
+; 4-byte substring, 1D400;MATHEMATICAL BOLD CAPITAL A
+test (Uppercase? (substring "\U1D400yz" 0 1))	#t
+
+; code coverage for describe
+with-output-to testfile (function #n {
+			   describe #\a		; code point
+			   describe #\0		; Decimal_Number
+			   describe #U+F32	; Fractional_Number
+			   describe #U+40000	; Invalid (in 13.0.0!)
+
+			   ; 1-byte string
+			   1bs := "axy"
+			   describe 1bs
+			   ; 2-byte string
+			   2bs := "\u126xy"
+			   describe 2bs
+			   ; 4-byte string
+			   4bs := "\U1d400xy"
+			   describe 4bs
+
+			   ; 1-byte substring
+			   1bs := "axy"
+			   describe (substring 1bs 0 1)
+			   ; 2-byte substring
+			   2bs := "\u126xy"
+			   describe (substring 2bs 0 1)
+			   ; 4-byte substring
+			   4bs := "\U1d400xy"
+			   describe (substring 4bs 0 1)
+})
+
+;; all done?
+Tests? (usi0 + 127)

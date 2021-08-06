@@ -32,6 +32,10 @@ uppercase characters all become: "Lu 0 32 0 0" where the 32 means the
 lowercase equivalent can be derived from this by adding 32.
 Similarly, the ASCII lowercase characters all become "Ll -32 0 -32 0".
 
+The trailing zero is the numeric value which, as the ASCII uppercase
+and lowercase letters are not classed as numeric, will not be used.
+The C static structure initialisation needs something, though!
+
 In fact, there are 194 such Lu Unicode code points and 204 such Ll
 Unicode code points if we're just using UnicodeData.txt.  Similarly,
 there are 76 Lu and Ll code points where the uppercase and lowercase
@@ -209,7 +213,7 @@ bit-field.
 We can create nominal C bit-field flags for those and then create
 our (originally 430) variations by generating the stringified static C
 structure elements, "{ flags, Category, UC offset, LC offset, TC
-offset, Numeric Value }", to get 463 "summary" code points.
+offset, Numeric Value }", to get 465 "summary" code points.
 
 As there's more than 256, references to these must be two bytes, that
 is the entire page table must be uint16_t.  Even without the flags
@@ -219,7 +223,7 @@ We now need a page indirection table to get us from a code point (one
 of #x110000) to a page in the page table and this indirection table
 will be #110000 / page-size entries.
 
-When we generate page tables (of 256 references to the 463 variants)
+When we generate page tables (of 256 references to the 465 variants)
 we get some duplication of the "used" pages -- used by valid code
 points -- sometimes dramatically different (see the #pg vs used pages
 columns below).
@@ -239,6 +243,8 @@ implementation is the sum of those two tables.
 The next question comes about that choice of a page size of 256.  What
 if we vary it a bit?  Let's try some numbers:
 
+(these numbers are approximate as the code evolves)
+
 pgsz  pages #pg/used  bytes
 1024   1088  55/  62 113728 (  1088 * 1 +  55 * 2 * 1024)
  512   2176  89/ 104  93312 (  2176 * 1 +  89 * 2 *  512)
@@ -252,7 +258,7 @@ From which we can see a sweet spot, for this arrangement of flags
 etc., around a page size of 128 requiring 70656 bytes in C static
 tables.  Schoenenberger used a page size of 256 for his arrangement.
 
-The final sizing element is fairly fixed as it is 463 times the size
+The final sizing element is fairly fixed as it is 465 times the size
 of an idio_USI_t holding the summarised code point information.  For
 the upper/lower/title case offsets, some of the relative numbers are
 over 32k meaning we can't use an int16_t, therefore it must be an
@@ -260,9 +266,9 @@ int32_t which wastes a bit of space as the vast majority are 0 or
 small offsets.
 
 An idio_USI_t, then, is 32 bytes, and therefore the variants tables is
-463 times that, 14816 bytes.
+465 times that, 14880 bytes.
 
-So a grand total of 85472 bytes (70656 + 14816) to store everything
+So a grand total of 85536 bytes (70656 + 14880) to store everything
 *we* need to know about Unicode.
 
 *#
@@ -422,13 +428,13 @@ for-each (function (k) {
 ; Having defined unique values for the flags we need those values as
 ; local variables to speed up access!
 Lt-flag                 := hash-ref flag-map 'Titlecase_Letter
-L-flag                  := hash-ref flag-map 'Letter
-M-flag                  := hash-ref flag-map 'Mark
+L*-flag                 := hash-ref flag-map 'Letter
+M*-flag                 := hash-ref flag-map 'Mark
 Nd-flag                 := hash-ref flag-map 'Decimal_Number
-N-flag                  := hash-ref flag-map 'Number
-P-flag                  := hash-ref flag-map 'Punctuation
-S-flag                  := hash-ref flag-map 'Symbol
-Z-flag                  := hash-ref flag-map 'Separator
+N*-flag                 := hash-ref flag-map 'Number
+P*-flag                 := hash-ref flag-map 'Punctuation
+S*-flag                 := hash-ref flag-map 'Symbol
+Z*-flag                 := hash-ref flag-map 'Separator
 
 Lowercase-flag          := hash-ref flag-map 'Lowercase
 Uppercase-flag          := hash-ref flag-map 'Uppercase
@@ -543,28 +549,28 @@ define (cat-flags gc) {
   (case
    gc
    (("Lt") {
-     Lt-flag + L-flag
+     Lt-flag + L*-flag
    })
    (("Lu" "Ll" "Lm" "Lo") {
-     L-flag
+     L*-flag
    })
    (("Mn" "Mc" "Me") {
-     M-flag
+     M*-flag
    })
    (("Nd") {
-     Nd-flag + N-flag
+     Nd-flag + N*-flag
    })
    (("Nl" "No") {
-     N-flag
+     N*-flag
    })
    (("Pc" "Pd" "Ps" "Pe" "Pi" "Pf" "Po") {
-     P-flag
+     P*-flag
    })
    (("Sm" "Sc" "Sk" "So" ) {
-     S-flag
+     S*-flag
    })
    (("Zs" "Zl" "Zp") {
-     Z-flag
+     Z*-flag
    })
    (else {
      0
@@ -642,96 +648,99 @@ define (UD-reader file) {
 		   line-r := r
 		   gc := line-r.3
 
-		   ;; integer->unicode (in char-set-set!) will
-		   ;; complain about surrogates being invalid!
-		   if (not (string=? gc "Cs")) {
-		     cp := read-number line-r.1 16
+		   cp := read-number line-r.1 16
 
-		     name := line-r.2
+		   name := line-r.2
 
-		     ;; mark a page as having been used, we'll replace
-		     ;; #t with the summary page index after we've
-		     ;; seen all the pages
-		     pi := quotient cp page-size
-		     array-set! used-pages-table pi #t
+		   ;; mark a page as having been used, we'll replace
+		   ;; #t with the summary page index after we've
+		   ;; seen all the pages
+		   pi := quotient cp page-size
+		   array-set! used-pages-table pi #t
 
-		     ; Category "char-set"
-		     cs := #f
-		     if (not (hash-exists? cat-char-set-map gc)) {
-		       cs = make-sparse-char-set unicode-char-set-size
-		       hash-set! cat-char-set-map gc cs
-		     } {
-		       cs = hash-ref cat-char-set-map gc
-		     }
-
-		     flags := (cat-flags gc) + (prop-flags cp)
-
-		     (regex-case
-		      name
-		      ("First>$" {
-			line = read-line fh
-			parts := split-string-exactly line ";"
-			lcp := read-number (ph parts) 16
-
-			;; can we guarantee these will have no
-			;; uc/lc/tc or numeric value?
-			scp := sprintf scp-C-fmt flags (hash-ref gc-map gc) 0 0 0 0
-			scp-i := get-scp-index scp
-
-			loop :+ function (cp) {
-				  if (cp gt lcp) #n {
-				    array-set! cp-table cp scp-i
-				    char-set-set! cs cp
-				    loop (cp + 1)
-				  }
-			}
-
-			loop cp
-		      })
-		      (else {
-			char-set-set! cs cp
-
-			nvs := line-r.9
-			nv := 0
-			if ((string-length nvs) gt 0) {
-			  (regex-case
-			   nvs
-			   ("/" {
-			     nv = sprintf ".frac=\"%s\"" nvs
-			     flags = flags + Fractional_Number-flag
-			   })
-			   (else {
-			     nv = read-number nvs 10
-			   }))
-			}
-
-			ucs := line-r.13
-			ucd := 0
-			if ((string-length ucs) gt 0) {
-			  ucn := read-number ucs 16
-			  ucd = ucn - cp
-			}
-
-			lcs := line-r.14
-			lcd := 0
-			if ((string-length lcs) gt 0) {
-			  lcn := read-number lcs 16
-			  lcd = lcn - cp
-			}
-
-			tcs := line-r.15
-			tcd := 0
-			if ((string-length tcs) gt 0) {
-			  tcn := read-number tcs 16
-			  tcd = tcn - cp
-			}
-
-			scp := sprintf scp-C-fmt flags (hash-ref gc-map gc) ucd lcd tcd nv
-			scp-i := get-scp-index scp
-
-			array-set! cp-table cp scp-i
-		      }))
+		   ; Category "char-set"
+		   cs := #f
+		   if (not (hash-exists? cat-char-set-map gc)) {
+		     cs = make-sparse-char-set unicode-char-set-size
+		     hash-set! cat-char-set-map gc cs
+		   } {
+		     cs = hash-ref cat-char-set-map gc
 		   }
+
+		   (regex-case
+		    name
+		    ("First>$" {
+		      line = read-line fh
+		      parts := split-string-exactly line ";"
+		      lcp := read-number (ph parts) 16
+
+		      gci :=  hash-ref gc-map gc
+		      cflags := cat-flags gc
+
+		      loop :+ function (cp) {
+				if (cp gt lcp) #n {
+				  flags := cflags + (prop-flags cp)
+
+				  ;; can we guarantee these will have no
+				  ;; uc/lc/tc or numeric value?
+				  scp := sprintf scp-C-fmt flags gci 0 0 0 0
+				  scp-i := get-scp-index scp
+
+				  array-set! cp-table cp scp-i
+				  char-set-set! cs cp
+				  loop (cp + 1)
+				}
+		      }
+
+		      loop cp
+		    })
+		    (else {
+		      char-set-set! cs cp
+
+		      flags := (cat-flags gc) + (prop-flags cp)
+
+		      nvs := line-r.9
+		      nv := 0
+		      if ((string-length nvs) gt 0) {
+			(regex-case
+			 nvs
+			 ("/" {
+			   nv = sprintf ".frac=\"%s\"" nvs
+			   flags = flags + Fractional_Number-flag
+			 })
+			 (else {
+			   nv = read-number nvs 10
+			 }))
+		      }
+
+		      ucs := line-r.13
+		      ucd := 0
+		      if ((string-length ucs) gt 0) {
+			ucn := read-number ucs 16
+			ucd = ucn - cp
+		      }
+
+		      lcs := line-r.14
+		      lcd := 0
+		      if ((string-length lcs) gt 0) {
+			lcn := read-number lcs 16
+			lcd = lcn - cp
+		      }
+
+		      tcs := line-r.15
+		      tcd := 0
+		      if ((string-length tcs) eq 0) {
+			tcd = ucd
+		      } {
+			tcn := read-number tcs 16
+			tcd = tcn - cp
+		      }
+
+		      scp := sprintf scp-C-fmt flags (hash-ref gc-map gc) ucd lcd tcd nv
+		      scp-i := get-scp-index scp
+
+		      array-set! cp-table cp scp-i
+		    }))
 		 }))
 	      }
 	      loop fh
@@ -942,13 +951,15 @@ hprintf s-c-fh #S{
 hprintf s-c-fh "const char *idio_USI_flag_names[] = {\n"
 
 for-each (function (fl) {
-	    hprintf s-c-fh "  \"%s\",\n" (symbol->string fl)
+	    if (not (eq? fl 'Invalid)) {
+	      hprintf s-c-fh "  \"%s\",\n" (symbol->string fl)
+	    }
 }) all-flags
 
 hprintf s-c-fh "};\n\n"
 
 hprintf s-c-fh "const char *idio_USI_Category_names[] = {\n"
-hprintf s-c-fh "  [IDIO_USI_CATEGORY_INVALID] = \"\",\n"
+hprintf s-c-fh "  [IDIO_USI_CATEGORY_Invalid] = \"\",\n"
 
 for-each (function (cat) {
 	    designator := append-string "[IDIO_USI_CATEGORY_" cat "]"

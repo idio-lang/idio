@@ -100,8 +100,8 @@ fixnum-error-load "fixnum-errors/infix-eq-bad-type-2.idio" "bad parameter type: 
 fixnum-error-load "fixnum-errors/integer2char-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
 fixnum-error-load "fixnum-errors/integer2char-bignum-range.idio" "invalid integer"
 
-fixnum-error-load "fixnum-errors/integer2unicode-fixnum-invalid-code-point.idio" "integer->unicode code point: U+D800: is invalid"
-fixnum-error-load "fixnum-errors/integer2unicode-bignum-invalid-code-point.idio" "integer->unicode code point: U+D800: is invalid"
+fixnum-error-load "fixnum-errors/integer2unicode-fixnum-invalid-code-point.idio" "integer->unicode code point: U+110000: is invalid"
+fixnum-error-load "fixnum-errors/integer2unicode-bignum-invalid-code-point.idio" "integer->unicode code point: U+110000: is invalid"
 fixnum-error-load "fixnum-errors/integer2unicode-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
 fixnum-error-load "fixnum-errors/integer2unicode-fixnum-range.idio" "integer->unicode code point: U+-1: cannot be negative"
 fixnum-error-load "fixnum-errors/integer2unicode-bignum-range.idio" "integer->unicode code point: U+-1: cannot be negative"
