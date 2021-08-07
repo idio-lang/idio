@@ -505,8 +505,8 @@ typedef struct idio_hash_s {
     idio_hi_t size;
     idio_hi_t mask;	      /* bitmask for easy modulo arithmetic */
     idio_hi_t count;	      /* (key) count */
-    int (*comp_C) (void *k1, void *k2);	/* C equivalence function */
-    idio_hi_t (*hash_C) (struct idio_s *h, void *k); /* C hashing function */
+    int (*comp_C) (const void *k1, const void *k2);	/* C equivalence function */
+    idio_hi_t (*hash_C) (struct idio_s *h, const void *k); /* C hashing function */
     struct idio_s *comp;	/* user-supplied comparator */
     struct idio_s *hash;	/* user-supplied hashing function */
     idio_hash_entry_t* *ha;	/* a C array */

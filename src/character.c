@@ -79,7 +79,7 @@
  */
 static IDIO idio_characters_hash = idio_S_nil;
 
-int idio_character_C_eqp (void *s1, void *s2)
+int idio_character_C_eqp (const void *s1, const void *s2)
 {
     /*
      * We should only be here for idio_characters_hash key comparisons
@@ -93,7 +93,7 @@ int idio_character_C_eqp (void *s1, void *s2)
     return (0 == strcmp ((const char *) s1, (const char *) s2));
 }
 
-idio_hi_t idio_character_C_hash (IDIO h, void *s)
+idio_hi_t idio_character_C_hash (IDIO h, const void *s)
 {
     size_t hvalue = (uintptr_t) s;
 

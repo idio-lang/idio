@@ -304,7 +304,7 @@ static void idio_property_key_not_found_error (IDIO key, IDIO c_location)
     /* notreached */
 }
 
-int idio_symbol_C_eqp (void *s1, void *s2)
+int idio_symbol_C_eqp (const void *s1, const void *s2)
 {
     /*
      * We should only be here for idio_symbols_hash key comparisons
@@ -318,7 +318,7 @@ int idio_symbol_C_eqp (void *s1, void *s2)
     return (0 == strcmp ((const char *) s1, (const char *) s2));
 }
 
-idio_hi_t idio_symbol_C_hash (IDIO h, void *s)
+idio_hi_t idio_symbol_C_hash (IDIO h, const void *s)
 {
     size_t hvalue = (uintptr_t) s;
 
@@ -373,7 +373,7 @@ void idio_free_symbol (IDIO s)
     /* IDIO_GC_FREE (s->u.symbol); */
 }
 
-IDIO idio_symbols_C_intern (char *sym_C)
+IDIO idio_symbols_C_intern (const char *sym_C)
 {
     IDIO_C_ASSERT (sym_C);
 

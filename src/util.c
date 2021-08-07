@@ -456,17 +456,17 @@ return the boolean inverse of `e`		\n\
  *
  */
 
-int idio_eqp (void *o1, void *o2)
+int idio_eqp (const void *o1, const void *o2)
 {
     return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQP);
 }
 
-int idio_eqvp (void *o1, void *o2)
+int idio_eqvp (const void *o1, const void *o2)
 {
     return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQVP);
 }
 
-int idio_equalp (void *o1, void *o2)
+int idio_equalp (const void *o1, const void *o2)
 {
     return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQUALP);
 }
