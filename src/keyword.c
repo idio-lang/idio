@@ -123,7 +123,7 @@ void idio_keyword_format_error (char *msg, IDIO kw, IDIO c_location)
     /* notreached */
 }
 
-int idio_keyword_C_eqp (void *s1, void *s2)
+int idio_keyword_C_eqp (const void *s1, const void *s2)
 {
     /*
      * We should only be here for idio_keywords_hash key comparisons
@@ -137,7 +137,7 @@ int idio_keyword_C_eqp (void *s1, void *s2)
     return (0 == strcmp ((const char *) s1, (const char *) s2));
 }
 
-idio_hi_t idio_keyword_C_hash (IDIO h, void *s)
+idio_hi_t idio_keyword_C_hash (IDIO h, const void *s)
 {
     size_t hvalue = (uintptr_t) s;
 

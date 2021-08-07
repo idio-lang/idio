@@ -152,7 +152,7 @@ void idio_property_error_key_not_found (IDIO key, IDIO c_location);
 
 void idio_free_symbol (IDIO s);
 int idio_isa_symbol (IDIO s);
-IDIO idio_symbols_C_intern (char *s);
+IDIO idio_symbols_C_intern (const char *s);
 IDIO idio_symbols_string_intern (IDIO str);
 
 IDIO idio_gensym (char *pref_prefix);

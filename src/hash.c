@@ -188,7 +188,7 @@ static int idio_assign_hash_he (IDIO h, idio_hi_t size)
  *
  * You cannot supply both.  Use NULL for the C-variant to ignore it.
  */
-IDIO idio_hash (idio_hi_t size, int (*comp_C) (void *k1, void *k2), idio_hi_t (*hash_C) (IDIO h, void *k), IDIO comp, IDIO hash)
+IDIO idio_hash (idio_hi_t size, int (*comp_C) (const void *k1, const void *k2), idio_hi_t (*hash_C) (IDIO h, const void *k), IDIO comp, IDIO hash)
 {
     IDIO_C_ASSERT (size);
     IDIO_ASSERT (comp);
@@ -408,7 +408,7 @@ void idio_hash_resize (IDIO h, int larger)
 
     IDIO_ASSERT_NOT_CONST (hash, h);
 
-    idio_hi_t ohsize = h->u.hash->size;
+    idio_hi_t ohsize = IDIO_HASH_SIZE (h);
     idio_hash_entry_t* *oha = h->u.hash->ha;
 
     idio_hi_t osize = IDIO_HASH_MASK (h) + 1;
@@ -706,13 +706,29 @@ idio_hi_t idio_hash_default_hash_C_C_FFI (IDIO h)
  * hash table ``ht`` for the key ``kv``.
  *
  * This is, the result will be modulo IDIO_HASH_MASK (ht) + 1.
+ *
+ * What is the hash of a compound value, ie. an array, list etc.?
+ *
+ * 1) It is the hash of the C pointer to the value
+ *
+ * 2) It is the hash of all the value's elements
+ *
+ * I think it depends more on how elements of the hash should be
+ * compared.  If the comparator is eq? or eqv? then (1) is correct.
+ * If the comparator is equal? then (2) is correct.
  */
-idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
+idio_hi_t idio_hash_default_hash_C (IDIO h, const void *kv)
 {
     IDIO_ASSERT (h);
 
     IDIO k = (IDIO) kv;
     IDIO_ASSERT (k);
+
+    int deep = 0;
+    if ((idio_eqp != IDIO_HASH_COMP_C (h)) &&
+	(idio_eqvp != IDIO_HASH_COMP_C (h))) {
+	deep = 1;
+    }
 
     idio_hi_t hv = 0;
     idio_type_e type = idio_type (k);
@@ -735,9 +751,6 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
 	}
     }
 
-    /*
-     * There's no precomputed IDIO_HASHVAL() for fixed types.
-     */
     switch (type) {
     case IDIO_TYPE_FIXNUM:
     case IDIO_TYPE_CONSTANT_IDIO:
@@ -772,13 +785,51 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
 	hv = idio_hash_default_hash_C_keyword (k);
 	break;
     case IDIO_TYPE_PAIR:
-	hv = idio_hash_default_hash_C_pair (k);
+	if (deep) {
+	    /*
+	     * XXX Recursion issue pending...
+	     */
+	    hv ^= idio_hash_default_hash_C (h, IDIO_PAIR_H (k));
+	    hv ^= idio_hash_default_hash_C (h, IDIO_PAIR_T (k));
+	} else {
+	    hv = idio_hash_default_hash_C_pair (k);
+	}
 	break;
     case IDIO_TYPE_ARRAY:
-	hv = idio_hash_default_hash_C_array (k);
+	if (deep) {
+	    idio_ai_t al = IDIO_ARRAY_USIZE (k);
+	    idio_ai_t ai = 0;
+	    for (; ai < al; ai++) {
+		hv ^= idio_hash_default_hash_C (h, IDIO_ARRAY_AE (k, ai));
+	    }
+	} else {
+	    hv = idio_hash_default_hash_C_array (k);
+	}
 	break;
     case IDIO_TYPE_HASH:
-	hv = idio_hash_default_hash_C_hash (k);
+	if (deep) {
+	    idio_hi_t khsize = IDIO_HASH_SIZE (k);
+	    idio_hash_entry_t* *kha = k->u.hash->ha;
+	    idio_hi_t hi;
+	    for (hi = 0 ; hi < khsize; hi++) {
+		idio_hash_entry_t *he = kha[hi];
+		for ( ; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
+		    if (idio_S_nil != IDIO_HASH_HE_KEY (he)) {
+			hv ^= idio_hash_default_hash_C (h, IDIO_HASH_HE_KEY (he));
+			hv ^= idio_hash_default_hash_C (h, IDIO_HASH_HE_VALUE (he));
+		    } else {
+			/*
+			 * Code coverage:
+			 *
+			 * Coding error?
+			 */
+			fprintf (stderr, "hash-default-hash: #n key?\n");
+		    }
+		}
+	    }
+	} else {
+	    hv = idio_hash_default_hash_C_hash (k);
+	}
 	break;
     case IDIO_TYPE_CLOSURE:
 	hv = idio_idio_hash_default_hash_C_closure (k);
@@ -891,7 +942,7 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
  *
  * ``kv`` is a generic "key value" as we can have C strings as keys.
  */
-idio_hi_t idio_hash_index (IDIO ht, void *kv)
+idio_hi_t idio_hash_index (IDIO ht, const void *kv)
 {
     IDIO_ASSERT (ht);
     IDIO_TYPE_ASSERT (hash, ht);
@@ -971,7 +1022,7 @@ idio_hi_t idio_hash_index (IDIO ht, void *kv)
  * idio_eqp, idio_eqvp or idio_equalp depending on which macro was
  * used to create the hash (IDIO_HASH_EQP(size), ...).
  */
-int idio_hash_equal (IDIO ht, void *kv1, void *kv2)
+int idio_hash_equal (IDIO ht, const void *kv1, const void *kv2)
 {
     IDIO_ASSERT (ht);
     IDIO_TYPE_ASSERT (hash, ht);
@@ -1077,7 +1128,7 @@ set the index of ``key` in hash table ``ht`` to ``v``	\n\
     return idio_hash_set (ht, key, v);
 }
 
-idio_hash_entry_t *idio_hash_he (IDIO h, void *kv)
+idio_hash_entry_t *idio_hash_he (IDIO h, const void *kv)
 {
     IDIO_ASSERT (h);
 
@@ -1219,7 +1270,7 @@ a value							\n\
     return r;
 }
 
-IDIO idio_hash_ref (IDIO h, void *kv)
+IDIO idio_hash_ref (IDIO h, const void *kv)
 {
     IDIO_ASSERT (h);
 
@@ -1572,8 +1623,8 @@ IDIO idio_hash_make_hash (IDIO args)
     IDIO_TYPE_ASSERT (list, args);
 
     idio_hi_t size = 32;
-    int (*equal) (void *k1, void *k2) = idio_equalp;
-    idio_hi_t (*hash_C) (IDIO h, void *k) = idio_hash_default_hash_C;
+    int (*equal) (const void *k1, const void *k2) = idio_equalp;
+    idio_hi_t (*hash_C) (IDIO h, const void *k) = idio_hash_default_hash_C;
     IDIO comp = idio_S_nil;
     IDIO hash = idio_S_nil;
 

@@ -28,7 +28,7 @@
 #define IDIO_HASH_EQVP(s)	(IDIO_HASH ((s), idio_eqvp, idio_hash_default_hash_C, idio_S_nil, idio_S_nil))
 #define IDIO_HASH_EQUALP(s)	(IDIO_HASH ((s), idio_equalp, idio_hash_default_hash_C, idio_S_nil, idio_S_nil))
 
-IDIO idio_hash (size_t size, int (*equal) (void *k1, void *k2), size_t (*hash_C) (IDIO h, void *k), IDIO comp, IDIO hash);
+IDIO idio_hash (size_t size, int (*equal) (const void *k1, const void *k2), size_t (*hash_C) (IDIO h, const void *k), IDIO comp, IDIO hash);
 IDIO idio_copy_hash (IDIO orig, int depth);
 IDIO idio_hash_alist_to_hash (IDIO alist, IDIO args);
 int idio_isa_hash (IDIO h);
@@ -43,11 +43,11 @@ size_t idio_hash_default_hash_C_void (void *p);
 size_t idio_hash_default_hash_C_pair (IDIO h);
 size_t idio_hash_default_hash_C_array (IDIO h);
 size_t idio_hash_default_hash_C_hash (IDIO h);
-size_t idio_hash_default_hash_C (IDIO h, void *k);
+size_t idio_hash_default_hash_C (IDIO h, const void *k);
 IDIO idio_hash_put (IDIO h, void *k, IDIO v);
 int idio_hash_exists_key (IDIO h, void *kv);
 IDIO idio_hash_exists (IDIO h, void *k);
-IDIO idio_hash_ref (IDIO h, void *k);
+IDIO idio_hash_ref (IDIO h, const void *k);
 int idio_hash_delete (IDIO h, void *k);
 IDIO idio_hash_keys_to_list (IDIO h);
 IDIO idio_hash_make_hash (IDIO args);
