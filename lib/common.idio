@@ -164,12 +164,12 @@ idio-print-conversion-precision :~ #f
 
 #*
 
-If the bootsrap fails, we need a couple of auxilliary functions which
+If the bootstrap fails, we need a couple of auxilliary functions which
 will be overwritten in due course
 
 *#
 
-define (ASCII-numeric? x) {
+define (ASCII-Decimal_Number? x) {
   if (or (eqv? x #\0)
 	 (eqv? x #\1)
 	 (eqv? x #\2)
@@ -198,7 +198,7 @@ a U+0022 (SPACE) character.
 If `type` is 'keyed then a % character in the format string starts an
 escape sequence which has the general form %[flags][width][.prec]K
 where K is a single Unicode code point (satisfying
-unicode-alphabetic?) which is expected to be a key in the optional
+Alphabetic?) which is expected to be a key in the optional
 hash table -- unless it is another % character.  The value associated
 with the key will be printed according to the specification.
 
@@ -274,7 +274,7 @@ The default padding character is #\{space}
 		       w-loop :+ (function (i) {
 				    i+1 := i + 1
 				    c = string-ref fmt i+1
-				    if (ASCII-numeric? c) {
+				    if (ASCII-Decimal_Number? c) {
 				      we = we + 1
 				      w-loop i+1
 				    } i
@@ -298,7 +298,7 @@ The default padding character is #\{space}
 			 p-loop :+ (function (i) {
 				      i+1 := i + 1
 				      c = string-ref fmt i+1
-				      if (ASCII-numeric? c) {
+				      if (ASCII-Decimal_Number? c) {
 					pe = pe + 1
 					p-loop i+1
 				      } i
@@ -329,7 +329,7 @@ The default padding character is #\{space}
 			       vs = "%"
 			       vs-len = 1
 			     })
-			     ((unicode-alphabetic? k) {
+			     ((Alphabetic? k) {
 			       v = hash-ref data k #f
 			       if (not v) {
 				 eprintf "%format: %s is not a key in data\n" k

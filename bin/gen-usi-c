@@ -61,7 +61,7 @@ point table up into groups of 256 code points then even those groups
 of 256, of what you might think were fairly random collection of
 references to the 430 unique variations, end up with duplicates.  And
 this isn't talking about Planes 4 through 13 which will all map to an
-Invalid variation.
+Unassigned variation.
 
 ------------------------------
 
@@ -124,6 +124,16 @@ breaks-between-things Properties.
 
 ----
 
+Reserved code points are a feature.  In particular they are not listed
+in UnicodeData.txt but are referenced in the three properties files.
+That might not be an issue except GraphemeBreakProperty.txt lists them
+as Property Control -- which is a Property we are interested in.
+
+Of course, so long as we only create summary information for code
+points in UnicodeData.txt then we're good.
+
+----
+
 Across these four files there are 65 Properties: 
 
   ASCII_Hex_Digit Alphabetic Bidi_Control CR Case_Ignorable Cased
@@ -168,7 +178,7 @@ for Property, C for Category):
   punctuation			C P*
   symbol			C S*
   hex-digit			P ASCII_Hex_Digit
-  blank				C Z* + 0009
+  blank				C Zs + 0009
   control			P Control
   regional-indicator		P Regional_Indicator
   extend-or-spacing-mark	P Extend + P SpacingMark
@@ -205,8 +215,8 @@ Schoenenberger also distingushes:
   We'll skip that, today.
 
 Across these we have 24 or so distinguishable flags (27 if we
-included "expands") plus "Invalid".  Plenty of room in a 32-bit flags
-bit-field.
+included "expands") with zero meaning "Unassigned".  Plenty of room in
+a 32-bit flags bit-field.
 
 ----
 
@@ -371,10 +381,8 @@ gc-list := '(
 	      "Cn"
 )
 
-gc-map := #{
-  ("" & 0)
-}
-gc-map-index := 1
+gc-map := #{}
+gc-map-index := 0
 for-each (function (cat) {
 	   hash-set! gc-map cat gc-map-index
 	   gc-map-index = gc-map-index + 1
@@ -411,18 +419,14 @@ p-flag-list := '(
 		  ZWJ
 )
 
-all-flags := append '(Invalid) gc-flag-list p-flag-list '(Fractional_Number)
+all-flags := append gc-flag-list p-flag-list '(Fractional_Number)
 
 ; flag-map is a C bit-map of all-flags
 flag-map-index := 0
 flag-map := #{}
 for-each (function (k) {
-	    if (eq? k 'Invalid) {
-	      hash-set! flag-map k 0
-	    } {
-	      hash-set! flag-map k (expt 2 flag-map-index)
-	      flag-map-index = flag-map-index + 1
-	    }
+	    hash-set! flag-map k (expt 2 flag-map-index)
+	    flag-map-index = flag-map-index + 1
 }) all-flags
 
 ; Having defined unique values for the flags we need those values as
@@ -604,13 +608,12 @@ define (prop-flags cp) {
 ; As we walk through UnicodeData.txt we'll figure out the stringified
 ; C static initialiser and look it up in scp-map's table of
 ; (previously seen) summarized code points.  We can initialize scp-map
-; with the stringified Invalid summarized code point (all zeroes).
+; with the Unassigned summarized code point.
 
 ; summary code points
-scp-map := #{
-  ("{         0,  0, {      0,      0,      0 }, {0} }" & 0)
-}
+scp-map := #{}
 scp-map-index := 0
+hash-set! scp-map (list 0 (hash-ref gc-map "Cn") 0 0 0 0) scp-map-index
 
 define (get-scp-index scp) {
   if (hash-exists? scp-map scp) {
@@ -652,12 +655,6 @@ define (UD-reader file) {
 
 		   name := line-r.2
 
-		   ;; mark a page as having been used, we'll replace
-		   ;; #t with the summary page index after we've
-		   ;; seen all the pages
-		   pi := quotient cp page-size
-		   array-set! used-pages-table pi #t
-
 		   ; Category "char-set"
 		   cs := #f
 		   if (not (hash-exists? cat-char-set-map gc)) {
@@ -675,19 +672,23 @@ define (UD-reader file) {
 		      lcp := read-number (ph parts) 16
 
 		      gci :=  hash-ref gc-map gc
-		      cflags := cat-flags gc
+		      gc-flags := cat-flags gc
 
 		      loop :+ function (cp) {
 				if (cp gt lcp) #n {
-				  flags := cflags + (prop-flags cp)
+				  ;; mark a page as having been used, we'll replace
+				  ;; #t with the summary page index after we've
+				  ;; seen all the pages
+				  array-set! used-pages-table (quotient cp page-size) #t
+
+				  char-set-set! cs cp
+
+				  flags := gc-flags + (prop-flags cp)
 
 				  ;; can we guarantee these will have no
 				  ;; uc/lc/tc or numeric value?
-				  scp := sprintf scp-C-fmt flags gci 0 0 0 0
-				  scp-i := get-scp-index scp
 
-				  array-set! cp-table cp scp-i
-				  char-set-set! cs cp
+				  array-set! cp-table cp (get-scp-index (list flags gci 0 0 0 0))
 				  loop (cp + 1)
 				}
 		      }
@@ -695,6 +696,11 @@ define (UD-reader file) {
 		      loop cp
 		    })
 		    (else {
+		      ;; mark a page as having been used, we'll replace
+		      ;; #t with the summary page index after we've
+		      ;; seen all the pages
+		      array-set! used-pages-table (quotient cp page-size) #t
+
 		      char-set-set! cs cp
 
 		      flags := (cat-flags gc) + (prop-flags cp)
@@ -705,7 +711,7 @@ define (UD-reader file) {
 			(regex-case
 			 nvs
 			 ("/" {
-			   nv = sprintf ".frac=\"%s\"" nvs
+			   nv = append-string ".frac=\"" nvs "\""
 			   flags = flags + Fractional_Number-flag
 			 })
 			 (else {
@@ -716,15 +722,13 @@ define (UD-reader file) {
 		      ucs := line-r.13
 		      ucd := 0
 		      if ((string-length ucs) gt 0) {
-			ucn := read-number ucs 16
-			ucd = ucn - cp
+			ucd = (read-number ucs 16) - cp
 		      }
 
 		      lcs := line-r.14
 		      lcd := 0
 		      if ((string-length lcs) gt 0) {
-			lcn := read-number lcs 16
-			lcd = lcn - cp
+			lcd = (read-number lcs 16) - cp
 		      }
 
 		      tcs := line-r.15
@@ -732,14 +736,10 @@ define (UD-reader file) {
 		      if ((string-length tcs) eq 0) {
 			tcd = ucd
 		      } {
-			tcn := read-number tcs 16
-			tcd = tcn - cp
+			tcd = (read-number tcs 16) - cp
 		      }
 
-		      scp := sprintf scp-C-fmt flags (hash-ref gc-map gc) ucd lcd tcd nv
-		      scp-i := get-scp-index scp
-
-		      array-set! cp-table cp scp-i
+		      array-set! cp-table cp (get-scp-index (list flags (hash-ref gc-map gc) ucd lcd tcd nv))
 		    }))
 		 }))
 	      }
@@ -779,6 +779,9 @@ define (range s e) {
   loop e #n
 }
 
+pads := "     "
+padl := string-length pads
+
 used-page-count := 0
 array-for-each-set used-pages-table (function (i v) {
 				       used-page-count = used-page-count + 1
@@ -787,7 +790,15 @@ array-for-each-set used-pages-table (function (i v) {
 									  if (not scpi) {
 									    scpi = 0
 									  }
-									  sprintf "%s%3d," (if ((remainder cp 16) eq 0) "\n    " "") scpi
+
+									  scpis := ->string scpi
+									  scpil := string-length scpis
+
+									  (append-string
+									   (if ((remainder cp 16) eq 0) "\n    " "")
+									   (substring pads 0 (padl - scpil))
+									   scpis
+									   ",")
 				       }) (range (i * page-size) (((i + 1) * page-size) - 1)))
 
 				       page = append-string "{" page "\n  }"
@@ -846,9 +857,6 @@ for-each (function (fl) {
 			  ((memq fl p-flag-list) {
 			    append-string "Property " (symbol->string fl)
 			  })
-			  ((eq? fl 'Invalid) {
-			    symbol->string fl
-			  })
 			  ((eq? fl 'Fractional_Number) {
 			    symbol->string fl
 			  })
@@ -869,7 +877,6 @@ hprintf s-h-fh #S{
 
 hprintf s-h-fh #S{
 typedef enum \{
-  IDIO_USI_CATEGORY_Invalid,
 }
 
 for-each (function (cat) {
@@ -951,15 +958,12 @@ hprintf s-c-fh #S{
 hprintf s-c-fh "const char *idio_USI_flag_names[] = {\n"
 
 for-each (function (fl) {
-	    if (not (eq? fl 'Invalid)) {
-	      hprintf s-c-fh "  \"%s\",\n" (symbol->string fl)
-	    }
+	    hprintf s-c-fh "  \"%s\",\n" (symbol->string fl)
 }) all-flags
 
 hprintf s-c-fh "};\n\n"
 
 hprintf s-c-fh "const char *idio_USI_Category_names[] = {\n"
-hprintf s-c-fh "  [IDIO_USI_CATEGORY_Invalid] = \"\",\n"
 
 for-each (function (cat) {
 	    designator := append-string "[IDIO_USI_CATEGORY_" cat "]"
@@ -971,7 +975,8 @@ hprintf s-c-fh "};\n\n"
 hprintf s-c-fh "const idio_USI_t idio_USI_variants[] = {\n"
 
 for-each (function (var) {
-	    hprintf s-c-fh "  %-64s,	/* %d */\n" var (get-scp-index var)
+	    vars := apply sprintf scp-C-fmt var
+	    hprintf s-c-fh "  %-64s,	/* %d */\n" vars (get-scp-index var)
 }) (sort (hash-keys scp-map) \lt (function (var) (get-scp-index var)))
 
 hprintf s-c-fh "};\n\n"
@@ -987,7 +992,7 @@ fold-array used-pages-table (function (i v val) {
 			 if v {
 			   spi = v
 			 }
-			 hprintf s-c-fh "%3d," spi
+			 hprintf s-c-fh "%4d," spi
 			 val
 }) 0
 

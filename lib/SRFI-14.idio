@@ -29,36 +29,7 @@ However with bitsets available as an Idio type (created for this
 purpose) I think we can skip it and derive the nominal SRFI-14-ish
 character sets from UnicodeData.txt (and others) directly.
 
-In the meanwhile this file, unicode.idio, defines the SRFI-14
-char-sets as derived from the above files and loaded by
-discretion (unicode.ASCII.idio, unicode.BMP0.idio or, the default,
-unicode.full.idio).
-
-Where did they come from?  .../utils/extract-unicode-char-sets.idio
-will trawl through the Unicode data files archived in
-.../utils/Unicode and generate unicode.{ASCII,BMP0,full}.idio files
-with the appropriate bitsets.  You can then check and copy them over
-the files in .../lib.
-
-Other generated tables include:
-
-char-set:simple-upper-case-map and char-set:simple-lower-case-map
-which use the fields (12) and (13) in UnicodeData.txt to generate
-simple mappings.  These use both integer-integer and unicode-unicode
-mappings.
-
-Beware that these two tables are NOT symmetric.  For example:
-
-to-lower (0130;LATIN CAPITAL LETTER I WITH DOT ABOVE)	= 0069;LATIN SMALL LETTER I
-to-upper (0069;LATIN SMALL LETTER I)			= 0049;LATIN CAPITAL LETTER I
-to-lower (0049;LATIN CAPITAL LETTER I)			= 0069;LATIN SMALL LETTER I
-
-to-upper (01C8;LATIN CAPITAL LETTER L WITH SMALL LETTER J)	= 01C7;LATIN CAPITAL LETTER LJ
-to-lower (01C7;LATIN CAPITAL LETTER LJ)				= 01C9;LATIN SMALL LETTER LJ
-to-upper (01C9;LATIN SMALL LETTER LJ)				= 01C7;LATIN CAPITAL LETTER LJ
-
-Also note that having, say, a lower-case code point in hand does not
-mean there is an upper-case variant.
+----
 
 The full Unicode tables are able to reference up to 2^21 code
 points (1114112 elements) and yet Unicode Planes 4-13 are
@@ -84,59 +55,6 @@ char-set.
 
 module SRFI-14
 export (
-	 ; SRFI-14 char-sets
-	 char-set:lower-case
-	 char-set:upper-case
-	 char-set:title-case
-	 char-set:letter
-	 char-set:digit
-	 char-set:letter+digit
-	 char-set:graphic
-	 char-set:printing
-	 char-set:whitespace
-	 char-set:iso-control
-	 char-set:punctuation
-	 char-set:symbol
-	 char-set:hex-digit
-	 char-set:blank
-	 char-set:ascii
-	 char-set:empty
-	 char-set:full
-
-	 ; useful derived map
-	 char-set:simple-upper-case-map
-	 char-set:simple-lower-case-map
-
-	 ; support for SRFI-115
-	 char-set:nonl
-	 char-set:control
-	 char-set:word-constituent
-	 char-set:cased
-
-	 ; SRFI-115: %X == intersection of ASCII and X
-	 %char-set:letter
-	 %char-set:lower-case
-	 %char-set:upper-case
-	 %char-set:digit
-	 %char-set:letter+digit
-	 %char-set:punctuation
-	 %char-set:symbol
-	 %char-set:graphic
-	 %char-set:whitespace
-	 %char-set:printing
-	 %char-set:iso-control
-	 %char-set:word-constituent
-
-	 ; SRFI-115: Unicode boundaries, TR29
-	 char-set:regional-indicator
-	 char-set:extend-or-spacing-mark
-	 char-set:hangul-l
-	 char-set:hangul-v
-	 char-set:hangul-t
-	 char-set:hangul-lv
-	 char-set:hangul-lvt
-
-
 	 make-sparse-char-set
 	 char-set?
 	 char-set-for-each-set
@@ -171,135 +89,9 @@ export (
 	 fold-char-set
 )
 
-; char-set:lower-case is Property Lowercase
-char-set:lower-case  := #n
-
-; char-set:upper-case is Property Uppercase
-char-set:upper-case  := #n
-
-; char-set:title-case is Category Lt
-char-set:title-case  := #n
-
-; char-set:letter is Property Alphabetic
-char-set:letter      := #n
-
-; char-set:digit is Category Nd
-char-set:digit       := #n
-
-; char-set:letter+digit is Property Alphabetic + Category Nd
-char-set:letter+digit := #n
-
-; char-set:graphic is Category L* + Category N* + Category M* + Category S* + Category P*
-char-set:graphic     := #n
-
-; char-set:printing is char-set:graphic + char-set:whitespace
-char-set:printing    := #n
-
-; char-set:whitespace is Property White_Space
-char-set:whitespace  := #n
-
-; char-set:iso-control is 0000..001F + 007F..009F
-char-set:iso-control := #n
-
-; char-set:punctuation is Category P*
-char-set:punctuation := #n
-
-; char-set:symbol is Category S*
-char-set:symbol      := #n
-
-; char-set:hex-digit is 0030..0039 + 0041..0046 + 0061..0066
-char-set:hex-digit   := #n
-
-; char-set:blank is Category Zs + 0009
-char-set:blank       := #n
-
-; char-set:ascii is 0000..007F
-char-set:ascii       := #n
-
-; char-set:empty is empty
-char-set:empty       := #n
-
-; char-set:full is full == ~ empty
-char-set:full        := #n
-
-; char-set:nonl is char-set:full excl. #\{newline}
-char-set:nonl        := #n
-
-; char-set:control is Property Control
-char-set:control     := #n
-
-; char-set:word-constituent is char-set:letter+digit + _
-char-set:word-constituent := #n
-
-; char-set:cased is char-set:upper-case char-set:lower-case char-set:title-case
-char-set:cased := #n
-
-; %char-set:letter is char-set:letter restricted to ASCII range
-%char-set:letter     := #n
-
-; %char-set:lower-case is char-set:lower-case restricted to ASCII range
-%char-set:lower-case := #n
-
-; %char-set:upper-case is char-set:upper-case restricted to ASCII range
-%char-set:upper-case := #n
-
-; %char-set:digit is char-set:digit restricted to ASCII range
-%char-set:digit      := #n
-
-; %char-set:letter+digit is char-set:letter+digit restricted to ASCII range
-%char-set:letter+digit := #n
-
-; %char-set:punctuation is char-set:punctuation restricted to ASCII range
-%char-set:punctuation := #n
-
-; %char-set:symbol is char-set:symbol restricted to ASCII range
-%char-set:symbol     := #n
-
-; %char-set:graphic is char-set:graphic restricted to ASCII range
-%char-set:graphic    := #n
-
-; %char-set:whitespace is char-set:whitespace restricted to ASCII range
-%char-set:whitespace := #n
-
-; %char-set:printing is char-set:printing restricted to ASCII range
-%char-set:printing   := #n
-
-; %char-set:iso-control is char-set:iso-control restricted to ASCII range
-%char-set:iso-control := #n
-
-; %char-set:word-constituent is char-set:word-constituent restricted to ASCII range
-%char-set:word-constituent := #n
-
-; char-set:regional-indicator is Property Regional_Indicator
-char-set:regional-indicator := #n
-
-; char-set:extend-or-spacing-mark is Property Extend + Property SpacingMark
-char-set:extend-or-spacing-mark := #n
-
-; char-set:hangul-l is Property L
-char-set:hangul-l := #n
-
-; char-set:hangul-v is Property V
-char-set:hangul-v := #n
-
-; char-set:hangul-t is Property T
-char-set:hangul-t := #n
-
-; char-set:hangul-lv is Property LV
-char-set:hangul-lv := #n
-
-; char-set:hangul-lvt is Property LVT
-char-set:hangul-lvt := #n
-
-; Simple uppercase mapping (single character result)
-char-set:simple-upper-case-map := #n
-
-; Simple lowercase mapping (single character result)
-char-set:simple-lower-case-map := #n
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-define-struct sparse-char-set size planes
+define-struct-accessors-only sparse-char-set size planes
 
 define (sparse-char-set-as-string scs seen-scss) {
   if (sparse-char-set? scs) {
@@ -368,10 +160,6 @@ elements in the char-set finding the other case.  In principle it has
 to do this twice, once for a lower-to-upper conversion and a second
 for upper-to-lower.  Calling a function a million times where many of
 the referenced elemnts were 0, ie. not present, took several seconds.
-
-Even when simply looping over the hash tables of
-char-set-simple-*-case-map at 1300-odd entries each, checking to see
-if each entry existed in the char-set, it was still multiple seconds.
 
 This is compounded in the particular case of a regular expression of
 the form '(w/nocase "my string") which, by the nature of SRFI-115, is
@@ -518,8 +306,7 @@ Return the uppercase variant of ``cp`` if one exists or cp
 :return: uppercase variant of ``cp``
 :rtype: integer
 "  {
-  uc-cp := hash-ref char-set:simple-upper-case-map cp #f
-  if uc-cp uc-cp cp
+  ->Uppercase cp
 }
 
 define (char-downcase cp) "
@@ -530,8 +317,7 @@ Return the lowercase variant of ``cp`` if one exists or cp
 :return: lowercase variant of ``cp``
 :rtype: integer
 "{
-  lc-cp := hash-ref char-set:simple-lower-case-map cp #f
-  if lc-cp lc-cp cp
+  ->Lowercase cp
 }
 
 define (char-set-ref cs cp) "
@@ -922,17 +708,5 @@ Invoke `f` on each code point in char-set `cs` and `v` returning the accumulated
    })
    (else (error 'fold-char-set "not a char-set" cs)))
 }
-
-; conditionally load in the real definitions for char-set:*
-(cond
- ((memq 'ASCII *subfeatures*) {
-   load "unicode.ASCII"
- })
- ((memq 'BMP0 *subfeatures*) {
-   load "unicode.BMP0"
- })
- (else {
-   load "unicode.full"
- }))
 
 provide SRFI-14

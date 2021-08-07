@@ -92,9 +92,17 @@ usi-error-load "usi-errors/LVT-bad-type.idio" "bad parameter type: '#t' a CONSTA
 usi-error-load "usi-errors/ZWJ-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode|string"
 usi-error-load "usi-errors/Fractional_Number-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode|string"
 
+usi-error-load "usi-errors/2Lowercase-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
+
+usi-error-load "usi-errors/2Uppercase-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
+
+usi-error-load "usi-errors/2Titlecase-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
+
+usi-error-load "usi-errors/ASCII-Decimal_Number-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
+
 usi-error-load "usi-errors/numeric-value-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
 usi-error-load "usi-errors/numeric-value-not-a-number.idio" "numeric-value code point='a': is not a number"
 
 
 ;; all done?
-Tests? (usi-error0 + 27)
+Tests? (usi-error0 + 31)

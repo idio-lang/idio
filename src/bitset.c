@@ -806,6 +806,29 @@ logical eXclusive OR the bitsets		\n\
     return r;
 }
 
+IDIO idio_not_bitset (IDIO bs)
+{
+    IDIO_ASSERT (bs);
+
+    IDIO_TYPE_ASSERT (bitset, bs);
+
+    IDIO r = idio_copy (bs, IDIO_COPY_SHALLOW);
+
+    size_t bs_size = IDIO_BITSET_SIZE (bs);
+
+    size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD;
+    int excess = bs_size % IDIO_BITSET_BITS_PER_WORD;
+    if (excess) {
+	n_ul += 1;
+    }
+    size_t i;
+    for (i = 0; i < n_ul; i++) {
+	IDIO_BITSET_WORDS (r, i) = ~ IDIO_BITSET_WORDS (bs, i);
+    }
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("not-bitset", not_bitset, (IDIO bs), "bs", "\
 logical complement of the bitset		\n\
 						\n\
@@ -823,21 +846,7 @@ logical complement of the bitset		\n\
      */
     IDIO_USER_TYPE_ASSERT (bitset, bs);
 
-    IDIO r = idio_copy (bs, IDIO_COPY_SHALLOW);
-
-    size_t bs_size = IDIO_BITSET_SIZE (bs);
-
-    size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD;
-    int excess = bs_size % IDIO_BITSET_BITS_PER_WORD;
-    if (excess) {
-	n_ul += 1;
-    }
-    size_t i;
-    for (i = 0; i < n_ul; i++) {
-	IDIO_BITSET_WORDS (r, i) = ~ IDIO_BITSET_WORDS (bs, i);
-    }
-
-    return r;
+    return idio_not_bitset (bs);
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("subtract-bitset", subtract_bitset, (IDIO args), "[bs ...]", "\

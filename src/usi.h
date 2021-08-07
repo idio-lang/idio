@@ -14,7 +14,6 @@
 #define IDIO_USI_PAGE_MASK	((1 << 7) - 1)
 
 typedef enum {
-  IDIO_USI_FLAG_Invalid               =        0UL,	/* Invalid */
   IDIO_USI_FLAG_Titlecase_Letter      =        1UL,	/* Category Titlecase_Letter */
   IDIO_USI_FLAG_Letter                =        2UL,	/* Category Letter */
   IDIO_USI_FLAG_Mark                  =        4UL,	/* Category Mark */
@@ -46,7 +45,6 @@ typedef enum {
 
 
 typedef enum {
-  IDIO_USI_CATEGORY_Invalid,
   IDIO_USI_CATEGORY_Lu,
   IDIO_USI_CATEGORY_Ll,
   IDIO_USI_CATEGORY_Lt,

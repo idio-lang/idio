@@ -23,6 +23,11 @@
 #ifndef UNICODE_H
 #define UNICODE_H
 
+#define IDIO_UNICODE_PLANE_COUNT	17
+#define IDIO_UNICODE_PLANE_SIZE		0x10000
+#define IDIO_UNICODE_PLANE_MASK		0xFFFF
+#define IDIO_UNICODE_SIZE		IDIO_UNICODE_PLANE_COUNT * IDIO_UNICODE_PLANE_SIZE
+
 /*
  * The following values are x12 to avoid unnecessary shifts
  */

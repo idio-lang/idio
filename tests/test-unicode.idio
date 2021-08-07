@@ -110,94 +110,94 @@ test (unicode=? #\{{} #\{lbrace} #U+7b) #t
 ; These examples are the first in UnicodeData.txt/PropList.txt!
 
 ; Uppercase (Lu) - 0041;LATIN CAPITAL LETTER A
-test (unicode-alphabetic? #\A)       #t
+test (Alphabetic? #\A)       #t
 ; Lowercase (Ll) - 0061;LATIN SMALL LETTER A
-test (unicode-alphabetic? #\a)       #t
+test (Alphabetic? #\a)       #t
 ; Lt (Titlecase letter) - U+01C5;LATIN CAPITAL LETTER D WITH SMALL LETTER Z WITH CARON
-test (unicode-alphabetic? #U+01c5)   #t
+test (Alphabetic? #U+01c5)   #t
 ; Lm (Modifier letter) - 02B0;MODIFIER LETTER SMALL H
-test (unicode-alphabetic? #U+02b0)   #t
+test (Alphabetic? #U+02b0)   #t
 ; Lo (Other letter) - 00AA;FEMININE ORDINAL INDICATOR
-test (unicode-alphabetic? #U+aa)     #t
+test (Alphabetic? #U+aa)     #t
 ; Nl (Letter number) - 16EE;RUNIC ARLAUG SYMBOL
-test (unicode-alphabetic? #U+16EE)   #t
+test (Alphabetic? #U+16EE)   #t
 ; Other_Alphabetic - 0345;COMBINING GREEK YPOGEGRAMMENI
-test (unicode-alphabetic? #U+0345)   #t
+test (Alphabetic? #U+0345)   #t
 
 ; some things that are not Alphabetic
 ; White_Space - 0020;SPACE (technically, U+0009 is first!)
-test (unicode-alphabetic? #\{space}) #f
+test (Alphabetic? #\{space}) #f
 ; Terminal_Punctuation - 0021;EXCLAMATION MARK
-test (unicode-alphabetic? #\!)       #f
+test (Alphabetic? #\!)       #f
 ; Hex_Digit - 0030;DIGIT ZERO
-test (unicode-alphabetic? #\0)       #f
+test (Alphabetic? #\0)       #f
 ; Diacritic - 005E;CIRCUMFLEX ACCENT
-test (unicode-alphabetic? #U+5E)     #f
+test (Alphabetic? #U+5E)     #f
 
-test (unicode-numeric?	#\0)     #t
-test (unicode-numeric?	#U+0030) #t
-test (unicode-numeric?	#\a)     #f
-test (unicode-numeric?	#\-)     #f
+test (Decimal_Number?	#\0)     #t
+test (Decimal_Number?	#U+0030) #t
+test (Decimal_Number?	#\a)     #f
+test (Decimal_Number?	#\-)     #f
 ; Nl (Letter number) - 16EE;RUNIC ARLAUG SYMBOL
-test (unicode-numeric?	#U+16EE) #f
+test (Decimal_Number?	#U+16EE) #f
 
-test (unicode-whitespace? #\0)                   #f
-test (unicode-whitespace? #\a)                   #f
-test (unicode-whitespace? #\ )                   #t
-test (unicode-whitespace? #\{space})             #t
-test (unicode-whitespace? #U+0020)               #t
-test (unicode-whitespace? (integer->unicode 32)) #t
-test (unicode-whitespace? #\{newline})           #t
-test (unicode-whitespace? #U+000A)               #t
-test (unicode-whitespace? (integer->unicode 10)) #t
+test (White_Space? #\0)                   #f
+test (White_Space? #\a)                   #f
+test (White_Space? #\ )                   #t
+test (White_Space? #\{space})             #t
+test (White_Space? #U+0020)               #t
+test (White_Space? (integer->unicode 32)) #t
+test (White_Space? #\{newline})           #t
+test (White_Space? #U+000A)               #t
+test (White_Space? (integer->unicode 10)) #t
 
-test (unicode-downcase #\a) #\a
-test (unicode-downcase #\A) #\a
-test (unicode-downcase #\!) #\!
-test (unicode-downcase #\0) #\0
+test (->Lowercase #\a) #\a
+test (->Lowercase #\A) #\a
+test (->Lowercase #\!) #\!
+test (->Lowercase #\0) #\0
 
-test (unicode-lower-case? #\a) #t
-test (unicode-lower-case? #\A) #f
-test (unicode-lower-case? #\!) #f
-test (unicode-lower-case? #\0) #f
+test (Lowercase? #\a) #t
+test (Lowercase? #\A) #f
+test (Lowercase? #\!) #f
+test (Lowercase? #\0) #f
 
-test (unicode-upcase #\a) #\A
-test (unicode-upcase #\A) #\A
-test (unicode-upcase #\!) #\!
-test (unicode-upcase #\0) #\0
+test (->Uppercase #\a) #\A
+test (->Uppercase #\A) #\A
+test (->Uppercase #\!) #\!
+test (->Uppercase #\0) #\0
 
-test (unicode-upper-case? #\a) #f
-test (unicode-upper-case? #\A) #t
-test (unicode-upper-case? #\!) #f
-test (unicode-upper-case? #\0) #f
+test (Uppercase? #\a) #f
+test (Uppercase? #\A) #t
+test (Uppercase? #\!) #f
+test (Uppercase? #\0) #f
 
 c1 := #U+130				; 0130;LATIN CAPITAL LETTER I WITH DOT ABOVE
-test (unicode-upper-case? c1) #t
-test (unicode-lower-case? c1) #f
-c2 := unicode-downcase c1		; 0069;LATIN SMALL LETTER I
-test (unicode-upper-case? c2) #f
-test (unicode-lower-case? c2) #t
-c3 := unicode-upcase c2			; 0049;LATIN CAPITAL LETTER I
-test (unicode-upper-case? c3) #t
-test (unicode-lower-case? c3) #f
-c4 := unicode-downcase c3		; 0069;LATIN SMALL LETTER I
-test (unicode-upper-case? c4) #f
-test (unicode-lower-case? c4) #t
+test (Uppercase? c1) #t
+test (Lowercase? c1) #f
+c2 := ->Lowercase c1			; 0069;LATIN SMALL LETTER I
+test (Uppercase? c2) #f
+test (Lowercase? c2) #t
+c3 := ->Uppercase c2			; 0049;LATIN CAPITAL LETTER I
+test (Uppercase? c3) #t
+test (Lowercase? c3) #f
+c4 := ->Lowercase c3			; 0069;LATIN SMALL LETTER I
+test (Uppercase? c4) #f
+test (Lowercase? c4) #t
 
 ;; start with a Titlecase character, neither upper nor lower case!
 l1 := #U+01C8				; 01C8;LATIN CAPITAL LETTER L WITH SMALL LETTER J
-test (unicode-upper-case? l1) #f
-test (unicode-lower-case? l1) #f
+test (Uppercase? l1) #f
+test (Lowercase? l1) #f
 ; force the upcase conversion from Titlecase!
-l2 := unicode-upcase l1 #t		; 01C7;LATIN CAPITAL LETTER LJ
-test (unicode-upper-case? l2) #t
-test (unicode-lower-case? l2) #f
-l3 := unicode-downcase l2		; 01C9;LATIN SMALL LETTER LJ
-test (unicode-upper-case? l3) #f
-test (unicode-lower-case? l3) #t
-l4 := unicode-upcase l3			; 01C7;LATIN CAPITAL LETTER LJ
-test (unicode-upper-case? l4) #t
-test (unicode-lower-case? l4) #f
+l2 := ->Uppercase l1			; 01C7;LATIN CAPITAL LETTER LJ
+test (Uppercase? l2) #t
+test (Lowercase? l2) #f
+l3 := ->Lowercase l2			; 01C9;LATIN SMALL LETTER LJ
+test (Uppercase? l3) #f
+test (Lowercase? l3) #t
+l4 := ->Uppercase l3			; 01C7;LATIN CAPITAL LETTER LJ
+test (Uppercase? l4) #t
+test (Lowercase? l4) #f
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

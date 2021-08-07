@@ -145,14 +145,13 @@ define (flag-clear a b)		(and-bitset a (not-bitset b))
 define (char-set-ci cset) {
   cased := (char-set)
   char-set-for-each-set cset (function (ch) {
+				uc := integer->unicode ch
 				(cond
-				 ((char-set-ref char-set:lower-case ch) {
-				   uc := hash-ref char-set:simple-upper-case-map ch #f
-				   if uc (char-set-set! cased uc)
+				 ((Lowercase? uc) {
+				   char-set-set! cased (->Uppercase uc)
 				 })
-				 ((char-set-ref char-set:upper-case ch) {
-				   lc := hash-ref char-set:simple-lower-case-map ch #f
-				   if lc (char-set-set! cased lc)
+				 ((Uppercase? uc) {
+				   char-set-set! cased (->Lowercase uc)
 				 }))
   })
   ior-char-set cset cased
