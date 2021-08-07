@@ -1,0 +1,2 @@
+
+find-lib (append-string "/" (make-string (C/->integer PATH_MAX) #\A))

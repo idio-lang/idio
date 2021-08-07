@@ -123,6 +123,14 @@ void idio_module_table_register (void (*ap_func) (void), void (*f_func) (void))
 	}
 	idio_final_table.table[idio_final_table.used++] = f_func;
     }
+
+    /*
+     * If we are already running, rather than in bootstrap (or
+     * shutdown??)  then call the add_primitives function now.
+     */
+    if (IDIO_STATE_RUNNING == idio_state) {
+	(ap_func) ();
+    }
 }
 
 void idio_module_table_remove (idio_module_table_t *table, void (*func) (void))

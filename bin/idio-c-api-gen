@@ -341,13 +341,13 @@ define (Idio-identifier word) {
 for-each (function (lib-n) {
 	    lib-dn := find-ext-dir lib-n
 	    if (d? lib-dn) {
-	      src-dn := sprintf "%s/src" lib-dn
+	      api-dn := sprintf "%s/api" lib-dn
 
 	      api-bn := sprintf "%s-api" lib-n
-	      api-c-fn := sprintf "%s/%s.c" src-dn api-bn
+	      api-c-fn := sprintf "%s/%s.c" api-dn api-bn
 	      if (r? api-c-fn) {
 		printf "working on %s\n" lib-n
-		api-o-fn := sprintf "%s/%s.o" src-dn api-bn
+		api-o-fn := sprintf "%s/%s.o" api-dn api-bn
 		if (e? api-o-fn) {
 		  delete-file api-o-fn
 		}
@@ -396,7 +396,7 @@ for-each (function (lib-n) {
 		   cwd := PWD
 		   (unwind-protect {
 		     libc/chdir lib-dn
-		     make -C src api-o-fn
+		     make -C api-dn api-o-fn
 		   } {
 		     libc/chdir cwd
 		   })
@@ -545,15 +545,15 @@ for-each (function (lib-n) {
 		     (cond-expand
 		      ((or uname/sysname/FreeBSD
 			   uname/sysname/OpenBSD) {
-			gmake -C src api-o-fn
+			gmake -C api-dn api-o-fn
 			objdump-flags = "-W"
 		      })
 		      (uname/sysname/SunOS {
-			make -C src api-o-fn
+			make -C api-dn api-o-fn
 			objdump-flags = "-W"
 		      })
 		      (else {
-			make -C src api-o-fn
+			make -C api-dn api-o-fn
 		      }))
 		   } {
 		     libc/chdir cwd
