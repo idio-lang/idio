@@ -94,7 +94,7 @@ typedef struct idio_USI_s {
   union {
     const int64_t dec;
     const char *frac;
-  };
+  } u;
 } idio_USI_t;
 
 extern const char *idio_USI_flag_names[];

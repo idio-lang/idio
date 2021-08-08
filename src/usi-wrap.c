@@ -168,16 +168,16 @@ void idio_usi_describe_code_point (idio_unicode_t cp)
     idio_display_C (idio_USI_Category_names[var->category], oh);
     idio_display_C (";;;;", oh);
     if (var->flags & IDIO_USI_FLAG_Fractional_Number) {
-	snprintf (buf, 30, ";;%s;", var->frac);
+	snprintf (buf, 30, ";;%s;", var->u.frac);
 	idio_display_C (buf, oh);
     } else if (var->flags & IDIO_USI_FLAG_Number) {
 	if (IDIO_USI_CATEGORY_Nl == var->category) {
-	    snprintf (buf, 30, ";;%" PRId64 ";", var->dec);
+	    snprintf (buf, 30, ";;%" PRId64 ";", var->u.dec);
 	} else {
 	    /*
 	     * Only a single digit??
 	     */
-	    snprintf (buf, 30, "%" PRId64 ";%" PRId64 ";%" PRId64 ";", var->dec, var->dec, var->dec);
+	    snprintf (buf, 30, "%" PRId64 ";%" PRId64 ";%" PRId64 ";", var->u.dec, var->u.dec, var->u.dec);
 	}
 	idio_display_C (buf, oh);
     } else {
@@ -213,12 +213,12 @@ void idio_usi_describe_code_point (idio_unicode_t cp)
 	    char buf[30];
 	    switch (1 << i) {
 	    case IDIO_USI_FLAG_Fractional_Number:
-		snprintf (buf, 30, "=%s", var->frac);
+		snprintf (buf, 30, "=%s", var->u.frac);
 		idio_display_C (buf, oh);
 		break;
 	    case IDIO_USI_FLAG_Number:
 		if (0 == (var->flags & IDIO_USI_FLAG_Fractional_Number)) {
-		    snprintf (buf, 30, "=%" PRId64, var->dec);
+		    snprintf (buf, 30, "=%" PRId64, var->u.dec);
 		}
 		break;
 	    }
@@ -500,9 +500,9 @@ A consition is raised if ``cp`` is not Numeric.	\n\
     const idio_USI_t *var = idio_USI_codepoint (IDIO_UNICODE_VAL (cp));
 
     if (var->flags & IDIO_USI_FLAG_Fractional_Number) {
-	return idio_string_C (var->frac);
+	return idio_string_C (var->u.frac);
     } else if (var->flags & IDIO_USI_FLAG_Number) {
-	return idio_integer (var->dec);
+	return idio_integer (var->u.dec);
     } else {
 	/*
 	 * Test Case: usi-wrap-errors/numeric-value-not-a-number.idio
