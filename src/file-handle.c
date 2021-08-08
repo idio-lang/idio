@@ -17,14 +17,6 @@
 
 /*
  * file-handle.c
- *
- * This code sits a-top C's standard IO functions which isn't the
- * smartest move.
- *
- * In practice, it means that we, Idio, maintain buffers and state in
- * front of C's standard IO buffers and state.
- *
- * This really needs to be reworked to use read(2)/write(2) direct.
  */
 
 #define _GNU_SOURCE
@@ -44,6 +36,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
+/*
+ * SunOS libc doesn't define memrchr
+ */
+#ifndef memrchr
+#define memrchr(s,c,n) strrchr(s,c)
+#endif
 
 #include "gc.h"
 #include "idio.h"
