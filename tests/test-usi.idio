@@ -80,10 +80,10 @@ test (Symbol? "+$\u5e\ua9z")	#f
 
 test (Separator? #\a)		#f
 test (Separator? #\{space})	#t	; 0020;SPACE;Zs
-test (Separator? #U+2028)	#t	; 2028;LINE SEPARATOR;Zl
-test (Separator? #U+2029)	#t	; 2029;PARAGRAPH SEPARATOR;Zp
-test (Separator? " \u2028\u2029")	#t
-test (Separator? " \u2028\u2029z")	#f
+test (Separator? #U+2028)	#f	; 2028;LINE SEPARATOR;Zl
+test (Separator? #U+2029)	#f	; 2029;PARAGRAPH SEPARATOR;Zp
+test (Separator? " \uA0")	#t	; 00A0;NO-BREAK SPACE;Zs
+test (Separator? " \uA0z")	#f
 
 test (Lowercase? #\a)		#t
 test (Lowercase? #\A)		#f

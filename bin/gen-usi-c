@@ -438,7 +438,7 @@ Nd-flag                 := hash-ref flag-map 'Decimal_Number
 N*-flag                 := hash-ref flag-map 'Number
 P*-flag                 := hash-ref flag-map 'Punctuation
 S*-flag                 := hash-ref flag-map 'Symbol
-Z*-flag                 := hash-ref flag-map 'Separator
+Zs-flag                 := hash-ref flag-map 'Separator
 
 Lowercase-flag          := hash-ref flag-map 'Lowercase
 Uppercase-flag          := hash-ref flag-map 'Uppercase
@@ -573,8 +573,8 @@ define (cat-flags gc) {
    (("Sm" "Sc" "Sk" "So" ) {
      S*-flag
    })
-   (("Zs" "Zl" "Zp") {
-     Z*-flag
+   (("Zs") {
+     Zs-flag
    })
    (else {
      0
@@ -904,7 +904,7 @@ typedef struct idio_USI_s \{
   union \{
     const int64_t dec;
     const char *frac;
-  \};
+  \} u;
 \} idio_USI_t;
 
 extern const char *idio_USI_flag_names[];
