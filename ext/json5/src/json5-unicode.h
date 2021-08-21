@@ -56,6 +56,13 @@ json5_unicode_t json5_unicode_string_peek (json5_unicode_string_t *s, size_t i);
 json5_unicode_t json5_unicode_string_next (json5_unicode_string_t *s);
 void json5_unicode_skip_ws (json5_unicode_string_t *s);
 void json5_unicode_skip_slc (json5_unicode_string_t *s);
-void json5_unicode_skip_mlc (json5_unicode_string_t *s);
+void json5_unicode_skip_bc (json5_unicode_string_t *s);
+
+/*
+ * Not Art
+ */
+#ifndef json5_error_printf
+void json5_error_printf (char *format, ...);
+#endif
 
 #endif

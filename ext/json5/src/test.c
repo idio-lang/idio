@@ -30,6 +30,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,6 +39,53 @@
 #include "json5-unicode.h"
 #include "json5-token.h"
 #include "json5-parser.h"
+
+#ifdef IDIO_MALLOC
+#define JSON5_VASPRINTF idio_malloc_vasprintf
+#else
+#define JSON5_VASPRINTF vasprintf
+#endif
+
+void json5_error_alloc (char *m)
+{
+    assert (m);
+
+    /*
+     * This wants to be a lean'n'mean error "handler" as we've
+     * (probably) run out of memory.  The chances are {m} is a static
+     * string and has been pushed onto the stack so no allocation
+     * there.
+     *
+     * perror(3) ought to be able to work in this situation and in the
+     * end we abort(3).
+     */
+    perror (m);
+    abort ();
+}
+
+char *json5_error_string (char *format, va_list argp)
+{
+    char *s;
+    if (-1 == JSON5_VASPRINTF (&s, format, argp)) {
+	json5_error_alloc ("asprintf");
+    }
+
+    return s;
+}
+
+void json5_error_printf (char *format, ...)
+{
+    assert (format);
+
+    va_list fmt_args;
+    va_start (fmt_args, format);
+    char *msg = json5_error_string (format, fmt_args);
+    va_end (fmt_args);
+
+    fprintf (stderr, "ERROR: %s\n", msg);
+    free (msg);
+    exit (1);
+}
 
 void json5_value_print (json5_value_t *v, int depth);
 
@@ -112,9 +160,10 @@ void json5_value_object_print (json5_object_t *o, int depth)
 	    printf ("\"");
 	    break;
 	default:
-	    fprintf (stderr, "?member %d?\n", m->type);
-	    exit (1);
-	    break;
+	    json5_error_printf ("?member %d?", m->type);
+
+	    /* notreached */
+	    return;
 	}
 	printf (": ");
 
@@ -132,9 +181,10 @@ void json5_value_object_print (json5_object_t *o, int depth)
 void json5_value_print (json5_value_t *v, int depth)
 {
     if (NULL == v) {
-	fprintf (stderr, "_print: NULL?\n");
-	assert (0);
-	exit (1);
+	json5_error_printf ("_print: NULL?");
+
+	/* notreached */
+	return;
     }
 
     switch (v->type) {
@@ -154,10 +204,10 @@ void json5_value_print (json5_value_t *v, int depth)
 	    printf ("false");
 	    break;
 	default:
-	    assert (0);
-	    fprintf (stderr, "?literal %d?\n", v->u.l);
-	    exit (1);
-	    break;
+	    json5_error_printf ("?literal %d?", v->u.l);
+
+	    /* notreached */
+	    return;
 	}
 	break;
     case JSON5_VALUE_STRING:
@@ -197,9 +247,116 @@ void json5_value_print (json5_value_t *v, int depth)
 	json5_value_array_print (v->u.a, depth + 1);
 	break;
     default:
-	fprintf (stderr, "?value %d?\n", v->type);
-	exit (1);
+	json5_error_printf ("?value %d?", v->type);
+	/* notreached */
+	return;
+    }
+}
+
+void json5_value_free (json5_value_t *v);
+
+void json5_value_array_free (json5_array_t *a)
+{
+    if (NULL == a) {
+	return;
+    }
+
+    for (; NULL != a;) {
+	json5_value_free (a->element);
+	json5_array_t *pa = a;
+	a = a->next;
+	free (pa);
+    }
+}
+
+void json5_value_object_free (json5_object_t *o)
+{
+    if (NULL == o) {
+	return;
+    }
+
+    for (; NULL != o;) {
+	json5_member_t *m = o->member;
+
+	switch (m->type) {
+	case JSON5_MEMBER_IDENTIFIER:
+	    free (m->name->s);
+	    free (m->name);
+	    break;
+	case JSON5_MEMBER_STRING:
+	    free (m->name->s);
+	    free (m->name);
+	    break;
+	default:
+	    json5_error_printf ("?member %d?", m->type);
+
+	    /* notreached */
+	    return;
+	}
+
+	json5_value_free (m->value);
+
+	free (m);
+
+	json5_object_t *po = o;
+	o = o->next;
+	free (po);
+    }
+}
+
+void json5_value_free (json5_value_t *v)
+{
+    if (NULL == v) {
+	json5_error_printf ("_free: NULL?");
+
+	/* notreached */
+	return;
+    }
+
+    switch (v->type) {
+    case JSON5_VALUE_NULL:
+	free (v);
 	break;
+    case JSON5_VALUE_BOOLEAN:
+	switch (v->u.l) {
+	case JSON5_LITERAL_NULL:
+	    /* shouldn't get here */
+	    printf ("null?");
+	    break;
+	case JSON5_LITERAL_TRUE:
+	    free (v);
+	    break;
+	case JSON5_LITERAL_FALSE:
+	    free (v);
+	    break;
+	default:
+	    json5_error_printf ("?literal %d?", v->u.l);
+
+	    /* notreached */
+	    return;
+	}
+	break;
+    case JSON5_VALUE_STRING:
+	free (v->u.s->s);
+	free (v->u.s);
+	free (v);
+	break;
+    case JSON5_VALUE_NUMBER:
+	free (v->u.n);
+	free (v);
+	break;
+    case JSON5_VALUE_OBJECT:
+	json5_value_object_free (v->u.o);
+	free (v);
+	break;
+    case JSON5_VALUE_ARRAY:
+	json5_value_array_free (v->u.a);
+	free (v);
+	break;
+    default:
+	json5_error_printf ("?value %d?", v->type);
+	/* notreached */
+	return;
     }
 }
 
@@ -216,23 +373,31 @@ int main (int argc, char **argv)
 
 	    json5_value_t *v = json5_parse_fd (fd);
 
+	    if (NULL == v) {
+		json5_error_printf ("No JSON5 from %s", argv[i]);
+
+		/* notreached */
+		return 1;
+	    }
+
 	    json5_value_print (v, 0);
 	    printf ("\n");
+
+	    json5_value_free (v);
 
 	    if (close (fd) == -1) {
 		perror ("close");
 		exit (1);
-	    }
-
-	    if (NULL == v) {
-		fprintf (stderr, "No JSON5 from %s\n", argv[i]);
 	    }
 	}
     } else {
 	json5_value_t *v = json5_parse_fd (0);
 
 	if (NULL == v) {
-	    fprintf (stderr, "No JSON5 from stdin\n");
+	    json5_error_printf ("No JSON5 from stdin");
+
+	    /* notreached */
+	    return 1;
 	}
     }
 

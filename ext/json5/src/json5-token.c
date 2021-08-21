@@ -47,6 +47,7 @@ static const char *json5_ECMA_keywords[] = {
     "debugger",	"function",	"this",		"with",
     "default",	"if",		"throw",
     "delete",	"in",		"try",
+    0
 };
 
 /*
@@ -57,13 +58,29 @@ static const char *json5_ECMA_future[] = {
     "const",		"export",	"import",
     "implements",	"let",		"private",	"public",	"yield",
     "interface",	"package",	"protected",	"static",
+    0
 };
+
+json5_token_t *json5_token_free_next (json5_token_t *ct)
+{
+    json5_token_t *pt = ct;
+    ct = ct->next;
+    switch (pt->type) {
+    case JSON5_TOKEN_PUNCTUATOR:
+	free (pt->value);
+	break;
+    default:
+	break;
+    }
+    free (pt);
+    return ct;
+}
 
 /*
  * UES - UnicodeEscapeSequence only for Identifiers,
  * https://262.ecma-international.org/5.1/#sec-7.8.4
  */
-static json5_unicode_string_t *json5_token_UES_identifier (json5_unicode_string_t *s, size_t start, size_t end, int UES)
+static json5_unicode_string_t *json5_token_UES_identifier (json5_unicode_string_t *s, size_t start, size_t end)
 {
     json5_unicode_string_t *so = (json5_unicode_string_t *) malloc (sizeof (json5_unicode_string_t));
     so->width = s->width;
@@ -71,21 +88,29 @@ static json5_unicode_string_t *json5_token_UES_identifier (json5_unicode_string_
     so->i = 0;
     so->s = (char *) malloc (so->len * so->width);
 
-    for (size_t i = start; i < end; i++) {
-	json5_unicode_t cp = json5_unicode_string_peek (s, i);
+    s->i = start;
+    for (size_t i = start; s->i < end; i++) {
+	json5_unicode_t cp = json5_unicode_string_next (s);
 
 	if ('\\' == cp) {
 	    json5_unicode_t ecp;
 	    if (json5_ECMA_UnicodeEscapeSequence (s, &ecp)) {
 		cp = ecp;
 	    } else {
-		fprintf (stderr, "_token_esc_id: failed to recognise UES at %zd in %zd - %zd\n", i, start, end);
-		exit (1);
+		json5_error_printf ("_token_esc_id: failed to recognise UES at %zd in %zd - %zd", i, start, end);
+
+		/* notreached */
+		return NULL;
 	    }
 	}
 
 	json5_unicode_string_set (so, so->i++, cp);
     }
+
+    /*
+     * Set the actual string length
+     */
+    so->len = so->i;
 
     return so;
 }
@@ -131,7 +156,7 @@ static json5_token_t *json5_token_string (json5_unicode_string_t *s, const json5
 
     for (; s->i < s->len;) {
 	size_t start = s->i;
-	json5_unicode_t cp = json5_unicode_string_peek (s, s->i);
+	json5_unicode_t cp = json5_unicode_string_peek (s, start);
 
 	if (delim == cp) {
 	    json5_unicode_string_next (s);
@@ -140,8 +165,10 @@ static json5_token_t *json5_token_string (json5_unicode_string_t *s, const json5
 
 	json5_unicode_t ecp;
 	if (json5_ECMA_LineTerminator (s, &ecp)) {
-	    fprintf (stderr, "token_string: unexpected LineTerminator %#04X at %zd in %zd - %zd\n", ecp, s->i, token->start, i);
-	    exit (1);
+	    json5_error_printf ("token_string: unexpected LineTerminator %#04X at %zd in %zd - %zd", ecp, s->i, token->start, i);
+
+	    /* notreached */
+	    return NULL;
 	}
 
 	if ('\\' == cp) {
@@ -158,6 +185,11 @@ static json5_token_t *json5_token_string (json5_unicode_string_t *s, const json5
 
 	json5_unicode_string_set (so, so->i++, cp);
     }
+
+    /*
+     * Set the actual string length
+     */
+    so->len = so->i;
 
     token->end = s->i;
 
@@ -182,6 +214,7 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
     int leading_0 = 1;
     int in_exp = 0;
     int exp_sign = 0;
+    int digits = 0;
 
     int done = 0;
     for (; s->i < s->len;) {
@@ -192,8 +225,10 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 	case '-':
 	    if (in_exp) {
 		if (exp_sign) {
-		    fprintf (stderr, "_number: double signed exp %zd\n", s->i - 2);
-		    exit (1);
+		    json5_error_printf ("_number: double signed exp %zd", s->i - 2);
+
+		    /* notreached */
+		    return NULL;
 		} else {
 		    exp_sign = 1;
 		    if ('-' == cp) {
@@ -202,8 +237,10 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 		}
 	    } else {
 		if (sign) {
-		    fprintf (stderr, "_number: double signed %zd\n", s->i - 2);
-		    exit (1);
+		    json5_error_printf ("_number: double signed %zd", s->i - 2);
+
+		    /* notreached */
+		    return NULL;
 		} else {
 		    sign = 1;
 		    if ('-' == cp) {
@@ -214,41 +251,71 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 	    break;
 
 	case '0':
-	    {
-		if (leading_0) {
-		    leading_0 = 0;
-		    json5_unicode_t cp1 = json5_unicode_string_peek (s, s->i);
+	    if (leading_0) {
+		leading_0 = 0;
+		json5_unicode_t cp1 = json5_unicode_string_peek (s, s->i);
 
-		    switch (cp1) {
-		    case '.':	/* 0. */
-			integer = 0;
-		    case 'e':	/* 0e */
-		    case 'E':	/* 0E */
-			s->i++;
-			break;
+		switch (cp1) {
+		case '.':	/* 0. */
+		    integer = 0;
+		case 'e':	/* 0e */
+		case 'E':	/* 0E */
+		    s->i++;
+		    digits++;
+		    break;
 
-		    case 'x':	/* 0x */
-		    case 'X':	/* 0X */
-			dec = 0;
-			s->i++;
-			break;
+		case 'x':	/* 0x */
+		case 'X':	/* 0X */
+		    dec = 0;
+		    s->i++;
+		    /* XXX no digits yet */
+		    break;
 
-		    default:
-			{
-			    if (json5_ECMA_IdentifierStart (cp1, s) ||
-				isdigit (cp1)) {
-				fprintf (stderr, "_number: leading zero: 0%c %04X at %zd\n", cp1, cp1, s->i - 1);
-				exit (1);
-			    }
+		default:
+		    {
+			size_t start = s->i;
+			if (json5_ECMA_IdentifierStart (cp1, s) ||
+			    isdigit (cp1)) {
+			    json5_error_printf ("_number: leading zero: 0%c %04X at %zd", cp1, cp1, s->i - 1);
+
+			    /* notreached */
+			    return NULL;
 			}
-
+			s->i = start;
+			digits++;
 		    }
+
 		}
+	    } else {
+		digits++;
 	    }
 	    break;
 
 	case '.':
 	    integer = 0;
+	    if (in_exp) {
+		/*
+		 * I wouldn't classify 1e2.3 as an error of having a
+		 * floating point exponent but rather that someone has
+		 * appended .2 to a valid number.
+		 *
+		 * I think that way because only integer exponents are
+		 * valid numbers,
+		 * https://262.ecma-international.org/5.1/#sec-7.8.3,
+		 * and that to identify floating point exponents
+		 * implies testing a potential grammar rather than
+		 * sticking to a defined grammar.
+		 *
+		 * We only look out for it because
+		 * https://github.com/json5/json5-tests claims it is
+		 * an error.
+		 */
+		json5_error_printf ("_number: floating point exponent at %zd", s->i);
+
+		/* notreached */
+		return NULL;
+	    }
+	    break;
 	case '1':
 	case '2':
 	case '3':
@@ -259,6 +326,7 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 	case '8':
 	case '9':
 	    leading_0 = 0;
+	    digits++;
 	    break;
 
 	case 'a':
@@ -274,11 +342,14 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 	case 'E':
 	case 'F':
 	    leading_0 = 0;
+	    digits++;
 	    if (dec) {
 		if (!('e' == cp ||
 		      'E' == cp)) {
-		    fprintf (stderr, "_number: hex in dec : %c at %zd\n", cp, s->i);
-		    exit (1);
+		    json5_error_printf ("_number: hex in dec : %c at %zd", cp, s->i);
+
+		    /* notreached */
+		    return NULL;
 		}
 		in_exp = 1;
 		integer = 0;
@@ -294,6 +365,12 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 		token->value->u.n = (json5_number_t *) malloc (sizeof (json5_number_t));
 		token->value->u.n->type = -1 ==sign ? JSON5_NUMBER_NEG_INFINITY : JSON5_NUMBER_INFINITY;
 
+		/*
+		 * We haven't strictly seen any digits but we have
+		 * seen a JSON5 number
+		 */
+		digits++;
+
 		s->i += 8;	/* pretend to go one over */
 		done = 1;
 	    } else if ('N' == cp &&
@@ -303,6 +380,12 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 		token->value->type = JSON5_VALUE_NUMBER;
 		token->value->u.n = (json5_number_t *) malloc (sizeof (json5_number_t));
 		token->value->u.n->type = -1 == sign ? JSON5_NUMBER_NEG_NAN : JSON5_NUMBER_NAN;
+
+		/*
+		 * We haven't strictly seen any digits but we have
+		 * seen a JSON5 number
+		 */
+		digits++;
 
 		s->i += 3;	/* pretend to go one over */
 		done = 1;
@@ -323,18 +406,27 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
     s->i--;
     token->end = s->i;
 
+    if (0 == digits) {
+	json5_error_printf ("_number: no digits at %zd", s->i);
+
+	/* notreached */
+	return NULL;
+    }
+
     /*
      * XXX must not be followed by an IdentifierStart or DecimalDigit
      */
     json5_unicode_t cp = json5_unicode_string_peek (s, s->i);
 
+    size_t start = token->start;
+
     if (json5_ECMA_IdentifierStart (cp, s) ||
 	isdigit (cp)) {
-	fprintf (stderr, "_number: followed by: %04X at %zd\n", cp, s->i);
-	exit (1);
-    }
+	json5_error_printf ("_number: followed by: %04X at %zd", cp, s->i);
 
-    size_t start = token->start;
+	/* notreached */
+	return NULL;
+    }
 
     cp = json5_unicode_string_peek (s, start);
     if ('+' == cp ||
@@ -486,23 +578,27 @@ static json5_token_t *json5_token_identifier (json5_unicode_string_t *s)
     } else {
 	token->value = (json5_value_t *) malloc (sizeof (json5_value_t));
 	token->value->type = JSON5_VALUE_IDENTIFIER;
-	token->value->u.s = json5_token_UES_identifier (s, token->start, token->end, 1);
+	token->value->u.s = json5_token_UES_identifier (s, token->start, token->end);
 
 	size_t slen = token->end - token->start;
 	for (const char **k = json5_ECMA_keywords; *k; k++) {
 	    size_t klen = strlen (*k);
 	    if (slen == klen &&
 		json5_unicode_string_n_equal (s, *k, klen)) {
-		fprintf (stderr, "identifier is a keyword: %s\n", *k);
-		exit (1);
+		json5_error_printf ("identifier is a keyword: %s", *k);
+
+		/* notreached */
+		return NULL;
 	    }
 	}
 	for (const char **frw = json5_ECMA_future; *frw; frw++) {
 	    size_t frwlen = strlen (*frw);
 	    if (slen == frwlen &&
 		json5_unicode_string_n_equal (s, *frw, frwlen)) {
-		fprintf (stderr, "identifier is a future reserved word: %s\n", *frw);
-		exit (1);
+		json5_error_printf ("identifier is a future reserved word: %s", *frw);
+
+		/* notreached */
+		return NULL;
 	    }
 	}
     }
@@ -523,8 +619,10 @@ json5_token_t *json5_tokenize (json5_unicode_string_t *s)
 	json5_unicode_skip_ws (s);
 
 	if (s->i >= s->len) {
-	    fprintf (stderr, "_tokenize leading ws -> EOS\n");
-	    break;
+	    json5_error_printf ("_tokenize leading ws -> EOS");
+
+	    /* notreached */
+	    return NULL;
 	}
 
 	size_t start = s->i;
@@ -537,10 +635,12 @@ json5_token_t *json5_tokenize (json5_unicode_string_t *s)
 		if ('/' == cp1) {
 		    json5_unicode_skip_slc (s);
 		} else if ('*' == cp1) {
-		    json5_unicode_skip_mlc (s);
+		    json5_unicode_skip_bc (s);
 		} else {
-		    fprintf (stderr, "_tokenize: unexpected / at %zd\n", s->i - 1);
-		    break;
+		    json5_error_printf ("_tokenize: unexpected / at %zd", s->i - 1);
+
+		    /* notreached */
+		    return NULL;
 		}
 	    }
 	    break;
@@ -578,8 +678,10 @@ json5_token_t *json5_tokenize (json5_unicode_string_t *s)
 		    ct->value->u.p = JSON5_PUNCTUATOR_COMMA;
 		    break;
 		default:
-		    fprintf (stderr, "_tokenize: %04X: missed a punctuation clause\n", cp);
-		    exit (1);
+		    json5_error_printf ("_tokenize: %04X: missed a punctuation clause", cp);
+
+		    /* notreached */
+		    return NULL;
 		}
 		ct->start = start;
 		ct->end = s->i;
@@ -619,15 +721,16 @@ json5_token_t *json5_tokenize (json5_unicode_string_t *s)
 		ct->next = json5_token_identifier (s);
 		ct = ct->next;
 	    } else {
-		fprintf (stderr, "_tokenize + %04X at %zd\n", cp, start);
-		break;
+		json5_error_printf ("_tokenize + %04X at %zd", cp, start);
+
+		/* notreached */
+		return NULL;
 	    }
 	}
 
 	json5_unicode_skip_ws (s);
 
 	if (s->i >= s->len) {
-	    fprintf (stderr, "_tokenize trailing ws -> EOS\n");
 	    break;
 	}
     }
@@ -637,9 +740,12 @@ json5_token_t *json5_tokenize (json5_unicode_string_t *s)
 
 json5_token_t *json5_tokenize_string_C (char *s_C, size_t slen)
 {
-    json5_unicode_string_t *s = json5_utf8_string_C_len (s_C, slen);
+    json5_unicode_string_t *so = json5_utf8_string_C_len (s_C, slen);
 
-    json5_token_t *root = json5_tokenize (s);
+    json5_token_t *root = json5_tokenize (so);
+
+    free (so->s);
+    free (so);
 
     return root;
 }

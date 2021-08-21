@@ -141,10 +141,10 @@ json5_unicode_string_t *json5_utf8_string_C_len (char *s_C, const size_t slen)
 	reqd_bytes = cp_count * 4;
 	break;
     default:
-	{
-	    fprintf (stderr, "UTF-8 decode: unexpected width: %#x\n", width);
-	    return NULL;
-	}
+	json5_error_printf ("UTF-8 decode: unexpected width: %#x", width);
+
+	/* notreached */
+	return NULL;
     }
 
     json5_unicode_string_t *so = (json5_unicode_string_t *) malloc (sizeof (json5_unicode_string_t));
@@ -184,18 +184,15 @@ json5_unicode_string_t *json5_utf8_string_C_len (char *s_C, const size_t slen)
 	    us32[cp_count] = (uint32_t) codepoint;
 	    break;
 	default:
-	    {
-		fprintf (stderr, "UTF-8 decode: unexpected width: %#x\n", width);
-		return NULL;
-	    }
-	    break;
+	    json5_error_printf ("UTF-8 decode: unexpected width: %#x", width);
+
+	    /* notreached */
+	    return NULL;
 	}
     }
 
     so->len = cp_count;
     so->i = 0;
-
-    fprintf (stderr, "string: %zdB to %zd cp / %d\n", slen, so->len, so->width);
 
     return so;
 }

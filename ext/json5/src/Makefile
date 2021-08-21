@@ -4,8 +4,8 @@ include $(TOPDIR)/src/Makefile.common
 ifdef MAKE_DEBUG
 CDEBUG		:= -g
 else
-CDEBUG		:= 
-endif 
+CDEBUG		:=
+endif
 
 CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -I$(PWD) -I$(TOPDIR)/src $(CDEBUG)
 LDFLAGS		:= -L$(PWD) $(LDFLAGS)
@@ -24,16 +24,19 @@ USIOBJS		:= $(patsubst %.c,%.o,$(USISRCS))
 all : libjson5.so
 
 test : test.o libjson5-bare.so
-	$(CC) -o test $^ $(LDFLAGS) -ljson5-bare
+	$(CC) -o test $(LDFLAGS) $^ -ljson5-bare
 
 clean :
-	rm -f *.so *.o *.d
+	rm -f test *.so *.o *.d
 
 debug :
 	$(MAKE) MAKE_DEBUG=1
 
 debug-test :
 	$(MAKE) MAKE_DEBUG=1 test
+
+sanitize-test :
+	$(MAKE) test CDEBUG="-fsanitize=address -g" LDFLAGS="-L$(PWD) -lasan"
 
 libjson5.so : $(LIBOBJS) json5-module.o
 	$(CC) -shared -o $@ $^
