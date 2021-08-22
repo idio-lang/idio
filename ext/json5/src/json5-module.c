@@ -24,11 +24,14 @@
 
 #include <sys/types.h>
 
+#include <assert.h>
 #include <ffi.h>
 #include <setjmp.h>
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "gc.h"
 #include "evaluate.h"
@@ -38,9 +41,58 @@
 #include "vm.h"
 
 #include "json5-module.h"
+#include "json5-unicode.h"
+#include "json5-token.h"
 #include "json5-parser.h"
 
 IDIO idio_json5_module;
+
+#ifdef IDIO_MALLOC
+#define JSON5_VASPRINTF idio_malloc_vasprintf
+#else
+#define JSON5_VASPRINTF vasprintf
+#endif
+
+void json5_error_alloc (char *m)
+{
+    assert (m);
+
+    /*
+     * This wants to be a lean'n'mean error "handler" as we've
+     * (probably) run out of memory.  The chances are {m} is a static
+     * string and has been pushed onto the stack so no allocation
+     * there.
+     *
+     * perror(3) ought to be able to work in this situation and in the
+     * end we abort(3).
+     */
+    perror (m);
+    abort ();
+}
+
+char *json5_error_string (char *format, va_list argp)
+{
+    char *s;
+    if (-1 == JSON5_VASPRINTF (&s, format, argp)) {
+	json5_error_alloc ("asprintf");
+    }
+
+    return s;
+}
+
+void json5_error_printf (char *format, ...)
+{
+    assert (format);
+
+    va_list fmt_args;
+    va_start (fmt_args, format);
+    char *msg = json5_error_string (format, fmt_args);
+    va_end (fmt_args);
+
+    fprintf (stderr, "ERROR: %s\n", msg);
+    free (msg);
+    exit (1);
+}
 
 IDIO_DEFINE_PRIMITIVE0_DS ("hello", json5_hello, (), "", "\
 say hello				\n\

@@ -139,16 +139,15 @@ static json5_token_t *json5_parse_object (json5_token_t *ct, json5_value_t **val
 		object = object->next;
 	    }
 	    object->next = NULL;
-	    object->member = (json5_member_t *) malloc (sizeof (json5_member_t));
-	    object->member->value = NULL;
+	    object->value = NULL;
 
 	    if (JSON5_TOKEN_IDENTIFIER == ct->type) {
-		object->member->type = JSON5_MEMBER_IDENTIFIER;
-		object->member->name = ct->value->u.s;
+		object->type = JSON5_MEMBER_IDENTIFIER;
+		object->name = ct->value->u.s;
 		free (ct->value);
 	    } else if (JSON5_TOKEN_STRING == ct->type) {
-		object->member->type = JSON5_MEMBER_STRING;
-		object->member->name = ct->value->u.s;
+		object->type = JSON5_MEMBER_STRING;
+		object->name = ct->value->u.s;
 		free (ct->value);
 	    } else {
 		json5_error_printf ("_object: identifier|string name expected: ct->type=%d ", ct->type);
@@ -172,7 +171,7 @@ static json5_token_t *json5_parse_object (json5_token_t *ct, json5_value_t **val
 	    break;
 	case VALUE:
 	    {
-		ct = json5_parse_token (ct, &(object->member->value));
+		ct = json5_parse_token (ct, &(object->value));
 
 		if (NULL == ct) {
 		    return ct;

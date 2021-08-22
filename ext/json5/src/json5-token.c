@@ -61,6 +61,107 @@ static const char *json5_ECMA_future[] = {
     0
 };
 
+void json5_value_array_free (json5_array_t *a)
+{
+    if (NULL == a) {
+	return;
+    }
+
+    for (; NULL != a;) {
+	json5_value_free (a->element);
+	json5_array_t *pa = a;
+	a = a->next;
+	free (pa);
+    }
+}
+
+void json5_value_object_free (json5_object_t *o)
+{
+    if (NULL == o) {
+	return;
+    }
+
+    for (; NULL != o;) {
+	switch (o->type) {
+	case JSON5_MEMBER_IDENTIFIER:
+	    free (o->name->s);
+	    free (o->name);
+	    break;
+	case JSON5_MEMBER_STRING:
+	    free (o->name->s);
+	    free (o->name);
+	    break;
+	default:
+	    json5_error_printf ("?member %d?", o->type);
+
+	    /* notreached */
+	    return;
+	}
+
+	json5_value_free (o->value);
+
+	json5_object_t *po = o;
+	o = o->next;
+	free (po);
+    }
+}
+
+void json5_value_free (json5_value_t *v)
+{
+    if (NULL == v) {
+	json5_error_printf ("_free: NULL?");
+
+	/* notreached */
+	return;
+    }
+
+    switch (v->type) {
+    case JSON5_VALUE_NULL:
+	free (v);
+	break;
+    case JSON5_VALUE_BOOLEAN:
+	switch (v->u.l) {
+	case JSON5_LITERAL_NULL:
+	    /* shouldn't get here */
+	    printf ("null?");
+	    break;
+	case JSON5_LITERAL_TRUE:
+	    free (v);
+	    break;
+	case JSON5_LITERAL_FALSE:
+	    free (v);
+	    break;
+	default:
+	    json5_error_printf ("?literal %d?", v->u.l);
+
+	    /* notreached */
+	    return;
+	}
+	break;
+    case JSON5_VALUE_STRING:
+	free (v->u.s->s);
+	free (v->u.s);
+	free (v);
+	break;
+    case JSON5_VALUE_NUMBER:
+	free (v->u.n);
+	free (v);
+	break;
+    case JSON5_VALUE_OBJECT:
+	json5_value_object_free (v->u.o);
+	free (v);
+	break;
+    case JSON5_VALUE_ARRAY:
+	json5_value_array_free (v->u.a);
+	free (v);
+	break;
+    default:
+	json5_error_printf ("?value %d?", v->type);
+	/* notreached */
+	return;
+    }
+}
+
 json5_token_t *json5_token_free_next (json5_token_t *ct)
 {
     json5_token_t *pt = ct;

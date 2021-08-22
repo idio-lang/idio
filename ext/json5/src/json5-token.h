@@ -32,15 +32,11 @@ typedef enum {
     JSON5_MEMBER_IDENTIFIER
 } json5_member_type_t;
 
-typedef struct json5_member_s {
+typedef struct json5_object_s {
+    struct json5_object_s *next;
     json5_member_type_t type;
     json5_unicode_string_t *name;
     struct json5_value_s *value;
-} json5_member_t;
-
-typedef struct json5_object_s {
-    struct json5_object_s *next;
-    json5_member_t *member;
 } json5_object_t;
 
 typedef struct json5_array_s {
@@ -126,6 +122,7 @@ typedef struct json5_token_s {
     json5_value_t *value;
 } json5_token_t;
 
+void json5_value_free (json5_value_t *v);
 json5_token_t *json5_token_free_next (json5_token_t *ct);
 json5_token_t *json5_tokenize_string_C (char *s_C, size_t slen);
 

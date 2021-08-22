@@ -148,26 +148,24 @@ void json5_value_object_print (json5_object_t *o, int depth)
 	printf ("\n");
 	json5_value_print_indent (depth);
 
-	json5_member_t *m = o->member;
-
-	switch (m->type) {
+	switch (o->type) {
 	case JSON5_MEMBER_IDENTIFIER:
-	    json5_unicode_string_print (m->name);
+	    json5_unicode_string_print (o->name);
 	    break;
 	case JSON5_MEMBER_STRING:
 	    printf ("\"");
-	    json5_unicode_string_print (m->name);
+	    json5_unicode_string_print (o->name);
 	    printf ("\"");
 	    break;
 	default:
-	    json5_error_printf ("?member %d?", m->type);
+	    json5_error_printf ("?member %d?", o->type);
 
 	    /* notreached */
 	    return;
 	}
 	printf (": ");
 
-	json5_value_print (m->value, depth + 1);
+	json5_value_print (o->value, depth + 1);
 
 	o = o->next;
     }
@@ -245,113 +243,6 @@ void json5_value_print (json5_value_t *v, int depth)
 	break;
     case JSON5_VALUE_ARRAY:
 	json5_value_array_print (v->u.a, depth + 1);
-	break;
-    default:
-	json5_error_printf ("?value %d?", v->type);
-	/* notreached */
-	return;
-    }
-}
-
-void json5_value_free (json5_value_t *v);
-
-void json5_value_array_free (json5_array_t *a)
-{
-    if (NULL == a) {
-	return;
-    }
-
-    for (; NULL != a;) {
-	json5_value_free (a->element);
-	json5_array_t *pa = a;
-	a = a->next;
-	free (pa);
-    }
-}
-
-void json5_value_object_free (json5_object_t *o)
-{
-    if (NULL == o) {
-	return;
-    }
-
-    for (; NULL != o;) {
-	json5_member_t *m = o->member;
-
-	switch (m->type) {
-	case JSON5_MEMBER_IDENTIFIER:
-	    free (m->name->s);
-	    free (m->name);
-	    break;
-	case JSON5_MEMBER_STRING:
-	    free (m->name->s);
-	    free (m->name);
-	    break;
-	default:
-	    json5_error_printf ("?member %d?", m->type);
-
-	    /* notreached */
-	    return;
-	}
-
-	json5_value_free (m->value);
-
-	free (m);
-
-	json5_object_t *po = o;
-	o = o->next;
-	free (po);
-    }
-}
-
-void json5_value_free (json5_value_t *v)
-{
-    if (NULL == v) {
-	json5_error_printf ("_free: NULL?");
-
-	/* notreached */
-	return;
-    }
-
-    switch (v->type) {
-    case JSON5_VALUE_NULL:
-	free (v);
-	break;
-    case JSON5_VALUE_BOOLEAN:
-	switch (v->u.l) {
-	case JSON5_LITERAL_NULL:
-	    /* shouldn't get here */
-	    printf ("null?");
-	    break;
-	case JSON5_LITERAL_TRUE:
-	    free (v);
-	    break;
-	case JSON5_LITERAL_FALSE:
-	    free (v);
-	    break;
-	default:
-	    json5_error_printf ("?literal %d?", v->u.l);
-
-	    /* notreached */
-	    return;
-	}
-	break;
-    case JSON5_VALUE_STRING:
-	free (v->u.s->s);
-	free (v->u.s);
-	free (v);
-	break;
-    case JSON5_VALUE_NUMBER:
-	free (v->u.n);
-	free (v);
-	break;
-    case JSON5_VALUE_OBJECT:
-	json5_value_object_free (v->u.o);
-	free (v);
-	break;
-    case JSON5_VALUE_ARRAY:
-	json5_value_array_free (v->u.a);
-	free (v);
 	break;
     default:
 	json5_error_printf ("?value %d?", v->type);

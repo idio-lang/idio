@@ -59,7 +59,9 @@ void json5_unicode_skip_slc (json5_unicode_string_t *s);
 void json5_unicode_skip_bc (json5_unicode_string_t *s);
 
 /*
- * Not Art
+ * Not Art as the definition is outside of either libjson5.so
+ * (json5-module.c) or libjson5-bare.so (test.c).  Everything
+ * JSON5-ish includes this file, though.
  */
 #ifndef json5_error_printf
 void json5_error_printf (char *format, ...);
