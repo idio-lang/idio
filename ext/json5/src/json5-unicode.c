@@ -47,7 +47,7 @@ unsigned int h2i (char c)
 	      c <= 'f') {
 	return c - 'a' + 10;
     } else {
-	json5_error_printf ("h2i: %#04X is not a hex digit", c);
+	json5_error_printf ("hex2integer: %#04X is not a hex digit", c);
 
 	/* notreached */
 	return -1;
@@ -103,7 +103,7 @@ int json5_ECMA_LineTerminator (json5_unicode_string_t *s, json5_unicode_t *cpp)
 	    break;
 	}
     } else {
-	json5_error_printf ("ECMA_LT: at %zd / %zd", s->i - 1, s->len);
+	json5_error_printf ("ECMA_LineTerminator: at %zd / %zd", s->i - 1, s->len);
 
 	/* notreached */
 	return 0;
@@ -135,7 +135,7 @@ int json5_ECMA_LineTerminatorSequence (json5_unicode_string_t *s, json5_unicode_
 	    break;
 	}
     } else {
-	json5_error_printf ("ECMA_LT: \\ at %zd / %zd", s->i - 1, s->len);
+	json5_error_printf ("ECMA_LineTerminatorSequence: \\ at %zd / %zd", s->i - 1, s->len);
 
 	/* notreached */
 	return 0;
@@ -165,7 +165,7 @@ int json5_ECMA_SingleEscapeCharacter (json5_unicode_string_t *s, json5_unicode_t
 	    break;
 	}
     } else {
-	json5_error_printf ("ECMA_SEC: \\ at %zd / %zd", s->i - 1, s->len);
+	json5_error_printf ("ECMA_SingleEscapeCharacter: \\ at %zd / %zd", s->i - 1, s->len);
 
 	/* notreached */
 	return 0;
@@ -206,7 +206,7 @@ int json5_ECMA_NonEscapeCharacter (json5_unicode_string_t *s, json5_unicode_t *c
 	    }
 	}
     } else {
-	json5_error_printf ("ECMA_SEC: \\ at %zd / %zd", s->i - 1, s->len);
+	json5_error_printf ("ECMA_NonEscapeCharacter: \\ at %zd / %zd", s->i - 1, s->len);
 
 	/* notreached */
 	return 0;
@@ -249,13 +249,13 @@ int json5_ECMA_HexEscapeSequence (json5_unicode_string_t *s, json5_unicode_t *cp
 		    isxdigit (h2)) {
 		    *cpp = (h2i (h1) << 4) + h2i (h2);
 		} else {
-		    json5_error_printf ("ECMA_HES: \\%c %04X %04X", cp1, h1, h2);
+		    json5_error_printf ("ECMA_HexEscapeSequence: \\%c %04X %04X", cp1, h1, h2);
 
 		    /* notreached */
 		    return 0;
 		}
 	    } else {
-		json5_error_printf ("ECMA_HES: \\%c at %zd / %zd", cp1, s->i, s->len);
+		json5_error_printf ("ECMA_HexEscapeSequence: \\%c at %zd / %zd", cp1, s->i, s->len);
 
 		/* notreached */
 		return 0;
@@ -266,7 +266,7 @@ int json5_ECMA_HexEscapeSequence (json5_unicode_string_t *s, json5_unicode_t *cp
 	    break;
 	}
     } else {
-	json5_error_printf ("ECMA_HES: \\ at %zd / %zd", s->i, s->len);
+	json5_error_printf ("ECMA_HexEscapeSequence: \\ at %zd / %zd", s->i, s->len);
 
 	/* notreached */
 	return 0;
@@ -327,17 +327,17 @@ int json5_ECMA_UnicodeEscapeSequence (json5_unicode_string_t *s, json5_unicode_t
 				    ls <= 0xDFFF) {
 				    *cpp = 0x10000 + ((hs - 0xD800) * 0x400) + (ls - 0xDC00);
 				} else {
-				    json5_error_printf ("ECMA_UES: low surrogate range 0xDC00 <= %04X <= 0xDFFF at %zd", ls, s->i);
+				    json5_error_printf ("ECMA_UnicodeEscapeSequence: low surrogate range 0xDC00 <= %04X <= 0xDFFF at %zd", ls, s->i);
 				    /* notreached */
 				    return 0;
 				}
 			    } else {
-				json5_error_printf ("ECMA_UES: not a low surrogate %04X %04X %04X %04X %04X %04X at %zd", ls_esc, ls_u, ls_h1, ls_h2, ls_h3, ls_h4, s->i - 6);
+				json5_error_printf ("ECMA_UnicodeEscapeSequence: not a low surrogate %04X %04X %04X %04X %04X %04X at %zd", ls_esc, ls_u, ls_h1, ls_h2, ls_h3, ls_h4, s->i - 6);
 				/* notreached */
 				return 0;
 			    }
 			} else {
-			    json5_error_printf ("ECMA_UES: expecting low surrogate at %zd / %zd", s->i - 6, s->len);
+			    json5_error_printf ("ECMA_UnicodeEscapeSequence: expecting low surrogate at %zd / %zd", s->i - 6, s->len);
 			    /* notreached */
 			    return 0;
 			}
@@ -348,13 +348,13 @@ int json5_ECMA_UnicodeEscapeSequence (json5_unicode_string_t *s, json5_unicode_t
 			*cpp = hs;
 		    }
 		} else {
-		    json5_error_printf ("ECMA_UES: not hex digits \\%c %04X %04X %04X %04X at %zd", cp1, h1, h2, h3, h4, s->i - 6);
+		    json5_error_printf ("ECMA_UnicodeEscapeSequence: not hex digits \\%c %04X %04X %04X %04X at %zd", cp1, h1, h2, h3, h4, s->i - 6);
 
 		    /* notreached */
 		    return 0;
 		}
 	    } else {
-		json5_error_printf ("ECMA_UES: EOS after \\%c at %zd / %zd", cp1, s->i, s->len);
+		json5_error_printf ("ECMA_UnicodeEscapeSequence: EOS after \\%c at %zd / %zd", cp1, s->i, s->len);
 
 		/* notreached */
 		return 0;
@@ -365,7 +365,7 @@ int json5_ECMA_UnicodeEscapeSequence (json5_unicode_string_t *s, json5_unicode_t
 	    break;
 	}
     } else {
-	json5_error_printf ("ECMA_UES: \\ at %zd / %zd", s->i, s->len);
+	json5_error_printf ("ECMA_UnicodeEscapeSequence: \\ at %zd / %zd", s->i, s->len);
 
 	/* notreached */
 	return 0;
@@ -391,7 +391,7 @@ int json5_ECMA_EscapeSequence (json5_unicode_string_t *s, json5_unicode_t *cpp)
 	    return 1;
 	}
     } else {
-	json5_error_printf ("ECMA_ES: \\ at %zd / %zd", s->i, s->len);
+	json5_error_printf ("ECMA_EscapeSequence: \\ at %zd / %zd", s->i, s->len);
 
 	/* notreached */
 	return 0;
@@ -582,7 +582,7 @@ void json5_unicode_string_print (json5_unicode_string_t *s)
 		}
 		printf ("%.*s", n, r);
 	    } else {
-		json5_error_printf ("U+%04" PRIX32 " is invalid", cp);
+		json5_error_printf ("code point U+%04" PRIX32 " is invalid", cp);
 
 		/* notreached */
 		return;
@@ -654,7 +654,7 @@ int json5_unicode_string_n_equal (json5_unicode_string_t *s, const char *scmp, s
 	    }
 	    break;
 	default:
-	    json5_error_printf ("JSON5-string-ncmp: unexpected width: %#x", s->width);
+	    json5_error_printf ("JSON5-string-n-equal: unexpected width: %#x", s->width);
 
 	    /* notreached */
 	    return 0;

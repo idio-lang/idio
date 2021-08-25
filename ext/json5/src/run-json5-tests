@@ -62,6 +62,8 @@ while getopts "d:ht:" opt ; do
     esac
 done
 
+make test
+
 if [[ -d ${opt_dir} ]] ; then
     echo "Using tests in ${opt_dir}"
 else

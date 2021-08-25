@@ -86,7 +86,7 @@ IDIO idio_json5_string_value_to_idio (json5_unicode_string_t *js)
 	reqd_bytes *= 4;
 	break;
     default:
-	json5_error_printf ("JSON5-string-to-IDIO: unexpected s width: %#x", js->width);
+	json5_error_printf ("JSON5-string->Idio: unexpected s width: %#x", js->width);
 
 	return idio_S_notreached;
     }
@@ -124,7 +124,7 @@ json5_unicode_string_t *idio_string_to_json5_string_value (IDIO is)
 	reqd_bytes *= 4;
 	break;
     default:
-	json5_error_printf ("JSON5-string-to-IDIO: unexpected s flags: %#x", IDIO_STRING_FLAGS (is));
+	json5_error_printf ("Idio->JSON5-string: unexpected s flags: %#x", IDIO_STRING_FLAGS (is));
 
 	return NULL;
     }
@@ -499,7 +499,7 @@ IDIO idio_json5_object_value_to_idio (json5_object_t *o)
 	    k = idio_json5_string_value_to_idio (o->name);
 	    break;
 	default:
-	    json5_error_printf ("?member %d?", o->type);
+	    json5_error_printf ("JSON5-object->Idio: unexpected member name type %d", o->type);
 
 	    return idio_S_notreached;
 	}
@@ -515,7 +515,7 @@ IDIO idio_json5_object_value_to_idio (json5_object_t *o)
 IDIO idio_json5_value_to_idio (json5_value_t *v)
 {
     if (NULL == v) {
-	json5_error_printf ("_value: NULL?");
+	json5_error_printf ("JSON5->Idio: NULL?");
 
 	return idio_S_notreached;
     }
@@ -539,7 +539,7 @@ IDIO idio_json5_value_to_idio (json5_value_t *v)
 	    r = idio_S_false;
 	    break;
 	default:
-	    json5_error_printf ("?literal %d?", v->u.l);
+	    json5_error_printf ("JSON5->Idio: unexpected literal type %d", v->u.l);
 
 	    return idio_S_notreached;
 	}
@@ -568,7 +568,7 @@ IDIO idio_json5_value_to_idio (json5_value_t *v)
 	    r = idio_bignum_double (v->u.n->u.f);
 	    break;
 	default:
-	    json5_error_printf ("?number %d? ", v->u.n->type);
+	    json5_error_printf ("JSON5->Idio: unexpected number type %d", v->u.n->type);
 
 	    return idio_S_notreached;
 	}
@@ -580,7 +580,7 @@ IDIO idio_json5_value_to_idio (json5_value_t *v)
 	r = idio_json5_array_value_to_idio (v->u.a);
 	break;
     default:
-	json5_error_printf ("?value %d?", v->type);
+	json5_error_printf ("JSON5->Idio: unexpected value type %d", v->type);
 
 	return idio_S_notreached;
     }

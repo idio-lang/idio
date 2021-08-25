@@ -33,7 +33,7 @@ typedef enum {
 typedef struct json5_unicode_string_s {
     json5_unicode_string_width_t width;
     size_t len;
-    size_t i;
+    size_t i;			/* 0 <= index < len */
     char *s;
 } json5_unicode_string_t;
 

@@ -85,7 +85,7 @@ static json5_token_t *json5_parse_array (json5_token_t *ct, json5_value_t **valu
 	case COMMA_RBRACKET:
 	    if (JSON5_TOKEN_PUNCTUATOR != ct->type ||
 		JSON5_PUNCTUATOR_COMMA != ct->value->u.p) {
-		json5_error_printf ("_array: ,|] expected: ");
+		json5_error_printf ("parse array: ,|] expected: ");
 
 		/* notreached */
 		return NULL;
@@ -150,7 +150,7 @@ static json5_token_t *json5_parse_object (json5_token_t *ct, json5_value_t **val
 		object->name = ct->value->u.s;
 		free (ct->value);
 	    } else {
-		json5_error_printf ("_object: identifier|string name expected: ct->type=%d ", ct->type);
+		json5_error_printf ("parse object: identifier|string name expected: ct->type=%d ", ct->type);
 
 		/* notreached */
 		return NULL;
@@ -161,7 +161,7 @@ static json5_token_t *json5_parse_object (json5_token_t *ct, json5_value_t **val
 	case COLON:
 	    if (JSON5_TOKEN_PUNCTUATOR != ct->type ||
 		JSON5_PUNCTUATOR_COLON != ct->value->u.p) {
-		json5_error_printf ("_object: colon expected: ");
+		json5_error_printf ("parse object: colon expected: ");
 
 		/* notreached */
 		return NULL;
@@ -183,7 +183,7 @@ static json5_token_t *json5_parse_object (json5_token_t *ct, json5_value_t **val
 	    if (JSON5_TOKEN_PUNCTUATOR != ct->type ||
 		(JSON5_PUNCTUATOR_COMMA != ct->value->u.p &&
 		 JSON5_PUNCTUATOR_RBRACE != ct->value->u.p)) {
-		json5_error_printf ("_object: ,|} expected: ");
+		json5_error_printf ("parse object: ,|} expected: ");
 
 		/* notreached */
 		return NULL;
@@ -206,7 +206,7 @@ static json5_token_t *json5_parse_token (json5_token_t *ct, json5_value_t **valu
 {
     switch (ct->type) {
     case JSON5_TOKEN_ROOT:
-	json5_error_printf ("unexpected root token");
+	json5_error_printf ("parse: unexpected root token");
 
 	/* notreached */
 	return NULL;
@@ -224,7 +224,7 @@ static json5_token_t *json5_parse_token (json5_token_t *ct, json5_value_t **valu
 		*valuepp = ct->value;
 		break;
 	    default:
-		json5_error_printf ("?literal %d?", ct->value->u.l);
+		json5_error_printf ("parse: unexpected literal type %d", ct->value->u.l);
 
 		/* notreached */
 		return NULL;
@@ -234,7 +234,7 @@ static json5_token_t *json5_parse_token (json5_token_t *ct, json5_value_t **valu
 	    *valuepp = ct->value;
 	    break;
 	default:
-	    json5_error_printf ("?identifier %d?", ct->value->type);
+	    json5_error_printf ("parse: unexpected identifier type %d", ct->value->type);
 
 	    /* notreached */
 	    return NULL;
@@ -264,12 +264,12 @@ static json5_token_t *json5_parse_token (json5_token_t *ct, json5_value_t **valu
 		p = ",";
 		break;
 	    default:
-		json5_error_printf ("?punctuator? %d ", ct->value->u.p);
+		json5_error_printf ("parse: unexpected punctuator type %d ", ct->value->u.p);
 
 		/* notreached */
 		return NULL;
 	    }
-	    json5_error_printf ("unexpected punctuation: '%s'", p);
+	    json5_error_printf ("parse: unexpected punctuation: '%s'", p);
 
 	    /* notreached */
 	    return NULL;
@@ -294,7 +294,7 @@ static json5_token_t *json5_parse_token (json5_token_t *ct, json5_value_t **valu
 	case ECMA_NUMBER_FLOAT:
 	    break;
 	default:
-	    json5_error_printf ("?number %d?", ct->value->u.n->type);
+	    json5_error_printf ("parse: unexpected number type %d", ct->value->u.n->type);
 
 	    /* notreached */
 	    return NULL;
@@ -303,7 +303,7 @@ static json5_token_t *json5_parse_token (json5_token_t *ct, json5_value_t **valu
 	ct = json5_token_free_next (ct);
 	break;
     default:
-	json5_error_printf ("?token %d?", ct->type);
+	json5_error_printf ("parse: unexpected token type %d", ct->type);
 
 	/* notreached */
 	return NULL;
@@ -316,7 +316,7 @@ static json5_token_t *json5_parse_token_stream (json5_token_t *ct, json5_value_t
 {
     if (NULL == ct ||
 	JSON5_TOKEN_ROOT != ct->type) {
-	json5_error_printf ("invalid token stream");
+	json5_error_printf ("parse: invalid token stream");
 
 	/* notreached */
 	return NULL;
@@ -325,7 +325,7 @@ static json5_token_t *json5_parse_token_stream (json5_token_t *ct, json5_value_t
     ct = json5_token_free_next (ct);
 
     if (NULL == ct) {
-	json5_error_printf ("empty token stream");
+	json5_error_printf ("parse: empty token stream");
 
 	/* notreached */
 	return NULL;
@@ -343,7 +343,7 @@ json5_value_t *json5_parse (json5_token_t *root)
     json5_token_t *ct = json5_parse_token_stream (root, &valuep);
 
     while (NULL != ct) {
-	json5_error_printf ("_parse: not all parsed");
+	json5_error_printf ("parse: extra tokens");
 
 	/* notreached */
 	return NULL;

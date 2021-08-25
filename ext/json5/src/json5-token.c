@@ -92,7 +92,7 @@ void json5_value_object_free (json5_object_t *o)
 	    free (o->name);
 	    break;
 	default:
-	    json5_error_printf ("?member %d?", o->type);
+	    json5_error_printf ("free: unexpected member type %d", o->type);
 
 	    /* notreached */
 	    return;
@@ -109,7 +109,7 @@ void json5_value_object_free (json5_object_t *o)
 void json5_value_free (json5_value_t *v)
 {
     if (NULL == v) {
-	json5_error_printf ("_free: NULL?");
+	json5_error_printf ("free: NULL?");
 
 	/* notreached */
 	return;
@@ -132,7 +132,7 @@ void json5_value_free (json5_value_t *v)
 	    free (v);
 	    break;
 	default:
-	    json5_error_printf ("?literal %d?", v->u.l);
+	    json5_error_printf ("free: unexpected literal type %d", v->u.l);
 
 	    /* notreached */
 	    return;
@@ -156,7 +156,7 @@ void json5_value_free (json5_value_t *v)
 	free (v);
 	break;
     default:
-	json5_error_printf ("?value %d?", v->type);
+	json5_error_printf ("free: unexpected value type %d", v->type);
 	/* notreached */
 	return;
     }
@@ -198,7 +198,7 @@ static json5_unicode_string_t *json5_token_UES_identifier (json5_unicode_string_
 	    if (json5_ECMA_UnicodeEscapeSequence (s, &ecp)) {
 		cp = ecp;
 	    } else {
-		json5_error_printf ("_token_esc_id: failed to recognise UES at %zd in %zd - %zd", i, start, end);
+		json5_error_printf ("tokenize identifier: failed to recognise UnicodeEscapeSequence at %zd in %zd - %zd", i, start, end);
 
 		/* notreached */
 		return NULL;
@@ -266,7 +266,7 @@ static json5_token_t *json5_token_string (json5_unicode_string_t *s, const json5
 
 	json5_unicode_t ecp;
 	if (json5_ECMA_LineTerminator (s, &ecp)) {
-	    json5_error_printf ("token_string: unexpected LineTerminator %#04X at %zd in %zd - %zd", ecp, s->i, token->start, i);
+	    json5_error_printf ("tokenize string: unexpected LineTerminator %#04X at %zd in %zd - %zd", ecp, s->i, token->start, i);
 
 	    /* notreached */
 	    return NULL;
@@ -326,7 +326,7 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 	case '-':
 	    if (in_exp) {
 		if (exp_sign) {
-		    json5_error_printf ("_number: double signed exp %zd", s->i - 2);
+		    json5_error_printf ("tokenize number: double signed exp %zd", s->i - 2);
 
 		    /* notreached */
 		    return NULL;
@@ -338,7 +338,7 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 		}
 	    } else {
 		if (sign) {
-		    json5_error_printf ("_number: double signed %zd", s->i - 2);
+		    json5_error_printf ("tokenize number: double signed %zd", s->i - 2);
 
 		    /* notreached */
 		    return NULL;
@@ -361,6 +361,7 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 		    integer = 0;
 		case 'e':	/* 0e */
 		case 'E':	/* 0E */
+		    integer = 0;
 		    s->i++;
 		    digits++;
 		    break;
@@ -377,7 +378,7 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 			size_t start = s->i;
 			if (json5_ECMA_IdentifierStart (cp1, s) ||
 			    isdigit (cp1)) {
-			    json5_error_printf ("_number: leading zero: 0%c %04X at %zd", cp1, cp1, s->i - 1);
+			    json5_error_printf ("tokenize number: leading zero: 0%c %04X at %zd", cp1, cp1, s->i - 1);
 
 			    /* notreached */
 			    return NULL;
@@ -411,7 +412,7 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 		 * https://github.com/json5/json5-tests claims it is
 		 * an error.
 		 */
-		json5_error_printf ("_number: floating point exponent at %zd", s->i);
+		json5_error_printf ("tokenize number: floating point exponent at %zd", s->i);
 
 		/* notreached */
 		return NULL;
@@ -447,7 +448,7 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 	    if (dec) {
 		if (!('e' == cp ||
 		      'E' == cp)) {
-		    json5_error_printf ("_number: hex in dec : %c at %zd", cp, s->i);
+		    json5_error_printf ("tokenize number: hex in dec : %c at %zd", cp, s->i);
 
 		    /* notreached */
 		    return NULL;
@@ -508,7 +509,7 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
     token->end = s->i;
 
     if (0 == digits) {
-	json5_error_printf ("_number: no digits at %zd", s->i);
+	json5_error_printf ("tokenize number: no digits at %zd", s->i);
 
 	/* notreached */
 	return NULL;
@@ -523,7 +524,7 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
 
     if (json5_ECMA_IdentifierStart (cp, s) ||
 	isdigit (cp)) {
-	json5_error_printf ("_number: followed by: %04X at %zd", cp, s->i);
+	json5_error_printf ("tokenize number: followed by: %04X at %zd", cp, s->i);
 
 	/* notreached */
 	return NULL;
@@ -632,7 +633,7 @@ void json5_token_reserved_identifiers (json5_unicode_string_t *s, size_t slen)
 	size_t klen = strlen (*k);
 	if (slen == klen &&
 	    json5_unicode_string_n_equal (s, *k, klen)) {
-	    json5_error_printf ("identifier is a keyword: %s", *k);
+	    json5_error_printf ("tokenize identifier: is a keyword: %s", *k);
 
 	    /* notreached */
 	    return;
@@ -642,7 +643,7 @@ void json5_token_reserved_identifiers (json5_unicode_string_t *s, size_t slen)
 	size_t frwlen = strlen (*frw);
 	if (slen == frwlen &&
 	    json5_unicode_string_n_equal (s, *frw, frwlen)) {
-	    json5_error_printf ("identifier is a future reserved word: %s", *frw);
+	    json5_error_printf ("tokenize identifier: is a future reserved word: %s", *frw);
 
 	    /* notreached */
 	    return;
@@ -725,7 +726,7 @@ json5_token_t *json5_tokenize (json5_unicode_string_t *s)
 	json5_unicode_skip_ws (s);
 
 	if (s->i >= s->len) {
-	    json5_error_printf ("_tokenize leading ws -> EOS");
+	    json5_error_printf ("tokenize: leading ws -> EOS");
 
 	    /* notreached */
 	    return NULL;
@@ -743,7 +744,7 @@ json5_token_t *json5_tokenize (json5_unicode_string_t *s)
 		} else if ('*' == cp1) {
 		    json5_unicode_skip_bc (s);
 		} else {
-		    json5_error_printf ("_tokenize: unexpected / at %zd", s->i - 1);
+		    json5_error_printf ("tokenize: unexpected / at %zd", s->i - 1);
 
 		    /* notreached */
 		    return NULL;
@@ -784,7 +785,7 @@ json5_token_t *json5_tokenize (json5_unicode_string_t *s)
 		    ct->value->u.p = JSON5_PUNCTUATOR_COMMA;
 		    break;
 		default:
-		    json5_error_printf ("_tokenize: %04X: missed a punctuation clause", cp);
+		    json5_error_printf ("tokenize: %04X: unexpected punctuation", cp);
 
 		    /* notreached */
 		    return NULL;
@@ -827,7 +828,7 @@ json5_token_t *json5_tokenize (json5_unicode_string_t *s)
 		ct->next = json5_token_identifier (s);
 		ct = ct->next;
 	    } else {
-		json5_error_printf ("_tokenize + %04X at %zd", cp, start);
+		json5_error_printf ("tokenize: unexpected %04X at %zd", cp, start);
 
 		/* notreached */
 		return NULL;
