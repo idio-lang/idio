@@ -1405,7 +1405,7 @@ index								\n\
     idio_ai_t al = IDIO_ARRAY_USIZE (a);
     idio_ai_t ai;
 
-    for (ai = 0; ai < al - 1; ai++) {
+    for (ai = 0; ai < al; ai++) {
 	IDIO v = idio_array_ref_index (a, ai);
 	if (! idio_equal (v, IDIO_ARRAY_DV (a), IDIO_EQUAL_EQUALP)) {
 	    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (func, idio_integer (ai), v));
@@ -1453,7 +1453,7 @@ The final value of ``val`` is returned				\n\
     idio_ai_t al = IDIO_ARRAY_USIZE (a);
     idio_ai_t ai;
 
-    for (ai = 0; ai < al - 1; ai++) {
+    for (ai = 0; ai < al; ai++) {
 	IDIO v = idio_array_ref_index (a, ai);
 	val = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST4 (func, idio_integer (ai), v, val));
     }

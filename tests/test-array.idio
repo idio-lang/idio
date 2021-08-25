@@ -224,5 +224,27 @@ a = #[ 1 #[ 10 20 30 ] 3 ]
 a.1 .1 = 40
 test (a.1 .1) 40
 
+a = make-array 4
+a.0 = 1
+a.2 = 3
+; a == #[ 1 #f 3 #f ]
+
+test (fold-array a (function (i v val) {
+		      if v {
+			val + v
+		      } {
+			val
+		      }
+}) 0) 4
+
+c := 0
+array-for-each-set a (function (i v) {
+			if v {
+			  c = c + 1
+			}
+})
+test c 2
+
+
 ;; all done?
-Tests? (array0 + 91)
+Tests? (array0 + 93)
