@@ -161,11 +161,12 @@ IDIO idio_condition_default_SIGCHLD_handler;
 
 IDIO idio_condition_default_handler;
 
-static IDIO idio_condition_define_condition0_string = idio_S_nil;
-IDIO idio_condition_define_condition0_dynamic_string = idio_S_nil; /* needed in lib-wrap.c */
-static IDIO idio_condition_define_condition1_string = idio_S_nil;
-static IDIO idio_condition_define_condition2_string = idio_S_nil;
-static IDIO idio_condition_define_condition3_string = idio_S_nil;
+IDIO idio_condition_define_condition0_string = idio_S_nil;
+IDIO idio_condition_define_condition1_string = idio_S_nil;
+IDIO idio_condition_define_condition2_string = idio_S_nil;
+IDIO idio_condition_define_condition3_string = idio_S_nil;
+
+IDIO idio_condition_define_condition0_dynamic_string = idio_S_nil;
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("make-condition-type", make_condition_type, (IDIO name, IDIO parent, IDIO fields), "name parent fields", "\
 make a new condition type			\n\

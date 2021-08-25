@@ -626,6 +626,30 @@ static json5_token_t *json5_token_number (json5_unicode_string_t *s)
     return token;
 }
 
+void json5_token_reserved_identifiers (json5_unicode_string_t *s, size_t slen)
+{
+    for (const char **k = json5_ECMA_keywords; *k; k++) {
+	size_t klen = strlen (*k);
+	if (slen == klen &&
+	    json5_unicode_string_n_equal (s, *k, klen)) {
+	    json5_error_printf ("identifier is a keyword: %s", *k);
+
+	    /* notreached */
+	    return;
+	}
+    }
+    for (const char **frw = json5_ECMA_future; *frw; frw++) {
+	size_t frwlen = strlen (*frw);
+	if (slen == frwlen &&
+	    json5_unicode_string_n_equal (s, *frw, frwlen)) {
+	    json5_error_printf ("identifier is a future reserved word: %s", *frw);
+
+	    /* notreached */
+	    return;
+	}
+    }
+}
+
 static json5_token_t *json5_token_identifier (json5_unicode_string_t *s)
 {
     json5_token_t *token = (json5_token_t *) malloc (sizeof (json5_token_t));
@@ -682,26 +706,7 @@ static json5_token_t *json5_token_identifier (json5_unicode_string_t *s)
 	token->value->u.s = json5_token_UES_identifier (s, token->start, token->end);
 
 	size_t slen = token->end - token->start;
-	for (const char **k = json5_ECMA_keywords; *k; k++) {
-	    size_t klen = strlen (*k);
-	    if (slen == klen &&
-		json5_unicode_string_n_equal (s, *k, klen)) {
-		json5_error_printf ("identifier is a keyword: %s", *k);
-
-		/* notreached */
-		return NULL;
-	    }
-	}
-	for (const char **frw = json5_ECMA_future; *frw; frw++) {
-	    size_t frwlen = strlen (*frw);
-	    if (slen == frwlen &&
-		json5_unicode_string_n_equal (s, *frw, frwlen)) {
-		json5_error_printf ("identifier is a future reserved word: %s", *frw);
-
-		/* notreached */
-		return NULL;
-	    }
-	}
+	json5_token_reserved_identifiers (s, slen);
     }
     s->i = token->end;
 

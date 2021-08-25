@@ -32,6 +32,9 @@ extern IDIO idio_json5_literal_value_NaN_sym;
 extern IDIO idio_json5_literal_value_pos_NaN_sym;
 extern IDIO idio_json5_literal_value_neg_NaN_sym;
 
+extern IDIO idio_condition_rt_json5_error_type;
+extern IDIO idio_condition_rt_json5_value_error_type;
+
 void idio_init_json5 ();
 
 #endif

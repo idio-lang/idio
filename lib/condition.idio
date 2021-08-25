@@ -423,272 +423,307 @@ define-template (condition type & field-bindings) {
 				      rt-signal?
 				      (signal rt-signal-signal))
 
-;; have a common method for reporting on a condition
-define (condition-report prefix c & args) "print a report on condition `c`
+;; We want to have a common method for reporting on a condition but
+;; condition-report only knows about core conditions and nothing about
+;; extension conditions.
+
+;; We need to allow extensions to register their new conditions with
+;; us, with a callback which will take the iem and cr-report functions
+;; as arguments
+
+condition-report-extend := #f
+condition-report := #f
+
+{
+  extension-callbacks := make-hash #n #n 4
+
+  condition-report-extend = function (ct cb) {
+			      if (struct-type? ct) {
+				if (function? cb) {
+				  hash-set! extension-callbacks ct cb
+				} {
+				  error 'condition-report-extend "not a function" cb
+				}
+			      } {
+				error 'condition-report-extend "not a struct-type" ct
+			      }
+  }
+
+  condition-report = function (prefix c & args) "print a report on condition `c`
 
 :param prefix: a distinguishing string
 :param c: the condition
 :param args: print to optional handle
 
 :return: unspecified
-" {
-  oh := (current-output-handle)
-  if (and (not (null? args))
-	  (pair? args)) {
-	    oh = ph args
-	  }
+  " {
+    oh := (current-output-handle)
+    if (and (not (null? args))
+	    (pair? args)) {
+	      oh = ph args
+	    }
 
-  msgs := #n
+    msgs := #n
 
-  define (cr-printf fmt & args*) {
-    msgs  = pair (apply sprintf fmt args*) msgs
-  }
-
-  ;; standard ^idio-error has location message detail
-  define (iem c) {
-    cr-printf "%s:" (idio-error-location c)
-    cr-printf "%s:" (struct-type-name (struct-instance-type c))
-    cr-printf "%s" (idio-error-message c)
-    if (not (null? (idio-error-detail c))) {
-      cr-printf ": detail %s" (idio-error-detail c)
+    define (cr-printf fmt & args*) {
+      msgs  = pair (apply sprintf fmt args*) msgs
     }
+
+    ;; standard ^idio-error has location message detail
+    define (iem c) {
+      cr-printf "%s:" (idio-error-location c)
+      cr-printf "%s:" (struct-type-name (struct-instance-type c))
+      cr-printf "%s" (idio-error-message c)
+      if (not (null? (idio-error-detail c))) {
+	cr-printf ": detail %s" (idio-error-detail c)
+      }
+    }
+
+    if (not (null? prefix)) {
+      cr-printf (append-string prefix ":")
+    }
+
+    ;; The ordering of these is slightly about face.  Ostensibly it is
+    ;; the same as the definition order with the generic form last.
+    ;;
+    ;; So, if the ^i/o-* conditions, the ^i/o-handle-error,
+    ;; ^i/o-filename-error and ^i/o-mode-error have extra attributes so
+    ;; we have specific clauses for them.  All of the rest are otherwise
+    ;; undistinguished from ^i/o-error so can be picked up by that.
+    ;;
+    ;; We pick up ^i/o-error itself because even though it is
+    ;; undistinguished from ^idio-error it means we can identify any
+    ;; missed condition groups in the trailing clause for ^idio-error.
+
+    (cond
+     ;; ^i/o-error
+     ((i/o-handle-error? c) {
+       iem c
+       cr-printf ": handle '%s'" (i/o-handle-error-handle c)
+     })
+     ((i/o-filename-error? c) {
+       iem c
+       cr-printf ": filename '%s'" (i/o-filename-error-filename c)
+     })
+     ((i/o-mode-error? c) {
+       iem c
+       cr-printf ": mode '%s'" (i/o-mode-error-mode c)
+     })
+     ((i/o-error? c) {
+       iem c
+     })
+
+     ;; ^read-error
+     ((read-error? c) {
+       iem c
+       cr-printf " line %d" (read-error-line c)
+     })
+
+     ;; ^evaluation-error
+     ((evaluation-error? c) {
+       iem c
+       cr-printf ": expr '%s'" (evaluation-error-expr c)
+     })
+
+     ;; ^string-error
+     ((string-error? c) {
+       cr-printf "%s:%s:%s" (idio-error-location c) (idio-error-message c) (idio-error-detail c)
+     })
+
+     ;; ^system-error
+     ((system-error? c) {
+       cr-printf "%s:" (idio-error-location c)
+       cr-printf "%s:" (struct-type-name (struct-instance-type c))
+       cr-printf "%s (%s) => %s (%s/errno %s)" (system-error-function c) (idio-error-detail c) (libc/errno-name (system-error-errno c)) (idio-error-message c) (system-error-errno c)
+     })
+
+     ;; ^static-error
+     ((st-variable-error? c) {
+       iem c
+       cr-printf ": variable '%s'" (st-variable-error-name c)
+     })
+     ((static-error? c) {
+       iem c
+     })
+
+     ;; ^runtime-error (lots!)
+
+     ;; ^rt-parameter-error
+     ((rt-parameter-error? c) {
+       iem c
+     })
+
+     ;; ^rt-variable-error (incl. dynamic environ computed)
+     ((rt-variable-error? c) {
+       iem c
+       cr-printf ": name '%s'" (rt-variable-error-name c)
+     })
+
+     ;; ^rt-function-error
+     ((rt-function-error? c) {
+       iem c
+     })
+
+     ;; ^rt-module-error
+     ((rt-module-symbol-unbound-error? c) {
+       iem c
+       ; annoyingly (idio-error-module c) resolves module to #undef
+       cr-printf ": symbol '%s/%s'" (module-name (rt-module-error-module c)) (rt-module-error-symbol c)
+     })
+     ((rt-module-error? c) {
+       iem c
+       ; annoyingly (idio-error-module c) resolves module to #undef
+       cr-printf ": module '%s'" (module-name (rt-module-error-module c))
+     })
+
+     ;; ^rt-path-error
+     ((rt-path-error? c) {
+       iem c
+       cr-printf ": pathname '%s'" (rt-path-error-pathname c)
+     })
+
+     ;; ^rt-glob-error
+     ((rt-glob-error? c) {
+       iem c
+       cr-printf ": pattern '%s'" (rt-glob-error-pattern c)
+     })
+
+     ;; ^rt-command-error
+     ((rt-command-argv-type-error? c) {
+       iem c
+       cr-printf ": arg '%s'" (rt-command-argv-type-error-arg c)
+     })
+     ((rt-command-format-error? c) {
+       iem c
+       cr-printf ": "
+       name := (rt-command-format-error-name c)
+       if (not (null? name)) {
+	 cr-printf "%s=" name
+       }
+       cr-printf "'%s'" (rt-command-format-error-value c)
+     })
+     ((rt-command-env-type-error? c) {
+       iem c
+       cr-printf ": name '%s'='%s'" (rt-command-env-type-error-name c) (rt-command-env-type-error-value c)
+     })
+     ((rt-command-exec-error? c) {
+       iem c
+       cr-printf ": errno '%s'" (rt-command-exec-error-errno c)
+     })
+     ((rt-command-status-error? c) {
+       ;iem c
+       job := idio-error-location c
+       osh := (open-output-string)
+       format-job-detail job osh
+       cr-printf (get-output-string osh)
+       close-handle osh
+       ;cr-printf "job: %s => %s" (%idio-job-pipeline job) (rt-command-status-error-status c)
+     })
+     ((rt-command-error? c) {
+       iem c
+     })
+
+     ;; ^rt-array-error
+     ((rt-array-error? c) {
+       iem c
+       cr-printf ": index '%s'" (rt-array-error-index c)
+     })
+
+     ;; ^rt-hash-error
+     ((rt-hash-key-not-found-error? c) {
+       iem c
+       cr-printf ": key '%s'" (rt-hash-key-not-found-error-key c)
+     })
+     ((rt-hash-error? c) {
+       iem c
+     })
+
+     ;; ^rt-number-error (bignum fixnum)
+     ((rt-bignum-error? c) {
+       iem c
+       cr-printf ": bignum %s" (rt-number-error-number c)
+     })
+     ((rt-fixnum-error? c) {
+       iem c
+       cr-printf ": fixnum %d" (rt-number-error-number c)
+     })
+     ((rt-number-error? c) {
+       iem c
+       cr-printf ": number '%s'" (rt-number-error-number c)
+     })
+
+     ;; ^rt-bitset-error
+     ((rt-bitset-bounds-error? c) {
+       iem c
+       cr-printf ": bit %s" (rt-bitset-bounds-error-bit c)
+     })
+     ((rt-bitset-size-mismatch-error? c) {
+       iem c
+       cr-printf ": size mismatch: %s != %s" (rt-bitset-size-mismatch-error-size1 c) (rt-bitset-size-mismatch-error-size2 c)
+     })
+     ((rt-bitset-error? c) {
+       iem c
+     })
+
+     ;; ^rt-keyword-error
+     ((rt-keyword-error? c) {
+       iem c
+       cr-printf ": keyword %s" (rt-keyword-error-keyword c)
+     })
+
+     ;; ^rt-libc-error
+     ((rt-libc-format-error? c) {
+       iem c
+       cr-printf ": name %s" (rt-libc-format-error-name c)
+     })
+     ((rt-libc-error? c) {
+       iem c
+     })
+
+     ;; ^rt-struct-error
+     ((rt-struct-error? c) {
+       iem c
+     })
+
+     ;; ^rt-symbol-error
+     ((rt-symbol-error? c) {
+       iem c
+     })
+
+     ;; ^rt-signal
+     ((rt-signal? c) {
+       iem c
+       cr-printf "signal %s (%s)" (rt-signal-error-signum c) (libc/signal-name (rt-signal-error-signum c))
+     })
+
+     (else {
+       ct := struct-instance-type c
+       cb := hash-ref extension-callbacks ct #f
+       if cb {
+	 cb c iem cr-printf
+       } {
+	 (cond
+	  ;; ^runtime-error fallback
+	  ((runtime-error? c) {
+	    iem c
+	    cr-printf ": unhandled runtime-error %s" c
+	  })
+
+	  ;; fallbacks
+	  ((idio-error? c) {
+	    iem c
+	    cr-printf ": unhandled ^idio-error %s" c
+	  })
+	  ((error? c) {
+	    cr-printf ": unhandled ^error %s" (struct-type-name (struct-instance-type c))
+	  })
+	  (else {
+	    cr-printf ": unhandled ^condition %s" c
+	  }))
+       }
+     }))
+
+    msgs = pair "\n" msgs
+    display (join-string "" (reverse msgs)) oh
   }
-
-  if (not (null? prefix)) {
-    cr-printf (append-string prefix ":")
-  }
-
-  ;; The ordering of these is slightly about face.  Ostensibly it is
-  ;; the same as the definition order with the generic form last.
-  ;;
-  ;; So, if the ^i/o-* conditions, the ^i/o-handle-error,
-  ;; ^i/o-filename-error and ^i/o-mode-error have extra attributes so
-  ;; we have specific clauses for them.  All of the rest are otherwise
-  ;; undistinguished from ^i/o-error so can be picked up by that.
-  ;;
-  ;; We pick up ^i/o-error itself because even though it is
-  ;; undistinguished from ^idio-error it means we can identify any
-  ;; missed condition groups in the trailing clause for ^idio-error.
-
-  (cond
-   ;; ^i/o-error
-   ((i/o-handle-error? c) {
-     iem c
-     cr-printf ": handle '%s'" (i/o-handle-error-handle c)
-   })
-   ((i/o-filename-error? c) {
-     iem c
-     cr-printf ": filename '%s'" (i/o-filename-error-filename c)
-   })
-   ((i/o-mode-error? c) {
-     iem c
-     cr-printf ": mode '%s'" (i/o-mode-error-mode c)
-   })
-   ((i/o-error? c) {
-     iem c
-   })
-
-   ;; ^read-error
-   ((read-error? c) {
-     iem c
-     cr-printf " line %d" (read-error-line c)
-   })
-
-   ;; ^evaluation-error
-   ((evaluation-error? c) {
-     iem c
-     cr-printf ": expr '%s'" (evaluation-error-expr c)
-   })
-
-   ;; ^string-error
-   ((string-error? c) {
-     cr-printf "%s:%s:%s" (idio-error-location c) (idio-error-message c) (idio-error-detail c)
-   })
-
-   ;; ^system-error
-   ((system-error? c) {
-     cr-printf "%s:" (idio-error-location c)
-     cr-printf "%s:" (struct-type-name (struct-instance-type c))
-     cr-printf "%s (%s) => %s (%s/errno %s)" (system-error-function c) (idio-error-detail c) (libc/errno-name (system-error-errno c)) (idio-error-message c) (system-error-errno c)
-   })
-
-   ;; ^static-error
-   ((st-variable-error? c) {
-     iem c
-     cr-printf ": variable '%s'" (st-variable-error-name c)
-   })
-   ((static-error? c) {
-     iem c
-   })
-
-   ;; ^runtime-error (lots!)
-
-   ;; ^rt-parameter-error
-   ((rt-parameter-error? c) {
-     iem c
-   })
-
-   ;; ^rt-variable-error (incl. dynamic environ computed)
-   ((rt-variable-error? c) {
-     iem c
-     cr-printf ": name '%s'" (rt-variable-error-name c)
-   })
-
-   ;; ^rt-function-error
-   ((rt-function-error? c) {
-     iem c
-   })
-
-   ;; ^rt-module-error
-   ((rt-module-symbol-unbound-error? c) {
-     iem c
-     ; annoyingly (idio-error-module c) resolves module to #undef
-     cr-printf ": symbol '%s/%s'" (module-name (rt-module-error-module c)) (rt-module-error-symbol c)
-   })
-   ((rt-module-error? c) {
-     iem c
-     ; annoyingly (idio-error-module c) resolves module to #undef
-     cr-printf ": module '%s'" (module-name (rt-module-error-module c))
-   })
-
-   ;; ^rt-path-error
-   ((rt-path-error? c) {
-     iem c
-     cr-printf ": pathname '%s'" (rt-path-error-pathname c)
-   })
-
-   ;; ^rt-glob-error
-   ((rt-glob-error? c) {
-     iem c
-     cr-printf ": pattern '%s'" (rt-glob-error-pattern c)
-   })
-
-   ;; ^rt-command-error
-   ((rt-command-argv-type-error? c) {
-     iem c
-     cr-printf ": arg '%s'" (rt-command-argv-type-error-arg c)
-   })
-   ((rt-command-format-error? c) {
-     iem c
-     cr-printf ": "
-     name := (rt-command-format-error-name c)
-     if (not (null? name)) {
-       cr-printf "%s=" name
-     }
-     cr-printf "'%s'" (rt-command-format-error-value c)
-   })
-   ((rt-command-env-type-error? c) {
-     iem c
-     cr-printf ": name '%s'='%s'" (rt-command-env-type-error-name c) (rt-command-env-type-error-value c)
-   })
-   ((rt-command-exec-error? c) {
-     iem c
-     cr-printf ": errno '%s'" (rt-command-exec-error-errno c)
-   })
-   ((rt-command-status-error? c) {
-     ;iem c
-     job := idio-error-location c
-     osh := (open-output-string)
-     format-job-detail job osh
-     cr-printf (get-output-string osh)
-     close-handle osh
-     ;cr-printf "job: %s => %s" (%idio-job-pipeline job) (rt-command-status-error-status c)
-   })
-   ((rt-command-error? c) {
-     iem c
-   })
-
-   ;; ^rt-array-error
-   ((rt-array-error? c) {
-     iem c
-     cr-printf ": index '%s'" (rt-array-error-index c)
-   })
-
-   ;; ^rt-hash-error
-   ((rt-hash-key-not-found-error? c) {
-     iem c
-     cr-printf ": key '%s'" (rt-hash-key-not-found-error-key c)
-   })
-   ((rt-hash-error? c) {
-     iem c
-   })
-
-   ;; ^rt-number-error (bignum fixnum)
-   ((rt-bignum-error? c) {
-     iem c
-     cr-printf ": bignum %s" (rt-number-error-number c)
-   })
-   ((rt-fixnum-error? c) {
-     iem c
-     cr-printf ": fixnum %d" (rt-number-error-number c)
-   })
-   ((rt-number-error? c) {
-     iem c
-     cr-printf ": number '%s'" (rt-number-error-number c)
-   })
-
-   ;; ^rt-bitset-error
-   ((rt-bitset-bounds-error? c) {
-     iem c
-     cr-printf ": bit %s" (rt-bitset-bounds-error-bit c)
-   })
-   ((rt-bitset-size-mismatch-error? c) {
-     iem c
-     cr-printf ": size mismatch: %s != %s" (rt-bitset-size-mismatch-error-size1 c) (rt-bitset-size-mismatch-error-size2 c)
-   })
-   ((rt-bitset-error? c) {
-     iem c
-   })
-
-   ;; ^rt-keyword-error
-   ((rt-keyword-error? c) {
-     iem c
-     cr-printf ": keyword %s" (rt-keyword-error-keyword c)
-   })
-
-   ;; ^rt-libc-error
-   ((rt-libc-format-error? c) {
-     iem c
-     cr-printf ": name %s" (rt-libc-format-error-name c)
-   })
-   ((rt-libc-error? c) {
-     iem c
-   })
-
-   ;; ^rt-struct-error
-   ((rt-struct-error? c) {
-     iem c
-   })
-
-   ;; ^rt-symbol-error
-   ((rt-symbol-error? c) {
-     iem c
-   })
-
-   ;; ^rt-signal
-   ((rt-signal? c) {
-     iem c
-     cr-printf "signal %s (%s)" (rt-signal-error-signum c) (libc/signal-name (rt-signal-error-signum c))
-   })
-
-   ;; ^runtime-error fallback
-   ((runtime-error? c) {
-     iem c
-     cr-printf ": unhandled runtime-error %s" c
-   })
-
-   ;; fallbacks
-   ((idio-error? c) {
-     iem c
-     cr-printf ": unhandled ^idio-error %s" c
-   })
-   ((error? c) {
-     cr-printf ": unhandled ^error %s" (struct-type-name (struct-instance-type c))
-   })
-   (else {
-     cr-printf ": unhandled ^condition %s" c
-   }))
-
-  msgs = pair "\n" msgs
-  display (join-string "" (reverse msgs)) oh
 }

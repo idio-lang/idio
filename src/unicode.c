@@ -253,8 +253,14 @@ convert `c` to an integer		\n\
 /*
  * construct a UTF-8 sequence from an Idio string
  *
- * escapes says to turn, say, a single ASCII 07 (Alert, Bell, ...)
- * into the C-style two-character escape sequence \a
+ * escapes says:
+ *
+ *   * to turn, say, a single ASCII 07 (Alert, Bell, ...)  into the
+ *     C-style two-character escape sequence \a
+ *
+ *   * to turn any non-isprint(3) code point for a pathname into \xHH
+ *
+ *   * to turn U+0000 - U+001F into \xHH (JSON)
  *
  * quoted says to add a " at the front and back
  *
@@ -383,6 +389,9 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 		    ! isprint (c)) {
 		    /* c (1 char) -> \xhh (4 chars) */
 		    n += 3;
+		} else if (c < 0x20) {
+		    /* c (1 char) -> \xhh (4 chars) */
+		    n += 3;
 		}
 	    }
 	}
@@ -461,6 +470,8 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	    default:
 		if (is_pathname &&
 		    ! isprint (c)) {
+		    hex = 1;
+		} else if (c < 0x20) {
 		    hex = 1;
 		}
 

@@ -34,9 +34,17 @@
 #include <stdlib.h>
 
 #include "gc.h"
+
+#include "condition.h"
 #include "evaluate.h"
+#include "handle.h"
+#include "fixnum.h"
 #include "idio.h"
+#include "idio-string.h"
 #include "module.h"
+#include "pair.h"
+#include "string-handle.h"
+#include "struct.h"
 #include "symbol.h"
 #include "vm.h"
 
@@ -50,6 +58,9 @@ IDIO idio_json5_literal_value_neg_Infinity_sym = idio_S_nil;
 IDIO idio_json5_literal_value_NaN_sym = idio_S_nil;
 IDIO idio_json5_literal_value_pos_NaN_sym = idio_S_nil;
 IDIO idio_json5_literal_value_neg_NaN_sym = idio_S_nil;
+
+IDIO idio_condition_rt_json5_error_type;
+IDIO idio_condition_rt_json5_value_error_type;
 
 #ifdef IDIO_MALLOC
 #define JSON5_VASPRINTF idio_malloc_vasprintf
@@ -74,14 +85,22 @@ void json5_error_alloc (char *m)
     abort ();
 }
 
-char *json5_error_string (char *format, va_list argp)
+IDIO json5_error_string (char *format, va_list argp)
 {
     char *s;
     if (-1 == JSON5_VASPRINTF (&s, format, argp)) {
 	json5_error_alloc ("asprintf");
     }
 
-    return s;
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C (s, sh);
+#ifdef IDIO_MALLOC
+    IDIO_GC_FREE (s);
+#else
+    free (s);
+#endif
+
+    return idio_get_output_string (sh);
 }
 
 void json5_error_printf (char *format, ...)
@@ -90,28 +109,23 @@ void json5_error_printf (char *format, ...)
 
     va_list fmt_args;
     va_start (fmt_args, format);
-    char *msg = json5_error_string (format, fmt_args);
+    IDIO msg = json5_error_string (format, fmt_args);
     va_end (fmt_args);
 
-    fprintf (stderr, "ERROR: %s\n", msg);
-    free (msg);
-    exit (1);
-}
+    IDIO location = idio_vm_source_location ();
 
-IDIO_DEFINE_PRIMITIVE0_DS ("hello", json5_hello, (), "", "\
-say hello				\n\
-")
-{
-    fprintf (stdout, "hello\n");
+    IDIO c = idio_struct_instance (idio_condition_rt_json5_error_type,
+				   IDIO_LIST3 (msg,
+					       location,
+					       idio_S_nil));
+    idio_raise_condition (idio_S_false, c);
 
-    return idio_S_unspec;
+    /* notreached */
 }
 
 void idio_json5_add_primitives ()
 {
     idio_json5_api_add_primitives ();
-
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_json5_module, json5_hello);
 }
 
 void idio_final_json5 ()
@@ -130,4 +144,8 @@ void idio_init_json5 ()
     idio_json5_literal_value_NaN_sym = idio_symbols_C_intern ("NaN");
     idio_json5_literal_value_pos_NaN_sym = idio_symbols_C_intern ("+NaN");
     idio_json5_literal_value_neg_NaN_sym = idio_symbols_C_intern ("-NaN");
+
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_json5_error_type, "^rt-json5-error", idio_condition_runtime_error_type);
+
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_json5_value_error_type, "^rt-json5-value-error", idio_condition_rt_json5_error_type, "value");
 }

@@ -20,7 +20,26 @@ json5.idio
 
 module json5
 
-eprintf "This is module JSON5: "
-(json5/hello)
+(define-condition-type-accessors-only ^rt-json5-error
+				      ^runtime-error
+				      rt-json5-error?)
+
+(define-condition-type-accessors-only ^rt-json5-value-error
+				      ^rt-json5-error
+				      rt-json5-value-error?
+				      (value rt-json5-value-error-value))
+
+define (condition-report-json5-error c iem cr-printf) {
+  iem c
+}
+
+condition-report-extend ^rt-json5-error condition-report-json5-error
+
+define (condition-report-json5-value-error c iem cr-printf) {
+  iem c
+  cr-printf ": %s" (rt-json5-value-error-value c)
+}
+
+condition-report-extend ^rt-json5-value-error condition-report-json5-value-error
 
 provide json5

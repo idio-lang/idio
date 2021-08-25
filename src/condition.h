@@ -55,6 +55,11 @@
 /* ^rt-signal */
 #define IDIO_SI_RT_SIGNAL_TYPE_SIGNUM		0
 
+extern IDIO idio_condition_define_condition0_string;
+extern IDIO idio_condition_define_condition1_string;
+extern IDIO idio_condition_define_condition2_string;
+extern IDIO idio_condition_define_condition3_string;
+
 extern IDIO idio_condition_define_condition0_dynamic_string;
 
 #define IDIO_DEFINE_CONDITION0(v,n,p) {					\

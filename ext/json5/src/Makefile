@@ -32,6 +32,9 @@ clean :
 debug :
 	$(MAKE) MAKE_DEBUG=1
 
+sanitize :
+	$(MAKE) CDEBUG="-fsanitize=address -g" LDFLAGS="-L$(PWD) -lasan"
+
 debug-test :
 	$(MAKE) MAKE_DEBUG=1 test
 

@@ -136,7 +136,7 @@ json5_unicode_string_t *idio_string_to_json5_string_value (IDIO is)
     return so;
 }
 
-int idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth);
+void idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth);
 
 void idio_print_value_as_json_indent (IDIO oh, int depth)
 {
@@ -170,7 +170,7 @@ void idio_print_bignum_as_json (IDIO v, IDIO oh, int json5, int depth)
     IDIO_GC_FREE (bs);
 }
 
-int idio_print_array_as_json (IDIO a, IDIO oh, int json5, int depth)
+void idio_print_array_as_json (IDIO a, IDIO oh, int json5, int depth)
 {
     IDIO_ASSERT (a);
 
@@ -194,22 +194,16 @@ int idio_print_array_as_json (IDIO a, IDIO oh, int json5, int depth)
 	IDIO e = idio_array_ref_index (a, ai);
 	IDIO_ASSERT (e);
 
-	int er = idio_print_value_as_json (e, oh, json5, depth);
-
-	if (0 == er) {
-	    return 0;
-	}
+	idio_print_value_as_json (e, oh, json5, depth);
     }
     if (printed) {
 	idio_display_C ("\n", oh);
 	idio_print_value_as_json_indent (oh, depth - 1);
     }
     idio_display_C ("]", oh);
-
-    return 1;
 }
 
-int idio_print_hash_as_json (IDIO h, IDIO oh, int json5, int depth)
+void idio_print_hash_as_json (IDIO h, IDIO oh, int json5, int depth)
 {
     IDIO_ASSERT (h);
 
@@ -223,7 +217,8 @@ int idio_print_hash_as_json (IDIO h, IDIO oh, int json5, int depth)
 	idio_hash_entry_t *he = IDIO_HASH_HA (h, i);
 	for ( ; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
 	    IDIO k = IDIO_HASH_HE_KEY (he);
-	    if (idio_isa_string (k)) {
+	    if (idio_isa_string (k) ||
+		idio_isa_symbol (k)) {
 		if (printed) {
 		    idio_display_C (",", oh);
 		} else {
@@ -232,21 +227,16 @@ int idio_print_hash_as_json (IDIO h, IDIO oh, int json5, int depth)
 		idio_display_C ("\n", oh);
 		idio_print_value_as_json_indent (oh, depth);
 
-		int kr = idio_print_value_as_json (k, oh, json5, depth);
-
-		if (0 == kr) {
-		    return 0;
-		}
+		idio_print_value_as_json (k, oh, json5, depth);
 
 		idio_display_C (": ", oh);
 
-		int vr = idio_print_value_as_json (IDIO_HASH_HE_VALUE (he), oh, json5, depth + 1);
-
-		if (0 == vr) {
-		    return 0;
-		}
+		idio_print_value_as_json (IDIO_HASH_HE_VALUE (he), oh, json5, depth + 1);
 	    } else {
-		return 0;
+		idio_error_param_value_exp ("json5/generate", "member name", k, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return;
 	    }
 	}
     }
@@ -255,15 +245,11 @@ int idio_print_hash_as_json (IDIO h, IDIO oh, int json5, int depth)
 	idio_print_value_as_json_indent (oh, depth - 1);
     }
     idio_display_C ("}", oh);
-
-    return 1;
 }
 
-int idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
+void idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 {
     IDIO_ASSERT (v);
-
-    int r = 1;
 
     switch ((intptr_t) v & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
@@ -287,13 +273,19 @@ int idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 			idio_display_C ("false", oh);
 			break;
 		    default:
-			return 0;
+			idio_error_param_value_exp ("json5/generate", "value", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
+
+			/* notreached */
+			return;
 		    }
 
 		}
 		break;
 	    default:
-		return 0;
+		idio_error_param_value_exp ("json5/generate", "value", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return;
 	    }
 	}
 	break;
@@ -309,36 +301,90 @@ int idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 		break;
 	    case IDIO_TYPE_SYMBOL:
 		{
-		    if (json5 &&
-			(idio_json5_literal_value_Infinity_sym == v ||
-			 idio_json5_literal_value_pos_Infinity_sym == v ||
-			 idio_json5_literal_value_neg_Infinity_sym == v ||
-			 idio_json5_literal_value_NaN_sym == v ||
-			 idio_json5_literal_value_pos_NaN_sym == v ||
-			 idio_json5_literal_value_neg_NaN_sym == v)) {
-			idio_display (v, oh);
+		    if (json5) {
+			if (idio_json5_literal_value_Infinity_sym == v ||
+			    idio_json5_literal_value_pos_Infinity_sym == v ||
+			    idio_json5_literal_value_neg_Infinity_sym == v ||
+			    idio_json5_literal_value_NaN_sym == v ||
+			    idio_json5_literal_value_pos_NaN_sym == v ||
+			    idio_json5_literal_value_neg_NaN_sym == v) {
+			    idio_display (v, oh);
+			} else {
+			    /*
+			     * The symbol needs to be a valid
+			     * ECMAScript Identifier for which we need
+			     * a full json5_unicode_string_t in case
+			     * the symbol starts with the six code
+			     * point sequence \uHHHH and the
+			     * ECMA_UnicodeEscapeSequence needs
+			     * validating
+			     */
+
+			    IDIO sym_str = idio_string_C (IDIO_SYMBOL_S (v));
+			    json5_unicode_string_t *js = idio_string_to_json5_string_value (sym_str);
+
+			    /*
+			     * This is the logic behind
+			     * json5_token_identifier()
+			     */
+			    js->i = 0;
+			    json5_unicode_t cp = json5_unicode_string_next (js);
+			    if (json5_ECMA_IdentifierStart (cp, js)) {
+				for (; js->i < js->len;) {
+				    json5_unicode_t cp = json5_unicode_string_next (js);
+
+				    if (json5_ECMA_IdentifierPart (cp, js) == 0) {
+					idio_error_param_value_exp ("json5/generate", "symbol", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
+
+					/* notreached */
+					return;
+				    }
+				}
+
+				json5_token_reserved_identifiers (js, js->len);
+			    } else {
+				idio_error_param_value_exp ("json5/generate", "symbol", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
+
+				/* notreached */
+				return;
+			    }
+
+			    free (js->s);
+			    free (js);
+
+			    idio_display (v, oh);
+			}
 		    } else {
-			return 0;
+			idio_error_param_value_exp ("json5/generate", "value", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
+
+			/* notreached */
+			return;
 		    }
 		}
 		break;
 	    case IDIO_TYPE_ARRAY:
-		return idio_print_array_as_json (v, oh, json5, depth + 1);
+		idio_print_array_as_json (v, oh, json5, depth + 1);
+		break;
 	    case IDIO_TYPE_HASH:
-		return idio_print_hash_as_json (v, oh, json5, depth + 1);
+		idio_print_hash_as_json (v, oh, json5, depth + 1);
+		break;
 	    case IDIO_TYPE_BIGNUM:
 		idio_print_bignum_as_json (v, oh, json5, depth);
 		break;
 	    default:
-		return 0;
+		idio_error_param_value_exp ("json5/generate", "value", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return;
 	    }
 	}
 	break;
     default:
-	return 0;
-    }
+	idio_error_param_value_exp ("json5/generate", "value", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
 
-    return r;
+	/* notreached */
+	return;
+    }
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("generate", json5_generate, (IDIO v, IDIO args), "v [handle]", "\
@@ -358,21 +404,16 @@ See also ``json5/generate-json``	\n\
 
     IDIO sh = idio_open_output_string_handle_C ();
 
-    if (idio_print_value_as_json (v, sh, 1, 0)) {
-	IDIO s = idio_get_output_string (sh);
+    idio_print_value_as_json (v, sh, 1, 0);
+    IDIO s = idio_get_output_string (sh);
 
-	if (idio_isa_pair (args)) {
-	    IDIO oh = IDIO_PAIR_H (args);
+    if (idio_isa_pair (args)) {
+	IDIO oh = IDIO_PAIR_H (args);
 
-	    IDIO_USER_TYPE_ASSERT (handle, oh);
-	    return idio_display (s, oh);
-	} else {
-	    return s;
-	}
+	IDIO_USER_TYPE_ASSERT (handle, oh);
+	return idio_display (s, oh);
     } else {
-	idio_error_param_value_exp ("json5/generate", "v", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
-	
-	return idio_S_notreached;
+	return s;
     }
 }
 
@@ -393,21 +434,16 @@ See also ``json5/generate``		\n\
 
     IDIO sh = idio_open_output_string_handle_C ();
 
-    if (idio_print_value_as_json (v, sh, 0, 0)) {
-	IDIO s = idio_get_output_string (sh);
+    idio_print_value_as_json (v, sh, 0, 0);
+    IDIO s = idio_get_output_string (sh);
 
-	if (idio_isa_pair (args)) {
-	    IDIO oh = IDIO_PAIR_H (args);
+    if (idio_isa_pair (args)) {
+	IDIO oh = IDIO_PAIR_H (args);
 
-	    IDIO_USER_TYPE_ASSERT (handle, oh);
-	    return idio_display (s, oh);
-	} else {
-	    return s;
-	}
+	IDIO_USER_TYPE_ASSERT (handle, oh);
+	return idio_display (s, oh);
     } else {
-	idio_error_param_value_exp ("json5/generate-json", "v", v, "JSON-compatible value", IDIO_C_FUNC_LOCATION ());
-	
-	return idio_S_notreached;
+	return s;
     }
 }
 
@@ -440,7 +476,7 @@ IDIO idio_json5_array_value_to_idio (json5_array_t *ja)
 IDIO idio_json5_object_value_to_idio (json5_object_t *o)
 {
     if (NULL == o) {
-	return IDIO_HASH_EQUALP (0);
+	return IDIO_HASH_EQUALP (1);
     }
 
     size_t n = 0;
