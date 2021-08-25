@@ -444,7 +444,7 @@ void idio_init_C_struct ()
     /*
      * XXX nothing to do here...
      */
-    idio_module_table_register (NULL, NULL);
+    idio_module_table_register (NULL, NULL, NULL);
 
     idio_C_typedefs_hash = IDIO_HASH_EQP (1<<6);
     idio_gc_protect_auto (idio_C_typedefs_hash);

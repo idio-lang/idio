@@ -700,6 +700,6 @@ void idio_string_handle_add_primitives ()
 
 void idio_init_string_handle ()
 {
-    idio_module_table_register (idio_string_handle_add_primitives, NULL);
+    idio_module_table_register (idio_string_handle_add_primitives, NULL, NULL);
 }
 

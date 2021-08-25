@@ -718,7 +718,7 @@ test if unicode arguments are equal			\n\
 
 void idio_init_unicode ()
 {
-    idio_module_table_register (idio_unicode_add_primitives, NULL);
+    idio_module_table_register (idio_unicode_add_primitives, NULL, NULL);
 
     idio_unicode_hash = idio_hash (1<<7, idio_unicode_C_eqp, idio_unicode_C_hash, idio_S_nil, idio_S_nil);
     idio_gc_protect_auto (idio_unicode_hash);

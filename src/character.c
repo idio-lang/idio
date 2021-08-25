@@ -574,7 +574,7 @@ This implementation uses libc tolower()						\n\
 
 void idio_init_character ()
 {
-    idio_module_table_register (idio_character_add_primitives, NULL);
+    idio_module_table_register (idio_character_add_primitives, NULL, NULL);
 
     idio_characters_hash = idio_hash (1<<7, idio_character_C_eqp, idio_character_C_hash, idio_S_nil, idio_S_nil);
     idio_gc_protect_auto (idio_characters_hash);

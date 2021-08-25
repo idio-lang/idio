@@ -1439,7 +1439,7 @@ void idio_expander_add_primitives ()
 
 void idio_init_expander ()
 {
-    idio_module_table_register (idio_expander_add_primitives, NULL);
+    idio_module_table_register (idio_expander_add_primitives, NULL, NULL);
 
     idio_expander_module = idio_module (idio_symbols_C_intern ("expander"));
 

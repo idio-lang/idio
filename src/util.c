@@ -4127,7 +4127,7 @@ void idio_final_util ()
 
 void idio_init_util ()
 {
-    idio_module_table_register (idio_util_add_primitives, idio_final_util);
+    idio_module_table_register (idio_util_add_primitives, idio_final_util, NULL);
 
     idio_util_value_as_string = idio_symbols_C_intern ("%%value-as-string");
     idio_module_set_symbol_value (idio_util_value_as_string, IDIO_HASH_EQP (32), idio_Idio_module);

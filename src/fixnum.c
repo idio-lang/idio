@@ -1429,6 +1429,6 @@ void idio_fixnum_add_primitives ()
 
 void idio_init_fixnum ()
 {
-    idio_module_table_register (idio_fixnum_add_primitives, NULL);
+    idio_module_table_register (idio_fixnum_add_primitives, NULL, NULL);
 }
 

@@ -196,6 +196,6 @@ void idio_closure_add_primitives ()
 
 void idio_init_closure ()
 {
-    idio_module_table_register (idio_closure_add_primitives, NULL);
+    idio_module_table_register (idio_closure_add_primitives, NULL, NULL);
 }
 

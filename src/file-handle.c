@@ -2763,19 +2763,6 @@ IDIO idio_dl_read (IDIO h)
     return idio_S_notreached;
 }
 
-void idio_dl_handle_finalizer (IDIO h)
-{
-    IDIO_ASSERT (h);
-    IDIO_TYPE_ASSERT (C_pointer, h);
-
-    void *handle = IDIO_C_TYPE_POINTER_P (h);
-
-    if (dlclose (handle)) {
-	fprintf (stderr, "dlclose () => %s\n", dlerror ());
-	perror ("dlclose");
-    }
-}
-
 IDIO idio_load_dl_library (char *filename, size_t filename_len, char *libname, size_t libname_len, IDIO cs)
 {
     /*
@@ -2818,14 +2805,26 @@ IDIO idio_load_dl_library (char *filename, size_t filename_len, char *libname, s
 	return idio_S_notreached;
     }
 
-    idio_gc_register_finalizer (idio_C_pointer (handle), idio_dl_handle_finalizer);
-
+    /*
+     * Having loaded the shared library we want to call the
+     * idio_init_NAME() function which is a simple string
+     * construction.
+     *
+     * The argument we pass is the handle associated with the
+     * dlopen(3) in order that we can stash it away to be passed to
+     * dlclose(3) when it is safe to do so -- notably after the
+     * idio_final_NAME() function has been called which is quite late
+     * on in the game and doesn't play well with generic finalizers.
+     *
+     * Core modules aren't dynamically loaded so their
+     * idio_init_NAME() functions don't need a handle to be passed.
+     */
     char func[PATH_MAX];
     sprintf (func, "idio_init_%s", libname);
 
     dlerror ();
-    void (*lib_init) (void);
-    lib_init = (void (*) (void)) dlsym (handle, func);
+    void (*lib_init) (void *handle);
+    lib_init = (void (*) (void *handle)) dlsym (handle, func);
 
     char *error = dlerror ();
     if (NULL != error) {
@@ -2834,7 +2833,7 @@ IDIO idio_load_dl_library (char *filename, size_t filename_len, char *libname, s
 	return idio_S_notreached;
     }
 
-    (*lib_init) ();
+    (*lib_init) (handle);
 
     /*
      * Having loaded a specific .so we can look to load any *adjacent*
@@ -3561,7 +3560,7 @@ void idio_final_file_handle ()
 
 void idio_init_file_handle ()
 {
-    idio_module_table_register (idio_file_handle_add_primitives, idio_final_file_handle);
+    idio_module_table_register (idio_file_handle_add_primitives, idio_final_file_handle, NULL);
 
     idio_file_handles = IDIO_HASH_EQP (1<<3);
     idio_gc_protect_auto (idio_file_handles);

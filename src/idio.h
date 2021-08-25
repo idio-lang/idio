@@ -406,7 +406,7 @@ extern pid_t idio_pid;
 extern int idio_exit_status;
 extern IDIO idio_k_exit;
 
-void idio_module_table_register (void (*ap_func) (void), void (*f_func) (void));
+void idio_module_table_register (void (*ap_func) (void), void (*f_func) (void), void *handle);
 void idio_module_table_deregister (void (*ap_func) (void), void (*f_func) (void));
 
 

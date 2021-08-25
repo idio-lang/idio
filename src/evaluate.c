@@ -5200,7 +5200,7 @@ void idio_evaluate_add_primitives ()
 
 void idio_init_evaluate ()
 {
-    idio_module_table_register (idio_evaluate_add_primitives, NULL);
+    idio_module_table_register (idio_evaluate_add_primitives, NULL, NULL);
 
     idio_evaluate_module = idio_module (idio_symbols_C_intern ("evaluate"));
 

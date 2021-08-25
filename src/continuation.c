@@ -133,6 +133,6 @@ void idio_continuation_add_primitives ()
 
 void idio_init_continuation ()
 {
-    idio_module_table_register (idio_continuation_add_primitives, NULL);
+    idio_module_table_register (idio_continuation_add_primitives, NULL, NULL);
 }
 

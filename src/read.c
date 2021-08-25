@@ -4331,7 +4331,7 @@ void idio_final_read ()
 
 void idio_init_read ()
 {
-    idio_module_table_register (idio_read_add_primitives, idio_final_read);
+    idio_module_table_register (idio_read_add_primitives, idio_final_read, NULL);
 
     IDIO name = idio_symbols_C_intern ("%idio-lexical-object");
     idio_lexobj_type = idio_struct_type (name,

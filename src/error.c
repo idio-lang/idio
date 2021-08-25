@@ -658,7 +658,7 @@ void idio_error_add_primitives ()
 
 void idio_init_error ()
 {
-    idio_module_table_register (idio_error_add_primitives, NULL);
+    idio_module_table_register (idio_error_add_primitives, NULL, NULL);
 
     idio_S_internal = idio_symbols_C_intern ("internal");
     idio_gc_protect_auto (idio_S_internal);

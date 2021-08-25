@@ -1163,7 +1163,7 @@ void idio_condition_add_primitives ()
 
 void idio_init_condition ()
 {
-    idio_module_table_register (idio_condition_add_primitives, NULL);
+    idio_module_table_register (idio_condition_add_primitives, NULL, NULL);
 
 #define IDIO_CONDITION_STRING(c,s) idio_condition_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_condition_ ## c ## _string);
 

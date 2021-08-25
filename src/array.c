@@ -1481,6 +1481,6 @@ void idio_array_add_primitives ()
 
 void idio_init_array ()
 {
-    idio_module_table_register (idio_array_add_primitives, NULL);
+    idio_module_table_register (idio_array_add_primitives, NULL, NULL);
 }
 

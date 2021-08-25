@@ -2374,7 +2374,7 @@ void idio_final_gc ()
 
 void idio_init_gc ()
 {
-    idio_module_table_register (idio_gc_add_primitives, idio_final_gc);
+    idio_module_table_register (idio_gc_add_primitives, idio_final_gc, NULL);
 
     idio_gc = idio_gc_obj_new (NULL);
 

@@ -1001,6 +1001,6 @@ void idio_pair_add_primitives ()
 
 void idio_init_pair ()
 {
-    idio_module_table_register (idio_pair_add_primitives, NULL);
+    idio_module_table_register (idio_pair_add_primitives, NULL, NULL);
 }
 

@@ -297,6 +297,6 @@ void idio_init_frame ()
     /*
      * XXX nothing to do here
      */
-    idio_module_table_register (NULL, NULL);
+    idio_module_table_register (NULL, NULL, NULL);
 }
 

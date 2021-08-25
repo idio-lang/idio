@@ -27,6 +27,7 @@
 #include <sys/resource.h>
 
 #include <assert.h>
+#include <dlfcn.h>
 #include <ffi.h>
 #include <setjmp.h>
 #include <signal.h>
@@ -95,6 +96,7 @@ typedef struct idio_module_table_s {
     size_t size;
     size_t used;
     void (**table) (void);
+    void (**handle) (void *handle);		/* final only */
 } idio_module_table_t;
 
 static idio_module_table_t idio_add_primitives_table;
@@ -105,12 +107,14 @@ void idio_module_table_init ()
     idio_add_primitives_table.used = 0;
     idio_add_primitives_table.size = 40;
     idio_add_primitives_table.table = idio_alloc (40 * sizeof (void *));
+    idio_add_primitives_table.handle = NULL;
     idio_final_table.used = 0;
     idio_final_table.size = 40;
     idio_final_table.table = idio_alloc (40 * sizeof (void *));
+    idio_final_table.handle = idio_alloc (40 * sizeof (void *));
 }
 
-void idio_module_table_register (void (*ap_func) (void), void (*f_func) (void))
+void idio_module_table_register (void (*ap_func) (void), void (*f_func) (void), void *handle)
 {
     if (NULL != ap_func) {
 	if (idio_add_primitives_table.used >= idio_add_primitives_table.size) {
@@ -121,8 +125,11 @@ void idio_module_table_register (void (*ap_func) (void), void (*f_func) (void))
     if (NULL != f_func) {
 	if (idio_final_table.used >= idio_final_table.size) {
 	    idio_final_table.table = idio_realloc (idio_final_table.table, (idio_final_table.size + 10) * sizeof (void *));
+	    idio_final_table.handle = idio_realloc (idio_final_table.handle, (idio_final_table.size + 10) * sizeof (void *));
 	}
-	idio_final_table.table[idio_final_table.used++] = f_func;
+	idio_final_table.table[idio_final_table.used] = f_func;
+	idio_final_table.handle[idio_final_table.used] = handle;
+	idio_final_table.used++;
     }
 
     /*
@@ -134,17 +141,20 @@ void idio_module_table_register (void (*ap_func) (void), void (*f_func) (void))
     }
 }
 
-void idio_module_table_remove (idio_module_table_t *table, void (*func) (void))
+void idio_module_table_remove (idio_module_table_t *tbl, void (*func) (void))
 {
     size_t i;
-    for (i = 0; i < table->used; i++) {
-	if (func == table->table[i]) {
-	    if (i < table->size - 1) {
-		for (; i < table->used - 1; i++) {
-		    table->table[i] = table->table[i + 1];
+    for (i = 0; i < tbl->used; i++) {
+	if (func == tbl->table[i]) {
+	    if (i < tbl->size - 1) {
+		for (; i < tbl->used - 1; i++) {
+		    tbl->table[i] = tbl->table[i + 1];
 		}
 	    }
-	    table->table[i] = NULL;
+	    tbl->table[i] = NULL;
+	    if (NULL != tbl->handle) {
+		tbl->handle[i] = NULL;
+	    }
 	    break;
 	}
     }
@@ -173,6 +183,14 @@ void idio_module_table_final ()
     ptrdiff_t i;
     for (i = idio_final_table.used - 1; i >= 0; i--) {
 	(idio_final_table.table[i]) ();
+	if (NULL != idio_final_table.handle &&
+	    NULL != idio_final_table.handle[i]) {
+	    if (dlclose (idio_final_table.handle[i])) {
+		fprintf (stderr, "dlclose () => %s\n", dlerror ());
+		perror ("dlclose");
+	    }
+
+	}
     }
 }
 

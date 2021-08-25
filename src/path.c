@@ -362,7 +362,7 @@ void idio_path_add_primitives ()
 
 void idio_init_path ()
 {
-    idio_module_table_register (idio_path_add_primitives, NULL);
+    idio_module_table_register (idio_path_add_primitives, NULL, NULL);
 
     IDIO_DEFINE_STRUCT1 (idio_path_type, "~path", idio_S_nil, "pattern");
 }

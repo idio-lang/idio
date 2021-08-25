@@ -2460,7 +2460,7 @@ void idio_c_type_add_primitives ()
 
 void idio_init_c_type ()
 {
-    idio_module_table_register (idio_c_type_add_primitives, NULL);
+    idio_module_table_register (idio_c_type_add_primitives, NULL, NULL);
 
     idio_C_module = idio_module (idio_symbols_C_intern ("C"));
 

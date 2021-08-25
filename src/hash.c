@@ -2330,6 +2330,6 @@ void idio_hash_add_primitives ()
 
 void idio_init_hash ()
 {
-    idio_module_table_register (idio_hash_add_primitives, NULL);
+    idio_module_table_register (idio_hash_add_primitives, NULL, NULL);
 }
 

@@ -1535,7 +1535,7 @@ void idio_command_add_primitives ()
 
 void idio_init_command ()
 {
-    idio_module_table_register (idio_command_add_primitives, NULL);
+    idio_module_table_register (idio_command_add_primitives, NULL, NULL);
 
     idio_command_module = idio_module (idio_symbols_C_intern ("command"));
 }

@@ -2081,7 +2081,7 @@ void idio_final_module ()
 
 void idio_init_module ()
 {
-    idio_module_table_register (idio_module_add_primitives, idio_final_module);
+    idio_module_table_register (idio_module_add_primitives, idio_final_module, NULL);
 
     idio_modules_hash = IDIO_HASH_EQP (1<<4);
     idio_gc_protect_auto (idio_modules_hash);

@@ -454,7 +454,7 @@ void idio_keyword_add_primitives ()
 
 void idio_init_keyword ()
 {
-    idio_module_table_register (idio_keyword_add_primitives, NULL);
+    idio_module_table_register (idio_keyword_add_primitives, NULL, NULL);
 
     idio_keywords_hash = idio_hash (1<<7, idio_keyword_C_eqp, idio_keyword_C_hash, idio_S_nil, idio_S_nil);
     idio_gc_protect_auto (idio_keywords_hash);

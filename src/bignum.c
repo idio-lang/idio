@@ -4184,6 +4184,6 @@ void idio_final_bignum ()
 
 void idio_init_bignum ()
 {
-    idio_module_table_register (idio_bignum_add_primitives, idio_final_bignum);
+    idio_module_table_register (idio_bignum_add_primitives, idio_final_bignum, NULL);
 }
 

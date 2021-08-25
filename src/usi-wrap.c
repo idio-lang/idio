@@ -672,7 +672,7 @@ int idio_usi_codepoint_has_attribute (idio_unicode_t cp, int flag)
 
 void idio_init_usi_wrap ()
 {
-    idio_module_table_register (idio_usi_wrap_add_primitives, idio_final_usi_wrap);
+    idio_module_table_register (idio_usi_wrap_add_primitives, idio_final_usi_wrap, NULL);
 
     idio_unicode_module = idio_module (idio_symbols_C_intern ("unicode"));
 

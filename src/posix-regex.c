@@ -417,7 +417,7 @@ void idio_posix_regex_add_primitives ()
 
 void idio_init_posix_regex ()
 {
-    idio_module_table_register (idio_posix_regex_add_primitives, NULL);
+    idio_module_table_register (idio_posix_regex_add_primitives, NULL, NULL);
 
     /*
      * XXX REG_BASIC is not a thing in regex.h however we could do

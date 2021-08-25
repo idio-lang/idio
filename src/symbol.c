@@ -914,7 +914,7 @@ void idio_final_symbol ()
 
 void idio_init_symbol ()
 {
-    idio_module_table_register (idio_symbol_add_primitives, idio_final_symbol);
+    idio_module_table_register (idio_symbol_add_primitives, idio_final_symbol, NULL);
 
     idio_symbols_hash = idio_hash (1<<7, idio_symbol_C_eqp, idio_symbol_C_hash, idio_S_nil, idio_S_nil);
     idio_gc_protect_auto (idio_symbols_hash);

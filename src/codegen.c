@@ -2917,7 +2917,7 @@ void idio_codegen_add_primitives ()
 
 void idio_init_codegen ()
 {
-    idio_module_table_register (idio_codegen_add_primitives, NULL);
+    idio_module_table_register (idio_codegen_add_primitives, NULL, NULL);
 
     idio_codegen_module = idio_module (idio_symbols_C_intern ("codegen"));
 

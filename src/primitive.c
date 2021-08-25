@@ -291,6 +291,6 @@ void idio_primitive_add_primitives ()
 
 void idio_init_primitive ()
 {
-    idio_module_table_register (idio_primitive_add_primitives, NULL);
+    idio_module_table_register (idio_primitive_add_primitives, NULL, NULL);
 }
 

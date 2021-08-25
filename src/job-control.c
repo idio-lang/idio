@@ -2151,7 +2151,7 @@ void idio_final_job_control ()
 
 void idio_init_job_control ()
 {
-    idio_module_table_register (idio_job_control_add_primitives, idio_final_job_control);
+    idio_module_table_register (idio_job_control_add_primitives, idio_final_job_control, NULL);
 
     idio_job_control_module = idio_module (idio_symbols_C_intern ("job-control"));
 

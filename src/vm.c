@@ -8211,7 +8211,7 @@ void idio_final_vm ()
 
 void idio_init_vm ()
 {
-    idio_module_table_register (idio_vm_add_primitives, idio_final_vm);
+    idio_module_table_register (idio_vm_add_primitives, idio_final_vm, NULL);
 
     /*
      * Careful analysis:

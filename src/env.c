@@ -646,7 +646,7 @@ void idio_final_env ()
 
 void idio_init_env ()
 {
-    idio_module_table_register (idio_env_add_primitives, idio_final_env);
+    idio_module_table_register (idio_env_add_primitives, idio_final_env, NULL);
 
     idio_env_IDIOLIB_sym = idio_symbols_C_intern ("IDIOLIB");
     idio_env_PATH_sym = idio_symbols_C_intern ("PATH");

@@ -98,7 +98,7 @@ void idio_final_vars ()
 
 void idio_init_vars ()
 {
-    idio_module_table_register (idio_vars_add_primitives, idio_final_vars);
+    idio_module_table_register (idio_vars_add_primitives, idio_final_vars, NULL);
 
     idio_vars_IFS_sym                           = idio_symbols_C_intern ("IFS");
     idio_vars_suppress_exit_on_error_sym        = idio_symbols_C_intern ("suppress-exit-on-error!");

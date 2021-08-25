@@ -132,11 +132,11 @@ void idio_final_json5 ()
 {
 }
 
-void idio_init_json5 ()
+void idio_init_json5 (void *handle)
 {
     idio_json5_module = idio_module (idio_symbols_C_intern ("json5"));
 
-    idio_module_table_register (idio_json5_add_primitives, idio_final_json5);
+    idio_module_table_register (idio_json5_add_primitives, idio_final_json5, handle);
 
     idio_json5_literal_value_Infinity_sym = idio_symbols_C_intern ("Infinity");
     idio_json5_literal_value_pos_Infinity_sym = idio_symbols_C_intern ("+Infinity");

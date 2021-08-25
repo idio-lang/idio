@@ -2391,7 +2391,7 @@ void idio_handle_add_primitives ()
 
 void idio_init_handle ()
 {
-    idio_module_table_register (idio_handle_add_primitives, NULL);
+    idio_module_table_register (idio_handle_add_primitives, NULL, NULL);
 }
 
 /* Local Variables: */

@@ -262,7 +262,7 @@ void idio_thread_add_primitives ()
 
 void idio_init_thread ()
 {
-    idio_module_table_register (idio_thread_add_primitives, NULL);
+    idio_module_table_register (idio_thread_add_primitives, NULL, NULL);
 
     idio_running_threads = idio_array (8);
     idio_gc_protect_auto (idio_running_threads);
