@@ -839,6 +839,13 @@ json5_token_t *json5_tokenize (json5_unicode_string_t *s)
     return root;
 }
 
+json5_token_t *json5_tokenize_string (json5_unicode_string_t *so)
+{
+    json5_token_t *root = json5_tokenize (so);
+
+    return root;
+}
+
 json5_token_t *json5_tokenize_string_C (char *s_C, size_t slen)
 {
     json5_unicode_string_t *so = json5_utf8_string_C_len (s_C, slen);

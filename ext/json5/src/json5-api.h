@@ -16,14 +16,13 @@
  */
 
 /*
- * json5-parser.h
+ * json5-api.h
+ *
  */
 
-#ifndef JSON5_PARSER_H
-#define JSON5_PARSER_H
+#ifndef JSON5_API_H
+#define JSON5_API_H
 
-json5_value_t *json5_parse_string (json5_unicode_string_t *so);
-json5_value_t *json5_parse_string_C (char *s_C, size_t s_Clen);
-json5_value_t *json5_parse_fd (int fd);
+void idio_json5_api_add_primitives ();
 
 #endif

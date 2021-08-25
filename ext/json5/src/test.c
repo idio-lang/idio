@@ -234,7 +234,7 @@ void json5_value_print (json5_value_t *v, int depth)
 	    printf ("%e", v->u.n->u.f);
 	    break;
 	default:
-	    printf ("?? ");
+	    json5_error_printf ("?number %d? ", v->u.n->type);
 	    break;
 	}
 	break;

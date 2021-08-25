@@ -346,7 +346,7 @@ void idio_error_param_value_exp (char *func, char *param, IDIO val, char *exp, I
 }
 
 /*
- * Use idio_error_param_value_exp() for when val should have a range
+ * Use idio_error_param_value_msg() for when val should have a range
  * of possible values, say
  */
 void idio_error_param_value_msg (char *func, char *param, IDIO val, char *msg, IDIO c_location)

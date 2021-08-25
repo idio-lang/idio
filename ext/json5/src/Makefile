@@ -38,7 +38,7 @@ debug-test :
 sanitize-test :
 	$(MAKE) test CDEBUG="-fsanitize=address -g" LDFLAGS="-L$(PWD) -lasan"
 
-libjson5.so : $(LIBOBJS) json5-module.o
+libjson5.so : $(LIBOBJS) json5-module.o json5-api.o
 	$(CC) -shared -o $@ $^
 
 libjson5-bare.so : $(LIBOBJS) $(USIOBJS)

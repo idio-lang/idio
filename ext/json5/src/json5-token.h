@@ -124,6 +124,7 @@ typedef struct json5_token_s {
 
 void json5_value_free (json5_value_t *v);
 json5_token_t *json5_token_free_next (json5_token_t *ct);
+json5_token_t *json5_tokenize_string (json5_unicode_string_t *so);
 json5_token_t *json5_tokenize_string_C (char *s_C, size_t slen);
 
 #endif

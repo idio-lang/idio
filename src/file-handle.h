@@ -52,6 +52,13 @@ typedef struct idio_file_handle_stream_s {
 #define IDIO_FILE_HANDLE_PTR(H)    IDIO_FILE_HANDLE_STREAM_PTR((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 #define IDIO_FILE_HANDLE_COUNT(H)  IDIO_FILE_HANDLE_STREAM_COUNT((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 
+#define IDIO_IDIO_EXT	".idio"
+#define IDIO_MODE_R	"r"
+#define IDIO_MODE_RE	"re"
+#define IDIO_MODE_W	"w"
+#define IDIO_MODE_WE	"we"
+
+IDIO idio_file_handle_open_file (char *func, IDIO name, IDIO mode, char *def_mode, size_t dm_len);
 int idio_isa_file_handle (IDIO fh);
 int idio_isa_fd_handle (IDIO fh);
 int idio_isa_pipe_handle (IDIO fh);

@@ -352,6 +352,15 @@ json5_value_t *json5_parse (json5_token_t *root)
     return valuep;
 }
 
+json5_value_t *json5_parse_string (json5_unicode_string_t *so)
+{
+    json5_token_t *root = json5_tokenize_string (so);
+
+    json5_value_t *valuep = json5_parse (root);
+
+    return valuep;
+}
+
 json5_value_t *json5_parse_string_C (char *s_C, size_t s_Clen)
 {
     json5_token_t *root = json5_tokenize_string_C (s_C, s_Clen);

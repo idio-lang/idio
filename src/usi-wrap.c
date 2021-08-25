@@ -646,6 +646,30 @@ const SRFI_14_char_set_t SRFI_14_char_sets[] = {
     { hangul_lvt,             "char-set:hangul-lvt" },
 };
 
+int idio_usi_codepoint_is_category (idio_unicode_t cp, int cat)
+{
+    int r = 0;
+
+    const idio_USI_t *var = idio_USI_codepoint (cp);
+    if (cat == var->category) {
+	r = 1;
+    }
+
+    return r;
+}
+
+int idio_usi_codepoint_has_attribute (idio_unicode_t cp, int flag)
+{
+    int r = 0;
+
+    const idio_USI_t *var = idio_USI_codepoint (cp);
+    if (var->flags & flag) {
+	r = 1;
+    }
+
+    return r;
+}
+
 void idio_init_usi_wrap ()
 {
     idio_module_table_register (idio_usi_wrap_add_primitives, idio_final_usi_wrap);

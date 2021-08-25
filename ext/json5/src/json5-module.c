@@ -40,12 +40,16 @@
 #include "symbol.h"
 #include "vm.h"
 
-#include "json5-module.h"
-#include "json5-unicode.h"
-#include "json5-token.h"
-#include "json5-parser.h"
+#include "json5-api.h"
 
 IDIO idio_json5_module;
+
+IDIO idio_json5_literal_value_Infinity_sym = idio_S_nil;
+IDIO idio_json5_literal_value_pos_Infinity_sym = idio_S_nil;
+IDIO idio_json5_literal_value_neg_Infinity_sym = idio_S_nil;
+IDIO idio_json5_literal_value_NaN_sym = idio_S_nil;
+IDIO idio_json5_literal_value_pos_NaN_sym = idio_S_nil;
+IDIO idio_json5_literal_value_neg_NaN_sym = idio_S_nil;
 
 #ifdef IDIO_MALLOC
 #define JSON5_VASPRINTF idio_malloc_vasprintf
@@ -105,6 +109,8 @@ say hello				\n\
 
 void idio_json5_add_primitives ()
 {
+    idio_json5_api_add_primitives ();
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_json5_module, json5_hello);
 }
 
@@ -117,4 +123,11 @@ void idio_init_json5 ()
     idio_json5_module = idio_module (idio_symbols_C_intern ("json5"));
 
     idio_module_table_register (idio_json5_add_primitives, idio_final_json5);
+
+    idio_json5_literal_value_Infinity_sym = idio_symbols_C_intern ("Infinity");
+    idio_json5_literal_value_pos_Infinity_sym = idio_symbols_C_intern ("+Infinity");
+    idio_json5_literal_value_neg_Infinity_sym = idio_symbols_C_intern ("-Infinity");
+    idio_json5_literal_value_NaN_sym = idio_symbols_C_intern ("NaN");
+    idio_json5_literal_value_pos_NaN_sym = idio_symbols_C_intern ("+NaN");
+    idio_json5_literal_value_neg_NaN_sym = idio_symbols_C_intern ("-NaN");
 }

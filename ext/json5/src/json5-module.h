@@ -24,6 +24,14 @@
 #define JSON5_MODULE_H
 
 extern IDIO idio_json5_module;
+
+extern IDIO idio_json5_literal_value_Infinity_sym;
+extern IDIO idio_json5_literal_value_pos_Infinity_sym;
+extern IDIO idio_json5_literal_value_neg_Infinity_sym;
+extern IDIO idio_json5_literal_value_NaN_sym;
+extern IDIO idio_json5_literal_value_pos_NaN_sym;
+extern IDIO idio_json5_literal_value_neg_NaN_sym;
+
 void idio_init_json5 ();
 
 #endif

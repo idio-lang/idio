@@ -72,12 +72,6 @@
 #include "util.h"
 #include "vm.h"
 
-#define IDIO_IDIO_EXT	".idio"
-#define IDIO_MODE_R	"r"
-#define IDIO_MODE_RE	"re"
-#define IDIO_MODE_W	"w"
-#define IDIO_MODE_WE	"we"
-
 static IDIO idio_file_handles = idio_S_nil;
 static IDIO idio_stdin = idio_S_nil;
 static IDIO idio_stdout = idio_S_nil;
@@ -1448,9 +1442,9 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, size_t 
 }
 
 /*
- * imode, if not #n, is used in preferance.
+ * mode, if not #n, is used in preferance.
  */
-static IDIO idio_file_handle_open_file (char *func, IDIO name, IDIO mode, char *def_mode, size_t dm_len)
+IDIO idio_file_handle_open_file (char *func, IDIO name, IDIO mode, char *def_mode, size_t dm_len)
 {
     IDIO_C_ASSERT (func);
     IDIO_ASSERT (name);

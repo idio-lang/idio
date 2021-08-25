@@ -25,6 +25,9 @@
 
 extern IDIO idio_unicode_module;
 
+int idio_usi_codepoint_is_category (idio_unicode_t cp, int cat);
+int idio_usi_codepoint_has_attribute (idio_unicode_t cp, int flag);
+
 void idio_init_usi_wrap ();
 
 #endif
