@@ -7,12 +7,14 @@ else
 CDEBUG		:=
 endif
 
-CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -I$(PWD) -I$(TOPDIR)/src $(CDEBUG)
+CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -I$(PWD) -I$(TOPDIR)/src $(CFLAGS) $(CDEBUG) $(LIBFFI_INC)
 LDFLAGS		:= -L$(PWD) $(LDFLAGS)
 LIBS		:= $(LIBS)
 
-ifneq ($(OS),Darwin)
-DLIBS		:= libos.so libposix-regex.so
+ifeq ($(OS),Darwin)
+LD_DLFLAGS	:= -dynamiclib -undefined dynamic_lookup
+else
+LD_DLFLAGS	:= -shared
 endif
 
 LIBSRCS		:= json5-token.c json5-parser.c utf8.c json5-unicode.c
@@ -42,10 +44,10 @@ sanitize-test :
 	$(MAKE) test CDEBUG="-fsanitize=address -g" LDFLAGS="-L$(PWD) -lasan"
 
 libjson5.so : $(LIBOBJS) json5-module.o json5-api.o
-	$(CC) -shared -o $@ $^
+	$(CC) $(LD_DLFLAGS) -o $@ $^
 
 libjson5-bare.so : $(LIBOBJS) $(USIOBJS)
-	$(CC) -shared -o $@ $^
+	$(CC) $(LD_DLFLAGS) -o $@ $^
 
 %.o : %.d
 
