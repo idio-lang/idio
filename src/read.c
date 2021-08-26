@@ -1775,7 +1775,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 			     * presumably meant to be "\u00A92021" for "©2021"
 			     */
 			    char em[BUFSIZ];
-			    sprintf (em, "Unicode code point U+%04tX is invalid", u);
+			    sprintf (em, "Unicode code point U+%04jX is invalid", u);
 
 			    idio_read_error_string (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
