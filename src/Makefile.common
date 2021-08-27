@@ -80,7 +80,7 @@ CC		:= cc		# clang
 endif
 
 LIBFFI_INCDIR	:= /usr/local/include
-LDFLAGS		:= -L/usr/local/lib
+LDFLAGS		:= -Xlinker --export-dynamic -L/usr/local/lib
 
 # Yes, I know there's an arithmetic shift left of a signed variable!
 CFLAGS		:= -Wno-shift-negative-value
