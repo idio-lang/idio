@@ -71,7 +71,7 @@ c-type-error-load := {
 ;; idio_C_primitive_binary_add function directly from C to get an n1
 ;; error.
 c-type-error-load "c-type-errors/c-type-add-bad-n2-type.idio" "C/add n2='#t' a CONSTANT_IDIO is not a C numeric type"
-c-type-error-load "c-type-errors/c-type-add-mixed-types.idio" "C/add n1, n2 types='(0 0)': should be the same C numeric type"
+c-type-error-load "c-type-errors/c-type-add-mixed-types.idio" "C/add n1, n2 types='(\"C/int\" \"C/uint\")': should be the same C numeric type for C arithmetic add"
 
 c-type-error-load "c-type-errors/c-type-2integer-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C integral type"
 

@@ -1244,7 +1244,7 @@ int idio_C_longdouble_equal_ULP (long double o1, long double o2, unsigned int ma
 	int t1 = idio_type (n1);					\
 	int t2 = idio_type (n2);					\
 	if (t1 != t2) {							\
-	    idio_error_param_value_msg ("C/" #cname, "n1, n2 types", IDIO_LIST2 (n1, n2), "should be the same C numeric type", IDIO_C_FUNC_LOCATION ()); \
+	    idio_error_param_value_msg ("C/" #cname, "n1, n2 types", IDIO_LIST2 (idio_string_C (idio_type2string (n1)), idio_string_C (idio_type2string (n2))), "should be the same C numeric type for C arithmetic " #cname, IDIO_C_FUNC_LOCATION ()); \
 	    return idio_S_notreached;					\
 	}								\
 	switch (t1) {							\
@@ -1375,7 +1375,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 	int result;							\
 									\
 	if (idio_type (n1) != idio_type (n2)) {				\
-	    idio_error_C ("C/" name ": n1->type != n2->type", IDIO_LIST2 (idio_string_C (idio_type2string (n1)), idio_string_C (idio_type2string (n2))), idio_string_C ("C arithmetic cmp " name)); \
+	    idio_error_param_value_msg ("C/" name, "n1, n2 types", IDIO_LIST2 (idio_string_C (idio_type2string (n1)), idio_string_C (idio_type2string (n2))), "should be the same C numeric type for C arithmetic cmp " name, IDIO_C_FUNC_LOCATION ()); \
 									\
 	    return idio_S_notreached;					\
 	} else {							\
@@ -1426,7 +1426,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		result = (IDIO_C_TYPE_POINTER_P (n1) cmp IDIO_C_TYPE_POINTER_P (n2)); \
 		break;							\
 	    default:							\
-		idio_error_C ("C/" name ": n1->type unexpected", IDIO_LIST2 (n1, n2), idio_string_C ("C arithmetic cmp " name)); \
+		idio_error_param_value_msg ("C/" name, "n1 type", IDIO_LIST2 (n1, n2), "unexpected", IDIO_C_FUNC_LOCATION ()); \
 									\
 		return idio_S_notreached;				\
 	    }								\
@@ -1454,7 +1454,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 	int result;							\
 									\
 	if (idio_type (n1) != idio_type (n2)) {				\
-	    idio_error_C ("C/" name ": n1->type != n2->type", IDIO_LIST2 (idio_string_C (idio_type2string (n1)), idio_string_C (idio_type2string (n2))), idio_string_C ("C arithmetic cmp " name)); \
+	    idio_error_param_value_msg ("C/" name, "n1, n2 types", IDIO_LIST2 (idio_string_C (idio_type2string (n1)), idio_string_C (idio_type2string (n2))), "should be the same C numeric type for C arithmetic eq " name, IDIO_C_FUNC_LOCATION ()); \
 									\
 	    return idio_S_notreached;					\
 	} else {							\
@@ -1505,7 +1505,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		result = (IDIO_C_TYPE_POINTER_P (n1) cmp IDIO_C_TYPE_POINTER_P (n2)); \
 		break;							\
 	    default:							\
-		idio_error_C ("C/" name ": n1->type unexpected", IDIO_LIST2 (n1, n2), idio_string_C ("C arithmetic cmp " name)); \
+		idio_error_param_value_msg ("C/" name, "n1 type", IDIO_LIST2 (n1, n2), "unexpected", IDIO_C_FUNC_LOCATION ()); \
 									\
 		return idio_S_notreached;				\
 	    }								\
@@ -1534,7 +1534,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 	int result;							\
 									\
 	if (idio_type (n1) != idio_type (n2)) {				\
-	    idio_error_C ("C/" name ": n1->type != n2->type", IDIO_LIST2 (idio_string_C (idio_type2string (n1)), idio_string_C (idio_type2string (n2))), idio_string_C ("C arithmetic cmp " name)); \
+	    idio_error_param_value_msg ("C/" name, ": n1, n2 types", IDIO_LIST2 (idio_string_C (idio_type2string (n1)), idio_string_C (idio_type2string (n2))), "should be the same C numeric type for C arithmetic cmp eq " name, IDIO_C_FUNC_LOCATION ()); \
 									\
 	    return idio_S_notreached;					\
 	} else {							\
@@ -1588,7 +1588,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		result = (IDIO_C_TYPE_POINTER_P (n1) cmp IDIO_C_TYPE_POINTER_P (n2)); \
 		break;							\
 	    default:							\
-		idio_error_C ("C/" name ": n1->type unexpected", IDIO_LIST2 (n1, n2), idio_string_C ("C arithmetic cmp " name)); \
+		idio_error_param_value_msg ("C/" name, ": n1 type", IDIO_LIST2 (n1, n2), "unexpected", IDIO_C_FUNC_LOCATION ()); \
 									\
 		return idio_S_notreached;				\
 	    }								\

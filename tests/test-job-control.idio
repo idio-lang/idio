@@ -117,7 +117,7 @@ job-control-error-load := {
     jcel-lock := (libc/pipe)
 
     pid := (libc/fork)
-    if (C/== pid C/0i) {
+    if (C/== pid libc/0pid_t) {
       libc/close (libc/pipe-writer jcel-lock)
 
       ;; block waiting for the parent to be ready
@@ -242,7 +242,7 @@ job-control-async-load := {
     jcal-lock := (libc/pipe)
 
     pid := (libc/fork)
-    if (C/== pid C/0i) {
+    if (C/== pid libc/0pid_t) {
       libc/close (libc/pipe-writer jcal-lock)
 
       ;; block waiting for the parent to be ready

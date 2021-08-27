@@ -225,7 +225,7 @@ define (tidy-process-substitution-job job) {
     }
 
     pgid := %idio-job-pgid job
-    if (C/> pgid C/0i) {
+    if (C/> pgid libc/0pid_t) {
       if (not (job-is-completed job)) {
 	eprintf "%6d: tidy-psj: kill -TERM %d:\n" PID pgid
 	format-job-detail job (current-error-handle)
