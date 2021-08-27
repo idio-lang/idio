@@ -1772,7 +1772,8 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 			     * "\uD800"
 			     * "\U00A92021"
 			     *
-			     * presumably meant to be "\u00A92021" for "©2021"
+			     * presumably meant to be "\u00A92021" for
+			     * the UTF-8 "Â©2021"
 			     */
 			    char em[BUFSIZ];
 			    sprintf (em, "Unicode code point U+%04jX is invalid", u);
@@ -1895,11 +1896,15 @@ static IDIO idio_read_named_character (IDIO handle, IDIO lo)
 	    /*
 	     * Test Case: read-errors/named-character-non-ASCII.idio
 	     *
-	     * #\{newlïne}
+	     * #\{newlÃ¯ne}
 	     *
-	     * That's a literal 0xFE which might be being displayed as
-	     * LATIN SMALL LETTER I WITH DIAERESIS in the middle,
-	     * there
+	     * In the test Case, that's the UTF-8 for U+00EF (LATIN
+	     * SMALL LETTER I WITH DIAERESIS) in the middle, which may
+	     * show up as a Latin small letter I with diaeresis or as
+	     * the UTF-8 tuple 0xC3 0xAF.
+	     *
+	     * The point being that neith 0xC3 or 0xAF are ASCII and
+	     * therefore is cannot be the name of a character.
 	     */
 	    idio_read_error_named_character (handle, lo, IDIO_C_FUNC_LOCATION (), "non-ASCII");
 
@@ -3218,7 +3223,7 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
     if (has_period ||
 	has_exp ||
 	inexact) {
-	num = idio_bignum_C (str);
+	num = idio_bignum_C (str, i);
     } else {
 	/*
 	 * It might be possible to use a fixnum -- if it's small
@@ -3239,7 +3244,7 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
 	     *
 	     * 12345678901234567890
 	     */
-	    num = idio_bignum_C (str);
+	    num = idio_bignum_C (str, i);
 
 	    /* convert to a fixnum if possible */
 	    IDIO fn = idio_bignum_to_fixnum (num);

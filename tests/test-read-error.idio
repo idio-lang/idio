@@ -157,7 +157,7 @@ read-error-load "read-errors/character-incomplete-eof.idio" "UTF-8 decode: EOF" 
 read-error-load "read-errors/character-invalid-utf8.idio" "UTF-8 decode: not well-formed" 1
 read-error-load "read-errors/named-character-eof.idio" "named character: EOF" 1
 read-error-load "read-errors/named-character-eof-emb.idio" "named character: EOF" 2
-read-error-load "read-errors/named-character-non-ASCII.idio" "named character: non-ASCII" 3
+read-error-load "read-errors/named-character-non-ASCII.idio" "named character: non-ASCII" 4
 read-error-load "read-errors/named-character-no-name.idio" "named character: no letters in character name?" 1
 
 read-error-load "read-errors/named-character-unknown.idio" "unknown named character: caveat" 2

@@ -8242,8 +8242,8 @@ void idio_init_vm ()
     idio_vm_extend_constants (idio_S_if);
     idio_vm_extend_constants (idio_S_ph);
     idio_vm_extend_constants (idio_S_quote);
-    idio_vm_extend_constants (idio_bignum_real_C ("0.0"));
-    idio_vm_extend_constants (idio_bignum_real_C ("1.0"));
+    idio_vm_extend_constants (idio_bignum_real_C ("0.0", 3));
+    idio_vm_extend_constants (idio_bignum_real_C ("1.0", 3));
     idio_vm_extend_constants (idio_string_C ("\n"));
     idio_vm_extend_constants (idio_string_C ("closed application: (e)"));
     idio_vm_extend_constants (idio_string_C ("closed application: (end)"));

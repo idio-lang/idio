@@ -81,14 +81,13 @@
 
 static IDIO idio_array_default_value = idio_S_false;
 
-static void idio_array_length_error (char *msg, idio_ai_t size, IDIO c_location)
+static void idio_array_length_error (const char *msg, idio_ai_t size, IDIO c_location)
 {
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
     char em[BUFSIZ];
-
-    sprintf (em, "%s: size %td", msg, size);
+    idio_snprintf (em, BUFSIZ, "%s: size %td", msg, size);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (em, msh);
@@ -118,8 +117,7 @@ static void idio_array_bounds_error (idio_ai_t index, idio_ai_t size, IDIO c_loc
     IDIO_TYPE_ASSERT (string, c_location);
 
     char em[BUFSIZ];
-
-    sprintf (em, "array bounds error: abs (%td) >= #elem %td", index, size);
+    idio_snprintf (em, BUFSIZ, "array bounds error: abs (%td) >= #elem %td", index, size);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (em, msh);
@@ -724,7 +722,8 @@ void idio_duplicate_array (IDIO a, IDIO o, idio_ai_t n, int depth)
 	     * coding error
 	     */
 	    char em[30];
-	    sprintf (em, "n=%td", n);
+	    idio_snprintf (em, 30, "n=%td", n);
+
 	    idio_error_param_value_msg_only ("duplicate_array", em, "should be > 0", IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */

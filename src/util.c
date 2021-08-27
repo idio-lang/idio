@@ -4079,7 +4079,7 @@ IDIO idio_add_feature_pi (char *p, size_t size)
 size_t strnlen (const char *s, size_t maxlen)
 {
     size_t n = 0;
-    while (*s &&
+    while (*s++ &&
 	   n < maxlen) {
 	n++;
     }
@@ -4087,6 +4087,56 @@ size_t strnlen (const char *s, size_t maxlen)
     return n;
 }
 #endif
+
+size_t idio_strnlen (const char *s, size_t maxlen)
+{
+    size_t n = 0;
+    while (*s++ &&
+	   n < maxlen) {
+	n++;
+    }
+
+    if (maxlen == n) {
+	fprintf (stderr, "strnlen == %zd\n", n);
+	idio_error_C ("strnlen truncated", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return 0;
+    }
+
+    return n;
+}
+
+int idio_snprintf (char *str, size_t size, char *format, ...)
+{
+    IDIO_C_ASSERT (str);
+    IDIO_C_ASSERT (size > 0);
+    IDIO_C_ASSERT (format);
+
+    va_list fmt_args;
+    va_start (fmt_args, format);
+    int plen = vsnprintf (str, size, format, fmt_args);
+    va_end (fmt_args);
+
+    /*
+     * plen is "the number of characters (excluding the terminating
+     * null byte) which would have been written to the final string if
+     * enough space had been available."
+     */
+    if (plen >= size) {
+	idio_error_C ("snprintf truncated", idio_integer (plen), IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return 0;
+    } else if (plen < 0) {
+	idio_error_C ("snprintf failure", idio_integer (plen), IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return 0;
+    }
+
+    return plen;
+}
 
 void idio_util_add_primitives ()
 {

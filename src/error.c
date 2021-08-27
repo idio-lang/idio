@@ -534,6 +534,7 @@ void idio_error_C (char *msg, IDIO args, IDIO c_location)
     IDIO_TYPE_ASSERT (string, c_location);
 
     idio_error (idio_S_internal, idio_string_C (msg), args, c_location);
+    /* notreached */
 }
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("error", error, (IDIO loc, IDIO msg, IDIO args), "loc msg args", "\

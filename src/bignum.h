@@ -144,6 +144,7 @@
 */
 
 #define IDIO_BIGNUM_DPW           18
+#define IDIO_BIGNUM_DPW_FMT       "%018zd"
 #define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000000000000LL
 #define IDIO_BIGNUM_SIG_SEGMENTS  1
 
@@ -158,6 +159,7 @@
 #else
 #define IDIO_BIGNUM_MDPW          9
 #define IDIO_BIGNUM_DPW           9
+#define IDIO_BIGNUM_DPW_FMT       "%09zd"
 #define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000L
 #define IDIO_BIGNUM_SIG_SEGMENTS  2
 
@@ -307,10 +309,10 @@ char *idio_bignum_real_as_string (IDIO o, size_t *sizep);
 char *idio_bignum_as_string (IDIO o, size_t *sizep);
 size_t idio_bignum_count_digits (IDIO_BSA sig_a);
 IDIO idio_bignum_normalize (IDIO o);
-char *idio_bignum_C_without_inexact (char *nums);
-IDIO idio_bignum_integer_C (char *nums, int req_exact);
-IDIO idio_bignum_real_C (char *nums);
-IDIO idio_bignum_C (char *nums);
+char *idio_bignum_C_without_inexact (char *nums, size_t nums_len);
+IDIO idio_bignum_integer_C (char *nums, size_t nums_len, int req_exact);
+IDIO idio_bignum_real_C (char *nums, size_t nums_len);
+IDIO idio_bignum_C (char *nums, size_t nums_len);
 
 IDIO idio_bignum_primitive_add (IDIO args);
 IDIO idio_bignum_primitive_subtract (IDIO args);

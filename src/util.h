@@ -74,6 +74,9 @@ IDIO idio_add_feature_pi (char *p, size_t size);
 size_t strnlen (const char *s, size_t maxlen);
 #endif
 
+size_t idio_strnlen (const char *s, size_t maxlen);
+int idio_snprintf (char *str, size_t size, char *format, ...);
+
 void idio_init_util ();
 
 #endif

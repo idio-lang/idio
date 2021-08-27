@@ -2224,7 +2224,7 @@ int idio_asprintf(char **strp, const char *fmt, ...)
  * @s1: first string
  * @s1sp: first string length pointer
  * @s2: second string
- * @s2sp: second string length pointer
+ * @s2s: second string length
  *
  * If @s2 is non-NULL then @s1 is resized to have @s2 concatenated.
  *
@@ -2260,8 +2260,8 @@ char *idio_strcat (char *s1, size_t *s1sp, const char *s2, const size_t s2s)
     }
 
     memcpy (r + *s1sp, s2, s2s);
-    r[*s1sp + s2s] = '\0';
     *s1sp += s2s;
+    r[*s1sp] = '\0';
 
     return r;
 }
@@ -2271,7 +2271,7 @@ char *idio_strcat (char *s1, size_t *s1sp, const char *s2, const size_t s2s)
  * @s1: first string
  * @s1sp: first string length pointer
  * @s2: second string
- * @s2sp: second string length pointer
+ * @s2s: second string length
  *
  * Calls idio_strcat() then free()s @s2.
  *
