@@ -68,7 +68,7 @@ extern IDIO idio_libc_struct_stat;
  * names.  Or would do if I understood C macro expansion.
  */
 #define IDIO_LIBC_SIGNAL_NAME_ONLY(n,i) {				\
-	IDIO sig_sym = idio_symbols_C_intern (n);			\
+	IDIO sig_sym = idio_symbols_C_intern (n, sizeof (n) - 1);	\
 	idio_libc_export_symbol_value (sig_sym, idio_C_int (i));	\
 	sprintf (idio_libc_signal_names[i], "%s", #n); \
     }
@@ -90,7 +90,7 @@ extern IDIO idio_libc_struct_stat;
  */
 
 #define IDIO_LIBC_SIGNAL_NAME_AND_CONDITION(n) {			\
-	IDIO sig_sym = idio_symbols_C_intern (#n);			\
+	IDIO sig_sym = idio_symbols_C_intern (#n, sizeof (#n) - 1);	\
 	idio_libc_export_symbol_value (sig_sym, idio_C_int (n));	\
 	if ('\0' == idio_libc_signal_names[n][0]) {			\
 	    sprintf (idio_libc_signal_names[n], "%s", #n);		\
@@ -102,7 +102,7 @@ extern IDIO idio_libc_struct_stat;
     }
 
 #define IDIO_LIBC_SIGNAL(n) {						\
-	IDIO sig_sym = idio_symbols_C_intern (#n);			\
+	IDIO sig_sym = idio_symbols_C_intern (#n, sizeof (#n) - 1);	\
 	idio_libc_export_symbol_value (sig_sym, idio_C_int (n));	\
 	if ('\0' == idio_libc_signal_names[n][0]) {			\
 	    sprintf (idio_libc_signal_names[n], "%s", #n);		\
@@ -114,7 +114,7 @@ extern IDIO idio_libc_struct_stat;
     }
 
 #define IDIO_LIBC_ERRNO(n) {						\
-	IDIO err_sym = idio_symbols_C_intern (#n);			\
+	IDIO err_sym = idio_symbols_C_intern (#n, sizeof (#n) - 1);	\
 	idio_libc_export_symbol_value (err_sym, idio_C_int (n));	\
 	if ('\0' == idio_libc_errno_names[n][0]) {			\
 	    sprintf (idio_libc_errno_names[n], "%s", IDIO_SYMBOL_S (err_sym)); \
@@ -126,7 +126,7 @@ extern IDIO idio_libc_struct_stat;
     }
 
 #define IDIO_LIBC_RLIMIT(n) {						\
-	IDIO rlimit_sym = idio_symbols_C_intern (#n);			\
+	IDIO rlimit_sym = idio_symbols_C_intern (#n, sizeof (#n) - 1);	\
 	idio_libc_export_symbol_value (rlimit_sym, idio_C_int (n));	\
 	if ('\0' == idio_libc_rlimit_names[n][0]) {			\
 	    sprintf (idio_libc_rlimit_names[n], "%s", IDIO_SYMBOL_S (rlimit_sym)); \

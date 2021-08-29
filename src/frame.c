@@ -41,6 +41,7 @@
 #include "idio-string.h"
 #include "pair.h"
 #include "thread.h"
+#include "util.h"
 #include "vm.h"
 
 IDIO idio_G_frame;
@@ -53,8 +54,11 @@ void idio_frame_error_range (IDIO fo, size_t d, size_t i, IDIO c_location)
     IDIO_TYPE_ASSERT (string, c_location);
 
     char em[BUFSIZ];
-    sprintf (em, "frame #%zd index #%zd is out of range", d, i);
+    idio_snprintf (em, BUFSIZ, "frame #%zd index #%zd is out of range", d, i);
+
     idio_error_C (em, fo, c_location);
+
+    /* notreached */
 }
 
 IDIO idio_frame_allocate (idio_ai_t arityp1)

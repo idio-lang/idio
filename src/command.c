@@ -319,22 +319,28 @@ static void idio_command_exec_error (char **argv, char **envp, IDIO c_location)
     /* notreached */
 }
 
-char *idio_command_string_C (IDIO var, IDIO val, char *op_C, int *free_me_p, IDIO c_location)
+char *idio_command_string_C (IDIO var, IDIO val, size_t *sizep, char *op_C, int *free_me_p, IDIO c_location)
 {
     IDIO_ASSERT (var);
     IDIO_ASSERT (val);
+    IDIO_C_ASSERT (sizep);
     IDIO_C_ASSERT (op_C);
     IDIO_C_ASSERT (free_me_p);
 
     *free_me_p = 0;
 
     if (idio_isa_symbol (val)) {
+	*sizep = IDIO_SYMBOL_BLEN (val);
 	return IDIO_SYMBOL_S (val);
     } else if (idio_isa_string (val)) {
-	size_t size = 0;
-	char *val_C = idio_string_as_C (val, &size);
-	size_t C_size = strlen (val_C);
-	if (C_size != size) {
+	char *val_C = idio_string_as_C (val, sizep);
+
+	/*
+	 * Use size + 1 to avoid a truncation warning -- we're just
+	 * seeing if val_C includes a NUL
+	 */
+	size_t C_size = idio_strnlen (val_C, *sizep + 1);
+	if (C_size != *sizep) {
 	    IDIO_GC_FREE (val_C);
 
 	    idio_command_format_error (op_C, "contains an ASCII NUL", var, val, c_location);
@@ -356,6 +362,12 @@ char *idio_command_string_C (IDIO var, IDIO val, char *op_C, int *free_me_p, IDI
     }
 }
 
+/*
+ * I'm not sure we can second guess strlen() calls here as the
+ * environment is allowed to get "quite large" and the only limit is
+ * whatever execve() places on it -- which presumes execve() is going
+ * to get called.
+ */
 char **idio_command_get_envp ()
 {
     IDIO symbols = idio_module_visible_symbols (idio_thread_env_module (), idio_S_environ);
@@ -366,7 +378,8 @@ char **idio_command_get_envp ()
     n = 0;
     while (idio_S_nil != symbols) {
 	IDIO symbol = IDIO_PAIR_H (symbols);
-	size_t slen = strlen (IDIO_SYMBOL_S (symbol));
+
+	size_t slen = IDIO_SYMBOL_BLEN (symbol);
 
 	/*
 	 * NOTE
@@ -398,14 +411,15 @@ char **idio_command_get_envp ()
 		 * IDIO-LIB :* join-string (make-string 1 #U+0) '("hello" "world")
 		 * (env)
 		 */
-		char *val_C = idio_command_string_C (symbol, val, "environ", &free_val_C, IDIO_C_FUNC_LOCATION ());
-		size_t vlen  = strlen (val_C);
+		size_t vlen;
+		char *val_C = idio_command_string_C (symbol, val, &vlen, "environ", &free_val_C, IDIO_C_FUNC_LOCATION ());
 
 		envp[n] = idio_alloc (slen + 1 + vlen + 1);
-		strcpy (envp[n], IDIO_SYMBOL_S (symbol));
-		strcat (envp[n], "=");
-		strncat (envp[n], val_C, vlen);
+		memcpy (envp[n], IDIO_SYMBOL_S (symbol), slen);
+		memcpy (envp[n] + slen, "=", 1);
+		memcpy (envp[n] + slen + 1, val_C, vlen);
 		envp[n][slen + 1 + vlen] = '\0';
+
 		n++;
 
 		if (free_val_C) {
@@ -432,11 +446,10 @@ char **idio_command_get_envp ()
     return envp;
 }
 
-char *idio_command_find_exe_C (char *command)
+char *idio_command_find_exe_C (const char *command, size_t cmdlen)
 {
     IDIO_C_ASSERT (command);
-
-    size_t cmdlen = strlen (command);
+    IDIO_C_ASSERT (cmdlen > 0);
 
     IDIO PATH = idio_module_current_symbol_value_recurse (idio_env_PATH_sym, idio_S_nil);
 
@@ -462,7 +475,7 @@ char *idio_command_find_exe_C (char *command)
 	 * A C unit test, then.
 	 */
 	path = idio_env_PATH_default;
-	pathe = path + strlen (path);
+	pathe = path + sizeof (path);
     } else {
 	/*
 	 * Test Case: command-errors/PATH-format.idio
@@ -470,7 +483,8 @@ char *idio_command_find_exe_C (char *command)
 	 * PATH :* join-string (make-string 1 #U+0) '("hello" "world")
 	 * (env)
 	 */
-	path_C = idio_command_string_C (idio_env_PATH_sym, PATH, "find-exe", &free_path_C, IDIO_C_FUNC_LOCATION ());
+	size_t plen;
+	path_C = idio_command_string_C (idio_env_PATH_sym, PATH, &plen, "find-exe", &free_path_C, IDIO_C_FUNC_LOCATION ());
 
 	path = path_C;
 	pathe = path + idio_string_len (PATH);
@@ -500,7 +514,8 @@ char *idio_command_find_exe_C (char *command)
 	return NULL;
     }
 
-    size_t cwdlen = strlen (cwd);
+    size_t cwdlen = idio_strnlen (cwd, PATH_MAX);
+    size_t exelen = 0;
 
     int done = 0;
     while (! done) {
@@ -531,7 +546,9 @@ char *idio_command_find_exe_C (char *command)
 	     *
 	     * PATH = ""
 	     */
-	    strcpy (exename, cwd);
+	    memcpy (exename, cwd, cwdlen);
+	    exename[cwdlen] = '\0';
+	    exelen = cwdlen;
 	} else {
 	    colon = memchr (path, ':', pathlen);
 
@@ -556,6 +573,7 @@ char *idio_command_find_exe_C (char *command)
 
 		memcpy (exename, path, pathlen);
 		exename[pathlen] = '\0';
+		exelen = pathlen;
 	    } else {
 		size_t dirlen = colon - path;
 
@@ -586,7 +604,9 @@ char *idio_command_find_exe_C (char *command)
 		     * PATH = "foo:"
 		     * PATH = "foo::bar"
 		     */
-		    strcpy (exename, cwd);
+		    memcpy (exename, cwd, cwdlen);
+		    exename[cwdlen] = '\0';
+		    exelen = cwdlen;
 		} else {
 		    if ((dirlen + 1 + cmdlen + 1) >= PATH_MAX) {
 			/*
@@ -608,12 +628,15 @@ char *idio_command_find_exe_C (char *command)
 
 		    memcpy (exename, path, dirlen);
 		    exename[dirlen] = '\0';
+		    exelen = dirlen;
 		}
 	    }
 	}
 
-	strcat (exename, "/");
-	strcat (exename, command);
+	memcpy (exename + exelen, "/", 1);
+	memcpy (exename + exelen + 1, command, cmdlen);
+	exelen += 1 + cmdlen;
+	exename[exelen] = '\0';
 
 	if (access (exename, X_OK) == 0) {
 	    struct stat sb;
@@ -653,8 +676,9 @@ char *idio_command_find_exe_C (char *command)
     char *pathname = NULL;
 
     if (0 != exename[0]) {
-	pathname = idio_alloc (strlen (exename) + 1);
-	strcpy (pathname, exename);
+	pathname = idio_alloc (exelen + 1);
+	memcpy (pathname, exename, exelen);
+	pathname[exelen] = '\0';
     }
 
     if (free_path_C) {
@@ -678,10 +702,11 @@ char *idio_command_find_exe (IDIO func)
      * %find-exe (join-string (make-string 1 #U+0) '("hello" "world"))
      % %find-exe #t 2 3
      */
-    char *func_C = idio_command_string_C (idio_S_nil, func, "command", &free_func_C, IDIO_C_FUNC_LOCATION ());
+    size_t flen;
+    char *func_C = idio_command_string_C (idio_S_nil, func, &flen, "command", &free_func_C, IDIO_C_FUNC_LOCATION ());
 
     if (strchr (func_C, '/') == NULL) {
-	char *r = idio_command_find_exe_C (func_C);
+	char *r = idio_command_find_exe_C (func_C, flen);
 
 	if (free_func_C) {
 	    IDIO_GC_FREE (func_C);
@@ -699,8 +724,9 @@ char *idio_command_find_exe (IDIO func)
 	 * which our caller frees.  We then get a second attempt to
 	 * free it (from the symbol table) when the VM shuts down.
 	 */
-	char *cmdname = idio_alloc (strlen (func_C) + 1);
-	strcpy (cmdname, func_C);
+	char *cmdname = idio_alloc (flen + 1);
+	memcpy (cmdname, func_C, flen);
+	cmdname[flen] = '\0';
 
 	if (free_func_C) {
 	    IDIO_GC_FREE (func_C);
@@ -806,7 +832,8 @@ static ssize_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
      * path-glob := make-struct-instance ~path str
      * env path-glob
      */
-    char *glob_C = idio_command_string_C (idio_S_nil, arg, "glob", &free_glob_C, IDIO_C_FUNC_LOCATION ());
+    size_t glen;
+    char *glob_C = idio_command_string_C (idio_S_nil, arg, &glen, "glob", &free_glob_C, IDIO_C_FUNC_LOCATION ());
 
     char *match = idio_command_glob_charp (glob_C);
 
@@ -948,7 +975,8 @@ char **idio_command_argv (IDIO args)
 			 *
 			 * env (join-string (make-string 1 #U+0) '("hello" "world"))
 			 */
-			argv[i] = idio_command_string_C (idio_S_nil, arg, "argument", &free_argv_i, IDIO_C_FUNC_LOCATION ());
+			size_t alen;
+			argv[i] = idio_command_string_C (idio_S_nil, arg, &alen, "argument", &free_argv_i, IDIO_C_FUNC_LOCATION ());
 			i++;
 		    }
 		    break;
@@ -974,9 +1002,17 @@ char **idio_command_argv (IDIO args)
 
 			    size_t n;
 			    for (n = 0; n < g.gl_pathc; n++) {
+				/*
+				 * Can we know anything about the size
+				 * of g.gl_pathv[n] to constrain the
+				 * strlen?
+				 */
 				size_t plen = strlen (g.gl_pathv[n]);
 				argv[i] = idio_alloc (plen + 1);
-				strcpy (argv[i++], g.gl_pathv[n]);
+				memcpy (argv[i], g.gl_pathv[n], plen);
+				argv[i][plen] = '\0';
+
+				i++;
 			    }
 
 			    globfree (&g);
@@ -1040,9 +1076,17 @@ char **idio_command_argv (IDIO args)
 
 				size_t n;
 				for (n = 0; n < g.gl_pathc; n++) {
+				    /*
+				     * Can we know anything about the
+				     * size of g.gl_pathv[n] to
+				     * constrain the strlen?
+				     */
 				    size_t plen = strlen (g.gl_pathv[n]);
 				    argv[i] = idio_alloc (plen + 1);
-				    strcpy (argv[i++], g.gl_pathv[n]);
+				    memcpy (argv[i], g.gl_pathv[n], plen);
+				    argv[i][plen] = '\0';
+
+				    i++;
 				}
 
 				globfree (&g);
@@ -1537,6 +1581,6 @@ void idio_init_command ()
 {
     idio_module_table_register (idio_command_add_primitives, NULL, NULL);
 
-    idio_command_module = idio_module (idio_symbols_C_intern ("command"));
+    idio_command_module = idio_module (IDIO_SYMBOLS_C_INTERN ("command"));
 }
 

@@ -323,9 +323,16 @@ typedef struct idio_substring_s {
 #define IDIO_SYMBOL_FLAG_GENSYM		(1<<0)
 
 typedef struct idio_symbol_s {
+    /**
+     * @blen: length in bytes
+     *
+     * The string is expected to be NUL-terminated.
+     */
+    size_t blen;		/* bytes */
     char *s;			/* C string */
 } idio_symbol_t;
 
+#define IDIO_SYMBOL_BLEN(S)	((S)->u.symbol.blen)
 #define IDIO_SYMBOL_S(S)	((S)->u.symbol.s)
 #define IDIO_SYMBOL_FLAGS(S)	((S)->tflags)
 
@@ -568,10 +575,13 @@ typedef struct idio_closure_s {
 typedef struct idio_primitive_desc_s {
     struct idio_s *(*f) ();	/* don't declare args */
     char *name;
+    size_t name_len;
     uint8_t arity;
     char varargs;
     char *sigstr;
+    size_t sigstr_len;
     char *docstr;
+    size_t docstr_len;
 } idio_primitive_desc_t;
 
 /*
@@ -585,6 +595,7 @@ typedef struct idio_primitive_s {
     struct idio_s *grey;
     struct idio_s *(*f) ();	/* don't declare args */
     char *name;
+    size_t name_len;
     uint8_t arity;
     char varargs;
 #ifdef IDIO_VM_PROF
@@ -598,6 +609,7 @@ typedef struct idio_primitive_s {
 #define IDIO_PRIMITIVE_GREY(P)       ((P)->u.primitive->grey)
 #define IDIO_PRIMITIVE_F(P)          ((P)->u.primitive->f)
 #define IDIO_PRIMITIVE_NAME(P)       ((P)->u.primitive->name)
+#define IDIO_PRIMITIVE_NAME_LEN(P)   ((P)->u.primitive->name_len)
 #define IDIO_PRIMITIVE_ARITY(P)      ((P)->u.primitive->arity)
 #define IDIO_PRIMITIVE_VARARGS(P)    ((P)->u.primitive->varargs)
 #ifdef IDIO_VM_PROF
@@ -708,7 +720,7 @@ typedef struct idio_handle_methods_s {
     int (*close) (struct idio_s *h);
     int (*putb) (struct idio_s *h, uint8_t c);
     int (*putc) (struct idio_s *h, idio_unicode_t c);
-    ptrdiff_t (*puts) (struct idio_s *h, const char *s, size_t slen);
+    ptrdiff_t (*puts) (struct idio_s *h, const char *s, const size_t slen);
     int (*flush) (struct idio_s *h);
     off_t (*seek) (struct idio_s *h, off_t offset, int whence);
     void (*print) (struct idio_s *h, struct idio_s *o);
@@ -1503,6 +1515,8 @@ void idio_gc_free ();
 int idio_asprintf(char **strp, const char *fmt, ...);
 char *idio_strcat (char *s1, size_t *s1sp, const char *s2, const size_t s2s);
 char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, const size_t s2s);
+
+#define IDIO_STATIC_STR_LEN(s)	(s), sizeof (s) - 1
 
 #define IDIO_STRCAT(s1,s1sp,s2)		{			\
 	char *str = s2;						\

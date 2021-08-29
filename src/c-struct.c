@@ -460,7 +460,7 @@ void idio_init_C_struct ()
     IDIO_C_TYPEDEF_ADD (float);
     IDIO_C_TYPEDEF_ADD (double);
     {
-	IDIO sym = idio_symbols_C_intern ("*");
+	IDIO sym = IDIO_SYMBOLS_C_INTERN ("*");
 	idio_CTD_asterisk = idio_C_typedefs_add (sym);
     }
     IDIO_C_TYPEDEF_ADD (string);

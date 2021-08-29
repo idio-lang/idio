@@ -1223,7 +1223,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 
 	    switch (format) {
 	    case IDIO_PRINT_CONVERSION_FORMAT_X:
-		idio_asprintf (&r, "%" PRIXPTR, (uintptr_t) IDIO_FIXNUM_VAL (o));
+		*sizep = idio_asprintf (&r, "%" PRIXPTR, (uintptr_t) IDIO_FIXNUM_VAL (o));
 		break;
 	    case IDIO_PRINT_CONVERSION_FORMAT_b:
 		{
@@ -1242,17 +1242,17 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			}
 		    }
 		    bits[j] = '\0';
-		    idio_asprintf (&r, "%s", bits + seen_bit);
+		    *sizep = idio_asprintf (&r, "%s", bits + seen_bit);
 		}
 		break;
 	    case IDIO_PRINT_CONVERSION_FORMAT_d:
-		idio_asprintf (&r, "%" PRIdPTR, IDIO_FIXNUM_VAL (o));
+		*sizep = idio_asprintf (&r, "%" PRIdPTR, IDIO_FIXNUM_VAL (o));
 		break;
 	    case IDIO_PRINT_CONVERSION_FORMAT_o:
-		idio_asprintf (&r, "%" PRIoPTR, (uintptr_t) IDIO_FIXNUM_VAL (o));
+		*sizep = idio_asprintf (&r, "%" PRIoPTR, (uintptr_t) IDIO_FIXNUM_VAL (o));
 		break;
 	    case IDIO_PRINT_CONVERSION_FORMAT_x:
-		idio_asprintf (&r, "%" PRIxPTR, (uintptr_t) IDIO_FIXNUM_VAL (o));
+		*sizep = idio_asprintf (&r, "%" PRIxPTR, (uintptr_t) IDIO_FIXNUM_VAL (o));
 		break;
 	    default:
 		/*
@@ -1270,7 +1270,6 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		}
 		break;
 	    }
-	    *sizep = strlen (r);
 	    break;
 	}
     case IDIO_TYPE_CONSTANT_MARK:
@@ -1352,8 +1351,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			 * Coding error.  There should be a case
 			 * clause above.
 			 */
-			idio_asprintf (&r, "#<type/constant/idio?? %10p>", o);
-			*sizep = strlen (r);
+			*sizep = idio_asprintf (&r, "#<type/constant/idio?? %10p>", o);
 			break;
 		    }
 
@@ -1364,11 +1362,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			 * Coding error.  There should be a case
 			 * clause above.
 			 */
-			idio_asprintf (&r, "#<CONST? %10p>", o);
+			*sizep = idio_asprintf (&r, "#<CONST? %10p>", o);
 		    } else {
-			idio_asprintf (&r, "%s", t);
+			*sizep = idio_asprintf (&r, "%s", t);
 		    }
-		    *sizep = strlen (r);
 		}
 		break;
 	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:
@@ -1397,7 +1394,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			 * Coding error.  There should be a case
 			 * clause above.
 			 */
-			sprintf (m, "#<type/constant/token?? %10p>", o);
+			idio_snprintf (m, BUFSIZ, "#<type/constant/token?? %10p>", o);
 			t = m;
 			break;
 		    }
@@ -1409,11 +1406,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			 * Coding error.  There should be a case
 			 * clause above.
 			 */
-			idio_asprintf (&r, "#<TOKEN=%" PRIdPTR ">", v);
+			*sizep = idio_asprintf (&r, "#<TOKEN=%" PRIdPTR ">", v);
 		    } else {
-			idio_asprintf (&r, "%s", t);
+			*sizep = idio_asprintf (&r, "%s", t);
 		    }
-		    *sizep = strlen (r);
 		}
 		break;
 
@@ -1512,7 +1508,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			 * Coding error.  There should be a case
 			 * clause above.
 			 */
-			sprintf (m, "#<type/constant/vm_code?? o=%10p v=%tx>", o, v);
+			idio_snprintf (m, BUFSIZ, "#<type/constant/vm_code?? o=%10p v=%tx>", o, v);
 			t = m;
 			break;
 		    }
@@ -1524,11 +1520,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			 * Coding error.  There should be a case
 			 * clause above.
 			 */
-			idio_asprintf (&r, "#<I-CODE? %10p>", o);
+			*sizep = idio_asprintf (&r, "#<I-CODE? %10p>", o);
 		    } else {
-			idio_asprintf (&r, "%s", t);
+			*sizep = idio_asprintf (&r, "%s", t);
 		    }
-		    *sizep = strlen (r);
 		}
 		break;
 
@@ -1544,11 +1539,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    intptr_t c = IDIO_CHARACTER_VAL (o);
 		    if (c <= 0x7f &&
 			isgraph (c)) {
-			idio_asprintf (&r, "#\\%c", (char) c);
+			*sizep = idio_asprintf (&r, "#\\%c", (char) c);
 		    } else {
-			idio_asprintf (&r, "#U+%04X", c);
+			*sizep = idio_asprintf (&r, "#U+%04X", c);
 		    }
-		    *sizep = strlen (r);
 		    break;
 		}
 	    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
@@ -1556,11 +1550,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    idio_unicode_t u = IDIO_UNICODE_VAL (o);
 		    if (u <= 0x7f &&
 			isgraph (u)) {
-			idio_asprintf (&r, "#\\%c", u);
+			*sizep = idio_asprintf (&r, "#\\%c", u);
 		    } else {
-			idio_asprintf (&r, "#U+%04X", u);
+			*sizep = idio_asprintf (&r, "#U+%04X", u);
 		    }
-		    *sizep = strlen (r);
 		    break;
 		}
 	    default:
@@ -1569,8 +1562,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		 *
 		 * Coding error.  There should be a case clause above.
 		 */
-		idio_asprintf (&r, "#<type/constant?? %10p>", o);
-		*sizep = strlen (r);
+		*sizep = idio_asprintf (&r, "#<type/constant?? %10p>", o);
 		break;
 	    }
 	}
@@ -1581,22 +1573,19 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 	 *
 	 * Coding error.
 	 */
-	idio_asprintf (&r, "#<type/placecholder?? %10p>", o);
-	*sizep = strlen (r);
+	*sizep = idio_asprintf (&r, "#<type/placecholder?? %10p>", o);
 	break;
     case IDIO_TYPE_POINTER_MARK:
 	{
 	    idio_type_e type = idio_type (o);
 
 	    if (depth <= 0) {
-		idio_asprintf (&r, "..");
-		*sizep = strlen (r);
+		*sizep = idio_asprintf (&r, "..");
 		return r;
 	    }
 
 	    if (idio_S_false != idio_list_memq (o, seen)) {
-		idio_asprintf (&r, "#<^{%s@%p}>", idio_type2string (o), o);
-		*sizep = strlen (r);
+		*sizep = idio_asprintf (&r, "#<^{%s@%p}>", idio_type2string (o), o);
 		return r;
 	    }
 
@@ -1608,8 +1597,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		 * Coding error.
 		 */
 		fprintf (stderr, "TYPE_NONE in flight :(\n");
-		idio_asprintf (&r, "#<NONE!! -none- %10p>", o);
-		*sizep = strlen (r);
+		*sizep = idio_asprintf (&r, "#<NONE!! -none- %10p>", o);
 		break;
 	    case IDIO_TYPE_STRING:
 		r = idio_utf8_string (o, sizep, IDIO_UTF8_STRING_ESCAPES, IDIO_UTF8_STRING_QUOTED, IDIO_UTF8_STRING_USEPREC);
@@ -1618,12 +1606,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		r = idio_utf8_string (o, sizep, IDIO_UTF8_STRING_ESCAPES, IDIO_UTF8_STRING_QUOTED, IDIO_UTF8_STRING_USEPREC);
 		break;
 	    case IDIO_TYPE_SYMBOL:
-		idio_asprintf (&r, "%s", IDIO_SYMBOL_S (o));
-		*sizep = strlen (r);
+		*sizep = idio_asprintf (&r, "%s", IDIO_SYMBOL_S (o));
 		break;
 	    case IDIO_TYPE_KEYWORD:
-		idio_asprintf (&r, ":%s", IDIO_KEYWORD_S (o));
-		*sizep = strlen (r);
+		*sizep = idio_asprintf (&r, ":%s", IDIO_KEYWORD_S (o));
 		break;
 	    case IDIO_TYPE_PAIR:
 		/*
@@ -1647,20 +1633,17 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 
 			if (idio_S_quote == IDIO_PAIR_H (o)) {
 			    special = 1;
-			    idio_asprintf (&r, "'");
+			    *sizep = idio_asprintf (&r, "'");
 			} else if (idio_S_unquote == IDIO_PAIR_H (o)) {
 			    special = 1;
-			    idio_asprintf (&r, "$");
+			    *sizep = idio_asprintf (&r, "$");
 			} else if (idio_S_unquotesplicing == IDIO_PAIR_H (o)) {
 			    special = 1;
-			    idio_asprintf (&r, "$@");
+			    *sizep = idio_asprintf (&r, "$@");
 			} else if (idio_S_quasiquote == IDIO_PAIR_H (o)) {
 			    special = 1;
 			    trail = " }";
-			    idio_asprintf (&r, "#T{ ");
-			}
-			if (NULL != r) {
-			    *sizep = strlen (r);
+			    *sizep = idio_asprintf (&r, "#T{ ");
 			}
 
 			if (special) {
@@ -1688,8 +1671,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			}
 		    }
 
-		    idio_asprintf (&r, "(");
-		    *sizep = strlen (r);
+		    *sizep = idio_asprintf (&r, "(");
 
 		    while (1) {
 			size_t hs_size = 0;
@@ -1700,9 +1682,8 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			if (idio_type (o) != IDIO_TYPE_PAIR) {
 			    if (idio_S_nil != o) {
 				char *ps;
-				idio_asprintf (&ps, " %c ", IDIO_PAIR_SEPARATOR);
+				size_t ps_size = idio_asprintf (&ps, " %c ", IDIO_PAIR_SEPARATOR);
 				/* assumming IDIO_PAIR_SEPARATOR is 1 byte */
-				size_t ps_size = strlen (ps);
 				IDIO_STRCAT_FREE (r, sizep, ps, ps_size);
 
 				size_t t_size = 0;
@@ -1724,8 +1705,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		 * arrays as the code matures.
 		 */
 		seen = idio_pair (o, seen);
-		idio_asprintf (&r, "#[ ");
-		*sizep = strlen (r);
+		*sizep = idio_asprintf (&r, "#[ ");
 		if (depth > 0) {
 		    if (IDIO_ARRAY_USIZE (o) <= 40) {
 			for (i = 0; i < IDIO_ARRAY_USIZE (o); i++) {
@@ -1742,8 +1722,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			    IDIO_STRCAT (r, sizep, " ");
 			}
 			char *aei;
-			idio_asprintf (&aei, "..[%zd] ", IDIO_ARRAY_USIZE (o) - 20);
-			size_t aei_size = strlen (aei);
+			size_t aei_size = idio_asprintf (&aei, "..[%zd] ", IDIO_ARRAY_USIZE (o) - 20);
 			IDIO_STRCAT_FREE (r, sizep, aei, aei_size);
 			for (i = IDIO_ARRAY_USIZE (o) - 20; i < IDIO_ARRAY_USIZE (o); i++) {
 			    size_t t_size = 0;
@@ -1764,8 +1743,8 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		break;
 	    case IDIO_TYPE_HASH:
 		seen = idio_pair (o, seen);
-		idio_asprintf (&r, "#{ ");
-		*sizep = strlen (r);
+		*sizep = idio_asprintf (&r, "#{ ");
+
 		if (depth > 0) {
 		    for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
 			idio_hash_entry_t *he = IDIO_HASH_HA (o, i);
@@ -1797,8 +1776,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 				IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 				char *hes;
-				idio_asprintf (&hes, " %c ", IDIO_PAIR_SEPARATOR);
-				size_t hes_size = strlen (hes);
+				size_t hes_size = idio_asprintf (&hes, " %c ", IDIO_PAIR_SEPARATOR);
 				IDIO_STRCAT_FREE (r, sizep, hes, hes_size);
 
 				if (IDIO_HASH_HE_VALUE (he)) {
@@ -1832,22 +1810,19 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 	    case IDIO_TYPE_CLOSURE:
 		{
 		    seen = idio_pair (o, seen);
-		    idio_asprintf (&r, "#<CLOS ");
-		    *sizep = strlen (r);
+		    *sizep = idio_asprintf (&r, "#<CLOS ");
 
 		    IDIO name = idio_ref_property (o, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 		    if (idio_S_nil != name) {
 			char *name_C;
-			idio_asprintf (&name_C, "%s ", IDIO_SYMBOL_S (name));
-			size_t name_size = strlen (name_C);
+			size_t name_size = idio_asprintf (&name_C, "%s ", IDIO_SYMBOL_S (name));
 			IDIO_STRCAT_FREE (r, sizep, name_C, name_size);
 		    } else {
 			IDIO_STRCAT (r, sizep, "- ");
 		    }
 
 		    char *t;
-		    idio_asprintf (&t, "@%zd/%p/", IDIO_CLOSURE_CODE_PC (o), IDIO_CLOSURE_FRAME (o));
-		    size_t t_size = strlen (t);
+		    size_t t_size = idio_asprintf (&t, "@%zd/%p/", IDIO_CLOSURE_CODE_PC (o), IDIO_CLOSURE_FRAME (o));
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    size_t mn_size = 0;
@@ -1858,8 +1833,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    break;
 		}
 	    case IDIO_TYPE_PRIMITIVE:
-		idio_asprintf (&r, "#<PRIM %s>", IDIO_PRIMITIVE_NAME (o));
-		*sizep = strlen (r);
+		*sizep = idio_asprintf (&r, "#<PRIM %s>", IDIO_PRIMITIVE_NAME (o));
 		break;
 	    case IDIO_TYPE_BIGNUM:
 		{
@@ -1868,8 +1842,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		}
 	    case IDIO_TYPE_MODULE:
 		{
-		    idio_asprintf (&r, "#<MOD ");
-		    *sizep = strlen (r);
+		    *sizep = idio_asprintf (&r, "#<MOD ");
 
 		    if (idio_S_nil == IDIO_MODULE_NAME (o)) {
 			/*
@@ -1920,8 +1893,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		     * Not user-visible.
 		     */
 		    seen = idio_pair (o, seen);
-		    idio_asprintf (&r, "#<FRAME %p n=%d/%d [ ", o, IDIO_FRAME_NPARAMS (o), IDIO_FRAME_NALLOC (o));
-		    *sizep = strlen (r);
+		    *sizep = idio_asprintf (&r, "#<FRAME %p n=%d/%d [ ", o, IDIO_FRAME_NPARAMS (o), IDIO_FRAME_NALLOC (o));
 
 		    for (i = 0; i < IDIO_FRAME_NALLOC (o); i++) {
 			size_t t_size = 0;
@@ -1941,8 +1913,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		}
 	    case IDIO_TYPE_HANDLE:
 		{
-		    idio_asprintf (&r, "#<H ");
-		    *sizep = strlen (r);
+		    *sizep = idio_asprintf (&r, "#<H ");
 
 		    IDIO_FLAGS_T h_flags = IDIO_HANDLE_FLAGS (o);
 		    if (h_flags & IDIO_HANDLE_FLAG_CLOSED) {
@@ -1984,8 +1955,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			}
 
 			char *fds;
-			idio_asprintf (&fds, "%4d", IDIO_FILE_HANDLE_FD (o));
-			size_t fds_size = strlen (fds);
+			size_t fds_size = idio_asprintf (&fds, "%4d", IDIO_FILE_HANDLE_FD (o));
 			IDIO_STRCAT_FREE (r, sizep, fds, fds_size);
 		    }
 
@@ -1994,15 +1964,13 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		     */
 		    char *sname = idio_handle_name_as_C (o);
 		    char *info;
-		    idio_asprintf (&info, ":\"%s\":%jd:%jd>", sname, (intmax_t) IDIO_HANDLE_LINE (o), (intmax_t) IDIO_HANDLE_POS (o));
+		    size_t info_size = idio_asprintf (&info, ":\"%s\":%jd:%jd>", sname, (intmax_t) IDIO_HANDLE_LINE (o), (intmax_t) IDIO_HANDLE_POS (o));
 		    idio_gc_free (sname);
-		    size_t info_size = strlen (info);
 		    IDIO_STRCAT_FREE (r, sizep, info, info_size);
 		}
 		break;
 	    case IDIO_TYPE_C_CHAR:
-		idio_asprintf (&r, "%c", IDIO_C_TYPE_char (o));
-		*sizep = strlen (r);
+		*sizep = idio_asprintf (&r, "%c", IDIO_C_TYPE_char (o));
 		break;
 	    case IDIO_TYPE_C_SCHAR:
 	    case IDIO_TYPE_C_UCHAR:
@@ -2056,26 +2024,32 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		     * 30 should cover it!
 		     */
 		    char fmt[30];
+		    size_t fmt_len = 0;
 		    switch (type) {
 		    case IDIO_TYPE_C_SCHAR:
 		    case IDIO_TYPE_C_UCHAR:
-			strcpy (fmt, "%hh");
+			fmt_len = 3;
+			memcpy (fmt, "%hh", fmt_len);
 			break;
 		    case IDIO_TYPE_C_SHORT:
 		    case IDIO_TYPE_C_USHORT:
-			strcpy (fmt, "%h");
+			fmt_len = 2;
+			memcpy (fmt, "%h", fmt_len);
 			break;
 		    case IDIO_TYPE_C_INT:
 		    case IDIO_TYPE_C_UINT:
-			strcpy (fmt, "%");
+			fmt_len = 1;
+			memcpy (fmt, "%", fmt_len);
 			break;
 		    case IDIO_TYPE_C_LONG:
 		    case IDIO_TYPE_C_ULONG:
-			strcpy (fmt, "%l");
+			fmt_len = 2;
+			memcpy (fmt, "%l", fmt_len);
 			break;
 		    case IDIO_TYPE_C_LONGLONG:
 		    case IDIO_TYPE_C_ULONGLONG:
-			strcpy (fmt, "%ll");
+			fmt_len = 3;
+			memcpy (fmt, "%ll", fmt_len);
 			break;
 		    }
 
@@ -2101,13 +2075,13 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			    case IDIO_TYPE_C_LONGLONG:
 				switch (f) {
 				case IDIO_PRINT_CONVERSION_FORMAT_d:
-				    strcat (fmt, "d");
+				    memcpy (fmt + fmt_len++, "d", 1);
 				    break;
 				case IDIO_PRINT_CONVERSION_FORMAT_s:
 				    /*
 				     * A generic: printf "%s" e
 				     */
-				    strcat (fmt, "d");
+				    memcpy (fmt + fmt_len++, "d", 1);
 				    break;
 				default:
 				    /*
@@ -2118,7 +2092,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 #ifdef IDIO_DEBUG
 				    fprintf (stderr, "signed C type as-string: unexpected conversion format: '%c' (%#x).  Using 'd' for %" PRIdPTR " @%d.\n", (int) f, (int) f, IDIO_FIXNUM_VAL (o), depth);
 #endif
-				    strcat (fmt, "d");
+				    memcpy (fmt + fmt_len++, "d", 1);
 				    break;
 				}
 				break;
@@ -2129,16 +2103,16 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			    case IDIO_TYPE_C_ULONGLONG:
 				switch (f) {
 				case IDIO_PRINT_CONVERSION_FORMAT_X:
-				    strcat (fmt, "X");
+				    memcpy (fmt + fmt_len++, "X", 1);
 				    break;
 				case IDIO_PRINT_CONVERSION_FORMAT_o:
-				    strcat (fmt, "o");
+				    memcpy (fmt + fmt_len++, "o", 1);
 				    break;
 				case IDIO_PRINT_CONVERSION_FORMAT_u:
-				    strcat (fmt, "u");
+				    memcpy (fmt + fmt_len++, "u", 1);
 				    break;
 				case IDIO_PRINT_CONVERSION_FORMAT_x:
-				    strcat (fmt, "x");
+				    memcpy (fmt + fmt_len++, "x", 1);
 				    break;
 				case IDIO_PRINT_CONVERSION_FORMAT_b:
 				    {
@@ -2184,7 +2158,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 					    }
 					}
 					bits[j] = '\0';
-					idio_asprintf (&r, "%s", bits + seen_bit);
+					*sizep = idio_asprintf (&r, "%s", bits + seen_bit);
 					printed = 1;
 				    }
 				    break;
@@ -2192,7 +2166,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 				    /*
 				     * A generic: printf "%s" e
 				     */
-				    strcat (fmt, "u");
+				    memcpy (fmt + fmt_len++, "u", 1);
 				    break;
 				default:
 				    /*
@@ -2203,7 +2177,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 #ifdef IDIO_DEBUG
 				    fprintf (stderr, "unsigned C type as-string: unexpected conversion format: '%c' (%#x).  Using 'u' for %" PRIdPTR " @%d.\n", (int) f, (int) f, IDIO_FIXNUM_VAL (o), depth);
 #endif
-				    strcat (fmt, "u");
+				    memcpy (fmt + fmt_len++, "u", 1);
 				    break;
 				}
 				break;
@@ -2215,14 +2189,14 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			    case IDIO_TYPE_C_INT:
 			    case IDIO_TYPE_C_LONG:
 			    case IDIO_TYPE_C_LONGLONG:
-				strcat (fmt, "d");
+				memcpy (fmt + fmt_len++, "d", 1);
 				break;
 			    case IDIO_TYPE_C_UCHAR:
 			    case IDIO_TYPE_C_USHORT:
 			    case IDIO_TYPE_C_UINT:
 			    case IDIO_TYPE_C_ULONG:
 			    case IDIO_TYPE_C_ULONGLONG:
-				strcat (fmt, "u");
+				memcpy (fmt + fmt_len++, "u", 1);
 				break;
 			    }
 			}
@@ -2260,14 +2234,14 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 				    }
 				}
 			    }
-			    sprintf (fmt, "%%.%d", prec);
+			    fmt_len = idio_snprintf (fmt, 30, "%%.%d", prec);
 
 			    switch (type) {
 			    case IDIO_TYPE_C_DOUBLE:
-				strcat (fmt, "l");
+				memcpy (fmt + fmt_len++, "l", 1);
 				break;
 			    case IDIO_TYPE_C_LONGDOUBLE:
-				strcat (fmt, "L");
+				memcpy (fmt + fmt_len++, "L", 1);
 				break;
 			    }
 
@@ -2275,19 +2249,19 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 				idio_unicode_t f = IDIO_UNICODE_VAL (ipcf);
 				switch (f) {
 				case IDIO_PRINT_CONVERSION_FORMAT_e:
-				    strcat (fmt, "e");
+				    memcpy (fmt + fmt_len++, "e", 1);
 				    break;
 				case IDIO_PRINT_CONVERSION_FORMAT_f:
-				    strcat (fmt, "f");
+				    memcpy (fmt + fmt_len++, "f", 1);
 				    break;
 				case IDIO_PRINT_CONVERSION_FORMAT_g:
-				    strcat (fmt, "g");
+				    memcpy (fmt + fmt_len++, "g", 1);
 				    break;
 				case IDIO_PRINT_CONVERSION_FORMAT_s:
 				    /*
 				     * A generic: printf "%s" e
 				     */
-				    strcat (fmt, "g");
+				    memcpy (fmt + fmt_len++, "g", 1);
 				    break;
 				default:
 				    /*
@@ -2298,60 +2272,60 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 #ifdef IDIO_DEBUG
 				    fprintf (stderr, "as-string: unexpected conversion format: '%c' (%#x).  Using 'd' for %" PRIdPTR " @%d.\n", (int) f, (int) f, IDIO_FIXNUM_VAL (o), depth);
 #endif
-				    strcat (fmt, "g");
+				    memcpy (fmt + fmt_len++, "g", 1);
 				    break;
 				}
 			    } else {
-				strcat (fmt, "g");
+				memcpy (fmt + fmt_len++, "g", 1);
 			    }
 			}
 			break;
 		    }
+		    fmt[fmt_len] = '\0';
 
 		    if (! printed) {
 			switch (type) {
 			case IDIO_TYPE_C_SCHAR:
-			    idio_asprintf (&r, fmt, IDIO_C_TYPE_schar (o));
+			    *sizep = idio_asprintf (&r, fmt, IDIO_C_TYPE_schar (o));
 			    break;
 			case IDIO_TYPE_C_UCHAR:
-			    idio_asprintf (&r, fmt, IDIO_C_TYPE_uchar (o));
+			    *sizep = idio_asprintf (&r, fmt, IDIO_C_TYPE_uchar (o));
 			    break;
 			case IDIO_TYPE_C_SHORT:
-			    idio_asprintf (&r, fmt, IDIO_C_TYPE_short (o));
+			    *sizep = idio_asprintf (&r, fmt, IDIO_C_TYPE_short (o));
 			    break;
 			case IDIO_TYPE_C_USHORT:
-			    idio_asprintf (&r, fmt, IDIO_C_TYPE_ushort (o));
+			    *sizep = idio_asprintf (&r, fmt, IDIO_C_TYPE_ushort (o));
 			    break;
 			case IDIO_TYPE_C_INT:
-			    idio_asprintf (&r, fmt, IDIO_C_TYPE_int (o));
+			    *sizep = idio_asprintf (&r, fmt, IDIO_C_TYPE_int (o));
 			    break;
 			case IDIO_TYPE_C_UINT:
-			    idio_asprintf (&r, fmt, IDIO_C_TYPE_uint (o));
+			    *sizep = idio_asprintf (&r, fmt, IDIO_C_TYPE_uint (o));
 			    break;
 			case IDIO_TYPE_C_LONG:
-			    idio_asprintf (&r, fmt, IDIO_C_TYPE_long (o));
+			    *sizep = idio_asprintf (&r, fmt, IDIO_C_TYPE_long (o));
 			    break;
 			case IDIO_TYPE_C_ULONG:
-			    idio_asprintf (&r, fmt, IDIO_C_TYPE_ulong (o));
+			    *sizep = idio_asprintf (&r, fmt, IDIO_C_TYPE_ulong (o));
 			    break;
 			case IDIO_TYPE_C_LONGLONG:
-			    idio_asprintf (&r, fmt, IDIO_C_TYPE_longlong (o));
+			    *sizep = idio_asprintf (&r, fmt, IDIO_C_TYPE_longlong (o));
 			    break;
 			case IDIO_TYPE_C_ULONGLONG:
-			    idio_asprintf (&r, fmt, IDIO_C_TYPE_ulonglong (o));
+			    *sizep = idio_asprintf (&r, fmt, IDIO_C_TYPE_ulonglong (o));
 			    break;
 			case IDIO_TYPE_C_FLOAT:
-			    idio_asprintf (&r, fmt, IDIO_C_TYPE_float (o));
+			    *sizep = idio_asprintf (&r, fmt, IDIO_C_TYPE_float (o));
 			    break;
 			case IDIO_TYPE_C_DOUBLE:
-			    idio_asprintf (&r, fmt, IDIO_C_TYPE_double (o));
+			    *sizep = idio_asprintf (&r, fmt, IDIO_C_TYPE_double (o));
 			    break;
 			case IDIO_TYPE_C_LONGDOUBLE:
-			    idio_asprintf (&r, fmt, IDIO_C_TYPE_longdouble (o));
+			    *sizep = idio_asprintf (&r, fmt, IDIO_C_TYPE_longdouble (o));
 			    break;
 			}
 		    }
-		    *sizep = strlen (r);
 		}
 		break;
 	    case IDIO_TYPE_C_POINTER:
@@ -2392,8 +2366,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			}
 		    }
 
-		    idio_asprintf (&r, "#<C/*");
-		    *sizep = strlen (r);
+		    *sizep = idio_asprintf (&r, "#<C/*");
 
 		    if (idio_S_nil != pt) {
 			size_t n_size = 0;
@@ -2410,11 +2383,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 	    case IDIO_TYPE_STRUCT_TYPE:
 		{
 #ifdef IDIO_DEBUG
-		    idio_asprintf (&r, "#<ST %10p ", o);
+		    *sizep = idio_asprintf (&r, "#<ST %10p ", o);
 #else
-		    idio_asprintf (&r, "#<ST ");
+		    *sizep = idio_asprintf (&r, "#<ST ");
 #endif
-		    *sizep = strlen (r);
 
 		    size_t stn_size = 0;
 		    char *stn = idio_as_string (IDIO_STRUCT_TYPE_NAME (o), &stn_size, 1, seen, 0);
@@ -2474,8 +2446,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			}
 		    }
 
-		    idio_asprintf (&r, "#<SI ");
-		    *sizep = strlen (r);
+		    *sizep = idio_asprintf (&r, "#<SI ");
 
 		    size_t n_size = 0;
 		    char *ns = idio_as_string (IDIO_STRUCT_TYPE_NAME (sit), &n_size, 1, seen, 0);
@@ -2506,11 +2477,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		     */
 		    seen = idio_pair (o, seen);
 		    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (o));
-		    idio_asprintf (&r, "#<THR %10p\n  pc=%6zd\n  sp/top=%2zd/",
-				   o,
-				   IDIO_THREAD_PC (o),
-				   sp - 1);
-		    *sizep = strlen (r);
+		    *sizep = idio_asprintf (&r, "#<THR %10p\n  pc=%6zd\n  sp/top=%2zd/",
+					    o,
+					    IDIO_THREAD_PC (o),
+					    sp - 1);
 
 		    size_t t_size = 0;
 		    char *t = idio_as_string (idio_array_top (IDIO_THREAD_STACK (o)), &t_size, 1, seen, 0);
@@ -2532,8 +2502,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			    IDIO_STRCAT (r, sizep, "\n  fr=nil");
 			} else {
 			    char *es;
-			    idio_asprintf (&es, "\n  fr=%10p n=%td ", frame, IDIO_FRAME_NPARAMS (frame));
-			    size_t es_size = strlen (es);
+			    size_t es_size = idio_asprintf (&es, "\n  fr=%10p n=%td ", frame, IDIO_FRAME_NPARAMS (frame));
 			    IDIO_STRCAT_FREE (r, sizep, es, es_size);
 
 			    size_t f_size = 0;
@@ -2634,17 +2603,15 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    }
 
 #ifdef IDIO_DEBUG
-		    idio_asprintf (&r, "#<K%s %10p ss=%zu PC=%td>", kind, o, kss, IDIO_CONTINUATION_PC (o));
+		    *sizep = idio_asprintf (&r, "#<K%s %10p ss=%zu PC=%td>", kind, o, kss, IDIO_CONTINUATION_PC (o));
 #else
-		    idio_asprintf (&r, "#<K%s ss=%zu PC=%td>", kind, kss, IDIO_CONTINUATION_PC (o));
+		    *sizep = idio_asprintf (&r, "#<K%s ss=%zu PC=%td>", kind, kss, IDIO_CONTINUATION_PC (o));
 #endif
-		    *sizep = strlen (r);
 		}
 		break;
 	    case IDIO_TYPE_BITSET:
 		{
-		    idio_asprintf (&r, "#B{ %zu ", IDIO_BITSET_SIZE (o));
-		    *sizep = strlen (r);
+		    *sizep = idio_asprintf (&r, "#B{ %zu ", IDIO_BITSET_SIZE (o));
 
 		    size_t bs_size = IDIO_BITSET_SIZE (o);
 		    size_t count = 0;
@@ -2700,12 +2667,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 					     * bytes being set.
 					     */
 					    in_range = 0;
-					    idio_asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT);
-					    size_t lead_size = strlen (lead);
+					    size_t lead_size = idio_asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT);
 					    IDIO_STRCAT_FREE (r, sizep, lead, lead_size);
 					} else {
-					    idio_asprintf (&lead, "%zx:", count);
-					    size_t lead_size = strlen (lead);
+					    size_t lead_size = idio_asprintf (&lead, "%zx:", count);
 					    IDIO_STRCAT_FREE (r, sizep, lead, lead_size);
 					}
 				    }
@@ -2744,8 +2709,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 					 * set.
 					 */
 					in_range = 0;
-					idio_asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT);
-					size_t lead_size = strlen (lead);
+					size_t lead_size = idio_asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT);
 					IDIO_STRCAT_FREE (r, sizep, lead, lead_size);
 				    }
 
@@ -2765,8 +2729,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 				 */
 				in_range = 0;
 				char *lead;
-				idio_asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT);
-				size_t lead_size = strlen (lead);
+				size_t lead_size = idio_asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT);
 				IDIO_STRCAT_FREE (r, sizep, lead, lead_size);
 			    }
 
@@ -2782,8 +2745,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			 */
 			in_range = 0;
 			char *lead;
-			idio_asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT);
-			size_t lead_size = strlen (lead);
+			size_t lead_size = idio_asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT);
 			IDIO_STRCAT_FREE (r, sizep, lead, lead_size);
 		    }
 		    IDIO_STRCAT (r, sizep, "}");
@@ -2791,18 +2753,16 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		break;
 	    case IDIO_TYPE_C_TYPEDEF:
 		{
-		    idio_asprintf (&r, "#<C/typedef %10p>", IDIO_C_TYPEDEF_SYM (o));
-		    *sizep = strlen (r);
+		    *sizep = idio_asprintf (&r, "#<C/typedef %10p>", IDIO_C_TYPEDEF_SYM (o));
 		    break;
 		}
 	    case IDIO_TYPE_C_STRUCT:
 		{
 #ifdef IDIO_DEBUG
-		    idio_asprintf (&r, "#<C/struct %10p ", o);
+		    *sizep = idio_asprintf (&r, "#<C/struct %10p ", o);
 #else
-		    idio_asprintf (&r, "#<C/struct ");
+		    *sizep = idio_asprintf (&r, "#<C/struct ");
 #endif
-		    *sizep = strlen (r);
 
 		    IDIO_STRCAT (r, sizep, "\n\tfields: ");
 		    size_t f_size = 0;
@@ -2826,8 +2786,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 					t_size = 0;
 					t = idio_as_string (IDIO_HASH_HE_VALUE (he), &t_size, depth - 1, seen, 0);
 				    } else {
-					idio_asprintf (&t, "-");
-					t_size = strlen (t);
+					t_size = idio_asprintf (&t, "-");
 				    }
 				    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 				    IDIO_STRCAT (r, sizep, " ");
@@ -2845,17 +2804,15 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 	    case IDIO_TYPE_C_INSTANCE:
 		{
 #ifdef IDIO_DEBUG
-		    idio_asprintf (&r, "#<C/instance %10p C/*=%10p C/struct=%10p>", o, IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o));
+		    *sizep = idio_asprintf (&r, "#<C/instance %10p C/*=%10p C/struct=%10p>", o, IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o));
 #else
-		    idio_asprintf (&r, "#<C/instance C/*=%10p C/struct=%10p>", IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o));
+		    *sizep = idio_asprintf (&r, "#<C/instance C/*=%10p C/struct=%10p>", IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o));
 #endif
-		    *sizep = strlen (r);
 		    break;
 		}
 	    case IDIO_TYPE_C_FFI:
 		{
-		    idio_asprintf (&r, "#<CFFI ");
-		    *sizep = strlen (r);
+		    *sizep = idio_asprintf (&r, "#<CFFI ");
 
 		    size_t t_size = 0;
 		    char *t = idio_as_string (IDIO_C_FFI_NAME (o), &t_size, depth - 1, seen, 0);
@@ -2884,8 +2841,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		}
 	    case IDIO_TYPE_OPAQUE:
 		{
-		    idio_asprintf (&r, "#<O %10p ", IDIO_OPAQUE_P (o));
-		    *sizep = strlen (r);
+		    *sizep = idio_asprintf (&r, "#<O %10p ", IDIO_OPAQUE_P (o));
 
 		    size_t t_size = 0;
 		    char *t = idio_as_string (IDIO_OPAQUE_ARGS (o), &t_size, depth - 1, seen, 0);
@@ -2909,11 +2865,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		     */
 		    size_t n = strnlen ((char *) o, 40);
 		    if (40 == n) {
-			idio_asprintf (&r, "#<void?? %10p>", o);
+			*sizep = idio_asprintf (&r, "#<void?? %10p>", o);
 		    } else {
-			idio_asprintf (&r, "#<string?? \"%s\">", (char *) o);
+			*sizep = idio_asprintf (&r, "#<string?? \"%s\">", (char *) o);
 		    }
-		    *sizep = strlen (r);
 		    IDIO_C_ASSERT (0);
 		}
 		break;
@@ -2926,8 +2881,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 	 *
 	 * Coding error.
 	 */
-	idio_asprintf (&r, "#<type?? %10p>", o);
-	*sizep = strlen (r);
+	*sizep = idio_asprintf (&r, "#<type?? %10p>", o);
 	break;
     }
 
@@ -2975,8 +2929,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
 	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
 		{
 		    intptr_t c = IDIO_CHARACTER_VAL (o);
-		    idio_asprintf (&r, "%c", (char) c);
-		    *sizep = strlen (r);
+		    *sizep = idio_asprintf (&r, "%c", (char) c);
 		}
 		break;
 	    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
@@ -2984,23 +2937,23 @@ char *idio_display_string (IDIO o, size_t *sizep)
 		    idio_unicode_t u = IDIO_UNICODE_VAL (o);
 		    if (idio_unicode_valid_code_point (u)) {
 			if (u >= 0x10000) {
-			    idio_asprintf (&r, "%c%c%c%c",
-					   0xf0 | ((u & (0x07 << 18)) >> 18),
-					   0x80 | ((u & (0x3f << 12)) >> 12),
-					   0x80 | ((u & (0x3f << 6)) >> 6),
-					   0x80 | ((u & (0x3f << 0)) >> 0));
+			    *sizep = idio_asprintf (&r, "%c%c%c%c",
+						    0xf0 | ((u & (0x07 << 18)) >> 18),
+						    0x80 | ((u & (0x3f << 12)) >> 12),
+						    0x80 | ((u & (0x3f << 6)) >> 6),
+						    0x80 | ((u & (0x3f << 0)) >> 0));
 			} else if (u >= 0x0800) {
-			    idio_asprintf (&r, "%c%c%c",
-					   0xe0 | ((u & (0x0f << 12)) >> 12),
-					   0x80 | ((u & (0x3f << 6)) >> 6),
-					   0x80 | ((u & (0x3f << 0)) >> 0));
+			    *sizep = idio_asprintf (&r, "%c%c%c",
+						    0xe0 | ((u & (0x0f << 12)) >> 12),
+						    0x80 | ((u & (0x3f << 6)) >> 6),
+						    0x80 | ((u & (0x3f << 0)) >> 0));
 			} else if (u >= 0x0080) {
-			    idio_asprintf (&r, "%c%c",
-					   0xc0 | ((u & (0x1f << 6)) >> 6),
-					   0x80 | ((u & (0x3f << 0)) >> 0));
+			    *sizep = idio_asprintf (&r, "%c%c",
+						    0xc0 | ((u & (0x1f << 6)) >> 6),
+						    0x80 | ((u & (0x3f << 0)) >> 0));
 			} else {
-			    idio_asprintf (&r, "%c",
-					   u & 0x7f);
+			    *sizep = idio_asprintf (&r, "%c",
+						    u & 0x7f);
 			}
 		    } else {
 			/*
@@ -3017,7 +2970,6 @@ char *idio_display_string (IDIO o, size_t *sizep)
 			/* notreached */
 			return NULL;
 		    }
-		    *sizep = strlen (r);
 		}
 		break;
 	    }
@@ -3048,8 +3000,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
 	 *
 	 * Coding error.
 	 */
-	idio_asprintf (&r, "type %d n/k", o->type);
-	*sizep = strlen (r);
+	*sizep = idio_asprintf (&r, "type %d n/k", o->type);
 	break;
     }
 
@@ -3820,8 +3771,7 @@ void idio_dump (IDIO o, int detail)
 					size = 0;
 					s = idio_as_string_safe (IDIO_HASH_HE_VALUE (he), &size, 4, 1);
 				    } else {
-					idio_asprintf (&s, "-");
-					size = strlen (s);
+					size = idio_asprintf (&s, "-");
 				    }
 				    fprintf (stderr, "%-10s\n", s);
 				    idio_gc_free (s);
@@ -3959,7 +3909,12 @@ idio-debug \"foo is %20s\n\" foo			\n\
 
     size_t size = 0;
     char *sfmt = idio_string_as_C (fmt, &size);
-    size_t C_size = strlen (sfmt);
+
+    /*
+     * Use size + 1 to avoid a truncation warning -- we're just seeing
+     * if sfmt includes a NUL
+     */
+    size_t C_size = idio_strnlen (sfmt, size + 1);
     if (C_size != size) {
 	/*
 	 * Test Case: util-errors/idio-debug-format.idio
@@ -4005,7 +3960,9 @@ IDIO idio_add_feature (IDIO f)
 
     if (idio_isa_string (f)) {
 	size_t size = 0;
-	f = idio_symbols_C_intern (idio_display_string (f, &size));
+	char *f_C = idio_display_string (f, &size);
+	f = idio_symbols_C_intern (f_C, size);
+	IDIO_GC_FREE (f_C);
     }
 
     /*
@@ -4045,29 +4002,29 @@ add feature ``f`` to Idio features			\n\
     }
 }
 
-IDIO idio_add_feature_ps (char *p, char *s)
+IDIO idio_add_feature_ps (const char *p, const size_t plen, const char *s, const size_t slen)
 {
     IDIO_C_ASSERT (p);
     IDIO_C_ASSERT (s);
 
-    size_t buflen = strlen (p) + strlen (s) + 1;
+    size_t buflen = plen + slen + 1;
     char *buf;
     IDIO_GC_ALLOC (buf, buflen);
-    sprintf (buf, "%s%s", p, s);
-    IDIO r = idio_add_feature (idio_symbols_C_intern (buf));
+    size_t blen = idio_snprintf (buf, buflen, "%s%s", p, s);
+    IDIO r = idio_add_feature (idio_symbols_C_intern (buf, blen));
     IDIO_GC_FREE (buf);
     return r;
 }
 
-IDIO idio_add_feature_pi (char *p, size_t size)
+IDIO idio_add_feature_pi (const char *p, const size_t plen, const size_t size)
 {
     IDIO_C_ASSERT (p);
 
-    size_t buflen = strlen (p) + 20;
+    size_t buflen = plen + 20;
     char *buf;
     IDIO_GC_ALLOC (buf, buflen);
-    sprintf (buf, "%s%zu", p, size);
-    IDIO r = idio_add_feature (idio_symbols_C_intern (buf));
+    size_t blen = idio_snprintf (buf, buflen, "%s%zu", p, size);
+    IDIO r = idio_add_feature (idio_symbols_C_intern (buf, blen));
     IDIO_GC_FREE (buf);
     return r;
 }
@@ -4097,7 +4054,6 @@ size_t idio_strnlen (const char *s, size_t maxlen)
     }
 
     if (maxlen == n) {
-	fprintf (stderr, "strnlen == %zd\n", n);
 	idio_error_C ("strnlen truncated", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -4179,17 +4135,17 @@ void idio_init_util ()
 {
     idio_module_table_register (idio_util_add_primitives, idio_final_util, NULL);
 
-    idio_util_value_as_string = idio_symbols_C_intern ("%%value-as-string");
+    idio_util_value_as_string = IDIO_SYMBOLS_C_INTERN ("%%value-as-string");
     idio_module_set_symbol_value (idio_util_value_as_string, IDIO_HASH_EQP (32), idio_Idio_module);
 
-    idio_print_conversion_format_sym = idio_symbols_C_intern ("idio-print-conversion-format");
-    idio_print_conversion_precision_sym = idio_symbols_C_intern ("idio-print-conversion-precision");
+    idio_print_conversion_format_sym = IDIO_SYMBOLS_C_INTERN ("idio-print-conversion-format");
+    idio_print_conversion_precision_sym = IDIO_SYMBOLS_C_INTERN ("idio-print-conversion-precision");
 
-    idio_features = idio_symbols_C_intern ("*idio-features*");
+    idio_features = IDIO_SYMBOLS_C_INTERN ("*idio-features*");
     idio_module_set_symbol_value (idio_features, idio_S_nil, idio_Idio_module);
 
 #ifdef IDIO_DEBUG
-    idio_add_feature (idio_symbols_C_intern ("IDIO_DEBUG"));
+    idio_add_feature (IDIO_SYMBOLS_C_INTERN ("IDIO_DEBUG"));
 #endif
 
 #ifdef IDIO_EQUAL_DEBUG

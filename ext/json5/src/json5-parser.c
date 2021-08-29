@@ -372,12 +372,12 @@ json5_value_t *json5_parse_string_C (char *s_C, size_t s_Clen)
 
 json5_value_t *json5_parse_fd (int fd)
 {
-    size_t slen = JSON5_CHUNK;
-    size_t buf_rem = slen;
+    size_t alen = JSON5_CHUNK;
+    size_t buf_rem = alen;
     char *s = malloc (buf_rem);
 
-    size_t buf_off = 0;
-    char *buf = s + buf_off;
+    size_t slen = 0;
+    char *buf = s + slen;
 
     for (;;) {
 	ssize_t read_r = read (fd, buf, buf_rem);
@@ -393,12 +393,12 @@ json5_value_t *json5_parse_fd (int fd)
 	}
 
 	buf_rem -= read_r;
-	buf_off += read_r;
+	slen += read_r;
 
 	if (0 == buf_rem) {
 	    buf_rem = JSON5_CHUNK;
-	    slen += buf_rem;
-	    char *p = realloc (s, slen);
+	    alen += buf_rem;
+	    char *p = realloc (s, alen);
 
 	    if (NULL == p) {
 		perror ("json5_parse_fd: realloc");
@@ -407,10 +407,10 @@ json5_value_t *json5_parse_fd (int fd)
 	    s = p;
 	}
 
-	buf = s + buf_off;
+	buf = s + slen;
     }
 
-    json5_value_t *v = json5_parse_string_C (s, strlen (s));
+    json5_value_t *v = json5_parse_string_C (s, slen);
 
     free (s);
 

@@ -78,7 +78,8 @@ ffi_type *idio_C_FFI_type (IDIO field_data)
     default:
 	{
 	    char em[BUFSIZ];
-	    sprintf (em, "unexpected C_FFI type %u: %s", IDIO_C_TYPE_uint (type), idio_type2string (type));
+	    idio_snprintf (em, BUFSIZ, "unexpected C_FFI type %u: %s", IDIO_C_TYPE_uint (type), idio_type2string (type));
+
 	    idio_error_printf (IDIO_C_FUNC_LOCATION (), em);
 
 	    /* notreached */
@@ -148,7 +149,8 @@ IDIO idio_C_FFI (IDIO symbol, IDIO arg_types, IDIO result_type)
     ffi_status s = ffi_prep_cif (IDIO_C_FFI_CIFP (o), FFI_DEFAULT_ABI, nargs, IDIO_C_FFI_RTYPE (o), IDIO_C_FFI_ARG_TYPES (o));
     if (s != FFI_OK) {
 	char em[BUFSIZ];
-	sprintf (em, "ffi_prep_cif failed");
+	idio_snprintf (em, BUFSIZ, "ffi_prep_cif failed");
+
 	idio_error_printf (IDIO_C_FUNC_LOCATION (), em);
 
 	return idio_S_notreached;

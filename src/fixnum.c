@@ -53,14 +53,17 @@
 #include "struct.h"
 #include "symbol.h"
 #include "unicode.h"
+#include "util.h"
 #include "vm.h"
 
-static void idio_fixnum_divide_by_zero_error (IDIO c_location)
+static void idio_fixnum_divide_by_zero_error (IDIO nums, IDIO c_location)
 {
+    IDIO_ASSERT (nums);
     IDIO_ASSERT (c_location);
+
     IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_divide_by_zero ("fixnum divide by zero", c_location);
+    idio_error_divide_by_zero ("fixnum divide by zero", nums, c_location);
 
     /* notreached */
 }
@@ -168,13 +171,13 @@ IDIO idio_fixnum (intptr_t i)
 	 * I think this requires a coding error.
 	 */
 	char em[BUFSIZ];
+	idio_snprintf (em, BUFSIZ, "%" PRIdPTR " too large", i);
 
-	sprintf (em, "%" PRIdPTR " too large", i);
 	IDIO_C_ASSERT (0);
 	idio_fixnum_conversion_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
-    }
 
-    return idio_S_notreached;
+	return idio_S_notreached;
+    }
 }
 
 IDIO idio_fixnum_C (char *str, int base)
@@ -194,7 +197,8 @@ IDIO idio_fixnum_C (char *str, int base)
 	 * This requires a coding error.
 	 */
 	char em[BUFSIZ];
-	sprintf (em, "idio_fixnum_C: strtoll (%s) = %lld", str, val);
+	idio_snprintf (em, BUFSIZ, "idio_fixnum_C: strtoll (%s) = %lld", str, val);
+
 	idio_fixnum_conversion_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -207,7 +211,8 @@ IDIO idio_fixnum_C (char *str, int base)
 	 * This requires a coding error.
 	 */
 	char em[BUFSIZ];
-	sprintf (em, "idio_fixnum_C: strtoll (%s): No digits?", str);
+	idio_snprintf (em, BUFSIZ, "idio_fixnum_C: strtoll (%s): No digits?", str);
+
 	idio_fixnum_conversion_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -223,7 +228,8 @@ IDIO idio_fixnum_C (char *str, int base)
 	 * This requires a coding error.
 	 */
 	char em[BUFSIZ];
-	sprintf (em, "idio_fixnum_C: strtoll (%s) = %lld", str, val);
+	idio_snprintf (em, BUFSIZ, "idio_fixnum_C: strtoll (%s) = %lld", str, val);
+
 	idio_fixnum_conversion_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -653,7 +659,7 @@ IDIO idio_fixnum_primitive_remainder (IDIO a, IDIO b)
 	 *
 	 * remainder 1 0
 	 */
-	idio_fixnum_divide_by_zero_error (IDIO_C_FUNC_LOCATION ());
+	idio_fixnum_divide_by_zero_error (IDIO_LIST2 (a, b), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -743,7 +749,7 @@ IDIO idio_fixnum_primitive_quotient (IDIO a, IDIO b)
 	 *
 	 * quotient 1 0
 	 */
-	idio_fixnum_divide_by_zero_error (IDIO_C_FUNC_LOCATION ());
+	idio_fixnum_divide_by_zero_error (IDIO_LIST2 (a, b), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1336,14 +1342,14 @@ convert integer `i` to a Unicode code point	\n\
 		 *
 		 * integer->unicode -1
 		 */
-		sprintf (em, "U+%" PRIdPTR ": cannot be negative", iv);
+		idio_snprintf (em, BUFSIZ, "U+%" PRIdPTR ": cannot be negative", iv);
 	    } else {
 		/*
 		 * Test Case: fixnum-errors/integer2unicode-fixnum-invalid-code-point.idio
 		 *
 		 * integer->unicode #xd800
 		 */
-		sprintf (em, "U+%04" PRIXPTR ": is invalid", iv);
+		idio_snprintf (em, BUFSIZ, "U+%04" PRIXPTR ": is invalid", iv);
 	    }
 	    idio_error_param_value_msg_only ("integer->unicode", "code point", em, IDIO_C_FUNC_LOCATION ());
 
@@ -1362,14 +1368,14 @@ convert integer `i` to a Unicode code point	\n\
 		 *
 		 * integer->unicode -1.0
 		 */
-		sprintf (em, "U+%" PRIdPTR ": cannot be negative", iv);
+		idio_snprintf (em, BUFSIZ, "U+%" PRIdPTR ": cannot be negative", iv);
 	    } else {
 		/*
 		 * Test Case: fixnum-errors/integer2unicode-bignum-invalid-code-point.idio
 		 *
 		 * integer->unicode 55296e0
 		 */
-		sprintf (em, "U+%04" PRIXPTR ": is invalid", iv);
+		idio_snprintf (em, BUFSIZ, "U+%04" PRIXPTR ": is invalid", iv);
 	    }
 	    idio_error_param_value_msg_only ("integer->unicode", "code point", em, IDIO_C_FUNC_LOCATION ());
 
@@ -1391,8 +1397,8 @@ convert integer `i` to a Unicode code point	\n\
 
 void idio_fixnum_add_primitives ()
 {
-    idio_module_set_symbol_value (idio_symbols_C_intern ("FIXNUM-MAX"), idio_fixnum (IDIO_FIXNUM_MAX), idio_Idio_module_instance ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("FIXNUM-MIN"), idio_fixnum (IDIO_FIXNUM_MIN), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("FIXNUM-MAX"), idio_fixnum (IDIO_FIXNUM_MAX), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("FIXNUM-MIN"), idio_fixnum (IDIO_FIXNUM_MIN), idio_Idio_module_instance ());
 
     IDIO_ADD_PRIMITIVE (fixnump);
     IDIO_ADD_PRIMITIVE (integerp);

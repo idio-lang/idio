@@ -470,9 +470,11 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
     IDIO location = idio_meaning_error_location (src);
 
     IDIO dsh = idio_open_output_string_handle_C ();
+
     char em[BUFSIZ];
-    sprintf (em, "ARITY != %" PRId8 "%s; primitive (", IDIO_PRIMITIVE_ARITY (primdata), IDIO_PRIMITIVE_VARARGS (primdata) ? "+" : "");
-    idio_display_C (em, dsh);
+    size_t eml = idio_snprintf (em, BUFSIZ, "ARITY != %" PRId8 "%s; primitive (", IDIO_PRIMITIVE_ARITY (primdata), IDIO_PRIMITIVE_VARARGS (primdata) ? "+" : "");
+    idio_display_C_len (em, eml, dsh);
+
     idio_display (f, dsh);
     idio_display_C (" ", dsh);
     IDIO sigstr = idio_ref_property (primdata, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
@@ -515,7 +517,7 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
     IDIO_TYPE_ASSERT (array, cs);
 
     IDIO primdata = idio_primitive_data (d);
-    IDIO name = idio_symbols_C_intern (d->name);
+    IDIO name = idio_symbols_C_intern (d->name, d->name_len);
 
     if (IDIO_MEANING_PREDEF_FLAG_EXPORT == flags) {
 	IDIO_MODULE_EXPORTS (module) = idio_pair (name, IDIO_MODULE_EXPORTS (module));
@@ -1412,7 +1414,7 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
     } else if (idio_isa_array (e)) {
 	IDIO iatl = idio_array_to_list (e);
 
-	r = IDIO_LIST2 (idio_symbols_C_intern ("list->array"), idio_meaning_dequasiquote (iatl, iatl, level, indent + 1));
+	r = IDIO_LIST2 (IDIO_SYMBOLS_C_INTERN ("list->array"), idio_meaning_dequasiquote (iatl, iatl, level, indent + 1));
     } else if (idio_isa_symbol (e)) {
 	r = IDIO_LIST2 (idio_S_quote, e);
     } else {
@@ -1554,7 +1556,7 @@ static IDIO idio_meaning_rewrite_cond (IDIO prev, IDIO src, IDIO clauses)
 	     * keep rewriting all the remaining clauses (``pt
 	     * clauses``).
 	     */
-	    IDIO gs = idio_gensym (NULL);
+	    IDIO gs = idio_gensym (NULL, 0);
 	    /*
 	      `(let ((gs ,(phh clauses)))
 	         (if gs
@@ -1598,7 +1600,7 @@ static IDIO idio_meaning_rewrite_cond (IDIO prev, IDIO src, IDIO clauses)
 	    return idio_S_notreached;
 	}
     } else if (idio_S_nil == IDIO_PAIR_TH (clauses)) {
-	IDIO gs = idio_gensym (NULL);
+	IDIO gs = idio_gensym (NULL, 0);
 	/*
 	  `(let ((gs ,(phh clauses)))
 	     (or gs
@@ -1879,8 +1881,8 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
      *
      * where proc is (function (formal*) ...) from above, ie. e
      */
-    IDIO x_sym = idio_symbols_C_intern ("x");
-    IDIO e_sym = idio_symbols_C_intern ("e");
+    IDIO x_sym = IDIO_SYMBOLS_C_INTERN ("x");
+    IDIO e_sym = IDIO_SYMBOLS_C_INTERN ("e");
 
     IDIO pt_x = IDIO_LIST2 (idio_S_pt, x_sym);
     idio_meaning_copy_src_properties (src, pt_x);
@@ -2138,11 +2140,11 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 	    return idio_S_notreached;
 	}
 
-	IDIO find_module = IDIO_LIST2 (idio_symbols_C_intern ("find-module"),
+	IDIO find_module = IDIO_LIST2 (IDIO_SYMBOLS_C_INTERN ("find-module"),
 				       IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module)));
 	idio_meaning_copy_src_properties (src, find_module);
 
-	IDIO sve = IDIO_LIST3 (idio_symbols_C_intern ("symbol-value"),
+	IDIO sve = IDIO_LIST3 (IDIO_SYMBOLS_C_INTERN ("symbol-value"),
 			       IDIO_LIST2 (idio_S_quote, e),
 			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
@@ -2242,11 +2244,11 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 	    return idio_S_notreached;
 	}
 
-	IDIO find_module = IDIO_LIST2 (idio_symbols_C_intern ("find-module"),
+	IDIO find_module = IDIO_LIST2 (IDIO_SYMBOLS_C_INTERN ("find-module"),
 				       IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module)));
 	idio_meaning_copy_src_properties (src, find_module);
 
-	IDIO sve = IDIO_LIST3 (idio_symbols_C_intern ("symbol-value"),
+	IDIO sve = IDIO_LIST3 (IDIO_SYMBOLS_C_INTERN ("symbol-value"),
 			       IDIO_LIST2 (idio_S_quote, e),
 			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
@@ -5202,7 +5204,7 @@ void idio_init_evaluate ()
 {
     idio_module_table_register (idio_evaluate_add_primitives, NULL, NULL);
 
-    idio_evaluate_module = idio_module (idio_symbols_C_intern ("evaluate"));
+    idio_evaluate_module = idio_module (IDIO_SYMBOLS_C_INTERN ("evaluate"));
 
 #define IDIO_MEANING_STRING(c,s) idio_meaning_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_meaning_ ## c ## _string);
 

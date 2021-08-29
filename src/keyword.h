@@ -24,7 +24,7 @@
 #define KEYWORD_H
 
 #define IDIO_KEYWORD_DECL(n)		IDIO idio_KW_ ## n
-#define IDIO_KEYWORD_DEF(iname,cname)	idio_KW_ ## cname = idio_keywords_C_intern (iname);
+#define IDIO_KEYWORD_DEF(iname,cname)	idio_KW_ ## cname = idio_keywords_C_intern (iname, sizeof (iname) - 1);
 
 extern IDIO_KEYWORD_DECL (docstr);
 extern IDIO_KEYWORD_DECL (docstr_raw);
@@ -39,7 +39,7 @@ IDIO idio_keyword_C (const char *s_C);
 IDIO idio_tag_C (const char *s_C);
 void idio_free_keyword (IDIO s);
 int idio_isa_keyword (IDIO s);
-IDIO idio_keywords_C_intern (char *s);
+IDIO idio_keywords_C_intern (const char *s, const size_t slen);
 IDIO idio_hash_make_keyword_table (IDIO args);
 IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args);
 IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v);

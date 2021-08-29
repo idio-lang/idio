@@ -59,12 +59,11 @@ static void idio_bitset_bounds_error (size_t bit, size_t size, IDIO c_location)
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    char em[BUFSIZ];
-
-    sprintf (em, "bitset bounds error: %zu >= size %zu", bit, size);
-
     IDIO msh = idio_open_output_string_handle_C ();
-    idio_display_C (em, msh);
+
+    char em[BUFSIZ];
+    size_t eml = idio_snprintf (em, BUFSIZ, "bitset bounds error: %zu >= size %zu", bit, size);
+    idio_display_C_len (em, eml, msh);
 
     IDIO location = idio_vm_source_location ();
 
@@ -90,12 +89,11 @@ static void idio_bitset_size_mismatch_error (size_t s1, size_t s2, IDIO c_locati
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    char em[BUFSIZ];
-
-    sprintf (em, "bitset size mistmatch: %zu != %zu", s1, s2);
-
     IDIO msh = idio_open_output_string_handle_C ();
-    idio_display_C (em, msh);
+
+    char em[BUFSIZ];
+    size_t eml = idio_snprintf (em, BUFSIZ, "bitset size mistmatch: %zu != %zu", s1, s2);
+    idio_display_C_len (em, eml, msh);
 
     IDIO location = idio_vm_source_location ();
 

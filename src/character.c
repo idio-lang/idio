@@ -71,12 +71,24 @@
 #include "keyword.h"
 #include "pair.h"
 #include "primitive.h"
+#include "util.h"
 #include "vm.h"
 
 /**
- * static idio_characters_hash - table of known character names to values
- *
+ * static idio_characters_hash - table of known character names to
+ * values
  */
+
+/*
+ * The longest known character name -- noting we should be using
+ * Unicode -- is "carriage-return", some 15 character long.
+ *
+ * By setting IDIO_CHARACTER_MAXLEN to be a bit larger than that we're
+ * looking to avoid buffer overruns rather than being fastidious about
+ * the character name.
+ */
+#define IDIO_CHARACTER_MAXLEN 20
+
 static IDIO idio_characters_hash = idio_S_nil;
 
 int idio_character_C_eqp (const void *s1, const void *s2)
@@ -90,7 +102,7 @@ int idio_character_C_eqp (const void *s1, const void *s2)
 	return 0;
     }
 
-    return (0 == strcmp ((const char *) s1, (const char *) s2));
+    return (0 == strncmp ((const char *) s1, (const char *) s2, IDIO_CHARACTER_MAXLEN));
 }
 
 idio_hi_t idio_character_C_hash (IDIO h, const void *s)
@@ -98,22 +110,25 @@ idio_hi_t idio_character_C_hash (IDIO h, const void *s)
     size_t hvalue = (uintptr_t) s;
 
     if (idio_S_nil != s) {
-	hvalue = idio_hash_default_hash_C_string_C (strlen ((char *) s), s);
+	size_t slen = idio_strnlen ((char *) s, IDIO_CHARACTER_MAXLEN);
+	hvalue = idio_hash_default_hash_C_string_C (slen, s);
     }
 
     return (hvalue & IDIO_HASH_MASK (h));
 }
 
-IDIO idio_characters_C_intern (char *s, IDIO v)
+IDIO idio_characters_C_intern (const char *s, IDIO v)
 {
     IDIO_C_ASSERT (s);
 
     IDIO c = idio_hash_ref (idio_characters_hash, s);
 
     if (idio_S_unspec == c) {
-	size_t blen = strlen (s);
+	size_t blen = idio_strnlen (s, IDIO_CHARACTER_MAXLEN);
 	char *copy = idio_alloc (blen + 1);
-	strcpy (copy, s);
+	memcpy (copy, s, blen);
+	copy[blen] = '\0';
+
 	idio_hash_put (idio_characters_hash, copy, v);
     }
 

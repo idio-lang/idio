@@ -296,7 +296,8 @@ void idio_sigaddset (sigset_t *ssp, int signum)
 
     if (-1 == r) {
 	char em[BUFSIZ];
-	sprintf (em, "sigaddset %s", idio_libc_signal_name (signum));
+	idio_snprintf (em, BUFSIZ, "sigaddset %s", idio_libc_signal_name (signum));
+
 	idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -373,7 +374,8 @@ void idio_add_terminal_signal (int sig)
 	 * Test Case: ??
 	 */
 	char em[BUFSIZ];
-	sprintf (em, "sigaction %s", idio_libc_signal_name (sig));
+	idio_snprintf (em, BUFSIZ, "sigaction %s", idio_libc_signal_name (sig));
+
 	idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -391,7 +393,8 @@ void idio_add_terminal_signal (int sig)
 	     * Test Case: ??
 	     */
 	    char em[BUFSIZ];
-	    sprintf (em, "sigaction %s", idio_libc_signal_name (sig));
+	    idio_snprintf (em, BUFSIZ, "sigaction %s", idio_libc_signal_name (sig));
+
 	    idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -440,7 +443,11 @@ int main (int argc, char **argv, char **envp)
     idio_module_table_init ();
     idio_init ();
 
-    idio_env_init_idiolib (argv[0]);
+    /*
+     * I'm not sure there are any limits on the length of argv[0] so
+     * we're stuck with strlen.  PATH_MAX, maybe.
+     */
+    idio_env_init_idiolib (argv[0], strlen (argv[0]));
 
     IDIO thr = idio_thread_current_thread ();
 
@@ -629,7 +636,7 @@ int main (int argc, char **argv, char **envp)
 		    idio_vm_reports = 1;
 		} else if (strncmp (argv[i], "--load", 6) == 0) {
 		    option = OPTION_LOAD;
-		} else if (strlen (argv[i]) == 2) {
+		} else if ('\0' == argv[i][2]) {
 		    in_idio_options = 0;
 		}
 	    } else {
@@ -660,7 +667,7 @@ int main (int argc, char **argv, char **envp)
      * Remember, sargv started out pointing at argv so if there were
      * no arguments sargv[0] is argv[0].
      */
-    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV0"), idio_string_C (sargv[0]), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("ARGV0"), idio_string_C (sargv[0]), idio_Idio_module_instance ());
 
     IDIO args = idio_array (sargc);
     if (sargc) {
@@ -669,8 +676,8 @@ int main (int argc, char **argv, char **envp)
 	}
     }
 
-    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGC"), idio_integer (sargc - 1), idio_Idio_module_instance ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV"), args, idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("ARGC"), idio_integer (sargc - 1), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("ARGV"), args, idio_Idio_module_instance ());
 
     if (sargc) {
 	/*

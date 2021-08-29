@@ -30,7 +30,7 @@ extern IDIO idio_env_IDIOLIB_sym;
 
 void idio_env_format_error (char *circumstance, char *msg, IDIO name, IDIO val, IDIO c_location);
 
-void idio_env_init_idiolib (char *argv0);
+void idio_env_init_idiolib (const char *argv0, const size_t argv0_len);
 
 void idio_init_env ();
 

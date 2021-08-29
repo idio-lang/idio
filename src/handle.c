@@ -170,10 +170,11 @@ static void idio_handle_bad_input_error (IDIO h, IDIO c_location)
     IDIO_TYPE_ASSERT (string, c_location);
 
     if (idio_isa_handle (h)) {
-	char em[BUFSIZ];
 	size_t hn_size;
 	char *hn = idio_string_as_C (IDIO_HANDLE_FILENAME (h), &hn_size);
-	sprintf (em, "handle '%s' is not a input handle", hn);
+	char em[BUFSIZ];
+	idio_snprintf (em, BUFSIZ, "handle '%s' is not a input handle", hn);
+
 	IDIO_GC_FREE (hn);
 	idio_error_param_type_msg (em, c_location);
     } else {
@@ -190,10 +191,11 @@ static void idio_handle_bad_output_error (IDIO h, IDIO c_location)
     IDIO_TYPE_ASSERT (string, c_location);
 
     if (idio_isa_handle (h)) {
-	char em[BUFSIZ];
 	size_t hn_size;
 	char *hn = idio_string_as_C (IDIO_HANDLE_FILENAME (h), &hn_size);
-	sprintf (em, "handle '%s' is not a output handle", hn);
+	char em[BUFSIZ];
+	idio_snprintf (em, BUFSIZ, "handle '%s' is not a output handle", hn);
+
 	IDIO_GC_FREE (hn);
 	idio_error_param_type_msg (em, c_location);
     } else {
@@ -281,8 +283,8 @@ char *idio_handle_name_as_C (IDIO h)
     if (idio_S_nil == hname) {
 	hname = IDIO_HANDLE_PATHNAME (h);
     }
-    char *name = "n/a";
-    size_t size = strlen (name);
+    char *name;;
+    size_t size = 0;
     if (idio_isa_string (hname)) {
 	name = idio_string_as_C (hname, &size);
     } else {
@@ -291,7 +293,6 @@ char *idio_handle_name_as_C (IDIO h)
 	 * during shutdown...
 	 */
 	name = "n/r";
-	size = strlen (name);
     }
 
     return name;
@@ -917,7 +918,7 @@ int idio_putc_handle (IDIO h, idio_unicode_t c)
     return n;
 }
 
-ptrdiff_t idio_puts_handle (IDIO h, const char *s, size_t slen)
+ptrdiff_t idio_puts_handle (IDIO h, const char *s, const size_t slen)
 {
     IDIO_ASSERT (h);
     IDIO_C_ASSERT (s);
@@ -1135,7 +1136,8 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
 	     * seek-handle (current-input-handle) 0 'maybe
 	     */
 	    char em[BUFSIZ];
-	    sprintf (em, "'%s' is invalid: 'set, 'end or 'cur", IDIO_SYMBOL_S (w));
+	    idio_snprintf (em, BUFSIZ, "'%s' is invalid: 'set, 'end or 'cur", IDIO_SYMBOL_S (w));
+
 	    idio_error_param_value_msg ("seek-handle", "whence", w, em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -1640,7 +1642,8 @@ or the current output handle				\n\
 	 * write-char (integer->unicode #xFDD0)
 	 */
 	char em[BUFSIZ];
-	sprintf (em, "U+%04" PRIX32 " is not a character", c_C);
+	idio_snprintf (em, BUFSIZ, "U+%04" PRIX32 " is not a character", c_C);
+
 	idio_error_param_value_msg_only ("write-char", "Unicode code point", em, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -1681,7 +1684,7 @@ IDIO idio_display (IDIO o, IDIO h)
     return idio_S_unspec;
 }
 
-IDIO idio_display_C_len (const char *s, size_t blen, IDIO h)
+IDIO idio_display_C_len (const char *s, const size_t blen, IDIO h)
 {
     IDIO_C_ASSERT (s);
     IDIO_ASSERT (h);
@@ -1871,16 +1874,17 @@ num	specifies a maximum limit on the output		\n\
 		    case 'X':
 			{
 			    char fmt[BUFSIZ];
-			    strncpy (fmt, s, ss - s + 1);
+			    memcpy (fmt, s, ss - s);
 			    fmt[ss - s] = '\0';
+
 			    if (idio_S_nil != args) {
 				IDIO arg = IDIO_PAIR_H (args);
 				args = IDIO_PAIR_T (args);
 				if (idio_isa_fixnum (arg)) {
 				    intmax_t n = IDIO_FIXNUM_VAL (arg);
 				    char str[BUFSIZ];
-				    sprintf (str, fmt, n);
-				    idio_puts_handle (h, str, strlen (str));
+				    size_t str_len = idio_snprintf (str, BUFSIZ, fmt, n);
+				    idio_puts_handle (h, str, str_len);
 				} else if (idio_isa_bignum (arg)) {
 				    size_t s_size = 0;
 				    s = idio_bignum_as_string (arg, &s_size);
@@ -1888,11 +1892,11 @@ num	specifies a maximum limit on the output		\n\
 				    IDIO_GC_FREE (s);
 				} else {
 				    /* ?? */
-				    idio_puts_handle (h, c, strlen (c));
+				    idio_puts_handle (h, c, ss - s);
 				}
 			    } else {
 				c = "<no-arg>";
-				idio_puts_handle (h, c, strlen (c));
+				idio_puts_handle (h, c, sizeof (c) - 1);
 			    }
 			    s = ss;
 			    i = si;
@@ -1934,7 +1938,7 @@ num	specifies a maximum limit on the output		\n\
 				IDIO_GC_FREE (c);
 			    } else {
 				c = "<no-arg>";
-				idio_puts_handle (h, c, strlen (c));
+				idio_puts_handle (h, c, sizeof (c) - 1);
 			    }
 			    s = ss;
 			    i = si;
@@ -2009,9 +2013,10 @@ IDIO idio_handle_location (IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    char buf[BUFSIZ];
     char *sname = idio_handle_name_as_C (h);
-    sprintf (buf, "%s:line %jd", sname, (intmax_t) IDIO_HANDLE_LINE (h));
+    char buf[BUFSIZ];
+    idio_snprintf (buf, BUFSIZ, "%s:line %jd", sname, (intmax_t) IDIO_HANDLE_LINE (h));
+
     IDIO_GC_FREE (sname);
 
     return idio_string_C (buf);
@@ -2280,7 +2285,7 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	 * Throw out some messages about any recently failed jobs
 	 */
 	idio_vm_invoke_C (idio_thread_current_thread (),
-			  idio_module_symbol_value (idio_symbols_C_intern ("do-job-notification"),
+			  idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("do-job-notification"),
 						    idio_job_control_module,
 						    idio_S_nil));
 
@@ -2295,7 +2300,8 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	IDIO eh = idio_thread_current_error_handle ();
 #ifdef IDIO_DEBUG
 	char pbuf[BUFSIZ];
-	sprintf (pbuf, "[%d] ", getpid ());
+	idio_snprintf (pbuf, BUFSIZ, "[%d] ", getpid ());
+
 	idio_display_C (pbuf, eh);
 #endif
 	idio_display (IDIO_MODULE_NAME (cm), eh);

@@ -649,7 +649,7 @@ condition-report := #f
      })
      ((rt-number-error? c) {
        iem c
-       cr-printf ": number '%s'" (rt-number-error-number c)
+       cr-printf ": number(s) '%s'" (rt-number-error-number c)
      })
 
      ;; ^rt-bitset-error

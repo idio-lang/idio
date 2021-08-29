@@ -349,7 +349,7 @@ int main (int argc, char **argv)
 	char *format = "%c";
 	time_t t = time (NULL);
 	struct tm *tmp = localtime (&t);
-	size_t strftime_r = strftime (s, sizeof (s), format, tmp);
+	size_t strftime_r = strftime (s, BUFSIZ, format, tmp);
     }
 
     /* strptime(3) */

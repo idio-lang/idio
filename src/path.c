@@ -49,6 +49,7 @@
 #include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
+#include "util.h"
 #include "vm.h"
 
 IDIO idio_path_type;
@@ -150,7 +151,7 @@ void idio_pathname_format_error (char *msg, IDIO str, IDIO c_location)
     /* notreached */
 }
 
-IDIO idio_pathname_C_len (const char *s_C, size_t blen)
+IDIO idio_pathname_C_len (const char *s_C, const size_t blen)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -171,7 +172,8 @@ IDIO idio_pathname_C_len (const char *s_C, size_t blen)
 	     * %P{hello\x0world}
 	     */
 	    char em[BUFSIZ];
-	    sprintf (em, "contains an ASCII NUL at %zd/%zd", i + 1, blen);
+	    idio_snprintf (em, BUFSIZ, "contains an ASCII NUL at %zd/%zd", i + 1, blen);
+
 	    idio_pathname_format_error (em, idio_string_C_len (s_C, blen), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -224,7 +226,7 @@ test if `o` is an pathname				\n\
     return r;
 }
 
-IDIO idio_fd_pathname_C_len (const char *s_C, size_t blen)
+IDIO idio_fd_pathname_C_len (const char *s_C, const size_t blen)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -251,7 +253,7 @@ int idio_isa_fd_pathname (IDIO o)
 	      (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o)) & IDIO_STRING_FLAG_FD_PATHNAME))));
 }
 
-IDIO idio_fifo_pathname_C_len (const char *s_C, size_t blen)
+IDIO idio_fifo_pathname_C_len (const char *s_C, const size_t blen)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -302,7 +304,11 @@ IDIO idio_path_expand (IDIO p)
     size_t size = 0;
     char *pat_C = idio_string_as_C (pat, &size);
 
-    size_t C_size = strlen (pat_C);
+    /*
+     * Use size + 1 to avoid a truncation warning -- we're just seeing
+     * if pat_C includes a NUL
+     */
+    size_t C_size = idio_strnlen (pat_C, size + 1);
     if (C_size != size) {
 	/*
 	 * Test Case: path-errors/pattern-bad-format.idio

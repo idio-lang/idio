@@ -126,7 +126,7 @@ IDIO idio_add_evaluation_primitive (idio_primitive_desc_t *d, IDIO module, const
     IDIO_TYPE_ASSERT (module, module);
 
     IDIO primdata = idio_primitive_data (d);
-    IDIO sym = idio_symbols_C_intern (d->name);
+    IDIO sym = idio_symbols_C_intern (d->name, d->name_len);
     return idio_evaluator_extend (sym, primdata, module, cpp__FILE__, cpp__LINE__);
 }
 
@@ -138,21 +138,21 @@ void idio_add_expander_primitive (idio_primitive_desc_t *d, IDIO cs, const char 
 
     idio_add_primitive (d, cs, cpp__FILE__, cpp__LINE__);
     IDIO primdata = idio_primitive_data (d);
-    idio_install_expander_source (idio_symbols_C_intern (d->name), primdata, primdata);
+    idio_install_expander_source (idio_symbols_C_intern (d->name, d->name_len), primdata, primdata);
 }
 
 void idio_add_infix_operator_primitive (idio_primitive_desc_t *d, int pri, const char *cpp__FILE__, int cpp__LINE__)
 {
     idio_add_evaluation_primitive (d, idio_operator_module, cpp__FILE__, cpp__LINE__);
     IDIO primdata = idio_primitive_data (d);
-    idio_install_infix_operator (idio_symbols_C_intern (d->name), primdata, pri);
+    idio_install_infix_operator (idio_symbols_C_intern (d->name, d->name_len), primdata, pri);
 }
 
 void idio_add_postfix_operator_primitive (idio_primitive_desc_t *d, int pri, const char *cpp__FILE__, int cpp__LINE__)
 {
     idio_add_evaluation_primitive (d, idio_operator_module, cpp__FILE__, cpp__LINE__);
     IDIO primdata = idio_primitive_data (d);
-    idio_install_postfix_operator (idio_symbols_C_intern (d->name), primdata, pri);
+    idio_install_postfix_operator (idio_symbols_C_intern (d->name, d->name_len), primdata, pri);
 }
 
 IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
@@ -521,14 +521,14 @@ poor man's letrec				\n\
 
 	if (idio_isa_pair (binding)) {
 	    vars = idio_pair (IDIO_PAIR_H (binding), vars);
-	    tmps = idio_pair (idio_gensym (NULL), tmps);
+	    tmps = idio_pair (idio_gensym (NULL, 0), tmps);
 	    if (idio_isa_pair (IDIO_PAIR_T (binding))) {
 		value_expr = IDIO_PAIR_HT (binding);
 	    }
 	    vals = idio_pair (value_expr, vals);
 	} else if (idio_isa_symbol (binding)) {
 	    vars = idio_pair (binding, vars);
-	    tmps = idio_pair (idio_gensym (NULL), tmps);
+	    tmps = idio_pair (idio_gensym (NULL, 0), tmps);
 	    vals = idio_pair (value_expr, vals);
 	} else {
 	    /*
@@ -1441,26 +1441,26 @@ void idio_init_expander ()
 {
     idio_module_table_register (idio_expander_add_primitives, NULL, NULL);
 
-    idio_expander_module = idio_module (idio_symbols_C_intern ("expander"));
+    idio_expander_module = idio_module (IDIO_SYMBOLS_C_INTERN ("expander"));
 
-    idio_expander_list = idio_symbols_C_intern ("*expander-list*");
+    idio_expander_list = IDIO_SYMBOLS_C_INTERN ("*expander-list*");
     idio_module_set_symbol_value (idio_expander_list, idio_S_nil, idio_expander_module);
 
-    idio_expander_list_src = idio_symbols_C_intern ("*expander-list-src*");
+    idio_expander_list_src = IDIO_SYMBOLS_C_INTERN ("*expander-list-src*");
     idio_module_set_symbol_value (idio_expander_list_src, idio_S_nil, idio_expander_module);
 
-    idio_operator_module = idio_module (idio_symbols_C_intern ("operator"));
+    idio_operator_module = idio_module (IDIO_SYMBOLS_C_INTERN ("operator"));
 
-    idio_infix_operator_list = idio_symbols_C_intern ("*infix-operator-list*");
+    idio_infix_operator_list = IDIO_SYMBOLS_C_INTERN ("*infix-operator-list*");
     idio_module_set_symbol_value (idio_infix_operator_list, idio_S_nil, idio_operator_module);
 
-    idio_infix_operator_group = idio_symbols_C_intern ("*infix-operator-group*");
+    idio_infix_operator_group = IDIO_SYMBOLS_C_INTERN ("*infix-operator-group*");
     idio_module_set_symbol_value (idio_infix_operator_group, idio_S_nil, idio_operator_module);
 
-    idio_postfix_operator_list = idio_symbols_C_intern ("*postfix-operator-list*");
+    idio_postfix_operator_list = IDIO_SYMBOLS_C_INTERN ("*postfix-operator-list*");
     idio_module_set_symbol_value (idio_postfix_operator_list, idio_S_nil, idio_operator_module);
 
-    idio_postfix_operator_group = idio_symbols_C_intern ("*postfix-operator-group*");
+    idio_postfix_operator_group = IDIO_SYMBOLS_C_INTERN ("*postfix-operator-group*");
     idio_module_set_symbol_value (idio_postfix_operator_group, idio_S_nil, idio_operator_module);
 }
 

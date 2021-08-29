@@ -2919,11 +2919,15 @@ void idio_init_codegen ()
 {
     idio_module_table_register (idio_codegen_add_primitives, NULL, NULL);
 
-    idio_codegen_module = idio_module (idio_symbols_C_intern ("codegen"));
+    idio_codegen_module = idio_module (IDIO_SYMBOLS_C_INTERN ("codegen"));
 
     idio_codegen_symbol_t *cs = idio_codegen_symbols;
     for (; cs->name != NULL; cs++) {
-	IDIO sym = idio_symbols_C_intern (cs->name);
+	/*
+	 * The longest existing cs->name is 33 chars so the strnlen
+	 * (..., 40) magic number gives us a bit of future leeway
+	 */
+	IDIO sym = idio_symbols_C_intern (cs->name, strnlen (cs->name, 40));
 	idio_module_export_symbol_value (sym, cs->value, idio_codegen_module);
     }
 }

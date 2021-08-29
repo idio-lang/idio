@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -23,7 +23,7 @@
 #ifndef PRIMITIVE_H
 #define PRIMITIVE_H
 
-IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs, const char *sigstr_C, const char *docstr_C);
+IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, const size_t name_C_len, size_t arity, char varargs, const char *sigstr_C, const size_t sigstr_C_len, const char *docstr_C, const size_t docstr_C_len);
 IDIO idio_primitive_data (idio_primitive_desc_t *desc);
 void idio_primitive_set_property_C (IDIO p, IDIO kw, const char *str_C);
 int idio_isa_primitive (IDIO o);

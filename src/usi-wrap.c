@@ -32,6 +32,7 @@
 #include <setjmp.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "gc.h"
 #include "idio.h"
@@ -50,6 +51,7 @@
 #include "thread.h"
 #include "unicode.h"
 #include "usi.h"
+#include "util.h"
 #include "vm.h"
 
 #include "usi-wrap.h"
@@ -163,23 +165,25 @@ void idio_usi_describe_code_point (idio_unicode_t cp)
      * A 64-bit decimal number can be ~19 digits.
      */
     char buf[30];
-    snprintf (buf, 30, "%04X;;", cp);
-    idio_display_C (buf, oh);
+    size_t blen = idio_snprintf (buf, 30, "%04X;;", cp);
+    idio_display_C_len (buf, blen, oh);
+
     idio_display_C (idio_USI_Category_names[var->category], oh);
     idio_display_C (";;;;", oh);
+
     if (var->flags & IDIO_USI_FLAG_Fractional_Number) {
-	snprintf (buf, 30, ";;%s;", var->u.frac);
-	idio_display_C (buf, oh);
+	blen = idio_snprintf (buf, 30, ";;%s;", var->u.frac);
+	idio_display_C_len (buf, blen, oh);
     } else if (var->flags & IDIO_USI_FLAG_Number) {
 	if (IDIO_USI_CATEGORY_Nl == var->category) {
-	    snprintf (buf, 30, ";;%" PRId64 ";", var->u.dec);
+	    blen = idio_snprintf (buf, 30, ";;%" PRId64 ";", var->u.dec);
 	} else {
 	    /*
 	     * Only a single digit??
 	     */
-	    snprintf (buf, 30, "%" PRId64 ";%" PRId64 ";%" PRId64 ";", var->u.dec, var->u.dec, var->u.dec);
+	    blen = idio_snprintf (buf, 30, "%" PRId64 ";%" PRId64 ";%" PRId64 ";", var->u.dec, var->u.dec, var->u.dec);
 	}
-	idio_display_C (buf, oh);
+	idio_display_C_len (buf, blen, oh);
     } else {
 	idio_display_C (";;;", oh);
     }
@@ -188,8 +192,8 @@ void idio_usi_describe_code_point (idio_unicode_t cp)
 
     for (int i = 0; i < 3; i++) {
 	if (var->cases[i]) {
-	    snprintf (buf, 30, "%04X", cp + var->cases[i]);
-	    idio_display_C (buf, oh);
+	    blen = idio_snprintf (buf, 30, "%04X", cp + var->cases[i]);
+	    idio_display_C_len (buf, blen, oh);
 	}
 
 	if (i < 2) {
@@ -213,12 +217,13 @@ void idio_usi_describe_code_point (idio_unicode_t cp)
 	    char buf[30];
 	    switch (1 << i) {
 	    case IDIO_USI_FLAG_Fractional_Number:
-		snprintf (buf, 30, "=%s", var->u.frac);
-		idio_display_C (buf, oh);
+		blen = idio_snprintf (buf, 30, "=%s", var->u.frac);
+		idio_display_C_len (buf, blen, oh);
 		break;
 	    case IDIO_USI_FLAG_Number:
 		if (0 == (var->flags & IDIO_USI_FLAG_Fractional_Number)) {
-		    snprintf (buf, 30, "=%" PRId64, var->u.dec);
+		    blen = idio_snprintf (buf, 30, "=%" PRId64, var->u.dec);
+		    idio_display_C_len (buf, blen, oh);
 		}
 		break;
 	    }
@@ -233,8 +238,8 @@ void idio_usi_describe_code_point (idio_unicode_t cp)
     for (int i = 0; i < 3; i++) {
 	if (var->cases[i]) {
 	    idio_display_C (case_names[i], oh);
-	    snprintf (buf, 30, "=%04X ", cp + var->cases[i]);
-	    idio_display_C (buf, oh);
+	    blen = idio_snprintf (buf, 30, "=%04X ", cp + var->cases[i]);
+	    idio_display_C_len (buf, blen, oh);
 	}
     }
     idio_display_C ("\n", oh);
@@ -674,19 +679,19 @@ void idio_init_usi_wrap ()
 {
     idio_module_table_register (idio_usi_wrap_add_primitives, idio_final_usi_wrap, NULL);
 
-    idio_unicode_module = idio_module (idio_symbols_C_intern ("unicode"));
+    idio_unicode_module = idio_module (IDIO_SYMBOLS_C_INTERN ("unicode"));
 
     /*
      * Create the SRFI-14 char-sets
      */
 
-    IDIO idio_SRFI_14_module = idio_module (idio_symbols_C_intern ("SRFI-14"));
+    IDIO idio_SRFI_14_module = idio_module (IDIO_SYMBOLS_C_INTERN ("SRFI-14"));
 
-    IDIO sym = idio_symbols_C_intern ("sparse-char-set");
+    IDIO sym = IDIO_SYMBOLS_C_INTERN ("sparse-char-set");
     IDIO sparse_char_set_type = idio_struct_type (sym,
 						  idio_S_nil,
-						  idio_pair (idio_symbols_C_intern ("size"),
-						  idio_pair (idio_symbols_C_intern ("planes"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("size"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("planes"),
 						  idio_S_nil)));
 
     idio_module_set_symbol_value (sym, sparse_char_set_type, idio_SRFI_14_module);
@@ -723,7 +728,13 @@ void idio_init_usi_wrap ()
 	IDIO_ARRAY_USIZE (as[csi]) = IDIO_ARRAY_ASIZE (as[csi]);
 
 	css[csi] = idio_struct_instance (sparse_char_set_type, IDIO_LIST2 (idio_integer (IDIO_UNICODE_SIZE), as[csi]));
-	idio_module_export_symbol_value (idio_symbols_C_intern (SRFI_14_char_sets[csi].name), css[csi], idio_SRFI_14_module);
+
+	/*
+	 * The longest SRFI_14_char_sets[csi].name is 31 chars hence
+	 * the strnlen (..., 40) magic number to allow some future
+	 * leeway
+	 */
+	idio_module_export_symbol_value (idio_symbols_C_intern (SRFI_14_char_sets[csi].name, strnlen (SRFI_14_char_sets[csi].name, 40)), css[csi], idio_SRFI_14_module);
     }
     IDIO_GC_FREE (css);
 

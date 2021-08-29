@@ -53,6 +53,7 @@
 #include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
+#include "util.h"
 #include "vm.h"
 
 /*
@@ -169,10 +170,12 @@ static void idio_env_add_environ ()
 	IDIO val = idio_S_undef;
 
 	if (NULL != e) {
-	    char *name = idio_alloc (e - *env + 1);
-	    strncpy (name, *env, e - *env + 1);
-	    name[e - *env] = '\0';
-	    var = idio_symbols_C_intern (name);
+	    size_t name_len = e - *env;
+	    char *name = idio_alloc (name_len + 1);
+	    memcpy (name, *env, name_len);
+	    name[name_len] = '\0';
+
+	    var = idio_symbols_C_intern (name, name_len);
 	    IDIO_GC_FREE (name);
 
 	    val = idio_string_C (e + 1);
@@ -317,7 +320,7 @@ static void idio_env_add_environ ()
 
 #define IDIO_ENV_EXPORT(name)						\
     if (getenv (#name) == NULL) {					\
-	IDIO sym = idio_symbols_C_intern (#name);			\
+	IDIO sym = idio_symbols_C_intern (#name, sizeof (#name) - 1);	\
 	if (idio_env_set_default (sym, name) == 0) {			\
 	    idio_module_env_set_symbol_value (sym, idio_string_C (name)); \
 	}								\
@@ -347,10 +350,20 @@ static void idio_env_add_environ ()
  * - a0rp (argv0_realpath) is a buffer of PATH_MAX characters which we
  *   copy the result into
  */
-void idio_env_exe_pathname (char *argv0, char *a0rp)
+void idio_env_exe_pathname (const char *argv0, const size_t argv0_len, char *a0rp, size_t a0rp_len)
 {
     IDIO_C_ASSERT (argv0);
+    IDIO_C_ASSERT (argv0_len > 0);
     IDIO_C_ASSERT (a0rp);
+    IDIO_C_ASSERT (a0rp_len > 0);
+
+    /*
+     * Annoyingly, we want to replace argv0 and argv0_len in the SunOS
+     * section to reuse the generic argv0 code which means we drop the
+     * const or use local non-const references
+     */
+    char *a0 = (char *) argv0;
+    size_t a0_len = (size_t) argv0_len;
 
     /*
      * These operating system-bespoke sections are from
@@ -375,7 +388,7 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
     }
 #endif
 #elif defined (__linux__)
-    ssize_t r = readlink ("/proc/self/exe", a0rp, PATH_MAX);
+    ssize_t r = readlink ("/proc/self/exe", a0rp, a0rp_len);
     if (r > 0) {
 	/*
 	 * 1. Can a link be zero length?
@@ -400,7 +413,7 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
 	perror ("readlink /proc/self/exe");
     }
 #elif defined (__APPLE__) && defined (__MACH__)
-    uint32_t bufsiz = PATH_MAX;
+    uint32_t bufsiz = a0rp_len;
     int r = _NSGetExecutablePath (a0rp, &bufsiz);
     if (0 == r) {
 	return;
@@ -412,7 +425,9 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
     if (NULL != r) {
 	if ('/' == r[0]) {
 	    /* absolute pathname */
-	    strcpy (a0rp, r);
+	    memcpy (a0rp, r, a0rp_len);
+	    a0rp[a0rp_len] = '\0'; /* just in case */
+
 	    return;
 	} else {
 	    /*
@@ -420,9 +435,10 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
 	     *
 	     * We're about to do the right thing with argv0, below,
 	     * but have a better value (hopefully) in r, now.  Rather
-	     * than duplicate code have argv0 be r.
+	     * than duplicate code have a0 be r.
 	     */
-	    argv0 = (char *) r;
+	    a0 = (char *) r;
+	    a0_len = idio_strnlen (r, PATH_MAX);
 	}
     }
 #else
@@ -430,10 +446,9 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
 #endif
 
     /*
-     * Fallback to looking for argv0 either relative to us or on the
-     * PATH
+     * Fallback to looking for a0 either relative to us or on the PATH
      */
-    char *dir = rindex (argv0, '/');
+    char *dir = rindex (a0, '/');
 
     if (NULL == dir) {
 	/*
@@ -445,10 +460,10 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
 	 * explicit exec, ".../idio", and an implicit one,
 	 * "PATH=... idio", in the same test suite.
 	 */
-	argv0 = idio_command_find_exe_C (argv0);
+	a0 = idio_command_find_exe_C (a0, a0_len);
     }
 
-    char *rp = realpath (argv0, a0rp);
+    char *rp = realpath (a0, a0rp);
 
     if (NULL == rp) {
 	/*
@@ -462,6 +477,8 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
 	/* notreached */
 	return;
     }
+
+    a0rp[a0rp_len] = '\0';	/* just in case */
 }
 
 /*
@@ -476,18 +493,18 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
  * then here to us.  Or it could just call us separately.  Which it
  * does.
  */
-void idio_env_init_idiolib (char *argv0)
+void idio_env_init_idiolib (const char *argv0, const size_t argv0_len)
 {
     IDIO_C_ASSERT (argv0);
 
     char a0rp[PATH_MAX];
-    idio_env_exe_pathname (argv0, a0rp);
+    idio_env_exe_pathname (argv0, argv0_len, a0rp, PATH_MAX);
 
     /*
      * While we are here, set IDIO_CMD and IDIO_EXE.
      */
-    idio_module_set_symbol_value (idio_symbols_C_intern ("IDIO_CMD"), idio_string_C (argv0), idio_Idio_module_instance ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("IDIO_EXE"), idio_string_C (a0rp), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD"), idio_string_C (argv0), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_EXE"), idio_string_C (a0rp), idio_Idio_module_instance ());
 
     /*
      * If there's no existing IDIOLIB environment variable then set
@@ -544,18 +561,28 @@ void idio_env_init_idiolib (char *argv0)
 
     if (pdir >= a0rp) {
 	if (strncmp (pdir, "/bin", 4) == 0) {
-	    /* ... + /lib */
-	    size_t ieId_len = pdir - a0rp + 4;
-	    char *idiolib_exe = idio_alloc (ieId_len + 1);
-	    strncpy (idiolib_exe, a0rp, pdir - a0rp + 1);
-	    idiolib_exe[pdir - a0rp] = '\0';
-	    strcat (idiolib_exe, "/lib");
+	    /*
+	     * From .../bin we can derive .../lib
+	     *
+	     * This is the implicit idio-exe IDIOLIB directory, ieId
+	     */
+	    size_t ddd_len = pdir - a0rp;
+	    size_t ieId_len = ddd_len + 4;
+	    char *ieId = idio_alloc (ieId_len + 1);
+	    memcpy (ieId, a0rp, ddd_len);
+	    memcpy (ieId + ddd_len, "/lib", 4);
+	    ieId[ddd_len + 4] = '\0';
 
 	    IDIO idiolib = idio_module_env_symbol_value (idio_env_IDIOLIB_sym, IDIO_LIST1 (idio_S_false));
 
 	    size_t idiolib_len = 0;
 	    char *idiolib_C = idio_string_as_C (idiolib, &idiolib_len);
-	    size_t C_size = strlen (idiolib_C);
+
+	    /*
+	     * Use idiolib_len + 1 to avoid a truncation warning --
+	     * we're just seeing if idiolib_C includes a NUL
+	     */
+	    size_t C_size = idio_strnlen (idiolib_C, idiolib_len + 1);
 	    if (C_size != idiolib_len) {
 		/*
 		 * Test Case: ??
@@ -580,24 +607,23 @@ void idio_env_init_idiolib (char *argv0)
 		return;
 	    }
 
-	    char *index = strstr (idiolib_C, idiolib_exe);
+	    char *index = strstr (idiolib_C, ieId);
 	    int prepend = 0;
 	    if (index) {
 		/*
 		 * Code coverage:
 		 *
-		 * These should be picked up if a pre-existing
-		 * IDIOLIB is one of:
+		 * These should be picked up if a pre-existing IDIOLIB
+		 * is already one of:
 		 *
 		 * .../lib
 		 * .../lib:...
 		 *
-		 * Both of which will fall into the manual
-		 * test category.
+		 * Both of which will fall into the manual test
+		 * category.
 		 *
-		 * We do these extra checks in case someone
-		 * has added .../libs -- which index will
-		 * match.
+		 * We do these extra checks in case someone has added
+		 * .../libs -- which index will also match.
 		 */
 		if (! ('\0' == index[ieId_len] ||
 		       ':' == index[ieId_len])) {
@@ -613,18 +639,18 @@ void idio_env_init_idiolib (char *argv0)
 	    }
 
 	    if (prepend) {
-		size_t ni_len = idiolib_len + 1 + ieId_len + 1;
+		size_t ni_len = ieId_len + 1 + idiolib_len + 1;
 		if (0 == idiolib_len) {
 		    ni_len = ieId_len + 1;
 		}
 		char *ni = idio_alloc (ni_len + 1);
-		ni[0] = '\0';
-		strcpy (ni, idiolib_exe);
-		strcat (ni, ":");
+		memcpy (ni, ieId, ieId_len);
+		memcpy (ni + ieId_len, ":", 1);
 		if (idiolib_len) {
-		    strcat (ni, idiolib_C);
+		    memcpy (ni + ieId_len + 1, idiolib_C, idiolib_len);
 		}
 		ni[ni_len] = '\0';
+
 		idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, idio_string_C (ni));
 		IDIO_GC_FREE (ni);
 	    }
@@ -648,9 +674,9 @@ void idio_init_env ()
 {
     idio_module_table_register (idio_env_add_primitives, idio_final_env, NULL);
 
-    idio_env_IDIOLIB_sym = idio_symbols_C_intern ("IDIOLIB");
-    idio_env_PATH_sym = idio_symbols_C_intern ("PATH");
-    idio_env_PWD_sym = idio_symbols_C_intern ("PWD");
+    idio_env_IDIOLIB_sym = IDIO_SYMBOLS_C_INTERN ("IDIOLIB");
+    idio_env_PATH_sym = IDIO_SYMBOLS_C_INTERN ("PATH");
+    idio_env_PWD_sym = IDIO_SYMBOLS_C_INTERN ("PWD");
 
     /*
      * /usr/lib/{pkg} seems pretty universal -- but it might not be.
@@ -658,7 +684,9 @@ void idio_init_env ()
      * some systems before copying that into idio_env_IDIOLIB_default.
      */
     char *idiolib_default = "/usr/lib/idio";
-    idio_env_IDIOLIB_default = idio_alloc (strlen (idiolib_default) + 1);
-    strcpy (idio_env_IDIOLIB_default, idiolib_default);
+    size_t id_len = sizeof (idiolib_default) - 1;
+    idio_env_IDIOLIB_default = idio_alloc (id_len + 1);
+    memcpy (idio_env_IDIOLIB_default, idiolib_default, id_len);
+    idio_env_IDIOLIB_default[id_len] = '\0';
 }
 

@@ -227,10 +227,13 @@ extern FILE *idio_vm_perf_FILE;
     static struct idio_primitive_desc_s idio_primitive_data_ ## cname = { \
 	idio_defprimitive_ ## cname,					\
 	iname,								\
+	sizeof (iname) - 1,						\
 	arity,								\
 	varargs,							\
 	sigstr,								\
-	docstr								\
+	sizeof (sigstr) - 1,						\
+	docstr,								\
+	sizeof (docstr) - 1						\
     };									\
     IDIO idio_defprimitive_ ## cname params
 
@@ -307,10 +310,13 @@ extern FILE *idio_vm_perf_FILE;
     static struct idio_primitive_desc_s idio_infix_operator_data_ ## cname = { \
 	idio_defoperator_ ## cname,					\
 	iname,								\
+	sizeof (iname) - 1,						\
 	arity,								\
 	varargs,							\
 	(char *) 0,							\
-	(char *) 0							\
+	0,								\
+	(char *) 0,							\
+	0,								\
     };									\
     IDIO idio_defoperator_ ## cname params
 
@@ -324,10 +330,13 @@ extern FILE *idio_vm_perf_FILE;
     static struct idio_primitive_desc_s idio_postfix_operator_data_ ## cname = { \
 	idio_defoperator_ ## cname,					\
 	iname,								\
+	sizeof (iname) - 1,						\
 	arity,								\
 	varargs,							\
 	(char *) 0,							\
-	(char *) 0							\
+	0,								\
+	(char *) 0,							\
+	0,								\
     };									\
     IDIO idio_defoperator_ ## cname params
 
@@ -336,7 +345,9 @@ extern FILE *idio_vm_perf_FILE;
 
 #define IDIO_ADD_POSTFIX_OPERATOR(cname,pri)	  idio_add_postfix_operator_primitive (&idio_postfix_operator_data_ ## cname, pri);
 
-#define IDIO_STREQP(s,cs)	(strlen (s) == strlen (cs) && strncmp (s, cs, strlen (cs)) == 0)
+#define IDIO_STREQP(s,cs)	(strlen (s) == strlen (cs) && strncmp (s, cs, strlen (s)) == 0)
+
+#define IDIO_STREQP_LEN(s,slen,cs)	(slen == (sizeof (cs) - 1) && strncmp (s, cs, slen) == 0)
 
 #define IDIO_C_STRUCT_IDENT_DECL(n)			IDIO idio_CSI_ ## n
 #define IDIO_C_STRUCT_IDENT_DEF(iname,cname,fvi)	idio_CSI_ ## cname = IDIO_LIST2 (idio_string_C (iname), idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi)));  idio_gc_protect_auto (idio_CSI_ ## cname);

@@ -257,7 +257,7 @@ void idio_error_param_type_C (char *etype, IDIO who, char *file, const char *fun
     IDIO_ASSERT (who);
 
     char c_location[BUFSIZ];
-    sprintf (c_location, "%s:%s:%d", func, file, line);
+    idio_snprintf (c_location, BUFSIZ, "%s:%s:%d", func, file, line);
 
     idio_error_param_type (etype, who, idio_string_C (c_location));
 }
@@ -296,7 +296,7 @@ void idio_error_const_param_C (char *type_name, IDIO who, char *file, const char
     IDIO_ASSERT (who);
 
     char c_location[BUFSIZ];
-    sprintf (c_location, "%s:%s:%d", func, file, line);
+    idio_snprintf (c_location, BUFSIZ, "%s:%s:%d", func, file, line);
 
     idio_error_const_param (type_name, who, idio_string_C (c_location));
 }
@@ -623,9 +623,10 @@ void idio_error_system_errno (char *func, IDIO args, IDIO c_location)
     idio_error_system_errno_msg (func, NULL, args, c_location);
 }
 
-void idio_error_divide_by_zero (char *msg, IDIO c_location)
+void idio_error_divide_by_zero (char *msg, IDIO nums, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (nums);
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
@@ -646,7 +647,7 @@ void idio_error_divide_by_zero (char *msg, IDIO c_location)
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
 					       detail,
-					       idio_S_nil));
+					       nums));
 
     idio_raise_condition (idio_S_true, c);
     /* notreached */
@@ -661,9 +662,9 @@ void idio_init_error ()
 {
     idio_module_table_register (idio_error_add_primitives, NULL, NULL);
 
-    idio_S_internal = idio_symbols_C_intern ("internal");
+    idio_S_internal = IDIO_SYMBOLS_C_INTERN ("internal");
     idio_gc_protect_auto (idio_S_internal);
-    idio_S_user = idio_symbols_C_intern ("user");
+    idio_S_user = IDIO_SYMBOLS_C_INTERN ("user");
     idio_gc_protect_auto (idio_S_user);
     idio_S_user_code = idio_string_C ("user code");
     idio_gc_protect_auto (idio_S_user_code);

@@ -128,13 +128,14 @@ static void idio_bignum_conversion_error (char *msg, IDIO bn, IDIO c_location)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_bignum_error_divide_by_zero (IDIO c_location)
+static void idio_bignum_error_divide_by_zero (IDIO nums, IDIO c_location)
 {
+    IDIO_ASSERT (nums);
     IDIO_ASSERT (c_location);
 
     IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_divide_by_zero ("bignum divide by zero", c_location);
+    idio_error_divide_by_zero ("bignum divide by zero", nums, c_location);
 }
 
 IDIO_BSA idio_bsa (size_t n)
@@ -201,6 +202,7 @@ IDIO_BS_T idio_bsa_get (IDIO_BSA bsa, size_t i)
 	 */
 	char em[BUFSIZ];
 	idio_snprintf (em, BUFSIZ, "bignum significand array access OOB: get %zd/%zd", i, bsa->size);
+
 	idio_bignum_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -224,6 +226,7 @@ void idio_bsa_set (IDIO_BSA bsa, IDIO_BS_T v, size_t i)
 	     */
 	    char em[BUFSIZ];
 	    idio_snprintf (em, BUFSIZ, "bignum significand array access OOB: set %zd/%zd", i, bsa->size);
+
 	    idio_bignum_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -688,12 +691,14 @@ IDIO idio_bignum_float (float f)
 	if (uf.parts.mantissa) {
 	    char em[30];
 	    idio_snprintf (em, 30, "NaN %07x non-special float", uf.parts.mantissa);
+
 	    idio_error_param_value_msg_only ("C/->number", "i", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	} else {
 	    char em[30];
 	    idio_snprintf (em, 30, "%cinf non-special float", uf.parts.sign ? '-' : '+');
+
 	    idio_error_param_value_msg_only ("C/->number", "i", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -702,6 +707,7 @@ IDIO idio_bignum_float (float f)
 
     char fs[30];
     size_t fs_len = idio_snprintf (fs, 30, "%.*e", IDIO_BIGNUM_SIG_MAX_DIGITS - 1, f);
+
     return idio_bignum_real_C (fs, fs_len);
 }
 
@@ -714,12 +720,14 @@ IDIO idio_bignum_double (double d)
 	if (ud.parts.mantissa) {
 	    char em[60];
 	    idio_snprintf (em, 60, "NaN %016llx non-special double", (unsigned long long int) ud.parts.mantissa);
+
 	    idio_error_param_value_msg_only ("C/->number", "i", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	} else {
 	    char em[60];
 	    idio_snprintf (em, 60, "%cinf non-special double", ud.parts.sign ? '-' : '+');
+
 	    idio_error_param_value_msg_only ("C/->number", "i", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -728,6 +736,7 @@ IDIO idio_bignum_double (double d)
 
     char fs[30];
     size_t fs_len = idio_snprintf (fs, 30, "%.*le", IDIO_BIGNUM_SIG_MAX_DIGITS - 1, d);
+
     return idio_bignum_real_C (fs, fs_len);
 }
 
@@ -751,12 +760,14 @@ IDIO idio_bignum_longdouble (long double ld)
 	if (uld.parts_96bit.mantissa) {
 	    char em[60];
 	    idio_snprintf (em, 60, "NaN %020llx non-special long double", uld.parts_96bit.mantissa);
+
 	    idio_error_param_value_msg_only ("C/->number", "i", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	} else {
 	    char em[60];
 	    idio_snprintf (em, 60, "%cinf non-special long double", uld.parts_96bit.sign ? '-' : '+');
+
 	    idio_error_param_value_msg_only ("C/->number", "i", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -765,6 +776,7 @@ IDIO idio_bignum_longdouble (long double ld)
 
     char fs[30];
     size_t fs_len = idio_snprintf (fs, 30, "%.*Le", IDIO_BIGNUM_SIG_MAX_DIGITS - 1, ld);
+
     return idio_bignum_real_C (fs, fs_len);
 }
 
@@ -1561,7 +1573,7 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
 	 * XXX Or would be except idio_bignum_primitive_divide()
 	 * catches this (same) test before us.
 	 */
-	idio_bignum_error_divide_by_zero (IDIO_C_FUNC_LOCATION ());
+	idio_bignum_error_divide_by_zero (IDIO_LIST2 (a, b), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -2895,6 +2907,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	    size_t vs_len = IDIO_BIGNUM_DPW + 1;
 	    char vs[vs_len];
 	    idio_snprintf (vs, vs_len, "%" PRIdPTR, v);
+
 	    char *vs_rest = vs + 1;
 
 	    size_t vs_size = idio_strnlen (vs, vs_len);
@@ -2922,12 +2935,14 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 		 */
 		v = idio_bsa_get (sig_a, i);
 		vs_size = idio_snprintf (vs, vs_len, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
+
 		s = idio_strcat (s, sizep, vs, vs_size);
 	    }
 
 	    IDIO_STRCAT (s, sizep, "e");
 	    IDIO_BE_T e = exp + digits - 1;
 	    vs_size = idio_snprintf (vs, vs_len, "%+" PRId32, e);
+
 	    s = idio_strcat (s, sizep, vs, vs_size);
 	}
 	break;
@@ -2941,6 +2956,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	    size_t vs_len = IDIO_BIGNUM_DPW + 1;
 	    char vs[vs_len];
 	    idio_snprintf (vs, vs_len, "%" PRIdPTR, v);
+
 	    char *vs_rest = vs + 1;
 
 	    size_t vs_size = idio_strnlen (vs, vs_len);
@@ -2969,6 +2985,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 		 */
 		v = idio_bsa_get (sig_a, i);
 		idio_snprintf (vs, vs_len, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
+
 		vs_size = idio_strnlen (vs, vs_len);
 		if (prec < vs_size) {
 		    vs_size = prec;
@@ -2983,12 +3000,14 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 		int pad = prec;
 		char pads[pad + 1];
 		idio_snprintf (pads, pad + 1, "%.*d", pad, 0);
+
 		s = idio_strcat (s, sizep, pads, pad);
 	    }
 
 	    IDIO_STRCAT (s, sizep, "e");
 	    IDIO_BE_T e = exp + digits - 1;
 	    vs_size = idio_snprintf (vs, vs_len, "%+03" PRId32, e);
+
 	    s = idio_strcat (s, sizep, vs, vs_size);
 	}
 	break;
@@ -2997,6 +3016,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	    size_t vs_len = IDIO_BIGNUM_DPW + 1;
 	    char vs[vs_len];
 	    size_t vs_size = idio_snprintf (vs, vs_len, "%" PRIdPTR, v);
+
 	    int pre_dp_digits = digits + exp;
 	    /* we should have detected over/underflow by now! */
 
@@ -3006,6 +3026,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 		if (pad > 0) {
 		    char pads[pad + 1];
 		    idio_snprintf (pads, pad + 1, "%.*d", pad, 0);
+
 		    s = idio_strcat (s, sizep, pads, pad);
 		}
 		if (prec) {
@@ -3013,6 +3034,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 		    pad = prec;
 		    char pads[pad + 1];
 		    idio_snprintf (pads, pad + 1, "%.*d", pad, 0);
+
 		    s = idio_strcat (s, sizep, pads, pad);
 		}
 	    } else {
@@ -3033,6 +3055,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 			}
 			char pads[pad + 1];
 			idio_snprintf (pads, pad + 1, "%.*d", pad, 0);
+
 			s = idio_strcat (s, sizep, pads, pad);
 			prec -= pad;
 		    }
@@ -3056,6 +3079,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 			 */
 			v = idio_bsa_get (sig_a, i);
 			vs_size = idio_snprintf (vs, vs_len, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
+
 			if (prec < vs_size) {
 			    vs_size = prec;
 			}
@@ -3069,6 +3093,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 			int pad = prec;
 			char pads[pad + 1];
 			idio_snprintf (pads, pad + 1, "%.*d", pad, 0);
+
 			s = idio_strcat (s, sizep, pads, pad);
 		    }
 		}
@@ -3109,7 +3134,8 @@ char *idio_bignum_as_string (IDIO bn, size_t *sizep)
 	 */
 	size_t ibn_len = sizeof (IDIO_BIGNUM_NAN);
 	char *s = idio_alloc (ibn_len + 1);
-	memcpy (s, IDIO_BIGNUM_NAN, ibn_len + 1);
+	memcpy (s, IDIO_BIGNUM_NAN, ibn_len);
+	s[ibn_len] = '\0';
 
 	return s;
     }
@@ -3219,6 +3245,7 @@ IDIO idio_bignum_integer_C (char *nums, size_t nums_len, int req_exact)
 	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
 	    idio_snprintf (em, BUFSIZ, "(%s) = %lld", nums, i);
+
 	    idio_error_system_errno_msg ("strtoll", em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -3233,6 +3260,7 @@ IDIO idio_bignum_integer_C (char *nums, size_t nums_len, int req_exact)
 	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
 	    idio_snprintf (em, BUFSIZ, "(%s): No digits?", nums);
+
 	    idio_error_system_errno_msg ("strtoll", em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -3247,6 +3275,7 @@ IDIO idio_bignum_integer_C (char *nums, size_t nums_len, int req_exact)
 	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
 	    idio_snprintf (em, BUFSIZ, "strtoll (%s) = %lld", nums, i);
+
 	    idio_bignum_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -3557,6 +3586,8 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 
     int first = 1;
 
+    IDIO oargs = args;
+
     while (idio_S_nil != args) {
 	IDIO h = IDIO_PAIR_H (args);
 
@@ -3597,7 +3628,7 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 	     *
 	     * / 1.0 0.0
 	     */
-	    idio_bignum_error_divide_by_zero (IDIO_C_FUNC_LOCATION ());
+	    idio_bignum_error_divide_by_zero (oargs, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}

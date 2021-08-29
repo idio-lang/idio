@@ -293,28 +293,28 @@ IDIO idio_libc_struct_tms_as_string (struct tms *tmsp)
     idio_display_C (" tms_utime:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_clock_t);
-    sprintf (buf, fmt, tmsp->tms_utime);
+    idio_snprintf (buf, BUFSIZ, fmt, tmsp->tms_utime);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" tms_stime:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_clock_t);
-    sprintf (buf, fmt, tmsp->tms_stime);
+    idio_snprintf (buf, BUFSIZ, fmt, tmsp->tms_stime);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" tms_cutime:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_clock_t);
-    sprintf (buf, fmt, tmsp->tms_cutime);
+    idio_snprintf (buf, BUFSIZ, fmt, tmsp->tms_cutime);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" tms_cstime:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_clock_t);
-    sprintf (buf, fmt, tmsp->tms_cstime);
+    idio_snprintf (buf, BUFSIZ, fmt, tmsp->tms_cstime);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
@@ -615,28 +615,28 @@ IDIO idio_libc_struct_termios_as_string (struct termios *termiosp)
     idio_display_C (" c_iflag:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_tcflag_t);
-    sprintf (buf, fmt, termiosp->c_iflag);
+    idio_snprintf (buf, BUFSIZ, fmt, termiosp->c_iflag);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" c_oflag:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_tcflag_t);
-    sprintf (buf, fmt, termiosp->c_oflag);
+    idio_snprintf (buf, BUFSIZ, fmt, termiosp->c_oflag);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" c_cflag:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_tcflag_t);
-    sprintf (buf, fmt, termiosp->c_cflag);
+    idio_snprintf (buf, BUFSIZ, fmt, termiosp->c_cflag);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" c_lflag:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_tcflag_t);
-    sprintf (buf, fmt, termiosp->c_lflag);
+    idio_snprintf (buf, BUFSIZ, fmt, termiosp->c_lflag);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
@@ -649,14 +649,14 @@ IDIO idio_libc_struct_termios_as_string (struct termios *termiosp)
     idio_display_C (" c_ispeed:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_speed_t);
-    sprintf (buf, fmt, termiosp->c_ispeed);
+    idio_snprintf (buf, BUFSIZ, fmt, termiosp->c_ispeed);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" c_ospeed:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_speed_t);
-    sprintf (buf, fmt, termiosp->c_ospeed);
+    idio_snprintf (buf, BUFSIZ, fmt, termiosp->c_ospeed);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 #endif
@@ -1016,63 +1016,63 @@ IDIO idio_libc_struct_tm_as_string (struct tm *tmp)
     idio_display_C (" tm_sec:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
-    sprintf (buf, fmt, tmp->tm_sec);
+    idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_sec);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" tm_min:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
-    sprintf (buf, fmt, tmp->tm_min);
+    idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_min);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" tm_hour:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
-    sprintf (buf, fmt, tmp->tm_hour);
+    idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_hour);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" tm_mday:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
-    sprintf (buf, fmt, tmp->tm_mday);
+    idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_mday);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" tm_mon:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
-    sprintf (buf, fmt, tmp->tm_mon);
+    idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_mon);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" tm_year:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
-    sprintf (buf, fmt, tmp->tm_year);
+    idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_year);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" tm_wday:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
-    sprintf (buf, fmt, tmp->tm_wday);
+    idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_wday);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" tm_yday:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
-    sprintf (buf, fmt, tmp->tm_yday);
+    idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_yday);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" tm_isdst:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
-    sprintf (buf, fmt, tmp->tm_isdst);
+    idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_isdst);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
@@ -1081,7 +1081,7 @@ IDIO idio_libc_struct_tm_as_string (struct tm *tmp)
     idio_display_C (" tm_gmtoff:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_LONG);
-    sprintf (buf, fmt, tmp->tm_gmtoff);
+    idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_gmtoff);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
@@ -1299,70 +1299,70 @@ IDIO idio_libc_struct_stat_as_string (struct stat *statp)
     idio_display_C (" st_dev:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_dev_t);
-    sprintf (buf, fmt, statp->st_dev);
+    idio_snprintf (buf, BUFSIZ, fmt, statp->st_dev);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" st_ino:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_ino_t);
-    sprintf (buf, fmt, statp->st_ino);
+    idio_snprintf (buf, BUFSIZ, fmt, statp->st_ino);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" st_nlink:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_nlink_t);
-    sprintf (buf, fmt, statp->st_nlink);
+    idio_snprintf (buf, BUFSIZ, fmt, statp->st_nlink);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" st_mode:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_mode_t);
-    sprintf (buf, fmt, statp->st_mode);
+    idio_snprintf (buf, BUFSIZ, fmt, statp->st_mode);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" st_uid:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_uid_t);
-    sprintf (buf, fmt, statp->st_uid);
+    idio_snprintf (buf, BUFSIZ, fmt, statp->st_uid);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" st_gid:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_gid_t);
-    sprintf (buf, fmt, statp->st_gid);
+    idio_snprintf (buf, BUFSIZ, fmt, statp->st_gid);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" st_rdev:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_dev_t);
-    sprintf (buf, fmt, statp->st_rdev);
+    idio_snprintf (buf, BUFSIZ, fmt, statp->st_rdev);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" st_size:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_off_t);
-    sprintf (buf, fmt, statp->st_size);
+    idio_snprintf (buf, BUFSIZ, fmt, statp->st_size);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" st_blksize:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_blksize_t);
-    sprintf (buf, fmt, statp->st_blksize);
+    idio_snprintf (buf, BUFSIZ, fmt, statp->st_blksize);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" st_blocks:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_blkcnt_t);
-    sprintf (buf, fmt, statp->st_blocks);
+    idio_snprintf (buf, BUFSIZ, fmt, statp->st_blocks);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
@@ -1617,7 +1617,7 @@ IDIO idio_libc_struct_timespec_as_string (struct timespec *timespecp)
     }
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_time_t);
-    sprintf (buf, fmt, timespecp->tv_sec);
+    idio_snprintf (buf, BUFSIZ, fmt, timespecp->tv_sec);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
@@ -1634,13 +1634,13 @@ IDIO idio_libc_struct_timespec_as_string (struct timespec *timespecp)
      * ".000"
      */
     char us[30];
-    sprintf (us, "%09ld", timespecp->tv_nsec);
+    idio_snprintf (us, 30, "%09ld", timespecp->tv_nsec);
     char sfmt[30];
     if (prec > 9) {
 	prec = 9;
     }
-    sprintf (sfmt, "%%.%ds", prec);
-    sprintf (buf, sfmt, us);
+    idio_snprintf (sfmt, 30, "%%.%ds", prec);
+    idio_snprintf (buf, BUFSIZ, sfmt, us);
     idio_display_C (buf, CSI_sh);
 
     return idio_get_output_string (CSI_sh);
@@ -1835,14 +1835,14 @@ IDIO idio_libc_struct_rlimit_as_string (struct rlimit *rlimitp)
     idio_display_C (" rlim_cur:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_rlim_t);
-    sprintf (buf, fmt, rlimitp->rlim_cur);
+    idio_snprintf (buf, BUFSIZ, fmt, rlimitp->rlim_cur);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
     idio_display_C (" rlim_max:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_rlim_t);
-    sprintf (buf, fmt, rlimitp->rlim_max);
+    idio_snprintf (buf, BUFSIZ, fmt, rlimitp->rlim_max);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
@@ -2067,7 +2067,7 @@ IDIO idio_libc_struct_timeval_as_string (struct timeval *timevalp)
     }
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_time_t);
-    sprintf (buf, fmt, timevalp->tv_sec);
+    idio_snprintf (buf, BUFSIZ, fmt, timevalp->tv_sec);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
@@ -2086,16 +2086,16 @@ IDIO idio_libc_struct_timeval_as_string (struct timeval *timevalp)
     char us[30];
 #if defined (__APPLE__) && defined (__MACH__)
     /* technically it's a __darwin_suseconds_t => __int32_t */
-    sprintf (us, "%06d", timevalp->tv_usec);
+    idio_snprintf (us, 30, "%06d", timevalp->tv_usec);
 #else
-    sprintf (us, "%06ld", timevalp->tv_usec);
+    idio_snprintf (us, 30, "%06ld", timevalp->tv_usec);
 #endif
     char sfmt[30];
     if (prec > 6) {
 	prec = 6;
     }
-    sprintf (sfmt, "%%.%ds", prec);
-    sprintf (buf, sfmt, us);
+    idio_snprintf (sfmt, 30, "%%.%ds", prec);
+    idio_snprintf (buf, BUFSIZ, sfmt, us);
     idio_display_C (buf, CSI_sh);
 
     return idio_get_output_string (CSI_sh);
@@ -4464,8 +4464,8 @@ a wrapper to libc fork(2)					\n\
     if (0 == C_pid) {
 	idio_job_control_cmd_pid = getpid ();
 	idio_job_control_interactive = 0;
-	idio_module_set_symbol_value (idio_symbols_C_intern ("PID"), idio_libc_pid_t (getpid ()), idio_Idio_module);
-	idio_module_set_symbol_value (idio_symbols_C_intern ("PPID"), idio_libc_pid_t (getppid ()), idio_Idio_module);
+	idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("PID"), idio_libc_pid_t (getpid ()), idio_Idio_module);
+	idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("PPID"), idio_libc_pid_t (getppid ()), idio_Idio_module);
     }
 
     return idio_libc_pid_t (C_pid);
@@ -5021,63 +5021,63 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_utsname_as_string);
     idio_hash_put (iuvas,
 		   idio_CSI_libc_struct_utsname,
-		   idio_module_symbol_value (idio_symbols_C_intern ("struct-utsname-as-string"),
+		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-utsname-as-string"),
 								   idio_libc_module,
 								   idio_S_nil));
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tms_as_string);
     idio_hash_put (iuvas,
 		   idio_CSI_libc_struct_tms,
-		   idio_module_symbol_value (idio_symbols_C_intern ("struct-tms-as-string"),
+		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-tms-as-string"),
 								   idio_libc_module,
 								   idio_S_nil));
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_termios_as_string);
     idio_hash_put (iuvas,
 		   idio_CSI_libc_struct_termios,
-		   idio_module_symbol_value (idio_symbols_C_intern ("struct-termios-as-string"),
+		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-termios-as-string"),
 								   idio_libc_module,
 								   idio_S_nil));
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tm_as_string);
     idio_hash_put (iuvas,
 		   idio_CSI_libc_struct_tm,
-		   idio_module_symbol_value (idio_symbols_C_intern ("struct-tm-as-string"),
+		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-tm-as-string"),
 								   idio_libc_module,
 								   idio_S_nil));
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_stat_as_string);
     idio_hash_put (iuvas,
 		   idio_CSI_libc_struct_stat,
-		   idio_module_symbol_value (idio_symbols_C_intern ("struct-stat-as-string"),
+		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-stat-as-string"),
 								   idio_libc_module,
 								   idio_S_nil));
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timespec_as_string);
     idio_hash_put (iuvas,
 		   idio_CSI_libc_struct_timespec,
-		   idio_module_symbol_value (idio_symbols_C_intern ("struct-timespec-as-string"),
+		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-timespec-as-string"),
 								   idio_libc_module,
 								   idio_S_nil));
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rlimit_as_string);
     idio_hash_put (iuvas,
 		   idio_CSI_libc_struct_rlimit,
-		   idio_module_symbol_value (idio_symbols_C_intern ("struct-rlimit-as-string"),
+		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-rlimit-as-string"),
 								   idio_libc_module,
 								   idio_S_nil));
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timeval_as_string);
     idio_hash_put (iuvas,
 		   idio_CSI_libc_struct_timeval,
-		   idio_module_symbol_value (idio_symbols_C_intern ("struct-timeval-as-string"),
+		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-timeval-as-string"),
 								   idio_libc_module,
 								   idio_S_nil));
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rusage_as_string);
     idio_hash_put (iuvas,
 		   idio_CSI_libc_struct_rusage,
-		   idio_module_symbol_value (idio_symbols_C_intern ("struct-rusage-as-string"),
+		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-rusage-as-string"),
 								   idio_libc_module,
 								   idio_S_nil));
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_write);
@@ -5147,33 +5147,33 @@ void idio_init_libc_api ()
      * generated header/Idio files will still reference these names
      */
 #ifdef __rlimit_resource
-    idio_module_export_symbol_value (idio_symbols_C_intern ("RLIMIT_CPU"), idio_C_uint (RLIMIT_CPU), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("RLIMIT_FSIZE"), idio_C_uint (RLIMIT_FSIZE), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("RLIMIT_DATA"), idio_C_uint (RLIMIT_DATA), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("RLIMIT_STACK"), idio_C_uint (RLIMIT_STACK), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("RLIMIT_CORE"), idio_C_uint (RLIMIT_CORE), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("__RLIMIT_RSS"), idio_C_uint (__RLIMIT_RSS), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("RLIMIT_NOFILE"), idio_C_uint (RLIMIT_NOFILE), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("__RLIMIT_OFILE"), idio_C_uint (__RLIMIT_OFILE), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("RLIMIT_AS"), idio_C_uint (RLIMIT_AS), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("__RLIMIT_NPROC"), idio_C_uint (__RLIMIT_NPROC), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("__RLIMIT_MEMLOCK"), idio_C_uint (__RLIMIT_MEMLOCK), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("__RLIMIT_LOCKS"), idio_C_uint (__RLIMIT_LOCKS), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("__RLIMIT_SIGPENDING"), idio_C_uint (__RLIMIT_SIGPENDING), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("__RLIMIT_MSGQUEUE"), idio_C_uint (__RLIMIT_MSGQUEUE), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("__RLIMIT_NICE"), idio_C_uint (__RLIMIT_NICE), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("__RLIMIT_RTPRIO"), idio_C_uint (__RLIMIT_RTPRIO), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("__RLIMIT_RTTIME"), idio_C_uint (__RLIMIT_RTTIME), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("__RLIMIT_NLIMITS"), idio_C_uint (__RLIMIT_NLIMITS), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("__RLIM_NLIMITS"), idio_C_uint (__RLIM_NLIMITS), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_CPU"), idio_C_uint (RLIMIT_CPU), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_FSIZE"), idio_C_uint (RLIMIT_FSIZE), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_DATA"), idio_C_uint (RLIMIT_DATA), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_STACK"), idio_C_uint (RLIMIT_STACK), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_CORE"), idio_C_uint (RLIMIT_CORE), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_RSS"), idio_C_uint (__RLIMIT_RSS), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_NOFILE"), idio_C_uint (RLIMIT_NOFILE), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_OFILE"), idio_C_uint (__RLIMIT_OFILE), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_AS"), idio_C_uint (RLIMIT_AS), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_NPROC"), idio_C_uint (__RLIMIT_NPROC), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_MEMLOCK"), idio_C_uint (__RLIMIT_MEMLOCK), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_LOCKS"), idio_C_uint (__RLIMIT_LOCKS), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_SIGPENDING"), idio_C_uint (__RLIMIT_SIGPENDING), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_MSGQUEUE"), idio_C_uint (__RLIMIT_MSGQUEUE), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_NICE"), idio_C_uint (__RLIMIT_NICE), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_RTPRIO"), idio_C_uint (__RLIMIT_RTPRIO), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_RTTIME"), idio_C_uint (__RLIMIT_RTTIME), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_NLIMITS"), idio_C_uint (__RLIMIT_NLIMITS), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIM_NLIMITS"), idio_C_uint (__RLIM_NLIMITS), idio_libc_module);
 #endif	/* __rlimit_resource */
 
     /* /usr/include/bits/resource.h */
     /* enum __rusage_who */
 #ifdef __rusage_who
-    idio_module_export_symbol_value (idio_symbols_C_intern ("RUSAGE_SELF"), idio_C_int (RUSAGE_SELF), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("RUSAGE_CHILDREN"), idio_C_int (RUSAGE_CHILDREN), idio_libc_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("RUSAGE_THREAD"), idio_C_int (RUSAGE_THREAD), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RUSAGE_SELF"), idio_C_int (RUSAGE_SELF), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RUSAGE_CHILDREN"), idio_C_int (RUSAGE_CHILDREN), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RUSAGE_THREAD"), idio_C_int (RUSAGE_THREAD), idio_libc_module);
 #endif  /* __rusage_who */
 
     IDIO fgvi;

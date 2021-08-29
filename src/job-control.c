@@ -737,7 +737,7 @@ void idio_job_control_do_job_notification ()
      */
     idio_job_control_update_status ();
 
-    IDIO ps_jobs = idio_module_symbol_value (idio_symbols_C_intern ("%%process-substitution-jobs"), idio_job_control_module, idio_S_nil);
+    IDIO ps_jobs = idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("%%process-substitution-jobs"), idio_job_control_module, idio_S_nil);
 
     IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
     IDIO njobs = idio_S_nil;
@@ -779,7 +779,12 @@ void idio_job_control_do_job_notification ()
 		    idio_debug ("unlink/rm %s\n", psj);
 		    size_t size = 0;
 		    char *path_C = idio_string_as_C (psj_path, &size);
-		    size_t C_size = strlen (path_C);
+
+		    /*
+		     * Use size + 1 to avoid a truncation warning --
+		     * we're just seeing if path_C includes a NUL
+		     */
+		    size_t C_size = idio_strnlen (path_C, size + 1);
 		    if (C_size != size) {
 			fprintf (stderr, "ERROR: named-pipe: path contains an ASCII NUL: %s\n", path_C);
 		    } else {
@@ -789,7 +794,13 @@ void idio_job_control_do_job_notification ()
 			    IDIO psj_dir = idio_struct_instance_ref_direct (psj, 2);
 			    size = 0;
 			    char *dir_C = idio_string_as_C (psj_dir, &size);
-			    size_t C_size = strlen (dir_C);
+
+			    /*
+			     * Use size + 1 to avoid a truncation
+			     * warning -- we're just seeing if dir_C
+			     * includes a NUL
+			     */
+			    size_t C_size = idio_strnlen (dir_C, size);
 			    if (C_size != size) {
 				fprintf (stderr, "ERROR: named-pipe: dir: contains an ASCII NUL: %s\n", dir_C);
 			    } else {
@@ -1222,7 +1233,7 @@ IDIO idio_job_control_SIGCHLD_signal_handler ()
      * do-job-notification is a thunk so we can call it direct
      */
     IDIO r = idio_vm_invoke_C (idio_thread_current_thread (),
-			       idio_module_symbol_value (idio_symbols_C_intern ("do-job-notification"),
+			       idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("do-job-notification"),
 							 idio_job_control_module,
 							 idio_S_nil));
 
@@ -2084,7 +2095,7 @@ void idio_job_control_set_interactive (int interactive)
 	    }
 	}
 
-	idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-pgid"),
+	idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("%idio-pgid"),
 				      idio_libc_pid_t (idio_job_control_pgid),
 				      idio_job_control_module);
 
@@ -2153,16 +2164,16 @@ void idio_init_job_control ()
 {
     idio_module_table_register (idio_job_control_add_primitives, idio_final_job_control, NULL);
 
-    idio_job_control_module = idio_module (idio_symbols_C_intern ("job-control"));
+    idio_job_control_module = idio_module (IDIO_SYMBOLS_C_INTERN ("job-control"));
 
-    idio_S_background_job = idio_symbols_C_intern ("background-job");
-    idio_S_exit = idio_symbols_C_intern ("exit");
-    idio_S_foreground_job = idio_symbols_C_intern ("foreground-job");
-    idio_S_killed = idio_symbols_C_intern ("killed");
-    idio_S_wait_for_job = idio_symbols_C_intern ("wait-for-job");
-    idio_S_stdin_fileno = idio_symbols_C_intern ("stdin-fileno");
-    idio_S_stdout_fileno = idio_symbols_C_intern ("stdout-fileno");
-    idio_S_stderr_fileno = idio_symbols_C_intern ("stderr-fileno");
+    idio_S_background_job = IDIO_SYMBOLS_C_INTERN ("background-job");
+    idio_S_exit = IDIO_SYMBOLS_C_INTERN ("exit");
+    idio_S_foreground_job = IDIO_SYMBOLS_C_INTERN ("foreground-job");
+    idio_S_killed = IDIO_SYMBOLS_C_INTERN ("killed");
+    idio_S_wait_for_job = IDIO_SYMBOLS_C_INTERN ("wait-for-job");
+    idio_S_stdin_fileno = IDIO_SYMBOLS_C_INTERN ("stdin-fileno");
+    idio_S_stdout_fileno = IDIO_SYMBOLS_C_INTERN ("stdout-fileno");
+    idio_S_stderr_fileno = IDIO_SYMBOLS_C_INTERN ("stderr-fileno");
 
     int signum;
     for (signum = IDIO_LIBC_FSIG; signum <= IDIO_LIBC_NSIG; signum++) {
@@ -2196,7 +2207,7 @@ void idio_init_job_control ()
     idio_job_control_tty_isatty = isatty (idio_job_control_tty_fd);
 
     IDIO sym;
-    sym = idio_symbols_C_intern ("%idio-terminal");
+    sym = IDIO_SYMBOLS_C_INTERN ("%idio-terminal");
     idio_module_set_symbol_value (sym,
 				  idio_C_int (idio_job_control_tty_fd),
 				  idio_job_control_module);
@@ -2221,7 +2232,7 @@ void idio_init_job_control ()
 	}
     }
 
-    idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-tcattrs"),
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("%idio-tcattrs"),
 				  idio_job_control_tcattrs,
 				  idio_job_control_module);
 
@@ -2235,7 +2246,7 @@ void idio_init_job_control ()
      */
     IDIO geti;
     geti = IDIO_ADD_PRIMITIVE (interactivep);
-    idio_module_add_computed_symbol (idio_symbols_C_intern ("%idio-interactive"),
+    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("%idio-interactive"),
 				     idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)),
 				     idio_S_nil,
 				     idio_job_control_module);
@@ -2257,7 +2268,7 @@ void idio_init_job_control ()
      * variables which we should avoid.
      */
     idio_job_control_pgid = getpgrp ();
-    sym = idio_symbols_C_intern ("%idio-pgid");
+    sym = IDIO_SYMBOLS_C_INTERN ("%idio-pgid");
     idio_module_set_symbol_value (sym,
 				  idio_libc_pid_t (idio_job_control_pgid),
 				  idio_job_control_module);
@@ -2266,44 +2277,44 @@ void idio_init_job_control ()
 				  idio_S_nil);
     IDIO_FLAGS (v) |= IDIO_FLAG_CONST;
 
-    idio_job_control_jobs_sym = idio_symbols_C_intern ("%idio-jobs");
+    idio_job_control_jobs_sym = IDIO_SYMBOLS_C_INTERN ("%idio-jobs");
     idio_module_set_symbol_value (idio_job_control_jobs_sym, idio_S_nil, idio_job_control_module);
-    idio_job_control_last_job = idio_symbols_C_intern ("%%last-job");
+    idio_job_control_last_job = IDIO_SYMBOLS_C_INTERN ("%%last-job");
     idio_module_set_symbol_value (idio_job_control_last_job, idio_S_nil, idio_job_control_module);
-    idio_job_control_stray_pids_sym = idio_symbols_C_intern ("%idio-stray-pids");
+    idio_job_control_stray_pids_sym = IDIO_SYMBOLS_C_INTERN ("%idio-stray-pids");
     idio_module_set_symbol_value (idio_job_control_stray_pids_sym, IDIO_HASH_EQP (4), idio_job_control_module);
 
-    sym = idio_symbols_C_intern ("%idio-process");
+    sym = IDIO_SYMBOLS_C_INTERN ("%idio-process");
     idio_job_control_process_type = idio_struct_type (sym,
 						      idio_S_nil,
-						      idio_pair (idio_symbols_C_intern ("argv"),
-						      idio_pair (idio_symbols_C_intern ("exec"),
-						      idio_pair (idio_symbols_C_intern ("pid"),
-						      idio_pair (idio_symbols_C_intern ("completed"),
-						      idio_pair (idio_symbols_C_intern ("stopped"),
-						      idio_pair (idio_symbols_C_intern ("status"),
+						      idio_pair (IDIO_SYMBOLS_C_INTERN ("argv"),
+						      idio_pair (IDIO_SYMBOLS_C_INTERN ("exec"),
+						      idio_pair (IDIO_SYMBOLS_C_INTERN ("pid"),
+						      idio_pair (IDIO_SYMBOLS_C_INTERN ("completed"),
+						      idio_pair (IDIO_SYMBOLS_C_INTERN ("stopped"),
+						      idio_pair (IDIO_SYMBOLS_C_INTERN ("status"),
 						      idio_S_nil)))))));
     idio_module_set_symbol_value (sym, idio_job_control_process_type, idio_job_control_module);
 
-    sym = idio_symbols_C_intern ("%idio-job");
+    sym = IDIO_SYMBOLS_C_INTERN ("%idio-job");
     idio_job_control_job_type = idio_struct_type (sym,
 						  idio_S_nil,
-						  idio_pair (idio_symbols_C_intern ("pipeline"),
-						  idio_pair (idio_symbols_C_intern ("procs"),
-						  idio_pair (idio_symbols_C_intern ("pgid"),
-						  idio_pair (idio_symbols_C_intern ("notified"),
-						  idio_pair (idio_symbols_C_intern ("raised"),
-						  idio_pair (idio_symbols_C_intern ("tcattrs"),
-						  idio_pair (idio_symbols_C_intern ("stdin"),
-						  idio_pair (idio_symbols_C_intern ("stdout"),
-						  idio_pair (idio_symbols_C_intern ("stderr"),
-						  idio_pair (idio_symbols_C_intern ("report-timing"),
-						  idio_pair (idio_symbols_C_intern ("timing-start"),
-						  idio_pair (idio_symbols_C_intern ("timing-end"),
-						  idio_pair (idio_symbols_C_intern ("async"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("pipeline"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("procs"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("pgid"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("notified"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("raised"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("tcattrs"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("stdin"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("stdout"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("stderr"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("report-timing"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("timing-start"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("timing-end"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("async"),
 						  idio_S_nil))))))))))))));
     idio_module_set_symbol_value (sym, idio_job_control_job_type, idio_job_control_module);
 
-    idio_job_control_default_child_handler_sym = idio_symbols_C_intern ("default-child-handler");
+    idio_job_control_default_child_handler_sym = IDIO_SYMBOLS_C_INTERN ("default-child-handler");
 }
 

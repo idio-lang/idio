@@ -156,7 +156,7 @@ IDIO idio_keyword_C_len (const char *s_C, size_t blen)
 
     IDIO_GC_ALLOC (IDIO_KEYWORD_S (o), blen + 1);
 
-    strncpy (IDIO_KEYWORD_S (o), s_C, blen + 1);
+    memcpy (IDIO_KEYWORD_S (o), s_C, blen);
     IDIO_KEYWORD_S (o)[blen] = '\0';
 
     return o;
@@ -182,7 +182,11 @@ create a keyword from `s`			\n\
 	size_t size = 0;
 	char *sC = idio_string_as_C (s, &size);
 
-	size_t C_size = strlen (sC);
+	/*
+	 * Use size + 1 to avoid a truncation warning -- we're just
+	 * seeing if val_C includes a NUL
+	 */
+	size_t C_size = idio_strnlen (sC, size + 1);
 	if (C_size != size) {
 	    /*
 	     * Test Case: keyword-errors/make-keyword-bad-format.idio
@@ -196,13 +200,13 @@ create a keyword from `s`			\n\
 	    return idio_S_notreached;
 	}
 
-	IDIO r = idio_keywords_C_intern (sC);
+	IDIO r = idio_keywords_C_intern (sC, size);
 
 	IDIO_GC_FREE (sC);
 
 	return r;
     } else if (idio_isa_symbol (s)) {
-	return idio_keywords_C_intern (IDIO_SYMBOL_S (s));
+	return idio_keywords_C_intern (IDIO_SYMBOL_S (s), IDIO_SYMBOL_BLEN (s));
     } else {
 	/*
 	 * Test Case: keyword-errors/make-keyword-bad-type.idio
@@ -230,14 +234,14 @@ void idio_free_keyword (IDIO s)
     /* IDIO_GC_FREE (s->u.keyword); */
 }
 
-IDIO idio_keywords_C_intern (char *s)
+IDIO idio_keywords_C_intern (const char *s, const size_t slen)
 {
     IDIO_C_ASSERT (s);
 
     IDIO sym = idio_hash_ref (idio_keywords_hash, s);
 
     if (idio_S_unspec == sym) {
-	sym = idio_keyword_C (s);
+	sym = idio_keyword_C_len (s, slen);
 	idio_hash_put (idio_keywords_hash, IDIO_KEYWORD_S (sym), sym);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -24,13 +24,13 @@
 #define C_STRUCT_H
 
 #define IDIO_C_TYPEDEF_ADD_VALUE(t,v)	{				\
-	IDIO sym = idio_symbols_C_intern ((#t));			\
-	IDIO val = idio_symbols_C_intern ((#v));			\
+	IDIO sym = idio_symbols_C_intern (#t, sizeof (#t) - 1);		\
+	IDIO val = idio_symbols_C_intern (#v, sizeof (#v) - 1);		\
 	idio_CTD_##t = idio_C_typedefs_add_value (sym, val);		\
     }
 
 #define IDIO_C_TYPEDEF_ADD(t)	{					\
-	IDIO sym = idio_symbols_C_intern ((#t));			\
+	IDIO sym = idio_symbols_C_intern (#t, sizeof (#t) - 1);		\
 	idio_CTD_##t = idio_C_typedefs_add_value (sym, idio_S_nil);	\
     }
 

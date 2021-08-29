@@ -779,7 +779,7 @@ int idio_isa_C_unsigned (IDIO o)
 
 /*
  * Printing C types is a little more intricate than at first blush.
- * Not because calling sprintf(3) is hard but because the chances are
+ * Not because calling snprintf(3) is hard but because the chances are
  * we've been called from format which has potentially set the
  * conversion precision and specifier.
  *
@@ -839,10 +839,12 @@ char *idio_C_type_format_string (int type)
     }
 
     char *fmt = idio_alloc (30);
+    size_t fmt_len = 0;
 
     switch (type) {
     case IDIO_TYPE_C_CHAR:
-	strcpy (fmt, "%c");
+	fmt_len = 2;
+	memcpy (fmt, "%c", fmt_len);
 	break;
     case IDIO_TYPE_C_SCHAR:
     case IDIO_TYPE_C_UCHAR:
@@ -862,23 +864,28 @@ char *idio_C_type_format_string (int type)
 	    switch (type) {
 	    case IDIO_TYPE_C_SCHAR:
 	    case IDIO_TYPE_C_UCHAR:
-		strcpy (fmt, "%hh");
+		fmt_len = 3;
+		memcpy (fmt, "%hh", fmt_len);
 		break;
 	    case IDIO_TYPE_C_SHORT:
 	    case IDIO_TYPE_C_USHORT:
-		strcpy (fmt, "%h");
+		fmt_len = 2;
+		memcpy (fmt, "%h", fmt_len);
 		break;
 	    case IDIO_TYPE_C_INT:
 	    case IDIO_TYPE_C_UINT:
-		strcpy (fmt, "%");
+		fmt_len = 1;
+		memcpy (fmt, "%", fmt_len);
 		break;
 	    case IDIO_TYPE_C_LONG:
 	    case IDIO_TYPE_C_ULONG:
-		strcpy (fmt, "%l");
+		fmt_len = 2;
+		memcpy (fmt, "%l", fmt_len);
 		break;
 	    case IDIO_TYPE_C_LONGLONG:
 	    case IDIO_TYPE_C_ULONGLONG:
-		strcpy (fmt, "%ll");
+		fmt_len = 3;
+		memcpy (fmt, "%ll", fmt_len);
 		break;
 	    }
 
@@ -903,13 +910,13 @@ char *idio_C_type_format_string (int type)
 		    case IDIO_TYPE_C_LONGLONG:
 			switch (f) {
 			case IDIO_PRINT_CONVERSION_FORMAT_d:
-			    strcat (fmt, "d");
+			    memcpy (fmt + fmt_len++, "d", 1);
 			    break;
 			case IDIO_PRINT_CONVERSION_FORMAT_s:
 			    /*
 			     * A generic: printf "%s" e
 			     */
-			    strcat (fmt, "d");
+			    memcpy (fmt + fmt_len++, "d", 1);
 			    break;
 			default:
 			    /*
@@ -920,7 +927,7 @@ char *idio_C_type_format_string (int type)
 #ifdef IDIO_DEBUG
 			    fprintf (stderr, "signed C type as-string: unexpected conversion format: '%c' (%#x).  Using 'd'\n", (int) f, (int) f);
 #endif
-			    strcat (fmt, "d");
+			    memcpy (fmt + fmt_len++, "d", 1);
 			    break;
 			}
 			break;
@@ -931,22 +938,22 @@ char *idio_C_type_format_string (int type)
 		    case IDIO_TYPE_C_ULONGLONG:
 			switch (f) {
 			case IDIO_PRINT_CONVERSION_FORMAT_X:
-			    strcat (fmt, "X");
+			    memcpy (fmt + fmt_len++, "X", 1);
 			    break;
 			case IDIO_PRINT_CONVERSION_FORMAT_o:
-			    strcat (fmt, "o");
+			    memcpy (fmt + fmt_len++, "o", 1);
 			    break;
 			case IDIO_PRINT_CONVERSION_FORMAT_u:
-			    strcat (fmt, "u");
+			    memcpy (fmt + fmt_len++, "u", 1);
 			    break;
 			case IDIO_PRINT_CONVERSION_FORMAT_x:
-			    strcat (fmt, "x");
+			    memcpy (fmt + fmt_len++, "x", 1);
 			    break;
 			case IDIO_PRINT_CONVERSION_FORMAT_s:
 			    /*
 			     * A generic: printf "%s" e
 			     */
-			    strcat (fmt, "u");
+			    memcpy (fmt + fmt_len++, "u", 1);
 			    break;
 			default:
 			    /*
@@ -957,7 +964,7 @@ char *idio_C_type_format_string (int type)
 #ifdef IDIO_DEBUG
 			    fprintf (stderr, "idio_C_type_format-string: unexpected conversion format: '%c' (%#x).  Using 'u'\n", (int) f, (int) f);
 #endif
-			    strcat (fmt, "u");
+			    memcpy (fmt + fmt_len++, "u", 1);
 			    break;
 			}
 			break;
@@ -969,14 +976,14 @@ char *idio_C_type_format_string (int type)
 		    case IDIO_TYPE_C_INT:
 		    case IDIO_TYPE_C_LONG:
 		    case IDIO_TYPE_C_LONGLONG:
-			strcat (fmt, "d");
+			memcpy (fmt + fmt_len++, "d", 1);
 			break;
 		    case IDIO_TYPE_C_UCHAR:
 		    case IDIO_TYPE_C_USHORT:
 		    case IDIO_TYPE_C_UINT:
 		    case IDIO_TYPE_C_ULONG:
 		    case IDIO_TYPE_C_ULONGLONG:
-			strcat (fmt, "u");
+			memcpy (fmt + fmt_len++, "u", 1);
 			break;
 		    }
 		}
@@ -1014,14 +1021,14 @@ char *idio_C_type_format_string (int type)
 			    }
 			}
 		    }
-		    sprintf (fmt, "%%.%d", prec);
+		    fmt_len = idio_snprintf (fmt, 30, "%%.%d", prec);
 
 		    switch (type) {
 		    case IDIO_TYPE_C_DOUBLE:
-			strcat (fmt, "l");
+			memcpy (fmt + fmt_len++, "l", 1);
 			break;
 		    case IDIO_TYPE_C_LONGDOUBLE:
-			strcat (fmt, "L");
+			memcpy (fmt + fmt_len++, "L", 1);
 			break;
 		    }
 
@@ -1029,19 +1036,19 @@ char *idio_C_type_format_string (int type)
 			idio_unicode_t f = IDIO_UNICODE_VAL (ipcf);
 			switch (f) {
 			case IDIO_PRINT_CONVERSION_FORMAT_e:
-			    strcat (fmt, "e");
+			    memcpy (fmt + fmt_len++, "e", 1);
 			    break;
 			case IDIO_PRINT_CONVERSION_FORMAT_f:
-			    strcat (fmt, "f");
+			    memcpy (fmt + fmt_len++, "f", 1);
 			    break;
 			case IDIO_PRINT_CONVERSION_FORMAT_g:
-			    strcat (fmt, "g");
+			    memcpy (fmt + fmt_len++, "g", 1);
 			    break;
 			case IDIO_PRINT_CONVERSION_FORMAT_s:
 			    /*
 			     * A generic: printf "%s" e
 			     */
-			    strcat (fmt, "g");
+			    memcpy (fmt + fmt_len++, "g", 1);
 			    break;
 			default:
 			    /*
@@ -1052,11 +1059,11 @@ char *idio_C_type_format_string (int type)
 #ifdef IDIO_DEBUG
 			    fprintf (stderr, "idio_C_type_format_string: unexpected conversion format: '%c' (%#x).  Using 'd'\n", (int) f, (int) f);
 #endif
-			    strcat (fmt, "g");
+			    memcpy (fmt + fmt_len++, "g", 1);
 			    break;
 			}
 		    } else {
-			strcat (fmt, "g");
+			memcpy (fmt + fmt_len++, "g", 1);
 		    }
 		}
 		break;
@@ -1070,6 +1077,7 @@ char *idio_C_type_format_string (int type)
 	}
 	break;
     }
+    fmt[fmt_len] = '\0';
 
     return fmt;
 }
@@ -2462,9 +2470,9 @@ void idio_init_c_type ()
 {
     idio_module_table_register (idio_c_type_add_primitives, NULL, NULL);
 
-    idio_C_module = idio_module (idio_symbols_C_intern ("C"));
+    idio_C_module = idio_module (IDIO_SYMBOLS_C_INTERN ("C"));
 
-    idio_module_export_symbol_value (idio_symbols_C_intern ("0u"), idio_C_uint (0U), idio_C_module);
-    idio_module_export_symbol_value (idio_symbols_C_intern ("0i"), idio_C_int (0), idio_C_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("0u"), idio_C_uint (0U), idio_C_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("0i"), idio_C_int (0), idio_C_module);
 }
 

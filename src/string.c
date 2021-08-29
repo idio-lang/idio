@@ -133,15 +133,15 @@ void idio_string_size_error (char *msg, ptrdiff_t size, IDIO c_location)
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    char em[BUFSIZ];
-
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("string size: ", msh);
     idio_display_C (msg, msh);
 
     IDIO dsh = idio_open_output_string_handle_C ();
-    sprintf (em, "%td", size);
-    idio_display_C (em, dsh);
+
+    char em[BUFSIZ];
+    size_t eml = idio_snprintf (em, BUFSIZ, "%td", size);
+    idio_display_C_len (em, eml, dsh);
 
     idio_string_error (idio_get_output_string (msh), idio_get_output_string (dsh), c_location);
 
@@ -156,8 +156,6 @@ void idio_string_length_error (char *msg, IDIO str, ptrdiff_t index, IDIO c_loca
 
     IDIO_TYPE_ASSERT (string, c_location);
 
-    char em[BUFSIZ];
-
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("string length: ", msh);
     idio_display_C (msg, msh);
@@ -168,8 +166,10 @@ void idio_string_length_error (char *msg, IDIO str, ptrdiff_t index, IDIO c_loca
 	idio_display (str, dsh);
 	idio_display_C ("\" ", dsh);
     }
-    sprintf (em, "index %td", index);
-    idio_display_C (em, dsh);
+
+    char em[BUFSIZ];
+    size_t eml = idio_snprintf (em, BUFSIZ, "index %td", index);
+    idio_display_C_len (em, eml, dsh);
 
     idio_string_error (idio_get_output_string (msh), idio_get_output_string (dsh), c_location);
 
@@ -189,8 +189,6 @@ void idio_substring_length_error (char *msg, IDIO str, ptrdiff_t index, IDIO c_l
 
     IDIO_TYPE_ASSERT (string, c_location);
 
-    char em[BUFSIZ];
-
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("substring length: ", msh);
     idio_display_C (msg, msh);
@@ -201,8 +199,10 @@ void idio_substring_length_error (char *msg, IDIO str, ptrdiff_t index, IDIO c_l
 	idio_display (str, dsh);
 	idio_display_C ("\" ", dsh);
     }
-    sprintf (em, "index %td", index);
-    idio_display_C (em, dsh);
+
+    char em[BUFSIZ];
+    size_t eml = idio_snprintf (em, BUFSIZ, "index %td", index);
+    idio_display_C_len (em, eml, dsh);
 
     idio_string_error (idio_get_output_string (msh), idio_get_output_string (dsh), c_location);
 
@@ -218,15 +218,15 @@ void idio_substring_index_error (char *msg, IDIO str, ptrdiff_t ip0, ptrdiff_t i
     IDIO_TYPE_ASSERT (string, str);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    char em[BUFSIZ];
-
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("substring index: ", msh);
     idio_display_C (msg, msh);
 
     IDIO dsh = idio_open_output_string_handle_C ();
-    sprintf (em, " offset %td end %td", ip0, ipn);
-    idio_display_C (em, dsh);
+
+    char em[BUFSIZ];
+    size_t eml = idio_snprintf (em, BUFSIZ, " offset %td end %td", ip0, ipn);
+    idio_display_C_len (em, eml, dsh);
 
     idio_string_error (idio_get_output_string (msh), idio_get_output_string (dsh), c_location);
 
@@ -313,7 +313,8 @@ size_t idio_string_storage_size (IDIO s)
 	     * Test Case: coding error
 	     */
 	    char em[30];
-	    sprintf (em, "%#x", flags);
+	    idio_snprintf (em, 30, "%#x", flags);
+
 	    idio_error_param_value_msg_only ("idio_string_storage_size", "unexpected string flag", em, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -386,7 +387,7 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
 	     * Coding error.
 	     */
 	    char em[30];
-	    sprintf (em, "%#x", flags);
+	    idio_snprintf (em, 30, "%#x", flags);
 
 	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
@@ -437,7 +438,7 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
 		 * Coding error.  Should have been caught above.
 		 */
 		char em[30];
-		sprintf (em, "%#x", flags);
+		idio_snprintf (em, 30, "%#x", flags);
 
 		idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
@@ -557,7 +558,7 @@ IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[])
 	     * Coding error.
 	     */
 	    char em[30];
-	    sprintf (em, "%#x", flags);
+	    idio_snprintf (em, 30, "%#x", flags);
 
 	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
@@ -614,7 +615,7 @@ IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[])
 		     * Coding error.  Should have been caught above.
 		     */
 		    char em[30];
-		    sprintf (em, "%#x", flags);
+		    idio_snprintf (em, 30, "%#x", flags);
 
 		    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
@@ -978,7 +979,7 @@ If no default value is supplied #\{space} is used.	\n\
 	     * Coding error.
 	     */
 	    char em[30];
-	    sprintf (em, "%#x", flags);
+	    idio_snprintf (em, 30, "%#x", flags);
 
 	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
@@ -1015,7 +1016,7 @@ If no default value is supplied #\{space} is used.	\n\
 		 * Coding error.  Should have been caught above.
 		 */
 		char em[30];
-		sprintf (em, "%#x", flags);
+		idio_snprintf (em, 30, "%#x", flags);
 
 		idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
@@ -1195,7 +1196,7 @@ IDIO idio_list_list2string (IDIO l)
 	     * Coding error.
 	     */
 	    char em[30];
-	    sprintf (em, "%#x", flags);
+	    idio_snprintf (em, 30, "%#x", flags);
 
 	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
@@ -1238,7 +1239,7 @@ IDIO idio_list_list2string (IDIO l)
 		 * Coding error.  Should have been caught above.
 		 */
 		char em[30];
-		sprintf (em, "%#x", flags);
+		idio_snprintf (em, 30, "%#x", flags);
 
 		idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
@@ -1293,7 +1294,11 @@ return a symbol derived from `s`		\n\
     size_t size = 0;
     char *sC = idio_string_as_C (s, &size);
 
-    size_t C_size = strlen (sC);
+    /*
+     * Use size + 1 to avoid a truncation warning -- we're just
+     * seeing if sC includes a NUL
+     */
+    size_t C_size = idio_strnlen (sC, size + 1);
     if (C_size != size) {
 	/*
 	 * Test Case: string-errors/string2symbol-format.idio
@@ -1307,7 +1312,7 @@ return a symbol derived from `s`		\n\
 	return idio_S_notreached;
     }
 
-    IDIO r = idio_symbols_C_intern (sC);
+    IDIO r = idio_symbols_C_intern (sC, size);
 
     IDIO_GC_FREE (sC);
 

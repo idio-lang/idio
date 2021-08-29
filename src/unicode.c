@@ -354,7 +354,8 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 		 * Test Case: coding error
 		 */
 		char em[30];
-		sprintf (em, "%#x", flags);
+		idio_snprintf (em, 30, "%#x", flags);
+
 		idio_error_param_value_msg_only ("idio_utf8_string", "unexpected string flag", em, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -445,7 +446,8 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 		 * up above!
 		 */
 		char em[30];
-		sprintf (em, "%#x", flags);
+		idio_snprintf (em, 30, "%#x", flags);
+
 		idio_error_param_value_msg_only ("idio_utf8_string", "unexpected string flag", em, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -516,7 +518,8 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 		     * Hopefully, this is guarded against elsewhere
 		     */
 		    char em[50];
-		    sprintf (em, "U+%04" PRIX32 " is invalid", c);
+		    idio_snprintf (em, 50, "U+%04" PRIX32 " is invalid", c);
+
 		    idio_error_param_value_msg_only ("idio_utf8_string", "Unicode code point", em, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
@@ -572,7 +575,8 @@ void idio_utf8_code_point (idio_unicode_t c, char *buf, int *sizep)
 	 * Hopefully, this is guarded against elsewhere
 	 */
 	char em[50];
-	sprintf (em, "U+%04" PRIX32 " is invalid", c);
+	idio_snprintf (em, 50, "U+%04" PRIX32 " is invalid", c);
+
 	idio_error_param_value_msg_only ("idio_utf8_code_point", "Unicode code point", em, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -607,16 +611,17 @@ idio_hi_t idio_unicode_C_hash (IDIO h, const void *s)
     return (hvalue & IDIO_HASH_MASK (h));
 }
 
-IDIO idio_unicode_C_intern (char *s, IDIO v)
+IDIO idio_unicode_C_intern (const char *s, const size_t blen, IDIO v)
 {
     IDIO_C_ASSERT (s);
 
     IDIO c = idio_hash_ref (idio_unicode_hash, s);
 
     if (idio_S_unspec == c) {
-	size_t blen = strlen (s);
 	char *copy = idio_alloc (blen + 1);
-	strcpy (copy, s);
+	memcpy (copy, s, blen);
+	copy[blen] = '\0';
+
 	idio_hash_put (idio_unicode_hash, copy, v);
     }
 
@@ -689,7 +694,7 @@ IDIO idio_unicode_lookup (char *s)
 
 IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode=?", eq, ==)
 
-#define IDIO_UNICODE_INTERN_C(name,c)	(idio_unicode_C_intern (name, IDIO_UNICODE (c)))
+#define IDIO_UNICODE_INTERN_C(name,c)	(idio_unicode_C_intern (name, sizeof (name) - 1, IDIO_UNICODE (c)))
 
 void idio_unicode_add_primitives ()
 {

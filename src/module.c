@@ -1082,8 +1082,11 @@ IDIO idio_module_direct_reference (IDIO name)
 	 *
 	 * Just to be safe we'll use a copy of name.
 	 */
-	char *copy_C = idio_alloc (strlen (name_C) + 1);
-	strcpy (copy_C, name_C);
+	size_t name_len = IDIO_SYMBOL_BLEN (name);
+	char *copy_C = idio_alloc (name_len + 1);
+	memcpy (copy_C, name_C, name_len);
+	copy_C[name_len] = '\0';
+
 	slash = strrchr (copy_C, '/');
 
 	if (NULL == slash) {
@@ -1100,8 +1103,9 @@ IDIO idio_module_direct_reference (IDIO name)
 	*slash = '\0';
 
 
-	IDIO m_sym = idio_symbols_C_intern (copy_C);
-	IDIO s_sym = idio_symbols_C_intern (slash + 1);
+	size_t mlen = slash - copy_C;
+	IDIO m_sym = idio_symbols_C_intern (copy_C, mlen);
+	IDIO s_sym = idio_symbols_C_intern (slash + 1, name_len - mlen - 1);
 
 	IDIO_GC_FREE (copy_C);
 
@@ -2104,19 +2108,19 @@ void idio_init_module ()
      * imports list for all other modules to be '(Idio *primitives*)
      */
 
-    IDIO pname = idio_symbols_C_intern ("*primitives*");
+    IDIO pname = IDIO_SYMBOLS_C_INTERN ("*primitives*");
     idio_primitives_module = idio_module (pname);
     IDIO_MODULE_IMPORTS (idio_primitives_module) = idio_S_nil;
     idio_ai_t pm_gci = idio_vm_constants_lookup_or_extend (pname);
     idio_ai_t pm_gvi = idio_vm_extend_values ();
 
-    IDIO Iname = idio_symbols_C_intern ("Idio");
+    IDIO Iname = IDIO_SYMBOLS_C_INTERN ("Idio");
     idio_Idio_module = idio_module (Iname);
     IDIO_MODULE_IMPORTS (idio_Idio_module) = IDIO_LIST1 (IDIO_LIST1 (idio_primitives_module));
     idio_ai_t Im_gci = idio_vm_constants_lookup_or_extend (Iname);
     idio_ai_t Im_gvi = idio_vm_extend_values ();
 
-    IDIO dname = idio_symbols_C_intern ("debugger");
+    IDIO dname = IDIO_SYMBOLS_C_INTERN ("debugger");
     idio_debugger_module = idio_module (dname);
     idio_ai_t dm_gci = idio_vm_constants_lookup_or_extend (dname);
     idio_ai_t dm_gvi = idio_vm_extend_values ();

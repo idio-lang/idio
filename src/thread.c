@@ -267,7 +267,7 @@ void idio_init_thread ()
     idio_running_threads = idio_array (8);
     idio_gc_protect_auto (idio_running_threads);
 
-    idio_threading_module = idio_module (idio_symbols_C_intern ("threading"));
+    idio_threading_module = idio_module (IDIO_SYMBOLS_C_INTERN ("threading"));
 }
 
 void idio_init_first_thread ()
@@ -283,7 +283,7 @@ void idio_init_first_thread ()
     /* IDIO_THREAD_MODULE (idio_expander_thread) = idio_expander_module; */
     IDIO_THREAD_PC (idio_expander_thread) = 1;
 
-    IDIO ethr = idio_symbols_C_intern ("*expander-thread*");
+    IDIO ethr = IDIO_SYMBOLS_C_INTERN ("*expander-thread*");
     idio_module_set_symbol_value (ethr, idio_expander_thread, idio_expander_module);
 }
 

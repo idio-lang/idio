@@ -642,7 +642,10 @@ IDIO idio_condition_exit_on_error (IDIO c)
 
 /*
  * Let's try to be consistent with condition-report by, uh, calling
- * condition-report
+ * condition-report.
+ *
+ * As I am regularly bothered by errant processes when things go wrong
+ * we can prefix the, erm, prefix, with the current PID.
  */
 void idio_condition_report (char *prefix, IDIO c)
 {
@@ -663,19 +666,21 @@ void idio_condition_report (char *prefix, IDIO c)
      * pid_t can't be negative (it is a signed value).
      */
     char pid[30];
-    sprintf (pid, ":[%d]", getpid ());
+    size_t pid_len = idio_snprintf (pid, 30, ":[%d]", getpid ());
+
+    size_t prefix_len = idio_strnlen (prefix, BUFSIZ);
 
     char pid_prefix[BUFSIZ];
-    size_t plen = strlen (prefix);
-    if (plen < (BUFSIZ - 30)) {
-	strcpy (pid_prefix, prefix);
+    if (prefix_len < (BUFSIZ - 30)) {
+	memcpy (pid_prefix, prefix, prefix_len);
     } else {
-	strncpy (pid_prefix, prefix, BUFSIZ - 30);
-	pid_prefix[BUFSIZ - 30] = '\0';
+	prefix_len = BUFSIZ - 30;
+	memcpy (pid_prefix, prefix, prefix_len);
     }
-    strcat (pid_prefix, pid);
+    memcpy (pid_prefix + prefix_len, pid, pid_len);
+    pid_prefix[prefix_len + pid_len] = '\0';
 
-    IDIO cr_cmd = IDIO_LIST4 (idio_module_symbol_value (idio_symbols_C_intern ("condition-report"),
+    IDIO cr_cmd = IDIO_LIST4 (idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("condition-report"),
 							idio_Idio_module,
 							idio_S_nil),
 			      idio_string_C (pid_prefix),
@@ -908,7 +913,7 @@ does not return per se						\n\
 	idio_condition_report ("default-condition-handler", c);
 
 	if (IDIO_STATE_RUNNING == idio_state) {
-	    IDIO cmd = IDIO_LIST1 (idio_module_symbol_value (idio_symbols_C_intern ("debug"),
+	    IDIO cmd = IDIO_LIST1 (idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("debug"),
 							     idio_debugger_module,
 							     idio_S_nil));
 
@@ -1182,7 +1187,7 @@ void idio_init_condition ()
      * which means we have to repeat a couple of the actions of the
      * IDIO_DEFINE_CONDITION0 macro.
      */
-    IDIO sym = idio_symbols_C_intern (IDIO_CONDITION_CONDITION_TYPE_NAME);
+    IDIO sym = IDIO_SYMBOLS_C_INTERN (IDIO_CONDITION_CONDITION_TYPE_NAME);
     idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);
     idio_condition_condition_type_mci = idio_fixnum (gci);
 

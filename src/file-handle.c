@@ -438,11 +438,16 @@ char *idio_file_handle_string_C (IDIO val, char *op_C, char *kind, size_t *sizep
 
     if (idio_isa_symbol (val)) {
 	char *s = IDIO_SYMBOL_S (val);
-	*sizep = strlen (s);
+	*sizep = IDIO_SYMBOL_BLEN (val);
 	return s;
     } else if (idio_isa_string (val)) {
 	char *val_C = idio_string_as_C (val, sizep);
-	size_t C_size = strlen (val_C);
+
+	/*
+	 * Use *sizep + 1 to avoid a truncation warning -- we're just
+	 * seeing if val_C includes a NUL
+	 */
+	size_t C_size = idio_strnlen (val_C, *sizep + 1);
 	if (C_size != *sizep) {
 	    IDIO_GC_FREE (val_C);
 
@@ -525,7 +530,8 @@ static IDIO idio_open_file_handle (IDIO filename, char *pathname, int fd, int h_
 	     * Coding error.
 	     */
 	    char em[BUFSIZ];
-	    sprintf (em, "unexpected handle type %#x", h_type);
+	    idio_snprintf (em, BUFSIZ, "unexpected handle type %#x", h_type);
+
 	    idio_error_C (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -627,7 +633,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
     int fd = IDIO_C_TYPE_int (ifd);
 
     char fd_name[PATH_MAX];
-    sprintf (fd_name, "/dev/fd/%d", fd);
+    idio_snprintf (fd_name, PATH_MAX, "/dev/fd/%d", fd);
 
     if (idio_S_nil != args) {
 	IDIO name = IDIO_PAIR_H (args);
@@ -669,7 +675,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 		return idio_S_notreached;
 	    }
 
-	    sprintf (fd_name, "%s", name_C);
+	    idio_snprintf (fd_name, PATH_MAX, "%s", name_C);
 
 	    if (free_name_C) {
 		IDIO_GC_FREE (name_C);
@@ -788,7 +794,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	 * Test Case: ??
 	 */
 	fprintf (stderr, "[%d]fcntl %d (%s) => %d\n", getpid (), fd, idio_type2string (ifd), errno);
-	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, idio_symbols_C_intern ("F_GETFL")), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, IDIO_SYMBOLS_C_INTERN ("F_GETFL")), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -870,7 +876,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	/*
 	 * Test Case: ??
 	 */
-	idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, idio_symbols_C_intern ("F_SETFL"), idio_C_int (req_fs_flags)), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, IDIO_SYMBOLS_C_INTERN ("F_SETFL"), idio_C_int (req_fs_flags)), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -900,7 +906,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	/*
 	 * Test Case: ??
 	 */
-	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, idio_symbols_C_intern ("F_GETFD")), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, IDIO_SYMBOLS_C_INTERN ("F_GETFD")), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -943,7 +949,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	     IDIO_STATE_BOOTSTRAP == idio_state)) {
 	    perror ("fcntl F_SETFD");
 	} else {
-	    idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, idio_symbols_C_intern ("F_SETFD"), idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, IDIO_SYMBOLS_C_INTERN ("F_SETFD"), idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1432,7 +1438,7 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, size_t 
 	     IDIO_STATE_BOOTSTRAP == idio_state)) {
 	    perror ("fcntl F_SETFD");
 	} else {
-	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), idio_symbols_C_intern ("F_SETFD"), idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), IDIO_SYMBOLS_C_INTERN ("F_SETFD"), idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2276,7 +2282,7 @@ int idio_putc_file_handle (IDIO fh, idio_unicode_t c)
     return size;
 }
 
-ptrdiff_t idio_puts_file_handle (IDIO fh, const char *s, size_t slen)
+ptrdiff_t idio_puts_file_handle (IDIO fh, const char *s, const size_t slen)
 {
     IDIO_ASSERT (fh);
 
@@ -2655,7 +2661,8 @@ off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence)
 		 * Coding error.
 		 */
 		char em[BUFSIZ];
-		sprintf (em, "'%#x' is invalid", whence);
+		idio_snprintf (em, BUFSIZ, "'%#x' is invalid", whence);
+
 		idio_error_param_value_msg_only ("seek", "whence", em, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -2741,7 +2748,7 @@ fd handle `fh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
 	     *
 	     * Not sure how to provoke this...
 	     */
-	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), idio_symbols_C_intern ("F_SETFD"), idio_symbols_C_intern ("FD_CLOEXEC")), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), IDIO_SYMBOLS_C_INTERN ("F_SETFD"), IDIO_SYMBOLS_C_INTERN ("FD_CLOEXEC")), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2820,7 +2827,7 @@ IDIO idio_load_dl_library (char *filename, size_t filename_len, char *libname, s
      * idio_init_NAME() functions don't need a handle to be passed.
      */
     char func[PATH_MAX];
-    sprintf (func, "idio_init_%s", libname);
+    idio_snprintf (func, PATH_MAX, "idio_init_%s", libname);
 
     dlerror ();
     void (*lib_init) (void *handle);
@@ -2845,8 +2852,13 @@ IDIO idio_load_dl_library (char *filename, size_t filename_len, char *libname, s
     char lib_idio[PATH_MAX];
     size_t lib_idio_len = filename_slash - filename + 1;
     memcpy (lib_idio, filename, lib_idio_len); /* ".../" */
-    memcpy (lib_idio + lib_idio_len, libname, libname_len + 1);
+    memcpy (lib_idio + lib_idio_len, libname, libname_len);
     lib_idio_len += libname_len;
+    lib_idio[lib_idio_len] = '\0';
+
+    /*
+     * The sizeof includes the trailing NUL
+     */
     memcpy (lib_idio + lib_idio_len, IDIO_IDIO_EXT, sizeof (IDIO_IDIO_EXT));
 
     IDIO r = idio_S_unspec;
@@ -2886,11 +2898,10 @@ static idio_file_extension_t idio_file_extensions[] = {
     { NULL, NULL, NULL }
 };
 
-char *idio_libfile_find_C (char *file, size_t *liblen)
+char *idio_libfile_find_C (const char *file, const size_t file_len, size_t *liblen)
 {
     IDIO_C_ASSERT (file);
-
-    const size_t filelen = strlen (file);
+    IDIO_C_ASSERT (file_len > 0);
 
     IDIO IDIOLIB = idio_module_current_symbol_value_recurse (idio_env_IDIOLIB_sym, idio_S_nil);
 
@@ -2915,11 +2926,16 @@ char *idio_libfile_find_C (char *file, size_t *liblen)
 	 */
 	idio_error_warning_message ("IDIOLIB is not a string");
 	idiolib = idio_env_IDIOLIB_default;
-	idiolibe = idiolib + strlen (idiolib);
+	idiolibe = idiolib + idio_strnlen (idiolib, PATH_MAX);
     } else {
 	size_t size = 0;
 	idiolib_copy_C = idio_string_as_C (IDIOLIB, &size);
-	const size_t C_size = strlen (idiolib_copy_C);
+
+	/*
+	 * Use size + 1 to avoid a truncation warning -- we're just
+	 * seeing if idiolib_copy_C includes a NUL
+	 */
+	const size_t C_size = idio_strnlen (idiolib_copy_C, size + 1);
 	if (C_size != size) {
 	    /*
 	     * Test Case: file-handle-errors/find-lib-IDIOLIB-format.idio
@@ -2948,12 +2964,12 @@ char *idio_libfile_find_C (char *file, size_t *liblen)
 
     for (;NULL != fe->reader;fe++) {
 	if (NULL != fe->ext) {
-	    size_t el = strlen (fe->ext);
+	    size_t el = idio_strnlen (fe->ext, PATH_MAX);
 	    if (NULL != fe->prefix) {
-		el += strlen (fe->prefix);
+		el += idio_strnlen (fe->prefix, PATH_MAX);
 	    }
 	    if (NULL != fe->suffix) {
-		el += strlen (fe->suffix);
+		el += idio_strnlen (fe->suffix, PATH_MAX);
 	    }
 	    if (el > max_ext_len) {
 		max_ext_len = el;
@@ -2987,10 +3003,10 @@ char *idio_libfile_find_C (char *file, size_t *liblen)
 	return NULL;
     }
 
-    const size_t cwdlen = strlen (cwd);
+    const size_t cwdlen = idio_strnlen (cwd, PATH_MAX);
 
     if ('/' == file[0]) {
-	if ((filelen + 1) >= PATH_MAX) {
+	if ((file_len + 1) >= PATH_MAX) {
 	    /*
 	     * Test Case: file-handle-errors/find-lib-abs-file-PATH_MAX.idio
 	     *
@@ -3007,8 +3023,9 @@ char *idio_libfile_find_C (char *file, size_t *liblen)
 	    return NULL;
 	}
 
-	memcpy (libname, file, filelen + 1);
-	libnamelen = filelen;
+	memcpy (libname, file, file_len);
+	libnamelen = file_len;
+	libname[libnamelen] = '\0';
     } else {
 	int done = 0;
 	while (! done) {
@@ -3026,7 +3043,7 @@ char *idio_libfile_find_C (char *file, size_t *liblen)
 	    colon = memchr (idiolib, ':', idioliblen);
 
 	    if (NULL == colon) {
-		if ((idioliblen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
+		if ((idioliblen + 1 + file_len + max_ext_len + 1) >= PATH_MAX) {
 		    /*
 		     * Test Case: file-handle-errors/find-lib-dir-lib-PATH_MAX-1.idio
 		     *
@@ -3044,8 +3061,9 @@ char *idio_libfile_find_C (char *file, size_t *liblen)
 		    return NULL;
 		}
 
-		memcpy (libname, idiolib, idioliblen + 1);
+		memcpy (libname, idiolib, idioliblen);
 		libnamelen = idioliblen;
+		libname[libnamelen] = '\0';
 	    } else {
 		size_t dirlen = colon - idiolib;
 
@@ -3056,7 +3074,7 @@ char *idio_libfile_find_C (char *file, size_t *liblen)
 		     *
 		     * Is that a good thing?
 		     */
-		    if ((cwdlen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
+		    if ((cwdlen + 1 + file_len + max_ext_len + 1) >= PATH_MAX) {
 			/*
 			 * Test Case: file-handle-errors/find-lib-dir-cmd-PATH_MAX-2.idio
 			 *
@@ -3074,10 +3092,11 @@ char *idio_libfile_find_C (char *file, size_t *liblen)
 			return NULL;
 		    }
 
-		    memcpy (libname, cwd, cwdlen + 1);
+		    memcpy (libname, cwd, cwdlen);
 		    libnamelen = cwdlen;
+		    libname[libnamelen] = '\0';
 		} else {
-		    if ((dirlen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
+		    if ((dirlen + 1 + file_len + max_ext_len + 1) >= PATH_MAX) {
 			/*
 			 * Test Case: file-handle-errors/find-lib-dir-cmd-PATH_MAX-2.idio
 			 *
@@ -3095,8 +3114,9 @@ char *idio_libfile_find_C (char *file, size_t *liblen)
 			return NULL;
 		    }
 
-		    memcpy (libname, idiolib, dirlen + 1);
+		    memcpy (libname, idiolib, dirlen);
 		    libnamelen = dirlen;
+		    libname[libnamelen] = '\0';
 		}
 	    }
 
@@ -3116,22 +3136,29 @@ char *idio_libfile_find_C (char *file, size_t *liblen)
 
 	    for (;NULL != fe->reader;fe++) {
 		if (NULL == fe->ext) {
-		    memcpy (lne, file, filelen + 1);
+		    memcpy (lne, file, file_len);
+		    lne[file_len] = '\0';
 		} else {
 		    char *end = lne;
 		    if (NULL != fe->prefix) {
-			const size_t pl = strlen (fe->prefix);
-			memcpy (end, fe->prefix, pl + 1);
+			const size_t pl = idio_strnlen (fe->prefix, PATH_MAX);
+			memcpy (end, fe->prefix, pl);
+			end[pl] = '\0';
 			end += pl;
 		    }
-		    memcpy (end, file, filelen + 1);
-		    end += filelen;
+		    memcpy (end, file, file_len);
+		    end[file_len] = '\0';
+		    end += file_len;
+
 		    if (NULL != fe->suffix) {
-			const size_t sl = strlen (fe->prefix);
-			memcpy (end, fe->suffix, sl + 1);
+			const size_t sl = idio_strnlen (fe->prefix, PATH_MAX);
+			memcpy (end, fe->suffix, sl);
+			end[sl] = '\0';
 			end += sl;
 		    }
-		    memcpy (end, fe->ext, strlen (fe->ext) + 1);
+		    size_t fel = idio_strnlen (fe->ext, PATH_MAX);
+		    memcpy (end, fe->ext, fel);
+		    end[fel] = '\0';
 		}
 
 		if (access (libname, R_OK) == 0) {
@@ -3162,7 +3189,7 @@ char *idio_libfile_find_C (char *file, size_t *liblen)
 		 *
 		 * Unless that was the last thing we tried.
 		 */
-		size_t dl = strlen (idio_env_IDIOLIB_default);
+		size_t dl = idio_strnlen (idio_env_IDIOLIB_default, PATH_MAX);
 		if (memcmp (libname, idio_env_IDIOLIB_default, dl) == 0 &&
 		    '/' == libname[dl]) {
 		    done = 1;
@@ -3170,7 +3197,7 @@ char *idio_libfile_find_C (char *file, size_t *liblen)
 		    break;
 		} else {
 		    idiolib = idio_env_IDIOLIB_default;
-		    idiolibe = idiolib + strlen (idiolib);
+		    idiolibe = idiolib + idio_strnlen (idiolib, PATH_MAX);
 		    colon = idiolib - 1;
 		}
 	    }
@@ -3183,9 +3210,10 @@ char *idio_libfile_find_C (char *file, size_t *liblen)
     *liblen = 0;
 
     if (0 != libname[0]) {
-	*liblen = strlen (libname);
+	*liblen = idio_strnlen (libname, PATH_MAX);
 	idiolibname = idio_alloc (*liblen + 1);
-	memcpy (idiolibname, libname, *liblen + 1);
+	memcpy (idiolibname, libname, *liblen);
+	idiolibname[*liblen] = '\0';
     }
 
     if (free_idiolib_copy_C) {
@@ -3211,7 +3239,7 @@ char *idio_libfile_find (IDIO file)
     char *file_C = idio_file_handle_filename_string_C (file, "find-lib", &file_C_len, &free_file_C, IDIO_C_FUNC_LOCATION ());
 
     size_t liblen = 0;
-    char *r = idio_libfile_find_C (file_C, &liblen);
+    char *r = idio_libfile_find_C (file_C, file_C_len, &liblen);
 
     if (free_file_C) {
 	IDIO_GC_FREE (file_C);
@@ -3282,7 +3310,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     char *filename_C = idio_file_handle_filename_string_C (filename, "load", &filename_C_len, &free_filename_C, IDIO_C_FUNC_LOCATION ());
 
     size_t libfilelen = 0;
-    char *libfile = idio_libfile_find_C (filename_C, &libfilelen);
+    char *libfile = idio_libfile_find_C (filename_C, filename_C_len, &libfilelen);
 
     if (NULL == libfile) {
 	/*
@@ -3302,8 +3330,9 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     }
 
     char lfn[PATH_MAX];
-    memcpy (lfn, libfile, libfilelen + 1);
-    lfn[PATH_MAX - 1] = '\0';
+    memcpy (lfn, libfile, libfilelen);
+    lfn[libfilelen] = '\0';
+
     IDIO_GC_FREE (libfile);
 
     char *filename_slash = memrchr (filename_C, '/', filename_C_len);
@@ -3327,7 +3356,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     if (NULL != lfn_dot) {
 	for (;NULL != fe->reader;fe++) {
 	    if (NULL != fe->ext) {
-		const size_t el = strlen (fe->ext);
+		const size_t el = idio_strnlen (fe->ext, PATH_MAX);
 		if (memcmp (lfn_dot, fe->ext, el) == 0) {
 		    reader = fe->reader;
 		    evaluator = fe->evaluator;

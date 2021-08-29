@@ -470,7 +470,8 @@ IDIO idio_struct_instance (IDIO st, IDIO values)
 	 * make-struct-instance foo 1
 	 */
 	char em[BUFSIZ];
-	sprintf (em, "make-struct-instance: not enough values: %" PRIdPTR " < %" PRIdPTR, i, size);
+	idio_snprintf (em, BUFSIZ, "make-struct-instance: not enough values: %" PRIdPTR " < %" PRIdPTR, i, size);
+
 	idio_struct_error (idio_string_C (em), st, values, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -484,7 +485,8 @@ IDIO idio_struct_instance (IDIO st, IDIO values)
 	 * make-struct-instance foo 1 2 3
 	 */
 	char em[BUFSIZ];
-	sprintf (em, "make-struct-instance: too many values: %" PRIdPTR " > %" PRIdPTR, i, size);
+	idio_snprintf (em, BUFSIZ, "make-struct-instance: too many values: %" PRIdPTR " > %" PRIdPTR, i, size);
+
 	idio_struct_error (idio_string_C (em), st, values, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -751,7 +753,8 @@ IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index)
 	 * %struct-instance-ref-direct f foo -1
 	 */
 	char em[BUFSIZ];
-	sprintf (em, "%%struct-instance-ref-direct bounds error: %td < 0", index);
+	idio_snprintf (em, BUFSIZ, "%%struct-instance-ref-direct bounds error: %td < 0", index);
+
 	idio_struct_instance_bounds_error (em, index, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -766,7 +769,8 @@ IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index)
 	 * %struct-instance-ref-direct f foo 3
 	 */
 	char em[BUFSIZ];
-	sprintf (em, "%%struct-instance-ref-direct bounds error: %td >= %zu", index, IDIO_STRUCT_INSTANCE_SIZE (si));
+	idio_snprintf (em, BUFSIZ, "%%struct-instance-ref-direct bounds error: %td >= %zu", index, IDIO_STRUCT_INSTANCE_SIZE (si));
+
 	idio_struct_instance_bounds_error (em, index, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -916,7 +920,8 @@ IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v)
 	 * %struct-instance-set-direct! f foo -1 #t
 	 */
 	char em[BUFSIZ];
-	sprintf (em, "%%struct-instance-set-direct! bounds error: %td < 0", index);
+	idio_snprintf (em, BUFSIZ, "%%struct-instance-set-direct! bounds error: %td < 0", index);
+
 	idio_struct_instance_bounds_error (em, index, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -931,7 +936,8 @@ IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v)
 	 * %struct-instance-set-direct f foo 3 #t
 	 */
 	char em[BUFSIZ];
-	sprintf (em, "%%struct-instance-set-direct! bounds error: %td >= %zu", index, IDIO_STRUCT_INSTANCE_SIZE (si));
+	idio_snprintf (em, BUFSIZ, "%%struct-instance-set-direct! bounds error: %td >= %zu", index, IDIO_STRUCT_INSTANCE_SIZE (si));
+
 	idio_struct_instance_bounds_error (em, index, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;

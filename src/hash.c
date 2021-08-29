@@ -292,7 +292,8 @@ IDIO idio_copy_hash (IDIO orig, int depth)
 		 * Coding error ultimately.
 		 */
 		char em[BUFSIZ];
-		sprintf (em, "copy-hash: key #%zd is NULL", i);
+		idio_snprintf (em, BUFSIZ, "copy-hash: key #%zd is NULL", i);
+
 		idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -335,7 +336,8 @@ IDIO idio_merge_hash (IDIO ht1, IDIO ht2)
 		 * Coding error ultimately.
 		 */
 		char em[BUFSIZ];
-		sprintf (em, "merge-hash: key #%zd is NULL", i);
+		idio_snprintf (em, BUFSIZ, "merge-hash: key #%zd is NULL", i);
+
 		idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -743,7 +745,8 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, const void *kv)
 	 */
 	{
 	    char em[BUFSIZ];
-	    sprintf (em, "type: unexpected object type %s", idio_type2string (k));
+	    idio_snprintf (em, BUFSIZ, "type: unexpected object type %s", idio_type2string (k));
+
 	    idio_hash_error (em, IDIO_C_FUNC_LOCATION_S ("PLACEHOLDER"));
 
 	    /* notreached */
@@ -766,7 +769,7 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, const void *kv)
 	{
 	    size_t size = 0;
 	    char *sk = idio_string_as_C (k, &size);
-	    hv = idio_hash_default_hash_C_string_C (strlen (sk), sk);
+	    hv = idio_hash_default_hash_C_string_C (size, sk);
 	    IDIO_GC_FREE (sk);
 	}
 	break;
@@ -774,7 +777,7 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, const void *kv)
 	{
 	    size_t size = 0;
 	    char *sk = idio_string_as_C (k, &size);
-	    hv = idio_hash_default_hash_C_string_C (strlen (sk), sk);
+	    hv = idio_hash_default_hash_C_string_C (size, sk);
 	    IDIO_GC_FREE (sk);
 	}
 	break;
@@ -917,7 +920,8 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, const void *kv)
 	 */
 	{
 	    char em[BUFSIZ];
-	    sprintf (em, "unexpected type = %d==%s\n", type, idio_type_enum2string (type));
+	    idio_snprintf (em, BUFSIZ, "unexpected type = %d==%s\n", type, idio_type_enum2string (type));
+
 	    idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -1494,7 +1498,8 @@ IDIO idio_hash_keys_to_list (IDIO h)
 		 * Coding error ultimately.
 		 */
 		char em[BUFSIZ];
-		sprintf (em, "key #%zd is NULL", i);
+		idio_snprintf (em, BUFSIZ, "key #%zd is NULL", i);
+
 		idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -1560,7 +1565,8 @@ IDIO idio_hash_values_to_list (IDIO h)
 		 * Coding error ultimately.
 		 */
 		char em[BUFSIZ];
-		sprintf (em, "hash-values-to-list: key #%zd is NULL", i);
+		idio_snprintf (em, BUFSIZ, "hash-values-to-list: key #%zd is NULL", i);
+
 		idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;

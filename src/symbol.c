@@ -315,6 +315,9 @@ int idio_symbol_C_eqp (const void *s1, const void *s2)
 	return 0;
     }
 
+    /*
+     * There are no useful restrictions on the length of a symbol.
+     */
     return (0 == strcmp ((const char *) s1, (const char *) s2));
 }
 
@@ -323,7 +326,11 @@ idio_hi_t idio_symbol_C_hash (IDIO h, const void *s)
     size_t hvalue = (uintptr_t) s;
 
     if (idio_S_nil != s) {
-	hvalue = idio_hash_default_hash_C_string_C (strlen ((char *) s), s);
+	/*
+	 * There are no useful restrictions on the length of a symbol.
+	 */
+	size_t slen = strlen ((char *) s);
+	hvalue = idio_hash_default_hash_C_string_C (slen, s);
     }
 
     return (hvalue & IDIO_HASH_MASK (h));
@@ -343,15 +350,17 @@ idio_hi_t idio_symbol_C_hash (IDIO h, const void *s)
  * You should be calling idio_symbols_C_intern() which will check for
  * an existing symbol of the same name for you.
  */
-static IDIO idio_symbol_C (const char *s_C)
+static IDIO idio_symbol_C (const char *s_C, const size_t blen)
 {
     IDIO_C_ASSERT (s_C);
 
     IDIO o = idio_gc_get (IDIO_TYPE_SYMBOL);
 
-    size_t blen = strlen (s_C);
     IDIO_GC_ALLOC (IDIO_SYMBOL_S (o), blen + 1);
-    strcpy (IDIO_SYMBOL_S (o), s_C);
+    memcpy (IDIO_SYMBOL_S (o), s_C, blen);
+    IDIO_SYMBOL_S (o)[blen] = '\0';
+
+    IDIO_SYMBOL_BLEN (o) = blen;
 
     IDIO_SYMBOL_FLAGS (o) = IDIO_SYMBOL_FLAG_NONE;
 
@@ -373,14 +382,14 @@ void idio_free_symbol (IDIO s)
     /* IDIO_GC_FREE (s->u.symbol); */
 }
 
-IDIO idio_symbols_C_intern (const char *sym_C)
+IDIO idio_symbols_C_intern (const char *sym_C, const size_t blen)
 {
     IDIO_C_ASSERT (sym_C);
 
     IDIO sym = idio_hash_ref (idio_symbols_hash, sym_C);
 
     if (idio_S_unspec == sym) {
-	sym = idio_symbol_C (sym_C);
+	sym = idio_symbol_C (sym_C, blen);
 	idio_hash_put (idio_symbols_hash, IDIO_SYMBOL_S (sym), sym);
     }
 
@@ -394,7 +403,12 @@ IDIO idio_symbols_string_intern (IDIO str)
 
     size_t size = 0;
     char *sC = idio_string_as_C (str, &size);
-    size_t C_size = strlen (sC);
+
+    /*
+     * Use size + 1 to avoid a truncation warning -- we're just seeing
+     * if sC includes a NUL
+     */
+    size_t C_size = idio_strnlen (sC, size + 1);
     if (C_size != size) {
 	/*
 	 * Test Case: ??
@@ -409,7 +423,7 @@ IDIO idio_symbols_string_intern (IDIO str)
 	return idio_S_notreached;
     }
 
-    IDIO r = idio_symbols_C_intern (sC);
+    IDIO r = idio_symbols_C_intern (sC, size);
 
     IDIO_GC_FREE (sC);
 
@@ -418,12 +432,14 @@ IDIO idio_symbols_string_intern (IDIO str)
 
 static uintmax_t idio_gensym_id = 1;
 
-IDIO idio_gensym (char *pref_prefix)
+IDIO idio_gensym (const char *pref_prefix, const size_t blen)
 {
     char *prefix = "g";
+    size_t prefix_len = 1;
 
     if (NULL != pref_prefix) {
-	prefix = pref_prefix;
+	prefix = (char *) pref_prefix;
+	prefix_len = blen;
     }
 
     /*
@@ -431,17 +447,18 @@ IDIO idio_gensym (char *pref_prefix)
      * strlen (uintmax_t) == 20
      * NUL
      */
-    char buf[strlen (prefix) + 1 + 20 + 1];
+    size_t sym_len = prefix_len + 1 + 20;
+    char buf[sym_len + 1];
 
     IDIO sym;
 
     for (;idio_gensym_id;idio_gensym_id++) {
-	sprintf (buf, "%s/%" PRIuMAX, prefix, idio_gensym_id);
+	size_t blen = idio_snprintf (buf, sym_len, "%s/%" PRIuMAX, prefix, idio_gensym_id);
 
 	sym = idio_hash_ref (idio_symbols_hash, buf);
 
 	if (idio_S_unspec == sym) {
-	    sym = idio_symbols_C_intern (buf);
+	    sym = idio_symbols_C_intern (buf, blen);
 	    IDIO_SYMBOL_FLAGS (sym) |= IDIO_SYMBOL_FLAG_GENSYM;
 	    return sym;
 	}
@@ -476,48 +493,54 @@ Such *gensyms* are not guaranteed to be unique if saved.\n\
 {
     IDIO_ASSERT (args);
 
-    char *prefix = NULL;
+    char *prefix_C = NULL;
+    size_t prefix_C_len = 0;
     int free_me = 0;
 
     if (idio_isa_pair (args)) {
-	IDIO iprefix = IDIO_PAIR_H (args);
+	IDIO prefix = IDIO_PAIR_H (args);
 
-	if (idio_isa_string (iprefix)) {
-	    size_t size = 0;
-	    prefix = idio_string_as_C (iprefix, &size);
-	    size_t C_size = strlen (prefix);
-	    if (C_size != size) {
+	if (idio_isa_string (prefix)) {
+	    prefix_C = idio_string_as_C (prefix, &prefix_C_len);
+
+	    /*
+	     * Use prefix_C_len + 1 to avoid a truncation warning --
+	     * we're just seeing if prefix_C includes a NUL
+	     */
+	    size_t C_size = idio_strnlen (prefix_C, prefix_C_len + 1);
+	    if (C_size != prefix_C_len) {
 		/*
 		 * Test Case: symbol-errors/gensym-prefix-bad-format.idio
 		 *
 		 * gensym (join-string (make-string 1 U+0) '("hello" "world"))
 		 */
-		IDIO_GC_FREE (prefix);
+		IDIO_GC_FREE (prefix_C);
 
-		idio_symbol_format_error ("gensym: prefix contains an ASCII NUL", iprefix, IDIO_C_FUNC_LOCATION ());
+		idio_symbol_format_error ("gensym: prefix contains an ASCII NUL", prefix, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 
 	    free_me = 1;
-	} else if (idio_isa_symbol (iprefix)) {
-	    prefix = IDIO_SYMBOL_S (iprefix);
+	} else if (idio_isa_symbol (prefix)) {
+	    prefix_C = IDIO_SYMBOL_S (prefix);
+	    prefix_C_len = IDIO_SYMBOL_BLEN (prefix);
 	} else {
 	    /*
 	     * Test Case: symbol-errors/gensym-prefix-bad-type.idio
 	     *
 	     * gensym #t
 	     */
-	    idio_error_param_type ("string|symbol", iprefix, IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_type ("string|symbol", prefix, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
     }
 
-    IDIO sym = idio_gensym (prefix);
+    IDIO sym = idio_gensym (prefix_C, prefix_C_len);
 
     if (free_me) {
-	IDIO_GC_FREE (prefix);
+	IDIO_GC_FREE (prefix_C);
     }
 
     return sym;
@@ -996,7 +1019,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("pair", pair);
 
     char buf[2];
-    sprintf (buf, "%c", IDIO_PAIR_SEPARATOR);
+    idio_snprintf (buf, 2, "%c", IDIO_PAIR_SEPARATOR);
     IDIO_SYMBOL_DEF (buf, pair_separator);
 
     IDIO_SYMBOL_DEF ("param", param);

@@ -84,6 +84,10 @@ static idio_handle_methods_t idio_string_handle_methods = {
     idio_print_string_handle
 };
 
+#define IDIO_STRING_HANDLE_LABEL_INPUT	"input"
+#define IDIO_STRING_HANDLE_LABEL_OUTPUT	"output "
+#define IDIO_STRING_HANDLE_LABEL_BASE	"string-handle #"
+
 static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
 {
     IDIO_C_ASSERT (str);
@@ -110,28 +114,36 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
 
     IDIO_HANDLE_FLAGS (sh) |= sflags | IDIO_HANDLE_FLAG_STRING;
 
+    size_t name_len = 0;
     char name[BUFSIZ];
-    name[0] = '\0';
     if (sflags & IDIO_HANDLE_FLAG_READ) {
-	strcat (name, "input");
+	name_len = sizeof (IDIO_STRING_HANDLE_LABEL_INPUT) - 1;
+	memcpy (name, IDIO_STRING_HANDLE_LABEL_INPUT, name_len);
 	if (sflags & IDIO_HANDLE_FLAG_WRITE) {
 	    /*
 	     * Code coverage:
 	     *
 	     * This can't be called from Idio.
 	     */
-	    strcat (name, "/");
+	    memcpy (name + name_len++, "/", 1);
 	} else {
-	    strcat (name, " ");
+	    memcpy (name + name_len++, " ", 1);
 	}
     }
     if (sflags & IDIO_HANDLE_FLAG_WRITE) {
-	strcat (name, "output ");
+	size_t ol = sizeof (IDIO_STRING_HANDLE_LABEL_OUTPUT) - 1;
+	memcpy (name + name_len, "output ", ol);
+	name_len += ol;
     }
-    strcat (name, "string-handle #");
-    char inst[BUFSIZ];
-    sprintf (inst, "%zu", idio_string_handle_instance++);
-    strcat (name, inst);
+    size_t bl = sizeof (IDIO_STRING_HANDLE_LABEL_BASE) - 1;
+    memcpy (name + name_len, IDIO_STRING_HANDLE_LABEL_BASE, bl);
+    name_len += bl;
+
+    char inst[30];
+    size_t nl = idio_snprintf (inst, 30, "%zu", idio_string_handle_instance++);
+    memcpy (name + name_len, inst, nl);
+    name_len += nl;
+    name[name_len] = '\0';
 
     IDIO_HANDLE_FILENAME (sh) = idio_string_C (name);
     IDIO_HANDLE_PATHNAME (sh) = IDIO_HANDLE_FILENAME (sh);
@@ -141,18 +153,17 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
     return sh;
 }
 
-IDIO idio_open_input_string_handle_C (char *str)
+IDIO idio_open_input_string_handle_C (const char *str, const size_t blen)
 {
     IDIO_C_ASSERT (str);
 
-    size_t blen = strlen (str);
     char *str_copy = idio_alloc (blen + 1);
     /*
      * gcc warns "output truncated before terminating nul copying as
      * many bytes from a string as its length [-Wstringop-truncation]"
      * for just strncpy(..., blen)
      */
-    strncpy (str_copy, str, blen + 1);
+    memcpy (str_copy, str, blen);
     str_copy[blen] = '\0';
 
     /*
@@ -183,7 +194,7 @@ IDIO idio_open_output_string_handle_C ()
  * Given that those do not recurse we could save a lot of allocations
  * by re-using an existing input string handle...
  */
-IDIO idio_reopen_input_string_handle_C (IDIO sh, char *str)
+IDIO idio_reopen_input_string_handle_C (IDIO sh, const char *str, const size_t blen)
 {
     IDIO_ASSERT (sh);
     IDIO_C_ASSERT (str);
@@ -195,14 +206,8 @@ IDIO idio_reopen_input_string_handle_C (IDIO sh, char *str)
      */
     IDIO_GC_FREE (IDIO_STRING_HANDLE_BUF (sh));
 
-    size_t blen = strlen (str);
     char *str_copy = idio_alloc (blen + 1);
-    /*
-     * gcc warns "output truncated before terminating nul copying as
-     * many bytes from a string as its length [-Wstringop-truncation]"
-     * for just strncpy(..., blen)
-     */
-    strncpy (str_copy, str, blen + 1);
+    memcpy (str_copy, str, blen);
     str_copy[blen] = '\0';
 
     /*
@@ -526,7 +531,7 @@ int idio_putc_string_handle (IDIO sh, idio_unicode_t c)
     return size;
 }
 
-ptrdiff_t idio_puts_string_handle (IDIO sh, const char *s, size_t slen)
+ptrdiff_t idio_puts_string_handle (IDIO sh, const char *s, const size_t slen)
 {
     IDIO_ASSERT (sh);
 

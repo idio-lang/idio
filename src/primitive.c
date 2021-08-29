@@ -50,7 +50,7 @@
  * idio_primitive() exists in case anyone wants to create a primitive
  * dynamically -- as opposed to via the usual C macro methods.
  */
-IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs, const char *sigstr_C, const char *docstr_C)
+IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, const size_t name_C_len, size_t arity, char varargs, const char *sigstr_C, const size_t sigstr_C_len, const char *docstr_C, const size_t docstr_C_len)
 {
     IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (name_C);
@@ -64,16 +64,14 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
     IDIO_PRIMITIVE_ARITY (o) = arity;
     IDIO_PRIMITIVE_VARARGS (o) = varargs;
 
-    size_t l = strlen (name_C);
-    IDIO_C_ASSERT (l);
-
-    IDIO_GC_ALLOC (IDIO_PRIMITIVE_NAME (o), l + 1);
+    IDIO_GC_ALLOC (IDIO_PRIMITIVE_NAME (o), name_C_len + 1);
 
     /*
-      No point in using strncpy as we have just relied on name_C being
-      NUL terminated with strlen...
+     * Arguably, no point in using memcpy as we have just relied on
+     * name_C being NUL terminated with strlen...
      */
-    strcpy (IDIO_PRIMITIVE_NAME (o), name_C);
+    memcpy (IDIO_PRIMITIVE_NAME (o), name_C, name_C_len);
+    IDIO_PRIMITIVE_NAME (o)[name_C_len] = '\0';
 
 #ifdef IDIO_VM_PROF
     IDIO_PRIMITIVE_CALLED (o) = 0;
@@ -87,10 +85,10 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
 
     idio_create_properties (o);
     if (NULL != sigstr_C) {
-	idio_set_property (o, idio_KW_sigstr, idio_string_C (sigstr_C));
+	idio_set_property (o, idio_KW_sigstr, idio_string_C_len (sigstr_C, sigstr_C_len));
     }
     if (NULL != docstr_C) {
-	idio_set_property (o, idio_KW_docstr_raw, idio_string_C (docstr_C));
+	idio_set_property (o, idio_KW_docstr_raw, idio_string_C_len (docstr_C, docstr_C_len));
     }
 
     return o;
@@ -109,12 +107,10 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
     IDIO_PRIMITIVE_ARITY (o) = desc->arity;
     IDIO_PRIMITIVE_VARARGS (o) = desc->varargs;
 
-    size_t l = strlen (desc->name);
-    IDIO_C_ASSERT (l);
+    IDIO_GC_ALLOC (IDIO_PRIMITIVE_NAME (o), desc->name_len + 1);
 
-    IDIO_GC_ALLOC (IDIO_PRIMITIVE_NAME (o), l + 1);
-
-    strcpy (IDIO_PRIMITIVE_NAME (o), desc->name);
+    memcpy (IDIO_PRIMITIVE_NAME (o), desc->name, desc->name_len);
+    IDIO_PRIMITIVE_NAME (o)[desc->name_len] = '\0';
 
 #ifdef IDIO_VM_PROF
     IDIO_PRIMITIVE_CALLED (o) = 0;
@@ -128,7 +124,7 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
 
     idio_create_properties (o);
     if (NULL != desc->name) {
-	idio_set_property (o, idio_KW_name, idio_symbols_C_intern (desc->name));
+	idio_set_property (o, idio_KW_name, idio_symbols_C_intern (desc->name, desc->name_len));
     }
     if (NULL != desc->sigstr) {
 	idio_set_property (o, idio_KW_sigstr, idio_string_C (desc->sigstr));
@@ -155,8 +151,8 @@ void idio_primitive_set_property_C (IDIO p, IDIO kw, const char *str_C)
 	 */
 	return;
     } else {
-	size_t l = strlen (str_C);
-	if (0 == l) {
+	size_t str_C_len = strlen (str_C);
+	if (0 == str_C_len) {
 	    /*
 	     * Code coverage:
 	     *
@@ -164,7 +160,7 @@ void idio_primitive_set_property_C (IDIO p, IDIO kw, const char *str_C)
 	     */
 	    str = idio_S_nil;
 	} else {
-	    str = idio_string_C (str_C);
+	    str = idio_string_C_len (str_C, str_C_len);
 	}
     }
 

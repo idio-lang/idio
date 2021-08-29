@@ -24,7 +24,7 @@
 #define SYMBOL_H
 
 #define IDIO_SYMBOL_DECL(n)		IDIO idio_S_ ## n
-#define IDIO_SYMBOL_DEF(iname,cname)	idio_S_ ## cname = idio_symbols_C_intern (iname);
+#define IDIO_SYMBOL_DEF(iname,cname)	idio_S_ ## cname = idio_symbols_C_intern (iname, sizeof (iname) - 1);
 
 extern IDIO_SYMBOL_DECL (2string);
 extern IDIO_SYMBOL_DECL (C_struct);
@@ -152,10 +152,12 @@ void idio_property_error_key_not_found (IDIO key, IDIO c_location);
 
 void idio_free_symbol (IDIO s);
 int idio_isa_symbol (IDIO s);
-IDIO idio_symbols_C_intern (const char *s);
+IDIO idio_symbols_C_intern (const char *s, const size_t blen);
 IDIO idio_symbols_string_intern (IDIO str);
 
-IDIO idio_gensym (char *pref_prefix);
+#define IDIO_SYMBOLS_C_INTERN(s)	idio_symbols_C_intern (s, sizeof (s) - 1)
+
+IDIO idio_gensym (const char *pref_prefix, const size_t blen);
 
 IDIO idio_ref_properties (IDIO o, IDIO args);
 void idio_set_properties (IDIO o, IDIO properties);
