@@ -4079,13 +4079,13 @@ int idio_snprintf (char *str, size_t size, char *format, ...)
      * null byte) which would have been written to the final string if
      * enough space had been available."
      */
-    if (plen >= size) {
-	idio_error_C ("snprintf truncated", idio_integer (plen), IDIO_C_FUNC_LOCATION ());
+    if (plen >= size ||
+	plen < 0) {
+	str[size] = '\0';
+	char em[BUFSIZ];
+	snprintf (em, BUFSIZ, "idio_snprintf: reqd %zd in %zd available: \"%s\"", plen, size, str);
 
-	/* notreached */
-	return 0;
-    } else if (plen < 0) {
-	idio_error_C ("snprintf failure", idio_integer (plen), IDIO_C_FUNC_LOCATION ());
+	idio_error_C (em, idio_integer (plen), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return 0;

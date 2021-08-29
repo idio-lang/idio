@@ -425,8 +425,9 @@ void idio_env_exe_pathname (const char *argv0, const size_t argv0_len, char *a0r
     if (NULL != r) {
 	if ('/' == r[0]) {
 	    /* absolute pathname */
-	    memcpy (a0rp, r, a0rp_len);
-	    a0rp[a0rp_len] = '\0'; /* just in case */
+	    size_t rlen = strnlen (r, a0rp_len);
+	    memcpy (a0rp, r, rlen);
+	    a0rp[rlen] = '\0';
 
 	    return;
 	} else {

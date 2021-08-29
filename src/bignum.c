@@ -2891,6 +2891,15 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
     intptr_t i = al - 1;
     IDIO_BS_T v = idio_bsa_get (sig_a, i);
 
+    /*
+     * NB vs is used, separately, for both the mantissa,
+     * IDIO_BIGNUM_DPW digits, and exponent (with a leading +/-).  The
+     * exponent is an int32_t which requires 11 digits which is longer
+     * than IDIO_BIGNUM_DPW on 32-bit systems.
+     */
+    size_t vs_len = 30;
+    char vs[vs_len];
+
     switch (format) {
     case IDIO_BIGNUM_CONVERSION_FORMAT_SCHEME:
 	{
@@ -2904,8 +2913,6 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	     * ".".  If vs is more than 1 digit then add the rest of vs.  If
 	     * there are no more digits to add then add "0".
 	     */
-	    size_t vs_len = IDIO_BIGNUM_DPW + 1;
-	    char vs[vs_len];
 	    idio_snprintf (vs, vs_len, "%" PRIdPTR, v);
 
 	    char *vs_rest = vs + 1;
@@ -2953,8 +2960,6 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	     * ".".  If vs is more than 1 digit then add the rest of vs.  If
 	     * there are no more digits to add then add "0".
 	     */
-	    size_t vs_len = IDIO_BIGNUM_DPW + 1;
-	    char vs[vs_len];
 	    idio_snprintf (vs, vs_len, "%" PRIdPTR, v);
 
 	    char *vs_rest = vs + 1;
@@ -3013,8 +3018,6 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	break;
     case IDIO_BIGNUM_CONVERSION_FORMAT_f:
 	{
-	    size_t vs_len = IDIO_BIGNUM_DPW + 1;
-	    char vs[vs_len];
 	    size_t vs_size = idio_snprintf (vs, vs_len, "%" PRIdPTR, v);
 
 	    int pre_dp_digits = digits + exp;
