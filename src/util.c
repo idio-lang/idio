@@ -4083,7 +4083,7 @@ int idio_snprintf (char *str, size_t size, char *format, ...)
 	plen < 0) {
 	str[size] = '\0';
 	char em[BUFSIZ];
-	snprintf (em, BUFSIZ, "idio_snprintf: reqd %zd in %zd available: \"%s\"", plen, size, str);
+	snprintf (em, BUFSIZ, "idio_snprintf: reqd %d in %zd available: \"%s\"", plen, size, str);
 
 	idio_error_C (em, idio_integer (plen), IDIO_C_FUNC_LOCATION ());
 
