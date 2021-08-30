@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -24,7 +24,7 @@
 #define CHARACTER_H
 
 int idio_isa_character (IDIO o);
-IDIO idio_character_lookup (char *name);
+IDIO idio_character_lookup (char const *name);
 
 void idio_init_character ();
 

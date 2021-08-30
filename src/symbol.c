@@ -173,7 +173,7 @@ IDIO_SYMBOL_DECL (float);
 IDIO_SYMBOL_DECL (double);
 IDIO_SYMBOL_DECL (longdouble);
 
-static void idio_symbol_error (char *msg, IDIO c_location)
+static void idio_symbol_error (char const *msg, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -202,7 +202,7 @@ static void idio_symbol_error (char *msg, IDIO c_location)
     /* notreached */
 }
 
-static void idio_symbol_format_error (char *msg, IDIO s, IDIO c_location)
+static void idio_symbol_format_error (char const *msg, IDIO s, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (s);
@@ -215,7 +215,7 @@ static void idio_symbol_format_error (char *msg, IDIO s, IDIO c_location)
     /* notreached */
 }
 
-static void idio_property_nil_object_error (char *msg, IDIO c_location)
+static void idio_property_nil_object_error (char const *msg, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -244,7 +244,7 @@ static void idio_property_nil_object_error (char *msg, IDIO c_location)
     /* notreached */
 }
 
-static void idio_properties_not_found_error (char *msg, IDIO o, IDIO c_location)
+static void idio_properties_not_found_error (char const *msg, IDIO o, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -318,7 +318,7 @@ int idio_symbol_C_eqp (const void *s1, const void *s2)
     /*
      * There are no useful restrictions on the length of a symbol.
      */
-    return (0 == strcmp ((const char *) s1, (const char *) s2));
+    return (0 == strcmp ((char const *) s1, (char const *) s2));
 }
 
 idio_hi_t idio_symbol_C_hash (IDIO h, const void *s)
@@ -350,7 +350,7 @@ idio_hi_t idio_symbol_C_hash (IDIO h, const void *s)
  * You should be calling idio_symbols_C_intern() which will check for
  * an existing symbol of the same name for you.
  */
-static IDIO idio_symbol_C (const char *s_C, const size_t blen)
+static IDIO idio_symbol_C (char const *s_C, size_t const blen)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -382,7 +382,7 @@ void idio_free_symbol (IDIO s)
     /* IDIO_GC_FREE (s->u.symbol); */
 }
 
-IDIO idio_symbols_C_intern (const char *sym_C, const size_t blen)
+IDIO idio_symbols_C_intern (char const *sym_C, size_t const blen)
 {
     IDIO_C_ASSERT (sym_C);
 
@@ -432,7 +432,7 @@ IDIO idio_symbols_string_intern (IDIO str)
 
 static uintmax_t idio_gensym_id = 1;
 
-IDIO idio_gensym (const char *pref_prefix, const size_t blen)
+IDIO idio_gensym (char const *pref_prefix, size_t const blen)
 {
     char *prefix = "g";
     size_t prefix_len = 1;

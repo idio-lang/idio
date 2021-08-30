@@ -647,7 +647,7 @@ IDIO idio_condition_exit_on_error (IDIO c)
  * As I am regularly bothered by errant processes when things go wrong
  * we can prefix the, erm, prefix, with the current PID.
  */
-void idio_condition_report (char *prefix, IDIO c)
+void idio_condition_report (char const *prefix, IDIO c)
 {
     IDIO_C_ASSERT (prefix);
     IDIO_ASSERT (c);

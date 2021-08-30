@@ -119,7 +119,7 @@ static void idio_struct_instance_field_not_found_error (IDIO field, IDIO c_locat
     /* notreached */
 }
 
-static void idio_struct_instance_bounds_error (char *em, idio_ai_t index, IDIO c_location)
+static void idio_struct_instance_bounds_error (char const *em, idio_ai_t index, IDIO c_location)
 {
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);

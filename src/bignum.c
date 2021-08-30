@@ -68,7 +68,7 @@ size_t idio_bignum_seg_max = 0;
  * No Idio code can reach the calls to this function.  Requires some C
  * unit tests.
  */
-static void idio_bignum_error (char *msg, IDIO bn, IDIO c_location)
+static void idio_bignum_error (char const *msg, const IDIO bn, const IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -98,7 +98,7 @@ static void idio_bignum_error (char *msg, IDIO bn, IDIO c_location)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_bignum_conversion_error (char *msg, IDIO bn, IDIO c_location)
+static void idio_bignum_conversion_error (char const *msg, const IDIO bn, const IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -181,7 +181,7 @@ void idio_bsa_free (IDIO_BSA bsa)
     }
 }
 
-static void idio_bsa_resize_by (IDIO_BSA bsa, size_t n)
+static void idio_bsa_resize_by (IDIO_BSA bsa, size_t const n)
 {
     bsa->size += n;
     if (bsa->size > bsa->avail) {
@@ -192,7 +192,7 @@ static void idio_bsa_resize_by (IDIO_BSA bsa, size_t n)
     IDIO_C_ASSERT (bsa->size < 200); /* reading pi with 61 sig digits */
 }
 
-IDIO_BS_T idio_bsa_get (IDIO_BSA bsa, size_t i)
+IDIO_BS_T idio_bsa_get (IDIO_BSA bsa, size_t const i)
 {
     if (i >= bsa->size) {
 	/*
@@ -212,7 +212,7 @@ IDIO_BS_T idio_bsa_get (IDIO_BSA bsa, size_t i)
     return bsa->ae[i];
 }
 
-void idio_bsa_set (IDIO_BSA bsa, IDIO_BS_T v, size_t i)
+void idio_bsa_set (IDIO_BSA bsa, IDIO_BS_T v, size_t const i)
 {
     if (i >= bsa->size) {
 	/* one beyond the current usage is OK */
@@ -340,7 +340,7 @@ void idio_bignum_dump (IDIO bn)
 	     */
 	    fprintf (stderr, "%*s ", IDIO_BIGNUM_DPW, "");
 	} else {
-	    const char *fmt;
+	    char const *fmt;
 	    if (first) {
 		first = 0;
 		fmt = "%*zd ";
@@ -1360,7 +1360,7 @@ IDIO idio_bignum_subtract (IDIO a, IDIO b)
     return idio_bignum_integer (ra);
 }
 
-IDIO idio_bignum_shift_left (IDIO a, int fill)
+IDIO idio_bignum_shift_left (IDIO a, int const fill)
 {
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (bignum, a);
@@ -2067,7 +2067,7 @@ int idio_bignum_real_equal_p (IDIO a, IDIO b)
 
   100.0e-2
  */
-IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BE_T desired_exp, size_t max_size)
+IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BE_T desired_exp, size_t const max_size)
 {
     IDIO_ASSERT (bn);
 
@@ -3169,7 +3169,7 @@ size_t idio_bignum_count_digits (IDIO_BSA sig_a)
     return d;
 }
 
-char *idio_bignum_C_without_inexact (char *nums, size_t nums_len)
+char *idio_bignum_C_without_inexact (char const *nums, size_t const nums_len)
 {
     IDIO_C_ASSERT (nums);
     IDIO_C_ASSERT (nums_len > 0);
@@ -3189,7 +3189,7 @@ char *idio_bignum_C_without_inexact (char *nums, size_t nums_len)
     return buf;
 }
 
-IDIO idio_bignum_integer_C (char *nums, size_t nums_len, int req_exact)
+IDIO idio_bignum_integer_C (char const *nums, size_t const nums_len, const int req_exact)
 {
     IDIO_C_ASSERT (nums);
     IDIO_C_ASSERT (nums_len > 0);
@@ -3317,7 +3317,7 @@ IDIO idio_bignum_integer_C (char *nums, size_t nums_len, int req_exact)
     }
 }
 
-IDIO idio_bignum_real_C (char *nums, size_t nums_len)
+IDIO idio_bignum_real_C (char const *nums, size_t const nums_len)
 {
     IDIO_C_ASSERT (nums);
     IDIO_C_ASSERT (nums_len > 0);
@@ -3325,7 +3325,7 @@ IDIO idio_bignum_real_C (char *nums, size_t nums_len)
     IDIO sig_bn = idio_bignum_integer_intmax_t (0);
 
     IDIO_BE_T exp = 0;
-    char *s = nums;
+    char *s = (char *) nums;
     size_t slen = nums_len;
     int neg = 0;
 
@@ -3443,12 +3443,12 @@ IDIO idio_bignum_real_C (char *nums, size_t nums_len)
     return idio_bignum_normalize (r);
 }
 
-IDIO idio_bignum_C (char *nums, size_t nums_len)
+IDIO idio_bignum_C (char const *nums, size_t const nums_len)
 {
     IDIO_C_ASSERT (nums);
     IDIO_C_ASSERT (nums_len > 0);
 
-    char *s = nums;
+    char *s = (char *) nums;
     while (*s) {
 	if ('.' == *s ||
 	    IDIO_BIGNUM_EXP_CHAR (*s)) {

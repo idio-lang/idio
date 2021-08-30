@@ -90,7 +90,7 @@
 
 static IDIO idio_C_module = idio_S_nil;
 
-static void idio_C_conversion_error (char *msg, IDIO n, IDIO c_location)
+static void idio_C_conversion_error (char const *msg, IDIO n, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -119,7 +119,7 @@ static void idio_C_conversion_error (char *msg, IDIO n, IDIO c_location)
     idio_raise_condition (idio_S_true, c);
 }
 
-IDIO idio_C_char (char v)
+IDIO idio_C_char (char const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_CHAR);
 
@@ -154,7 +154,7 @@ test if `o` is an C/char				\n\
     return r;
 }
 
-IDIO idio_C_schar (signed char v)
+IDIO idio_C_schar (signed char const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_SCHAR);
 
@@ -189,7 +189,7 @@ test if `o` is an C/schar				\n\
     return r;
 }
 
-IDIO idio_C_uchar (unsigned char v)
+IDIO idio_C_uchar (unsigned char const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_UCHAR);
 
@@ -224,7 +224,7 @@ test if `o` is an C/uchar				\n\
     return r;
 }
 
-IDIO idio_C_short (short v)
+IDIO idio_C_short (short const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_SHORT);
 
@@ -259,7 +259,7 @@ test if `o` is an C/short				\n\
     return r;
 }
 
-IDIO idio_C_ushort (unsigned short v)
+IDIO idio_C_ushort (unsigned short const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_USHORT);
 
@@ -294,7 +294,7 @@ test if `o` is an C/ushort			\n\
     return r;
 }
 
-IDIO idio_C_int (int v)
+IDIO idio_C_int (int const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_INT);
 
@@ -329,7 +329,7 @@ test if `o` is an C/int				\n\
     return r;
 }
 
-IDIO idio_C_uint (unsigned int v)
+IDIO idio_C_uint (unsigned int const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_UINT);
 
@@ -364,7 +364,7 @@ test if `o` is an C/uint			\n\
     return r;
 }
 
-IDIO idio_C_long (long v)
+IDIO idio_C_long (long const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_LONG);
 
@@ -399,7 +399,7 @@ test if `o` is an C/long				\n\
     return r;
 }
 
-IDIO idio_C_ulong (unsigned long v)
+IDIO idio_C_ulong (unsigned long const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_ULONG);
 
@@ -434,7 +434,7 @@ test if `o` is an C/ulong			\n\
     return r;
 }
 
-IDIO idio_C_longlong (long long v)
+IDIO idio_C_longlong (long long const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_LONGLONG);
 
@@ -469,7 +469,7 @@ test if `o` is an C/longlong				\n\
     return r;
 }
 
-IDIO idio_C_ulonglong (unsigned long long v)
+IDIO idio_C_ulonglong (unsigned long long const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_ULONGLONG);
 
@@ -504,7 +504,7 @@ test if `o` is an C/ulonglong			\n\
     return r;
 }
 
-IDIO idio_C_float (float v)
+IDIO idio_C_float (float const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_FLOAT);
 
@@ -539,7 +539,7 @@ test if `o` is an C/float			\n\
     return r;
 }
 
-IDIO idio_C_double (double v)
+IDIO idio_C_double (double const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_DOUBLE);
 
@@ -574,7 +574,7 @@ test if `o` is an C/double			\n\
     return r;
 }
 
-IDIO idio_C_longdouble (long double v)
+IDIO idio_C_longdouble (long double const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_LONGDOUBLE);
 

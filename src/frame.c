@@ -46,7 +46,7 @@
 
 IDIO idio_G_frame;
 
-void idio_frame_error_range (IDIO fo, size_t d, size_t i, IDIO c_location)
+void idio_frame_error_range (IDIO fo, size_t const d, size_t const i, IDIO c_location)
 {
     IDIO_ASSERT (fo);
     IDIO_ASSERT (c_location);
@@ -133,12 +133,14 @@ void idio_free_frame (IDIO fo)
     IDIO_GC_FREE (fo->u.frame);
 }
 
-IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
+IDIO idio_frame_fetch (IDIO fo, size_t const d, size_t const i)
 {
     IDIO_ASSERT (fo);
     IDIO_TYPE_ASSERT (frame, fo);
 
-    for (; d; d--) {
+    size_t td = d;
+
+    for (; td; td--) {
 	fo = IDIO_FRAME_NEXT (fo);
 	IDIO_ASSERT (fo);
 	IDIO_TYPE_ASSERT (frame, fo);
@@ -146,7 +148,7 @@ IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
 
     if (i >= IDIO_FRAME_NALLOC (fo)) {
 	idio_vm_frame_tree (idio_S_nil);
-	idio_frame_error_range (fo, d, i, IDIO_C_FUNC_LOCATION ());
+	idio_frame_error_range (fo, td, i, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -154,13 +156,15 @@ IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
     return IDIO_FRAME_ARGS (fo, i);
 }
 
-void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
+void idio_frame_update (IDIO fo, size_t const d, size_t const i, IDIO v)
 {
     IDIO_ASSERT (fo);
     IDIO_TYPE_ASSERT (frame, fo);
     IDIO_ASSERT (v);
 
-    for (; d; d--) {
+    size_t td = d;
+
+    for (; td; td--) {
 	fo = IDIO_FRAME_NEXT (fo);
 	IDIO_ASSERT (fo);
 	IDIO_TYPE_ASSERT (frame, fo);
@@ -168,7 +172,7 @@ void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
 
     if (i >= IDIO_FRAME_NALLOC (fo)) {
 	idio_vm_frame_tree (idio_S_nil);
-	idio_frame_error_range (fo, d, i, IDIO_C_FUNC_LOCATION ());
+	idio_frame_error_range (fo, td, i, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -211,7 +215,7 @@ IDIO idio_link_frame (IDIO f1, IDIO f2)
     return f2;
 }
 
-void idio_extend_frame (IDIO fo, size_t nalloc)
+void idio_extend_frame (IDIO fo, size_t const nalloc)
 {
     IDIO_ASSERT (fo);
     IDIO_C_ASSERT (nalloc);

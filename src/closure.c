@@ -57,7 +57,7 @@
  * Return:
  * Returns the closure.
  */
-IDIO idio_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr)
+IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr)
 {
     IDIO_C_ASSERT (code_pc);
     IDIO_C_ASSERT (code_len);

@@ -116,7 +116,7 @@ static void idio_path_base_error (IDIO msg, IDIO pattern, IDIO c_location)
     /* notreached */
 }
 
-static void idio_path_error_C (char *msg, IDIO pattern, IDIO c_location)
+static void idio_path_error_C (char const *msg, IDIO pattern, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (pattern);
@@ -133,7 +133,7 @@ static void idio_path_error_C (char *msg, IDIO pattern, IDIO c_location)
     /* notreached */
 }
 
-void idio_pathname_format_error (char *msg, IDIO str, IDIO c_location)
+void idio_pathname_format_error (char const *msg, IDIO str, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
@@ -151,7 +151,7 @@ void idio_pathname_format_error (char *msg, IDIO str, IDIO c_location)
     /* notreached */
 }
 
-IDIO idio_pathname_C_len (const char *s_C, const size_t blen)
+IDIO idio_pathname_C_len (char const *s_C, size_t const blen)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -189,7 +189,7 @@ IDIO idio_pathname_C_len (const char *s_C, const size_t blen)
     return so;
 }
 
-IDIO idio_pathname_C (const char *s_C)
+IDIO idio_pathname_C (char const *s_C)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -226,7 +226,7 @@ test if `o` is an pathname				\n\
     return r;
 }
 
-IDIO idio_fd_pathname_C_len (const char *s_C, const size_t blen)
+IDIO idio_fd_pathname_C_len (char const *s_C, size_t const blen)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -236,7 +236,7 @@ IDIO idio_fd_pathname_C_len (const char *s_C, const size_t blen)
     return so;
 }
 
-IDIO idio_fd_pathname_C (const char *s_C)
+IDIO idio_fd_pathname_C (char const *s_C)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -253,7 +253,7 @@ int idio_isa_fd_pathname (IDIO o)
 	      (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o)) & IDIO_STRING_FLAG_FD_PATHNAME))));
 }
 
-IDIO idio_fifo_pathname_C_len (const char *s_C, const size_t blen)
+IDIO idio_fifo_pathname_C_len (char const *s_C, size_t const blen)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -263,7 +263,7 @@ IDIO idio_fifo_pathname_C_len (const char *s_C, const size_t blen)
     return so;
 }
 
-IDIO idio_fifo_pathname_C (const char *s_C)
+IDIO idio_fifo_pathname_C (char const *s_C)
 {
     IDIO_C_ASSERT (s_C);
 

@@ -109,7 +109,7 @@ static const uint8_t idio_utf8d[] = {
     12,36,12,12,12,12,12,12,12,12,12,12,
 };
 
-static const char *hex_DIGITS = "0123456789ABCDEF";
+static char const *hex_DIGITS = "0123456789ABCDEF";
 
 idio_unicode_t inline idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, idio_unicode_t byte)
 {
@@ -597,7 +597,7 @@ int idio_unicode_C_eqp (const void *s1, const void *s2)
 	return 0;
     }
 
-    return (0 == strcmp ((const char *) s1, (const char *) s2));
+    return (0 == strcmp ((char const *) s1, (char const *) s2));
 }
 
 idio_hi_t idio_unicode_C_hash (IDIO h, const void *s)
@@ -611,7 +611,7 @@ idio_hi_t idio_unicode_C_hash (IDIO h, const void *s)
     return (hvalue & IDIO_HASH_MASK (h));
 }
 
-IDIO idio_unicode_C_intern (const char *s, const size_t blen, IDIO v)
+IDIO idio_unicode_C_intern (char const *s, size_t const blen, IDIO v)
 {
     IDIO_C_ASSERT (s);
 
@@ -637,7 +637,7 @@ IDIO idio_unicode_C_intern (const char *s, const size_t blen, IDIO v)
  * Return:
  * The Idio value of the code point or %idio_S_unspec.
  */
-IDIO idio_unicode_lookup (char *s)
+IDIO idio_unicode_lookup (char const *s)
 {
     IDIO_C_ASSERT (s);
 

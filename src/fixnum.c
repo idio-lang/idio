@@ -68,7 +68,7 @@ static void idio_fixnum_divide_by_zero_error (IDIO nums, IDIO c_location)
     /* notreached */
 }
 
-static void idio_fixnum_conversion_error (char *msg, IDIO num, IDIO c_location)
+static void idio_fixnum_conversion_error (char const *msg, IDIO num, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (num);
@@ -100,7 +100,7 @@ static void idio_fixnum_conversion_error (char *msg, IDIO num, IDIO c_location)
     /* notreached */
 }
 
-static void idio_fixnum_number_error (char *msg, IDIO num, IDIO c_location)
+static void idio_fixnum_number_error (char const *msg, IDIO num, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (num);
@@ -132,7 +132,7 @@ static void idio_fixnum_number_error (char *msg, IDIO num, IDIO c_location)
     /* notreached */
 }
 
-IDIO idio_integer (intmax_t i)
+IDIO idio_integer (intmax_t const i)
 {
     if (i <= IDIO_FIXNUM_MAX &&
 	i >= IDIO_FIXNUM_MIN) {
@@ -148,7 +148,7 @@ IDIO idio_integer (intmax_t i)
  *
  * This is called from ->integer in c-type.c
  */
-IDIO idio_uinteger (uintmax_t ui)
+IDIO idio_uinteger (uintmax_t const ui)
 {
     if (ui <= IDIO_FIXNUM_MAX) {
 	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
@@ -158,7 +158,7 @@ IDIO idio_uinteger (uintmax_t ui)
     }
 }
 
-IDIO idio_fixnum (intptr_t i)
+IDIO idio_fixnum (intptr_t const i)
 {
     if (i <= IDIO_FIXNUM_MAX &&
 	i >= IDIO_FIXNUM_MIN) {
@@ -180,7 +180,7 @@ IDIO idio_fixnum (intptr_t i)
     }
 }
 
-IDIO idio_fixnum_C (char *str, int base)
+IDIO idio_fixnum_C (char const *str, int const base)
 {
     char *end;
     errno = 0;

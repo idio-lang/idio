@@ -135,16 +135,16 @@ extern IDIO idio_libc_struct_stat;
 
 extern IDIO idio_vm_signal_handler_conditions;
 extern char **idio_libc_signal_names;
-void idio_libc_format_error (char *msg, IDIO name, IDIO c_location);
-char *idio_libc_string_C (IDIO val, char *func_C, int *free_me_p, IDIO c_location);
-char *idio_getcwd (char *func, char *buf, size_t size);
+void idio_libc_format_error (char const *msg, IDIO name, IDIO c_location);
+char *idio_libc_string_C (IDIO val, char const *func_C, int *free_me_p, IDIO c_location);
+char *idio_getcwd (char const *func, char *buf, size_t const size);
 char *idio_libc_signal_name (int signum);
 extern IDIO idio_vm_errno_conditions;
 extern char **idio_libc_errno_names;
 char *idio_libc_errno_name (int errnum);
 extern char **idio_libc_rlimit_names;
 char *idio_libc_rlimit_name (int errnum);
-IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp);
+IDIO idio_libc_struct_timeval_pointer (struct timeval const *tvp);
 
 void idio_init_libc_wrap ();
 

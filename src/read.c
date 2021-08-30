@@ -302,7 +302,7 @@ static void idio_read_error (IDIO handle, IDIO lo, IDIO c_location, IDIO msg)
     /* notreached */
 }
 
-static void idio_read_error_parse (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+static void idio_read_error_parse (IDIO handle, IDIO lo, IDIO c_location, char const *msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -319,7 +319,7 @@ static void idio_read_error_parse (IDIO handle, IDIO lo, IDIO c_location, char *
     idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
 }
 
-static void idio_read_error_parse_args (IDIO handle, IDIO lo, IDIO c_location, char *msg, IDIO args)
+static void idio_read_error_parse_args (IDIO handle, IDIO lo, IDIO c_location, char const *msg, IDIO args)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -340,7 +340,7 @@ static void idio_read_error_parse_args (IDIO handle, IDIO lo, IDIO c_location, c
     /* notreached */
 }
 
-static void idio_read_error_parse_printf (IDIO handle, IDIO lo, IDIO c_location, char *fmt, ...)
+static void idio_read_error_parse_printf (IDIO handle, IDIO lo, IDIO c_location, char const *fmt, ...)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -361,7 +361,7 @@ static void idio_read_error_parse_printf (IDIO handle, IDIO lo, IDIO c_location,
     /* notreached */
 }
 
-static void idio_read_error_parse_word_too_long (IDIO handle, IDIO lo, IDIO c_location, char *word)
+static void idio_read_error_parse_word_too_long (IDIO handle, IDIO lo, IDIO c_location, char const *word)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -395,7 +395,7 @@ static void idio_read_error_list_eof (IDIO handle, IDIO lo, IDIO c_location)
     /* notreached */
 }
 
-static void idio_read_error_pair_separator (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+static void idio_read_error_pair_separator (IDIO handle, IDIO lo, IDIO c_location, char const *msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -411,7 +411,7 @@ static void idio_read_error_pair_separator (IDIO handle, IDIO lo, IDIO c_locatio
     /* notreached */
 }
 
-static void idio_read_error_comment (IDIO handle, IDIO lo, IDIO c_location, char *e_msg)
+static void idio_read_error_comment (IDIO handle, IDIO lo, IDIO c_location, char const *e_msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -432,7 +432,7 @@ static void idio_read_error_comment (IDIO handle, IDIO lo, IDIO c_location, char
     /* notreached */
 }
 
-static void idio_read_error_string (IDIO handle, IDIO lo, IDIO c_location, char *e_msg)
+static void idio_read_error_string (IDIO handle, IDIO lo, IDIO c_location, char const *e_msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -453,7 +453,7 @@ static void idio_read_error_string (IDIO handle, IDIO lo, IDIO c_location, char 
     /* notreached */
 }
 
-static void idio_read_error_named_character (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+static void idio_read_error_named_character (IDIO handle, IDIO lo, IDIO c_location, char const *msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -473,7 +473,7 @@ static void idio_read_error_named_character (IDIO handle, IDIO lo, IDIO c_locati
     /* notreached */
 }
 
-static void idio_read_error_named_character_unknown_name (IDIO handle, IDIO lo, IDIO c_location, char *name)
+static void idio_read_error_named_character_unknown_name (IDIO handle, IDIO lo, IDIO c_location, char const *name)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -493,7 +493,7 @@ static void idio_read_error_named_character_unknown_name (IDIO handle, IDIO lo, 
     /* notreached */
 }
 
-static void idio_read_error_bitset (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+static void idio_read_error_bitset (IDIO handle, IDIO lo, IDIO c_location, char const *msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -513,7 +513,7 @@ static void idio_read_error_bitset (IDIO handle, IDIO lo, IDIO c_location, char 
     /* notreached */
 }
 
-static void idio_read_error_template (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+static void idio_read_error_template (IDIO handle, IDIO lo, IDIO c_location, char const *msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -533,7 +533,7 @@ static void idio_read_error_template (IDIO handle, IDIO lo, IDIO c_location, cha
     /* notreached */
 }
 
-static void idio_read_error_pathname (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+static void idio_read_error_pathname (IDIO handle, IDIO lo, IDIO c_location, char const *msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -553,7 +553,7 @@ static void idio_read_error_pathname (IDIO handle, IDIO lo, IDIO c_location, cha
     /* notreached */
 }
 
-static void idio_read_error_integer (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+static void idio_read_error_integer (IDIO handle, IDIO lo, IDIO c_location, char const *msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -573,7 +573,7 @@ static void idio_read_error_integer (IDIO handle, IDIO lo, IDIO c_location, char
     /* notreached */
 }
 
-static void idio_read_error_bignum (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+static void idio_read_error_bignum (IDIO handle, IDIO lo, IDIO c_location, char const *msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -593,7 +593,7 @@ static void idio_read_error_bignum (IDIO handle, IDIO lo, IDIO c_location, char 
     /* notreached */
 }
 
-static void idio_read_error_utf8_decode (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+static void idio_read_error_utf8_decode (IDIO handle, IDIO lo, IDIO c_location, char const *msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -613,7 +613,7 @@ static void idio_read_error_utf8_decode (IDIO handle, IDIO lo, IDIO c_location, 
     /* notreached */
 }
 
-static void idio_read_error_unicode_decode (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+static void idio_read_error_unicode_decode (IDIO handle, IDIO lo, IDIO c_location, char const *msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -635,7 +635,7 @@ static void idio_read_error_unicode_decode (IDIO handle, IDIO lo, IDIO c_locatio
 
 static IDIO idio_read_1_expr (IDIO handle, idio_unicode_t *ic, int depth);
 static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, idio_unicode_t *ic, int depth);
-static IDIO idio_read_number_C (IDIO handle, char *str);
+static IDIO idio_read_number_C (IDIO handle, char const *str);
 static uintmax_t idio_read_uintmax_radix (IDIO handle, IDIO lo, char basec, int radix, int lim);
 static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix);
 static IDIO idio_read_unescape (IDIO ls);
@@ -3179,9 +3179,9 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 					 'l' == c || 'L' == c || \
 					 's' == c || 'S' == c)
 
-static IDIO idio_read_number_C (IDIO handle, char *str)
+static IDIO idio_read_number_C (IDIO handle, char const *str)
 {
-    char *s = str;
+    char *s = (char *) str;
     int i = 0;
 
     /*

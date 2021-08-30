@@ -23,8 +23,8 @@
 #ifndef STRING_HANDLE_H
 #define STRING_HANDLE_H
 
-IDIO idio_reopen_input_string_handle_C (IDIO sh, const char *str, const size_t blen);
-IDIO idio_open_input_string_handle_C (const char *str, const size_t blen);
+IDIO idio_reopen_input_string_handle_C (IDIO sh, char const *str, size_t const blen);
+IDIO idio_open_input_string_handle_C (char const *str, size_t const blen);
 IDIO idio_open_output_string_handle_C ();
 void idio_free_string_handle (IDIO sh);
 int idio_readyp_string_handle (IDIO sh);
@@ -33,7 +33,7 @@ int idio_eofp_string_handle (IDIO sh);
 int idio_close_string_handle (IDIO sh);
 int idio_putb_string_handle (IDIO sh, uint8_t c);
 int idio_putc_string_handle (IDIO sh, idio_unicode_t c);
-ptrdiff_t idio_puts_string_handle (IDIO sh, const char *s, size_t slen);
+ptrdiff_t idio_puts_string_handle (IDIO sh, char const *s, size_t const slen);
 int idio_flush_string_handle (IDIO sh);
 off_t idio_seek_string_handle (IDIO sh, off_t offset, int whence);
 void idio_print_string_handle (IDIO sh, IDIO o);

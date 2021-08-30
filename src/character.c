@@ -142,7 +142,7 @@ IDIO idio_characters_C_intern (const char *s, IDIO v)
  * Return:
  * The Idio value of the code point or %idio_S_unspec.
  */
-IDIO idio_character_lookup (char *s)
+IDIO idio_character_lookup (char const *s)
 {
     IDIO_C_ASSERT (s);
 

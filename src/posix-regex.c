@@ -70,7 +70,7 @@ IDIO idio_posix_regex_REG_STARTEND_sym;
 /*
  * Technically, never returns
  */
-static IDIO idio_posix_regex_error (int errcode, regex_t *preg, char *C_func, IDIO c_location)
+static IDIO idio_posix_regex_error (int errcode, regex_t *preg, char const *C_func, IDIO c_location)
 {
     IDIO_ASSERT (c_location);
 

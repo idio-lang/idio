@@ -81,7 +81,7 @@ IDIO idio_env_PWD_sym;
  * This code will only get called if IDIOLIB has an ASCII NULL in it
  * which...is unlikely.
  */
-void idio_env_format_error (char *circumstance, char *msg, IDIO name, IDIO val, IDIO c_location)
+void idio_env_format_error (char const *circumstance, char const *msg, IDIO name, IDIO val, IDIO c_location)
 {
     IDIO_C_ASSERT (circumstance);
     IDIO_C_ASSERT (msg);
@@ -129,7 +129,7 @@ void idio_env_format_error (char *circumstance, char *msg, IDIO name, IDIO val, 
     /* notreached */
 }
 
-static int idio_env_set_default (IDIO name, char *val)
+static int idio_env_set_default (IDIO name, char const *val)
 {
     IDIO_ASSERT (name);
     IDIO_C_ASSERT (val);
@@ -498,7 +498,7 @@ void idio_env_exe_pathname (const char *argv0, const size_t argv0_len, char *a0r
  * then here to us.  Or it could just call us separately.  Which it
  * does.
  */
-void idio_env_init_idiolib (const char *argv0, const size_t argv0_len)
+void idio_env_init_idiolib (char const *argv0, size_t const argv0_len)
 {
     IDIO_C_ASSERT (argv0);
 

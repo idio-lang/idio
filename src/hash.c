@@ -60,7 +60,7 @@
 #include "util.h"
 #include "vm.h"
 
-void idio_hash_error (char *msg, IDIO c_location)
+void idio_hash_error (char const *msg, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -188,7 +188,7 @@ static int idio_assign_hash_he (IDIO h, idio_hi_t size)
  *
  * You cannot supply both.  Use NULL for the C-variant to ignore it.
  */
-IDIO idio_hash (idio_hi_t size, int (*comp_C) (const void *k1, const void *k2), idio_hi_t (*hash_C) (IDIO h, const void *k), IDIO comp, IDIO hash)
+IDIO idio_hash (idio_hi_t size, int (*comp_C) (void const *k1, void const *k2), idio_hi_t (*hash_C) (IDIO h, void const *k), IDIO comp, IDIO hash)
 {
     IDIO_C_ASSERT (size);
     IDIO_ASSERT (comp);
@@ -552,7 +552,7 @@ idio_hi_t idio_hash_default_hash_C_void (void *p)
     return hv;
 }
 
-idio_hi_t idio_hash_default_hash_C_string_C (idio_hi_t blen, const char *s_C)
+idio_hi_t idio_hash_default_hash_C_string_C (idio_hi_t blen, char const *s_C)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -719,7 +719,7 @@ idio_hi_t idio_hash_default_hash_C_C_FFI (IDIO h)
  * compared.  If the comparator is eq? or eqv? then (1) is correct.
  * If the comparator is equal? then (2) is correct.
  */
-idio_hi_t idio_hash_default_hash_C (IDIO h, const void *kv)
+idio_hi_t idio_hash_default_hash_C (IDIO h, void const *kv)
 {
     IDIO_ASSERT (h);
 
@@ -946,7 +946,7 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, const void *kv)
  *
  * ``kv`` is a generic "key value" as we can have C strings as keys.
  */
-idio_hi_t idio_hash_index (IDIO ht, const void *kv)
+idio_hi_t idio_hash_index (IDIO ht, void const *kv)
 {
     IDIO_ASSERT (ht);
     IDIO_TYPE_ASSERT (hash, ht);
@@ -1026,7 +1026,7 @@ idio_hi_t idio_hash_index (IDIO ht, const void *kv)
  * idio_eqp, idio_eqvp or idio_equalp depending on which macro was
  * used to create the hash (IDIO_HASH_EQP(size), ...).
  */
-int idio_hash_equal (IDIO ht, const void *kv1, const void *kv2)
+int idio_hash_equal (IDIO ht, void const *kv1, void const *kv2)
 {
     IDIO_ASSERT (ht);
     IDIO_TYPE_ASSERT (hash, ht);
@@ -1132,7 +1132,7 @@ set the index of ``key` in hash table ``ht`` to ``v``	\n\
     return idio_hash_set (ht, key, v);
 }
 
-idio_hash_entry_t *idio_hash_he (IDIO h, const void *kv)
+idio_hash_entry_t *idio_hash_he (IDIO h, void const *kv)
 {
     IDIO_ASSERT (h);
 
@@ -1274,7 +1274,7 @@ a value							\n\
     return r;
 }
 
-IDIO idio_hash_ref (IDIO h, const void *kv)
+IDIO idio_hash_ref (IDIO h, void const *kv)
 {
     IDIO_ASSERT (h);
 
@@ -1629,8 +1629,8 @@ IDIO idio_hash_make_hash (IDIO args)
     IDIO_TYPE_ASSERT (list, args);
 
     idio_hi_t size = 32;
-    int (*equal) (const void *k1, const void *k2) = idio_equalp;
-    idio_hi_t (*hash_C) (IDIO h, const void *k) = idio_hash_default_hash_C;
+    int (*equal) (void const *k1, void const *k2) = idio_equalp;
+    idio_hi_t (*hash_C) (IDIO h, void const *k) = idio_hash_default_hash_C;
     IDIO comp = idio_S_nil;
     IDIO hash = idio_S_nil;
 
@@ -2230,7 +2230,7 @@ uint64_t traverse_rng(uint32_t n, uint32_t x0)
 	return sum;
 }
 
-size_t idio_unit_test_hash_n (size_t n, size_t x0)
+size_t idio_unit_test_hash_n (size_t const n, size_t const x0)
 {
     idio_gc_collect_gen ("%%unit-test-hash");
 

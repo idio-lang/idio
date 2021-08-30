@@ -727,7 +727,7 @@ typedef struct idio_handle_methods_s {
     int (*close) (struct idio_s *h);
     int (*putb) (struct idio_s *h, uint8_t c);
     int (*putc) (struct idio_s *h, idio_unicode_t c);
-    ptrdiff_t (*puts) (struct idio_s *h, const char *s, const size_t slen);
+    ptrdiff_t (*puts) (struct idio_s *h, char const *s, size_t const slen);
     int (*flush) (struct idio_s *h);
     off_t (*seek) (struct idio_s *h, off_t offset, int whence);
     void (*print) (struct idio_s *h, struct idio_s *o);
@@ -1463,11 +1463,11 @@ typedef idio_ia_t* IDIO_IA_T;
 void idio_gc_register_finalizer (IDIO o, void (*func) (IDIO o));
 void idio_gc_deregister_finalizer (IDIO o);
 void idio_run_finalizer (IDIO o);
-void *idio_alloc (size_t s);
+void *idio_alloc (size_t const s);
 void idio_free (void *p);
-void *idio_realloc (void *p, size_t s);
+void *idio_realloc (void *p, size_t const s);
 IDIO idio_gc_get (idio_type_e type);
-void idio_gc_alloc (void **p, size_t size);
+void idio_gc_alloc (void **p, size_t const size);
 /**
  * IDIO_GC_ALLOC() - normalised call to allocate ``IDIO`` value data
  * @p: pointer to be set
@@ -1482,7 +1482,7 @@ void idio_gc_alloc (void **p, size_t size);
 
 IDIO idio_clone_base (IDIO o);
 int idio_isa (IDIO o, idio_type_e type);
-void idio_gc_stats_free (size_t n);
+void idio_gc_stats_free (size_t const n);
 
 void idio_mark (IDIO o, unsigned colour);
 void idio_process_grey (unsigned colour);
@@ -1492,7 +1492,7 @@ void idio_root_dump (idio_root_t *root);
 void idio_root_mark (idio_root_t *root, unsigned colour);
 idio_gc_t *idio_gc_new ();
 #if IDIO_DEBUG > 2
-void IDIO_FPRINTF (FILE *stream, const char *format, ...);
+void IDIO_FPRINTF (FILE *stream, char const *format, ...);
 #else
 #define IDIO_FPRINTF(...)	((void) 0)
 #endif
@@ -1509,19 +1509,19 @@ void idio_gc_sweep (idio_gc_t *idio_gc);
 void idio_gc_possibly_collect ();
 #define IDIO_GC_COLLECT_GEN	0
 #define IDIO_GC_COLLECT_ALL	1
-void idio_gc_collect (idio_gc_t *idio_gc, int gen, char *caller);
-void idio_gc_collect_gen (char *caller);
-void idio_gc_collect_all (char *caller);
+void idio_gc_collect (idio_gc_t *idio_gc, int gen, char const *caller);
+void idio_gc_collect_gen (char const *caller);
+void idio_gc_collect_all (char const *caller);
 void idio_gc_new_gen ();
-int idio_gc_get_pause (char *caller);
-void idio_gc_pause (char *caller);
-void idio_gc_resume (char *caller);
-void idio_gc_reset (char *caller, int pause);
+int idio_gc_get_pause (char const *caller);
+void idio_gc_pause (char const *caller);
+void idio_gc_resume (char const *caller);
+void idio_gc_reset (char const *caller, int pause);
 void idio_gc_free ();
 
-int idio_asprintf(char **strp, const char *fmt, ...);
-char *idio_strcat (char *s1, size_t *s1sp, const char *s2, const size_t s2s);
-char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, const size_t s2s);
+int idio_asprintf(char **strp, char const *fmt, ...);
+char *idio_strcat (char *s1, size_t *s1sp, char const *s2, size_t const s2s);
+char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, size_t const s2s);
 
 #define IDIO_STATIC_STR_LEN(s)	(s), sizeof (s) - 1
 

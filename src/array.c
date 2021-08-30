@@ -372,7 +372,7 @@ void idio_array_push (IDIO a, IDIO o)
     idio_array_insert_index (a, o, IDIO_ARRAY_USIZE (a));
 }
 
-void idio_array_push_n (IDIO a, size_t nargs, ...)
+void idio_array_push_n (IDIO a, size_t const nargs, ...)
 {
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);

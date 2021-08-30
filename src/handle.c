@@ -233,7 +233,7 @@ void idio_handle_lookahead_error (IDIO h, int c)
  * comparison any more!
  */
 
-static void idio_handle_method_error (char *func, char *msg, IDIO c_location)
+static void idio_handle_method_error (char const *func, char const *msg, IDIO c_location)
 {
     IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (msg);
@@ -918,7 +918,7 @@ int idio_putc_handle (IDIO h, idio_unicode_t c)
     return n;
 }
 
-ptrdiff_t idio_puts_handle (IDIO h, const char *s, const size_t slen)
+ptrdiff_t idio_puts_handle (IDIO h, char const *s, size_t const slen)
 {
     IDIO_ASSERT (h);
     IDIO_C_ASSERT (s);
@@ -1687,7 +1687,7 @@ IDIO idio_display (IDIO o, IDIO h)
     return idio_S_unspec;
 }
 
-IDIO idio_display_C_len (const char *s, const size_t blen, IDIO h)
+IDIO idio_display_C_len (char const *s, size_t const blen, IDIO h)
 {
     IDIO_C_ASSERT (s);
     IDIO_ASSERT (h);
@@ -1698,7 +1698,7 @@ IDIO idio_display_C_len (const char *s, const size_t blen, IDIO h)
     return idio_S_unspec;
 }
 
-IDIO idio_display_C (const char *s, IDIO h)
+IDIO idio_display_C (char const *s, IDIO h)
 {
     IDIO_C_ASSERT (s);
     IDIO_ASSERT (h);

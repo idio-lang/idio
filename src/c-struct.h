@@ -64,7 +64,7 @@ extern IDIO idio_CTD_uint;
 extern IDIO idio_CTD_long;
 extern IDIO idio_CTD_ulong;
 
-IDIO idio_C_typedef_C (const char *s_C);
+IDIO idio_C_typedef_C (char const *s_C);
 int idio_isa_C_typedef (IDIO o);
 void idio_free_C_typedef (IDIO o);
 IDIO idio_C_typedefs_exists (IDIO s);

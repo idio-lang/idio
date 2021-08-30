@@ -270,7 +270,7 @@ set the tail of pair `p` to ``v``		\n\
  * I did use this for some dubious task which I now forget.  However,
  * it feels suitably dubious that I'm leaving it in as a reminder.
  */
-void idio_list_bind (IDIO *list, size_t nargs, ...)
+void idio_list_bind (IDIO *list, size_t const nargs, ...)
 {
     IDIO_ASSERT (*list);
 

@@ -666,7 +666,7 @@ wait for job `job` to be stopped or completed	\n\
     return idio_job_control_wait_for_job (job);
 }
 
-static void idio_job_control_format_job_info (IDIO job, char *msg)
+static void idio_job_control_format_job_info (IDIO job, char const *msg)
 {
     IDIO_ASSERT (job);
     IDIO_C_ASSERT (msg);
@@ -1669,7 +1669,7 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
     }
 }
 
-IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char *pathname, char **argv, IDIO args)
+IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pathname, char **argv, IDIO args)
 {
     IDIO_ASSERT (job);
     IDIO_TYPE_ASSERT (struct_instance, job);

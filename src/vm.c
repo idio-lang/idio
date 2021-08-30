@@ -342,7 +342,7 @@ void idio_final_vm ();
  *
  * We're not expecting to panic, right?
  */
-void idio_vm_panic (IDIO thr, char *m)
+void idio_vm_panic (IDIO thr, char const *m)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
@@ -359,7 +359,7 @@ void idio_vm_panic (IDIO thr, char *m)
 	fprintf (stderr, "VM already panicking for %s\n", idio_vm_panicking);
 	exit (-2);
     } else {
-	idio_vm_panicking = m;
+	idio_vm_panicking = (char *) m;
 	idio_vm_thread_state (thr);
 	idio_final_vm();
 	idio_exit_status = -1;
@@ -373,7 +373,7 @@ void idio_vm_panic (IDIO thr, char *m)
  *
  * No-one expects the Spanish Inquisition.
  */
-void idio_vm_error (char *msg, IDIO args, IDIO c_location)
+void idio_vm_error (char const *msg, IDIO args, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
@@ -402,7 +402,7 @@ void idio_vm_error (char *msg, IDIO args, IDIO c_location)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_vm_error_function_invoke (char *msg, IDIO args, IDIO c_location)
+static void idio_vm_error_function_invoke (char const *msg, IDIO args, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
@@ -432,7 +432,7 @@ static void idio_vm_error_function_invoke (char *msg, IDIO args, IDIO c_location
 }
 
 static void idio_vm_function_trace (IDIO_I ins, IDIO thr);
-static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arity, IDIO c_location)
+static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t const given, size_t const arity, IDIO c_location)
 {
     IDIO_ASSERT (thr);
     IDIO_ASSERT (c_location);
@@ -489,7 +489,7 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arit
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t given, size_t arity, IDIO c_location)
+static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t const given, size_t const arity, IDIO c_location)
 {
     IDIO_ASSERT (thr);
     IDIO_ASSERT (c_location);
@@ -645,7 +645,7 @@ static void idio_error_environ_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO c_loc
  *
  * Coding error.
  */
-static void idio_vm_error_computed (char *msg, idio_ai_t mci, idio_ai_t gvi, IDIO c_location)
+static void idio_vm_error_computed (char const *msg, idio_ai_t mci, idio_ai_t gvi, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -685,7 +685,7 @@ static void idio_vm_error_computed (char *msg, idio_ai_t mci, idio_ai_t gvi, IDI
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_vm_error_computed_no_accessor (char *msg, idio_ai_t mci, idio_ai_t gvi, IDIO c_location)
+static void idio_vm_error_computed_no_accessor (char const *msg, idio_ai_t mci, idio_ai_t gvi, IDIO c_location)
 {
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
@@ -731,7 +731,7 @@ static void idio_vm_error_computed_no_accessor (char *msg, idio_ai_t mci, idio_a
  *
  * Rest easy!  Gets called a lot when things go wrong.
  */
-void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start)
+void idio_vm_debug (IDIO thr, char const *prefix, idio_ai_t stack_start)
 {
     IDIO_ASSERT (thr);
     IDIO_C_ASSERT (prefix);
@@ -815,7 +815,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp);
 #define IDIO_IA_GET_NEXT(bc,pcp)	IDIO_IA_AE (bc, *(pcp)); (*pcp)++;
 #define IDIO_THREAD_FETCH_NEXT(bc)	IDIO_IA_GET_NEXT (bc, &(IDIO_THREAD_PC(thr)))
 
-static uint64_t idio_vm_read_fixuint (IDIO_IA_T bc, int n, size_t offset)
+static uint64_t idio_vm_read_fixuint (IDIO_IA_T bc, int const n, size_t const offset)
 {
     IDIO_C_ASSERT (n < 9 && n > 0);
 
@@ -934,7 +934,7 @@ static uint64_t idio_vm_fetch_64uint (IDIO thr, IDIO_IA_T bc)
  *
  * (func a b c d) => (func a (b c d))
  */
-static void idio_vm_listify (IDIO frame, size_t arity)
+static void idio_vm_listify (IDIO frame, size_t const arity)
 {
     IDIO_ASSERT (frame);
     IDIO_TYPE_ASSERT (frame, frame);
@@ -1248,7 +1248,7 @@ void idio_vm_func_stop (IDIO func, struct timespec *tsp, struct rusage *rup)
     }
 }
 
-static void idio_vm_clos_time (IDIO thr, const char *context)
+static void idio_vm_clos_time (IDIO thr, char const *context)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
@@ -1437,7 +1437,7 @@ void idio_vm_prim_time (IDIO func, struct timespec *ts0p, struct timespec *tsep,
 
 #endif
 
-static void idio_vm_primitive_call_trace (char *name, IDIO thr, int nargs);
+static void idio_vm_primitive_call_trace (char const *name, IDIO thr, int nargs);
 static void idio_vm_primitive_result_trace (IDIO thr);
 
 static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
@@ -3445,7 +3445,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
  *
  * Used by the tracer.
  */
-static void idio_vm_primitive_call_trace (char *name, IDIO thr, int nargs)
+static void idio_vm_primitive_call_trace (char const *name, IDIO thr, int nargs)
 {
     /*
      * %7zd	- PC of ins
@@ -8167,7 +8167,7 @@ void idio_final_vm ()
 	    fprintf (idio_vm_perf_FILE, "vm-ins:  %4.4s %-40.40s %8.8s %5.5s %15.15s %5.5s %6.6s\n", "code", "instruction", "count", "cnt%", "time (sec.nsec)", "time%", "ns/call");
 	    for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
 		if (1 || idio_vm_ins_counters[i]) {
-		    const char *bc_name = idio_vm_bytecode2string (i);
+		    char const *bc_name = idio_vm_bytecode2string (i);
 		    if (strcmp (bc_name, "Unknown bytecode") ||
 			idio_vm_ins_counters[i]) {
 			float count_pct = 100.0 * idio_vm_ins_counters[i] / c;

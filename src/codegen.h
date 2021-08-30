@@ -195,7 +195,7 @@
 #define IDIO_I_ABORT				((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_ABORT))
 #define IDIO_I_NOP				((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_NOP))
 
-IDIO_IA_T idio_ia (size_t n);
+IDIO_IA_T idio_ia (size_t const n);
 void idio_ia_free (IDIO_IA_T ia);
 void idio_ia_push (IDIO_IA_T ia, IDIO_I ins);
 idio_ai_t idio_codegen_extend_constants (IDIO cs, IDIO v);

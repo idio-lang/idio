@@ -52,7 +52,7 @@ int idio_isa_unicode (IDIO o);
 idio_unicode_t idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, idio_unicode_t byte);
 void idio_utf8_code_point (idio_unicode_t c, char *buf, int *sizep);
 char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int use_prec);
-IDIO idio_unicode_lookup (char *name);
+IDIO idio_unicode_lookup (char const *name);
 
 void idio_init_unicode ();
 

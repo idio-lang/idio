@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -27,9 +27,9 @@ void *idio_malloc_malloc (size_t nbytes);
 void *idio_malloc_calloc (size_t num, size_t size);
 void idio_malloc_free(void *cp);
 void *idio_malloc_realloc(void *cp, size_t nbytes);
-void idio_malloc_stats (char *s);
-int idio_malloc_vasprintf (char **strp, const char *fmt, va_list ap);
-int idio_malloc_asprintf(char **strp, const char *fmt, ...);
+void idio_malloc_stats (char const *s);
+int idio_malloc_vasprintf (char **strp, char const *fmt, va_list ap);
+int idio_malloc_asprintf(char **strp, char const *fmt, ...);
 
 #endif
 

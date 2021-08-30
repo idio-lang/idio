@@ -88,7 +88,7 @@ static idio_handle_methods_t idio_string_handle_methods = {
 #define IDIO_STRING_HANDLE_LABEL_OUTPUT	"output "
 #define IDIO_STRING_HANDLE_LABEL_BASE	"string-handle #"
 
-static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
+static IDIO idio_open_string_handle (char const *str, size_t const blen, int sflags)
 {
     IDIO_C_ASSERT (str);
 
@@ -98,14 +98,14 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
 
     idio_string_handle_stream_t *shsp = idio_alloc (sizeof (idio_string_handle_stream_t));
 
-    IDIO_STRING_HANDLE_STREAM_BUF (shsp) = str;
+    IDIO_STRING_HANDLE_STREAM_BUF (shsp) = (char *) str;
     IDIO_STRING_HANDLE_STREAM_BLEN (shsp) = blen;
     IDIO_STRING_HANDLE_STREAM_PTR (shsp) = IDIO_STRING_HANDLE_STREAM_BUF (shsp);
 
     if (sflags & IDIO_HANDLE_FLAG_WRITE) {
-	IDIO_STRING_HANDLE_STREAM_END (shsp) = str;
+	IDIO_STRING_HANDLE_STREAM_END (shsp) = (char *) str;
     } else {
-	IDIO_STRING_HANDLE_STREAM_END (shsp) = str + blen;
+	IDIO_STRING_HANDLE_STREAM_END (shsp) = (char *) str + blen;
     }
 
     IDIO_STRING_HANDLE_STREAM_EOF (shsp) = 0;
@@ -153,7 +153,7 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
     return sh;
 }
 
-IDIO idio_open_input_string_handle_C (const char *str, const size_t blen)
+IDIO idio_open_input_string_handle_C (char const *str, size_t const blen)
 {
     IDIO_C_ASSERT (str);
 
@@ -189,7 +189,7 @@ IDIO idio_open_output_string_handle_C ()
  * Given that those do not recurse we could save a lot of allocations
  * by re-using an existing input string handle...
  */
-IDIO idio_reopen_input_string_handle_C (IDIO sh, const char *str, const size_t blen)
+IDIO idio_reopen_input_string_handle_C (IDIO sh, char const *str, size_t const blen)
 {
     IDIO_ASSERT (sh);
     IDIO_C_ASSERT (str);
@@ -526,7 +526,7 @@ int idio_putc_string_handle (IDIO sh, idio_unicode_t c)
     return size;
 }
 
-ptrdiff_t idio_puts_string_handle (IDIO sh, const char *s, const size_t slen)
+ptrdiff_t idio_puts_string_handle (IDIO sh, char const *s, size_t const slen)
 {
     IDIO_ASSERT (sh);
 

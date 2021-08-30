@@ -50,7 +50,7 @@
  * idio_primitive() exists in case anyone wants to create a primitive
  * dynamically -- as opposed to via the usual C macro methods.
  */
-IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, const size_t name_C_len, size_t arity, char varargs, const char *sigstr_C, const size_t sigstr_C_len, const char *docstr_C, const size_t docstr_C_len)
+IDIO idio_primitive (IDIO (*func) (IDIO args), char const *name_C, size_t const name_C_len, size_t const arity, char varargs, char const *sigstr_C, size_t const sigstr_C_len, char const *docstr_C, size_t const docstr_C_len)
 {
     IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (name_C);
@@ -134,7 +134,7 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
     return o;
 }
 
-void idio_primitive_set_property_C (IDIO p, IDIO kw, const char *str_C, const size_t str_C_len)
+void idio_primitive_set_property_C (IDIO p, IDIO kw, char const *str_C, size_t const str_C_len)
 {
     IDIO_ASSERT (p);
     IDIO_TYPE_ASSERT (primitive, p);

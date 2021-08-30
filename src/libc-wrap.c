@@ -85,7 +85,7 @@ char **idio_libc_rlimit_names = NULL;
 
 static long idio_SC_CLK_TCK = 0;
 
-void idio_libc_format_error (char *msg, IDIO name, IDIO c_location)
+void idio_libc_format_error (char const *msg, IDIO name, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (name);
@@ -127,7 +127,7 @@ IDIO idio_libc_export_symbol_value (IDIO symbol, IDIO value)
     return idio_module_export_symbol_value (symbol, value, idio_libc_module);
 }
 
-char *idio_libc_string_C (IDIO val, char *func_C, int *free_me_p, IDIO c_location)
+char *idio_libc_string_C (IDIO val, char const *func_C, int *free_me_p, IDIO c_location)
 {
     IDIO_ASSERT (val);
     IDIO_C_ASSERT (func_C);
@@ -216,11 +216,11 @@ raise a ^system-error						\n\
     return idio_S_notreached;
 }
 
-IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp)
+IDIO idio_libc_struct_timeval_pointer (struct timeval const *tvp)
 {
     IDIO_C_ASSERT (tvp);
 
-    IDIO r = idio_C_pointer_type (idio_CSI_libc_struct_timeval, tvp);
+    IDIO r = idio_C_pointer_type (idio_CSI_libc_struct_timeval, (void *) tvp);
 
     return r;
 }
@@ -362,7 +362,7 @@ tv1 - tv2							\n\
  * Mac OS X: getcwd(3) => EMFILE (the man page says nothing)
  */
 
-char *idio_getcwd (char *func, char *buf, size_t size)
+char *idio_getcwd (char const *func, char *buf, size_t const size)
 {
     IDIO_C_ASSERT (func);
 
@@ -2756,7 +2756,7 @@ return the current error handle					\n\
     return idio_thread_current_error_handle ();
 }
 
-IDIO idio_libc_wrap_access_predicate (IDIO pathname, char *pred_C, int mode)
+IDIO idio_libc_wrap_access_predicate (IDIO pathname, char const *pred_C, int mode)
 {
     IDIO_ASSERT (pathname);
     IDIO_C_ASSERT (pred_C);
@@ -2777,7 +2777,7 @@ IDIO idio_libc_wrap_access_predicate (IDIO pathname, char *pred_C, int mode)
     return r;
 }
 
-IDIO idio_libc_wrap_stat_predicate (IDIO pathname, char *pred_C, int mask)
+IDIO idio_libc_wrap_stat_predicate (IDIO pathname, char const *pred_C, int mask)
 {
     IDIO_ASSERT (pathname);
     IDIO_C_ASSERT (pred_C);

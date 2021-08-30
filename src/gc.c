@@ -87,7 +87,7 @@ static IDIO idio_gc_finalizer_hash = idio_S_nil;
  * Return:
  * The allocated blob.
  */
-void *idio_alloc (size_t s)
+void *idio_alloc (size_t const s)
 {
 #ifdef IDIO_MALLOC
     void *blob = idio_malloc_malloc (s);
@@ -114,7 +114,7 @@ void *idio_alloc (size_t s)
     return blob;
 }
 
-void *idio_realloc (void *p, size_t s)
+void *idio_realloc (void *p, size_t const s)
 {
 #ifdef IDIO_MALLOC
     p = idio_malloc_realloc (p, s);
@@ -248,7 +248,7 @@ IDIO idio_gc_get (idio_type_e type)
  *
  */
 
-void idio_gc_alloc (void **p, size_t size)
+void idio_gc_alloc (void **p, size_t const size)
 {
     *p = idio_alloc (size);
     idio_gc->stats.nbytes += size;
@@ -310,7 +310,7 @@ int idio_isa (IDIO o, idio_type_e type)
     }
 }
 
-void idio_gc_stats_free (size_t n)
+void idio_gc_stats_free (size_t const n)
 {
     idio_gc->stats.nbytes -= n;
 }
@@ -827,7 +827,7 @@ void idio_gc_new_gen ()
 /*
  * http://c-faq.com/varargs/handoff.html
  */
-void IDIO_GC_VFPRINTF (FILE *stream, const char *format, va_list argp)
+void IDIO_GC_VFPRINTF (FILE *stream, char const *format, va_list argp)
 {
     IDIO_C_ASSERT (stream);
     IDIO_C_ASSERT (format);
@@ -842,7 +842,7 @@ void IDIO_GC_VFPRINTF (FILE *stream, const char *format, va_list argp)
     }
 }
 
-void IDIO_FPRINTF (FILE *stream, const char *format, ...)
+void IDIO_FPRINTF (FILE *stream, char const *format, ...)
 {
     IDIO_C_ASSERT (stream);
     IDIO_C_ASSERT (format);
@@ -1652,7 +1652,7 @@ void idio_gc_possibly_collect ()
     }
 }
 
-void idio_gc_collect (idio_gc_t *gc, int gen, char *caller)
+void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 {
     /* idio_gc_walk_tree (); */
     /* idio_gc_stats ();   */
@@ -1753,12 +1753,12 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char *caller)
     gc->stats.ru_stime.tv_sec += s;
 }
 
-void idio_gc_collect_gen (char *caller)
+void idio_gc_collect_gen (char const *caller)
 {
     idio_gc_collect (idio_gc, IDIO_GC_COLLECT_GEN, caller);
 }
 
-void idio_gc_collect_all (char *caller)
+void idio_gc_collect_all (char const *caller)
 {
     idio_gc_collect (idio_gc, IDIO_GC_COLLECT_ALL, caller);
 }
@@ -2088,7 +2088,7 @@ void idio_gc_stats ()
  * idio_gc_get_pause() - get the "pause" state of the garbage collector
  *
  */
-int idio_gc_get_pause (char *caller)
+int idio_gc_get_pause (char const *caller)
 {
     return idio_gc->pause;
 }
@@ -2103,7 +2103,7 @@ int idio_gc_get_pause (char *caller)
  *
  * See also idio_gc_resume().
  */
-void idio_gc_pause (char *caller)
+void idio_gc_pause (char const *caller)
 {
     idio_gc->pause++;
 }
@@ -2115,7 +2115,7 @@ void idio_gc_pause (char *caller)
  *
  * See also idio_gc_pause().
  */
-void idio_gc_resume (char *caller)
+void idio_gc_resume (char const *caller)
 {
     idio_gc->pause--;
     if (idio_gc->pause < 0) {
@@ -2127,7 +2127,7 @@ void idio_gc_resume (char *caller)
  * idio_gc_reset() - re-pause the garbage collector
  *
  */
-void idio_gc_reset (char *caller, int pause)
+void idio_gc_reset (char const *caller, int pause)
 {
     idio_gc->pause = pause;
 }
@@ -2196,7 +2196,7 @@ void idio_gc_obj_free ()
  * idio_asprintf() exists as a convenience function to abstract the
  * error check from dozens of calls to asprintf()
  */
-int idio_asprintf(char **strp, const char *fmt, ...)
+int idio_asprintf(char **strp, char const *fmt, ...)
 {
     int r;
     va_list ap;
@@ -2233,7 +2233,7 @@ int idio_asprintf(char **strp, const char *fmt, ...)
  *
  * See also idio_strcat_free().
  */
-char *idio_strcat (char *s1, size_t *s1sp, const char *s2, const size_t s2s)
+char *idio_strcat (char *s1, size_t *s1sp, char const *s2, size_t const s2s)
 {
     IDIO_C_ASSERT (s1);
 
@@ -2278,7 +2278,7 @@ char *idio_strcat (char *s1, size_t *s1sp, const char *s2, const size_t s2s)
  * Return:
  * Returns @s1 (original or new)
  */
-char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, const size_t s2s)
+char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, size_t const s2s)
 {
     IDIO_C_ASSERT (s1);
 

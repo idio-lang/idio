@@ -68,12 +68,12 @@ static IDIO idio_S_user_code;
  * In practice only the error variant is called and only in times of
  * great stress -- ie. immediately followed by abort().
  */
-int idio_error_vfprintf (char *format, va_list argp)
+int idio_error_vfprintf (char const *format, va_list argp)
 {
     return vfprintf (stderr, format, argp);
 }
 
-void idio_error_error_message (char *format, ...)
+void idio_error_error_message (char const *format, ...)
 {
     fprintf (stderr, "ERROR: ");
 
@@ -90,7 +90,7 @@ void idio_error_error_message (char *format, ...)
     }
 }
 
-void idio_error_warning_message (char *format, ...)
+void idio_error_warning_message (char const *format, ...)
 {
     fprintf (stderr, "WARNING: ");
 
@@ -116,7 +116,7 @@ void idio_error_warning_message (char *format, ...)
  * The only external call to idio_error_string() is an "impossible"
  * clause in read.c.
  */
-IDIO idio_error_string (char *format, va_list argp)
+IDIO idio_error_string (char const *format, va_list argp)
 {
     char *s;
 #ifdef IDIO_MALLOC
@@ -143,7 +143,7 @@ IDIO idio_error_string (char *format, va_list argp)
  * Possibly by calling idio_snprintf() then some regular Idio error
  * code with the resultant string.
  */
-void idio_error_printf (IDIO loc, char *format, ...)
+void idio_error_printf (IDIO loc, char const *format, ...)
 {
     IDIO_ASSERT (loc);
     IDIO_C_ASSERT (format);
@@ -163,7 +163,7 @@ void idio_error_printf (IDIO loc, char *format, ...)
     /* notreached */
 }
 
-void idio_error_alloc (char *m)
+void idio_error_alloc (char const *m)
 {
     IDIO_C_ASSERT (m);
 
@@ -180,7 +180,7 @@ void idio_error_alloc (char *m)
     abort ();
 }
 
-void idio_error_param_type (char *etype, IDIO who, IDIO c_location)
+void idio_error_param_type (char const *etype, IDIO who, IDIO c_location)
 {
     IDIO_C_ASSERT (etype);
     IDIO_ASSERT (who);
@@ -219,7 +219,7 @@ void idio_error_param_type (char *etype, IDIO who, IDIO c_location)
  * A variation on idio_error_param_type() where the message is
  * supplied -- notably so we don't print the value
  */
-void idio_error_param_type_msg (char *msg, IDIO c_location)
+void idio_error_param_type_msg (char const *msg, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -251,7 +251,7 @@ void idio_error_param_type_msg (char *msg, IDIO c_location)
 /*
  * Used by IDIO_TYPE_ASSERT and IDIO_USER_TYPE_ASSERT
  */
-void idio_error_param_type_C (char *etype, IDIO who, char *file, const char *func, int line)
+void idio_error_param_type_C (char const *etype, IDIO who, char const *file, const char *func, int line)
 {
     IDIO_C_ASSERT (etype);
     IDIO_ASSERT (who);
@@ -262,7 +262,7 @@ void idio_error_param_type_C (char *etype, IDIO who, char *file, const char *fun
     idio_error_param_type (etype, who, idio_string_C (c_location));
 }
 
-void idio_error_const_param (char *type_name, IDIO who, IDIO c_location)
+void idio_error_const_param (char const *type_name, IDIO who, IDIO c_location)
 {
     IDIO_C_ASSERT (type_name);
     IDIO_ASSERT (who);
@@ -290,7 +290,7 @@ void idio_error_const_param (char *type_name, IDIO who, IDIO c_location)
 /*
  * Used by IDIO_CONST_ASSERT
  */
-void idio_error_const_param_C (char *type_name, IDIO who, char *file, const char *func, int line)
+void idio_error_const_param_C (char const *type_name, IDIO who, char const *file, const char *func, int line)
 {
     IDIO_C_ASSERT (type_name);
     IDIO_ASSERT (who);
@@ -305,7 +305,7 @@ void idio_error_const_param_C (char *type_name, IDIO who, char *file, const char
  * Use idio_error_param_value_exp() for when val should have an
  * expected type
  */
-void idio_error_param_value_exp (char *func, char *param, IDIO val, char *exp, IDIO c_location)
+void idio_error_param_value_exp (char const *func, char const *param, IDIO val, char const *exp, IDIO c_location)
 {
     IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (param);
@@ -349,7 +349,7 @@ void idio_error_param_value_exp (char *func, char *param, IDIO val, char *exp, I
  * Use idio_error_param_value_msg() for when val should have a range
  * of possible values, say
  */
-void idio_error_param_value_msg (char *func, char *param, IDIO val, char *msg, IDIO c_location)
+void idio_error_param_value_msg (char const *func, char const *param, IDIO val, char const *msg, IDIO c_location)
 {
     IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (param);
@@ -391,7 +391,7 @@ void idio_error_param_value_msg (char *func, char *param, IDIO val, char *msg, I
  * Use idio_error_param_value_exp() for when val isn't a printable
  * value
  */
-void idio_error_param_value_msg_only (char *func, char *param, char *msg, IDIO c_location)
+void idio_error_param_value_msg_only (char const *func, char const *param, char const *msg, IDIO c_location)
 {
     IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (param);
@@ -466,7 +466,7 @@ void idio_error_param_undefined (IDIO name, IDIO c_location)
  * hash table lookup.  Any type is valid as the key to a hash table
  * except #n.
  */
-void idio_error_param_nil (char *func, char *name, IDIO c_location)
+void idio_error_param_nil (char const *func, char const *name, IDIO c_location)
 {
     IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (name);
@@ -525,7 +525,7 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO c_location)
     /* notreached */
 }
 
-void idio_error_C (char *msg, IDIO args, IDIO c_location)
+void idio_error_C (char const *msg, IDIO args, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
@@ -562,7 +562,7 @@ This does not return!				\n\
     return idio_S_notreached;
 }
 
-void idio_error_system (char *func, char *msg, IDIO args, int err, IDIO c_location)
+void idio_error_system (char const *func, char const *msg, IDIO args, int err, IDIO c_location)
 {
     IDIO_C_ASSERT (func);
     IDIO_ASSERT (args);
@@ -601,7 +601,7 @@ void idio_error_system (char *func, char *msg, IDIO args, int err, IDIO c_locati
     /* notreached */
 }
 
-void idio_error_system_errno_msg (char *func, char *msg, IDIO args, IDIO c_location)
+void idio_error_system_errno_msg (char const *func, char const *msg, IDIO args, IDIO c_location)
 {
     IDIO_C_ASSERT (func);
     IDIO_ASSERT (args);
@@ -612,7 +612,7 @@ void idio_error_system_errno_msg (char *func, char *msg, IDIO args, IDIO c_locat
     idio_error_system (func, msg, args, errno, c_location);
 }
 
-void idio_error_system_errno (char *func, IDIO args, IDIO c_location)
+void idio_error_system_errno (char const *func, IDIO args, IDIO c_location)
 {
     IDIO_C_ASSERT (func);
     IDIO_ASSERT (args);
@@ -623,7 +623,7 @@ void idio_error_system_errno (char *func, IDIO args, IDIO c_location)
     idio_error_system_errno_msg (func, NULL, args, c_location);
 }
 
-void idio_error_divide_by_zero (char *msg, IDIO nums, IDIO c_location)
+void idio_error_divide_by_zero (char const *msg, IDIO nums, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (nums);

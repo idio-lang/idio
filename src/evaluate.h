@@ -57,17 +57,17 @@
 
 extern IDIO idio_evaluate_module;
 
-void idio_meaning_dump_src_properties (const char *prefix, const char*name, IDIO e);
-void idio_meaning_error_param_type (IDIO src, IDIO c_location, char *msg, IDIO expr);
-void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char *msg, IDIO expr);
-void idio_meaning_error_static_redefine (IDIO lo, IDIO c_location, char *msg, IDIO name, IDIO cv, IDIO new);
-void idio_meaning_error_static_arity (IDIO lo, IDIO c_location, char *msg, IDIO args);
+void idio_meaning_dump_src_properties (char const *prefix, char const *name, IDIO e);
+void idio_meaning_error_param_type (IDIO src, IDIO c_location, char const *msg, IDIO expr);
+void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char const *msg, IDIO expr);
+void idio_meaning_error_static_redefine (IDIO lo, IDIO c_location, char const *msg, IDIO name, IDIO cv, IDIO new);
+void idio_meaning_error_static_arity (IDIO lo, IDIO c_location, char const *msg, IDIO args);
 
 void idio_meaning_add_description (IDIO sym, IDIO desc);
 IDIO idio_meaning_get_description (IDIO sym);
-IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__);
-IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__);
-IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__);
+IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, char const *cpp__FILE__, int cpp__LINE__);
+IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, char const *cpp__FILE__, int cpp__LINE__);
+IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs, char const *cpp__FILE__, int cpp__LINE__);
 
 IDIO idio_toplevel_extend (IDIO lo, IDIO name, int variant, IDIO cs, IDIO cm);
 IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO cs);

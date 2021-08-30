@@ -25,13 +25,13 @@
 
 #define IDIO_BITSET_BITS_PER_WORD (CHAR_BIT * sizeof (idio_bitset_word_t))
 
-IDIO idio_bitset (size_t size);
+IDIO idio_bitset (size_t const size);
 int idio_isa_bitset (IDIO o);
 void idio_free_bitset (IDIO bs);
 
-IDIO idio_bitset_set (IDIO bs, size_t bit);
-IDIO idio_bitset_clear (IDIO bs, size_t bit);
-IDIO idio_bitset_ref (IDIO bs, size_t bit);
+IDIO idio_bitset_set (IDIO bs, size_t const bit);
+IDIO idio_bitset_clear (IDIO bs, size_t const bit);
+IDIO idio_bitset_ref (IDIO bs, size_t const bit);
 IDIO idio_copy_bitset (IDIO obs);
 IDIO idio_not_bitset (IDIO bs);
 int idio_equal_bitsetp (IDIO args);

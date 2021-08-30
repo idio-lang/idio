@@ -54,7 +54,7 @@
 #include "util.h"
 #include "vm.h"
 
-static void idio_bitset_bounds_error (size_t bit, size_t size, IDIO c_location)
+static void idio_bitset_bounds_error (size_t const bit, size_t const size, IDIO c_location)
 {
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
@@ -84,7 +84,7 @@ static void idio_bitset_bounds_error (size_t bit, size_t size, IDIO c_location)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_bitset_size_mismatch_error (size_t s1, size_t s2, IDIO c_location)
+static void idio_bitset_size_mismatch_error (size_t const s1, size_t const s2, IDIO c_location)
 {
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
@@ -115,7 +115,7 @@ static void idio_bitset_size_mismatch_error (size_t s1, size_t s2, IDIO c_locati
     idio_raise_condition (idio_S_true, c);
 }
 
-IDIO idio_bitset (size_t size)
+IDIO idio_bitset (size_t const size)
 {
     IDIO bs = idio_gc_get (IDIO_TYPE_BITSET);
 
@@ -148,7 +148,7 @@ void idio_free_bitset (IDIO bs)
     IDIO_GC_FREE (bs->u.bitset.words);
 }
 
-IDIO idio_bitset_set (IDIO bs, size_t bit)
+IDIO idio_bitset_set (IDIO bs, size_t const bit)
 {
     IDIO_ASSERT (bs);
 
@@ -173,7 +173,7 @@ IDIO idio_bitset_set (IDIO bs, size_t bit)
     return idio_S_unspec;
 }
 
-IDIO idio_bitset_clear (IDIO bs, size_t bit)
+IDIO idio_bitset_clear (IDIO bs, size_t const bit)
 {
     IDIO_ASSERT (bs);
 
@@ -199,7 +199,7 @@ IDIO idio_bitset_clear (IDIO bs, size_t bit)
     return idio_S_unspec;
 }
 
-IDIO idio_bitset_ref (IDIO bs, size_t bit)
+IDIO idio_bitset_ref (IDIO bs, size_t const bit)
 {
     IDIO_ASSERT (bs);
 

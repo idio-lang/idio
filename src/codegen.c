@@ -52,7 +52,7 @@
 
 static IDIO idio_codegen_module = idio_S_nil;
 
-static void idio_codegen_error_param_args (char *m, IDIO mt, IDIO c_location)
+static void idio_codegen_error_param_args (char const *m, IDIO mt, IDIO c_location)
 {
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (mt);
@@ -62,7 +62,7 @@ static void idio_codegen_error_param_args (char *m, IDIO mt, IDIO c_location)
     idio_error_C (m, mt, c_location);
 }
 
-static void idio_codegen_error_param_type (char *m, IDIO t, IDIO c_location)
+static void idio_codegen_error_param_type (char const *m, IDIO t, IDIO c_location)
 {
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (t);
@@ -72,15 +72,16 @@ static void idio_codegen_error_param_type (char *m, IDIO t, IDIO c_location)
     idio_error_param_type (m, t, c_location);
 }
 
-IDIO_IA_T idio_ia (size_t asize)
+IDIO_IA_T idio_ia (size_t const asize)
 {
-    if (asize <= 0) {
-	asize = 100;
+    size_t sz = asize;
+    if (sz <= 0) {
+	sz = 100;
     }
 
     IDIO_IA_T ia = idio_alloc (sizeof (idio_ia_t));
-    ia->ae = idio_alloc (asize * sizeof (IDIO_I));
-    ia->asize = asize;
+    ia->ae = idio_alloc (sz * sizeof (IDIO_I));
+    ia->asize = sz;
     ia->usize = 0;
 
     return ia;
@@ -96,7 +97,7 @@ void idio_ia_free (IDIO_IA_T ia)
     }
 }
 
-static void idio_ia_resize_by (IDIO_IA_T ia, size_t n)
+static void idio_ia_resize_by (IDIO_IA_T ia, size_t const n)
 {
     IDIO_IA_ASIZE (ia) += n;
     ia->ae = idio_realloc (ia->ae, IDIO_IA_ASIZE (ia));
@@ -2819,7 +2820,7 @@ Generate the code for `m` using `cs` in `thr`	\n\
 }
 
 typedef struct idio_codegen_symbol_s {
-    char *name;
+    char const *name;
     IDIO value;
 } idio_codegen_symbol_t;
 

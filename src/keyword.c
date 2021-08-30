@@ -91,7 +91,7 @@ void idio_keyword_key_not_found_error (IDIO key, IDIO c_location)
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_keyword_format_error (char *msg, IDIO kw, IDIO c_location)
+void idio_keyword_format_error (char const *msg, IDIO kw, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (kw);
@@ -134,7 +134,7 @@ int idio_keyword_C_eqp (const void *s1, const void *s2)
 	return 0;
     }
 
-    return (0 == strcmp ((const char *) s1, (const char *) s2));
+    return (0 == strcmp ((char const *) s1, (char const *) s2));
 }
 
 idio_hi_t idio_keyword_C_hash (IDIO h, const void *s)
@@ -148,7 +148,7 @@ idio_hi_t idio_keyword_C_hash (IDIO h, const void *s)
     return (hvalue & IDIO_HASH_MASK (h));
 }
 
-IDIO idio_keyword_C_len (const char *s_C, size_t blen)
+IDIO idio_keyword_C_len (char const *s_C, size_t const blen)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -163,7 +163,7 @@ IDIO idio_keyword_C_len (const char *s_C, size_t blen)
     return o;
 }
 
-IDIO idio_keyword_C (const char *s_C)
+IDIO idio_keyword_C (char const *s_C)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -235,7 +235,7 @@ void idio_free_keyword (IDIO s)
     /* IDIO_GC_FREE (s->u.keyword); */
 }
 
-IDIO idio_keywords_C_intern (const char *s, const size_t slen)
+IDIO idio_keywords_C_intern (char const *s, size_t const slen)
 {
     IDIO_C_ASSERT (s);
 

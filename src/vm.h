@@ -225,8 +225,8 @@ extern int idio_vm_virtualisation_WSL;
 #define IDIO_VM_NS	1000000000L
 #define IDIO_VM_US	1000000L
 
-void idio_vm_panic (IDIO thr, char *m);
-void idio_vm_error (char *msg, IDIO args, IDIO c_location);
+void idio_vm_panic (IDIO thr, char const *m);
+void idio_vm_error (char const *msg, IDIO args, IDIO c_location);
 IDIO idio_vm_closure_name (IDIO c);
 
 #define IDIO_VM_RUN_C		0
@@ -267,7 +267,7 @@ void idio_vm_add_module_constants (IDIO module, IDIO constants);
 void idio_raise_condition (IDIO continuablep, IDIO e);
 void idio_reraise_condition (IDIO continuablep, IDIO condition);
 IDIO idio_apply (IDIO fn, IDIO args);
-void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start);
+void idio_vm_debug (IDIO thr, char const *prefix, idio_ai_t stack_start);
 #ifdef IDIO_VM_PROF
 void idio_vm_func_start (IDIO clos, struct timespec *tsp, struct rusage *rup);
 void idio_vm_func_stop (IDIO clos, struct timespec *tsp, struct rusage *rup);

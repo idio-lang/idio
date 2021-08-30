@@ -87,7 +87,7 @@ static void idio_string_error (IDIO msg, IDIO detail, IDIO c_location)
     /* notreached */
 }
 
-static void idio_string_error_C (char *msg, IDIO detail, IDIO c_location)
+static void idio_string_error_C (char const *msg, IDIO detail, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (detail);
@@ -108,7 +108,7 @@ static void idio_string_error_C (char *msg, IDIO detail, IDIO c_location)
  *
  * Coding error?
  */
-static void idio_string_utf8_decode_error (char *msg, char *det, IDIO c_location)
+static void idio_string_utf8_decode_error (char const *msg, char const *det, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -127,7 +127,7 @@ static void idio_string_utf8_decode_error (char *msg, char *det, IDIO c_location
     /* notreached */
 }
 
-void idio_string_size_error (char *msg, ptrdiff_t size, IDIO c_location)
+void idio_string_size_error (char const *msg, ptrdiff_t size, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -148,7 +148,7 @@ void idio_string_size_error (char *msg, ptrdiff_t size, IDIO c_location)
     /* notreached */
 }
 
-void idio_string_length_error (char *msg, IDIO str, ptrdiff_t index, IDIO c_location)
+void idio_string_length_error (char const *msg, IDIO str, ptrdiff_t index, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
@@ -181,7 +181,7 @@ void idio_string_length_error (char *msg, IDIO str, ptrdiff_t index, IDIO c_loca
  *
  * Not triggered as I can't provoke the clauses!
  */
-void idio_substring_length_error (char *msg, IDIO str, ptrdiff_t index, IDIO c_location)
+void idio_substring_length_error (char const *msg, IDIO str, ptrdiff_t index, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
@@ -209,7 +209,7 @@ void idio_substring_length_error (char *msg, IDIO str, ptrdiff_t index, IDIO c_l
     /* notreached */
 }
 
-void idio_substring_index_error (char *msg, IDIO str, ptrdiff_t ip0, ptrdiff_t ipn, IDIO c_location)
+void idio_substring_index_error (char const *msg, IDIO str, ptrdiff_t ip0, ptrdiff_t ipn, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
@@ -233,7 +233,7 @@ void idio_substring_index_error (char *msg, IDIO str, ptrdiff_t ip0, ptrdiff_t i
     /* notreached */
 }
 
-void idio_string_format_error (char *msg, IDIO str, IDIO c_location)
+void idio_string_format_error (char const *msg, IDIO str, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
@@ -251,7 +251,7 @@ void idio_string_format_error (char *msg, IDIO str, IDIO c_location)
     /* notreached */
 }
 
-void idio_string_width_error (char *msg, IDIO str, IDIO rc, IDIO c_location)
+void idio_string_width_error (char const *msg, IDIO str, IDIO rc, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
@@ -475,7 +475,7 @@ IDIO idio_string_C (const char *s_C)
  * algorithm is very quick.
  */
 
-IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[])
+IDIO idio_string_C_array_lens (size_t const ns, char const *a_C[], size_t const lens[])
 {
     IDIO_C_ASSERT (a_C);
     IDIO_C_ASSERT (lens);
@@ -633,7 +633,7 @@ IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[])
     return so;
 }
 
-IDIO idio_string_C_array (size_t ns, char *a_C[])
+IDIO idio_string_C_array (size_t const ns, char const *a_C[])
 {
     IDIO_C_ASSERT (a_C);
 
@@ -711,7 +711,7 @@ void idio_free_string (IDIO so)
  * If SUB1 is a substring of X and we want SUB2 to be a substring of
  * SUB1 then SUB2 is just another substring of X.
  */
-IDIO idio_substring_offset_len (IDIO str, size_t offset, size_t len)
+IDIO idio_substring_offset_len (IDIO str, size_t const offset, size_t const len)
 {
     IDIO_ASSERT (str);
     IDIO_C_ASSERT (offset >= 0);
@@ -1366,7 +1366,7 @@ which is a list of strings.						\n\
 	    args = IDIO_PAIR_T (args);
 	}
 
-	r = idio_string_C_array_lens (n, copies, lens);
+	r = idio_string_C_array_lens (n, (char const **) copies, lens);
 
 	for (i = 0; i < n; i++) {
 	    IDIO_GC_FREE (copies[i]);
@@ -1425,7 +1425,7 @@ a string.								\n\
 	    args = IDIO_PAIR_T (args);
 	}
 
-	r = idio_string_C_array (n, copies);
+	r = idio_string_C_array (n, (char const **) copies);
 
 	for (i = 0; i < n; i++) {
 	    IDIO_GC_FREE (copies[i]);
@@ -2268,7 +2268,7 @@ IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci>?", gt, >)
  * Of course, we're returning the number of Unicode code points of the
  * initial segment ...
  */
-static size_t idio_strspn (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *as, size_t alen, size_t aw)
+static size_t idio_strspn (ptrdiff_t i, char const *is, size_t const ilen, size_t const iw, char const *as, size_t const alen, size_t const aw)
 {
     uint8_t *is8 = NULL;
     uint16_t *is16 = NULL;
@@ -2367,7 +2367,7 @@ static size_t idio_strspn (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *
  */
 #define IDIO_STRING_STRPBRK_SENTINEL	-1
 
-static ptrdiff_t idio_strpbrk (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *as, size_t alen, size_t aw)
+static ptrdiff_t idio_strpbrk (ptrdiff_t i, char const *is, size_t const ilen, size_t const iw, char const *as, size_t const alen, size_t const aw)
 {
     uint8_t *is8 = NULL;
     uint16_t *is16 = NULL;
@@ -2447,7 +2447,7 @@ static ptrdiff_t idio_strpbrk (ptrdiff_t i, char *is, size_t ilen, size_t iw, ch
  */
 #define IDIO_STRING_TOKEN_SENTINEL	-1
 
-static ptrdiff_t idio_string_token (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *ds, size_t dlen, size_t dw, int flags, ptrdiff_t *saved, size_t *len)
+static ptrdiff_t idio_string_token (ptrdiff_t i, char const *is, size_t const ilen, size_t const iw, char const *ds, size_t const dlen, size_t const dw, int flags, ptrdiff_t *saved, size_t *len)
 {
     /*
      * U+FFFF is specifically not a valid Unicode character so it's a
@@ -2809,7 +2809,7 @@ IDIO idio_join_string (IDIO delim, IDIO args)
 	args = IDIO_PAIR_T (args);
     }
 
-    IDIO r = idio_string_C_array_lens (n - 1, copies, lens);
+    IDIO r = idio_string_C_array_lens (n - 1, (char const **) copies, lens);
 
     IDIO_GC_FREE (delim_C);
     for (i = 0; i < n; i += 2) {

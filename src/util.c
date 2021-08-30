@@ -456,17 +456,17 @@ return the boolean inverse of `e`		\n\
  *
  */
 
-int idio_eqp (const void *o1, const void *o2)
+int idio_eqp (void const *o1, void const *o2)
 {
     return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQP);
 }
 
-int idio_eqvp (const void *o1, const void *o2)
+int idio_eqvp (void const *o1, void const *o2)
 {
     return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQVP);
 }
 
-int idio_equalp (const void *o1, const void *o2)
+int idio_equalp (void const *o1, void const *o2)
 {
     return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQUALP);
 }
@@ -3865,7 +3865,7 @@ print the internal details of ``o`` to *stderr*		\n\
     return idio_S_unspec;
 }
 
-void idio_debug_FILE (FILE *file, const char *fmt, IDIO o)
+void idio_debug_FILE (FILE *file, char const *fmt, IDIO o)
 {
     IDIO_C_ASSERT (fmt);
     IDIO_ASSERT (o);
@@ -3878,7 +3878,7 @@ void idio_debug_FILE (FILE *file, const char *fmt, IDIO o)
     idio_gc_free (os);
 }
 
-void idio_debug (const char *fmt, IDIO o)
+void idio_debug (char const *fmt, IDIO o)
 {
     IDIO_C_ASSERT (fmt);
     IDIO_ASSERT (o);
@@ -4007,7 +4007,7 @@ add feature ``f`` to Idio features			\n\
     }
 }
 
-IDIO idio_add_feature_ps (const char *p, const size_t plen, const char *s, const size_t slen)
+IDIO idio_add_feature_ps (char const *p, size_t const plen, char const *s, size_t const slen)
 {
     IDIO_C_ASSERT (p);
     IDIO_C_ASSERT (s);
@@ -4021,7 +4021,7 @@ IDIO idio_add_feature_ps (const char *p, const size_t plen, const char *s, const
     return r;
 }
 
-IDIO idio_add_feature_pi (const char *p, const size_t plen, const size_t size)
+IDIO idio_add_feature_pi (char const *p, size_t const plen, size_t const size)
 {
     IDIO_C_ASSERT (p);
 
@@ -4038,7 +4038,7 @@ IDIO idio_add_feature_pi (const char *p, const size_t plen, const size_t size)
 /*
  * Mac OS X - 10.5.8
  */
-size_t strnlen (const char *s, size_t maxlen)
+size_t strnlen (char const *s, size_t maxlen)
 {
     size_t n = 0;
     while (*s++ &&
@@ -4050,7 +4050,7 @@ size_t strnlen (const char *s, size_t maxlen)
 }
 #endif
 
-size_t idio_strnlen (const char *s, size_t maxlen)
+size_t idio_strnlen (char const *s, size_t const maxlen)
 {
     size_t n = 0;
     while (*s++ &&
@@ -4077,7 +4077,7 @@ size_t idio_strnlen (const char *s, size_t maxlen)
     return n;
 }
 
-int idio_snprintf (char *str, size_t size, char *format, ...)
+int idio_snprintf (char *str, size_t const size, char const *format, ...)
 {
     IDIO_C_ASSERT (str);
     IDIO_C_ASSERT (size > 0);

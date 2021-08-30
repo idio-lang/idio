@@ -106,7 +106,7 @@ static idio_handle_methods_t idio_file_handle_pipe_methods = {
     idio_print_file_handle
 };
 
-static void idio_file_handle_filename_system_error (const char *circumstance, IDIO filename, IDIO c_location)
+static void idio_file_handle_filename_system_error (char const *circumstance, IDIO filename, IDIO c_location)
 {
     IDIO_C_ASSERT (circumstance);
     IDIO_ASSERT (filename);
@@ -179,7 +179,7 @@ static void idio_file_handle_filename_delete_error (IDIO filename, IDIO c_locati
  * would otherwise have generated an ENAMETOOLONG eror (somewhere) had
  * the code continued.
  */
-static void idio_file_handle_malformed_filename_error (char *msg, IDIO filename, IDIO c_location)
+static void idio_file_handle_malformed_filename_error (char const *msg, IDIO filename, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (filename);
@@ -213,7 +213,7 @@ static void idio_file_handle_malformed_filename_error (char *msg, IDIO filename,
     /* notreached */
 }
 
-static void idio_file_handle_file_protection_error (const char *circumstance, IDIO filename, IDIO c_location)
+static void idio_file_handle_file_protection_error (char const *circumstance, IDIO filename, IDIO c_location)
 {
     IDIO_C_ASSERT (circumstance);
     IDIO_ASSERT (filename);
@@ -248,7 +248,7 @@ static void idio_file_handle_file_protection_error (const char *circumstance, ID
     /* notreached */
 }
 
-static void idio_file_handle_filename_already_exists_error (const char *circumstance, IDIO filename, IDIO c_location)
+static void idio_file_handle_filename_already_exists_error (char const *circumstance, IDIO filename, IDIO c_location)
 {
     IDIO_C_ASSERT (circumstance);
     IDIO_ASSERT (filename);
@@ -283,7 +283,7 @@ static void idio_file_handle_filename_already_exists_error (const char *circumst
     /* notreached */
 }
 
-static void idio_file_handle_filename_not_found_error (const char *circumstance, IDIO filename, IDIO c_location)
+static void idio_file_handle_filename_not_found_error (char const *circumstance, IDIO filename, IDIO c_location)
 {
     IDIO_C_ASSERT (circumstance);
     IDIO_ASSERT (filename);
@@ -318,7 +318,7 @@ static void idio_file_handle_filename_not_found_error (const char *circumstance,
     /* notreached */
 }
 
-void idio_file_handle_format_error (const char *circumstance, const char *kind, const char *msg, IDIO filename, IDIO c_location)
+void idio_file_handle_format_error (char const *circumstance, char const *kind, char const *msg, IDIO filename, IDIO c_location)
 {
     IDIO_C_ASSERT (circumstance);
     IDIO_C_ASSERT (kind);
@@ -357,7 +357,7 @@ void idio_file_handle_format_error (const char *circumstance, const char *kind, 
     /* notreached */
 }
 
-void idio_file_handle_filename_format_error (const char *circumstance, const char *msg, IDIO filename, IDIO c_location)
+void idio_file_handle_filename_format_error (char const *circumstance, char const *msg, IDIO filename, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (filename);
@@ -392,7 +392,7 @@ void idio_file_handle_filename_format_error (const char *circumstance, const cha
     /* notreached */
 }
 
-void idio_file_handle_mode_format_error (const char *circumstance, const char *msg, IDIO mode, IDIO c_location)
+void idio_file_handle_mode_format_error (char const *circumstance, char const *msg, IDIO mode, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (mode);
@@ -427,7 +427,7 @@ void idio_file_handle_mode_format_error (const char *circumstance, const char *m
     /* notreached */
 }
 
-char *idio_file_handle_string_C (IDIO val, const char *op_C, const char *kind, size_t *sizep, int *free_me_p, IDIO c_location)
+char *idio_file_handle_string_C (IDIO val, char const *op_C, char const *kind, size_t *sizep, int *free_me_p, IDIO c_location)
 {
     IDIO_ASSERT (val);
     IDIO_C_ASSERT (op_C);
@@ -470,7 +470,7 @@ char *idio_file_handle_string_C (IDIO val, const char *op_C, const char *kind, s
     }
 }
 
-char *idio_file_handle_filename_string_C (IDIO val, const char *op_C, size_t *sizep, int *free_me_p, IDIO c_location)
+char *idio_file_handle_filename_string_C (IDIO val, char const *op_C, size_t *sizep, int *free_me_p, IDIO c_location)
 {
     IDIO_ASSERT (val);
     IDIO_C_ASSERT (op_C);
@@ -479,7 +479,7 @@ char *idio_file_handle_filename_string_C (IDIO val, const char *op_C, size_t *si
     return idio_file_handle_string_C (val, op_C, "filename", sizep, free_me_p, c_location);
 }
 
-char *idio_file_handle_mode_string_C (IDIO val, const char *op_C, size_t *sizep, int *free_me_p, IDIO c_location)
+char *idio_file_handle_mode_string_C (IDIO val, char const *op_C, size_t *sizep, int *free_me_p, IDIO c_location)
 {
     IDIO_ASSERT (val);
     IDIO_C_ASSERT (op_C);
@@ -488,7 +488,7 @@ char *idio_file_handle_mode_string_C (IDIO val, const char *op_C, size_t *sizep,
     return idio_file_handle_string_C (val, op_C, "mode", sizep, free_me_p, c_location);
 }
 
-static IDIO idio_open_file_handle (IDIO filename, const char *pathname, const size_t pathname_len, int fd, int h_type, int h_flags, int s_flags)
+static IDIO idio_open_file_handle (IDIO filename, char const *pathname, size_t const pathname_len, int fd, int h_type, int h_flags, int s_flags)
 {
     IDIO_ASSERT (filename);
     IDIO_C_ASSERT (pathname);
@@ -559,7 +559,7 @@ static IDIO idio_open_file_handle (IDIO filename, const char *pathname, const si
  * fopen(3) implementation deliberately limits the mode string to 5
  * (or 6 or 7) characters.
  */
-static int idio_file_handle_validate_mode_flags (const char *mode_str, const size_t mode_str_len, int *sflagsp, int *fs_flagsp, int *fd_flagsp)
+static int idio_file_handle_validate_mode_flags (char const *mode_str, size_t const mode_str_len, int *sflagsp, int *fs_flagsp, int *fd_flagsp)
 {
     if (mode_str_len < 1) {
 	return -1;
@@ -608,7 +608,7 @@ static int idio_file_handle_validate_mode_flags (const char *mode_str, const siz
     return 0;
 }
 
-static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char *func, char *def_mode_str, const size_t dms_len, int def_mode, int plus_mode)
+static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char const *func, char const *def_mode_str, size_t const dms_len, int def_mode, int plus_mode)
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
@@ -699,7 +699,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
     }
 
     int free_mode_C = 0;
-    char *mode_C = def_mode_str;
+    char *mode_C = (char *) def_mode_str;
     size_t mode_C_len = dms_len;
 
     if (idio_S_nil != args) {
@@ -1097,7 +1097,7 @@ Use #n for ``name`` if you only want to set ``mode``	\n\
     return ph;
 }
 
-IDIO idio_open_file_handle_C (const char *func, IDIO filename, const char *pathname, const size_t pathname_len, int free_pathname, const char *mode_str, const size_t mode_str_len, int free_mode_str, int user_mode)
+IDIO idio_open_file_handle_C (char const *func, IDIO filename, char const *pathname, size_t const pathname_len, int free_pathname, char const *mode_str, size_t const mode_str_len, int free_mode_str, int user_mode)
 {
     IDIO_C_ASSERT (func);
     IDIO_ASSERT (filename);	/* the user supplied name */
@@ -1450,7 +1450,7 @@ IDIO idio_open_file_handle_C (const char *func, IDIO filename, const char *pathn
 /*
  * mode, if not #n, is used in preferance.
  */
-IDIO idio_file_handle_open_file (const char *func, IDIO name, IDIO mode, const char *def_mode, const size_t dm_len)
+IDIO idio_file_handle_open_file (char const *func, IDIO name, IDIO mode, char const *def_mode, size_t const dm_len)
 {
     IDIO_C_ASSERT (func);
     IDIO_ASSERT (name);
@@ -2286,7 +2286,7 @@ int idio_putc_file_handle (IDIO fh, idio_unicode_t c)
     return size;
 }
 
-ptrdiff_t idio_puts_file_handle (IDIO fh, const char *s, const size_t slen)
+ptrdiff_t idio_puts_file_handle (IDIO fh, char const *s, size_t const slen)
 {
     IDIO_ASSERT (fh);
 
@@ -2774,7 +2774,7 @@ IDIO idio_dl_read (IDIO h)
     return idio_S_notreached;
 }
 
-IDIO idio_load_dl_library (char *filename, size_t filename_len, char *libname, size_t libname_len, IDIO cs)
+IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char const *libname, size_t const libname_len, IDIO cs)
 {
     /*
      * string lengths.  We *should* be being called with filename as
@@ -2902,7 +2902,7 @@ static idio_file_extension_t idio_file_extensions[] = {
     { NULL, NULL, NULL }
 };
 
-char *idio_libfile_find_C (const char *file, const size_t file_len, size_t *liblen)
+char *idio_libfile_find_C (char const *file, size_t const file_len, size_t *liblen)
 {
     IDIO_C_ASSERT (file);
     IDIO_C_ASSERT (file_len > 0);
@@ -2939,7 +2939,7 @@ char *idio_libfile_find_C (const char *file, const size_t file_len, size_t *libl
 	 * Use size + 1 to avoid a truncation warning -- we're just
 	 * seeing if idiolib_copy_C includes a NUL
 	 */
-	const size_t C_size = idio_strnlen (idiolib_copy_C, size + 1);
+	size_t const C_size = idio_strnlen (idiolib_copy_C, size + 1);
 	if (C_size != size) {
 	    /*
 	     * Test Case: file-handle-errors/find-lib-IDIOLIB-format.idio
@@ -3007,7 +3007,7 @@ char *idio_libfile_find_C (const char *file, const size_t file_len, size_t *libl
 	return NULL;
     }
 
-    const size_t cwdlen = idio_strnlen (cwd, PATH_MAX);
+    size_t const cwdlen = idio_strnlen (cwd, PATH_MAX);
 
     if ('/' == file[0]) {
 	if ((file_len + 1) >= PATH_MAX) {
@@ -3145,7 +3145,7 @@ char *idio_libfile_find_C (const char *file, const size_t file_len, size_t *libl
 		} else {
 		    char *end = lne;
 		    if (NULL != fe->prefix) {
-			const size_t pl = idio_strnlen (fe->prefix, PATH_MAX);
+			size_t const pl = idio_strnlen (fe->prefix, PATH_MAX);
 			memcpy (end, fe->prefix, pl);
 			end[pl] = '\0';
 			end += pl;
@@ -3155,7 +3155,7 @@ char *idio_libfile_find_C (const char *file, const size_t file_len, size_t *libl
 		    end += file_len;
 
 		    if (NULL != fe->suffix) {
-			const size_t sl = idio_strnlen (fe->prefix, PATH_MAX);
+			size_t const sl = idio_strnlen (fe->prefix, PATH_MAX);
 			memcpy (end, fe->suffix, sl);
 			end[sl] = '\0';
 			end += sl;
@@ -3360,7 +3360,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     if (NULL != lfn_dot) {
 	for (;NULL != fe->reader;fe++) {
 	    if (NULL != fe->ext) {
-		const size_t el = idio_strnlen (fe->ext, PATH_MAX);
+		size_t const el = idio_strnlen (fe->ext, PATH_MAX);
 		if (memcmp (lfn_dot, fe->ext, el) == 0) {
 		    reader = fe->reader;
 		    evaluator = fe->evaluator;
@@ -3372,7 +3372,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 		    if (NULL == filename_dot ||
 			memcmp (filename_dot, fe->ext, el)) {
 
-			char *ss[] = { filename_C, fe->ext };
+			char const *ss[] = { filename_C, fe->ext };
 
 			filename_ext = idio_string_C_array (2, ss);
 

@@ -91,7 +91,7 @@ ffi_type *idio_C_FFI_type (IDIO field_data)
     return NULL;
 }
 
-ffi_type **idio_C_FFI_ffi_arg_types (size_t nargs, IDIO args)
+ffi_type **idio_C_FFI_ffi_arg_types (size_t const nargs, IDIO args)
 {
     if (0 == nargs) {
 	return NULL;

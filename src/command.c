@@ -105,7 +105,7 @@ static void idio_command_glob_error (IDIO pattern, IDIO c_location)
     /* notreached */
 }
 
-static void idio_command_arg_type_error (IDIO arg, char *reason_C, IDIO c_location)
+static void idio_command_arg_type_error (IDIO arg, char const *reason_C, IDIO c_location)
 {
     IDIO_ASSERT (arg);
     IDIO_ASSERT (c_location);
@@ -176,7 +176,7 @@ static void idio_command_env_type_error (IDIO name, IDIO c_location)
     /* notreached */
 }
 
-static void idio_command_format_error (char *circumstance, char *msg, IDIO var, IDIO val, IDIO c_location)
+static void idio_command_format_error (char const *circumstance, char const *msg, IDIO var, IDIO val, IDIO c_location)
 {
     IDIO_C_ASSERT (circumstance);
     IDIO_C_ASSERT (msg);
@@ -219,7 +219,7 @@ static void idio_command_format_error (char *circumstance, char *msg, IDIO var, 
     /* notreached */
 }
 
-void idio_command_not_found_error (char *msg, IDIO cmd, IDIO c_location)
+void idio_command_not_found_error (char const *msg, IDIO cmd, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (cmd);
@@ -319,7 +319,7 @@ static void idio_command_exec_error (char **argv, char **envp, IDIO c_location)
     /* notreached */
 }
 
-char *idio_command_string_C (IDIO var, IDIO val, size_t *sizep, char *op_C, int *free_me_p, IDIO c_location)
+char *idio_command_string_C (IDIO var, IDIO val, size_t *sizep, char const *op_C, int *free_me_p, IDIO c_location)
 {
     IDIO_ASSERT (var);
     IDIO_ASSERT (val);
@@ -446,7 +446,7 @@ char **idio_command_get_envp ()
     return envp;
 }
 
-char *idio_command_find_exe_C (const char *command, size_t cmdlen)
+char *idio_command_find_exe_C (char const *command, size_t const cmdlen)
 {
     IDIO_C_ASSERT (command);
     IDIO_C_ASSERT (cmdlen > 0);
@@ -767,7 +767,7 @@ find `command` on PATH				\n\
     return r;
 }
 
-static char *idio_command_glob_charp (char *src)
+static char *idio_command_glob_charp (char const *src)
 {
     IDIO_C_ASSERT (src);
 
@@ -776,7 +776,7 @@ static char *idio_command_glob_charp (char *src)
 	case '*':
 	case '?':
 	case '[':
-	    return src;
+	    return (char *) src;
 	}
 	src++;
     }
@@ -1178,7 +1178,7 @@ void idio_command_free_argv1 (char **argv)
  * that does this, and not have everything duplicated but we're not
  * quite there yet.
  */
-IDIO idio_command_invoke (IDIO name, IDIO thr, char *pathname)
+IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
 {
     IDIO val = IDIO_THREAD_VAL (thr);
 
@@ -1207,7 +1207,7 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char *pathname)
 	argv[0] = idio_string_as_C (name, &size);
     } else {
 	fprintf (stderr, "ici: name isa %s\n", idio_type2string (name));
-	argv[0] = pathname;
+	argv[0] = (char *) pathname;
     }
 
     IDIO stack = IDIO_THREAD_STACK (thr);

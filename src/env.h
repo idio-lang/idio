@@ -28,9 +28,9 @@ extern char *idio_env_IDIOLIB_default;
 extern IDIO idio_env_PATH_sym;
 extern IDIO idio_env_IDIOLIB_sym;
 
-void idio_env_format_error (char *circumstance, char *msg, IDIO name, IDIO val, IDIO c_location);
+void idio_env_format_error (char const *circumstance, char const *msg, IDIO name, IDIO val, IDIO c_location);
 
-void idio_env_init_idiolib (const char *argv0, const size_t argv0_len);
+void idio_env_init_idiolib (char const *argv0, size_t const argv0_len);
 
 void idio_init_env ();
 

@@ -154,7 +154,7 @@ static IDIO idio_meaning_define_gvi0_string = idio_S_nil;
 static IDIO idio_meaning_define_infix_operator_string = idio_S_nil;
 static IDIO idio_meaning_define_postfix_operator_string = idio_S_nil;
 
-void idio_meaning_dump_src_properties (const char *prefix, const char*name, IDIO e)
+void idio_meaning_dump_src_properties (char const *prefix, char const *name, IDIO e)
 {
     IDIO_ASSERT (e);
 
@@ -247,7 +247,7 @@ static void idio_meaning_base_error (IDIO src, IDIO c_location, IDIO msg, IDIO e
     /* notreached */
 }
 
-void idio_meaning_error_param_type (IDIO src, IDIO c_location, char *msg, IDIO expr)
+void idio_meaning_error_param_type (IDIO src, IDIO c_location, char const *msg, IDIO expr)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (c_location);
@@ -265,7 +265,7 @@ void idio_meaning_error_param_type (IDIO src, IDIO c_location, char *msg, IDIO e
     /* notreached */
 }
 
-static void idio_meaning_error_param (IDIO src, IDIO c_location, char *msg, IDIO expr)
+static void idio_meaning_error_param (IDIO src, IDIO c_location, char const *msg, IDIO expr)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (c_location);
@@ -284,7 +284,7 @@ static void idio_meaning_error_param (IDIO src, IDIO c_location, char *msg, IDIO
     /* notreached */
 }
 
-void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char *msg, IDIO expr)
+void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char const *msg, IDIO expr)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (c_location);
@@ -306,7 +306,7 @@ void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char *msg, IDIO e
  * idio_meaning_error_static_redefine() in places where it requires we
  * have broken the code to raise it.
  */
-void idio_meaning_error_static_redefine (IDIO src, IDIO c_location, char *msg, IDIO name, IDIO cv, IDIO new)
+void idio_meaning_error_static_redefine (IDIO src, IDIO c_location, char const *msg, IDIO name, IDIO cv, IDIO new)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (c_location);
@@ -351,7 +351,7 @@ void idio_meaning_error_static_redefine (IDIO src, IDIO c_location, char *msg, I
  * The calls to idio_meaning_error_static_variable() requires we have
  * broken the code to raise it.
  */
-static void idio_meaning_error_static_variable (IDIO src, IDIO c_location, char *msg, IDIO name)
+static void idio_meaning_error_static_variable (IDIO src, IDIO c_location, char const *msg, IDIO name)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (c_location);
@@ -417,7 +417,7 @@ static void idio_meaning_error_static_immutable (IDIO src, IDIO c_location, IDIO
     /* notreached */
 }
 
-void idio_meaning_error_static_arity (IDIO src, IDIO c_location, char *msg, IDIO args)
+void idio_meaning_error_static_arity (IDIO src, IDIO c_location, char const *msg, IDIO args)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (c_location);
@@ -450,7 +450,7 @@ void idio_meaning_error_static_arity (IDIO src, IDIO c_location, char *msg, IDIO
     /* notreached */
 }
 
-static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location, char *msg, IDIO f, IDIO args, IDIO primdata)
+static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location, char const *msg, IDIO f, IDIO args, IDIO primdata)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (c_location);
@@ -507,7 +507,7 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
 #define IDIO_MEANING_PREDEF_FLAG_NONE	0
 #define IDIO_MEANING_PREDEF_FLAG_EXPORT	1
 
-static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDIO module, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
+static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDIO module, IDIO cs, char const *cpp__FILE__, int cpp__LINE__)
 {
     IDIO_C_ASSERT (d);
     IDIO_ASSERT (module);
@@ -565,7 +565,7 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
     return fgvi;
 }
 
-IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
+IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, char const *cpp__FILE__, int cpp__LINE__)
 {
     IDIO_ASSERT (module);
     IDIO_C_ASSERT (d);
@@ -577,7 +577,7 @@ IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, 
     return idio_meaning_predef_extend (d, IDIO_MEANING_PREDEF_FLAG_NONE, module, cs, cpp__FILE__, cpp__LINE__);
 }
 
-IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
+IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, char const *cpp__FILE__, int cpp__LINE__)
 {
     IDIO_ASSERT (module);
     IDIO_C_ASSERT (d);
@@ -588,7 +588,7 @@ IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO c
     return idio_meaning_predef_extend (d, IDIO_MEANING_PREDEF_FLAG_EXPORT, module, cs, cpp__FILE__, cpp__LINE__);
 }
 
-IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
+IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs, char const *cpp__FILE__, int cpp__LINE__)
 {
     IDIO_C_ASSERT (d);
     IDIO_ASSERT (cs);
@@ -3177,9 +3177,9 @@ static IDIO idio_meaning_block (IDIO src, IDIO es, IDIO nametree, IDIO escapes, 
     return idio_meaning_sequence (IDIO_MPP (es, src), es, nametree, escapes, flags, idio_S_begin, cs, cm);
 }
 
-static IDIO idio_meaning_arguments (IDIO src, IDIO aes, IDIO nametree, IDIO escapes, size_t arity, int flags, IDIO cs, IDIO cm);
+static IDIO idio_meaning_arguments (IDIO src, IDIO aes, IDIO nametree, IDIO escapes, size_t const arity, int flags, IDIO cs, IDIO cm);
 
-static IDIO idio_meaning_some_arguments (IDIO src, IDIO ae, IDIO aes, IDIO nametree, IDIO escapes, size_t arity, int flags, IDIO cs, IDIO cm)
+static IDIO idio_meaning_some_arguments (IDIO src, IDIO ae, IDIO aes, IDIO nametree, IDIO escapes, size_t const arity, int flags, IDIO cs, IDIO cm)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (ae);
@@ -3201,7 +3201,7 @@ static IDIO idio_meaning_some_arguments (IDIO src, IDIO ae, IDIO aes, IDIO namet
     return IDIO_LIST4 (IDIO_I_STORE_ARGUMENT, am, ams, idio_fixnum (rank));
 }
 
-static IDIO idio_meaning_no_argument (IDIO src, IDIO nametree, IDIO escapes, size_t arity, int flags, IDIO cs)
+static IDIO idio_meaning_no_argument (IDIO src, IDIO nametree, IDIO escapes, size_t const arity, int flags, IDIO cs)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (nametree);
@@ -3213,7 +3213,7 @@ static IDIO idio_meaning_no_argument (IDIO src, IDIO nametree, IDIO escapes, siz
     return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (arity));
 }
 
-static IDIO idio_meaning_arguments (IDIO src, IDIO aes, IDIO nametree, IDIO escapes, size_t arity, int flags, IDIO cs, IDIO cm)
+static IDIO idio_meaning_arguments (IDIO src, IDIO aes, IDIO nametree, IDIO escapes, size_t const arity, int flags, IDIO cs, IDIO cm)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (aes);
@@ -3265,9 +3265,9 @@ static IDIO idio_meaning_fix_closed_application (IDIO src, IDIO ns, IDIO body, I
     }
 }
 
-static IDIO idio_meaning_dotted_arguments (IDIO src, IDIO aes, IDIO nametree, IDIO escapes, size_t size, size_t arity, int flags, IDIO cs, IDIO cm);
+static IDIO idio_meaning_dotted_arguments (IDIO src, IDIO aes, IDIO nametree, IDIO escapes, size_t const size, size_t arity, int flags, IDIO cs, IDIO cm);
 
-static IDIO idio_meaning_some_dotted_arguments (IDIO src, IDIO ae, IDIO aes, IDIO nametree, IDIO escapes, size_t nargs, size_t arity, int flags, IDIO cs, IDIO cm)
+static IDIO idio_meaning_some_dotted_arguments (IDIO src, IDIO ae, IDIO aes, IDIO nametree, IDIO escapes, size_t const nargs, size_t arity, int flags, IDIO cs, IDIO cm)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (ae);
@@ -3292,7 +3292,7 @@ static IDIO idio_meaning_some_dotted_arguments (IDIO src, IDIO ae, IDIO aes, IDI
     }
 }
 
-static IDIO idio_meaning_no_dotted_argument (IDIO src, IDIO nametree, IDIO escapes, size_t nargs, size_t arity, int flags, IDIO cs)
+static IDIO idio_meaning_no_dotted_argument (IDIO src, IDIO nametree, IDIO escapes, size_t const nargs, size_t arity, int flags, IDIO cs)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (nametree);
@@ -3304,7 +3304,7 @@ static IDIO idio_meaning_no_dotted_argument (IDIO src, IDIO nametree, IDIO escap
     return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (arity));
 }
 
-static IDIO idio_meaning_dotted_arguments (IDIO src, IDIO aes, IDIO nametree, IDIO escapes, size_t nargs, size_t arity, int flags, IDIO cs, IDIO cm)
+static IDIO idio_meaning_dotted_arguments (IDIO src, IDIO aes, IDIO nametree, IDIO escapes, size_t const nargs, size_t arity, int flags, IDIO cs, IDIO cm)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (aes);
@@ -3481,7 +3481,7 @@ static IDIO idio_meaning_local_application (IDIO src, IDIO n, IDIO ae, IDIO body
 
 static IDIO idio_meaning_regular_application (IDIO src, IDIO fe, IDIO aes, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm);
 
-static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDIO nametree, IDIO escapes, int flags, size_t arity, IDIO gvi, IDIO cs, IDIO cm)
+static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDIO nametree, IDIO escapes, int flags, size_t const arity, IDIO gvi, IDIO cs, IDIO cm)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (fe);
