@@ -424,7 +424,11 @@ void idio_env_exe_pathname (const char *argv0, const size_t argv0_len, char *a0r
     const char *r = getexecname ();
     if (NULL != r) {
 	if ('/' == r[0]) {
-	    /* absolute pathname */
+	    /*
+	     * absolute pathname
+	     *
+	     * strnlen rather than idio_strnlen during bootstrap
+	     */
 	    size_t rlen = strnlen (r, a0rp_len);
 	    memcpy (a0rp, r, rlen);
 	    a0rp[rlen] = '\0';
@@ -504,7 +508,7 @@ void idio_env_init_idiolib (const char *argv0, const size_t argv0_len)
     /*
      * While we are here, set IDIO_CMD and IDIO_EXE.
      */
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD"), idio_string_C (argv0), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD"), idio_string_C_len (argv0, argv0_len), idio_Idio_module_instance ());
     idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_EXE"), idio_string_C (a0rp), idio_Idio_module_instance ());
 
     /*
@@ -574,85 +578,102 @@ void idio_env_init_idiolib (const char *argv0, const size_t argv0_len)
 	    memcpy (ieId + ddd_len, "/lib", 4);
 	    ieId[ddd_len + 4] = '\0';
 
+	    int prepend = 0;
+
 	    IDIO idiolib = idio_module_env_symbol_value (idio_env_IDIOLIB_sym, IDIO_LIST1 (idio_S_false));
 
-	    size_t idiolib_len = 0;
-	    char *idiolib_C = idio_string_as_C (idiolib, &idiolib_len);
+	    size_t idiolib_C_len = 0;
+	    char *idiolib_C = NULL;
 
 	    /*
-	     * Use idiolib_len + 1 to avoid a truncation warning --
-	     * we're just seeing if idiolib_C includes a NUL
+	     * It shouldn't ever be false becuase we set it higher up
+	     * but, you know how it is...
 	     */
-	    size_t C_size = idio_strnlen (idiolib_C, idiolib_len + 1);
-	    if (C_size != idiolib_len) {
+	    if (idio_S_false != idiolib) {
+		idiolib_C = idio_string_as_C (idiolib, &idiolib_C_len);
+
 		/*
-		 * Test Case: ??
-		 *
-		 * This is a bit hard to conceive and, indeed,
-		 * might be a wild goose chase.
-		 *
-		 * This code is only called on startup and if
-		 * IDIOLIB is (deliberately) goosed[sic] then
-		 * everything thereafter is banjaxed as well.
-		 * Which makes the collective testing tricky.
-		 *
-		 * In the meanwhilst, how do you inject an
-		 * environment variable into idio's
-		 * environment with an ASCII NUL in it?
+		 * Use idiolib_C_len + 1 to avoid a truncation warning
+		 * -- we're just seeing if idiolib_C includes a NUL
 		 */
-		IDIO_GC_FREE (idiolib_C);
+		size_t C_size = idio_strnlen (idiolib_C, idiolib_C_len + 1);
+		if (C_size != idiolib_C_len) {
+		    /*
+		     * Test Case: ??
+		     *
+		     * This is a bit hard to conceive and, indeed,
+		     * might be a wild goose chase.
+		     *
+		     * This code is only called on startup and if
+		     * IDIOLIB is (deliberately) goosed[sic] then
+		     * everything thereafter is banjaxed as well.
+		     * Which makes the collective testing tricky.
+		     *
+		     * In the meanwhilst, how do you inject an
+		     * environment variable into idio's environment
+		     * with an ASCII NUL in it?
+		     */
+		    IDIO_GC_FREE (idiolib_C);
 
-		idio_env_format_error ("bootstrap", "contains an ASCII NUL", idio_env_IDIOLIB_sym, idiolib, IDIO_C_FUNC_LOCATION ());
+		    idio_env_format_error ("bootstrap", "contains an ASCII NUL", idio_env_IDIOLIB_sym, idiolib, IDIO_C_FUNC_LOCATION ());
 
-		/* notreached */
-		return;
-	    }
+		    /* notreached */
+		    return;
+		}
 
-	    char *index = strstr (idiolib_C, ieId);
-	    int prepend = 0;
-	    if (index) {
-		/*
-		 * Code coverage:
-		 *
-		 * These should be picked up if a pre-existing IDIOLIB
-		 * is already one of:
-		 *
-		 * .../lib
-		 * .../lib:...
-		 *
-		 * Both of which will fall into the manual test
-		 * category.
-		 *
-		 * We do these extra checks in case someone has added
-		 * .../libs -- which index will also match.
-		 */
-		if (! ('\0' == index[ieId_len] ||
-		       ':' == index[ieId_len])) {
+		char *index = strstr (idiolib_C, ieId);
+		if (index) {
+		    /*
+		     * Code coverage:
+		     *
+		     * These should be picked up if a pre-existing
+		     * IDIOLIB is already one of:
+		     *
+		     * .../lib
+		     * .../lib:...
+		     *
+		     * Both of which will fall into the manual test
+		     * category.
+		     *
+		     * We do these extra checks in case someone has
+		     * added .../libs -- which index will also match.
+		     */
+		    if (! ('\0' == index[ieId_len] ||
+			   ':' == index[ieId_len])) {
+			prepend = 1;
+		    }
+		} else {
+		    /*
+		     * Code coverage:
+		     *
+		     * IDIOLIB is set but doesn't have .../lib
+		     */
 		    prepend = 1;
 		}
 	    } else {
-		/*
-		 * Code coverage:
-		 *
-		 * IDIOLIB is set but doesn't have .../lib
-		 */
 		prepend = 1;
 	    }
 
 	    if (prepend) {
-		size_t ni_len = ieId_len + 1 + idiolib_len + 1;
-		if (0 == idiolib_len) {
+		size_t ni_len = ieId_len + 1 + idiolib_C_len;
+
+		/*
+		 * Shouldn't ever happen becuase we should always have
+		 * set something...
+		 */
+		if (0 == idiolib_C_len) {
 		    ni_len = ieId_len + 1;
 		}
+
 		char *ni = idio_alloc (ni_len + 1);
 		memcpy (ni, ieId, ieId_len);
 		memcpy (ni + ieId_len, ":", 1);
-		if (idiolib_len) {
-		    memcpy (ni + ieId_len + 1, idiolib_C, idiolib_len);
+		if (idiolib_C_len) {
+		    memcpy (ni + ieId_len + 1, idiolib_C, idiolib_C_len);
 		}
 		ni[ni_len] = '\0';
 
-		idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, idio_string_C (ni));
+		idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, idio_string_C_len (ni, ni_len));
 		IDIO_GC_FREE (ni);
 	    }
 
@@ -684,10 +705,10 @@ void idio_init_env ()
      * Hence the use of idiolib_default which might be different on
      * some systems before copying that into idio_env_IDIOLIB_default.
      */
-    char *idiolib_default = "/usr/lib/idio";
-    size_t id_len = sizeof (idiolib_default) - 1;
+#define IDIO_ENV_IDIOLIB_DEFAULT	"/usr/lib/idio"
+    size_t id_len = sizeof (IDIO_ENV_IDIOLIB_DEFAULT) - 1;
     idio_env_IDIOLIB_default = idio_alloc (id_len + 1);
-    memcpy (idio_env_IDIOLIB_default, idiolib_default, id_len);
+    memcpy (idio_env_IDIOLIB_default, IDIO_ENV_IDIOLIB_DEFAULT, id_len);
     idio_env_IDIOLIB_default[id_len] = '\0';
 }
 

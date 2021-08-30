@@ -46,7 +46,7 @@
 #include "vm.h"
 
 IDIO idio_vars_IFS_sym;
-static char *idio_vars_IFS_default = " \t\n";
+#define IDIO_VARS_IFS_DEFAULT	" \t\n"
 
 IDIO idio_vars_suppress_exit_on_error_sym;
 IDIO idio_vars_suppress_pipefail_sym;
@@ -86,7 +86,7 @@ void idio_vars_add_primitives ()
     geti = IDIO_ADD_PRIMITIVE (SECONDS_get);
     idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("SECONDS"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_Idio_module);
 
-    idio_vars_set_dynamic_default (idio_vars_IFS_sym, idio_string_C (idio_vars_IFS_default));
+    idio_vars_set_dynamic_default (idio_vars_IFS_sym, idio_string_C_len (IDIO_STATIC_STR_LEN (IDIO_VARS_IFS_DEFAULT)));
     idio_vars_set_dynamic_default (idio_vars_suppress_exit_on_error_sym, idio_S_false);
     idio_vars_set_dynamic_default (idio_vars_suppress_pipefail_sym, idio_S_false);
     idio_vars_set_dynamic_default (idio_vars_suppress_async_command_report_sym, idio_S_false);

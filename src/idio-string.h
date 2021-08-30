@@ -35,7 +35,7 @@
 
 size_t idio_string_storage_size (IDIO s);
 int idio_assign_string_C (IDIO so, const char *s_C);
-IDIO idio_string_C_len (const char *s_C, size_t blen);
+IDIO idio_string_C_len (const char *s_C, const size_t blen);
 IDIO idio_string_C (const char *s_C);
 IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[]);
 IDIO idio_string_C_array (size_t ns, char *a_C[]);

@@ -145,7 +145,7 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
     name_len += nl;
     name[name_len] = '\0';
 
-    IDIO_HANDLE_FILENAME (sh) = idio_string_C (name);
+    IDIO_HANDLE_FILENAME (sh) = idio_string_C_len (name, name_len);
     IDIO_HANDLE_PATHNAME (sh) = IDIO_HANDLE_FILENAME (sh);
     IDIO_HANDLE_STREAM (sh) = shsp;
     IDIO_HANDLE_METHODS (sh) = &idio_string_handle_methods;
@@ -158,11 +158,6 @@ IDIO idio_open_input_string_handle_C (const char *str, const size_t blen)
     IDIO_C_ASSERT (str);
 
     char *str_copy = idio_alloc (blen + 1);
-    /*
-     * gcc warns "output truncated before terminating nul copying as
-     * many bytes from a string as its length [-Wstringop-truncation]"
-     * for just strncpy(..., blen)
-     */
     memcpy (str_copy, str, blen);
     str_copy[blen] = '\0';
 

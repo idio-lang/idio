@@ -709,8 +709,8 @@ void idio_unicode_add_primitives ()
      */
     IDIO fvi = IDIO_ADD_PRIMITIVE (unicode_eq_p);
     IDIO p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
-    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+    idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("c1 c2 [...]"));
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if unicode arguments are equal			\n\
 							\n\
 :param c1: unicode					\n\
@@ -718,7 +718,7 @@ test if unicode arguments are equal			\n\
 :param ...: unicode					\n\
 							\n\
 :return: #t if arguments are equal, #f otherwise	\n\
-");
+"));
 }
 
 void idio_init_unicode ()

@@ -470,9 +470,9 @@ IDIO idio_struct_instance (IDIO st, IDIO values)
 	 * make-struct-instance foo 1
 	 */
 	char em[BUFSIZ];
-	idio_snprintf (em, BUFSIZ, "make-struct-instance: not enough values: %" PRIdPTR " < %" PRIdPTR, i, size);
+	size_t eml = idio_snprintf (em, BUFSIZ, "make-struct-instance: not enough values: %" PRIdPTR " < %" PRIdPTR, i, size);
 
-	idio_struct_error (idio_string_C (em), st, values, IDIO_C_FUNC_LOCATION ());
+	idio_struct_error (idio_string_C_len (em, eml), st, values, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -485,9 +485,9 @@ IDIO idio_struct_instance (IDIO st, IDIO values)
 	 * make-struct-instance foo 1 2 3
 	 */
 	char em[BUFSIZ];
-	idio_snprintf (em, BUFSIZ, "make-struct-instance: too many values: %" PRIdPTR " > %" PRIdPTR, i, size);
+	size_t eml = idio_snprintf (em, BUFSIZ, "make-struct-instance: too many values: %" PRIdPTR " > %" PRIdPTR, i, size);
 
-	idio_struct_error (idio_string_C (em), st, values, IDIO_C_FUNC_LOCATION ());
+	idio_struct_error (idio_string_C_len (em, eml), st, values, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

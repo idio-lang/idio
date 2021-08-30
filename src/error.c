@@ -68,9 +68,9 @@ static IDIO idio_S_user_code;
  * In practice only the error variant is called and only in times of
  * great stress -- ie. immediately followed by abort().
  */
-void idio_error_vfprintf (char *format, va_list argp)
+int idio_error_vfprintf (char *format, va_list argp)
 {
-    vfprintf (stderr, format, argp);
+    return vfprintf (stderr, format, argp);
 }
 
 void idio_error_error_message (char *format, ...)
@@ -79,10 +79,10 @@ void idio_error_error_message (char *format, ...)
 
     va_list fmt_args;
     va_start (fmt_args, format);
-    idio_error_vfprintf (format, fmt_args);
+    int flen = idio_error_vfprintf (format, fmt_args);
     va_end (fmt_args);
 
-    switch (format[strlen(format)-1]) {
+    switch (format[flen-1]) {
     case '\n':
 	break;
     default:
@@ -96,10 +96,10 @@ void idio_error_warning_message (char *format, ...)
 
     va_list fmt_args;
     va_start (fmt_args, format);
-    idio_error_vfprintf (format, fmt_args);
+    int flen = idio_error_vfprintf (format, fmt_args);
     va_end (fmt_args);
 
-    switch (format[strlen(format)-1]) {
+    switch (format[flen-1]) {
     case '\n':
 	break;
     default:
@@ -140,8 +140,8 @@ IDIO idio_error_string (char *format, va_list argp)
  * idio_error_printf() is called a lot but I'd like to think those
  * calls could be migrated to an more Idio-centric mode.
  *
- * Possibly by calling sprintf() then some regular Idio error code
- * with the resultant string.
+ * Possibly by calling idio_snprintf() then some regular Idio error
+ * code with the resultant string.
  */
 void idio_error_printf (IDIO loc, char *format, ...)
 {
@@ -666,7 +666,7 @@ void idio_init_error ()
     idio_gc_protect_auto (idio_S_internal);
     idio_S_user = IDIO_SYMBOLS_C_INTERN ("user");
     idio_gc_protect_auto (idio_S_user);
-    idio_S_user_code = idio_string_C ("user code");
+    idio_S_user_code = idio_string_C_len (IDIO_STATIC_STR_LEN ("user code"));
     idio_gc_protect_auto (idio_S_user_code);
 }
 

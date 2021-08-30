@@ -8245,17 +8245,17 @@ void idio_init_vm ()
     idio_vm_extend_constants (idio_S_quote);
     idio_vm_extend_constants (idio_bignum_real_C ("0.0", 3));
     idio_vm_extend_constants (idio_bignum_real_C ("1.0", 3));
-    idio_vm_extend_constants (idio_string_C ("\n"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (e)"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (end)"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (loop)"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (r)"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (start)"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (v)"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (x)"));
-    idio_vm_extend_constants (idio_string_C ("invalid syntax"));
-    idio_vm_extend_constants (idio_string_C ("not a char-set"));
-    idio_vm_extend_constants (idio_string_C ("not a condition:"));
+    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("\n")));
+    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (e)")));
+    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (end)")));
+    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (loop)")));
+    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (r)")));
+    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (start)")));
+    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (v)")));
+    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (x)")));
+    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("invalid syntax")));
+    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("not a char-set")));
+    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("not a condition:")));
     idio_vm_extend_constants (IDIO_SYMBOLS_C_INTERN ("&args"));
     idio_vm_extend_constants (IDIO_SYMBOLS_C_INTERN (":"));
     idio_vm_extend_constants (IDIO_SYMBOLS_C_INTERN ("close"));
@@ -8298,7 +8298,9 @@ void idio_init_vm ()
 	/*
 	 * The three existing elements of this array are all 11 bytes
 	 * long so the following strnlen (..., 20), magic number,
-	 * allows for some casual expansion
+	 * allows for some casual expansion.
+	 *
+	 * strnlen rather than idio_strnlen during bootstrap.
 	 */
 	IDIO sym = idio_symbols_C_intern (cs->name, strnlen (cs->name, 20));
 	idio_module_export_symbol_value (sym, idio_fixnum (cs->value), idio_vm_module);

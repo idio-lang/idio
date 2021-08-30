@@ -108,7 +108,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, const 
 
     idio_module_set_vci (module, fmci, fmci);
     idio_module_set_vvi (module, fmci, fgvi);
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_predef, fmci, fgvi, module, idio_string_C ("idio_evaluator_extend")), module);
+    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_predef, fmci, fgvi, module, idio_string_C_len (IDIO_STATIC_STR_LEN ("idio_evaluator_extend"))), module);
 
     /*
      * idio_module_set_symbol_value() is a bit sniffy about setting

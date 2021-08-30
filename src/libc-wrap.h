@@ -70,7 +70,7 @@ extern IDIO idio_libc_struct_stat;
 #define IDIO_LIBC_SIGNAL_NAME_ONLY(n,i) {				\
 	IDIO sig_sym = idio_symbols_C_intern (n, sizeof (n) - 1);	\
 	idio_libc_export_symbol_value (sig_sym, idio_C_int (i));	\
-	sprintf (idio_libc_signal_names[i], "%s", #n); \
+	snprintf (idio_libc_signal_names[i], IDIO_LIBC_SIGNAMELEN, "%s", #n); \
     }
 
 /*
@@ -93,7 +93,7 @@ extern IDIO idio_libc_struct_stat;
 	IDIO sig_sym = idio_symbols_C_intern (#n, sizeof (#n) - 1);	\
 	idio_libc_export_symbol_value (sig_sym, idio_C_int (n));	\
 	if ('\0' == idio_libc_signal_names[n][0]) {			\
-	    sprintf (idio_libc_signal_names[n], "%s", #n);		\
+	    snprintf (idio_libc_signal_names[n], IDIO_LIBC_SIGNAMELEN, "%s", #n); \
 	}								\
 	IDIO sig_ct;							\
 	IDIO_DEFINE_CONDITION0_DYNAMIC (sig_ct, "^rt-signal-" #n, idio_condition_rt_signal_type); \
@@ -105,7 +105,7 @@ extern IDIO idio_libc_struct_stat;
 	IDIO sig_sym = idio_symbols_C_intern (#n, sizeof (#n) - 1);	\
 	idio_libc_export_symbol_value (sig_sym, idio_C_int (n));	\
 	if ('\0' == idio_libc_signal_names[n][0]) {			\
-	    sprintf (idio_libc_signal_names[n], "%s", #n);		\
+	    snprintf (idio_libc_signal_names[n], IDIO_LIBC_SIGNAMELEN, "%s", #n); \
 	}								\
 	IDIO sig_ct;							\
 	IDIO_DEFINE_CONDITION0_DYNAMIC (sig_ct, "^rt-signal-" #n, idio_condition_rt_signal_type); \
@@ -117,7 +117,7 @@ extern IDIO idio_libc_struct_stat;
 	IDIO err_sym = idio_symbols_C_intern (#n, sizeof (#n) - 1);	\
 	idio_libc_export_symbol_value (err_sym, idio_C_int (n));	\
 	if ('\0' == idio_libc_errno_names[n][0]) {			\
-	    sprintf (idio_libc_errno_names[n], "%s", IDIO_SYMBOL_S (err_sym)); \
+	    snprintf (idio_libc_errno_names[n], IDIO_LIBC_ERRNAMELEN, "%s", IDIO_SYMBOL_S (err_sym)); \
 	}								\
 	IDIO err_ct;							\
 	IDIO_DEFINE_CONDITION0_DYNAMIC (err_ct, "^system-error-" #n, idio_condition_system_error_type);	\
@@ -129,7 +129,7 @@ extern IDIO idio_libc_struct_stat;
 	IDIO rlimit_sym = idio_symbols_C_intern (#n, sizeof (#n) - 1);	\
 	idio_libc_export_symbol_value (rlimit_sym, idio_C_int (n));	\
 	if ('\0' == idio_libc_rlimit_names[n][0]) {			\
-	    sprintf (idio_libc_rlimit_names[n], "%s", IDIO_SYMBOL_S (rlimit_sym)); \
+	    snprintf (idio_libc_rlimit_names[n], IDIO_LIBC_RLIMITNAMELEN, "%s", IDIO_SYMBOL_S (rlimit_sym)); \
 	}								\
     }
 

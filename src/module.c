@@ -1093,10 +1093,10 @@ IDIO idio_module_direct_reference (IDIO name)
 	    /*
 	     * Test Case: ??
 	     *
-	     * Can we get here?  idio_alloc() failed?  strcpy()
-	     * failed?  strrchr() failed?
+	     * Can we get here?  idio_alloc() failed?  strrchr()
+	     * failed?
 	     */
-	    idio_error_C ("failed to strcpy a string for strrchr", name, IDIO_C_FUNC_LOCATION ());
+	    idio_error_C ("failed to memcpy a string for strrchr", name, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}

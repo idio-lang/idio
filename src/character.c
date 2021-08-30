@@ -448,8 +448,8 @@ void idio_character_add_primitives ()
      */
     IDIO fvi = IDIO_ADD_PRIMITIVE (char_le_p);
     IDIO p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
-    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+    idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("c1 c2 [...]"));
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if character arguments are sorted non-decreasing			\n\
 									\n\
 :param c1: char								\n\
@@ -457,12 +457,12 @@ test if character arguments are sorted non-decreasing			\n\
 :param ...: chars							\n\
 									\n\
 :return: #t if arguments are sorted non-decreasing, #f otherwise	\n\
-");
+"));
 
     fvi = IDIO_ADD_PRIMITIVE (char_lt_p);
     p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
-    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+    idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("c1 c2 [...]"));
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if character arguments are sorted increasing		\n\
 								\n\
 :param c1: char							\n\
@@ -470,12 +470,12 @@ test if character arguments are sorted increasing		\n\
 :param ...: chars						\n\
 								\n\
 :return: #t if arguments are sorted increasing, #f otherwise	\n\
-");
+"));
 
     fvi = IDIO_ADD_PRIMITIVE (char_eq_p);
     p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
-    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+    idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("c1 c2 [...]"));
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if character arguments are equal			\n\
 							\n\
 :param c1: char						\n\
@@ -483,12 +483,12 @@ test if character arguments are equal			\n\
 :param ...: chars					\n\
 							\n\
 :return: #t if arguments are equal, #f otherwise	\n\
-");
+"));
 
     fvi = IDIO_ADD_PRIMITIVE (char_ge_p);
     p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
-    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+    idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("c1 c2 [...]"));
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if character arguments are sorted non-increasing			\n\
 									\n\
 :param c1: char								\n\
@@ -496,12 +496,12 @@ test if character arguments are sorted non-increasing			\n\
 :param ...: chars							\n\
 									\n\
 :return: #t if arguments are sorted non-increasing, #f otherwise	\n\
-");
+"));
 
     fvi = IDIO_ADD_PRIMITIVE (char_gt_p);
     p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
-    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+    idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("c1 c2 [...]"));
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if character arguments are sorted decreasing		\n\
 								\n\
 :param c1: char							\n\
@@ -509,12 +509,12 @@ test if character arguments are sorted decreasing		\n\
 :param ...: chars						\n\
 								\n\
 :return: #t if arguments are sorted decreasing, #f otherwise	\n\
-");
+"));
 
     fvi = IDIO_ADD_PRIMITIVE (char_ci_le_p);
     p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
-    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+    idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("c1 c2 [...]"));
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if character arguments are sorted non-decreasing case-insensitively		\n\
 											\n\
 :param c1: char										\n\
@@ -524,12 +524,12 @@ test if character arguments are sorted non-decreasing case-insensitively		\n\
 This implementation uses libc tolower()							\n\
 											\n\
 :return: #t if arguments are sorted non-decreasing case-insensitively, #f otherwise	\n\
-");
+"));
 
     fvi = IDIO_ADD_PRIMITIVE (char_ci_lt_p);
     p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
-    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+    idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("c1 c2 [...]"));
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if character arguments are sorted increasing case-insensitively		\n\
 										\n\
 :param c1: char									\n\
@@ -539,12 +539,12 @@ test if character arguments are sorted increasing case-insensitively		\n\
 This implementation uses libc tolower()						\n\
 										\n\
 :return: #t if arguments are sorted increasing case-insensitively, #f otherwise	\n\
-");
+"));
 
     fvi = IDIO_ADD_PRIMITIVE (char_ci_eq_p);
     p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
-    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+    idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("c1 c2 [...]"));
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if character arguments are equal case-insensitively		\n\
 									\n\
 :param c1: char								\n\
@@ -554,12 +554,12 @@ test if character arguments are equal case-insensitively		\n\
 This implementation uses libc tolower()					\n\
 									\n\
 :return: #t if arguments are equal case-insensitively, #f otherwise	\n\
-");
+"));
 
     fvi = IDIO_ADD_PRIMITIVE (char_ci_ge_p);
     p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
-    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+    idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("c1 c2 [...]"));
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if character arguments are sorted non-increasing case-insensitively		\n\
 											\n\
 :param c1: char										\n\
@@ -569,12 +569,12 @@ test if character arguments are sorted non-increasing case-insensitively		\n\
 This implementation uses libc tolower()							\n\
 											\n\
 :return: #t if arguments are sorted non-increasing case-insensitively, #f otherwise	\n\
-");
+"));
 
     fvi = IDIO_ADD_PRIMITIVE (char_ci_gt_p);
     p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
-    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+    idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("c1 c2 [...]"));
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if character arguments are sorted decreasing case-insensitively		\n\
 										\n\
 :param c1: char									\n\
@@ -584,7 +584,7 @@ test if character arguments are sorted decreasing case-insensitively		\n\
 This implementation uses libc tolower()						\n\
 										\n\
 :return: #t if arguments are sorted decreasing case-insensitively, #f otherwise	\n\
-");
+"));
 }
 
 void idio_init_character ()

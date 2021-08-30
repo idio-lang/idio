@@ -4708,6 +4708,8 @@ a wrapper to libc ctime(3)		\n\
      *
      * SunOS in non _POSIX_PTHREAD_SEMANTICS mode (ie. default) also
      * wants to pass buflen.
+     *
+     * Of note is that the git(1) source code bans the use of ctime_r.
      */
 #define IDIO_CTIME_BUFLEN 52
     char buf[IDIO_CTIME_BUFLEN];
@@ -4855,6 +4857,9 @@ a wrapper to libc asctime(3)		\n\
      *
      * SunOS in non _POSIX_PTHREAD_SEMANTICS mode (ie. default) also
      * wants to pass buflen.
+     *
+     * Of note is that the git(1) source code bans the use of
+     * asctime_r.
      */
 #define IDIO_ASCTIME_BUFLEN 52
     char buf[IDIO_ASCTIME_BUFLEN];

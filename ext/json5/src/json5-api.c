@@ -320,7 +320,7 @@ void idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 			     * validating
 			     */
 
-			    IDIO sym_str = idio_string_C (IDIO_SYMBOL_S (v));
+			    IDIO sym_str = idio_string_C_len (IDIO_SYMBOL_S (v), IDIO_SYMBOL_BLEN (v));
 			    json5_unicode_string_t *js = idio_string_to_json5_string_value (sym_str);
 
 			    /*

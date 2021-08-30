@@ -584,7 +584,7 @@ convert symbol `s` into a string		\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, s);
 
-    return idio_string_C (IDIO_SYMBOL_S (s));
+    return idio_string_C_len (IDIO_SYMBOL_S (s), IDIO_SYMBOL_BLEN (s));
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("symbols", symbols, (), "", "\

@@ -3556,7 +3556,11 @@ static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDI
 		IDIO m1 = idio_meaning (IDIO_MPP (IDIO_PAIR_H (aes), src), IDIO_PAIR_H (aes), nametree, escapes, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 		IDIO m2 = idio_meaning (IDIO_MPP (IDIO_PAIR_HT (aes), src), IDIO_PAIR_HT (aes), nametree, escapes, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
-		if (IDIO_STREQP (name, "run-in-thread")) {
+#define IDIO_EVALUATE_RUN_IN_THREAD	"run-in-thread"
+		size_t rit_len = sizeof (IDIO_EVALUATE_RUN_IN_THREAD) - 1;
+
+		if (rit_len == IDIO_PRIMITIVE_NAME_LEN (primdata) &&
+		    strncmp (name, IDIO_EVALUATE_RUN_IN_THREAD, rit_len) == 0) {
 		    break;
 		} else {
 		    return IDIO_LIST5 (IDIO_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2), m1, m2, gvi);

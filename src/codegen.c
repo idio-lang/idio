@@ -2925,7 +2925,9 @@ void idio_init_codegen ()
     for (; cs->name != NULL; cs++) {
 	/*
 	 * The longest existing cs->name is 33 chars so the strnlen
-	 * (..., 40) magic number gives us a bit of future leeway
+	 * (..., 40) magic number gives us a bit of future leeway.
+	 *
+	 * strnlen rather than idio_strnlen during bootstrap.
 	 */
 	IDIO sym = idio_symbols_C_intern (cs->name, strnlen (cs->name, 40));
 	idio_module_export_symbol_value (sym, cs->value, idio_codegen_module);

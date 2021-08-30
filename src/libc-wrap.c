@@ -550,7 +550,7 @@ IDIO idio_libc_proc_subst_named_pipe (int into)
     IDIO mtd_cmd = IDIO_LIST2 (idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("make-tmp-dir"),
 							idio_libc_module,
 							 idio_S_nil),
-			       idio_string_C ("idio-np-"));
+			       idio_string_C_len (IDIO_STATIC_STR_LEN ("idio-np-")));
 
     IDIO td = idio_vm_invoke_C (idio_thread_current_thread (), mtd_cmd);
 

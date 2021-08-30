@@ -337,9 +337,16 @@ typedef struct idio_symbol_s {
 #define IDIO_SYMBOL_FLAGS(S)	((S)->tflags)
 
 typedef struct idio_keyword_s {
+    /**
+     * @blen: length in bytes
+     *
+     * The string is expected to be NUL-terminated.
+     */
+    size_t blen;		/* bytes */
     char *s;			/* C string */
 } idio_keyword_t;
 
+#define IDIO_KEYWORD_BLEN(S)	((S)->u.keyword.blen)
 #define IDIO_KEYWORD_S(S)	((S)->u.keyword.s)
 
 typedef struct idio_pair_s {
@@ -1518,11 +1525,16 @@ char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, const size_t s2s);
 
 #define IDIO_STATIC_STR_LEN(s)	(s), sizeof (s) - 1
 
-#define IDIO_STRCAT(s1,s1sp,s2)		{			\
-	char *str = s2;						\
-	size_t size = strlen (str);				\
-	(s1) = idio_strcat ((s1), (s1sp), str, size);		\
+/*
+ * IDIO_STRCAT should only be being used for static C strings for
+ * which the longest is something like "\n output_handle=", some 16
+ * chars.  The idio_strnlen (..., 20) magic number allows for some
+ * growth whilst constraining the length.
+ */
+#define IDIO_STRCAT(s1,s1sp,s2)		{				\
+	(s1) = idio_strcat ((s1), (s1sp), s2, idio_strnlen (s2, 20));	\
     }
+
 #define IDIO_STRCAT_FREE(s1,s1sp,s2,s2sp)	((s1) = idio_strcat_free ((s1), (s1sp), (s2), (s2sp)))
 
 int idio_gc_verboseness (int n);

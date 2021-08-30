@@ -445,9 +445,10 @@ int main (int argc, char **argv, char **envp)
 
     /*
      * I'm not sure there are any limits on the length of argv[0] so
-     * we're stuck with strlen.  PATH_MAX, maybe.
+     * we could be stuck with strlen.  PATH_MAX, maybe, for argv[0]
+     * alone?
      */
-    idio_env_init_idiolib (argv[0], strlen (argv[0]));
+    idio_env_init_idiolib (argv[0], idio_strnlen (argv[0], PATH_MAX));
 
     IDIO thr = idio_thread_current_thread ();
 
@@ -497,7 +498,7 @@ int main (int argc, char **argv, char **envp)
 
     idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
-    idio_load_file_name (idio_string_C ("bootstrap"), idio_vm_constants);
+    idio_load_file_name (idio_string_C_len (IDIO_STATIC_STR_LEN ("bootstrap")), idio_vm_constants);
 
     idio_gc_collect_all ("post-bootstrap");
     idio_add_terminal_signals ();
@@ -667,7 +668,8 @@ int main (int argc, char **argv, char **envp)
      * Remember, sargv started out pointing at argv so if there were
      * no arguments sargv[0] is argv[0].
      */
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("ARGV0"), idio_string_C (sargv[0]), idio_Idio_module_instance ());
+    IDIO filename = idio_string_C (sargv[0]);
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("ARGV0"), filename, idio_Idio_module_instance ());
 
     IDIO args = idio_array (sargc);
     if (sargc) {
@@ -685,8 +687,6 @@ int main (int argc, char **argv, char **envp)
 	 * So turn interactivity off.
 	 */
 	idio_job_control_set_interactive (0);
-
-	IDIO filename = idio_string_C (sargv[0]);
 
 	/*
 	 * If we're given a sequence of files to load then any

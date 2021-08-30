@@ -325,7 +325,7 @@ size_t idio_string_storage_size (IDIO s)
     return width;
 }
 
-IDIO idio_string_C_len (const char *s_C, size_t blen)
+IDIO idio_string_C_len (const char *s_C, const size_t blen)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -1361,7 +1361,7 @@ which is a list of strings.						\n\
 
 	    size_t size = 0;
 	    copies[i] = idio_string_as_C (IDIO_PAIR_H (args), &size);
-	    lens[i] = strlen (copies[i]);
+	    lens[i] = size;
 
 	    args = IDIO_PAIR_T (args);
 	}
@@ -1372,7 +1372,7 @@ which is a list of strings.						\n\
 	    IDIO_GC_FREE (copies[i]);
 	}
     } else {
-	r = idio_string_C ("");
+	r = idio_string_C_len ("", 0);
     }
 
     return r;
@@ -1431,7 +1431,7 @@ a string.								\n\
 	    IDIO_GC_FREE (copies[i]);
 	}
     } else {
-	r = idio_string_C ("");
+	r = idio_string_C_len ("", 0);
     }
 
     return r;
@@ -1998,7 +1998,7 @@ through to but excluuding position `pn`		\n\
     if (rl) {
 	r = idio_substring_offset_len (s, ip0, rl);
     } else {
-	r = idio_string_C ("");
+	r = idio_string_C_len ("", 0);
     }
 
     return r;

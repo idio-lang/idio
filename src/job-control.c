@@ -630,7 +630,7 @@ static IDIO idio_job_control_wait_for_job (IDIO job)
 	IDIO raised = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_RAISED);
 	if (idio_S_false == raised) {
 	    IDIO c = idio_struct_instance (idio_condition_rt_command_status_error_type,
-					   IDIO_LIST4 (idio_string_C ("C/job failed"),
+					   IDIO_LIST4 (idio_string_C_len (IDIO_STATIC_STR_LEN ("C/job failed")),
 						       IDIO_C_FUNC_LOCATION (),
 						       job,
 						       idio_job_control_job_status (job)));

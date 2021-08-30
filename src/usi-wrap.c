@@ -732,7 +732,9 @@ void idio_init_usi_wrap ()
 	/*
 	 * The longest SRFI_14_char_sets[csi].name is 31 chars hence
 	 * the strnlen (..., 40) magic number to allow some future
-	 * leeway
+	 * leeway.
+	 *
+	 * strnlen rather that idio_strnlen during bootstrap
 	 */
 	idio_module_export_symbol_value (idio_symbols_C_intern (SRFI_14_char_sets[csi].name, strnlen (SRFI_14_char_sets[csi].name, 40)), css[csi], idio_SRFI_14_module);
     }

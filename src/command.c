@@ -535,7 +535,7 @@ char *idio_command_find_exe_C (const char *command, size_t cmdlen)
 		    IDIO_GC_FREE (path_C);
 		}
 
-		idio_error_system ("cwd+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+		idio_error_system ("cwd+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C_len (command, cmdlen)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return NULL;
@@ -565,7 +565,7 @@ char *idio_command_find_exe_C (const char *command, size_t cmdlen)
 			IDIO_GC_FREE (path_C);
 		    }
 
-		    idio_error_system ("PATH+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+		    idio_error_system ("PATH+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C_len (command, cmdlen)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
 		    return NULL;
@@ -590,7 +590,7 @@ char *idio_command_find_exe_C (const char *command, size_t cmdlen)
 			    IDIO_GC_FREE (path_C);
 			}
 
-			idio_error_system ("cwd+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+			idio_error_system ("cwd+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C_len (command, cmdlen)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
 			return NULL;
@@ -620,7 +620,7 @@ char *idio_command_find_exe_C (const char *command, size_t cmdlen)
 			    IDIO_GC_FREE (path_C);
 			}
 
-			idio_error_system ("dir+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+			idio_error_system ("dir+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C_len (command, cmdlen)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
 			return NULL;
@@ -652,7 +652,7 @@ char *idio_command_find_exe_C (const char *command, size_t cmdlen)
 		    IDIO_GC_FREE (path_C);
 		}
 
-		idio_error_system_errno ("stat", idio_string_C (exename), IDIO_C_FUNC_LOCATION ());
+		idio_error_system_errno ("stat", idio_string_C_len (exename, exelen), IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return NULL;
@@ -1005,9 +1005,9 @@ char **idio_command_argv (IDIO args)
 				/*
 				 * Can we know anything about the size
 				 * of g.gl_pathv[n] to constrain the
-				 * strlen?
+				 * strnlen?  PATH_MAX?
 				 */
-				size_t plen = strlen (g.gl_pathv[n]);
+				size_t plen = idio_strnlen (g.gl_pathv[n], PATH_MAX);
 				argv[i] = idio_alloc (plen + 1);
 				memcpy (argv[i], g.gl_pathv[n], plen);
 				argv[i][plen] = '\0';
@@ -1079,9 +1079,10 @@ char **idio_command_argv (IDIO args)
 				    /*
 				     * Can we know anything about the
 				     * size of g.gl_pathv[n] to
-				     * constrain the strlen?
+				     * constrain the strnlen?
+				     * PATH_MAX?
 				     */
-				    size_t plen = strlen (g.gl_pathv[n]);
+				    size_t plen = idio_strnlen (g.gl_pathv[n], PATH_MAX);
 				    argv[i] = idio_alloc (plen + 1);
 				    memcpy (argv[i], g.gl_pathv[n], plen);
 				    argv[i][plen] = '\0';

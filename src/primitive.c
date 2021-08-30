@@ -66,12 +66,9 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, const size_t 
 
     IDIO_GC_ALLOC (IDIO_PRIMITIVE_NAME (o), name_C_len + 1);
 
-    /*
-     * Arguably, no point in using memcpy as we have just relied on
-     * name_C being NUL terminated with strlen...
-     */
     memcpy (IDIO_PRIMITIVE_NAME (o), name_C, name_C_len);
     IDIO_PRIMITIVE_NAME (o)[name_C_len] = '\0';
+    IDIO_PRIMITIVE_NAME_LEN (o) = name_C_len;
 
 #ifdef IDIO_VM_PROF
     IDIO_PRIMITIVE_CALLED (o) = 0;
@@ -111,6 +108,7 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
 
     memcpy (IDIO_PRIMITIVE_NAME (o), desc->name, desc->name_len);
     IDIO_PRIMITIVE_NAME (o)[desc->name_len] = '\0';
+    IDIO_PRIMITIVE_NAME_LEN (o) = desc->name_len;
 
 #ifdef IDIO_VM_PROF
     IDIO_PRIMITIVE_CALLED (o) = 0;
@@ -127,16 +125,16 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
 	idio_set_property (o, idio_KW_name, idio_symbols_C_intern (desc->name, desc->name_len));
     }
     if (NULL != desc->sigstr) {
-	idio_set_property (o, idio_KW_sigstr, idio_string_C (desc->sigstr));
+	idio_set_property (o, idio_KW_sigstr, idio_string_C_len (desc->sigstr, desc->sigstr_len));
     }
     if (NULL != desc->docstr) {
-	idio_set_property (o, idio_KW_docstr_raw, idio_string_C (desc->docstr));
+	idio_set_property (o, idio_KW_docstr_raw, idio_string_C_len (desc->docstr, desc->docstr_len));
     }
 
     return o;
 }
 
-void idio_primitive_set_property_C (IDIO p, IDIO kw, const char *str_C)
+void idio_primitive_set_property_C (IDIO p, IDIO kw, const char *str_C, const size_t str_C_len)
 {
     IDIO_ASSERT (p);
     IDIO_TYPE_ASSERT (primitive, p);
@@ -151,7 +149,6 @@ void idio_primitive_set_property_C (IDIO p, IDIO kw, const char *str_C)
 	 */
 	return;
     } else {
-	size_t str_C_len = strlen (str_C);
 	if (0 == str_C_len) {
 	    /*
 	     * Code coverage:
@@ -243,7 +240,7 @@ Return the name of `p`				\n\
      */
     IDIO_USER_TYPE_ASSERT (primitive, p);
 
-    return idio_string_C (IDIO_PRIMITIVE_NAME (p));
+    return idio_string_C_len (IDIO_PRIMITIVE_NAME (p), IDIO_PRIMITIVE_NAME_LEN (p));
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("primitive-varargs?", primitive_varargsp, (IDIO p), "p", "\

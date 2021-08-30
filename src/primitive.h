@@ -25,7 +25,7 @@
 
 IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, const size_t name_C_len, size_t arity, char varargs, const char *sigstr_C, const size_t sigstr_C_len, const char *docstr_C, const size_t docstr_C_len);
 IDIO idio_primitive_data (idio_primitive_desc_t *desc);
-void idio_primitive_set_property_C (IDIO p, IDIO kw, const char *str_C);
+void idio_primitive_set_property_C (IDIO p, IDIO kw, const char *str_C, const size_t str_C_len);
 int idio_isa_primitive (IDIO o);
 void idio_free_primitive (IDIO o);
 

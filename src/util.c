@@ -1630,6 +1630,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    if (idio_isa_symbol (IDIO_PAIR_H (o))) {
 			int special = 0;
 			char *trail = NULL;
+			size_t tlen = 0;
 
 			if (idio_S_quote == IDIO_PAIR_H (o)) {
 			    special = 1;
@@ -1643,6 +1644,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			} else if (idio_S_quasiquote == IDIO_PAIR_H (o)) {
 			    special = 1;
 			    trail = " }";
+			    tlen = 2;
 			    *sizep = idio_asprintf (&r, "#T{ ");
 			}
 
@@ -1665,7 +1667,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			    }
 
 			    if (NULL != trail) {
-				IDIO_STRCAT (r, sizep, trail);
+				r = idio_strcat (r, sizep, trail, tlen);
 			    }
 			    break;
 			}
@@ -1767,9 +1769,8 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 				     * No user-facing string keys
 				     * tables.
 				     */
-				    idio_asprintf (&t, "%s", (char *) IDIO_HASH_HE_KEY (he));
+				    t_size = idio_asprintf (&t, "%s", (char *) IDIO_HASH_HE_KEY (he));
 				    t = (char *) IDIO_HASH_HE_KEY (he);
-				    t_size = strlen (t);
 				} else {
 				    t = idio_as_string (IDIO_HASH_HE_KEY (he), &t_size, depth - 1, seen, 0);
 				}
@@ -2695,7 +2696,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 				    }
 				    bits[j] = '\0';
 
-				    IDIO_STRCAT (r, sizep, bits);
+				    r = idio_strcat (r, sizep, bits, j);
 				    IDIO_STRCAT (r, sizep, " ");
 				} else {
 				    char *lead;
@@ -2862,6 +2863,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		     * Of course the string can still be gobbledegook
 		     * but it's something to go on if we've trampled
 		     * on a hash's string key.
+		     *
+		     * strnlen rather than idio_strnlen as we're
+		     * already teetering and don't need a distracting
+		     * (virtually certain) condition being raised.
 		     */
 		    size_t n = strnlen ((char *) o, 40);
 		    if (40 == n) {
@@ -4054,7 +4059,16 @@ size_t idio_strnlen (const char *s, size_t maxlen)
     }
 
     if (maxlen == n) {
-	idio_error_C ("strnlen truncated", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * As we're including the input string in our helpful error
+	 * message then we don't want BUFSIZ chars filling the screen
+	 * so limit the entire error message to 80 bytes.
+	 */
+	char em[80];
+	snprintf (em, 80, "idio_strnlen: truncated to %zd: \"%s\"", maxlen, s);
+	em[80] = '\0';
+
+	idio_error_C (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return 0;
@@ -4082,8 +4096,15 @@ int idio_snprintf (char *str, size_t size, char *format, ...)
     if (plen >= size ||
 	plen < 0) {
 	str[size] = '\0';
-	char em[BUFSIZ];
-	snprintf (em, BUFSIZ, "idio_snprintf: reqd %d in %zd available: \"%s\"", plen, size, str);
+
+	/*
+	 * As we're including the input string in our helpful error
+	 * message then we don't want BUFSIZ chars filling the screen
+	 * so limit the entire error message to 80 bytes.
+	 */
+	char em[80];
+	snprintf (em, 80, "idio_snprintf: reqd %d in %zd available: \"%s\"", plen, size, str);
+	em[80] = '\0';
 
 	idio_error_C (em, idio_integer (plen), IDIO_C_FUNC_LOCATION ());
 

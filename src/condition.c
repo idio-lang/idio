@@ -683,7 +683,7 @@ void idio_condition_report (char *prefix, IDIO c)
     IDIO cr_cmd = IDIO_LIST4 (idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("condition-report"),
 							idio_Idio_module,
 							idio_S_nil),
-			      idio_string_C (pid_prefix),
+			      idio_string_C_len (pid_prefix, prefix_len + pid_len),
 			      c,
 			      idio_thread_current_error_handle ());
 

@@ -158,6 +158,7 @@ IDIO idio_keyword_C_len (const char *s_C, size_t blen)
 
     memcpy (IDIO_KEYWORD_S (o), s_C, blen);
     IDIO_KEYWORD_S (o)[blen] = '\0';
+    IDIO_KEYWORD_BLEN (o) = blen;
 
     return o;
 }
@@ -285,7 +286,7 @@ convert keyword `kw` to a string		\n\
      */
     IDIO_USER_TYPE_ASSERT (keyword, kw);
 
-    return idio_string_C (IDIO_KEYWORD_S (kw));
+    return idio_string_C_len (IDIO_KEYWORD_S (kw), IDIO_KEYWORD_BLEN (kw));
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("keywords", keywords, (), "", "\

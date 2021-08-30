@@ -1123,13 +1123,16 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
 	 */
 	IDIO_USER_TYPE_ASSERT (symbol, w);
 
-	if (IDIO_STREQP (IDIO_SYMBOL_S (w), "set")) {
-	    whence = SEEK_SET;
-	} else if (IDIO_STREQP (IDIO_SYMBOL_S (w), "end")) {
-	    whence = SEEK_END;
-	} else if (IDIO_STREQP (IDIO_SYMBOL_S (w), "cur")) {
-	    whence = SEEK_CUR;
-	} else {
+	if (3 == IDIO_SYMBOL_BLEN (w)) {
+	    if (strncmp (IDIO_SYMBOL_S (w), "set", 3) == 0) {
+		whence = SEEK_SET;
+	    } else if (strncmp (IDIO_SYMBOL_S (w), "end", 3) == 0) {
+		whence = SEEK_END;
+	    } else if (strncmp (IDIO_SYMBOL_S (w), "cur", 3) == 0) {
+		whence = SEEK_CUR;
+	    }
+	}
+	if (-1 == whence) {
 	    /*
 	     * Test Case: handle-errors/seek-handle-bad-whence-value.idio
 	     *
@@ -2015,11 +2018,11 @@ IDIO idio_handle_location (IDIO h)
 
     char *sname = idio_handle_name_as_C (h);
     char buf[BUFSIZ];
-    idio_snprintf (buf, BUFSIZ, "%s:line %jd", sname, (intmax_t) IDIO_HANDLE_LINE (h));
+    size_t buflen = idio_snprintf (buf, BUFSIZ, "%s:line %jd", sname, (intmax_t) IDIO_HANDLE_LINE (h));
 
     IDIO_GC_FREE (sname);
 
-    return idio_string_C (buf);
+    return idio_string_C_len (buf, buflen);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("handle-location", handle_location, (IDIO h), "handle", "\
