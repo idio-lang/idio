@@ -70,7 +70,7 @@ static IDIO idio_postfix_operator_group = idio_S_nil;
 
 static IDIO idio_initial_expander (IDIO x, IDIO e);
 
-static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, const char *cpp__FILE__, int cpp__LINE__)
+static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, char const *cpp__FILE__, int cpp__LINE__)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (primdata);
@@ -119,7 +119,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, const 
     return fgvi;
 }
 
-IDIO idio_add_evaluation_primitive (idio_primitive_desc_t *d, IDIO module, const char *cpp__FILE__, int cpp__LINE__)
+IDIO idio_add_evaluation_primitive (idio_primitive_desc_t *d, IDIO module, char const *cpp__FILE__, int cpp__LINE__)
 {
     IDIO_C_ASSERT (d);
     IDIO_ASSERT (module);
@@ -130,7 +130,7 @@ IDIO idio_add_evaluation_primitive (idio_primitive_desc_t *d, IDIO module, const
     return idio_evaluator_extend (sym, primdata, module, cpp__FILE__, cpp__LINE__);
 }
 
-void idio_add_expander_primitive (idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
+void idio_add_expander_primitive (idio_primitive_desc_t *d, IDIO cs, char const *cpp__FILE__, int cpp__LINE__)
 {
     IDIO_C_ASSERT (d);
     IDIO_ASSERT (cs);
@@ -141,14 +141,14 @@ void idio_add_expander_primitive (idio_primitive_desc_t *d, IDIO cs, const char 
     idio_install_expander_source (idio_symbols_C_intern (d->name, d->name_len), primdata, primdata);
 }
 
-void idio_add_infix_operator_primitive (idio_primitive_desc_t *d, int pri, const char *cpp__FILE__, int cpp__LINE__)
+void idio_add_infix_operator_primitive (idio_primitive_desc_t *d, int pri, char const *cpp__FILE__, int cpp__LINE__)
 {
     idio_add_evaluation_primitive (d, idio_operator_module, cpp__FILE__, cpp__LINE__);
     IDIO primdata = idio_primitive_data (d);
     idio_install_infix_operator (idio_symbols_C_intern (d->name, d->name_len), primdata, pri);
 }
 
-void idio_add_postfix_operator_primitive (idio_primitive_desc_t *d, int pri, const char *cpp__FILE__, int cpp__LINE__)
+void idio_add_postfix_operator_primitive (idio_primitive_desc_t *d, int pri, char const *cpp__FILE__, int cpp__LINE__)
 {
     idio_add_evaluation_primitive (d, idio_operator_module, cpp__FILE__, cpp__LINE__);
     IDIO primdata = idio_primitive_data (d);

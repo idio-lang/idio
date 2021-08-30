@@ -152,12 +152,12 @@ void idio_property_error_key_not_found (IDIO key, IDIO c_location);
 
 void idio_free_symbol (IDIO s);
 int idio_isa_symbol (IDIO s);
-IDIO idio_symbols_C_intern (char const *s, size_t const blen);
+IDIO idio_symbols_C_intern (char const *s, size_t blen);
 IDIO idio_symbols_string_intern (IDIO str);
 
 #define IDIO_SYMBOLS_C_INTERN(s)	idio_symbols_C_intern (s, sizeof (s) - 1)
 
-IDIO idio_gensym (char const *pref_prefix, size_t const blen);
+IDIO idio_gensym (char const *pref_prefix, size_t blen);
 
 IDIO idio_ref_properties (IDIO o, IDIO args);
 void idio_set_properties (IDIO o, IDIO properties);

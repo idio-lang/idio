@@ -146,7 +146,7 @@ int idio_usi_isa (IDIO o, int flag)
 
 void idio_usi_describe_code_point (idio_unicode_t cp)
 {
-    static const char *case_names[] = {
+    static char const *case_names[] = {
 	"Uppercase",
 	"Lowercase",
 	"Titlecase",
@@ -605,7 +605,7 @@ enum SRFI_14_char_set_IDs {
 
 typedef struct SRFI_14_char_set_s {
     enum SRFI_14_char_set_IDs index;
-    const char *name;
+    char const *name;
 } SRFI_14_char_set_t;
 
 const SRFI_14_char_set_t SRFI_14_char_sets[] = {

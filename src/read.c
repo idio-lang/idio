@@ -2939,8 +2939,8 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
     }
 }
 
-static const char idio_read_digits[] = "0123456789abcdefghijklmnopqrstuvwxyz"; /* base 36 is possible */
-static const char idio_read_DIGITS[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"; /* base 36 is possible */
+static char const idio_read_digits[] = "0123456789abcdefghijklmnopqrstuvwxyz"; /* base 36 is possible */
+static char const idio_read_DIGITS[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"; /* base 36 is possible */
 
 /*
  * Annoyingly similar to reading in bignums, see

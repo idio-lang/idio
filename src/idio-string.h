@@ -35,10 +35,10 @@
 
 size_t idio_string_storage_size (IDIO s);
 int idio_assign_string_C (IDIO so, char const *s_C);
-IDIO idio_string_C_len (char const *s_C, size_t const blen);
+IDIO idio_string_C_len (char const *s_C, size_t blen);
 IDIO idio_string_C (char const *s_C);
 IDIO idio_string_C_array_lens (size_t ns, char const *a_C[], size_t const lens[]);
-IDIO idio_string_C_array (size_t const ns, char const *a_C[]);
+IDIO idio_string_C_array (size_t ns, char const *a_C[]);
 IDIO idio_copy_string (IDIO s);
 void idio_free_string (IDIO so);
 int idio_isa_string (IDIO so);

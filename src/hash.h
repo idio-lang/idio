@@ -36,7 +36,7 @@ void idio_free_hash (IDIO h);
 size_t idio_hash_hcount (IDIO h);
 void idio_hash_resize (IDIO h, int larger);
 size_t idio_hash_default_hash_C_uintmax_t (uintmax_t i);
-size_t idio_hash_default_hash_C_string_C (size_t const blen, char const *s_C);
+size_t idio_hash_default_hash_C_string_C (size_t blen, char const *s_C);
 size_t idio_hash_default_hash_C_string (IDIO s);
 size_t idio_hash_default_hash_C_symbol (IDIO s);
 size_t idio_hash_default_hash_C_void (void *p);

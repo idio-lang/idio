@@ -102,7 +102,7 @@ int idio_character_C_eqp (const void *s1, const void *s2)
 	return 0;
     }
 
-    return (0 == strncmp ((const char *) s1, (const char *) s2, IDIO_CHARACTER_MAXLEN));
+    return (0 == strncmp ((char const *) s1, (char const *) s2, IDIO_CHARACTER_MAXLEN));
 }
 
 idio_hi_t idio_character_C_hash (IDIO h, const void *s)
@@ -117,7 +117,7 @@ idio_hi_t idio_character_C_hash (IDIO h, const void *s)
     return (hvalue & IDIO_HASH_MASK (h));
 }
 
-IDIO idio_characters_C_intern (const char *s, IDIO v)
+IDIO idio_characters_C_intern (char const *s, IDIO v)
 {
     IDIO_C_ASSERT (s);
 

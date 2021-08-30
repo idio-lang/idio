@@ -325,7 +325,7 @@ size_t idio_string_storage_size (IDIO s)
     return width;
 }
 
-IDIO idio_string_C_len (const char *s_C, const size_t blen)
+IDIO idio_string_C_len (char const *s_C, size_t const blen)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -455,7 +455,7 @@ IDIO idio_string_C_len (const char *s_C, const size_t blen)
     return so;
 }
 
-IDIO idio_string_C (const char *s_C)
+IDIO idio_string_C (char const *s_C)
 {
     IDIO_C_ASSERT (s_C);
 
@@ -2257,7 +2257,7 @@ IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci>?", gt, >)
 /*
  * idio_strspn()
  *
- * cf. size_t strspn(const char *s, const char *accept);
+ * cf. size_t strspn(char const *s, char const *accept);
  *
  *   The strspn() function calculates the length (in bytes) of the
  *   initial segment of s which consists entirely of bytes in accept.
@@ -2350,7 +2350,7 @@ static size_t idio_strspn (ptrdiff_t i, char const *is, size_t const ilen, size_
 /*
  * idio_strpbrk()
  *
- * cf. char *strpbrk(const char *s, const char *accept);
+ * cf. char *strpbrk(char const *s, char const *accept);
  *
  *   The strpbrk() function locates the first occurrence in the string
  *   s of any of the bytes in the string accept.

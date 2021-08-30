@@ -137,7 +137,7 @@ extern IDIO idio_vm_signal_handler_conditions;
 extern char **idio_libc_signal_names;
 void idio_libc_format_error (char const *msg, IDIO name, IDIO c_location);
 char *idio_libc_string_C (IDIO val, char const *func_C, int *free_me_p, IDIO c_location);
-char *idio_getcwd (char const *func, char *buf, size_t const size);
+char *idio_getcwd (char const *func, char *buf, size_t size);
 char *idio_libc_signal_name (int signum);
 extern IDIO idio_vm_errno_conditions;
 extern char **idio_libc_errno_names;

@@ -39,7 +39,7 @@ IDIO idio_keyword_C (char const *s_C);
 IDIO idio_tag_C (char const *s_C);
 void idio_free_keyword (IDIO s);
 int idio_isa_keyword (IDIO s);
-IDIO idio_keywords_C_intern (char const *s, size_t const slen);
+IDIO idio_keywords_C_intern (char const *s, size_t slen);
 IDIO idio_hash_make_keyword_table (IDIO args);
 IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args);
 IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v);

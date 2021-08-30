@@ -350,7 +350,7 @@ static void idio_env_add_environ ()
  * - a0rp (argv0_realpath) is a buffer of PATH_MAX characters which we
  *   copy the result into
  */
-void idio_env_exe_pathname (const char *argv0, const size_t argv0_len, char *a0rp, size_t a0rp_len)
+void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0rp, size_t a0rp_len)
 {
     IDIO_C_ASSERT (argv0);
     IDIO_C_ASSERT (argv0_len > 0);
@@ -421,7 +421,7 @@ void idio_env_exe_pathname (const char *argv0, const size_t argv0_len, char *a0r
 	perror ("_NSGetExecutablePath");
     }
 #elif defined (__sun) && defined (__SVR4)
-    const char *r = getexecname ();
+    char const *r = getexecname ();
     if (NULL != r) {
 	if ('/' == r[0]) {
 	    /*

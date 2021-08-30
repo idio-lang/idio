@@ -32,7 +32,7 @@ void idio_resize_array (IDIO a);
 idio_ai_t idio_array_size (IDIO a);
 void idio_array_insert_index (IDIO a, IDIO io, idio_ai_t index);
 void idio_array_push (IDIO a, IDIO io);
-void idio_array_push_n (IDIO a, size_t const nargs, ...);
+void idio_array_push_n (IDIO a, size_t nargs, ...);
 IDIO idio_array_pop (IDIO a);
 IDIO idio_array_shift (IDIO a);
 void idio_array_unshift (IDIO a, IDIO io);

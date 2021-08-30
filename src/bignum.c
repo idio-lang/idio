@@ -138,8 +138,10 @@ static void idio_bignum_error_divide_by_zero (IDIO nums, IDIO c_location)
     idio_error_divide_by_zero ("bignum divide by zero", nums, c_location);
 }
 
-IDIO_BSA idio_bsa (size_t n)
+IDIO_BSA idio_bsa (size_t const n0)
 {
+    size_t n = n0;
+
     if (n <= 0) {
 	/*
 	 * Code coverage: C unit test??
@@ -3129,7 +3131,7 @@ char *idio_bignum_as_string (IDIO bn, size_t *sizep)
 	/*
 	 * Code coverage: no use of NaN (yet?)
 	 */
-	size_t ibn_len = sizeof (IDIO_BIGNUM_NAN);
+	size_t ibn_len = sizeof (IDIO_BIGNUM_NAN) - 1;
 	char *s = idio_alloc (ibn_len + 1);
 	memcpy (s, IDIO_BIGNUM_NAN, ibn_len);
 	s[ibn_len] = '\0';

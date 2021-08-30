@@ -58,7 +58,7 @@ typedef struct idio_file_handle_stream_s {
 #define IDIO_MODE_W	"w"
 #define IDIO_MODE_WE	"we"
 
-IDIO idio_file_handle_open_file (char const *func, IDIO name, IDIO mode, char const *def_mode, size_t const dm_len);
+IDIO idio_file_handle_open_file (char const *func, IDIO name, IDIO mode, char const *def_mode, size_t dm_len);
 int idio_isa_file_handle (IDIO fh);
 int idio_isa_fd_handle (IDIO fh);
 int idio_isa_pipe_handle (IDIO fh);
@@ -77,7 +77,7 @@ int idio_eofp_file_handle (IDIO fh);
 int idio_close_file_handle (IDIO fh);
 int idio_putb_file_handle (IDIO fh, uint8_t c);
 int idio_putc_file_handle (IDIO fh, idio_unicode_t c);
-ptrdiff_t idio_puts_file_handle (IDIO fh, char const *s, size_t const slen);
+ptrdiff_t idio_puts_file_handle (IDIO fh, char const *s, size_t slen);
 int idio_flush_file_handle (IDIO fh);
 off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence);
 void idio_print_file_handle (IDIO fh, IDIO o);

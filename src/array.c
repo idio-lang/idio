@@ -81,7 +81,7 @@
 
 static IDIO idio_array_default_value = idio_S_false;
 
-static void idio_array_length_error (const char *msg, idio_ai_t size, IDIO c_location)
+static void idio_array_length_error (char const *msg, idio_ai_t size, IDIO c_location)
 {
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
@@ -187,8 +187,10 @@ void idio_assign_array (IDIO a, idio_ai_t asize, IDIO dv)
  * Return:
  * Returns the initialised array.
  */
-IDIO idio_array_dv (idio_ai_t size, IDIO dv)
+IDIO idio_array_dv (idio_ai_t size0, IDIO dv)
 {
+    size_t size = size0;
+
     if (0 == size) {
 	size = 1;
     }

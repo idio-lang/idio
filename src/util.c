@@ -163,7 +163,7 @@ int idio_type (IDIO o)
     }
 }
 
-const char *idio_type_enum2string (idio_type_e type)
+char const *idio_type_enum2string (idio_type_e type)
 {
     switch (type) {
     case IDIO_TYPE_NONE:		return "NONE";
@@ -220,7 +220,7 @@ const char *idio_type_enum2string (idio_type_e type)
     }
 }
 
-const char *idio_type2string (IDIO o)
+char const *idio_type2string (IDIO o)
 {
     return idio_type_enum2string (idio_type (o));
 }
@@ -3135,7 +3135,7 @@ convert `o` to a display string			\n\
  *
  * Compile a debug build then run with --vm-reports
  */
-const char *idio_vm_bytecode2string (int code)
+char const *idio_vm_bytecode2string (int code)
 {
     char *r;
 
@@ -4064,7 +4064,7 @@ size_t idio_strnlen (char const *s, size_t const maxlen)
 	 * message then we don't want BUFSIZ chars filling the screen
 	 * so limit the entire error message to 80 bytes.
 	 */
-	char em[80];
+	char em[81];
 	snprintf (em, 80, "idio_strnlen: truncated to %zd: \"%s\"", maxlen, s);
 	em[80] = '\0';
 
@@ -4102,7 +4102,7 @@ int idio_snprintf (char *str, size_t const size, char const *format, ...)
 	 * message then we don't want BUFSIZ chars filling the screen
 	 * so limit the entire error message to 80 bytes.
 	 */
-	char em[80];
+	char em[81];
 	snprintf (em, 80, "idio_snprintf: reqd %d in %zd available: \"%s\"", plen, size, str);
 	em[80] = '\0';
 

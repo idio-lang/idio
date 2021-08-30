@@ -563,7 +563,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
  * for each size category, the second showing the number of mallocs -
  * frees for each size category.
  */
-void idio_malloc_stats (char *s)
+void idio_malloc_stats (char const *s)
 {
     FILE *fh = stderr;
 
@@ -646,7 +646,7 @@ void idio_malloc_stats (char *s)
 /*
  * http://stackoverflow.com/questions/3774417/sprintf-with-automatic-memory-allocation
  */
-int idio_malloc_vasprintf (char **strp, const char *fmt, va_list ap)
+int idio_malloc_vasprintf (char **strp, char const *fmt, va_list ap)
 {
     va_list ap1;
     size_t size;
@@ -665,7 +665,7 @@ int idio_malloc_vasprintf (char **strp, const char *fmt, va_list ap)
     return vsnprintf (buffer, size, fmt, ap);
 }
 
-int idio_malloc_asprintf(char **strp, const char *fmt, ...)
+int idio_malloc_asprintf(char **strp, char const *fmt, ...)
 {
     int error;
     va_list ap;

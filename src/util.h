@@ -49,8 +49,8 @@ extern IDIO idio_print_conversion_format_sym;
 extern IDIO idio_print_conversion_precision_sym;
 
 int idio_type (IDIO o);
-const char *idio_type2string (IDIO o);
-const char *idio_type_enum2string (idio_type_e type);
+char const *idio_type2string (IDIO o);
+char const *idio_type_enum2string (idio_type_e type);
 int idio_isa_boolean (IDIO o);
 int idio_eqp (void const *o1, void const *o2);
 int idio_eqvp (void const *o1, void const *o2);
@@ -60,22 +60,22 @@ IDIO idio_value (IDIO o);
 char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first);
 char *idio_as_string_safe (IDIO o, size_t *sizep, int depth, int first);
 char *idio_display_string (IDIO o, size_t *sizep);
-const char *idio_vm_bytecode2string (int code);
+char const *idio_vm_bytecode2string (int code);
 void idio_as_flat_string (IDIO o, char **argv, int *i);
 IDIO idio_copy (IDIO o, int depth);
 void idio_dump (IDIO o, int detail);
 void idio_debug_FILE (FILE *file, char const *fmt, IDIO o);
 void idio_debug (char const *fmt, IDIO o);
 IDIO idio_add_feature (IDIO f);
-IDIO idio_add_feature_ps (char const *p, size_t const plen, char const *s, size_t const slen);
-IDIO idio_add_feature_pi (char const *p, size_t const plen, size_t const size);
+IDIO idio_add_feature_ps (char const *p, size_t plen, char const *s, size_t slen);
+IDIO idio_add_feature_pi (char const *p, size_t plen, size_t size);
 
 #if ! defined (strnlen)
 size_t strnlen (char const *s, size_t maxlen);
 #endif
 
-size_t idio_strnlen (char const *s, size_t const maxlen);
-int idio_snprintf (char *str, size_t const size, char const *format, ...);
+size_t idio_strnlen (char const *s, size_t maxlen);
+int idio_snprintf (char *str, size_t size, char const *format, ...);
 
 void idio_init_util ();
 

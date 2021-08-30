@@ -519,8 +519,8 @@ typedef struct idio_hash_s {
     idio_hi_t size;
     idio_hi_t mask;	      /* bitmask for easy modulo arithmetic */
     idio_hi_t count;	      /* (key) count */
-    int (*comp_C) (const void *k1, const void *k2);	/* C equivalence function */
-    idio_hi_t (*hash_C) (struct idio_s *h, const void *k); /* C hashing function */
+    int (*comp_C) (void const *k1, void const *k2);	/* C equivalence function */
+    idio_hi_t (*hash_C) (struct idio_s *h, void const *k); /* C hashing function */
     struct idio_s *comp;	/* user-supplied comparator */
     struct idio_s *hash;	/* user-supplied hashing function */
     idio_hash_entry_t* *ha;	/* a C array */
@@ -727,7 +727,7 @@ typedef struct idio_handle_methods_s {
     int (*close) (struct idio_s *h);
     int (*putb) (struct idio_s *h, uint8_t c);
     int (*putc) (struct idio_s *h, idio_unicode_t c);
-    ptrdiff_t (*puts) (struct idio_s *h, char const *s, size_t const slen);
+    ptrdiff_t (*puts) (struct idio_s *h, char const *s, size_t slen);
     int (*flush) (struct idio_s *h);
     off_t (*seek) (struct idio_s *h, off_t offset, int whence);
     void (*print) (struct idio_s *h, struct idio_s *o);
@@ -1463,11 +1463,11 @@ typedef idio_ia_t* IDIO_IA_T;
 void idio_gc_register_finalizer (IDIO o, void (*func) (IDIO o));
 void idio_gc_deregister_finalizer (IDIO o);
 void idio_run_finalizer (IDIO o);
-void *idio_alloc (size_t const s);
+void *idio_alloc (size_t s);
 void idio_free (void *p);
-void *idio_realloc (void *p, size_t const s);
+void *idio_realloc (void *p, size_t s);
 IDIO idio_gc_get (idio_type_e type);
-void idio_gc_alloc (void **p, size_t const size);
+void idio_gc_alloc (void **p, size_t size);
 /**
  * IDIO_GC_ALLOC() - normalised call to allocate ``IDIO`` value data
  * @p: pointer to be set
@@ -1482,7 +1482,7 @@ void idio_gc_alloc (void **p, size_t const size);
 
 IDIO idio_clone_base (IDIO o);
 int idio_isa (IDIO o, idio_type_e type);
-void idio_gc_stats_free (size_t const n);
+void idio_gc_stats_free (size_t n);
 
 void idio_mark (IDIO o, unsigned colour);
 void idio_process_grey (unsigned colour);
@@ -1520,8 +1520,8 @@ void idio_gc_reset (char const *caller, int pause);
 void idio_gc_free ();
 
 int idio_asprintf(char **strp, char const *fmt, ...);
-char *idio_strcat (char *s1, size_t *s1sp, char const *s2, size_t const s2s);
-char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, size_t const s2s);
+char *idio_strcat (char *s1, size_t *s1sp, char const *s2, size_t s2s);
+char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, size_t s2s);
 
 #define IDIO_STATIC_STR_LEN(s)	(s), sizeof (s) - 1
 

@@ -43,7 +43,7 @@ int idio_eofp_handle (IDIO h);
 int idio_close_handle (IDIO h);
 int idio_putb_handle (IDIO h, uint8_t c);
 int idio_putc_handle (IDIO h, idio_unicode_t c);
-ptrdiff_t idio_puts_handle (IDIO h, char const *s, size_t const slen);
+ptrdiff_t idio_puts_handle (IDIO h, char const *s, size_t slen);
 int idio_flush_handle (IDIO h);
 off_t idio_seek_handle (IDIO h, off_t offset, int whence);
 off_t idio_handle_tell (IDIO h);
@@ -59,7 +59,7 @@ IDIO idio_open_handle (IDIO pathname, char const *mode);
 IDIO idio_write (IDIO o, IDIO args);
 IDIO idio_write_char (IDIO c, IDIO args);
 IDIO idio_display (IDIO o, IDIO args);
-IDIO idio_display_C_len (char const *s, size_t const blen, IDIO h);
+IDIO idio_display_C_len (char const *s, size_t blen, IDIO h);
 IDIO idio_display_C (char const *s, IDIO h);
 IDIO idio_handle_location (IDIO h);
 

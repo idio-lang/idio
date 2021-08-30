@@ -251,7 +251,7 @@ void idio_error_param_type_msg (char const *msg, IDIO c_location)
 /*
  * Used by IDIO_TYPE_ASSERT and IDIO_USER_TYPE_ASSERT
  */
-void idio_error_param_type_C (char const *etype, IDIO who, char const *file, const char *func, int line)
+void idio_error_param_type_C (char const *etype, IDIO who, char const *file, char const *func, int line)
 {
     IDIO_C_ASSERT (etype);
     IDIO_ASSERT (who);
@@ -290,7 +290,7 @@ void idio_error_const_param (char const *type_name, IDIO who, IDIO c_location)
 /*
  * Used by IDIO_CONST_ASSERT
  */
-void idio_error_const_param_C (char const *type_name, IDIO who, char const *file, const char *func, int line)
+void idio_error_const_param_C (char const *type_name, IDIO who, char const *file, char const *func, int line)
 {
     IDIO_C_ASSERT (type_name);
     IDIO_ASSERT (who);

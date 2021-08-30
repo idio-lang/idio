@@ -110,8 +110,8 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_S2(x)			IDIO_S1(x)
 #define IDIO__LINE__			IDIO_S2(__LINE__)
 #define IDIO_C_LOCATION(s)		(idio_string_C (s ":" __FILE__ ":" IDIO__LINE__))
-#define IDIO_C_FUNC_LOCATION()		(idio_string_C_array (2, (char *[]) { __FILE__ ":" IDIO__LINE__ ":", (char *) __func__  }))
-#define IDIO_C_FUNC_LOCATION_S(s)	(idio_string_C_array (3, (char *[]) { __FILE__ ":" IDIO__LINE__ ":", (char *) __func__, "/" s }))
+#define IDIO_C_FUNC_LOCATION()		(idio_string_C_array (2, (char const *[]) { __FILE__ ":" IDIO__LINE__ ":", (char *) __func__  }))
+#define IDIO_C_FUNC_LOCATION_S(s)	(idio_string_C_array (3, (char const *[]) { __FILE__ ":" IDIO__LINE__ ":", (char *) __func__, "/" s }))
 
 #else
 
