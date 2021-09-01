@@ -22,6 +22,7 @@ vm-perf.log
 src/map
 
 bin/idio
+src/idio-system.h
 src/libc-api.h
 lib/libc-api.idio
 main

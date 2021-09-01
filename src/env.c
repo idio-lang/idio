@@ -47,6 +47,7 @@
 #include "evaluate.h"
 #include "handle.h"
 #include "idio-string.h"
+#include "idio-system.h"
 #include "libc-wrap.h"
 #include "module.h"
 #include "pair.h"
@@ -705,10 +706,9 @@ void idio_init_env ()
      * Hence the use of idiolib_default which might be different on
      * some systems before copying that into idio_env_IDIOLIB_default.
      */
-#define IDIO_ENV_IDIOLIB_DEFAULT	"/usr/lib/idio"
-    size_t id_len = sizeof (IDIO_ENV_IDIOLIB_DEFAULT) - 1;
+    size_t id_len = sizeof (IDIO_SYSTEM_LIBDIR) - 1;
     idio_env_IDIOLIB_default = idio_alloc (id_len + 1);
-    memcpy (idio_env_IDIOLIB_default, IDIO_ENV_IDIOLIB_DEFAULT, id_len);
+    memcpy (idio_env_IDIOLIB_default, IDIO_SYSTEM_LIBDIR, id_len);
     idio_env_IDIOLIB_default[id_len] = '\0';
 }
 
