@@ -2895,9 +2895,13 @@ typedef struct idio_file_extension_s {
 } idio_file_extension_t;
 
 static idio_file_extension_t idio_file_extensions[] = {
-    { NULL,  NULL, NULL,    idio_read, idio_evaluate, idio_Idio_module_instance },
     { "lib", NULL, ".so",   idio_dl_read, idio_evaluate, idio_Idio_module_instance },
     { NULL,  NULL, IDIO_IDIO_EXT, idio_read, idio_evaluate, idio_Idio_module_instance },
+
+    /*
+     * ext==NULL => check for file ~ ".idio$"
+     */
+    { NULL,  NULL, NULL, idio_read, idio_evaluate, idio_Idio_module_instance },
     /* { ".scm", idio_scm_read, idio_scm_evaluate, idio_main_scm_module_instance }, */
     { NULL, NULL, NULL }
 };
@@ -3032,6 +3036,12 @@ char *idio_libfile_find_C (char const *file, size_t const file_len, size_t *libl
 	libname[libnamelen] = '\0';
     } else {
 	int done = 0;
+	int file_ext_idio = 0;
+	if (file_len > 5) {
+	    if (strncmp (file + file_len - 5, ".idio", 5) == 0) {
+		file_ext_idio = 1;
+	    }
+	}
 	while (! done) {
 	    size_t idioliblen = idiolibe - idiolib;
 	    char * colon = NULL;
@@ -3140,8 +3150,12 @@ char *idio_libfile_find_C (char const *file, size_t const file_len, size_t *libl
 
 	    for (;NULL != fe->reader;fe++) {
 		if (NULL == fe->ext) {
-		    memcpy (lne, file, file_len);
-		    lne[file_len] = '\0';
+		    if (file_ext_idio) {
+			memcpy (lne, file, file_len);
+			lne[file_len] = '\0';
+		    } else {
+			continue;
+		    }
 		} else {
 		    char *end = lne;
 		    if (NULL != fe->prefix) {
