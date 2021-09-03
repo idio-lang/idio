@@ -2,7 +2,7 @@ export
 
 TOPDIR		:= $(abspath $(PWD))
 BINDIR		= $(TOPDIR)/bin
-LIBDIR		= $(TOPDIR)/lib
+LIBDIR		= $(TOPDIR)/lib/idio
 TESTSDIR	= $(TOPDIR)/tests
 DOCDIR		= $(TOPDIR)/doc
 
