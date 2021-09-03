@@ -446,10 +446,13 @@ char **idio_command_get_envp ()
     return envp;
 }
 
-char *idio_command_find_exe_C (char const *command, size_t const cmdlen)
+char *idio_command_find_exe_C (char const *command, size_t const cmdlen, size_t *lenp)
 {
     IDIO_C_ASSERT (command);
     IDIO_C_ASSERT (cmdlen > 0);
+    IDIO_C_ASSERT (lenp);
+
+    *lenp = 0;
 
     IDIO PATH = idio_module_current_symbol_value_recurse (idio_env_PATH_sym, idio_S_nil);
 
@@ -679,6 +682,11 @@ char *idio_command_find_exe_C (char const *command, size_t const cmdlen)
 	pathname = idio_alloc (exelen + 1);
 	memcpy (pathname, exename, exelen);
 	pathname[exelen] = '\0';
+
+	/*
+	 * Now that we finally have an answer we can set *lenp
+	 */
+	*lenp = exelen;
     }
 
     if (free_path_C) {
@@ -706,7 +714,8 @@ char *idio_command_find_exe (IDIO func)
     char *func_C = idio_command_string_C (idio_S_nil, func, &flen, "command", &free_func_C, IDIO_C_FUNC_LOCATION ());
 
     if (strchr (func_C, '/') == NULL) {
-	char *r = idio_command_find_exe_C (func_C, flen);
+	size_t rlen = 0;
+	char *r = idio_command_find_exe_C (func_C, flen, &rlen);
 
 	if (free_func_C) {
 	    IDIO_GC_FREE (func_C);

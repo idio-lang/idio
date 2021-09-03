@@ -306,7 +306,7 @@ for-each (function (d) {
 		 ext-dirs = pair r.0 ext-dirs
 	       }
 	     })
-	     ("(.*)/lib" {
+	     ("(.*)/lib/idio" {
 	       ed := sprintf "%s/ext" r.1
 	       if (d? ed) {
 		 ext-dirs = pair ed ext-dirs

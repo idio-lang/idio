@@ -74,6 +74,10 @@ IDIO idio_add_feature_pi (char const *p, size_t plen, size_t size);
 size_t strnlen (char const *s, size_t maxlen);
 #endif
 
+#if ! defined (memrchr)
+void *memrchr (void const *s, int c, size_t n);
+#endif
+
 size_t idio_strnlen (char const *s, size_t maxlen);
 int idio_snprintf (char *str, size_t size, char const *format, ...);
 

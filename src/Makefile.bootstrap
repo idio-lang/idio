@@ -1,6 +1,12 @@
 include Makefile.common
 
-CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -DIDIO_MALLOC -I$(SRCDIR) -I$(SRCDIR)/build-bootstrap $(CFLAGS) $(LIBFFI_INC)
+ifdef MAKE_DEBUG
+CDEBUG		:= -g
+else
+CDEBUG		:=
+endif
+
+CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -DIDIO_MALLOC -I$(SRCDIR) -I$(SRCDIR)/build-bootstrap $(CDEBUG) $(CFLAGS) $(LIBFFI_INC)
 LDFLAGS		:= $(LDFLAGS)
 LIBS		:= -lffi $(LIBS)
 
@@ -17,7 +23,7 @@ $(BINDIR):
 	@mkdir -p $(BINDIR)
 
 libc-api.h : $(BINDIR)/idio
-	PATH="$(PATH)":$(BINDIR) IDIOLIB=$(LIBDIR):$(LIBDIR)/build-bootstrap:$(EXTDIR) idio-c-api-gen libc
+	PATH="$(PATH)":$(BINDIR) IDIOLIB=$(LIBDIR):$(LIBDIR)/build-bootstrap idio-c-api-gen libc
 	cp $(EXTDIR)/libc/gen/libc-api.h $(SRCDIR)
 	cp $(EXTDIR)/libc/gen/libc-api.idio $(LIBDIR)
 	rm -f $(deps)

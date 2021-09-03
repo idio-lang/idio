@@ -37,13 +37,6 @@
 #include <string.h>
 #include <unistd.h>
 
-/*
- * SunOS/Mac OS X libc don't define memrchr
- */
-#ifndef memrchr
-#define memrchr(s,c,n) strrchr(s,c)
-#endif
-
 #include "gc.h"
 #include "idio.h"
 

@@ -9,7 +9,7 @@ TOPDIR		?= $(abspath $(PWD)/..)
 endif
 SRCDIR		?= $(TOPDIR)/src
 BINDIR		?= $(TOPDIR)/bin
-LIBDIR		?= $(TOPDIR)/lib
+LIBDIR		?= $(TOPDIR)/lib/idio
 EXTDIR		?= $(TOPDIR)/ext
 TESTSDIR	?= $(TOPDIR)/tests
 UTILSDIR	?= $(TOPDIR)/utils

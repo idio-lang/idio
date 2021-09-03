@@ -443,12 +443,12 @@ find-lib "empty"
 
 ;; reduce IDIOLIB to the grandparent directory of a known library file
 
-;; (findlib "empty") => ".../lib/empty.idio" from which we want "..."
-parts := regexec (regcomp "(.*)/[^/]+/[^/]+$") (find-lib "empty")
+;; (findlib "empty") => ".../lib/idio/empty.idio" from which we want "..."
+parts := regexec (regcomp "(.*)/lib/idio/[^/]+$") (find-lib "empty")
 IDIOLIB = parts.1
 
-load "lib/empty.idio"
-load "lib/empty"
+load "lib/idio/empty.idio"
+load "lib/idio/empty"
 
 IDIOLIB = OIDIOLIB
 ;; all done?

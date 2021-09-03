@@ -23,6 +23,7 @@
 #define _GNU_SOURCE
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 
@@ -72,6 +73,7 @@ extern char **environ;
 
 char *idio_env_PATH_default = "/bin:/usr/bin";
 char *idio_env_IDIOLIB_default = NULL;
+size_t idio_env_IDIOLIB_default_len;
 IDIO idio_env_IDIOLIB_sym;
 IDIO idio_env_PATH_sym;
 IDIO idio_env_PWD_sym;
@@ -335,6 +337,85 @@ static void idio_env_add_environ ()
 }
 
 /*
+ * Following in the guise of
+ * https://stackoverflow.com/questions/4774116/realpath-without-resolving-symlinks
+ *
+ * Here the result is always allocated and we'll set the returned
+ * value's length in rlenp (which may be less than the allocated
+ * length).
+ */
+char *idio_env_normalize_path (char const *path, size_t const path_len, size_t *rlenp)
+{
+    IDIO_C_ASSERT (path);
+    IDIO_C_ASSERT (path_len > 0);
+    IDIO_C_ASSERT (rlenp);
+
+    char *r;
+    size_t rlen;
+
+    char const *p;
+    char const *pe = path + path_len;
+    char const *slash;
+
+    if ('/' != path[0]) {
+	char *cwd = getcwd (NULL, PATH_MAX);
+
+	if (NULL == cwd) {
+	    *rlenp = 0;
+	    return NULL;
+	}
+
+	size_t cwd_len = strnlen (cwd, PATH_MAX);
+	r = idio_alloc (cwd_len + 1 + path_len + 1);
+	memcpy (r, cwd, cwd_len);
+	rlen = cwd_len;
+	free (cwd);
+    } else {
+	r = idio_alloc (path_len + 1);
+	rlen = 0;		/* nothing so far */
+    }
+
+    for (p = path; p < pe; p = slash + 1) {
+	slash = memchr (p, '/', pe - p);
+	if (NULL == slash) {
+	    slash = pe;
+	}
+
+	size_t plen = slash - p;
+	switch (plen) {
+	case 2:			/* /../ ? */
+	    if ('.' == p[0] &&
+		'.' == p[1]) {
+		char const *pslash = memrchr (r, '/', rlen);
+		if (NULL != pslash) {
+		    rlen = pslash - r;
+		}
+		continue;
+	    }
+	    break;
+	case 1:			/* /./ ? */
+	    if ('.' == p[0]) {
+		continue;
+	    }
+	    break;
+	case 0:			/* // */
+	    continue;
+	}
+
+	r[rlen++] = '/';
+	memcpy (r + rlen, p, plen);
+	rlen += plen;
+    }
+
+    if (0 == rlen) {
+	r[rlen++] = '/';
+    }
+    r[rlen] = '\0';
+    *rlenp = rlen;
+    return r;
+}
+
+/*
  * Figure out the pathname of the currently running executable.
  *
  * We should prefer to use kernel interfaces -- which are, of course,
@@ -346,25 +427,52 @@ static void idio_env_add_environ ()
  * kernel interfaces which, presumably, are not fooled by such, er,
  * tomfoolery.
  *
+ * However, we want, if we can, to realpath (argv[0]) anyway in case
+ * it is a symlink as in a virtualenv.
+ *
  * - argv0 is argv[0]
  *
- * - a0rp (argv0_realpath) is a buffer of PATH_MAX characters which we
- *   copy the result into
+ * - a0rp (argv0_realpath) is a buffer of a0rp_len characters which we
+ *   copy the realpath(argv0) result into
+ *
+ * - erp (executable_realpath) is a buffer of erp_len characters which
+ *   we copy the system-specific running executable name into
+ *
+ * - linkp is whether a0rp is a symlink
+ *
+ * Note that we can't (won't) (re-)calculate the a0rp_len and erp_len.
+ * For some OS' we can them via system calls which means someone has
+ * to strnlen() them.
  */
-void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0rp, size_t a0rp_len)
+void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0rp, size_t a0rp_len, char *erp, size_t erp_len, int *linkp)
 {
     IDIO_C_ASSERT (argv0);
     IDIO_C_ASSERT (argv0_len > 0);
     IDIO_C_ASSERT (a0rp);
     IDIO_C_ASSERT (a0rp_len > 0);
+    IDIO_C_ASSERT (erp);
+    IDIO_C_ASSERT (erp_len > 0);
+    IDIO_C_ASSERT (linkp);
+
+    a0rp[0] = '\0';
+
+    if ('/' == argv0[0]) {
+	memcpy (a0rp, argv0, argv0_len);
+	a0rp[argv0_len] = '\0';
+    }
 
     /*
      * Annoyingly, we want to replace argv0 and argv0_len in the SunOS
-     * section to reuse the generic argv0 code which means we drop the
-     * const or use local non-const references
+     * section to reuse the generic realpath (argv0) with a better
+     * argv0, if you like.
+     *
+     * That means we drop the const for argv0 or use local non-const
+     * references.
+     *
+     * We'll use e0 for exe0, our better argv0 (in SunOS, possibly).
      */
-    char *a0 = (char *) argv0;
-    size_t a0_len = (size_t) argv0_len;
+    char *e0 = (char *) argv0;
+    size_t e0_len = (size_t) argv0_len;
 
     /*
      * These operating system-bespoke sections are from
@@ -372,7 +480,7 @@ void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0r
      * I guess there are more.
      */
 
-    a0rp[0] = '\0';
+    erp[0] = '\0';
 #if defined (BSD)
 #if defined (KERN_PROC_PATHNAME)
     /*
@@ -380,16 +488,14 @@ void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0r
      * sysctl(3)
      */
     int names[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
-    size_t pm = PATH_MAX;
-    int r = sysctl (names, 4, a0rp, &pm, NULL, 0);
-    if (0 == r) {
-	return;
-    } else {
+    size_t pm = erp_len;
+    int r = sysctl (names, 4, erp, &pm, NULL, 0);
+    if (0 != r) {
 	perror ("sysctl CTL_KERN KERN_PROC KERN_PROC_PATHNAME");
     }
 #endif
 #elif defined (__linux__)
-    ssize_t r = readlink ("/proc/self/exe", a0rp, a0rp_len);
+    ssize_t r = readlink ("/proc/self/exe", erp, erp_len);
     if (r > 0) {
 	/*
 	 * 1. Can a link be zero length?
@@ -405,20 +511,17 @@ void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0r
 	     * Quite how the kernel managed to run a command whose
 	     * name is longer than PATH_MAX is the right question.
 	     */
-	    a0rp[r] = '\0';
+	    erp[r-1] = '\0';
 	} else {
-	    a0rp[r] = '\0';
+	    erp[r] = '\0';
 	}
-	return;
     } else {
 	perror ("readlink /proc/self/exe");
     }
 #elif defined (__APPLE__) && defined (__MACH__)
-    uint32_t bufsiz = a0rp_len;
-    int r = _NSGetExecutablePath (a0rp, &bufsiz);
-    if (0 == r) {
-	return;
-    } else {
+    uint32_t bufsiz = erp_len;
+    int r = _NSGetExecutablePath (erp, &bufsiz);
+    if (0 != r) {
 	perror ("_NSGetExecutablePath");
     }
 #elif defined (__sun) && defined (__SVR4)
@@ -430,21 +533,19 @@ void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0r
 	     *
 	     * strnlen rather than idio_strnlen during bootstrap
 	     */
-	    size_t rlen = strnlen (r, a0rp_len);
-	    memcpy (a0rp, r, rlen);
-	    a0rp[rlen] = '\0';
-
-	    return;
+	    size_t rlen = strnlen (r, erp_len);
+	    memcpy (erp, r, rlen);
+	    erp[rlen] = '\0';
 	} else {
 	    /*
 	     * relative
 	     *
-	     * We're about to do the right thing with argv0, below,
-	     * but have a better value (hopefully) in r, now.  Rather
-	     * than duplicate code have a0 be r.
+	     * We're about to do the right thing with e0, below, but
+	     * have a better value (hopefully) in r, now.  Rather than
+	     * duplicate code have e be r.
 	     */
-	    a0 = (char *) r;
-	    a0_len = idio_strnlen (r, PATH_MAX);
+	    e0 = (char *) r;
+	    e0_len = idio_strnlen (r, erp_len);
 	}
     }
 #else
@@ -452,10 +553,11 @@ void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0r
 #endif
 
     /*
-     * Fallback to looking for a0 either relative to us or on the PATH
+     * Fallback to looking for e0 either relative to us or on the PATH
      */
-    char *dir = rindex (a0, '/');
+    char *dir = rindex (e0, '/');
 
+    size_t elen = 0;
     if (NULL == dir) {
 	/*
 	 * Test Case: ??
@@ -466,12 +568,41 @@ void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0r
 	 * explicit exec, ".../idio", and an implicit one,
 	 * "PATH=... idio", in the same test suite.
 	 */
-	a0 = idio_command_find_exe_C (a0, a0_len);
+	e0 = idio_command_find_exe_C (e0, e0_len, &elen);
     }
 
-    char *rp = realpath (a0, a0rp);
+    /*
+     * If argv0 is not an absolute path then we'll copy this
+     * found-on-the-PATH value
+     */
+    if ('/' != argv0[0]) {
+	if (elen >= a0rp_len) {
+	    elen = a0rp_len - 1;
+	}
+	memcpy (a0rp, e0, elen);
+	a0rp[elen] = '\0';
+    }
 
-    if (NULL == rp) {
+    /*
+     * We have a slight problem, here, in that PATH could have had
+     * a relative element, PATH=$PATH:./bin in which case
+     * a0rp is ./bin/idio.
+     *
+     * Worse, is that realpath(3) resolves symlinks
+     */
+    if ('/' != a0rp[0]) {
+	size_t n_len = 0;
+	char *n_a0rp = idio_env_normalize_path (a0rp, elen, &n_len);
+	if (n_len < a0rp_len) {
+	    memcpy (a0rp, n_a0rp, n_len);
+	    a0rp[n_len] = '\0';
+	}
+	IDIO_GC_FREE (n_a0rp);
+    }
+
+    char *e0_rp = realpath (e0, erp);
+
+    if (NULL == e0_rp) {
 	/*
 	 * Test Case: ??
 	 *
@@ -484,112 +615,153 @@ void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0r
 	return;
     }
 
-    a0rp[a0rp_len] = '\0';	/* just in case */
-}
-
-/*
- * We want to generate a nominal IDIOLIB based on the path to the
- * running executable.  If argv0 is simply "idio" then we need to
- * discover where on the PATH it was found, otherwise we can normalize
- * argv0 with realpath(3).
- *
- * NB. We are called after idio_env_add_environ() as main() has to
- * pass us argv0.  main() could have passed argv0 to idio_init() then
- * to idio_env_add_primitives() then to idio_env_add_environ() and
- * then here to us.  Or it could just call us separately.  Which it
- * does.
- */
-void idio_env_init_idiolib (char const *argv0, size_t const argv0_len)
-{
-    IDIO_C_ASSERT (argv0);
-
-    char a0rp[PATH_MAX];
-    idio_env_exe_pathname (argv0, argv0_len, a0rp, PATH_MAX);
+    erp[erp_len - 1] = '\0';	/* just in case */
 
     /*
-     * While we are here, set IDIO_CMD and IDIO_EXE.
+     * Finally, we should have an a0rp, now, either from realpath() or
+     * from being found on PATH, so let's see if it was a symlink
      */
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD"), idio_string_C_len (argv0, argv0_len), idio_Idio_module_instance ());
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_EXE"), idio_string_C (a0rp), idio_Idio_module_instance ());
+    struct stat sb;
 
-    /*
-     * If there's no existing IDIOLIB environment variable then set
-     * one now
-     */
-    idio_env_set_default (idio_env_IDIOLIB_sym, idio_env_IDIOLIB_default);
+    *linkp = 0;
 
-    /*
-     * Were we launched with a specific executable name (absolute or
-     * relative)?  We use argv0, here, rather than the computed a0rp.
-     */
-    char *rel = rindex (argv0, '/');
-
-    if (NULL == rel) {
-	/*
-	 * Found on the PATH so we are happy with IDIOLIB
-	 * (user-supplied or system default).
-	 */
-	return;
+    if (lstat (a0rp, &sb) == 0 &&
+	S_ISLNK (sb.st_mode)) {
+	*linkp = 1;
     }
 
+    if (NULL == dir) {
+	IDIO_GC_FREE (e0);
+    }
+}
+
+int idio_env_valid_directory (char const *dir, int const verbose)
+{
+    int r = 0;
+
+    if (access (dir, R_OK) == 0) {
+	struct stat sb;
+
+	if (stat (dir, &sb) == -1) {
+	    /*
+	     * Can this fail if access(2) just above has succeeded?
+	     */
+	    perror ("stat");
+	}
+
+	if (S_ISDIR (sb.st_mode)) {
+	    r = 1;
+	} else {
+	    if (verbose) {
+		fprintf (stderr, "WARNING: extend-IDIOLIB: %s is not a directory\n", dir);
+	    }
+	}
+    } else {
+	if (verbose) {
+	    fprintf (stderr, "WARNING: extend-IDIOLIB: %s is not accessible\n", dir);
+	}
+    }
+
+    return r;
+}
+
+void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepend)
+{
+    IDIO_C_ASSERT (path);
+    IDIO_C_ASSERT (path_len > 0);
+
     /*
-     * a0rp	~ /a/b/c/idio
+     * path	~ /a/b/c/idio
      *
      * dir	~ /idio
      *
      * pdir	~ /c/idio		parent dir (of dir)
      *
      * If pdir is actually /bin/idio, ie. starts with /bin, then we
-     * can make an assumption that there is a parallel /lib containing
-     * Idio stuff which become idio_env_IDIOLIB_default.
-     *
-     * Finally, if IDIOLIB is unset we can set it to
-     * idio_env_IDIOLIB_default.
-     *
-     * If IDIOLIB is already set we check to see if
-     * idio_env_IDIOLIB_default isn't already on IDIOLIB and append
-     * it.
+     * can make an assumption that there is a parallel /lib/idio (or
+     * /lib) containing Idio stuff unless path is /bin/idio or
+     * /usr/bin/idio in which case use idio_env_IDIOLIB_default.
      */
-    char *dir = rindex (a0rp, '/');
+    char *dir = memrchr (path, '/', path_len);
 
     if (NULL == dir) {
 	/*
 	 * Possible if idio_env_exe_pathname() dun goofed.
 	 */
+	char em[301];
+	snprintf (em, 300, "WARNING: extend-IDIOLIB: no / in directory: '%s' (%zd chars)\n", path, path_len);
+	fprintf (stderr, em);
 	return;
     }
 
     char *pdir = dir - 1;
-    while (pdir > a0rp &&
+    while (pdir >= path &&
 	   '/' != *pdir) {
 	pdir--;
     }
 
-    if (pdir >= a0rp) {
+    if (pdir >= path) {
 	if (strncmp (pdir, "/bin", 4) == 0) {
 	    /*
-	     * From .../bin we can derive .../lib
+	     * From .../bin we can derive .../lib/idio or .../lib
 	     *
 	     * This is the implicit idio-exe IDIOLIB directory, ieId
 	     */
-	    size_t ddd_len = pdir - a0rp;
-	    size_t ieId_len = ddd_len + 4;
-	    char *ieId = idio_alloc (ieId_len + 1);
-	    memcpy (ieId, a0rp, ddd_len);
-	    memcpy (ieId + ddd_len, "/lib", 4);
-	    ieId[ddd_len + 4] = '\0';
+	    size_t ddd_len = pdir - path;
+	    size_t ieId_len = ddd_len + 9;
+	    char *ieId;
 
-	    int prepend = 0;
+	    /*
+	     * A quick check for /bin/{idio} or /usr/bin/{idio} -- we
+	     * can't guarantee the actual string "idio" but here we
+	     * are identifiying an element in a system executable
+	     * directory therefore we want a system library path
+	     */
+	    if (pdir == path ||
+		(4 == (pdir - path) &&
+		 strncmp (path, "/usr", 4) == 0)) {
+		ieId_len = idio_env_IDIOLIB_default_len;
+		ieId = idio_alloc (ieId_len + 1);
+		memcpy (ieId, idio_env_IDIOLIB_default, ieId_len);
+		ieId[ieId_len] = '\0';
+
+		/*
+		 * Noisily complain if the system directory is not
+		 * available
+		 */
+		idio_env_valid_directory (ieId, 1);
+	    } else {
+		ieId = idio_alloc (ieId_len + 1);
+		memcpy (ieId, path, ddd_len);
+		memcpy (ieId + ddd_len, "/lib/idio", 9);
+		ieId[ieId_len] = '\0';
+
+		if (idio_env_valid_directory (ieId, 0) == 0) {
+		    ieId_len -= 5;
+		    ieId[ieId_len] = '\0';
+
+		    if (idio_env_valid_directory (ieId, 1) == 0) {
+			/*
+			 * Bah!  Go back to the .../lib/idio variant
+			 */
+			ieId[ieId_len] = '/';
+			ieId_len += 5;
+		    }
+		}
+	    }
+
+	    /*
+	     * Has what we are about to do already been done: if we're
+	     * about to add /a, does IDIOLIB already have /a:... or
+	     * ...:/a?
+	     */
+	    int in_place = 0;
 
 	    IDIO idiolib = idio_module_env_symbol_value (idio_env_IDIOLIB_sym, IDIO_LIST1 (idio_S_false));
 
 	    size_t idiolib_C_len = 0;
 	    char *idiolib_C = NULL;
 
-	    /*
-	     * It shouldn't ever be false becuase we set it higher up
-	     * but, you know how it is...
-	     */
 	    if (idio_S_false != idiolib) {
 		idiolib_C = idio_string_as_C (idiolib, &idiolib_C_len);
 
@@ -621,66 +793,144 @@ void idio_env_init_idiolib (char const *argv0, size_t const argv0_len)
 		    /* notreached */
 		    return;
 		}
-
-		char *index = strstr (idiolib_C, ieId);
-		if (index) {
-		    /*
-		     * Code coverage:
-		     *
-		     * These should be picked up if a pre-existing
-		     * IDIOLIB is already one of:
-		     *
-		     * .../lib
-		     * .../lib:...
-		     *
-		     * Both of which will fall into the manual test
-		     * category.
-		     *
-		     * We do these extra checks in case someone has
-		     * added .../libs -- which index will also match.
-		     */
-		    if (! ('\0' == index[ieId_len] ||
-			   ':' == index[ieId_len])) {
-			prepend = 1;
-		    }
-		} else {
-		    /*
-		     * Code coverage:
-		     *
-		     * IDIOLIB is set but doesn't have .../lib
-		     */
-		    prepend = 1;
-		}
-	    } else {
-		prepend = 1;
 	    }
 
-	    if (prepend) {
-		size_t ni_len = ieId_len + 1 + idiolib_C_len;
+	    size_t dlen;
 
-		/*
-		 * Shouldn't ever happen becuase we should always have
-		 * set something...
-		 */
-		if (0 == idiolib_C_len) {
-		    ni_len = ieId_len + 1;
+	    if (NULL != idiolib_C) {
+		if (prepend) {
+		    char *colon = memchr (idiolib_C, ':', idiolib_C_len);
+		    if (NULL == colon) {
+			if (ieId_len == idiolib_C_len &&
+			    strncmp (ieId, idiolib_C, ieId_len) == 0) {
+			    in_place = 1;
+			}
+		    } else {
+			dlen = colon - idiolib_C;
+			if (ieId_len == dlen &&
+			    strncmp (ieId, colon + 1, ieId_len) == 0) {
+			    in_place = 1;
+			}
+		    }
+		} else {
+		    char *colon = memrchr (idiolib_C, ':', idiolib_C_len);
+		    if (NULL == colon) {
+			if (ieId_len == idiolib_C_len &&
+			    strncmp (ieId, idiolib_C, ieId_len) == 0) {
+			    in_place = 1;
+			}
+		    } else {
+			dlen = idiolib_C_len - (colon - idiolib_C) + 1;
+			if (ieId_len == dlen &&
+			    strncmp (ieId, colon + 1, ieId_len) == 0) {
+			    in_place = 1;
+			}
+		    }
+		}
+	    }
+
+	    if (0 == in_place) {
+		size_t ni_len = ieId_len;
+
+		if (idiolib_C_len) {
+		    ni_len += 1 + idiolib_C_len;
 		}
 
 		char *ni = idio_alloc (ni_len + 1);
-		memcpy (ni, ieId, ieId_len);
-		memcpy (ni + ieId_len, ":", 1);
+		ni_len = 0;
+		if (prepend) {
+		    memcpy (ni, ieId, ieId_len);
+		    ni_len = ieId_len;
+		    if (idiolib_C_len) {
+			memcpy (ni + ni_len++, ":", 1);
+		    }
+		}
 		if (idiolib_C_len) {
-		    memcpy (ni + ieId_len + 1, idiolib_C, idiolib_C_len);
+		    memcpy (ni + ni_len, idiolib_C, idiolib_C_len);
+		    ni_len += idiolib_C_len;
+		    if (0 == prepend) {
+			memcpy (ni + ni_len++, ":", 1);
+		    }
+		}
+		if (0 == prepend) {
+		    memcpy (ni + ni_len, ieId, ieId_len);
+		    ni_len += ieId_len;
 		}
 		ni[ni_len] = '\0';
 
-		idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, idio_string_C_len (ni, ni_len));
+		if (idio_S_false == idiolib) {
+		    idio_env_set_default (idio_env_IDIOLIB_sym, ni);
+		} else {
+		    idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, idio_string_C_len (ni, ni_len));
+		}
 		IDIO_GC_FREE (ni);
 	    }
 
 	    IDIO_GC_FREE (idiolib_C);
 	}
     }
+}
+
+/*
+ * We want to generate a nominal IDIOLIB based on the path to the
+ * running executable.  If argv0 is simply "idio" then we need to
+ * discover where on the PATH it was found, otherwise we can normalize
+ * argv0 with realpath(3).
+ *
+ * NB. We are called after idio_env_add_environ() as main() has to
+ * pass us argv0.  main() could have passed argv0 to idio_init() then
+ * to idio_env_add_primitives() then to idio_env_add_environ() and
+ * then here to us.  Or it could just call us separately.  Which it
+ * does.
+ */
+void idio_env_init_idiolib (char const *argv0, size_t const argv0_len)
+{
+    IDIO_C_ASSERT (argv0);
+
+    char a0rp[PATH_MAX];
+    char erp[PATH_MAX];
+    int link = 0;
+    idio_env_exe_pathname (argv0, argv0_len, a0rp, PATH_MAX, erp, PATH_MAX, &link);
+
+    /*
+     * XXX strnlen in bootstrap
+     */
+    size_t a0rp_len = strnlen (a0rp, PATH_MAX);
+    size_t erp_len = strnlen (erp, PATH_MAX);
+
+    /*
+     * While we are here, set IDIO_CMD and IDIO_EXE.
+     */
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD"), idio_string_C_len (argv0, argv0_len), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD_PATH"), idio_string_C_len (a0rp, a0rp_len), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_EXE"), idio_string_C_len (erp, erp_len), idio_Idio_module_instance ());
+
+    if (erp_len > 0) {
+	idio_env_extend_IDIOLIB (erp, erp_len, 1);
+    } else {
+	fprintf (stderr, "WARNING: IDIO_EXE is zero length\n");
+    }
+
+    /*
+     * a0rp *may* have been copied from erp if argv0 had to be found
+     * on the PATH.  However, a0rp will only have been normalized (if
+     * the PATH element was not absolute) whereas erp will have been
+     * realpath(3)'d meaning symbolic links resolved.
+     *
+     * The point being they could now be quite different, notably, if
+     * used in a virtualenv-type setup.
+     */
+    if (link ||
+	!(a0rp_len == erp_len &&
+	  strncmp (a0rp, erp, a0rp_len) == 0)) {
+	if (a0rp_len > 0) {
+	    idio_env_extend_IDIOLIB (a0rp, a0rp_len, 1);
+	} else {
+	    fprintf (stderr, "WARNING: IDIO_CMD_PATH is zero length\n");
+	}
+    }
+
+    return;
 }
 
 void idio_env_add_primitives ()
@@ -706,9 +956,11 @@ void idio_init_env ()
      * Hence the use of idiolib_default which might be different on
      * some systems before copying that into idio_env_IDIOLIB_default.
      */
-    size_t id_len = sizeof (IDIO_SYSTEM_LIBDIR) - 1;
-    idio_env_IDIOLIB_default = idio_alloc (id_len + 1);
-    memcpy (idio_env_IDIOLIB_default, IDIO_SYSTEM_LIBDIR, id_len);
-    idio_env_IDIOLIB_default[id_len] = '\0';
+    size_t isl_len = sizeof (IDIO_SYSTEM_LIBDIR) - 1;
+    idio_env_IDIOLIB_default_len = isl_len + 5;
+    idio_env_IDIOLIB_default = idio_alloc (idio_env_IDIOLIB_default_len + 1);
+    memcpy (idio_env_IDIOLIB_default, IDIO_SYSTEM_LIBDIR, isl_len);
+    memcpy (idio_env_IDIOLIB_default + isl_len, "/idio", 5);
+    idio_env_IDIOLIB_default[idio_env_IDIOLIB_default_len] = '\0';
 }
 

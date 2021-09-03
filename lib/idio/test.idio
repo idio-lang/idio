@@ -138,18 +138,23 @@ define (Tests? n) {
 }
 
 ;; put the tests dirs on IDIOLIB
-testdir := #n
+testdir := #f
 
 map (function (d) {
-       t-p := join-string "/" (reverse (pt (reverse (split-string d "/"))))
-       t-d := append-string "/" t-p "/tests"
-       r-e := append-string t-d "/test-operator.idio"
-       if (e? r-e) {
-	 testdir = t-d
+       if (not testdir) {
+	 (regex-case
+	  d
+	  ("^(.*)/lib/idio$" {
+	    td := append-string r.1 "/tests"
+	    tf := append-string td "/test-operator.idio"
+	    if (e? tf) {
+	      testdir = td
+	    }
+	  }))
        }
 }) (split-string IDIOLIB ":")
 
-if (null? testdir) {
+if (not testdir) {
   edisplay* "Cannot find 'tests' subdir on IDIOLIB" IDIOLIB
 } {
   IDIOLIB = append-string IDIOLIB ":" testdir
