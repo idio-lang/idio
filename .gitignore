@@ -24,7 +24,7 @@ src/map
 bin/idio
 src/idio-system.h
 src/libc-api.h
-lib/libc-api.idio
+lib/idio/libc-api.idio
 main
 scm1-c-structs
 scm1-c-structs.scm1

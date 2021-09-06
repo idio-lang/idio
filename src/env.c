@@ -689,8 +689,8 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
 	 * Possible if idio_env_exe_pathname() dun goofed.
 	 */
 	char em[301];
-	snprintf (em, 300, "WARNING: extend-IDIOLIB: no / in directory: '%s' (%zd chars)\n", path, path_len);
-	fprintf (stderr, em);
+	snprintf (em, 300, "WARNING: extend-IDIOLIB: no / in directory: '%s' (%zd chars)", path, path_len);
+	fprintf (stderr, "%s\n", em);
 	return;
     }
 
