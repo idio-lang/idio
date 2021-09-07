@@ -378,18 +378,20 @@ for-each (function (lib-n) {
 
 		;; We want the .debug_info and .debug_line sections
 		;; from the DWARF in the object file (ELF or Mach-O) .
-		;;
+
 		;; Most systems have objdump doing something useful
 		;; (albeit sometimes without the finesse of -Wil).
 		;; Mac OS X+ does have an objdump (but it will only print
 		;; out the .debug_frame section (with the slightly
 		;; confusing --dwarf=frames flag) .
-		;;
-		;; Mac OS X+ does have dwarfdump (and -debug-info and
-		;; -debug-line options, yay!, although it expands out
-		;; decl_file anyway so -debug-line is redundant) but
-		;; the output is similarly different.  Hence these two
-		;; variations on a theme.
+
+		;; Mac OS X+ does have dwarfdump (and --debug-info and
+		;; --debug-line options, yay!, although in 10.5 it
+		;; uses TAG_ rather than DW_TAG_ and in 10.15 it
+		;; expands out decl_file anyway so --debug-line is
+		;; possibly redundant) but the output is similarly
+		;; different to objdump.  Hence these two variations
+		;; on a theme of reading object files.
 
 		(cond-expand
 		 (uname/sysname/Darwin {
@@ -406,20 +408,20 @@ for-each (function (lib-n) {
 		     exit 1
 		   }
 
-		   oph := pipe-from dwarfdump -debug-info api-o-fn
+		   oph := pipe-from dwarfdump --debug-info --debug-line api-o-fn
 		   p-depth := 0
 
 		   define (dwarfdump-loop depth DIE) {
 		     if (eof? oph) DIE {
 		       (regex-case (read-line oph)
-				   ("(0x[[:xdigit:]]+):([[:space:]]+)DW_TAG_([^)]+)" {
+				   ("(0x[[:xdigit:]]+):([[:space:]]+)(DW_)?TAG_([[:alnum:]_]+)" {
 				     id := r.1
 				     ;; there's no formal declaration
 				     ;; of nesting depth other than
 				     ;; the relative indent of the
 				     ;; elements!
 				     c-depth := string-length r.2
-				     tag := string->symbol r.3
+				     tag := string->symbol r.4
 
 				     ;; new DIE
 				     new-DIE := (make-hash)
@@ -471,8 +473,22 @@ for-each (function (lib-n) {
 				       dwarfdump-loop depth DIE
 				     })
 				   (
+				     ;; Darwin 9.8.0
+				     ;;                AT_type( {0x00000413} ( const char ) )
+				     "[[:space:]]+AT_([^[:space:]]+)\\( {(0x[[:xdigit:]]+)} \\( ([^\\)]+) \\) \\)" {
+				       hash-set! DIE (string->symbol r.1) r.2
+				       dwarfdump-loop depth DIE
+				     })
+				   (
 				     ;;                DW_AT_name      ("int")
 				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+\\(\"([^\"]+)\"\\)" {
+				       hash-set! DIE (string->symbol r.1) r.2
+				       dwarfdump-loop depth DIE
+				     })
+				   (
+				     ;; Darwin 9.8.0
+				     ;;                AT_name( "int" )
+				     "[[:space:]]+AT_([^[:space:]]+)\\( \"([^\"]+)\" \\)" {
 				       hash-set! DIE (string->symbol r.1) r.2
 				       dwarfdump-loop depth DIE
 				     })
@@ -483,9 +499,24 @@ for-each (function (lib-n) {
 				       dwarfdump-loop depth DIE
 				     })
 				   (
+				     ;; Darwin 9.8.0
+				     ;;                AT_byte_size( 0x04 )
+				     "[[:space:]]+AT_([^[:space:]]+)\\( 0x([[:xdigit:]]+) \\)" {
+				       hash-set! DIE (string->symbol r.1) (read-number r.2 16)
+				       dwarfdump-loop depth DIE
+				     })
+				   (
 				     ;;                DW_AT_frame_base        (DW_OP_reg6 RBP)
 				     ;;                DW_AT_decl_line (53)
 				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+\\(([^)]+)\\)" {
+				       hash-set! DIE (string->symbol r.1) r.2
+				       dwarfdump-loop depth DIE
+				     })
+				   (
+				     ;; darwin 9.8.0
+				     ;;                AT_decl_file( "/usr/include/i386/_types.h" )
+				     ;;                AT_decl_line( 53 )
+				     "[[:space:]]+AT_([^[:space:]]+)\\( ([^)]+) \\)" {
 				       hash-set! DIE (string->symbol r.1) r.2
 				       dwarfdump-loop depth DIE
 				     })
@@ -515,9 +546,22 @@ for-each (function (lib-n) {
 				       dwarfdump-loop depth DIE
 				     })
 				   (
-				     ;;   3     /usr/include/sys
-				     ;;   /usr/include/sys
-				     "(/.+)$" {
+				     ;; Darwin 9.8.0
+				     ;;   file_names[  8]    4 0x00000000 0x00000000 resource.h
+				     "file_names\\[[[:space:]]*[[:digit:]]+\\][[:space:]]+([[:digit:]]+)[[:space:]]+[[:xdigit:]]+[[:space:]]+[[:xdigit:]]+[[:space:]]+(.+)$" {
+				       if (eq? lnt 'file) {
+					 dir-n :=
+					 array-push! file-a r.2
+					 array-push! filenames (append-string (array-ref dir-a (read-number r.1))
+									      "/"
+									      r.2)
+				       }
+				       dwarfdump-loop depth DIE
+				     })
+				   (
+				     ; Darwin 9.8.0
+				     ;;   include_directories[  4] = '/usr/include/sys'
+				     "(/.+)'$" {
 				       if (eq? lnt 'dir) {
 					 array-push! dir-a r.1
 				       }
@@ -1110,7 +1154,7 @@ ${i-module-name}-error-load := {
 				    (("double")			 "double")
 				    (("long double")		 "longdouble")
 				    (else {
-				      eprintf "unexpected base type: %s\n" (hash-ref DIE 'name "base_type-name")
+				      eprintf "idio-c-type-name: unexpected base type: '%s'\n" (hash-ref DIE 'name "base_type-name")
 				      exit 1
 				    }))
 			    })
@@ -1177,7 +1221,7 @@ ${i-module-name}-error-load := {
 				    (("double")			 "DOUBLE")
 				    (("long double")		 "LONGDOUBLE")
 				    (else {
-				      eprintf "unexpected base type: %s\n" (hash-ref DIE 'name "base_type-name")
+				      eprintf "idio-c-type-MACRO-NAME: unexpected base type: '%s'\n" (hash-ref DIE 'name "base_type-name")
 				      exit 1
 				    }))
 			    })

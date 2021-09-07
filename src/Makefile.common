@@ -24,14 +24,19 @@ deps		:= $(patsubst %.c,%.d,$(sources))
 ifeq ($(OS),Darwin)
 
 LIBFFI_INCDIR	:= /usr/include/ffi
-ifeq ($(REV),9.8.0)
-LIBFFI_INCDIR	:= /Developer//SDKs/MacOSX10.5.sdk/usr/include/ffi
-else
-LIBFFI_INCDIR	:= /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include/ffi
+ifeq ($(wildcard ${LIBFFI_INCDIR}/.),)
+XCODE_DIR	:= $(shell xcode-select -print-path)
+# can have multiple installs so pick the "last"
+LIBFFI_INCDIR	:= $(shell find ${XCODE_DIR} -type d -name ffi | tail -1)
 endif
 
+ifeq ($(REV),9.8.0)
+CFLAGS		:=
+else
 # Yes, I know there's an arithmetic shift left of a signed variable!
 CFLAGS		:= -Wno-shift-negative-value
+endif
+
 LDFLAGS		:= -rdynamic
 LIBS		:= -ldl
 

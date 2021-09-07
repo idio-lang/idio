@@ -905,7 +905,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
     }
 
     if ((fd_flags & O_CLOEXEC) != (req_fd_flags & O_CLOEXEC)) {
-	idio_error_warning_message ("file descriptor flags inconsistent: fcntl (%d, F_GETFD) => %#x: wants %#x from %s\n", fd, fd_flags, req_fd_flags, mode_C);
+	idio_error_warning_message ("file descriptor flags inconsistent: fcntl (%d, F_GETFD) => %#x: requested %#x (from %s)\n", fd, fd_flags, req_fd_flags, mode_C);
 	if (0) {
 	    /*
 	     * Test Cases: ??

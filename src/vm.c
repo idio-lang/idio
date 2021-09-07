@@ -3022,7 +3022,7 @@ IDIO idio_vm_restore_continuation_data (IDIO k, IDIO val)
     IDIO_THREAD_PC (thr)		= IDIO_CONTINUATION_PC (k);
     IDIO k_stack = IDIO_CONTINUATION_STACK (k);
     if (IDIO_CONTINUATION_FLAGS (k) & IDIO_CONTINUATION_FLAG_DELIMITED) {
-	fprintf (stderr, "KD ss->%td\n", IDIO_FIXNUM_VAL (k_stack));
+	fprintf (stderr, "KD ss->%" PRIdPTR "\n", IDIO_FIXNUM_VAL (k_stack));
 	if (IDIO_ARRAY_USIZE (IDIO_THREAD_STACK (thr)) < IDIO_FIXNUM_VAL (k_stack)) {
 	    fprintf (stderr, "KD >%td\n", IDIO_ARRAY_USIZE (IDIO_THREAD_STACK (thr)));
 	    idio_vm_thread_state (thr);
@@ -7377,7 +7377,7 @@ void idio_vm_thread_state (IDIO thr)
 	IDIO names = idio_S_nil;
 	names = idio_vm_constants_ref (IDIO_FIXNUM_VAL (faci));
 
-	fprintf (stderr, "vm-thread-state: frame: %10p (%10p) %2u/%2u %5td", frame, IDIO_FRAME_NEXT (frame), IDIO_FRAME_NPARAMS (frame), IDIO_FRAME_NALLOC (frame), IDIO_FIXNUM_VAL (faci));
+	fprintf (stderr, "vm-thread-state: frame: %10p (%10p) %2u/%2u %5" PRIdPTR, frame, IDIO_FRAME_NEXT (frame), IDIO_FRAME_NPARAMS (frame), IDIO_FRAME_NALLOC (frame), IDIO_FIXNUM_VAL (faci));
 	idio_debug (" - %-20s - ", names);
 	idio_debug ("%s\n", idio_frame_args_as_list (frame));
 	frame = IDIO_FRAME_NEXT (frame);
@@ -7853,18 +7853,18 @@ void idio_vm_decode_stack (IDIO stack)
 	    fprintf (stderr, "%-20s ", "ESCAPER");
 	    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), sv1);
 	    idio_debug ("%-20s ", idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci)));
-	    fprintf (stderr, "PC -> %td", IDIO_FIXNUM_VAL (sv3));
+	    fprintf (stderr, "PC -> %" PRIdPTR, IDIO_FIXNUM_VAL (sv3));
 	    sp -= 4;
 	} else if (idio_SM_dynamic == sv0 &&
 		   sp >= 3) {
-	    fprintf (stderr, "%-20s vi=%5td ", "DYNAMIC", IDIO_FIXNUM_VAL (sv1));
+	    fprintf (stderr, "%-20s vi=%5" PRIdPTR " ", "DYNAMIC", IDIO_FIXNUM_VAL (sv1));
 	    idio_debug ("%-35s ", sv2);
 	    idio_ai_t dsp = IDIO_FIXNUM_VAL (sv3);
 	    fprintf (stderr, "next dyn @%td", dsp);
 	    sp -= 4;
 	} else if (idio_SM_environ == sv0 &&
 		   sp >= 3) {
-	    fprintf (stderr, "%-20s vi=%5td", "ENVIRON", IDIO_FIXNUM_VAL (sv1));
+	    fprintf (stderr, "%-20s vi=%5" PRIdPTR, "ENVIRON", IDIO_FIXNUM_VAL (sv1));
 	    idio_debug ("%-35s ", sv2);
 	    idio_ai_t esp = IDIO_FIXNUM_VAL (sv3);
 	    fprintf (stderr, "next env @%td", esp);

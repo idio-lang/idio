@@ -44,7 +44,17 @@
 typedef __suseconds_t seconds_t;
 #else
 #if defined (__APPLE__) && defined (__MACH__) && defined (_SUSECONDS_T)
-typedef __darwin_suseconds_t    suseconds_t;
+/*
+ * Darwin 9.8.0 /usr/include/sys/types.h:250
+ * typedef __darwin_suseconds_t    suseconds_t;
+ *
+ * if we re-typedef it here then gcc gets in a mess and doesn't
+ * generate the suseconds_t -> __darwin_suseconds_t typedef in the
+ * DWARF output
+ *
+ * Darwin 19.6.0 (Mac OS X 10.15) didn't mind.  So why did I
+ * re-typedef it?
+ */
 #elif defined (_SUSECONDS_T_DECLARED)
 typedef        __suseconds_t   suseconds_t;
 #else

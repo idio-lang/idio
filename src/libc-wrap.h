@@ -23,6 +23,16 @@
 #ifndef LIBC_WRAP_H
 #define LIBC_WRAP_H
 
+/*
+ * Mac OS 10.5.8 might not define O_CLOEXEC but the fcntl(2) man page
+ * suggests using the lowest bit instead
+ */
+#ifndef O_CLOEXEC
+#if defined (__APPLE__) && defined (__MACH__)
+#define O_CLOEXEC 1
+#endif
+#endif
+
 extern IDIO idio_libc_module;
 extern IDIO idio_libc_struct_stat;
 
