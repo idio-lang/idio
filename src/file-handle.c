@@ -287,8 +287,16 @@ static void idio_file_handle_filename_not_found_error (char const *circumstance,
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (circumstance, msh);
-    idio_display_C (": ", msh);
-    idio_display_C (strerror (errno), msh);
+
+    /*
+     * We call this function when we have failed to find a file (on
+     * IDIOLIB) resulting in a disingenuous ": Success" message via
+     * strerror()
+     */
+    if (errno) {
+	idio_display_C (": ", msh);
+	idio_display_C (strerror (errno), msh);
+    }
 
     IDIO location = idio_vm_source_location ();
 
