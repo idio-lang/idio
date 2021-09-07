@@ -41,6 +41,7 @@
 #include "fixnum.h"
 #include "idio.h"
 #include "idio-string.h"
+#include "json5-system.h"
 #include "module.h"
 #include "pair.h"
 #include "string-handle.h"
@@ -148,4 +149,9 @@ void idio_init_json5 (void *handle)
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_json5_error_type, "^rt-json5-error", idio_condition_runtime_error_type);
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_json5_value_error_type, "^rt-json5-value-error", idio_condition_rt_json5_error_type, "value");
+
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("version"),
+				     idio_string_C_len (JSON5_SYSTEM_VERSION, sizeof (JSON5_SYSTEM_VERSION) - 1),
+				     idio_json5_module);
+
 }

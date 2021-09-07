@@ -84,7 +84,7 @@ edit-clean :
 	rm -f $(BINDIR)/*~ $(SRCDIR)/*~ $(SRCDIR)/build-bootstrap/*~ $(LIBDIR)/*~ $(TESTSDIR)/*~ $(TESTSDIR)/*/*~ $(EXTDIR)/*/src/*~ $(UTILSDIR)/*~ $(UTILSDIR)/*/*~
 
 dist-clean : clean
-	rm -f $(SRCDIR)/idio-system.h
+	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system
 	rm -f $(SRCDIR)/libc-api.h
 	rm -f $(LIBDIR)/libc-api.idio
 
@@ -109,8 +109,10 @@ cppcheck:
 # built and some of them require idio-system.h
 env.d : idio-system.h
 
-idio-system.h :
-	GCC=${CC} $(UTILSDIR)/bin/gen-idio-system
+idio-system.h Makefile.system :
+	CC=${CC} $(UTILSDIR)/bin/gen-idio-system
+
+include Makefile.system
 
 -include $(deps)
 

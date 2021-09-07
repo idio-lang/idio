@@ -17,6 +17,7 @@ TAGS
 core.*
 vgcore.*
 *.so
+*.so.*
 *.orig
 vm-perf.log
 src/map
@@ -25,6 +26,7 @@ bin/idio
 src/idio-system.h
 src/libc-api.h
 lib/idio/libc-api.idio
+Makefile.system
 main
 scm1-c-structs
 scm1-c-structs.scm1

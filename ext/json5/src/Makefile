@@ -23,6 +23,15 @@ LIBOBJS		:= $(patsubst %.c,%.o,$(LIBSRCS))
 USISRCS		:= usi.c usi-wrap.c
 USIOBJS		:= $(patsubst %.c,%.o,$(USISRCS))
 
+include Makefile.system
+
+JSON5_SYSTEM_VERSION_M	:= $(shell echo ${JSON5_SYSTEM_VERSION_MM} | sed -e 's/\..*//')
+
+LD_SONAME_FLAGS	:=
+ifeq ($(OS),Linux)
+LD_SONAME_FLAGS	:= -Wl,-soname=libjson5.so.${JSON5_SYSTEM_VERSION_M}
+endif
+
 all : libjson5.so
 
 test : test.o libjson5-bare.so
@@ -30,6 +39,8 @@ test : test.o libjson5-bare.so
 
 clean :
 	rm -f test *.so *.o *.d
+	rm -f *.so.*
+	rm -f json5-system.h Makefile.system
 
 debug :
 	$(MAKE) MAKE_DEBUG=1
@@ -43,12 +54,25 @@ debug-test :
 sanitize-test :
 	$(MAKE) test CDEBUG="-fsanitize=address -g" LDFLAGS="-L$(PWD) -lasan"
 
-libjson5.so : $(LIBOBJS) json5-module.o json5-api.o
-	$(CC) $(LD_DLFLAGS) -o $@ $^
+libjson5.so : libjson5.so.${JSON5_SYSTEM_VERSION_M}
+	ln -sf $^ $@
+
+libjson5.so.${JSON5_SYSTEM_VERSION_M} : libjson5.so.${JSON5_SYSTEM_VERSION_MM}
+	ln -sf $^ $@
+
+libjson5.so.${JSON5_SYSTEM_VERSION_MM} : $(LIBOBJS) json5-module.o json5-api.o
+	$(CC) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) -o $@ $^
 
 libjson5-bare.so : $(LIBOBJS) $(USIOBJS)
 	$(CC) $(LD_DLFLAGS) -o $@ $^
 
 %.o : %.d
+
+# the include $(deps) means that, in effect, *.d are the first things
+# built and some of them require json5-system.h
+json5-module.d : json5-system.h
+
+json5-header.h Makefile.system :
+	CC=${CC} $(UTILSDIR)/bin/gen-idio-system -P json5
 
 -include $(deps)

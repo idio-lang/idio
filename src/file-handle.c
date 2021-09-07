@@ -2775,6 +2775,35 @@ IDIO idio_dl_read (IDIO h)
     return idio_S_notreached;
 }
 
+/*
+ * Map various extensions to reader/evaluator.
+ *
+ * In addition {prefix} and {suffix} may be added to the name.  The
+ * obvious {prefix} is "lib" for an {ext} of ".so" giving libX.so.
+ *
+ * There must be some {suffix}s...
+ */
+typedef struct idio_file_extension_s {
+    char *prefix;		/* X -> {prefix}X */
+    char *suffix;		/* X -> X{suffix} */
+    char *ext;			/* X -> X{ext} */
+    IDIO (*reader) (IDIO h);
+    IDIO (*evaluator) (IDIO e, IDIO cs);
+    IDIO (*modulep) (void);
+} idio_file_extension_t;
+
+static idio_file_extension_t idio_file_extensions[] = {
+    { "lib", NULL, ".so",   idio_dl_read, idio_evaluate, idio_Idio_module_instance },
+    { NULL,  NULL, IDIO_IDIO_EXT, idio_read, idio_evaluate, idio_Idio_module_instance },
+
+    /*
+     * ext==NULL => check for file ~ ".idio$"
+     */
+    { NULL,  NULL, NULL, idio_read, idio_evaluate, idio_Idio_module_instance },
+    /* { ".scm", idio_scm_read, idio_scm_evaluate, idio_main_scm_module_instance }, */
+    { NULL, NULL, NULL }
+};
+
 IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char const *libname, size_t const libname_len, IDIO cs)
 {
     /*
@@ -2865,47 +2894,40 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
      * The sizeof includes the trailing NUL
      */
     memcpy (lib_idio + lib_idio_len, IDIO_IDIO_EXT, sizeof (IDIO_IDIO_EXT));
+    lib_idio_len += sizeof (IDIO_IDIO_EXT) - 1;
 
     IDIO r = idio_S_unspec;
 
     if (access (lib_idio, R_OK) == 0) {
-	IDIO lib_idio_C = idio_string_C_len (lib_idio, lib_idio_len);
-	idio_gc_protect (lib_idio_C);
-	r = idio_load_file_name (lib_idio_C, cs);
-	idio_gc_expose (lib_idio_C);
+	IDIO lib_idio_I = idio_string_C_len (lib_idio, lib_idio_len);
+	idio_gc_protect (lib_idio_I);
+
+	IDIO fh = idio_open_file_handle_C ("load", lib_idio_I, lib_idio, lib_idio_len, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
+
+	idio_file_extension_t *fe = idio_file_extensions;
+	IDIO (*reader) (IDIO h) = idio_read;
+	IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate;
+
+	for (;NULL != fe->reader;fe++) {
+	    if (NULL != fe->ext) {
+		size_t elen = idio_strnlen (fe->ext, PATH_MAX);
+		if ((sizeof (IDIO_IDIO_EXT) - 1) == elen) {
+		    if (strncmp (fe->ext, IDIO_IDIO_EXT, sizeof (IDIO_IDIO_EXT) - 1) == 0) {
+			reader = fe->reader;
+			evaluator = fe->evaluator;
+			break;
+		    }
+		}
+	    }
+	}
+
+	r = idio_load_handle_C (fh, reader, evaluator, cs);
+
+	idio_gc_expose (lib_idio_I);
     }
 
     return r;
 }
-
-/*
- * Map various extensions to reader/evaluator.
- *
- * In addition {prefix} and {suffix} may be added to the name.  The
- * obvious {prefix} is "lib" for an {ext} of ".so" giving libX.so.
- *
- * There must be some {suffix}s...
- */
-typedef struct idio_file_extension_s {
-    char *prefix;		/* X -> {prefix}X */
-    char *suffix;		/* X -> X{suffix} */
-    char *ext;			/* X -> X{ext} */
-    IDIO (*reader) (IDIO h);
-    IDIO (*evaluator) (IDIO e, IDIO cs);
-    IDIO (*modulep) (void);
-} idio_file_extension_t;
-
-static idio_file_extension_t idio_file_extensions[] = {
-    { "lib", NULL, ".so",   idio_dl_read, idio_evaluate, idio_Idio_module_instance },
-    { NULL,  NULL, IDIO_IDIO_EXT, idio_read, idio_evaluate, idio_Idio_module_instance },
-
-    /*
-     * ext==NULL => check for file ~ ".idio$"
-     */
-    { NULL,  NULL, NULL, idio_read, idio_evaluate, idio_Idio_module_instance },
-    /* { ".scm", idio_scm_read, idio_scm_evaluate, idio_main_scm_module_instance }, */
-    { NULL, NULL, NULL }
-};
 
 char *idio_libfile_find_C (char const *file, size_t const file_len, size_t *liblen)
 {
