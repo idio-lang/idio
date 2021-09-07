@@ -141,7 +141,7 @@ fi
 
 ######################################################################
 
-var_PREFIX=${opt_prefix^^}
+var_PREFIX=$( echo ${opt_prefix} | tr '[a-z]' '[A-Z]' )
 var_header=${opt_prefix}-system.h
 
 cat <<EOF > ${var_header}
