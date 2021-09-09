@@ -2007,7 +2007,11 @@ void idio_module_add_primitives ()
     IDIO_ADD_PRIMITIVE (symbol_value);
     IDIO_ADD_MODULE_PRIMITIVE (idio_evaluate_module, symbol_value_recurse);
     IDIO_ADD_MODULE_PRIMITIVE (idio_evaluate_module, set_symbol);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluate_module, set_symbol_value);
+
+    /*
+     * set-symbol-value! is used by path-functions.idio
+     */
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_evaluate_module, set_symbol_value);
 
 #ifdef IDIO_DEBUG
     IDIO_ADD_PRIMITIVE (dump_module);

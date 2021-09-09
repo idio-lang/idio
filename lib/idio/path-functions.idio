@@ -1,0 +1,517 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; path-functions.idio -- a rework of some Bash functions
+;;
+
+path-remove-l := #f
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#*
+
+path-modify VAR VAL ACT WRT [keyword arguments]
+
+Modify a path in various ways (append, prepend, remove, replace,
+etc.).  It handles paths with whitespace and various kinds of
+separators (Unix's :, Windows' ;).
+
+VAR - the name of the path to be manipulated, eg. PATH, CLASSPATH
+
+VAL - the path element(s) to be added, SEP separated
+
+ACT - the action to be performed: 
+	first|start  - prepend VAL
+	last|end     - append VAL
+	verify       - apply the conditional operator
+	after|before - insert VAL after/before WRT
+	replace      - replace WRT with VAL
+	remove       - remove WRT
+
+WRT - the element in the path to be operated on
+
+[keyword arguments]:
+
+:sep SEP - the element separator (defaults to ":")
+
+:once bool - do the operation once (replace/remove); unique
+	     entry (first/last/before/after)
+
+:test OP - apply the operator on the path segment
+	d? - apply the exists and is a directory operator
+	e? - apply the exists operator
+	f? - apply the exists and is a file operator
+
+*#
+
+define* (path-modify var val act wrt (:sep sep ":") (:once once? #f) (:test test? #f)) {
+  orig-dirs := split-string (symbol-value var (current-module)) sep
+
+  if once? {
+    (case act
+	  ((first start last end after before) {
+	    if (member val orig-dirs) {
+	      path-modify var #n 'remove val
+	      orig-dirs = split-string (symbol-value var (current-module)) sep
+	    }
+	  }))
+  }
+
+  new-dirs := #n
+  if (string? val) {
+    new-dirs = split-string val sep
+  }
+
+  if test? {
+    nval := #n
+    for-each (function (e) {
+		if (test? e) {
+		  nval = pair e nval
+		}
+    }) new-dirs
+    new-dirs = reverse nval
+  }
+
+  ok := #t
+
+  if (null? new-dirs) {
+    (case act
+	  ((verify replace remove) {
+	    ok = #t
+	  })
+	  (else {
+	    ok = #f
+	  }))
+  }
+
+  if ok {
+    r := (case act
+	       ((first start) {
+		 append new-dirs orig-dirs
+	       })
+	       ((last end) {
+		 append orig-dirs new-dirs
+	       })
+	       ((verify) {
+		 new-dirs
+	       })
+	       ((after before replace remove) {
+		 todo := #t
+		 r := #n
+		 for-each (function (e) {
+			     if (and todo
+				     (string=? e wrt)) {
+				       (case act
+					     ((after) {
+					       r = append new-dirs (append (list e) r)
+					     })
+					     ((before) {
+					       r = append (list e) (append new-dirs r)
+					     })
+					     ((replace) {
+					       r = append new-dirs r
+					     })
+					     ((remove) {
+					       r
+					     }))
+
+				       if once? {
+					 todo = #f
+				       }
+				     } {
+				       r = pair e r
+				     }
+		 }) orig-dirs
+		 reverse r
+	       })
+	       (else {
+		 orig-dirs
+	       }))
+
+    evaluate/set-symbol-value! var (join-string sep r) (current-module)
+  }
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#*
+
+path-append VAR VAL [keyword arguments]
+
+A wrapper to path-modify's append function.
+
+VAR - the name of the path to be manipulated, eg. PATH, CLASSPATH
+
+VAL - the path element(s) to be added, SEP separated
+
+[keyword arguments]:
+
+:sep STR - the element separator (defaults to ":")
+
+:once bool - do the operation once (replace/remove); unique
+	     entry (first/last/before/after)
+
+:test OP - apply the operator on the path segment
+	d? - apply the exists and is a directory operator
+	e? - apply the exists operator
+	f? - apply the exists and is a file operator
+
+*#
+
+define* (path-append var val (:sep sep ":") (:once once? #f) (:test test? #f)) {
+  path-modify var val 'last #n :sep sep :once once? :test test?
+}
+
+define* (path-append-unique var val (:sep sep ":") (:test test? #f)) {
+  path-modify var val 'last #n :sep sep :once #t :test test?
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#*
+
+path-prepend VAR VAL [keyword arguments]
+
+A wrapper to path-modify's prepend function.
+
+VAR - the name of the path to be manipulated, eg. PATH, CLASSPATH
+
+VAL - the path element(s) to be added, SEP separated
+
+[keyword arguments]:
+
+:sep STR - the element separator (defaults to ":")
+
+:once bool - do the operation once (replace/remove); unique
+	     entry (first/last/before/after)
+
+:test OP - apply the operator on the path segment
+	d? - apply the exists and is a directory operator
+	e? - apply the exists operator
+	f? - apply the exists and is a file operator
+
+*#
+
+define* (path-prepend var val (:sep sep ":") (:once once? #f) (:test test? #f)) {
+  path-modify var val 'first #n :sep sep :once once? :test test?
+}
+
+define* (path-prepend-unique var val (:sep sep ":") (:test test? #f)) {
+  path-modify var val 'first #n :sep sep :once #t :test test?
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#*
+
+path-verify VAR [keyword arguments]
+
+A wrapper to path-modify's verify function.
+
+VAR - the name of the path to be manipulated, eg. PATH, CLASSPATH
+
+[keyword arguments]:
+
+:sep STR - the element separator (defaults to ":")
+
+:test OP - apply the operator on the path segment
+	d? - apply the exists and is a directory operator
+	e? - apply the exists operator
+	f? - apply the exists and is a file operator
+
+*#
+
+define* (path-verify var (:sep sep ":") (:test test? #f)) {
+  path-modify var (symbol-value var (current-module)) 'verify #n :sep sep :test test?
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#*
+
+path-replace VAR OLD NEW [keyword arguments]
+
+A wrapper to path-modify's replace function.
+
+VAR - the name of the path to be manipulated, eg. PATH, CLASSPATH
+
+OLD - the path element to be replaced
+
+NEW - the path element(s) to be added, SEP separated
+
+[keyword arguments]:
+
+:sep STR - the element separator (defaults to ":")
+
+:once bool - do the operation once
+
+:test OP - apply the operator on the path segment
+	d? - apply the exists and is a directory operator
+	e? - apply the exists operator
+	f? - apply the exists and is a file operator
+
+*#
+
+define* (path-replace var old new (:sep sep ":") (:once once? #f) (:test test? #f)) {
+  path-modify var new 'replace old :sep sep :once once? :test test?
+}
+
+define* (path-replace-first var old new (:sep sep ":") (:test test? #f)) {
+  path-modify var new 'replace old :sep sep :once #t :test test?
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#*
+
+path-remove VAR OLD [keyword arguments]
+
+A wrapper to path-modify's remove function.
+
+VAR - the name of the path to be manipulated, eg. PATH, CLASSPATH
+
+OLD - the path element to be removed
+
+[keyword arguments]:
+
+:sep STR - the element separator (defaults to ":")
+
+:once bool - do the operation once
+
+*#
+
+define* (path-remove var old (:sep sep ":") (:once once? #f)) {
+  path-modify var #n 'remove old :sep sep :once once?
+}
+
+define* (path-remove-first var old (:sep sep ":")) {
+  path-modify var #n 'remove old :sep sep :once #t
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#*
+
+trim-path VAR [keyword arguments]
+
+Remove duplicate elements in a path after the first
+
+VAR - the name of the path to be manipulated, eg. PATH, CLASSPATH
+
+[keyword arguments]:
+
+:sep STR - the element separator (defaults to ":")
+
+*#
+
+define* (trim-path var (:sep sep ":")) {
+  seen := #n
+
+  for-each (function (e) {
+	      if (not (member e seen)) {
+		seen = pair e seen
+	      }
+  }) (split-string var sep)
+
+  join-string sep (reverse seen)
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#*
+
+std-paths ACT VAL [keyword arguments]
+
+Call the function path_ACT for PATH with VAL/bin and MANPATH with
+VAL/share/man (or VAL/man) if either exists.
+
+ACT - the suffix of the path function, eg. append to give
+path-append
+
+VAL - the top of the distribution tree, eg. /usr/local to add
+/usr/local/bin to PATH and either of /usr/local/share/man or
+/usr/local/man to MANPATH if either exists.
+
+[keyword arguments]:
+
+:sep STR - the element separator (defaults to ":")
+
+:once bool - do the operation once (replace/remove); unique
+	     entry (first/last/before/after)
+
+:test OP - apply the operator on the path segment
+	d? - apply the exists and is a directory operator
+	e? - apply the exists operator
+	f? - apply the exists and is a file operator
+
+
+*#
+
+define* (std-paths act val (:sep sep ":") (:once once? #f) (:test test? #f)) {
+  path-act := symbol-value (string->symbol (append-string "path-" (symbol->string act))) (current-module)
+  for-each (function (e) {
+	      (case act
+		    ((remove) {
+		      path-act 'PATH (append-string e "/bin") :sep sep :once once?
+		    })
+		    (else {
+		      path-act 'PATH (append-string e "/bin") :sep sep :once once? :test test?
+		    }))
+	      for-each (function (m) {
+			  md := append-string e m
+			  if (d? md) {
+			    (case act
+				  ((remove) {
+				    path-act 'MANPATH md :sep sep :once once?
+				  })
+				  (else {
+				    path-act 'MANPATH md :sep sep :once once? :test test?
+				  }))
+			  }
+	      }) '("share/man" "man")
+  }) (split-string val sep)
+}
+
+define* (std-paths-unique act val (:sep sep ":") (:test test? #f)) {
+  std-paths act val :sep sep :once #t :test test?
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#*
+
+all-paths ACT VAL [keyword arguments]
+
+Call the function path_ACT for PATH with VAL/bin, LD_LIBRARY_PATH with
+VAL/lib if it exists and MANPATH with VAL/share/man (or VAL/man) if
+either exists.
+
+ACT - the suffix of the path function, eg. append to give
+path-append
+
+VAL - the top of the distribution tree, eg. /usr/local to add
+/usr/local/bin to PATH, /usr/local/lib to LD_LIBRARY_PATH if it exists
+and either of /usr/local/share/man or /usr/local/man to MANPATH if
+either exists.
+
+[keyword arguments]:
+
+:sep STR - the element separator (defaults to ":")
+
+:once bool - do the operation once (replace/remove); unique
+	     entry (first/last/before/after)
+
+:test OP - apply the operator on the path segment
+	d? - apply the exists and is a directory operator
+	e? - apply the exists operator
+	f? - apply the exists and is a file operator
+
+
+*#
+
+define* (all-paths act val (:sep sep ":") (:once once? #f) (:test test? #f)) {
+  path-act := symbol-value (string->symbol (append-string "path-" (symbol->string act))) (current-module)
+  for-each (function (e) {
+	      (case act
+		    ((remove) {
+		      path-act 'PATH (append-string e "/bin") :sep sep :once once?
+		    })
+		    (else {
+		      path-act 'PATH (append-string e "/bin") :sep sep :once once? :test test?
+		    }))
+	      for-each (function (m) {
+			  md := append-string e m
+			  if (d? md) {
+			    (case act
+				  ((remove) {
+				    path-act 'MANPATH md :sep sep :once once?
+				  })
+				  (else {
+				    path-act 'MANPATH md :sep sep :once once? :test test?
+				  }))
+			  }
+	      }) '("share/man" "man")
+	      ld := append-string e "/lib"
+	      if (d? ld) {
+		(case act
+		      ((remove) {
+			path-act 'LD_LIBRARY_PATH ld :sep sep :once once?
+		      })
+		      (else {
+			path-act 'LD_LIBRARY_PATH ld :sep sep :once once? :test test?
+		      }))
+	      }
+  }) (split-string val sep)
+}
+
+define* (all-paths-unique act val (:sep sep ":") (:test test? #f)) {
+  all-paths act val :sep sep :once #t :test test?
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#*
+
+normalize-pathname VAL [keyword arguments]
+
+Normalize the pathname by removing . and .. elements as appropriate.
+
+Non-absolute pathnames are made absolute.
+
+VAL - the pathname to be normalized
+
+[keyword arguments]:
+
+:sep STR - the element separator (defaults to "/")
+
+*#
+
+define* (normalize-pathname val (:sep sep "/")) {
+  r := #n
+
+  if (not (and (gt (string-length val) 0)
+	       (eq? (string-ref val 0) #\/))) {
+    val = append-string PWD "/" val
+  }
+
+  for-each (function (e) {
+	      (case e
+		    (("")
+		     ;; "///foo" -> ("" "" "" "foo" )
+		      #n)
+		    ((".") #n)
+		    (("..") {
+		      if (pair? r) {
+			r = pt r
+		      }
+		    })
+		    (else {
+		      r = pair e r
+		    }))
+  }) (split-string-exactly val sep)
+
+  r = reverse r
+
+  if (null? r) {
+    "/"
+  } {
+    append-string "/" (join-string sep r)
+  }
+}
+
+provide path-functions

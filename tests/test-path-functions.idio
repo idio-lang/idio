@@ -1,0 +1,279 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-path-functions.idio
+;;
+
+module tests/path-functions
+
+path-functions0 := Tests
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; simple P
+P := "a:b:c"
+
+path-append 'P "a"
+test P "a:b:c:a"
+
+; a's removed then appended
+path-append-unique 'P "a"
+test P "b:c:a"
+
+; doubled P
+P := "a:b:c:a:b:c"
+
+path-append 'P "a"
+test P "a:b:c:a:b:c:a"
+
+; a's removed then appended
+path-append-unique 'P "a"
+test P "b:c:b:c:a"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; simple P
+P = "a:b:c"
+
+path-prepend 'P "a"
+test P "a:a:b:c"
+
+; a's removed then prepended
+path-prepend-unique 'P "a"
+test P "a:b:c"
+
+; doubled P
+P = "a:b:c:a:b:c"
+
+path-prepend 'P "a"
+test P "a:a:b:c:a:b:c"
+
+; a's removed then prepended
+path-prepend-unique 'P "a"
+test P "a:b:c:b:c"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; assuming we don't have files called a/x b/y and c/z ...
+P = "a/x:b/y:c/z"
+
+path-verify 'P :test f?
+test P ""
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; simple P
+P = "a:b:c"
+
+; start
+path-replace 'P "a" "x"
+test P "x:b:c"
+
+; middle
+path-replace 'P "b" "y"
+test P "x:y:c"
+
+; end
+path-replace 'P "c" "z"
+test P "x:y:z"
+
+;;;;;;;;;;;;;;;
+
+; doubled P - all
+P = "a:b:c:a:b:c"
+
+; start
+path-replace 'P "a" "x"
+test P "x:b:c:x:b:c"
+
+; middle
+path-replace 'P "b" "y"
+test P "x:y:c:x:y:c"
+
+; end
+path-replace 'P "c" "z"
+test P "x:y:z:x:y:z"
+
+;;;;;;;;;;;;;;;
+
+; doubled P - first
+P = "a:b:c:a:b:c"
+
+; start
+path-replace-first 'P "a" "x"
+test P "x:b:c:a:b:c"
+
+; middle
+path-replace-first 'P "b" "y"
+test P "x:y:c:a:b:c"
+
+; end
+path-replace-first 'P "c" "z"
+test P "x:y:z:a:b:c"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; simple P
+P = "a:b:c:d"
+
+; non-existent
+path-remove 'P "x"
+test P "a:b:c:d"
+
+; start
+path-remove 'P "a"
+test P "b:c:d"
+
+; middle
+path-remove 'P "c"
+test P "b:d"
+
+; end
+path-remove 'P "d"
+test P "b"
+
+; all
+path-remove 'P "b"
+test P ""
+
+;;;;;;;;;;;;;;;
+
+; doubled P
+
+P = "a:b:c:d:a:b:c:d"
+
+; start
+path-remove 'P "a"
+test P "b:c:d:b:c:d"
+
+P = "a:b:c:d:a:b:c:d"
+
+; start
+path-remove-first 'P "a"
+test P "b:c:d:a:b:c:d"
+
+; middle
+path-remove-first 'P "c"
+test P "b:d:a:b:c:d"
+
+; end
+path-remove-first 'P "d"
+test P "b:a:b:c:d"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; simple P
+P = "a:b:c:d"
+
+test (trim-path P) "a:b:c:d"
+
+; doubled P
+P = "a:b:c:d:a:b:c:d"
+
+test (trim-path P) "a:b:c:d"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; simple
+P = "/a/b/c"
+
+test (normalize-pathname P) "/a/b/c"
+
+; prefix /
+P = "///a/b/c"
+
+test (normalize-pathname P) "/a/b/c"
+
+; infix /
+P = "/a///b/c"
+
+test (normalize-pathname P) "/a/b/c"
+
+; suffix /
+P = "/a/b/c///"
+
+test (normalize-pathname P) "/a/b/c"
+
+;;;;;;;;;;;;;;;
+
+; simple .
+P = "/."
+
+test (normalize-pathname P) "/"
+
+; prefix .
+P = "/./a/b/c"
+
+test (normalize-pathname P) "/a/b/c"
+
+; infix .
+P = "/a/b/./c"
+
+test (normalize-pathname P) "/a/b/c"
+
+; suffix .
+P = "/a/b/c/."
+
+test (normalize-pathname P) "/a/b/c"
+
+;;;;;;;;;;;;;;;
+
+; simple ..
+P = "/.."
+
+test (normalize-pathname P) "/"
+
+; prefix ..
+P = "/../a/b/c"
+
+test (normalize-pathname P) "/a/b/c"
+
+; infix ..
+P = "/a/b/../c"
+
+test (normalize-pathname P) "/a/c"
+
+; suffix ..
+P = "/a/b/c/.."
+
+test (normalize-pathname P) "/a/b"
+
+;;;;;;;;;;;;;;;
+
+; multiple ..
+P = "/../.."
+
+test (normalize-pathname P) "/"
+
+; prefix ..
+P = "/../../a/b/c"
+
+test (normalize-pathname P) "/a/b/c"
+
+; infix ../..
+P = "/a/b/../../c"
+
+test (normalize-pathname P) "/c"
+
+; suffix ../..
+P = "/a/b/c/../.."
+
+test (normalize-pathname P) "/a"
+
+;; all done?
+Tests? (path-functions0 + 45)

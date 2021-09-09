@@ -401,7 +401,7 @@ define (&opt-key key-values i default) {
   val := array-ref key-values i
   if (eq? val &undefined) {
     (default)
-    } val
+  } val
 }
 
 define (&process-keys args key-hash-table key-values) {

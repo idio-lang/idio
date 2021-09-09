@@ -56,6 +56,9 @@ include "bootstrap/s9.idio"
 load "SRFI-89.idio"			; Optional positional and named parameters
 load "SRFI-95.idio"			; sort, merge
 
+; after SRFI-89
+require path-functions
+
 ; after SRFI-95, please
 load "doc.idio"
 
