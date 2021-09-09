@@ -525,13 +525,8 @@ test (collect-output hostname) HOSTNAME
 ;; hierarchy.  Probably, GitLab CI shell puts us in
 ;; .../builds/<RUNNER>/0/idio/idio and gitlab-runner exec shell in
 ;; .../builds/0/project-0.
-a-e-str := (regex-case IDIO_EXE
-		       ("(.*)/bin/idio" {
-			 append-string r.1 "/utils/bin/auto-exit"
-		       })
-		       (else {
-			 "./utils/bin/auto-exit"
-		       }))
+
+a-e-str := append-string IDIO-UTILS-BIN "/auto-exit"
 
 if (x? a-e-str) {
   ; 1. execute as a symbol
@@ -540,7 +535,7 @@ if (x? a-e-str) {
   ; 2. execute as a string
   test (a-e-str -E 0) #t
 } {
-  eprintf "x? %s in %s with\nIDIO_EXE=%s\nPATH=%s: failed\n" a-e-str PWD IDIO_EXE PATH
+  eprintf "x? %s in %s with\nIDIO-UTILS-BIN=%s\nPATH=%s: failed\n" a-e-str PWD IDIO-UTILS-BIN PATH
 }
 
 ;; all done?

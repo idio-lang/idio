@@ -26,13 +26,16 @@
 # 1. an Idio version number and derivatives of it
 
 # 2. an ARCH in the multiarch guise.  For systems not in the multiarch
-# way we need to figure something out that is approximately the same
+# way we need to figure something out that is approximately the same,
+# say, a GNU triplet
 
 # 3. a default/fallback system library directory which is where to
 # look for library files if we were started as /usr/bin/idio
 
 # file-hierarchy(7) describes $libdir which can be
-# /usr/lib{64}/{multiarch-tuple} -- or not
+# /usr/lib{64}/{multiarch-tuple} -- or not -- onto which we want to
+# append /idio for /usr/lib64/idio or /usr/lib/x86_64-linux-gnu/idio,
+# say.
 
 set -ue
 
@@ -107,6 +110,12 @@ gcc*)
     ;;
 esac
 
+case "${MULTIARCH}" in
+"")
+    MULTIARCH=${DUMPMACHINE}
+    ;;
+esac
+
 libdir=/usr/lib
 
 case "${uname_a[0]}" in
@@ -128,15 +137,7 @@ esac
 if type -p systemd-path ; then
     libdir=$(systemd-path system-library-arch)
 else
-
-    case "${MULTIARCH}" in
-    "")
-	libdir=${libdir}/${DUMPMACHINE}
-	;;
-    *)
-	libdir=${libdir}/${MULTIARCH}
-	;;
-    esac
+    libdir=${libdir}/${DUMPMACHINE}
 fi
 
 ######################################################################
@@ -160,7 +161,8 @@ cat <<EOF > ${var_header}
 #define ${var_PREFIX}_SYSTEM_VERSION	"${version}"
 #define ${var_PREFIX}_SYSTEM_VERSION_MM	"${version_mm}"
 #define ${var_PREFIX}_SYSTEM_BUILD_DATE	"${build_date}"
-#define ${var_PREFIX}_SYSTEM_LIBDIR	"${libdir}"
+#define ${var_PREFIX}_SYSTEM_LIBDIR	"${libdir}/idio"
+#define ${var_PREFIX}_SYSTEM_ARCH	"${MULTIARCH}"
 
 #endif
 
@@ -174,6 +176,7 @@ cat <<EOF > Makefile.system
 ${var_PREFIX}_SYSTEM_VERSION	:= ${version}
 ${var_PREFIX}_SYSTEM_VERSION_MM	:= ${version_mm}
 ${var_PREFIX}_SYSTEM_BUILD_DATE	:= ${build_date}
-${var_PREFIX}_SYSTEM_LIBDIR	:= ${libdir}
+${var_PREFIX}_SYSTEM_LIBDIR	:= ${libdir}/idio
+${var_PREFIX}_SYSTEM_ARCH	:= ${MULTIARCH}
 
 EOF

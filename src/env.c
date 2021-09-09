@@ -71,6 +71,8 @@
 /* MacOS & Solaris doesn't have environ in unistd.h */
 extern char **environ;
 
+#define IDIO_ENV_LIB_BASE	"/lib/idio"
+
 char *idio_env_PATH_default = "/bin:/usr/bin";
 char *idio_env_IDIOLIB_default = NULL;
 size_t idio_env_IDIOLIB_default_len;
@@ -557,7 +559,7 @@ void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0r
      */
     char *dir = rindex (e0, '/');
 
-    size_t elen = 0;
+    size_t elen = e0_len;
     if (NULL == dir) {
 	/*
 	 * Test Case: ??
@@ -645,6 +647,8 @@ int idio_env_valid_directory (char const *dir, int const verbose)
 	if (stat (dir, &sb) == -1) {
 	    /*
 	     * Can this fail if access(2) just above has succeeded?
+	     * Other than the obvious race condition of substituting
+	     * an alternative dir between the two calls.
 	     */
 	    perror ("stat");
 	}
@@ -678,9 +682,10 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
      * pdir	~ /c/idio		parent dir (of dir)
      *
      * If pdir is actually /bin/idio, ie. starts with /bin, then we
-     * can make an assumption that there is a parallel /lib/idio (or
-     * /lib) containing Idio stuff unless path is /bin/idio or
-     * /usr/bin/idio in which case use idio_env_IDIOLIB_default.
+     * can make an assumption that there is a parallel
+     * /lib/idio/{IDIO_VER} containing Idio stuff unless path is
+     * /bin/idio or /usr/bin/idio in which case use
+     * idio_env_IDIOLIB_default.
      */
     char *dir = memrchr (path, '/', path_len);
 
@@ -703,12 +708,12 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
     if (pdir >= path) {
 	if (strncmp (pdir, "/bin", 4) == 0) {
 	    /*
-	     * From .../bin we can derive .../lib/idio or .../lib
+	     * From .../bin we can derive .../lib/idio/{IDIO_VER}
 	     *
 	     * This is the implicit idio-exe IDIOLIB directory, ieId
 	     */
 	    size_t ddd_len = pdir - path;
-	    size_t ieId_len = ddd_len + 9;
+	    size_t ieId_len = ddd_len + sizeof (IDIO_ENV_LIB_BASE) - 1 + 1 + sizeof (IDIO_SYSTEM_VERSION_MM) - 1;
 	    char *ieId;
 
 	    /*
@@ -732,12 +737,23 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
 		idio_env_valid_directory (ieId, 1);
 	    } else {
 		ieId = idio_alloc (ieId_len + 1);
-		memcpy (ieId, path, ddd_len);
-		memcpy (ieId + ddd_len, "/lib/idio", 9);
+		size_t i = 0;
+		memcpy (ieId + i, path, ddd_len);
+		i += ddd_len;
+		memcpy (ieId + i, IDIO_ENV_LIB_BASE, sizeof (IDIO_ENV_LIB_BASE) - 1);
+		i += sizeof (IDIO_ENV_LIB_BASE) - 1;
+		ieId[i++] = '/';
+		memcpy (ieId + i, IDIO_SYSTEM_VERSION_MM, sizeof (IDIO_SYSTEM_VERSION_MM) - 1);
 		ieId[ieId_len] = '\0';
 
-		if (idio_env_valid_directory (ieId, 0) == 0) {
-		    ieId_len -= 5;
+		idio_env_valid_directory (ieId, 1);
+		if (0 &&
+		    idio_env_valid_directory (ieId, 0) == 0) {
+		    /*
+		     * .../lib/idio/{IDIO_VER} wants to be .../lib/idio
+		     */
+		    i = sizeof (IDIO_SYSTEM_VERSION_MM);
+		    ieId_len -= i;
 		    ieId[ieId_len] = '\0';
 
 		    if (idio_env_valid_directory (ieId, 1) == 0) {
@@ -745,7 +761,7 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
 			 * Bah!  Go back to the .../lib/idio variant
 			 */
 			ieId[ieId_len] = '/';
-			ieId_len += 5;
+			ieId_len += i;
 		    }
 		}
 	    }

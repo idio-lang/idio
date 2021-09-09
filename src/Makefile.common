@@ -13,6 +13,13 @@ LIBDIR		?= $(TOPDIR)/lib/idio
 EXTDIR		?= $(TOPDIR)/ext
 TESTSDIR	?= $(TOPDIR)/tests
 UTILSDIR	?= $(TOPDIR)/utils
+
+# local install
+LI_TOPDIR	?= $(TOPDIR)/.local
+LI_BINDIR	?= $(LI_TOPDIR)/bin
+LI_LIBDIR	?= $(LI_TOPDIR)/lib/idio
+LI_LIBVERDIR	?= $(LI_LIBDIR)/${IDIO_SYSTEM_VERSION_MM}
+
 DOCDIR		?= $(TOPDIR)/doc
 SRCDOCDIR	:= $(DOCDIR)/src
 SRCKDOUTDIR	:= $(SRCDOCDIR)/kernel-autodoc-out
@@ -20,6 +27,8 @@ SRCKDOUTDIR	:= $(SRCDOCDIR)/kernel-autodoc-out
 sources		:= $(wildcard *.c)
 objects		:= $(patsubst %.c,%.o,$(sources))
 deps		:= $(patsubst %.c,%.d,$(sources))
+
+LD_SONAME_FLAGS	:=
 
 ifeq ($(OS),Darwin)
 
@@ -44,6 +53,7 @@ else ifeq ($(OS),Linux)
 
 LIBFFI_INCDIR	= $(wildcard /usr/lib*/libffi-*/include)
 LDFLAGS		:= -rdynamic
+LD_SONAME_FLAGS	:= -Wl,-soname=libjson5.so.${JSON5_SYSTEM_VERSION_M}
 LIBS		:= -ldl
 ifeq ($(ARCH),x86_64)
 CFLAGS		:= -m64 $(CFLAGS) # -fsanitize=undefined
@@ -67,6 +77,7 @@ else ifeq ($(OS),SunOS)
 CC		:= gcc
 LIBFFI_INCDIR	= $(wildcard /usr/lib/$(shell isainfo -k | grep -v i386)/libffi-*/include)
 LDFLAGS		:= -L/usr/local/lib -R/usr/local/lib
+LD_SONAME_FLAGS	:= -Wl,-soname=libjson5.so.${JSON5_SYSTEM_VERSION_M}
 LIBS		:= -ldl
 CFLAGS		:= -D__EXTENSIONS__
 M64		:= $(filter %64, $(shell isainfo))
@@ -80,22 +91,23 @@ else ifeq ($(OS),FreeBSD)
 ifeq ($(REV),10.0-RELEASE)
 CC		:= $(wildcard /usr/local/bin/gcc4?)
 else
-CC		:= gcc
 CC		:= cc		# clang
 endif
 
 LIBFFI_INCDIR	:= /usr/local/include
 LDFLAGS		:= -Xlinker --export-dynamic -L/usr/local/lib
+LD_SONAME_FLAGS	:= -Wl,--soname=libjson5.so.${JSON5_SYSTEM_VERSION_M}
 
 # Yes, I know there's an arithmetic shift left of a signed variable!
 CFLAGS		:= -Wno-shift-negative-value
 
 else ifeq ($(OS),OpenBSD)
 
-CC		:= gcc
+CC		:= cc		# clang
 
 LIBFFI_INCDIR	:= /usr/local/include
 LDFLAGS		:= -L/usr/local/lib
+LD_SONAME_FLAGS	:= -Wl,--soname=libjson5.so.${JSON5_SYSTEM_VERSION_M}
 
 CFLAGS		:= -DIDIO_DEV_FD
 

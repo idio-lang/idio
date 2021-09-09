@@ -2902,6 +2902,11 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 	IDIO lib_idio_I = idio_string_C_len (lib_idio, lib_idio_len);
 	idio_gc_protect (lib_idio_I);
 
+	/*
+	 * There is the obvious race condition of substituting an
+	 * alternative lib_idio between access(2) and the upcoming
+	 * open(2).
+	 */
 	IDIO fh = idio_open_file_handle_C ("load", lib_idio_I, lib_idio, lib_idio_len, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
 
 	idio_file_extension_t *fe = idio_file_extensions;
@@ -2929,7 +2934,7 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
     return r;
 }
 
-char *idio_libfile_find_C (char const *file, size_t const file_len, size_t *liblen)
+char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *liblen)
 {
     IDIO_C_ASSERT (file);
     IDIO_C_ASSERT (file_len > 0);
@@ -3036,6 +3041,9 @@ char *idio_libfile_find_C (char const *file, size_t const file_len, size_t *libl
 
     size_t const cwdlen = idio_strnlen (cwd, PATH_MAX);
 
+    /*
+     * Is file an absolute or relative pathname?
+     */
     if ('/' == file[0]) {
 	if ((file_len + 1) >= PATH_MAX) {
 	    /*
@@ -3059,12 +3067,34 @@ char *idio_libfile_find_C (char const *file, size_t const file_len, size_t *libl
 	libname[libnamelen] = '\0';
     } else {
 	int done = 0;
+
+	/*
+	 * Is this an Idio file -- saves checking each time round the
+	 * loop
+	 */
 	int file_ext_idio = 0;
 	if (file_len > 5) {
 	    if (strncmp (file + file_len - 5, ".idio", 5) == 0) {
 		file_ext_idio = 1;
 	    }
 	}
+
+	/*
+	 * Our true name is, for each {dir} in IDIOLIB:
+	 *
+	 *   {dir}/{IDIO_VER}
+	 *
+	 * and we might want to look for extensions in:
+	 *
+	 *   {dir}/{IDIO_VER}/{EXT}/{EXT_VER}/{ARCH}
+	 *   {dir}/{IDIO_VER}/{EXT}/{EXT_VER}
+	 *
+	 * using
+	 *
+	 *   {dir}/{IDIO_VER}/{EXT}/latest
+	 *
+	 * if {file} is not of the form {EXT}@{EXT_VER}
+	 */
 	while (! done) {
 	    size_t idioliblen = idiolibe - idiolib;
 	    char * colon = NULL;
@@ -3264,7 +3294,7 @@ char *idio_libfile_find_C (char const *file, size_t const file_len, size_t *libl
     return idiolibname;
 }
 
-char *idio_libfile_find (IDIO file, size_t *libfile_C_lenp)
+char *idio_find_libfile (IDIO file, size_t *libfile_C_lenp)
 {
     IDIO_ASSERT (file);
     IDIO_TYPE_ASSERT (string, file);
@@ -3279,7 +3309,7 @@ char *idio_libfile_find (IDIO file, size_t *libfile_C_lenp)
      */
     char *file_C = idio_file_handle_filename_string_C (file, "find-lib", &file_C_len, &free_file_C, IDIO_C_FUNC_LOCATION ());
 
-    char *r = idio_libfile_find_C (file_C, file_C_len, libfile_C_lenp);
+    char *r = idio_find_libfile_C (file_C, file_C_len, libfile_C_lenp);
 
     if (free_file_C) {
 	IDIO_GC_FREE (file_C);
@@ -3309,7 +3339,7 @@ possible file name extensions			\n\
     IDIO_USER_TYPE_ASSERT (string, file);
 
     size_t r_C_len = 0;
-    char *r_C = idio_libfile_find (file, &r_C_len);
+    char *r_C = idio_find_libfile (file, &r_C_len);
 
     IDIO r = idio_S_nil;
 
@@ -3351,7 +3381,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     char *filename_C = idio_file_handle_filename_string_C (filename, "load", &filename_C_len, &free_filename_C, IDIO_C_FUNC_LOCATION ());
 
     size_t libfilelen = 0;
-    char *libfile = idio_libfile_find_C (filename_C, filename_C_len, &libfilelen);
+    char *libfile = idio_find_libfile_C (filename_C, filename_C_len, &libfilelen);
 
     if (NULL == libfile) {
 	/*
@@ -3431,6 +3461,11 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 
 			    return r;
 			} else {
+			    /*
+			     * There is the obvious race condition of
+			     * substituting an alternative lfn between
+			     * access(2) and the upcoming open(2).
+			     */
 			    IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, libfilelen, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
 
 			    if (free_filename_C) {
@@ -3464,7 +3499,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     /*
      * Test Case: ??
      *
-     * It would require that a file we found via idio_libfile_find_C()
+     * It would require that a file we found via idio_find_libfile_C()
      * which uses access(2) with R_OK now fail the same access(2)
      * test.
      *

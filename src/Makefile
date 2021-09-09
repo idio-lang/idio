@@ -1,5 +1,7 @@
 include Makefile.common
 
+include Makefile.system
+
 ifdef MAKE_LEAN
 CDEBUG		:= -O3 -UIDIO_DEBUG -UIDIO_VM_PROF
 else ifdef MAKE_DEBUG
@@ -19,8 +21,8 @@ ifneq ($(OS),Darwin)
 DLIBS		:= libos.so libposix-regex.so
 endif
 
-all : $(BINDIR)/idio
-#all : idio scm1-c-structs.scm1 $(DLIBS) tags
+all : local-install
+	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
 
 profiled :
 	$(MAKE) PROFLAGS=-pg
@@ -36,21 +38,22 @@ lean :
 
 debug :
 	$(MAKE) MAKE_DEBUG=1
+	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
 
-test : all
-	$(BINDIR)/idio test
+test : local-install
+	$(LI_BINDIR)/idio test
 
 # ASAN only (really) works with libc malloc which then blows up with a
 # list as long as your arm about leaked memory.  I can't identify
 # where the libc malloc behaviour differs from IDIO_MALLOC.
 #
 # In the meanwhile, rely on valgrind and IDIO_MALLOC
-verify:
-	$(MAKE) clean all test
+verify: dist-clean
+	$(MAKE) test
 	#-ASAN_OPTIONS=log_path=idio-asan $(MAKE) clean sanitize-address test
 	$(MAKE) clean debug test
 	# run valgrind with the debug version as the output is more useful
-	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(BINDIR)/idio test
+	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(LI_BINDIR)/idio test
 	ls -l idio-valgrind.*
 
 doc : 
@@ -60,13 +63,30 @@ doc :
 	diff -w <(grep _[ch] $(SRCKDOUTDIR)/index.rst) <(grep _[ch] $(SRCDOCDIR)/index.rst | sed -e 's!.*/!!')
 	make -C $(SRCDOCDIR) html text
 
-$(BINDIR)/idio : $(objects) | libc-api.h $(deps)
+local-install : $(LI_BINDIR)/idio | Makefile.system $(LI_BINDIR) $(LI_LIBVERDIR)
+	cp -r $(LIBDIR)/*.idio $(LIBDIR)/bootstrap $(LI_LIBVERDIR)
+	(cd $(EXTDIR)/json5/src; $(MAKE) local-install)
+
+$(LI_BINDIR)/idio : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
+	ln -sf idio.${IDIO_SYSTEM_VERSION_MM} $@
+
+$(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(BINDIR)/idio | $(LI_BINDIR)
+	cp $^ $@
+
+$(LI_BINDIR) $(LI_LIBVERDIR) :
+	mkdir -p $@
+
+$(BINDIR)/idio : $(objects) | libc-api.h idio-system.h $(deps)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 lib%.so : %.o
 	$(CC) -shared -o $@ $^
 
+clean-local-install :
+	rm -rf $(LI_TOPDIR)
+
 clean : build-clean run-clean edit-clean
+	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
 
 build-clean:
 	rm -f *.o *.d $(BINDIR)/idio *.so TAGS map
@@ -87,6 +107,7 @@ dist-clean : clean
 	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system
 	rm -f $(SRCDIR)/libc-api.h
 	rm -f $(LIBDIR)/libc-api.idio
+	rm -rf $(LI_TOPDIR)
 
 tags : TAGS
 
@@ -94,8 +115,8 @@ TAGS : *.[ch] $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
 	@echo TAGS: $?
 	@etags *.[ch] --language=none --regex=@idio.tags $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
 
-valgrind: $(BINDIR)/idio
-	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(BINDIR)/idio # 2>&1 | less +/^==
+valgrind: local-install
+	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(LI_BINDIR)/idio # 2>&1 | less +/^==
 
 	valgrind --tool=callgrind ../bin/idio counter
 	qcachegrind
@@ -103,16 +124,14 @@ valgrind: $(BINDIR)/idio
 cppcheck:
 	cppcheck --force --enable=all .
 
-%.o : %.d
+depend : $(deps)
 
 # the include $(deps) means that, in effect, *.d are the first things
 # built and some of them require idio-system.h
-env.d : idio-system.h
+env.c vars.c : idio-system.h
 
 idio-system.h Makefile.system :
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system
-
-include Makefile.system
 
 -include $(deps)
 

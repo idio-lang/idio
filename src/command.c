@@ -648,7 +648,10 @@ char *idio_command_find_exe_C (char const *command, size_t const cmdlen, size_t 
 		/*
 		 * Test Case: ??
 		 *
-		 * Can this fail if access(2) just above has succeeded?
+		 * Can this fail if access(2) just above has
+		 * succeeded?  Other than the obvious race condition
+		 * of substituting an alternative exename between the
+		 * two calls.
 		 */
 
 		if (free_path_C) {

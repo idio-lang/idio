@@ -105,6 +105,10 @@ void idio_init_vars ()
 				  idio_string_C_len (IDIO_SYSTEM_VERSION, sizeof (IDIO_SYSTEM_VERSION) - 1),
 				  idio_Idio_module);
 
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_MM_VERSION"),
+				  idio_string_C_len (IDIO_SYSTEM_VERSION_MM, sizeof (IDIO_SYSTEM_VERSION_MM) - 1),
+				  idio_Idio_module);
+
     idio_vars_IFS_sym                           = IDIO_SYMBOLS_C_INTERN ("IFS");
     idio_vars_suppress_exit_on_error_sym        = IDIO_SYMBOLS_C_INTERN ("suppress-exit-on-error!");
     idio_vars_suppress_pipefail_sym             = IDIO_SYMBOLS_C_INTERN ("suppress-pipefail!");

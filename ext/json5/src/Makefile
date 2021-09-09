@@ -1,5 +1,6 @@
 TOPDIR		:= $(abspath $(PWD)/../../..)
 include $(TOPDIR)/src/Makefile.common
+include $(TOPDIR)/src/Makefile.system
 
 ifdef MAKE_DEBUG
 CDEBUG		:= -g
@@ -7,8 +8,8 @@ else
 CDEBUG		:=
 endif
 
-CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -I$(PWD) -I$(TOPDIR)/src $(CFLAGS) $(CDEBUG) $(LIBFFI_INC)
-LDFLAGS		:= -L$(PWD) $(LDFLAGS)
+CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -I$(PWD) -I$(TOPDIR)/src $(CFLAGS) $(CDEBUG) $(COVFLAGS) $(LIBFFI_INC)
+LDFLAGS		:= -L$(PWD) $(LDFLAGS) $(COVFLAGS)
 LIBS		:= $(LIBS)
 
 ifeq ($(OS),Darwin)
@@ -27,18 +28,21 @@ include Makefile.system
 
 JSON5_SYSTEM_VERSION_M	:= $(shell echo ${JSON5_SYSTEM_VERSION_MM} | sed -e 's/\..*//')
 
-LD_SONAME_FLAGS	:=
-ifeq ($(OS),Linux)
-LD_SONAME_FLAGS	:= -Wl,-soname=libjson5.so.${JSON5_SYSTEM_VERSION_M}
-endif
+# local install
+JSON5_LI_LIBDIR		:= $(LI_LIBVERDIR)/json5
+JSON5_LI_LIBVERDIR	:= $(JSON5_LI_LIBDIR)/$(JSON5_SYSTEM_VERSION_MM)
+JSON5_LI_LIBARCHDIR	:= $(JSON5_LI_LIBVERDIR)/$(IDIO_SYSTEM_ARCH)
 
 all : libjson5.so
+
+coverage :
+	$(MAKE) COVFLAGS="-fprofile-arcs -ftest-coverage"
 
 test : test.o libjson5-bare.so
 	$(CC) -o test $(LDFLAGS) $^ -ljson5-bare
 
 clean :
-	rm -f test *.so *.o *.d
+	rm -f test *.so *.o *.d *.gcda *.gcno *.gcov gmon.out map o e
 	rm -f *.so.*
 	rm -f json5-system.h Makefile.system
 
@@ -53,6 +57,19 @@ debug-test :
 
 sanitize-test :
 	$(MAKE) test CDEBUG="-fsanitize=address -g" LDFLAGS="-L$(PWD) -lasan"
+
+local-install : $(JSON5_LI_LIBARCHDIR)/libjson5.so | Makefile.system $(JSON5_LI_LIBVERDIR)
+	cp json5.idio $(JSON5_LI_LIBVERDIR)
+	echo json5@${JSON5_SYSTEM_VERSION_MM} > $(JSON5_LI_LIBDIR)/latest
+
+$(JSON5_LI_LIBARCHDIR)/libjson5.so : libjson5.so | $(JSON5_LI_LIBARCHDIR)
+	tar cf - $^* | (cd $(JSON5_LI_LIBARCHDIR) ; tar xf -)
+
+$(JSON5_LI_LIBARCHDIR) :
+	mkdir -p $@
+
+clean-local-install :
+	rm -rf $(JSON5_LI_LIBDIR)
 
 libjson5.so : libjson5.so.${JSON5_SYSTEM_VERSION_M}
 	ln -sf $^ $@
