@@ -2076,7 +2076,7 @@ void idio_gc_stats ()
 	ru_t /= IDIO_VM_US;
 
 	fprintf (fh, "gc-stats: GC time dur %ld.%03ld user+sys %6.3f; max RSS %ldKB\n",
-		 gc->stats.dur.tv_sec, (long) gc->stats.dur.tv_usec / 1000,
+		 (long) gc->stats.dur.tv_sec, (long) gc->stats.dur.tv_usec / 1000,
 		 ru_t,
 		 ru.ru_maxrss);
 

@@ -25,7 +25,7 @@ src/map
 bin/idio
 src/idio-system.h
 src/libc-api.h
-lib/idio/libc-api.idio
+lib/libc-api.idio
 Makefile.system
 main
 scm1-c-structs
@@ -39,3 +39,4 @@ src/*.gcda
 src/*.gcno
 *.gcov
 coverage.xml
+.local

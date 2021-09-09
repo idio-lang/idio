@@ -690,6 +690,13 @@ for-each (function (lib-n) {
 				       objdump-loop depth DIE
 				     })
 				   (
+				     ;; OpenBSD-6
+				     ;;     DW_AT_name        : (indirect string, offset: 0x187): unsigned int
+				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: \\(indirect string, offset: 0x[[:xdigit:]]+\\): ([^\t]+)" {
+				       hash-set! DIE (string->symbol r.1) r.2
+				       objdump-loop depth DIE
+				     })
+				   (
 				     ;;     <6c>   DW_AT_type        : <0x65>
 				     "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: <0x([[:xdigit:]]+)>" {
 				       hash-set! DIE (string->symbol r.1) r.2

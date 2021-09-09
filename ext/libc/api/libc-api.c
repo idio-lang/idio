@@ -58,7 +58,14 @@ typedef __suseconds_t seconds_t;
 #elif defined (_SUSECONDS_T_DECLARED)
 typedef        __suseconds_t   suseconds_t;
 #else
+
+/*
+ * OpenBSD doesn't flag the definition in any way
+ */
+#if ! defined (__OpenBSD__)
 typedef long suseconds_t;
+#endif
+
 #endif
 #endif
 
