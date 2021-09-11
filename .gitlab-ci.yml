@@ -6,7 +6,7 @@ test-regular:
     - env | sort
     - make clean
     - make
-    - ./utils/forced-tty-session ./bin/idio test
+    - ./utils/forced-tty-session ./.local/bin/idio test
 
 test-coverage:
   tags:
@@ -15,7 +15,7 @@ test-coverage:
   script:
     - make clean
     - make coverage
-    - ./utils/forced-tty-session ./bin/idio test
+    - ./utils/forced-tty-session ./.local/bin/idio test
     - gcovr --xml-pretty --exclude-unreachable-branches --print-summary -o coverage.xml --root ${CI_PROJECT_DIR}
   coverage: /^\s*lines:\s*\d+.\d+\%/
   artifacts:
