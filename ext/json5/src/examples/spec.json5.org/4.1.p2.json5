@@ -1,0 +1,7 @@
+// An array with three elements
+// and a trailing comma
+[
+    1,
+    true,
+    'three',
+]

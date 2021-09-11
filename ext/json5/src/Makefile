@@ -85,6 +85,9 @@ libjson5-bare.so : $(LIBOBJS) $(USIOBJS)
 
 %.o : %.d
 
+usi.c usi.h :
+	cp $(SRCDIR)/$@ .
+
 # the include $(deps) means that, in effect, *.d are the first things
 # built and some of them require json5-system.h
 json5-module.d : json5-system.h

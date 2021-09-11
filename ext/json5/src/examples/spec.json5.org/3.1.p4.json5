@@ -1,0 +1,5 @@
+// An array of objects
+[
+    { name: 'Joe', age: 27 },
+    { name: 'Jane', age: 32 },
+]

@@ -342,7 +342,16 @@ void idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 				    }
 				}
 
-				json5_token_reserved_identifiers (js, js->len);
+				/*
+				 * See the note in
+				 * json5_token_identifier() in
+				 * json5-token.c.
+				 *
+				 * JSON5Identifier != (ECMAScript) Identifier
+				 */
+				/*
+				  json5_token_reserved_identifiers (js, js->len);
+				*/
 			    } else {
 				idio_error_param_value_exp ("json5/generate", "symbol", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
 

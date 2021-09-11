@@ -706,7 +706,6 @@ static json5_token_t *json5_token_identifier (json5_unicode_string_t *s)
 	token->value->type = JSON5_VALUE_IDENTIFIER;
 	token->value->u.s = json5_token_UES_identifier (s, token->start, token->end);
 
-	size_t slen = token->end - token->start;
 	s->i = token->start;
 
 	/*
@@ -726,7 +725,10 @@ static json5_token_t *json5_token_identifier (json5_unicode_string_t *s)
 	 *
 	 * JSON5Identifier != (ECMAScript) Identifier
 	 */
-	/* json5_token_reserved_identifiers (s, slen); */
+	/*
+	  size_t slen = token->end - token->start;
+	  json5_token_reserved_identifiers (s, slen);
+	*/
     }
     s->i = token->end;
 
