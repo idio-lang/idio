@@ -708,7 +708,25 @@ static json5_token_t *json5_token_identifier (json5_unicode_string_t *s)
 
 	size_t slen = token->end - token->start;
 	s->i = token->start;
-	json5_token_reserved_identifiers (s, slen);
+
+	/*
+	 * Bah!  Read the small print.
+	 *
+	 * The json5_token_reserved_identifiers() call will tease out
+	 * any use of reserved or future reserved words being used as
+	 * member names.
+	 *
+	 * However, as Jordan Tucker notes in
+	 * https://github.com/json5/json5-tests/issues/2#issuecomment-632983466,
+	 * a JSON5Identifier is just an IdentifierName, ie. accords
+	 * with the syntax, but is not constrained by the ECMAScript
+	 * rules for Identifiers,
+	 * https://262.ecma-international.org/5.1/#sec-7.6, which are
+	 * IdentifierNames but disallow reserved words.
+	 *
+	 * JSON5Identifier != (ECMAScript) Identifier
+	 */
+	/* json5_token_reserved_identifiers (s, slen); */
     }
     s->i = token->end;
 
