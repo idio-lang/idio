@@ -86,11 +86,11 @@ uname_a=( $(uname -mrps) )
 # date and time
 
 # We'd like a GNU date for the -d flag (which is on a non-standard
-# PATH in SunOS).  The *BSDs don't have GNU date but do have a
-# -r{seconds} flag.
+# PATH in SunOS).  The *BSDs and Mac OS don't have GNU date but do
+# have a -r{seconds} flag.
 
 case "${uname_a[0]}" in
-*BSD)
+*BSD|Darwin)
     # we're going to generate more than one date output so use a
     # consistent date input
     now=$(date +%s)
@@ -204,7 +204,7 @@ unset IFS
 # git commit
 
 git_commit=$(git rev-parse --short=7 HEAD)
-git_describe=$(git describe --tags)
+git_describe=$(git describe --tags || true)
 
 # dirty working directory?
 # https://stackoverflow.com/questions/3878624/how-do-i-programmatically-determine-if-there-are-uncommitted-changes

@@ -354,7 +354,7 @@ if parts {
   trap (^runtime-error
 	^i/o-error
 	^system-error) (function (c) {
-			condition-report "\n\ntester" c
+			condition-report "extension test" c
   }) {
     libc/chdir tmpdir
     ; make a authoritative source copy of empty
@@ -397,7 +397,15 @@ if parts {
     cp -r "empty.0" "foo-bar"
     sed -i -e "s/empty/foo-bar/" "foo-bar/latest"
 
-    dirs = make-struct-instance ~path (append-string "foo-bar/[[:digit:]]*/" IDIO_SYSTEM_ARCH)
+    ;; This should be [:digit:] but FreeBSD and Mac OS X aren't so
+    ;; keen -- careful, Bash supports it but glob(3) doesn't
+    arch-dir-pattern := append-string "foo-bar/[0-9]*/" IDIO_SYSTEM_ARCH
+    dirs = make-struct-instance ~path arch-dir-pattern
+    if (null? dirs) {
+      eprintf "test-file-handle-error: failed to match %s\n" arch-dir-pattern
+      ls -l "foo-bar"
+      exit 1
+    }
     arch-dir := nth dirs 1
     arch-dir-0 := append-string arch-dir ".0"
     mv arch-dir arch-dir-0
