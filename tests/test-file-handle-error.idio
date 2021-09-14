@@ -351,92 +351,86 @@ if parts {
     tar xf '-
   }
 
-  trap (^runtime-error
-	^i/o-error
-	^system-error) (function (c) {
-			condition-report "extension test" c
-  }) {
-    libc/chdir tmpdir
-    ; make a authoritative source copy of empty
-    mv "empty" "empty.0"
+  libc/chdir tmpdir
+  ; make a authoritative source copy of empty
+  mv "empty" "empty.0"
 
-    ;; create module foo-bar, a copy of empty
+  ;; create module foo-bar, a copy of empty
 
-    ;; {mod}/latest does not exist
-    cp -r "empty.0" "foo-bar"
-    rm "foo-bar/latest"
+  ;; {mod}/latest does not exist
+  cp -r "empty.0" "foo-bar"
+  rm "foo-bar/latest"
 
-    extension-error-load "load: No such file or directory"
+  extension-error-load "load: No such file or directory"
 
-    ;; {mod}/latest is more than our guesstimate of a max 10 bytes --
-    ;; here including a newline -- but this is only a warning
-    echo "1234567890" > "foo-bar/latest"
+  ;; {mod}/latest is more than our guesstimate of a max 10 bytes --
+  ;; here including a newline -- but this is only a warning
+  echo "1234567890" > "foo-bar/latest"
 
-    ;; we actually want to make the file unreadable
-    chmod 0 "foo-bar/latest"
+  ;; we actually want to make the file unreadable
+  chmod 0 "foo-bar/latest"
 
-    extension-error-load "Permission denied" "open"
+  extension-error-load "Permission denied" "open"
 
-    ;; now it isn't of the form {mod}@{mod-ver}
-    chmod a+r,u+w "foo-bar/latest"
+  ;; now it isn't of the form {mod}@{mod-ver}
+  chmod a+r,u+w "foo-bar/latest"
 
-    extension-error-load "find-lib: no @ in \"1234567890\n\""
+  extension-error-load "find-lib: no @ in \"1234567890\n\""
 
-    ;; now it's the wrong {mod} in {mod}@{mod-ver}
-    cp "empty.0/latest" "foo-bar/latest"
+  ;; now it's the wrong {mod} in {mod}@{mod-ver}
+  cp "empty.0/latest" "foo-bar/latest"
 
-    extension-error-load "find-lib: wrong module in \"empty@1.0\n\""
+  extension-error-load "find-lib: wrong module in \"empty@1.0\n\""
 
-    ;; now it's a non-existent {mod-ver} in {mod}@{mod-ver}
-    echo "foo-bar@9.9" > "foo-bar/latest"
+  ;; now it's a non-existent {mod-ver} in {mod}@{mod-ver}
+  echo "foo-bar@9.9" > "foo-bar/latest"
 
-    extension-error-load "find-lib: module version doesn't exist \"foo-bar@9.9\""
+  extension-error-load "find-lib: module version doesn't exist \"foo-bar@9.9\""
 
-    ;; now there isn't an {ARCH}
-    rm -rf "foo-bar"
-    cp -r "empty.0" "foo-bar"
-    sed -i -e "s/empty/foo-bar/" "foo-bar/latest"
+  ;; now there isn't an {ARCH}
+  rm -rf "foo-bar"
+  cp -r "empty.0" "foo-bar"
+  sed -i -e "s/empty/foo-bar/" "foo-bar/latest"
 
-    ;; This should be [:digit:] but FreeBSD and Mac OS X aren't so
-    ;; keen -- careful, Bash supports it but glob(3) doesn't
-    arch-dir-pattern := append-string "foo-bar/[0-9]*/" IDIO_SYSTEM_ARCH
-    dirs = make-struct-instance ~path arch-dir-pattern
-    if (null? dirs) {
-      eprintf "test-file-handle-error: failed to match %s\n" arch-dir-pattern
-      ls -l "foo-bar"
-      exit 1
-    }
-    arch-dir := nth dirs 1
-    arch-dir-0 := append-string arch-dir ".0"
-    mv arch-dir arch-dir-0
-
-    extension-error-load "load: No such file or directory"
-
-    ;; now there is an {ARCH} but the wrong .so (libempty.so not libfoo-bar.so)
-    mv arch-dir-0 arch-dir
-
-    extension-error-load "load: No such file or directory"
-
-    ;; IDIO_DEBUG -- this test leaves a GC-protected object lying
-    ;; about.  Nothing critical except for the warning from a debug
-    ;; build.
-
-    ;; the right libfoo-bar.so (OK, linked to libempty.so.1) but
-    ;; therefore the wrong idio_init_NAME symbol
-    mv (append-string arch-dir "/libempty.so") (append-string arch-dir "/libfoo-bar.so")
-
-    extension-error-load "dlsym: idio_init_foo_bar"
-
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    ;; Separately, we defend against an *extension* being loaded more
-    ;; than once to avoid the C code initialising itself more than
-    ;; once.
-    load "empty"
-    filename = "empty"
-
-    extension-error-load "duplicate check: already loaded"
+  ;; This should be [:digit:] but FreeBSD and Mac OS X aren't so
+  ;; keen -- careful, Bash supports it but glob(3) doesn't
+  arch-dir-pattern := append-string "foo-bar/[0-9]*/" IDIO_SYSTEM_ARCH
+  dirs = make-struct-instance ~path arch-dir-pattern
+  if (null? dirs) {
+    eprintf "test-file-handle-error: failed to match %s\n" arch-dir-pattern
+    ls -l "foo-bar"
+    exit 1
   }
+  arch-dir := nth dirs 1
+  arch-dir-0 := append-string arch-dir ".0"
+  mv arch-dir arch-dir-0
+
+  extension-error-load "load: No such file or directory"
+
+  ;; now there is an {ARCH} but the wrong .so (libempty.so not libfoo-bar.so)
+  mv arch-dir-0 arch-dir
+
+  extension-error-load "load: No such file or directory"
+
+  ;; IDIO_DEBUG -- this test leaves a GC-protected object lying
+  ;; about.  Nothing critical except for the warning from a debug
+  ;; build.
+
+  ;; the right libfoo-bar.so (OK, linked to libempty.so.1) but
+  ;; therefore the wrong idio_init_NAME symbol
+  mv (append-string arch-dir "/libempty.so") (append-string arch-dir "/libfoo-bar.so")
+
+  extension-error-load "dlsym: idio_init_foo_bar"
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  ;; Separately, we defend against an *extension* being loaded more
+  ;; than once to avoid the C code initialising itself more than
+  ;; once.
+  load "empty"
+  filename = "empty"
+
+  extension-error-load "duplicate check: already loaded"
 } {
   eprintf "test-file-handle-error: failed to match for empty.so in IDIOLIB=%s\n" IDIOLIB
   eprintf "looking for subdir=%s in (find-lib \"empty\")=%s\n" subdir (find-lib "empty")
