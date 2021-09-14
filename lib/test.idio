@@ -58,16 +58,18 @@ expressions and sub-clauses and what we really want to be doing to
 extending our set of nominal arithmetic tests to include various
 corner cases in the form of coverage tests.
 
-I've tried to label the C course code with code coverage examples --
+I've tried to label the C source code with code coverage examples --
 or at least document when there isn't one -- which then get lost in
 the jumble of test cases in these test files.
 
 *#
 
-;; largely ported from
+;; orignally ported from
 ;;
 ;; Scheme 9 from Empty Space
 ;; By Nils M Holm <nmh@t3x.org>, 2007,2008,2009
+;;
+;; but only test-s9.idio remaining (still many hundreds of tests)
 
 require init
 
@@ -239,7 +241,6 @@ test-load "test-read-coverage.idio"
 test-load "test-evaluation-error.idio"
 test-load "test-expander-error.idio"
 
-;time test-load "test-s9-test.idio"
 test-load "test-array-error.idio"
 test-load "test-array.idio"
 test-load "test-bignum-error.idio"
@@ -309,6 +310,29 @@ test-load "test-trap.idio"
 test-load "test-SRFI-89.idio"
 test-load "test-SRFI-115.idio"
 
+extension-tests := make-struct-instance ~path (append-string topdir "/ext/*/tests/test-*.idio")
+if (null? extension-tests) {
+  eprintf "No extension tests\n"
+} {
+
+  for-each (function (etf) {
+	      IDIOLIB = OIDIOLIB
+	      PATH = OPATH
+
+	      td := #f
+	      (regex-case
+	       etf
+	       ("(.*/tests)/([^/]+)$" {
+		 eprintf "extension-tests: %s\n" r.1
+		 path-prepend 'IDIOLIB r.1
+		 test-load r.2
+	       })
+	       (else {
+		 eprintf "extension-tests: unexpected test-file: \"%s\"\n" etf
+	       }))
+  }) extension-tests
+}
+
 test-load "test-issues.idio"
 
 ; test shell-ish things after all the other tests
@@ -321,7 +345,7 @@ test-load "test-job-control.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? 6236
+Tests? 6237
 
 if (e? testfile) (delete-file testfile)
 

@@ -2991,6 +2991,7 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 
     char *error = dlerror ();
     if (NULL != error) {
+	dlclose (handle);
 	/*
 	 * Test Case: ??
 	 *

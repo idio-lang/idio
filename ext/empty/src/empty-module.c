@@ -66,7 +66,18 @@ Say hello to ``name``		\n\
 
     IDIO_USER_TYPE_ASSERT (string, name);
 
-    return idio_string_C_len ("hello", 5);
+    size_t size = 0;
+    char *name_C = idio_string_as_C (name, &size);
+
+    char const *ss[] = { "Hello, ", name_C, "." };
+
+    size_t lens[] = { 7, size, 1 };
+
+    IDIO r = idio_string_C_array_lens (3, ss, lens);
+
+    IDIO_GC_FREE (name_C);
+
+    return r;
 }
 
 void idio_empty_add_primitives ()
