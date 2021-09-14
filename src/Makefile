@@ -136,7 +136,7 @@ depend : $(deps)
 # built and some of them require idio-system.h
 env.c vars.c : idio-system.h
 
-idio-system.h Makefile.system :
+idio-system.h Makefile.system : $(UTILSDIR)/bin/gen-idio-system
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system
 
 -include $(deps)
