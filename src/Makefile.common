@@ -106,7 +106,7 @@ else ifeq ($(OS),OpenBSD)
 CC		:= cc		# clang
 
 LIBFFI_INCDIR	:= /usr/local/include
-LDFLAGS		:= -L/usr/local/lib
+LDFLAGS		:= -Xlinker --export-dynamic -L/usr/local/lib
 LD_SONAME_FLAGS	:= -Wl,--soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
 
 CFLAGS		:= -DIDIO_DEV_FD
