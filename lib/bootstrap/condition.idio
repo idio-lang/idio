@@ -418,6 +418,11 @@ define-template (condition type & field-bindings) {
 				      ^runtime-error
 				      rt-symbol-error?)
 
+(define-condition-type-accessors-only ^rt-load-error
+				      ^runtime-error
+				      rt-load-error?
+				      (filename rt-load-error-filename))
+
 (define-condition-type-accessors-only ^rt-signal
 				      ^error
 				      rt-signal?
@@ -503,11 +508,11 @@ condition-report := #f
      })
      ((i/o-filename-error? c) {
        iem c
-       cr-printf ": filename '%s'" (i/o-filename-error-filename c)
+       cr-printf ": filename \"%s\"" (i/o-filename-error-filename c)
      })
      ((i/o-mode-error? c) {
        iem c
-       cr-printf ": mode '%s'" (i/o-mode-error-mode c)
+       cr-printf ": mode \"%s\"" (i/o-mode-error-mode c)
      })
      ((i/o-error? c) {
        iem c
@@ -522,7 +527,7 @@ condition-report := #f
      ;; ^evaluation-error
      ((evaluation-error? c) {
        iem c
-       cr-printf ": expr '%s'" (evaluation-error-expr c)
+       cr-printf ": expr \"%s\"" (evaluation-error-expr c)
      })
 
      ;; ^string-error
@@ -568,24 +573,34 @@ condition-report := #f
      ((rt-module-symbol-unbound-error? c) {
        iem c
        ; annoyingly (idio-error-module c) resolves module to #undef
-       cr-printf ": symbol '%s/%s'" (module-name (rt-module-error-module c)) (rt-module-error-symbol c)
+       cond-mod := rt-module-error-module c
+       mod-name := (cond
+		    ((module? cond-mod) (module-name cond-mod))
+		    (else cond-mod))
+       cr-printf ": symbol '%s/%s'" mod-name (rt-module-error-symbol c)
      })
      ((rt-module-error? c) {
        iem c
        ; annoyingly (idio-error-module c) resolves module to #undef
-       cr-printf ": module '%s'" (module-name (rt-module-error-module c))
+       ; and the duplicate-name/unbound-name code (in module.c) puts
+       ; the symbol in for name
+       cond-mod := rt-module-error-module c
+       mod-name := (cond
+		    ((module? cond-mod) (module-name cond-mod))
+		    (else cond-mod))
+       cr-printf ": module '%s'" mod-name
      })
 
      ;; ^rt-path-error
      ((rt-path-error? c) {
        iem c
-       cr-printf ": pathname '%s'" (rt-path-error-pathname c)
+       cr-printf ": pathname \"%s\"" (rt-path-error-pathname c)
      })
 
      ;; ^rt-glob-error
      ((rt-glob-error? c) {
        iem c
-       cr-printf ": pattern '%s'" (rt-glob-error-pattern c)
+       cr-printf ": pattern \"%s\"" (rt-glob-error-pattern c)
      })
 
      ;; ^rt-command-error
@@ -688,6 +703,12 @@ condition-report := #f
      ;; ^rt-symbol-error
      ((rt-symbol-error? c) {
        iem c
+     })
+
+     ;; ^rt-load-error
+     ((rt-load-error? c) {
+       iem c
+       cr-printf ": filename %s" (rt-load-error-filename c)
      })
 
      ;; ^rt-signal

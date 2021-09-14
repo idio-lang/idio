@@ -185,7 +185,7 @@ There's several issues with asynchronous commands.
    This isn't obvious as what *should* happen if the command {b} fails
    in "{ a; b; c; }"?  There'll be no error overall (it's an
    asynchronous command) but we should only see the output from {a},
-   maybe something from {b} but defintiely nothing from {c}.
+   maybe something from {b} but definitely nothing from {c}.
 
 3. We need to test that they are reaped by the sub-Idio.  This is
    particularly hard as there's no common mechanism across platforms

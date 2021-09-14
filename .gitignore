@@ -35,8 +35,8 @@ doc/src/_build
 doc/src/kernel-autodoc-out
 tests/*.class
 ext/*/gen
-src/*.gcda
-src/*.gcno
+*.gcda
+*.gcno
 *.gcov
 coverage.xml
 .local

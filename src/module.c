@@ -201,9 +201,17 @@ IDIO idio_module (IDIO name)
 
     if (idio_S_unspec != m) {
 	/*
-	 * Test Case: ??
+	 * Test Case:
 	 *
-	 * Coding error.
+	 * loading a shared library which creates its own module
+	 * without a defensive check will trigger this
+	 *
+	 * How to translate that into a test case, though?
+	 *
+	 * load "empty"
+	 * load "empty-dupe"
+	 *
+	 * ??
 	 */
 	idio_module_duplicate_name_error (name, IDIO_C_FUNC_LOCATION ());
 

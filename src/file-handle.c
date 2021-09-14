@@ -27,6 +27,7 @@
 #include <sys/resource.h>
 
 #include <assert.h>
+#include <ctype.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -51,6 +52,7 @@
 #include "handle.h"
 #include "hash.h"
 #include "idio-string.h"
+#include "idio-system.h"
 #include "job-control.h"
 #include "libc-wrap.h"
 #include "module.h"
@@ -422,6 +424,39 @@ void idio_file_handle_mode_format_error (char const *circumstance, char const *m
 					       location,
 					       detail,
 					       mode));
+
+    idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
+}
+
+void idio_file_handle_dynamic_load_error (char const *circumstance, char const *msg, IDIO filename, IDIO detail, IDIO c_location)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (filename);
+    IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, filename);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (circumstance, msh);
+    idio_display_C (": ", msh);
+    idio_display_C (msg, msh);
+
+    IDIO location = idio_vm_source_location ();
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_load_error_type,
+				   IDIO_LIST4 (idio_get_output_string (msh),
+					       location,
+					       detail,
+					       filename));
 
     idio_raise_condition (idio_S_true, c);
 
@@ -2793,8 +2828,8 @@ typedef struct idio_file_extension_s {
 } idio_file_extension_t;
 
 static idio_file_extension_t idio_file_extensions[] = {
-    { "lib", NULL, ".so",   idio_dl_read, idio_evaluate, idio_Idio_module_instance },
     { NULL,  NULL, IDIO_IDIO_EXT, idio_read, idio_evaluate, idio_Idio_module_instance },
+    { "lib", NULL, ".so",   idio_dl_read, idio_evaluate, idio_Idio_module_instance },
 
     /*
      * ext==NULL => check for file ~ ".idio$"
@@ -2806,6 +2841,69 @@ static idio_file_extension_t idio_file_extensions[] = {
 
 IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char const *libname, size_t const libname_len, IDIO cs)
 {
+    /*
+     * NB libname might be {mod}@{mod-ver} or {mod}.so
+     */
+    char *mod = (char *) libname;
+    size_t mod_len = libname_len;
+    char *at = memchr (mod, '@', mod_len);
+    if (NULL != at) {
+	mod_len = at - mod;
+    } else {
+	char *dot = memrchr (mod, '.', mod_len);
+
+	if (NULL != dot) {
+	    mod_len = dot - mod;
+	}
+    }
+    /*
+     * {dir}/{mod} ?
+     */
+    char *slash = memrchr (mod, '/', mod_len);
+
+    if (NULL != slash) {
+	mod_len -= (slash - mod);
+	mod = slash;
+    }
+
+    /*
+     * Bah!  The IDIO_HASH_FLAG_STRING_KEYS code expects a
+     * NUL-terminated string.
+     *
+     * This was highlighted by
+     *
+     * load "empty@1.0"
+     * load "empty@1.0"
+     *
+     * where mod points at the e in empty and mod_len is 5 but that
+     * mod_len is not used for the key in the symbols hash table.
+     * There is no module empty@1.0 so we will reload "empty".
+     */
+    char *mod_name = idio_alloc (mod_len + 1);
+    memcpy (mod_name, mod, mod_len);
+    mod_name[mod_len] = '\0';
+
+    IDIO mod_sym = idio_symbols_C_intern (mod_name, mod_len);
+    IDIO_GC_FREE (mod_name);
+
+    IDIO module = idio_module_find_module (mod_sym);
+
+    if (idio_S_unspec != module) {
+	/*
+	 * Test Case: ??
+	 *
+	 * can we
+	 *
+	 * load "empty"
+	 * load "empty"
+	 *
+	 * ??
+	 */
+	idio_file_handle_dynamic_load_error ("duplicate check", "already loaded", idio_string_C_len (mod, mod_len), idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
     /*
      * string lengths.  We *should* be being called with filename as
      * ".../libX.so" which we want to turn into ".../X.idio" which is
@@ -2841,8 +2939,14 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 
     void *handle = dlopen (filename, RTLD_LAZY);
     if (NULL == handle) {
-	fprintf (stderr, "dlopen (%s) => %s\n", filename, dlerror ());
-	perror ("dlopen");
+	/*
+	 * Test Case: ??
+	 *
+	 * A truncated lib{mod}.so can trigger this with a "file too
+	 * short" error
+	 */
+	idio_file_handle_dynamic_load_error ("dlopen", dlerror (), idio_string_C_len (filename, filename_len), idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
 	return idio_S_notreached;
     }
 
@@ -2861,7 +2965,25 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
      * idio_init_NAME() functions don't need a handle to be passed.
      */
     char func[PATH_MAX];
-    idio_snprintf (func, PATH_MAX, "idio_init_%s", libname);
+    memcpy (func, "idio_init_", 10);
+
+    /*
+     * Careful, module foo-bar does not make a good C identifier
+     */
+    char *C_mod_id = idio_alloc (mod_len);
+    for (size_t i = 0; i < mod_len; i++) {
+	char c = mod[i];
+	if (isalnum (c)) {
+	    C_mod_id[i] = c;
+	} else {
+	    C_mod_id[i] = '_';
+	}
+    }
+
+    memcpy (func + 10, C_mod_id, mod_len);
+    func[10 + mod_len] = '\0';
+
+    IDIO_GC_FREE (C_mod_id);
 
     dlerror ();
     void (*lib_init) (void *handle);
@@ -2869,8 +2991,20 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 
     char *error = dlerror ();
     if (NULL != error) {
-	fprintf (stderr, "dlsym (%s, %s) => %s\n", libname, func, error);
-	perror ("dlsym");
+	/*
+	 * Test Case: ??
+	 *
+	 * Obviously a library missing the symbol will trigger this.
+	 * Coding error?
+	 */
+	char em[BUFSIZ];
+	snprintf (em, BUFSIZ, "%s", func);
+
+	char ed[BUFSIZ];
+	snprintf (ed, BUFSIZ, "%s", error);
+
+	idio_file_handle_dynamic_load_error ("dlsym", em, idio_string_C_len (filename, filename_len), idio_string_C_len (ed, idio_strnlen (ed, BUFSIZ)), IDIO_C_FUNC_LOCATION ());
+
 	return idio_S_notreached;
     }
 
@@ -2880,15 +3014,22 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
      * Having loaded a specific .so we can look to load any *adjacent*
      * .idio file.
      *
-     * NB This does not want to load a {libname}.idio in some other
-     * directory.  They must be adjacent.
+     * We need to turn
+     * .../lib/idio/{IDIO_VER}/{MOD}/{MOD_VER}/{ARCH}/lib{MOD}.so into
+     * .../lib/idio/{IDIO_VER}/{MOD}/{MOD_VER}/{MOD}.idio
+     *
+     * NB This does not want to load a {mod}.idio in some other
+     * directory.  They must be "adjacent" (in the sense of being
+     * separated by the {ARCH} directory).
      */
     char lib_idio[PATH_MAX];
-    size_t lib_idio_len = filename_slash - filename + 1;
+
+    char *filename_slash2 = memrchr (filename, '/', filename_slash - filename);
+
+    size_t lib_idio_len = filename_slash2 - filename + 1;
     memcpy (lib_idio, filename, lib_idio_len); /* ".../" */
-    memcpy (lib_idio + lib_idio_len, libname, libname_len);
-    lib_idio_len += libname_len;
-    lib_idio[lib_idio_len] = '\0';
+    memcpy (lib_idio + lib_idio_len, mod, mod_len);
+    lib_idio_len += mod_len;
 
     /*
      * The sizeof includes the trailing NUL
@@ -2907,7 +3048,7 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 	 * alternative lib_idio between access(2) and the upcoming
 	 * open(2).
 	 */
-	IDIO fh = idio_open_file_handle_C ("load", lib_idio_I, lib_idio, lib_idio_len, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
+	IDIO fh = idio_open_file_handle_C ("extension-load", lib_idio_I, lib_idio, lib_idio_len, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
 
 	idio_file_extension_t *fe = idio_file_extensions;
 	IDIO (*reader) (IDIO h) = idio_read;
@@ -2934,7 +3075,7 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
     return r;
 }
 
-char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *liblen)
+char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *liblenp)
 {
     IDIO_C_ASSERT (file);
     IDIO_C_ASSERT (file_len > 0);
@@ -2991,55 +3132,9 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 	idiolibe = idiolib + C_size;
     }
 
-    /*
-     * find the longest filename construction -- so we don't overrun
-     * PATH_MAX
-     */
-    size_t max_ext_len = 0;
-    idio_file_extension_t *fe = idio_file_extensions;
-
-    for (;NULL != fe->reader;fe++) {
-	if (NULL != fe->ext) {
-	    size_t el = idio_strnlen (fe->ext, PATH_MAX);
-	    if (NULL != fe->prefix) {
-		el += idio_strnlen (fe->prefix, PATH_MAX);
-	    }
-	    if (NULL != fe->suffix) {
-		el += idio_strnlen (fe->suffix, PATH_MAX);
-	    }
-	    if (el > max_ext_len) {
-		max_ext_len = el;
-	    }
-	}
-    }
-
-    /*
-     * See comment in libc-wrap.c re: getcwd(3)
-     */
     char libname[PATH_MAX];
     libname[0] = '\0';
     size_t libnamelen = 0;
-    char cwd[PATH_MAX];
-    if (idio_getcwd ("find/getcwd", cwd, PATH_MAX) == NULL) {
-	/*
-	 * Test Case: file-handle-errors/find-lib-getcwd-rmdir.idio
-	 *
-	 * tmpdir := (make-tmp-dir)
-	 * chdir tmpdir
-	 * rmdir tmpdir
-	 * find-lib "foo"
-	 */
-	if (free_idiolib_copy_C) {
-	    IDIO_GC_FREE (idiolib_copy_C);
-	}
-
-	idio_error_system_errno ("getcwd", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return NULL;
-    }
-
-    size_t const cwdlen = idio_strnlen (cwd, PATH_MAX);
 
     /*
      * Is file an absolute or relative pathname?
@@ -3066,34 +3161,154 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 	libnamelen = file_len;
 	libname[libnamelen] = '\0';
     } else {
-	int done = 0;
-
 	/*
-	 * Is this an Idio file -- saves checking each time round the
-	 * loop
+	 * {file} could be {mod}@{ver} or {mod}.{file_ext} noting that
+	 * {ver} can contain '.' so @ must be checked for first
+	 *
+	 * And therefore not both: {mod}.{file_ext}@{ver}
+	 *
+	 * Start by trying to find the longest filename construction
+	 * -- so we don't overrun PATH_MAX -- however...
+	 *
+	 * With dynamic libraries we don't find lib{mod}.so on IDIOLIB
+	 * directly but in {dir}/{mod}/{mod-ver}/{ARCH}/lib{mod}.so.
+	 *
+	 * Unfortunately, {mod-ver} is unknown unless it's passed
+	 * directly.  It's probably 1.0, say, but it could be more
+	 * complex.  Unfortunately, we can't know for sure until we've
+	 * opened {dir}/{mod}/latest and read the contents.
+	 *
+	 * We can't do much other than take a decent punt, say, 10 bytes
+	 * worth, and see how we go.
 	 */
-	int file_ext_idio = 0;
-	if (file_len > 5) {
-	    if (strncmp (file + file_len - 5, ".idio", 5) == 0) {
-		file_ext_idio = 1;
+	char const *mod = file;
+	size_t mod_len = file_len;
+
+	char *mod_ver = NULL;
+	size_t mod_ver_len = 10;
+
+	/* leading @ */
+	char *at = NULL;
+	/* trailing dot */
+	char *dot = NULL;
+
+	char *mod_ext = NULL;
+	size_t mod_ext_len = 0;
+	int mod_ext_idio = 0;
+
+	at = memchr (mod, '@', mod_len);
+
+	if (NULL != at) {
+	    mod_ver = at + 1;
+	    mod_ver_len = mod_len - (mod_ver - mod);
+
+	    mod_len = at - mod;
+	} else {
+	    dot = memrchr (mod, '.', mod_len);
+
+	    /*
+	     * Is this an Idio file -- saves checking each time round the
+	     * loop
+	     */
+	    if (NULL != dot) {
+		mod_ext = dot + 1;
+		mod_ext_len = mod_len - (dot + 1 - mod);
+
+		mod_len = dot - mod;
+
+		if (mod_ext_len == 4) {
+		    if (strncmp (mod_ext, "idio", 4) == 0) {
+			mod_ext_idio = 1;
+		    }
+		}
+
+	    }
+	}
+
+	size_t max_ext_len = 0;
+	idio_file_extension_t *fe = idio_file_extensions;
+
+	for (;NULL != fe->reader;fe++) {
+	    if (idio_dl_read == fe->reader) {
+		/*
+		 * /{mod}/{mod-ver}/{ARCH}/[prefix]{mod}[suffix][ext]
+		 */
+		size_t el = 1 + mod_len + 1 + 10 + 1 + (sizeof (IDIO_SYSTEM_ARCH) - 1) + 1;
+		if (NULL != fe->prefix) {
+		    el += idio_strnlen (fe->prefix, PATH_MAX);
+		}
+		if (NULL != fe->suffix) {
+		    el += idio_strnlen (fe->suffix, PATH_MAX);
+		}
+
+		/* should be .so ... */
+		if (NULL != fe->ext) {
+		    el += idio_strnlen (fe->ext, PATH_MAX);
+		}
+
+		if (el > max_ext_len) {
+		    max_ext_len = el;
+		}
+	    } else if (NULL != fe->ext) {
+		/*
+		 * [prefix]{mod}[suffix][ext]
+		 */
+		size_t el = idio_strnlen (fe->ext, PATH_MAX);
+		if (NULL != fe->prefix) {
+		    el += idio_strnlen (fe->prefix, PATH_MAX);
+		}
+		if (NULL != fe->suffix) {
+		    el += idio_strnlen (fe->suffix, PATH_MAX);
+		}
+		if (el > max_ext_len) {
+		    max_ext_len = el;
+		}
 	    }
 	}
 
 	/*
-	 * Our true name is, for each {dir} in IDIOLIB:
+	 * See comment in libc-wrap.c re: getcwd(3)
+	 */
+	char cwd[PATH_MAX];
+	if (idio_getcwd ("find/getcwd", cwd, PATH_MAX) == NULL) {
+	    /*
+	     * Test Case: file-handle-errors/find-lib-getcwd-rmdir.idio
+	     *
+	     * tmpdir := (make-tmp-dir)
+	     * chdir tmpdir
+	     * rmdir tmpdir
+	     * find-lib "foo"
+	     */
+	    if (free_idiolib_copy_C) {
+		IDIO_GC_FREE (idiolib_copy_C);
+	    }
+
+	    idio_error_system_errno ("getcwd", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return NULL;
+	}
+
+	size_t const cwdlen = idio_strnlen (cwd, PATH_MAX);
+
+	int done = 0;
+
+	/*
+	 * Our true library directory name is, for each {dir} in
+	 * IDIOLIB:
 	 *
 	 *   {dir}/{IDIO_VER}
 	 *
 	 * and we might want to look for extensions in:
 	 *
-	 *   {dir}/{IDIO_VER}/{EXT}/{EXT_VER}/{ARCH}
-	 *   {dir}/{IDIO_VER}/{EXT}/{EXT_VER}
+	 *   {dir}/{IDIO_VER}/{MOD}/{MOD_VER}/{ARCH}
+	 *   {dir}/{IDIO_VER}/{MOD}/{MOD_VER}
 	 *
 	 * using
 	 *
-	 *   {dir}/{IDIO_VER}/{EXT}/latest
+	 *   {dir}/{IDIO_VER}/{MOD}/latest
 	 *
-	 * if {file} is not of the form {EXT}@{EXT_VER}
+	 * if {file} is not of the form {MOD}@{MOD_VER}
 	 */
 	while (! done) {
 	    size_t idioliblen = idiolibe - idiolib;
@@ -3110,7 +3325,7 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 	    colon = memchr (idiolib, ':', idioliblen);
 
 	    if (NULL == colon) {
-		if ((idioliblen + 1 + file_len + max_ext_len + 1) >= PATH_MAX) {
+		if ((idioliblen + 1 + mod_len + max_ext_len + 1) >= PATH_MAX) {
 		    /*
 		     * Test Case: file-handle-errors/find-lib-dir-lib-PATH_MAX-1.idio
 		     *
@@ -3141,7 +3356,7 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 		     *
 		     * Is that a good thing?
 		     */
-		    if ((cwdlen + 1 + file_len + max_ext_len + 1) >= PATH_MAX) {
+		    if ((cwdlen + 1 + mod_len + max_ext_len + 1) >= PATH_MAX) {
 			/*
 			 * Test Case: file-handle-errors/find-lib-dir-cmd-PATH_MAX-2.idio
 			 *
@@ -3163,7 +3378,7 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 		    libnamelen = cwdlen;
 		    libname[libnamelen] = '\0';
 		} else {
-		    if ((dirlen + 1 + file_len + max_ext_len + 1) >= PATH_MAX) {
+		    if ((dirlen + 1 + mod_len + max_ext_len + 1) >= PATH_MAX) {
 			/*
 			 * Test Case: file-handle-errors/find-lib-dir-cmd-PATH_MAX-2.idio
 			 *
@@ -3203,7 +3418,7 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 
 	    for (;NULL != fe->reader;fe++) {
 		if (NULL == fe->ext) {
-		    if (file_ext_idio) {
+		    if (mod_ext_idio) {
 			memcpy (lne, file, file_len);
 			lne[file_len] = '\0';
 		    } else {
@@ -3211,15 +3426,237 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 		    }
 		} else {
 		    char *end = lne;
+
+		    if (idio_dl_read == fe->reader) {
+			size_t dl_name_len = libnamelen;
+
+			/*
+			 * /{mod}/{mod-ver}/{ARCH}/[prefix]{mod}[suffix][ext]
+			 *
+			 * noting that we might not have {mod-ver}
+			 * until we've read /{mod}/latest
+			 */
+			memcpy (end, mod, mod_len);
+			end += mod_len;
+			end[0] = '\0';
+			dl_name_len += mod_len;
+
+			/*
+			 * Check if the .../{mod} subdir exists
+			 */
+			struct stat sb;
+
+			if (stat (libname, &sb) ||
+			    S_ISDIR (sb.st_mode) == 0) {
+			    /*
+			     * not strictly an error -- maybe the
+			     * correct hierarchy in in another
+			     * directory on IDIOLIB and this is just
+			     * cruft left around
+			     */
+			    continue;
+			}
+
+			end[0] = '/';
+			end++;
+			dl_name_len++;
+
+			char *latest = NULL;
+
+			if (NULL == mod_ver) {
+			    memcpy (end, "latest", 7); /* trailing NUL */
+			    dl_name_len += 7;
+
+			    if (stat (libname, &sb) ||
+				S_ISREG (sb.st_mode) == 0) {
+				/*
+				 * not strictly an error -- maybe the
+				 * correct hierarchy in in another
+				 * directory on IDIOLIB and this is
+				 * just cruft left around
+				 */
+				if (9 != mod_len ||
+				    strncmp (mod, "bootstrap", 9)) {
+				    /*
+				     * bootstrap/latest is not
+				     * expected to exist.  If a user
+				     * has created a bootstrap
+				     * extension and messed up then,
+				     * well, we're all in trouble
+				     */
+#ifdef IDIO_DEBUG
+				    fprintf (stderr, "WARNING: find-lib: no %s?\n", libname);
+#endif
+				}
+				continue;
+			    }
+
+			    if (sb.st_size > 10) {
+#ifdef IDIO_DEBUG
+				fprintf (stderr, "WARNING: find-lib: %s is %zd bytes (more than the estimated 10)\n", libname, sb.st_size);
+#endif
+			    }
+
+			    int fd = open (libname, O_RDONLY);
+
+			    if (fd < 0) {
+				/*
+				 * XXX should we loop with
+				 * idio_gc_collect_all ("find_lib");
+				 * in case we're out of file
+				 * descriptors?
+				 */
+
+				idio_error_system_errno ("open", idio_string_C_len (libname, dl_name_len), IDIO_C_FUNC_LOCATION ());
+
+				/* notreached */
+				continue;
+			    }
+
+			    char *latest = idio_alloc (sb.st_size);
+
+			    ssize_t read_r = read (fd, latest, sb.st_size);
+
+			    if (-1 == read_r) {
+				IDIO_GC_FREE (latest);
+				close (fd);
+				/*
+				 * Test Case: ??
+				 *
+				 * How to get a (previously good) file
+				 * descriptor to fail for read(2)?
+				 */
+				idio_error_system_errno ("read", idio_string_C_len (libname, dl_name_len), IDIO_C_FUNC_LOCATION ());
+
+				/* notreached */
+				continue;
+			    }
+
+			    if (read_r != sb.st_size) {
+				IDIO_GC_FREE (latest);
+				close (fd);
+				/*
+				 * Test Case: ??
+				 *
+				 * Our file has changed size since the
+				 * stat(2) above?
+				 */
+				char em[BUFSIZ];
+				idio_snprintf (em, BUFSIZ, "ERROR: find-lib: read (%s, %zd) => %zd: %s", libname, sb.st_size, read_r, strerror (errno));
+				idio_error_system_errno ("read", idio_string_C_len (em, strnlen (em, BUFSIZ)), IDIO_C_FUNC_LOCATION ());
+
+				/* notreached */
+				continue;
+			    }
+
+			    at = memchr (latest, '@', read_r);
+
+			    if (NULL != at) {
+				/*
+				 * verify this is {mod}@...
+				 */
+				if (!((at - latest) == mod_len &&
+				      strncmp (latest, mod, mod_len) == 0)) {
+				    /*
+				     * Test Case: ??
+				     */
+				    char em[BUFSIZ];
+				    idio_snprintf (em, BUFSIZ, "wrong module in \"%.*s\"", read_r, latest);
+
+				    IDIO_GC_FREE (latest);
+				    close (fd);
+
+				    idio_file_handle_dynamic_load_error ("find-lib", em, idio_string_C_len (libname, dl_name_len), idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+				    /* notreached */
+				    continue;
+				}
+
+				mod_ver = at + 1;
+				mod_ver_len = read_r - (mod_ver - latest);
+
+				/*
+				 * Wait, what about trailing newlines
+				 * in .../latest?
+				 */
+				while (mod_ver_len > 0 &&
+				       !(isalnum (mod_ver[mod_ver_len - 1]) ||
+					 '.' == mod_ver[mod_ver_len - 1])) {
+				    mod_ver_len--;
+				}
+
+				memcpy (end, mod_ver, mod_ver_len);
+				end[mod_ver_len] = '\0';
+				dl_name_len = dl_name_len - 7 + mod_ver_len;
+
+				if (stat (libname, &sb) ||
+				    S_ISDIR (sb.st_mode) == 0) {
+				    /*
+				     * Test Case: ??
+				     */
+				    size_t mod_len = mod_ver - latest + mod_ver_len;
+				    char em[BUFSIZ];
+				    idio_snprintf (em, BUFSIZ, "module version doesn't exist \"%.*s\"", mod_len, latest);
+
+				    IDIO_GC_FREE (latest);
+				    close (fd);
+
+				    idio_file_handle_dynamic_load_error ("find-lib", em, idio_string_C_len (libname, dl_name_len), idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+				    /* notreached */
+				    continue;
+				}
+			    } else {
+				/*
+				 * Test Case: ??
+				 */
+				char em[BUFSIZ];
+				idio_snprintf (em, BUFSIZ, "no @ in \"%.*s\"", read_r, latest);
+
+				IDIO_GC_FREE (latest);
+				close (fd);
+
+				idio_file_handle_dynamic_load_error ("find-lib", em, idio_string_C_len (libname, dl_name_len), idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+				/* notreached */
+				continue;
+			    }
+
+			    if (close (fd) == -1) {
+				/*
+				 * Test Case: ??
+				 */
+				idio_error_system_errno ("close", idio_string_C_len (libname, dl_name_len), IDIO_C_FUNC_LOCATION ());
+
+				/* notreached */
+				continue;
+			    }
+			}
+
+			memcpy (end, mod_ver, mod_ver_len);
+			end += mod_ver_len;
+			end[0] = '/';
+			end++;
+
+			if (NULL != latest) {
+			    IDIO_GC_FREE (latest);
+			}
+
+			memcpy (end, IDIO_SYSTEM_ARCH, sizeof (IDIO_SYSTEM_ARCH) - 1);
+			end += sizeof (IDIO_SYSTEM_ARCH) - 1;
+			end[0] = '/';
+			end++;
+		    }
+
 		    if (NULL != fe->prefix) {
 			size_t const pl = idio_strnlen (fe->prefix, PATH_MAX);
 			memcpy (end, fe->prefix, pl);
 			end[pl] = '\0';
 			end += pl;
 		    }
-		    memcpy (end, file, file_len);
-		    end[file_len] = '\0';
-		    end += file_len;
+		    memcpy (end, mod, mod_len);
+		    end[mod_len] = '\0';
+		    end += mod_len;
 
 		    if (NULL != fe->suffix) {
 			size_t const sl = idio_strnlen (fe->prefix, PATH_MAX);
@@ -3278,13 +3715,13 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
     }
 
     char *idiolibname = NULL;
-    *liblen = 0;
+    *liblenp = 0;
 
     if (0 != libname[0]) {
-	*liblen = idio_strnlen (libname, PATH_MAX);
-	idiolibname = idio_alloc (*liblen + 1);
-	memcpy (idiolibname, libname, *liblen);
-	idiolibname[*liblen] = '\0';
+	*liblenp = idio_strnlen (libname, PATH_MAX);
+	idiolibname = idio_alloc (*liblenp + 1);
+	memcpy (idiolibname, libname, *liblenp);
+	idiolibname[*liblenp] = '\0';
     }
 
     if (free_idiolib_copy_C) {
@@ -3422,7 +3859,6 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 
     idio_file_extension_t *fe = idio_file_extensions;
     IDIO filename_ext = filename;
-    IDIO stack = IDIO_THREAD_STACK (idio_thread_current_thread ());
 
     if (NULL != lfn_dot) {
 	for (;NULL != fe->reader;fe++) {
@@ -3443,12 +3879,16 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 
 			filename_ext = idio_string_C_array (2, ss);
 
-			idio_array_push (stack, filename_ext);
+			idio_gc_protect (filename_ext);
 		    }
 
 		    if (access (lfn, R_OK) == 0) {
 
 			if (idio_dl_read == reader) {
+			    /*
+			     * NB filename_C might be {mod}@{mod_ver}
+			     * or {mod}.so or {dir}/{mod}
+			     */
 			    IDIO r = idio_load_dl_library (lfn, libfilelen, filename_C, filename_C_len, cs);
 
 			    if (free_filename_C) {
@@ -3456,7 +3896,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 			    }
 
 			    if (filename_ext != filename) {
-				idio_array_pop (stack);
+				idio_gc_expose (filename_ext);
 			    }
 
 			    return r;
@@ -3473,7 +3913,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 			    }
 
 			    if (filename_ext != filename) {
-				idio_array_pop (stack);
+				idio_gc_expose (filename_ext);
 			    }
 
 			    return idio_load_handle_C (fh, reader, evaluator, cs);
@@ -3490,7 +3930,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 	}
 
 	if (filename_ext != filename) {
-	    idio_array_pop (stack);
+	    idio_gc_expose (filename_ext);
 	}
 
 	return idio_load_handle_C (fh, reader, evaluator, cs);
@@ -3506,7 +3946,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
      * Race condition?
      */
     if (filename_ext != filename) {
-	idio_array_pop (stack);
+	idio_gc_expose (filename_ext);
     }
 
     if (free_filename_C) {

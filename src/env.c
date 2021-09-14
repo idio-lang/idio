@@ -557,7 +557,7 @@ void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0r
     /*
      * Fallback to looking for e0 either relative to us or on the PATH
      */
-    char *dir = rindex (e0, '/');
+    char *dir = memrchr (e0, '/', e0_len);
 
     size_t elen = e0_len;
     if (NULL == dir) {

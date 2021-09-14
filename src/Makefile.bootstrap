@@ -27,3 +27,4 @@ libc-api.h : $(BINDIR)/idio
 	cp $(EXTDIR)/libc/gen/libc-api.h $(SRCDIR)
 	cp $(EXTDIR)/libc/gen/libc-api.idio $(LIBDIR)
 	rm -f $(deps)
+	rm -f $(BINDIR)/idio

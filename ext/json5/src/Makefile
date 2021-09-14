@@ -1,6 +1,9 @@
 TOPDIR		:= $(abspath $(PWD)/../../..)
-include $(TOPDIR)/src/Makefile.common
+
+include Makefile.system
+
 include $(TOPDIR)/src/Makefile.system
+include $(TOPDIR)/src/Makefile.common
 
 ifdef MAKE_DEBUG
 CDEBUG		:= -g
@@ -23,10 +26,6 @@ LIBOBJS		:= $(patsubst %.c,%.o,$(LIBSRCS))
 
 USISRCS		:= usi.c usi-wrap.c
 USIOBJS		:= $(patsubst %.c,%.o,$(USISRCS))
-
-include Makefile.system
-
-JSON5_SYSTEM_VERSION_M	:= $(shell echo ${JSON5_SYSTEM_VERSION_MM} | sed -e 's/\..*//')
 
 # local install
 JSON5_LI_LIBDIR		:= $(LI_LIBVERDIR)/json5
@@ -78,7 +77,7 @@ libjson5.so.${JSON5_SYSTEM_VERSION_M} : libjson5.so.${JSON5_SYSTEM_VERSION_MM}
 	ln -sf $^ $@
 
 libjson5.so.${JSON5_SYSTEM_VERSION_MM} : $(LIBOBJS) json5-module.o json5-api.o
-	$(CC) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) -o $@ $^
+	$(CC) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^
 
 libjson5-bare.so : $(LIBOBJS) $(USIOBJS)
 	$(CC) $(LD_DLFLAGS) -o $@ $^
@@ -92,7 +91,7 @@ usi.c usi.h :
 # built and some of them require json5-system.h
 json5-module.d : json5-system.h
 
-json5-header.h Makefile.system :
-	CC=${CC} $(UTILSDIR)/bin/gen-idio-system -P json5
+json5-system.h Makefile.system :
+	CC=${CC} $(UTILSDIR)/bin/gen-idio-system -M json5
 
 -include $(deps)

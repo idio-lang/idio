@@ -23,6 +23,7 @@ endif
 
 all : local-install
 	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
+	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
 
 profiled :
 	$(MAKE) PROFLAGS=-pg
@@ -39,6 +40,7 @@ lean :
 debug :
 	$(MAKE) MAKE_DEBUG=1
 	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
+	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
 
 test : local-install
 	$(LI_BINDIR)/idio test
@@ -63,21 +65,24 @@ doc :
 	diff -w <(grep _[ch] $(SRCKDOUTDIR)/index.rst) <(grep _[ch] $(SRCDOCDIR)/index.rst | sed -e 's!.*/!!')
 	make -C $(SRCDOCDIR) html text
 
-local-install : $(LI_BINDIR)/idio | Makefile.system $(LI_BINDIR) $(LI_LIBVERDIR)
+local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)
 	cp -r $(LIBDIR)/*.idio $(LIBDIR)/bootstrap $(LI_LIBVERDIR)
 	(cd $(EXTDIR)/json5/src; $(MAKE) local-install)
+	(cd $(EXTDIR)/empty/src; $(MAKE) local-install)
 
 $(LI_BINDIR)/idio : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
 	ln -sf idio.${IDIO_SYSTEM_VERSION_MM} $@
 
-$(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(BINDIR)/idio | $(LI_BINDIR)
-	cp $^ $@
+$(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(objects) | Makefile.system $(LI_BINDIR) libc-api.h idio-system.h
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 $(LI_BINDIR) $(LI_LIBVERDIR) :
 	mkdir -p $@
 
-$(BINDIR)/idio : $(objects) | libc-api.h idio-system.h $(deps)
+$(BINDIR)/idio : $(objects) | libc-api.h idio-system.h
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+$(objects) : $(deps)
 
 lib%.so : %.o
 	$(CC) -shared -o $@ $^
@@ -87,6 +92,7 @@ clean-local-install :
 
 clean : build-clean run-clean edit-clean
 	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
+	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
 
 build-clean:
 	rm -f *.o *.d $(BINDIR)/idio *.so TAGS map
@@ -103,7 +109,7 @@ endif
 edit-clean :
 	rm -f $(BINDIR)/*~ $(SRCDIR)/*~ $(SRCDIR)/build-bootstrap/*~ $(LIBDIR)/*~ $(TESTSDIR)/*~ $(TESTSDIR)/*/*~ $(EXTDIR)/*/src/*~ $(UTILSDIR)/*~ $(UTILSDIR)/*/*~
 
-dist-clean : clean
+dist-clean : clean clean-local-install
 	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system
 	rm -f $(SRCDIR)/libc-api.h
 	rm -f $(LIBDIR)/libc-api.idio

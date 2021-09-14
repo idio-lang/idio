@@ -49,23 +49,23 @@ usage ()
     cat << EOF >&2
 
 ${0##*/} generates a system-specific header/makefile
-  -P PREFIX	prefix [${opt_prefix}]
+  -M NAME	module [${opt_module}]
 
   -v		verbose
 EOF
 }
 
-opt_prefix=idio
+opt_module=idio
 opt_verbose=
 
-while getopts "hP:v" opt ; do
+while getopts "hM:v" opt ; do
     case "${opt}" in
     h)
 	usage
 	exit 0
 	;;
-    P)
-	opt_prefix=${OPTARG}
+    M)
+	opt_module=${OPTARG}
 	;;
     v)
 	opt_verbose=1
@@ -79,20 +79,61 @@ done
 
 ######################################################################
 
-# 1.2.a.3
-version=$(cat version)
-
-IFS=.
-version_a=( ${version} )
-
-# 1.2
-version_mm="${version_a[*]:0:2}"
-unset IFS
-
-# build date
-build_date=$(date +%Y-%m-%dT%H:%M:%S%z)
-
 uname_a=( $(uname -mrps) )
+
+######################################################################
+#
+# date and time
+
+# We'd like a GNU date for the -d flag (which is on a non-standard
+# PATH in SunOS).  The *BSDs don't have GNU date but do have a
+# -r{seconds} flag.
+
+case "${uname_a[0]}" in
+*BSD)
+    # we're going to generate more than one date output so use a
+    # consistent date input
+    now=$(date +%s)
+
+    # build date and timestamp using a consistent {now}
+    build_date=$(date -r "${now}" +%Y-%m-%d)
+
+    # timestamp should be RFC3339/ISO8601 and whilst FreeBSD date
+    # supports the -Iseconds flag for ISIO8601 (and OpenBSD doesn't)
+    # we can't rely on it as it likes to use T/nothing rather than T/Z
+    # anyway.
+    #
+    # whole seconds -- as fractional seconds can't be generated
+    build_timestamp=$(date -r "${now}" +%Y-%m-%dT%H:%M:%SZ%z)
+    ;;
+*)
+    case "${uname_a[0]}" in
+    SunOS)
+	PATH=/usr/gnu/bin:$PATH
+	;;
+    esac
+
+    # we're going to generate more than one date output so use a
+    # consistent date input (including zone information otherwise it
+    # gets added again!)
+    now=$(date +'%Y-%m-%d %H:%M:%SZ%z')
+
+    # build date and timestamp using a consistent {now}
+    build_date=$(date -d "${now}" +%Y-%m-%d)
+
+    # timestamp should be RFC3339/ISO8601 and whilst GNU date
+    # variously supports flags for those we can't rely on it as
+    # --rfc-3339 likes to use SPACE/nothing rather than T/Z.
+    #
+    # whole seconds -- as fractional seconds can't be portably
+    # generated
+    build_timestamp=$(date -d "${now}" +%Y-%m-%dT%H:%M:%SZ%z)
+    ;;
+esac
+
+######################################################################
+#
+# ARCH
 
 # -dumpmachine works for gcc and clang and returns the GNU triplet
 DUMPMACHINE=$( ${CC} -dumpmachine )
@@ -123,7 +164,8 @@ case "${uname_a[0]}" in
     libdir=/usr/local/lib
     ;;
 *)
-    # this might not be generic
+    # this might not be generic -- at least systemd systems will
+    # override it, below
     case "${uname_a[2]}" in
     x86_64)
 	if [[ -d /usr/lib64 ]] ; then
@@ -134,16 +176,51 @@ case "${uname_a[0]}" in
     ;;
 esac
 
-if type -p systemd-path ; then
+if type -p systemd-path >/dev/null 2>&1 ; then
     libdir=$(systemd-path system-library-arch)
 else
     libdir=${libdir}/${DUMPMACHINE}
 fi
 
 ######################################################################
+#
+# Idio versions
 
-var_PREFIX=$( echo ${opt_prefix} | tr '[a-z]' '[A-Z]' )
-var_header=${opt_prefix}-system.h
+# 1.2.a.3
+version=$(cat version)
+
+IFS=.
+version_a=( ${version} )
+
+# 1.2 from 1.2.a.3
+version_mm="${version_a[*]:0:2}"
+
+# 1 from 1.2.a.3
+version_m="${version_a[*]:0:1}"
+unset IFS
+
+######################################################################
+#
+# git commit
+
+git_commit=$(git rev-parse --short=7 HEAD)
+git_describe=$(git describe --tags)
+
+# dirty working directory?
+# https://stackoverflow.com/questions/3878624/how-do-i-programmatically-determine-if-there-are-uncommitted-changes
+
+if ! git diff-files --quiet --ignore-submodules -- ; then
+    # unstaged changes in the working tree
+    git_commit="${git_commit}*"
+elif ! git diff-index --cached --quiet HEAD --ignore-submodules -- ; then
+    # uncommitted changes in the index
+    git_commit="${git_commit}+"
+fi
+
+######################################################################
+
+var_MODULE=$( echo ${opt_module} | tr '[a-z]' '[A-Z]' )
+var_header=${opt_module}-system.h
 
 cat <<EOF > ${var_header}
 /*
@@ -155,14 +232,17 @@ cat <<EOF > ${var_header}
  *
  */
 
-#ifndef ${var_PREFIX}_SYSTEM_H
-#define ${var_PREFIX}_SYSTEM_H
+#ifndef ${var_MODULE}_SYSTEM_H
+#define ${var_MODULE}_SYSTEM_H
 
-#define ${var_PREFIX}_SYSTEM_VERSION	"${version}"
-#define ${var_PREFIX}_SYSTEM_VERSION_MM	"${version_mm}"
-#define ${var_PREFIX}_SYSTEM_BUILD_DATE	"${build_date}"
-#define ${var_PREFIX}_SYSTEM_LIBDIR	"${libdir}/idio"
-#define ${var_PREFIX}_SYSTEM_ARCH	"${MULTIARCH}"
+#define ${var_MODULE}_SYSTEM_VERSION		"${version}"
+#define ${var_MODULE}_SYSTEM_VERSION_MM		"${version_mm}"
+#define ${var_MODULE}_SYSTEM_BUILD_DATE		"${build_date}"
+#define ${var_MODULE}_SYSTEM_BUILD_TIMESTAMP	"${build_timestamp}"
+#define ${var_MODULE}_SYSTEM_LIBDIR		"${libdir}/idio"
+#define ${var_MODULE}_SYSTEM_ARCH		"${MULTIARCH}"
+#define ${var_MODULE}_BUILD_COMMIT		"${git_commit}"
+#define ${var_MODULE}_BUILD_DESCRIBE		"${git_describe}"
 
 #endif
 
@@ -173,10 +253,14 @@ cat <<EOF > Makefile.system
 # generated by ${0##*/} on $(date)
 #
 
-${var_PREFIX}_SYSTEM_VERSION	:= ${version}
-${var_PREFIX}_SYSTEM_VERSION_MM	:= ${version_mm}
-${var_PREFIX}_SYSTEM_BUILD_DATE	:= ${build_date}
-${var_PREFIX}_SYSTEM_LIBDIR	:= ${libdir}/idio
-${var_PREFIX}_SYSTEM_ARCH	:= ${MULTIARCH}
+${var_MODULE}_NAME			:= ${opt_module}
+
+${var_MODULE}_SYSTEM_VERSION		:= ${version}
+${var_MODULE}_SYSTEM_VERSION_MM	:= ${version_mm}
+${var_MODULE}_SYSTEM_VERSION_M		:= ${version_m}
+${var_MODULE}_SYSTEM_BUILD_DATE	:= ${build_date}
+${var_MODULE}_SYSTEM_BUILD_TIMESTAMP	:= ${build_timestamp}
+${var_MODULE}_SYSTEM_LIBDIR		:= ${libdir}/idio
+${var_MODULE}_SYSTEM_ARCH		:= ${MULTIARCH}
 
 EOF

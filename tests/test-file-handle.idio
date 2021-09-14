@@ -430,27 +430,31 @@ close-handle ifh
 ;; find-lib code coverage
 OIDIOLIB := IDIOLIB
 IDIOLIB = #t
-find-lib "empty"
+find-lib "zero-length"
 IDIOLIB = ""
-find-lib "empty"
+find-lib "zero-length"
 IDIOLIB = ":"
-find-lib "empty"
+find-lib "zero-length"
 IDIOLIB = OIDIOLIB
 
-find-lib "empty"
+find-lib "zero-length"
 
 ;; load code coverage
 
 ;; reduce IDIOLIB to the grandparent directory of a known library file
 
-;; (findlib "empty") => ".../lib/idio/x.y/empty.idio" from which we
+;; (findlib "zero-length") => ".../tests/zero-length.idio" from which we
 ;; want "..."
-subdir := #S{lib/idio/${IDIO_MM_VERSION}}
-parts := regexec (regcomp #S!{(.*)/!{subdir}/[^/]+$}) (find-lib "empty")
-IDIOLIB = parts.1
+subdir := #S{tests}
+parts := regexec (regcomp #S!{(.*)/!{subdir}/[^/]+$}) (find-lib "zero-length")
+if parts {
+  IDIOLIB = parts.1
 
-load #S{${subdir}/empty.idio}
-load #S{${subdir}/empty}
+  load #S{${subdir}/zero-length.idio}
+  load #S{${subdir}/zero-length}
+} {
+  eprintf "test-file-handle: failed to match for zero-length.idio\n"
+}
 
 IDIOLIB = OIDIOLIB
 

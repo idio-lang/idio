@@ -1079,7 +1079,9 @@ void idio_gc_expose_all ()
 	fprintf (stderr, "gc-expose-all #%d\n", gc->inst);
 #endif
 	idio_root_t *r = gc->roots;
+#ifdef IDIO_DEBUG
 	size_t n = 0;
+#endif
 	while (r) {
 	    /*
 	     * Calling idio_dump (r->object, 1); on shutdown
@@ -1089,14 +1091,18 @@ void idio_gc_expose_all ()
 	     *
 	     * Instead, just a quick note.
 	     */
+#ifdef IDIO_DEBUG
 	    fprintf (stderr, "expose-all: %10p %s\n", r->object, idio_type2string (r->object));
-	    r = r->next;
 	    n++;
+#endif
+	    r = r->next;
 	}
 
+#ifdef IDIO_DEBUG
 	if (n) {
 	    fprintf (stderr, "gc-expose-all #%d: for %zd root objects\n", gc->inst, n);
 	}
+#endif
 
 	gc = gc->next;
     }

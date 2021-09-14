@@ -109,6 +109,26 @@ void idio_init_vars ()
 				  idio_string_C_len (IDIO_SYSTEM_VERSION_MM, sizeof (IDIO_SYSTEM_VERSION_MM) - 1),
 				  idio_Idio_module);
 
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_BUILD_DATE"),
+				  idio_string_C_len (IDIO_SYSTEM_BUILD_DATE, sizeof (IDIO_SYSTEM_BUILD_DATE) - 1),
+				  idio_Idio_module);
+
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_BUILD_TIMESTAMP"),
+				  idio_string_C_len (IDIO_SYSTEM_BUILD_TIMESTAMP, sizeof (IDIO_SYSTEM_BUILD_TIMESTAMP) - 1),
+				  idio_Idio_module);
+
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_SYSTEM_ARCH"),
+				  idio_string_C_len (IDIO_SYSTEM_ARCH, sizeof (IDIO_SYSTEM_ARCH) - 1),
+				  idio_Idio_module);
+
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_BUILD_COMMIT"),
+				  idio_string_C_len (IDIO_BUILD_COMMIT, sizeof (IDIO_BUILD_COMMIT) - 1),
+				  idio_Idio_module);
+
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_BUILD_DESCRIBE"),
+				  idio_string_C_len (IDIO_BUILD_DESCRIBE, sizeof (IDIO_BUILD_DESCRIBE) - 1),
+				  idio_Idio_module);
+
     idio_vars_IFS_sym                           = IDIO_SYMBOLS_C_INTERN ("IFS");
     idio_vars_suppress_exit_on_error_sym        = IDIO_SYMBOLS_C_INTERN ("suppress-exit-on-error!");
     idio_vars_suppress_pipefail_sym             = IDIO_SYMBOLS_C_INTERN ("suppress-pipefail!");
