@@ -120,6 +120,7 @@ void json5_error_printf (char *format, ...)
 				   IDIO_LIST3 (msg,
 					       location,
 					       idio_S_nil));
+
     idio_raise_condition (idio_S_false, c);
 
     /* notreached */

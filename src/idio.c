@@ -185,7 +185,30 @@ void idio_module_table_final ()
 	(idio_final_table.table[i]) ();
 	if (NULL != idio_final_table.handle &&
 	    NULL != idio_final_table.handle[i]) {
-	    if (dlclose (idio_final_table.handle[i])) {
+	    /*
+	     * If we dlclose() a shared library when valgrind is
+	     * running then any memory leaks are for ??? -- which
+	     * isn't helpful.  Of course, if we do not dlclose() then
+	     * we leak some dlopen() allocated memory.
+	     *
+	     * What would be really useful is if we could figure out
+	     * if we'd leaked enough memory to be of interest --
+	     * noting that sterror(3) and strsignal(3) both leak
+	     * memory.
+	     *
+	     * According to https://stackoverflow.com/a/62364698 we
+	     * can test an LD_PRELOAD environment variable
+	     */
+	    int valgrindp = 0;
+	    char *p = getenv ("LD_PRELOAD");
+	    if (NULL != p) {
+		if (strstr (p, "/valgrind/") != NULL ||
+		    strstr (p, "/vgpreload") != NULL) {
+		    valgrindp = 1;
+		}
+	    }
+	    if (0 == valgrindp &&
+		dlclose (idio_final_table.handle[i])) {
 		fprintf (stderr, "dlclose () => %s\n", dlerror ());
 		perror ("dlclose");
 	    }

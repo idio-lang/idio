@@ -31,23 +31,88 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "json5-unicode.h"
 #include "json5-token.h"
+#include "json5-unicode.h"
 #include "json5-parser.h"
 #include "utf8.h"
 
 #define JSON5_CHUNK 1024
 
-static json5_token_t *json5_parse_token (json5_token_t *ct, json5_value_t **valuepp);
+/*
+ * We've overridden the JSON5 meaning of "value" with punctuator and
+ * identifier when a valid JSON5Value is null, boolean, string,
+ * number, object or array.
+ *
+ * In the case of object and array we don't even have those yet as
+ * we're still running through the token stream!
+ */
+int json5_valid_value (json5_token_t *ct) {
+    int valid = 0;
+    switch (ct->type) {
+    case JSON5_TOKEN_IDENTIFIER:
+	switch (ct->value->type) {
+	case JSON5_VALUE_NULL:
+	    valid = 1;
+	    break;
+	case JSON5_VALUE_BOOLEAN:
+	    switch (ct->value->u.l) {
+	    case JSON5_LITERAL_TRUE:
+	    case JSON5_LITERAL_FALSE:
+		valid = 1;
+		break;
+	    default:
+		/* coding error? */
+		valid = 0;
+		break;
+	    }
+	    break;
+	default:
+	    valid = 0;
+	}
+	break;
+    case JSON5_TOKEN_PUNCTUATOR:
+	if (JSON5_PUNCTUATOR_LBRACE == ct->value->u.p) {
+	    valid = 1;
+	} else if (JSON5_PUNCTUATOR_LBRACKET == ct->value->u.p) {
+	    valid = 1;
+	}
+	break;
+    case JSON5_TOKEN_STRING:
+	valid = 1;
+	break;
+    case JSON5_TOKEN_NUMBER:
+	switch (ct->value->u.n->type) {
+	case JSON5_NUMBER_INFINITY:
+	case JSON5_NUMBER_NEG_INFINITY:
+	case JSON5_NUMBER_NAN:
+	case JSON5_NUMBER_NEG_NAN:
+	case ECMA_NUMBER_INTEGER:
+	case ECMA_NUMBER_FLOAT:
+	    valid = 1;
+	    break;
+	}
+	break;
+    default:
+	valid = 0;
+	break;
+    }
+
+    return valid;
+}
+
+static json5_token_t *json5_parse_token (json5_token_t *ft, json5_token_t *ct, json5_value_t **valuepp, int toplevel);
 static json5_token_t *json5_parse_token_stream (json5_token_t *ct, json5_value_t **valuepp);
 
-static json5_token_t *json5_parse_array (json5_token_t *ct, json5_value_t **valuepp)
+static json5_token_t *json5_parse_array (json5_token_t *ft, json5_token_t *ct, json5_value_t **valuepp, int toplevel)
 {
     enum pending_array_states {
 	VALUE,
 	COMMA_RBRACKET,		/* , or ] */
     };
     enum pending_array_states pending = VALUE;
+
+    size_t a_start = ct->start;
+    ct = ct->next;
 
     *valuepp = (json5_value_t *) malloc (sizeof (json5_value_t));
     (*valuepp)->type = JSON5_VALUE_ARRAY;
@@ -59,7 +124,8 @@ static json5_token_t *json5_parse_array (json5_token_t *ct, json5_value_t **valu
     for (; NULL != ct;) {
 	if (JSON5_TOKEN_PUNCTUATOR == ct->type &&
 	    JSON5_PUNCTUATOR_RBRACKET == ct->value->u.p) {
-	    ct = json5_token_free_next (ct);
+	    done = 1;
+	    ct = ct->next;
 	    break;
 	}
 
@@ -74,41 +140,103 @@ static json5_token_t *json5_parse_array (json5_token_t *ct, json5_value_t **valu
 	    ae->next = NULL;
 	    ae->element = NULL;
 
-	    ct = json5_parse_token (ct, &(ae->element));
+	    if (! json5_valid_value (ct)) {
+		size_t ct_start = ct->start;
+		if (toplevel) {
+		    json5_free_value (*valuepp);
+		}
+		json5_token_free_remaining (ft);
+
+		/*
+		 * Test Case: json5-errors/parse-array-invalid-value.idio
+		 *
+		 * json5/parse-string "[ while ]"
+		 */
+		json5_error_printf ("json5/parse array at %zd: invalid value at %zd", a_start, ct_start);
+
+		/* notreached */
+		return NULL;
+	    }
+
+	    ct = json5_parse_token (ft, ct, &(ae->element), 0);
 
 	    if (NULL == ct) {
-		done = 1;
-		break;
+		if (toplevel) {
+		    json5_free_value (*valuepp);
+		}
+		json5_token_free_remaining (ft);
+
+		/*
+		 * Test Case: json5-errors/parse-unterminated-array-1.idio
+		 *
+		 * json5/parse-string "[ true"
+		 */
+		json5_error_printf ("json5/parse array at %zd: no more tokens: expected ']'", a_start);
+
+		/* notreached */
+		return NULL;
 	    }
+
 	    pending = COMMA_RBRACKET;
 	    break;
 	case COMMA_RBRACKET:
 	    if (JSON5_TOKEN_PUNCTUATOR != ct->type ||
 		JSON5_PUNCTUATOR_COMMA != ct->value->u.p) {
-		json5_error_printf ("parse array: ,|] expected: ");
+		size_t ct_start = ct->start;
+		if (toplevel) {
+		    json5_free_value (*valuepp);
+		}
+		json5_token_free_remaining (ft);
+
+		/*
+		 * Test Cases:
+		 *
+		 *   json5-errors/parse-array-bad-sequence-1.idio
+		 *   json5-errors/parse-array-bad-sequence-2.idio
+		 *
+		 * json5/parse-string "[ true false ]"
+		 * json5/parse-string "[ true [ false ] ]"
+		 */
+		json5_error_printf ("json5/parse array at %zd: expected ',' or ']' at %zd", a_start, ct_start);
 
 		/* notreached */
 		return NULL;
 	    }
-	    ct = json5_token_free_next (ct);
+	    ct = ct->next;
 	    pending = VALUE;
 	    break;
 	}
+    }
 
-	if (done) {
-	    if (NULL != ct) {
-		ct = json5_token_free_next (ct);
-	    }
-	    break;
+    if (0 == done) {
+	/*
+	 * Test Case: json5-errors/parse-unterminated-array-2.idio
+	 *
+	 * json5/parse-string "["
+	 */
+	if (toplevel) {
+	    json5_free_value (*valuepp);
 	}
+	if (NULL == ct) {
+	    json5_token_free_remaining (ft);
+
+	    json5_error_printf ("json5/parse array at %zd: expected ']' (no more tokens)", a_start);
+	} else {
+	    size_t ct_start = ct->start;
+	    json5_token_free_remaining (ft);
+
+	    json5_error_printf ("json5/parse array at %zd: expected ']' at %zd", a_start, ct_start);
+	}
+
+	/* notreached */
+	return NULL;
     }
 
     return ct;
 }
 
-static json5_token_t *json5_parse_object (json5_token_t *ct, json5_value_t **valuepp)
+static json5_token_t *json5_parse_object (json5_token_t *ft, json5_token_t *ct, json5_value_t **valuepp, int toplevel)
 {
-    int done = 0;
     enum pending_object_states {
 	NAME,
 	COLON,
@@ -117,16 +245,52 @@ static json5_token_t *json5_parse_object (json5_token_t *ct, json5_value_t **val
     };
     enum pending_object_states pending = NAME;
 
+    size_t o_start = ct->start;
+    ct = ct->next;
+
     *valuepp = (json5_value_t *) malloc (sizeof (json5_value_t));
     (*valuepp)->type = JSON5_VALUE_OBJECT;
     (*valuepp)->u.o = NULL;
 
     json5_object_t *object = NULL;
 
+    int done = 0;
     for (; NULL != ct;) {
 	if (JSON5_TOKEN_PUNCTUATOR == ct->type &&
 	    JSON5_PUNCTUATOR_RBRACE == ct->value->u.p) {
-	    ct = json5_token_free_next (ct);
+	    /*
+	     * Have we closed too soon?
+	     */
+	    switch (pending) {
+	    case NAME:
+	    case COMMA_RBRACE:
+		break;
+	    default:
+		{
+		    size_t ct_start = ct->start;
+		    if (toplevel) {
+			json5_free_value (*valuepp);
+		    }
+		    json5_token_free_remaining (ft);
+
+		    /*
+		     * Test Cases:
+		     *
+		     *   json5-errors/parse-object-MemberName-only.idio
+		     *   json5-errors/parse-object-MemberName-colon-only.idio
+		     *
+		     * json5/parse-string "{ true }"
+		     * json5/parse-string "{ true: }"
+		     */
+		    json5_error_printf ("json5/parse object at %zd: expected more tokens at %zd", o_start, ct_start);
+
+		    /* notreached */
+		    return NULL;
+		}
+		break;
+	    }
+	    done = 1;
+	    ct = ct->next;
 	    break;
 	}
 
@@ -139,42 +303,111 @@ static json5_token_t *json5_parse_object (json5_token_t *ct, json5_value_t **val
 		object = object->next;
 	    }
 	    object->next = NULL;
+	    object->name = NULL;
 	    object->value = NULL;
 
 	    if (JSON5_TOKEN_IDENTIFIER == ct->type) {
-		object->type = JSON5_MEMBER_IDENTIFIER;
-		object->name = ct->value->u.s;
-		free (ct->value);
+		switch (ct->value->type) {
+		case JSON5_VALUE_NULL:
+		case JSON5_VALUE_BOOLEAN:
+		    object->type = JSON5_MEMBER_LITERAL;
+		    break;
+		case JSON5_VALUE_IDENTIFIER:
+		    object->type = JSON5_MEMBER_IDENTIFIER;
+		    break;
+		default:
+		    /*
+		     * Test Case: coding error?
+		     */
+		    json5_error_printf ("json5/parse object at %zd: MemberName: expected ??", o_start);
+
+		    /* notreached */
+		    return NULL;
+		    break;
+		}
+		object->name = ct->value;
+		ct->value = NULL;
 	    } else if (JSON5_TOKEN_STRING == ct->type) {
 		object->type = JSON5_MEMBER_STRING;
-		object->name = ct->value->u.s;
-		free (ct->value);
+		object->name = ct->value;
+		ct->value = NULL;
 	    } else {
-		json5_error_printf ("parse object: identifier|string name expected: ct->type=%d ", ct->type);
+		if (toplevel) {
+		    json5_free_value (*valuepp);
+		}
+		json5_token_free_remaining (ft);
+
+		/*
+		 * Test Case: json5-errors/parse-object-bad-MemberName-type.idio
+		 *
+		 * json5/parse-string "{ 10: false }"
+		 */
+		json5_error_printf ("json5/parse object at %zd: MemberName: expected ECMAIdentifier|string", o_start);
 
 		/* notreached */
 		return NULL;
 	    }
-	    ct = json5_token_free_next (ct);
+	    ct = ct->next;
 	    pending = COLON;
 	    break;
 	case COLON:
 	    if (JSON5_TOKEN_PUNCTUATOR != ct->type ||
 		JSON5_PUNCTUATOR_COLON != ct->value->u.p) {
-		json5_error_printf ("parse object: colon expected: ");
+		if (toplevel) {
+		    json5_free_value (*valuepp);
+		}
+		json5_token_free_remaining (ft);
+
+		/*
+		 * Test Case: json5-errors/parse-object-no-colon.idio
+		 *
+		 * json5/parse-string "{ true false }"
+		 */
+		json5_error_printf ("json5/parse object at %zd: expected ':'", o_start);
 
 		/* notreached */
 		return NULL;
 	    }
-	    ct = json5_token_free_next (ct);
+	    ct = ct->next;
 	    pending = VALUE;
 	    break;
 	case VALUE:
 	    {
-		ct = json5_parse_token (ct, &(object->value));
+		if (! json5_valid_value (ct)) {
+		    size_t ct_start = ct->start;
+		    if (toplevel) {
+			json5_free_value (*valuepp);
+		    }
+		    json5_token_free_remaining (ft);
+
+		    /*
+		     * Test Case: json5-errors/parse-object-invalid-value.idio
+		     *
+		     * json5/parse-string "{ true: while }"
+		     */
+		    json5_error_printf ("json5/parse object at %zd: invalid value at %zd", o_start, ct_start);
+
+		    /* notreached */
+		    return NULL;
+		}
+
+		ct = json5_parse_token (ft, ct, &(object->value), 0);
 
 		if (NULL == ct) {
-		    return ct;
+		    if (toplevel) {
+			json5_free_value (*valuepp);
+		    }
+		    json5_token_free_remaining (ft);
+
+		    /*
+		     * Test Case: json5-errors/parse-unterminated-object-1.idio
+		     *
+		     * json5/parse-string "{ true: false"
+		     */
+		    json5_error_printf ("json5/parse object at %zd: expected '}'", o_start);
+
+		    /* notreached */
+		    return NULL;
 		}
 	    }
 	    pending = COMMA_RBRACE;
@@ -183,30 +416,66 @@ static json5_token_t *json5_parse_object (json5_token_t *ct, json5_value_t **val
 	    if (JSON5_TOKEN_PUNCTUATOR != ct->type ||
 		(JSON5_PUNCTUATOR_COMMA != ct->value->u.p &&
 		 JSON5_PUNCTUATOR_RBRACE != ct->value->u.p)) {
-		json5_error_printf ("parse object: ,|} expected: ");
+		if (toplevel) {
+		    json5_free_value (*valuepp);
+		}
+		json5_token_free_remaining (ft);
+
+		/*
+		 * Test Case: json5-errors/parse-object-bad-sequence.idio
+		 *
+		 * json5/parse-string "{ true: false true: false }"
+		 */
+		json5_error_printf ("json5/parse object at %zd: expected ',' or '}'", o_start);
 
 		/* notreached */
 		return NULL;
 	    }
-	    ct = json5_token_free_next (ct);
+	    ct = ct->next;
 	    pending = NAME;
 	    break;
 	}
+    }
 
-	if (done) {
-	    ct = json5_token_free_next (ct);
-	    break;
+    if (0 == done) {
+	/*
+	 * Test Case: json5-errors/parse-unterminated-object-2.idio
+	 *
+	 * json5/parse-string "{"
+	 */
+	if (toplevel) {
+	    json5_free_value (*valuepp);
 	}
+	if (NULL == ct) {
+	    json5_token_free_remaining (ft);
+
+	    json5_error_printf ("json5/parse object at %zd: expected '}' (no more tokens)", o_start);
+	} else {
+	    size_t ct_start = ct->start;
+	    json5_token_free_remaining (ft);
+
+	    json5_error_printf ("json5/parse object at %zd: expected '}' at %zd", o_start, ct_start);
+	}
+
+	/* notreached */
+	return NULL;
     }
 
     return ct;
 }
 
-static json5_token_t *json5_parse_token (json5_token_t *ct, json5_value_t **valuepp)
+/*
+ * ft	- first token (used for cleanup)
+ * ct	- current token
+ */
+static json5_token_t *json5_parse_token (json5_token_t *ft, json5_token_t *ct, json5_value_t **valuepp, int toplevel)
 {
     switch (ct->type) {
     case JSON5_TOKEN_ROOT:
-	json5_error_printf ("parse: unexpected root token");
+	/*
+	 * Test Case: coding error?
+	 */
+	json5_error_printf ("json5/parse: unexpected root token");
 
 	/* notreached */
 	return NULL;
@@ -214,40 +483,50 @@ static json5_token_t *json5_parse_token (json5_token_t *ct, json5_value_t **valu
 	switch (ct->value->type) {
 	case JSON5_VALUE_NULL:
 	    *valuepp = ct->value;
+	    ct->value = NULL;
 	    break;
 	case JSON5_VALUE_BOOLEAN:
 	    switch (ct->value->u.l) {
 	    case JSON5_LITERAL_TRUE:
-		*valuepp = ct->value;
-		break;
 	    case JSON5_LITERAL_FALSE:
 		*valuepp = ct->value;
+		ct->value = NULL;
 		break;
 	    default:
-		json5_error_printf ("parse: unexpected literal type %d", ct->value->u.l);
+		/*
+		 * Test Case: coding error?
+		 */
+		json5_error_printf ("json5/parse: unexpected literal type %d", ct->value->u.l);
 
 		/* notreached */
 		return NULL;
 	    }
 	    break;
 	case JSON5_VALUE_IDENTIFIER:
-	    *valuepp = ct->value;
+	    /*
+	     * Test Case: ??
+	     */
+	    json5_error_printf ("json5/parse at %zd: unexpected identifier", ct->start);
+
+	    /* notreached */
+	    return NULL;
 	    break;
 	default:
-	    json5_error_printf ("parse: unexpected identifier type %d", ct->value->type);
+	    /*
+	     * Test Case: coding error?
+	     */
+	    json5_error_printf ("json5/parse: unexpected identifier type %d", ct->value->type);
 
 	    /* notreached */
 	    return NULL;
 	}
-	ct = json5_token_free_next (ct);
+	ct = ct->next;
 	break;
     case JSON5_TOKEN_PUNCTUATOR:
 	if (JSON5_PUNCTUATOR_LBRACE == ct->value->u.p) {
-	    ct = json5_token_free_next (ct);
-	    ct = json5_parse_object (ct, valuepp);
+	    ct = json5_parse_object (ft, ct, valuepp, toplevel);
 	} else if (JSON5_PUNCTUATOR_LBRACKET == ct->value->u.p) {
-	    ct = json5_token_free_next (ct);
-	    ct = json5_parse_array (ct, valuepp);
+	    ct = json5_parse_array (ft, ct, valuepp, toplevel);
 	} else {
 	    char *p;
 	    switch (ct->value->u.p) {
@@ -264,12 +543,29 @@ static json5_token_t *json5_parse_token (json5_token_t *ct, json5_value_t **valu
 		p = ",";
 		break;
 	    default:
-		json5_error_printf ("parse: unexpected punctuator type %d ", ct->value->u.p);
+		/*
+		 * Test Case: coding error?
+		 */
+		json5_error_printf ("json5/parse: unexpected punctuator type %d ", ct->value->u.p);
 
 		/* notreached */
 		return NULL;
 	    }
-	    json5_error_printf ("parse: unexpected punctuation: '%s'", p);
+
+	    size_t ct_start = ct->start;
+	    json5_token_free_remaining (ft);
+
+	    /*
+	     * Test Cases:
+	     *
+	     *   json5-errors/parse-bad-punctuation-rbrace.idio
+	     *   json5-errors/parse-bad-punctuation-rbracket.idio
+	     *   json5-errors/parse-bad-punctuation-colon.idio
+	     *   json5-errors/parse-bad-punctuation-comma.idio
+	     *
+	     * json5/parse-string ", true"
+	     */
+	    json5_error_printf ("json5/parse: unexpected punctuation at %zd: '%s'", ct_start, p);
 
 	    /* notreached */
 	    return NULL;
@@ -277,7 +573,8 @@ static json5_token_t *json5_parse_token (json5_token_t *ct, json5_value_t **valu
 	break;
     case JSON5_TOKEN_STRING:
 	*valuepp = ct->value;
-	ct = json5_token_free_next (ct);
+	ct->value = NULL;
+	ct = ct->next;
 	break;
     case JSON5_TOKEN_NUMBER:
 	switch (ct->value->u.n->type) {
@@ -294,16 +591,23 @@ static json5_token_t *json5_parse_token (json5_token_t *ct, json5_value_t **valu
 	case ECMA_NUMBER_FLOAT:
 	    break;
 	default:
-	    json5_error_printf ("parse: unexpected number type %d", ct->value->u.n->type);
+	    /*
+	     * Test Case: coding error?
+	     */
+	    json5_error_printf ("json5/parse: unexpected number type %d", ct->value->u.n->type);
 
 	    /* notreached */
 	    return NULL;
 	}
 	*valuepp = ct->value;
-	ct = json5_token_free_next (ct);
+	ct->value = NULL;
+	ct = ct->next;
 	break;
     default:
-	json5_error_printf ("parse: unexpected token type %d", ct->type);
+	/*
+	 * Test Case: coding error?
+	 */
+	json5_error_printf ("json5/parse: unexpected token type %d", ct->type);
 
 	/* notreached */
 	return NULL;
@@ -312,38 +616,64 @@ static json5_token_t *json5_parse_token (json5_token_t *ct, json5_value_t **valu
     return ct;
 }
 
-static json5_token_t *json5_parse_token_stream (json5_token_t *ct, json5_value_t **valuepp)
+static json5_token_t *json5_parse_token_stream (json5_token_t *root, json5_value_t **valuepp)
 {
+    json5_token_t *ct = root;
+
     if (NULL == ct ||
 	JSON5_TOKEN_ROOT != ct->type) {
-	json5_error_printf ("parse: invalid token stream");
+	/*
+	 * Test Case: coding error?
+	 */
+	json5_error_printf ("json5/parse: invalid token stream");
 
 	/* notreached */
 	return NULL;
     }
 
-    ct = json5_token_free_next (ct);
+    ct = ct->next;
 
     if (NULL == ct) {
-	json5_error_printf ("parse: empty token stream");
+	json5_free_value (*valuepp);
+	json5_token_free_remaining (root);
+
+	/*
+	 * Test Case: json5-errors/parse-empty-string.idio
+	 *
+	 * json5/parse-string ""
+	 */
+	json5_error_printf ("json5/parse: empty token stream");
 
 	/* notreached */
 	return NULL;
     }
 
-    ct = json5_parse_token (ct, valuepp);
+    ct = json5_parse_token (root, ct, valuepp, 1);
 
     return ct;
 }
 
 json5_value_t *json5_parse (json5_token_t *root)
 {
-    json5_value_t *valuep;
+    /*
+     * XXX assign with NULL so cover the implied json5_free_value
+     * (*valuepp) on error
+     */
+    json5_value_t *valuep = NULL;
 
     json5_token_t *ct = json5_parse_token_stream (root, &valuep);
 
-    while (NULL != ct) {
-	json5_error_printf ("parse: extra tokens");
+    if (NULL != ct) {
+	size_t ct_start = ct->start;
+	json5_free_value (valuep);
+	json5_token_free_remaining (root);
+
+	/*
+	 * Test Case: json5-errors/parse-extra-tokens.idio
+	 *
+	 * json5/parse-string "true false"
+	 */
+	json5_error_printf ("json5/parse: extra tokens at %zd", ct_start);
 
 	/* notreached */
 	return NULL;
@@ -356,7 +686,17 @@ json5_value_t *json5_parse_string (json5_unicode_string_t *so)
 {
     json5_token_t *root = json5_tokenize_string (so);
 
+    /*
+     * We free {so} here, on behalf of the caller, because
+     * json5_parse() can exit and doesn't know about {so} (to free
+     * it).
+     */
+    free (so->s);
+    free (so);
+
     json5_value_t *valuep = json5_parse (root);
+
+    json5_token_free_remaining (root);
 
     return valuep;
 }
@@ -366,6 +706,8 @@ json5_value_t *json5_parse_string_C (char *s_C, size_t s_Clen)
     json5_token_t *root = json5_tokenize_string_C (s_C, s_Clen);
 
     json5_value_t *valuep = json5_parse (root);
+
+    json5_token_free_remaining (root);
 
     return valuep;
 }

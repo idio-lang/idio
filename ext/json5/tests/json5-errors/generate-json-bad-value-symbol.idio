@@ -1,0 +1,6 @@
+
+module tests/json5-error
+import json5
+
+; no symbols in JSON
+json5/generate-json 'invalid

@@ -56,6 +56,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "json5-token.h"
 #include "json5-unicode.h"
 #include "utf8.h"
 
@@ -141,6 +142,9 @@ json5_unicode_string_t *json5_utf8_string_C_len (char *s_C, const size_t slen)
 	reqd_bytes = cp_count * 4;
 	break;
     default:
+	/*
+	 * Test Case: coding error?
+	 */
 	json5_error_printf ("UTF-8 decode: unexpected width: %#x", width);
 
 	/* notreached */
@@ -184,6 +188,9 @@ json5_unicode_string_t *json5_utf8_string_C_len (char *s_C, const size_t slen)
 	    us32[cp_count] = (uint32_t) codepoint;
 	    break;
 	default:
+	    /*
+	     * Test Case: coding error?
+	     */
 	    json5_error_printf ("UTF-8 decode: unexpected width: %#x", width);
 
 	    /* notreached */

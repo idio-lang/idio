@@ -29,13 +29,14 @@
 
 typedef enum {
     JSON5_MEMBER_STRING,
-    JSON5_MEMBER_IDENTIFIER
+    JSON5_MEMBER_IDENTIFIER,
+    JSON5_MEMBER_LITERAL	/* null, true, false etc. */
 } json5_member_type_t;
 
 typedef struct json5_object_s {
     struct json5_object_s *next;
     json5_member_type_t type;
-    json5_unicode_string_t *name;
+    struct json5_value_s *name;
     struct json5_value_s *value;
 } json5_object_t;
 
@@ -97,7 +98,7 @@ typedef struct json5_value_s {
     json5_value_type_t type;
     union {
 	json5_literal_t l;
-	json5_unicode_string_t *s;
+	struct json5_unicode_string_s *s;
 	json5_number_t *n;
 	json5_object_t *o;
 	json5_array_t *a;
@@ -122,10 +123,10 @@ typedef struct json5_token_s {
     json5_value_t *value;
 } json5_token_t;
 
-void json5_value_free (json5_value_t *v);
-json5_token_t *json5_token_free_next (json5_token_t *ct);
-void json5_token_reserved_identifiers (json5_unicode_string_t *s, size_t slen);
-json5_token_t *json5_tokenize_string (json5_unicode_string_t *so);
+void json5_free_value (json5_value_t *v);
+void json5_token_free_remaining (json5_token_t *ct);
+void json5_token_reserved_identifiers (struct json5_unicode_string_s *s, size_t slen);
+json5_token_t *json5_tokenize_string (struct json5_unicode_string_s *so);
 json5_token_t *json5_tokenize_string_C (char *s_C, size_t slen);
 
 #endif

@@ -2991,7 +2991,6 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 
     char *error = dlerror ();
     if (NULL != error) {
-	dlclose (handle);
 	/*
 	 * Test Case: ??
 	 *
@@ -3003,6 +3002,12 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 
 	char ed[BUFSIZ];
 	snprintf (ed, BUFSIZ, "%s", error);
+
+	/*
+	 * XXX the storage for {error} in related/in the handle from
+	 * dlopen(3) -- so don't dlclose() until you've used {error}
+	 */
+	dlclose (handle);
 
 	idio_file_handle_dynamic_load_error ("dlsym", em, idio_string_C_len (filename, filename_len), idio_string_C_len (ed, idio_strnlen (ed, BUFSIZ)), IDIO_C_FUNC_LOCATION ());
 

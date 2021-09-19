@@ -23,6 +23,7 @@
 #define JSON5_UNICODE_H
 
 typedef uint32_t json5_unicode_t;
+#define JSON5_UNICODE_INVALID	0x110000
 
 typedef enum {
     JSON5_UNICODE_STRING_WIDTH_1BYTE = 1,
@@ -43,20 +44,20 @@ int json5_ECMA_LineTerminatorSequence (json5_unicode_string_t *s, json5_unicode_
 int json5_ECMA_SingleEscapeCharacter (json5_unicode_string_t *s, json5_unicode_t *cpp);
 int json5_ECMA_NonEscapeCharacter (json5_unicode_string_t *s, json5_unicode_t *cpp);
 int json5_ECMA_CharacterEscapeSequence (json5_unicode_string_t *s, json5_unicode_t *cpp);
-int json5_ECMA_HexEscapeSequence (json5_unicode_string_t *s, json5_unicode_t *cpp);
-int json5_ECMA_UnicodeEscapeSequence (json5_unicode_string_t *s, json5_unicode_t *cpp);
-int json5_ECMA_EscapeSequence (json5_unicode_string_t *s, json5_unicode_t *cpp);
+int json5_ECMA_HexEscapeSequence (json5_unicode_string_t *s, json5_unicode_t *cpp, json5_token_t *ft, json5_unicode_string_t *so);
+int json5_ECMA_UnicodeEscapeSequence (json5_unicode_string_t *s, json5_unicode_t *cpp, json5_token_t *ft, json5_unicode_string_t *so);
+int json5_ECMA_EscapeSequence (json5_unicode_string_t *s, json5_unicode_t *cpp, json5_token_t *ft, json5_unicode_string_t *so);
 int json5_ECMA_IdentifierStart (json5_unicode_t cp, json5_unicode_string_t *s);
 int json5_ECMA_IdentifierPart (json5_unicode_t cp, json5_unicode_string_t *s);
 json5_unicode_string_t *json5_unicode_string_C_len (char *s_C, const size_t slen);
-void json5_unicode_string_print (json5_unicode_string_t *s);
 void json5_unicode_string_set (json5_unicode_string_t *s, size_t i, json5_unicode_t cp);
 int json5_unicode_string_n_equal (json5_unicode_string_t *s, const char *scmp, size_t n);
 json5_unicode_t json5_unicode_string_peek (json5_unicode_string_t *s, size_t i);
 json5_unicode_t json5_unicode_string_next (json5_unicode_string_t *s);
+int json5_unicode_string_available (json5_unicode_string_t *s, size_t const reqd);
 void json5_unicode_skip_ws (json5_unicode_string_t *s);
 void json5_unicode_skip_slc (json5_unicode_string_t *s);
-void json5_unicode_skip_bc (json5_unicode_string_t *s);
+void json5_unicode_skip_bc (json5_unicode_string_t *s, json5_token_t *ft);
 
 /*
  * Not Art as the definition is outside of either libjson5.so

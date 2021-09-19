@@ -1,0 +1,5 @@
+
+module tests/json5-error
+import json5
+
+json5/parse-string "{ 10: false }"

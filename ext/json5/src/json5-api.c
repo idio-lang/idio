@@ -59,11 +59,13 @@
 #include "vm.h"
 
 #include "json5-module.h"
-#include "json5-unicode.h"
 #include "json5-token.h"
+#include "json5-unicode.h"
 #include "json5-parser.h"
 
 #include "json5-api.h"
+
+static IDIO idio_json5_null_string;
 
 IDIO idio_json5_string_value_to_idio (json5_unicode_string_t *js)
 {
@@ -87,7 +89,10 @@ IDIO idio_json5_string_value_to_idio (json5_unicode_string_t *js)
 	reqd_bytes *= 4;
 	break;
     default:
-	json5_error_printf ("JSON5-string->Idio: unexpected s width: %#x", js->width);
+	/*
+	 * Test Case: coding error?
+	 */
+	json5_error_printf ("json5/string->Idio: unexpected s width: %#x", js->width);
 
 	return idio_S_notreached;
     }
@@ -107,6 +112,7 @@ json5_unicode_string_t *idio_string_to_json5_string_value (IDIO is)
     IDIO_TYPE_ASSERT (string, is);
 
     json5_unicode_string_t *so = (json5_unicode_string_t *) malloc (sizeof (json5_unicode_string_t));
+    so->i = 0;
 
     size_t reqd_bytes = idio_string_len (is);
     so->len = reqd_bytes;
@@ -125,6 +131,9 @@ json5_unicode_string_t *idio_string_to_json5_string_value (IDIO is)
 	reqd_bytes *= 4;
 	break;
     default:
+	/*
+	 * Test Case: coding error?
+	 */
 	json5_error_printf ("Idio->JSON5-string: unexpected s flags: %#x", IDIO_STRING_FLAGS (is));
 
 	return NULL;
@@ -234,6 +243,11 @@ void idio_print_hash_as_json (IDIO h, IDIO oh, int json5, int depth)
 
 		idio_print_value_as_json (IDIO_HASH_HE_VALUE (he), oh, json5, depth + 1);
 	    } else {
+		/*
+		 * Test Case: json5-errors/generate-hash-bad-key-type.idio
+		 *
+		 * json5/generate #{ (#t & 1) }
+		 */
 		idio_error_param_value_exp ("json5/generate", "member name", k, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -274,6 +288,11 @@ void idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 			idio_display_C ("false", oh);
 			break;
 		    default:
+			/*
+			 * Test Case: json5-errors/generate-bad-constant-value-1.idio
+			 *
+			 * json5/generate (void)
+			 */
 			idio_error_param_value_exp ("json5/generate", "value", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
@@ -283,6 +302,11 @@ void idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 		}
 		break;
 	    default:
+		/*
+		 * Test Case: json5-errors/generate-bad-constant-value-2.idio
+		 *
+		 * json5/generate #\a
+		 */
 		idio_error_param_value_exp ("json5/generate", "value", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -297,7 +321,7 @@ void idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 	    case IDIO_TYPE_SUBSTRING:
 		{
 		    size_t size = 0;
-		    idio_display_C (idio_utf8_string (v, &size, IDIO_UTF8_STRING_ESCAPES, IDIO_UTF8_STRING_QUOTED, IDIO_UTF8_STRING_USEPREC), oh);
+		    idio_display_C (idio_utf8_string (v, &size, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_QUOTED, IDIO_UTF8_STRING_NOPREC), oh);
 		}
 		break;
 	    case IDIO_TYPE_SYMBOL:
@@ -335,7 +359,15 @@ void idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 				    json5_unicode_t cp = json5_unicode_string_next (js);
 
 				    if (json5_ECMA_IdentifierPart (cp, js) == 0) {
-					idio_error_param_value_exp ("json5/generate", "symbol", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
+					free (js->s);
+					free (js);
+
+					/*
+					 * Test Case: json5-errors/generate-bad-symbol-value-ECMAIdentifierPart.idio
+					 *
+					 * json5/generate 'part*invalid
+					 */
+					idio_error_param_value_exp ("json5/generate", "symbol", v, "JSON5-compatible value (ECMAIdentifierPart)", IDIO_C_FUNC_LOCATION ());
 
 					/* notreached */
 					return;
@@ -353,7 +385,15 @@ void idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 				  json5_token_reserved_identifiers (js, js->len);
 				*/
 			    } else {
-				idio_error_param_value_exp ("json5/generate", "symbol", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
+				free (js->s);
+				free (js);
+
+				/*
+				 * Test Case: json5-errors/generate-bad-symbol-value-ECMAIdentifierStart.idio
+				 *
+				 * json5/generate '*invalid
+				 */
+				idio_error_param_value_exp ("json5/generate", "symbol", v, "JSON5-compatible value (ECMAIdentifierStart)", IDIO_C_FUNC_LOCATION ());
 
 				/* notreached */
 				return;
@@ -365,7 +405,12 @@ void idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 			    idio_display (v, oh);
 			}
 		    } else {
-			idio_error_param_value_exp ("json5/generate", "value", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
+			/*
+			 * Test Case: json5-errors/generate-bad-value-type.idio
+			 *
+			 * json5/generate-json 'invalid
+			 */
+			idio_error_param_value_exp ("json5/generate-json", "value", v, "JSON-compatible value", IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
 			return;
@@ -382,6 +427,17 @@ void idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 		idio_print_bignum_as_json (v, oh, json5, depth);
 		break;
 	    default:
+		/*
+		 * Test Case: json5-errors/generate-bad-value-type.idio
+		 *
+		 * a primitive is chosen because the printed form (in
+		 * the error message) is consistent.  Otherwise a
+		 * closure would be equally good.
+		 *
+		 * json5/generate *primitives* / read
+		 *
+		 * (modulo the whitespace which ends the C comment!)
+		 */
 		idio_error_param_value_exp ("json5/generate", "value", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -390,6 +446,9 @@ void idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 	}
 	break;
     default:
+	/*
+	 * Test Case: coding error?
+	 */
 	idio_error_param_value_exp ("json5/generate", "value", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -502,14 +561,40 @@ IDIO idio_json5_object_value_to_idio (json5_object_t *o)
 	IDIO k = idio_S_nil;
 
 	switch (o->type) {
-	case JSON5_MEMBER_IDENTIFIER:
-	    k = idio_json5_string_value_to_idio (o->name);
-	    break;
 	case JSON5_MEMBER_STRING:
-	    k = idio_json5_string_value_to_idio (o->name);
+	    k = idio_json5_string_value_to_idio (o->name->u.s);
+	    break;
+	case JSON5_MEMBER_IDENTIFIER:
+	    k = idio_json5_string_value_to_idio (o->name->u.s);
+	    break;
+	case JSON5_MEMBER_LITERAL:
+	    switch (o->name->type) {
+	    case JSON5_VALUE_NULL:
+		/*
+		 * #n is not a valid hash table key so use the string
+		 * version
+		 */
+		k = idio_json5_null_string;
+		break;
+	    case JSON5_VALUE_BOOLEAN:
+		k = idio_json5_value_to_idio (o->name);
+		break;
+	    default:
+		/*
+		 * Test Case: coding error?
+		 */
+		json5_error_printf ("json5/object->Idio: expected null / bool ??");
+
+		/* notreached */
+		return NULL;
+		break;
+	    }
 	    break;
 	default:
-	    json5_error_printf ("JSON5-object->Idio: unexpected member name type %d", o->type);
+	    /*
+	     * Test Case: coding error?
+	     */
+	    json5_error_printf ("json5/object->Idio: unexpected member name type %d", o->type);
 
 	    return idio_S_notreached;
 	}
@@ -525,7 +610,10 @@ IDIO idio_json5_object_value_to_idio (json5_object_t *o)
 IDIO idio_json5_value_to_idio (json5_value_t *v)
 {
     if (NULL == v) {
-	json5_error_printf ("JSON5->Idio: NULL?");
+	/*
+	 * Test Case: coding error?
+	 */
+	json5_error_printf ("json5/->Idio: NULL?");
 
 	return idio_S_notreached;
     }
@@ -549,7 +637,10 @@ IDIO idio_json5_value_to_idio (json5_value_t *v)
 	    r = idio_S_false;
 	    break;
 	default:
-	    json5_error_printf ("JSON5->Idio: unexpected literal type %d", v->u.l);
+	    /*
+	     * Test Case: coding error?
+	     */
+	    json5_error_printf ("json5/->Idio: unexpected literal type %d", v->u.l);
 
 	    return idio_S_notreached;
 	}
@@ -578,7 +669,10 @@ IDIO idio_json5_value_to_idio (json5_value_t *v)
 	    r = idio_bignum_double (v->u.n->u.f);
 	    break;
 	default:
-	    json5_error_printf ("JSON5->Idio: unexpected number type %d", v->u.n->type);
+	    /*
+	     * Test Case: coding error?
+	     */
+	    json5_error_printf ("json5/->Idio: unexpected number type %d", v->u.n->type);
 
 	    return idio_S_notreached;
 	}
@@ -590,7 +684,10 @@ IDIO idio_json5_value_to_idio (json5_value_t *v)
 	r = idio_json5_array_value_to_idio (v->u.a);
 	break;
     default:
-	json5_error_printf ("JSON5->Idio: unexpected value type %d", v->type);
+	/*
+	 * Test Case: coding error?
+	 */
+	json5_error_printf ("json5/->Idio: unexpected value type %d", v->type);
 
 	return idio_S_notreached;
     }
@@ -602,14 +699,14 @@ IDIO idio_json5_parse_string (IDIO s)
 {
     json5_unicode_string_t *js = idio_string_to_json5_string_value (s);
 
+    /*
+     * json5_parse_string() will free {js}
+     */
     json5_value_t *v = json5_parse_string (js);
 
     IDIO r = idio_json5_value_to_idio (v);
 
-    json5_value_free (v);
-
-    free (js->s);
-    free (js);
+    json5_free_value (v);
 
     return r;
 }
@@ -636,7 +733,7 @@ IDIO idio_json5_parse_fd (int fd)
 
     IDIO r = idio_json5_value_to_idio (v);
 
-    json5_value_free (v);
+    json5_free_value (v);
 
     return r;
 }
@@ -686,5 +783,8 @@ void idio_json5_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_json5_module, json5_parse_string);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_json5_module, json5_parse_fd);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_json5_module, json5_parse_file);
+
+    idio_json5_null_string = idio_string_C_len ("null", 4);
+    idio_gc_protect_auto (idio_json5_null_string);
 }
 

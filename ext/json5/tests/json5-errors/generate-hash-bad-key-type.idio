@@ -1,0 +1,7 @@
+
+module tests/json5-error
+import json5
+
+json5/generate #{
+  (#t & 1)
+}
