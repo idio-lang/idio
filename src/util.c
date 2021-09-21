@@ -3963,13 +3963,6 @@ IDIO idio_add_feature (IDIO f)
 	return idio_S_notreached;
     }
 
-    if (idio_isa_string (f)) {
-	size_t size = 0;
-	char *f_C = idio_display_string (f, &size);
-	f = idio_symbols_C_intern (f_C, size);
-	IDIO_GC_FREE (f_C);
-    }
-
     /*
      * Not Art but SRFI-0 has done the grep for us
      */
@@ -4016,7 +4009,7 @@ IDIO idio_add_feature_ps (char const *p, size_t const plen, char const *s, size_
     char *buf;
     IDIO_GC_ALLOC (buf, buflen);
     size_t blen = idio_snprintf (buf, buflen, "%s%s", p, s);
-    IDIO r = idio_add_feature (idio_symbols_C_intern (buf, blen));
+    IDIO r = idio_add_feature (idio_string_C_len (buf, blen));
     IDIO_GC_FREE (buf);
     return r;
 }

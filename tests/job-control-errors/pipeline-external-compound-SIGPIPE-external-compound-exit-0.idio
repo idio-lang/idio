@@ -1,7 +1,7 @@
 
 {
   (cond-expand
-   (uname/sysname/SunOS {
+   ("uname/sysname/SunOS" {
      libc/sleep 1
    })
    (else {

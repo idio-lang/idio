@@ -152,7 +152,7 @@ command-env-error-load "command-errors/env-type.idio" "environment variable 'IDI
 command-parent-error-load "command-errors/PATH-format.idio" "find-exe 'PATH' contains an ASCII NUL"
 
 (cond-expand
- (uname/sysname/SunOS {
+ ("uname/sysname/SunOS" {
    ;; SunOS won't let you rmdir "." or any equivalent => EINVAL
    eprintf "SunOS: skipping test using rmdir .\n"
    Tests = Tests + 2

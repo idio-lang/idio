@@ -130,7 +130,7 @@ struct-termios-ref termios 'c_cflag
 struct-termios-ref termios 'c_lflag
 struct-termios-ref termios 'c_cc
 (cond-expand
- ((not uname/sysname/SunOS) {
+ ((not "uname/sysname/SunOS") {
    struct-termios-ref termios 'c_ispeed
    struct-termios-ref termios 'c_ospeed
  }))
@@ -141,7 +141,7 @@ struct-termios-set! termios 'c_cflag (C/integer-> 0 libc/tcflag_t)
 struct-termios-set! termios 'c_lflag (C/integer-> 0 libc/tcflag_t)
 struct-termios-set! termios 'c_cc    (struct-termios-ref termios 'c_cc)
 (cond-expand
- ((not uname/sysname/SunOS) {
+ ((not "uname/sysname/SunOS") {
    struct-termios-set! termios 'c_ispeed (C/integer-> 0 libc/speed_t)
    struct-termios-set! termios 'c_ospeed (C/integer-> 0 libc/speed_t)
  }))
@@ -160,7 +160,7 @@ struct-tm-ref tm 'tm_wday
 struct-tm-ref tm 'tm_yday
 struct-tm-ref tm 'tm_isdst
 (cond-expand
- ((not uname/sysname/SunOS) {
+ ((not "uname/sysname/SunOS") {
    struct-tm-ref tm 'tm_gmtoff
    struct-tm-ref tm 'tm_zone
  }))
@@ -175,7 +175,7 @@ struct-tm-set! tm 'tm_wday (C/integer-> 0)
 struct-tm-set! tm 'tm_yday (C/integer-> 0)
 struct-tm-set! tm 'tm_isdst (C/integer-> 0)
 (cond-expand
- ((not uname/sysname/SunOS) {
+ ((not "uname/sysname/SunOS") {
    struct-tm-set! tm 'tm_gmtoff (C/integer-> 0 'long)
    struct-tm-set! tm 'tm_zone (struct-tm-ref tm 'tm_zone) ; char*
  }))
@@ -346,7 +346,7 @@ strsignal SIGHUP
 
 ;; should be safe to set the termios of stdin to stdin...
 (cond-expand
- (uname/sysname/SunOS {
+ ("uname/sysname/SunOS" {
    eprintf "SunOS: skipping tcsetattr *stdin* test\n"
  })
  (else {
@@ -447,7 +447,7 @@ test (S_ISREG (stat testfile).st_mode)		#t
 test (S_ISREG (stat ".").st_mode)		#f
 
 (cond-expand
- (uname/sysname/SunOS {
+ ("uname/sysname/SunOS" {
    ;; symlink on SunOS
    test (l? "/dev/tty") #t
  })
@@ -488,7 +488,7 @@ test (w? testfile)   #t
 test (w? linkfile)   #t
 
 (cond-expand
- (uname/sysname/FreeBSD {
+ ("uname/sysname/FreeBSD" {
    ;; crw--w----  1 idf  tty  0x5a Jan 30 13:10 /dev/tty
    ;; tests for X_OK
    test (x? "/dev/tty") #t

@@ -203,7 +203,7 @@ file-handle-error-load "file-handle-errors/open-input-file-filename-missing.idio
 ;; state of the system.
 file-handle-error-load "file-handle-errors/EMFILE.idio" "Too many open files" "open (final)"
 (cond-expand
- (uname/sysname/Darwin {
+ ("uname/sysname/Darwin" {
    eprintf "XXX: Darwin: requiring extra GC collection\n"
    (gc/collect)
  }))
@@ -235,7 +235,7 @@ IDIOLIB = OIDIOLIB
 file-handle-error-load "file-handle-errors/find-lib-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 
 (cond-expand
- (uname/sysname/SunOS {
+ ("uname/sysname/SunOS" {
    ;; SunOS won't let you rmdir "." or any equivalent => EINVAL
    eprintf "SunOS: skipping test using rmdir .\n"
    Tests = Tests + 2

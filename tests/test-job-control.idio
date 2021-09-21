@@ -691,7 +691,7 @@ job-control-async-load "job-control-errors/simple-named-pipe-into-Idio-compound-
    ;; FreeBSD gets a SIGPIPE once it has opened the named pipe
    job-control-async-load "job-control-errors/simple-named-pipe-into-Idio-compound-exit-9-early-child.idio" kill-PIPE
  })
- (uname/sysname/SunOS {
+ ("uname/sysname/SunOS" {
    ;; SunOS doesn't seem to mind writing into the named pipe when the
    ;; read end process has gone away.
    job-control-async-load "job-control-errors/simple-named-pipe-into-Idio-compound-exit-9-early-child.idio" exit-4
@@ -710,7 +710,7 @@ job-control-async-load "job-control-errors/simple-named-pipe-into-external-compo
    ;; FreeBSD gets a SIGPIPE once it has opened the named pipe
    job-control-async-load "job-control-errors/simple-named-pipe-into-external-compound-exit-9-early-child.idio" kill-PIPE
  })
- (uname/sysname/SunOS {
+ ("uname/sysname/SunOS" {
    ;; SunOS doesn't seem to mind writing into the named pipe when the
    ;; read end process has gone away.
    job-control-async-load "job-control-errors/simple-named-pipe-into-external-compound-exit-9-early-child.idio" exit-4
@@ -777,7 +777,7 @@ job-control-async-load "job-control-errors/pipeline-pipe-from-external-compound-
 job-control-async-load "job-control-errors/simple-named-pipe-from-Idio-compound-exit-0.idio" exit-0
 
 (cond-expand
- (uname/sysname/SunOS {
+ ("uname/sysname/SunOS" {
    ;; SunOS doesn't seem to mind reading from the named pipe when the
    ;; write end process has gone away.
    job-control-async-load "job-control-errors/simple-named-pipe-from-Idio-compound-exit-9-early-child.idio" exit-3
@@ -795,7 +795,7 @@ job-control-async-load "job-control-errors/simple-named-pipe-from-Idio-compound-
 
 job-control-async-load "job-control-errors/simple-named-pipe-from-external-compound-exit-0.idio" exit-0
 (cond-expand
- (uname/sysname/SunOS {
+ ("uname/sysname/SunOS" {
    ;; SunOS doesn't seem to mind reading from the named pipe when the
    ;; write end process has gone away.
    job-control-async-load "job-control-errors/simple-named-pipe-from-external-compound-exit-9-early-child.idio" exit-5
