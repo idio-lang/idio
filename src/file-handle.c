@@ -3823,31 +3823,43 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
      */
     char *filename_C = idio_file_handle_filename_string_C (filename, "load", &filename_C_len, &free_filename_C, IDIO_C_FUNC_LOCATION ());
 
-    size_t libfilelen = 0;
-    char *libfile = idio_find_libfile_C (filename_C, filename_C_len, &libfilelen);
+    size_t lfn_len = 0;
+    char lfn[PATH_MAX];
 
-    if (NULL == libfile) {
-	/*
-	 * Test Case: file-handle-errors/load-not-found.idio
-	 *
-	 * tmpfile := (make-tmp-file)
-	 * delete-file tmpfile
-	 * load tmpfile
-	 */
-	if (free_filename_C) {
-	    IDIO_GC_FREE (filename_C);
+    struct stat sb;
+
+    if (stat (filename_C, &sb) == 0 &&
+	sb.st_mode & S_IFREG) {
+	memcpy (lfn, filename_C, filename_C_len);
+	lfn[filename_C_len] = '\0';
+	lfn_len = filename_C_len;
+    } else {
+	size_t libfilelen = 0;
+	char *libfile = idio_find_libfile_C (filename_C, filename_C_len, &libfilelen);
+
+	if (NULL == libfile) {
+	    /*
+	     * Test Case: file-handle-errors/load-not-found.idio
+	     *
+	     * tmpfile := (make-tmp-file)
+	     * delete-file tmpfile
+	     * load tmpfile
+	     */
+	    if (free_filename_C) {
+		IDIO_GC_FREE (filename_C);
+	    }
+
+	    idio_file_handle_filename_not_found_error ("load", filename, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
 
-	idio_file_handle_filename_not_found_error ("load", filename, IDIO_C_FUNC_LOCATION ());
+	memcpy (lfn, libfile, libfilelen);
+	lfn[libfilelen] = '\0';
+	lfn_len = libfilelen;
 
-	return idio_S_notreached;
+	IDIO_GC_FREE (libfile);
     }
-
-    char lfn[PATH_MAX];
-    memcpy (lfn, libfile, libfilelen);
-    lfn[libfilelen] = '\0';
-
-    IDIO_GC_FREE (libfile);
 
     char *filename_slash = memrchr (filename_C, '/', filename_C_len);
     if (NULL == filename_slash) {
@@ -3856,9 +3868,9 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 
     char *filename_dot = memrchr (filename_slash, '.', filename_C_len - (filename_slash - filename_C));
 
-    char *lfn_slash = memrchr (lfn, '/', libfilelen);
+    char *lfn_slash = memrchr (lfn, '/', lfn_len);
 
-    char *lfn_dot = memrchr (lfn_slash, '.', libfilelen - (lfn_slash - lfn));
+    char *lfn_dot = memrchr (lfn_slash, '.', lfn_len - (lfn_slash - lfn));
 
     IDIO (*reader) (IDIO h) = idio_read;
     IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate;
@@ -3895,7 +3907,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 			     * NB filename_C might be {mod}@{mod_ver}
 			     * or {mod}.so or {dir}/{mod}
 			     */
-			    IDIO r = idio_load_dl_library (lfn, libfilelen, filename_C, filename_C_len, cs);
+			    IDIO r = idio_load_dl_library (lfn, lfn_len, filename_C, filename_C_len, cs);
 
 			    if (free_filename_C) {
 				IDIO_GC_FREE (filename_C);
@@ -3912,7 +3924,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 			     * substituting an alternative lfn between
 			     * access(2) and the upcoming open(2).
 			     */
-			    IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, libfilelen, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
+			    IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, lfn_len, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
 
 			    if (free_filename_C) {
 				IDIO_GC_FREE (filename_C);
@@ -3929,7 +3941,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 	    }
 	}
     } else {
-	IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, libfilelen, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
+	IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, lfn_len, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
 
 	if (free_filename_C) {
 	    IDIO_GC_FREE (filename_C);

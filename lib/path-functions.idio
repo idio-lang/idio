@@ -19,8 +19,6 @@
 ;; path-functions.idio -- a rework of some Bash functions
 ;;
 
-path-remove-l := #f
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #*

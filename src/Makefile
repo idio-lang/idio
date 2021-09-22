@@ -79,11 +79,6 @@ $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(objects) | Makefile.system $(LI_
 $(LI_BINDIR) $(LI_LIBVERDIR) :
 	mkdir -p $@
 
-$(BINDIR)/idio : $(objects) | libc-api.h idio-system.h
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
-
-$(objects) : $(deps)
-
 lib%.so : %.o
 	$(CC) -shared -o $@ $^
 
@@ -95,7 +90,7 @@ clean : build-clean run-clean edit-clean
 	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
 
 build-clean:
-	rm -f *.o *.d $(BINDIR)/idio *.so TAGS map
+	rm -f *.o *.d *.so TAGS map
 	rm -rf $(EXTDIR)/*/gen
 
 run-clean :
