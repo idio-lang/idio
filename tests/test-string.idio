@@ -129,6 +129,16 @@ test (substring "abc" 2 3) "c"
 test (substring "abc" 3 3) ""
 test (substring "abc" 0.0 3.0) "abc"
 
+test (string-index "hello" #\h) 0
+test (string-index "hello" #\l) 2
+test (string-index "hello" #\o) 4
+test (string-index "hello" #\q) #f
+
+test (string-rindex "hello" #\h) 0
+test (string-rindex "hello" #\l) 3
+test (string-rindex "hello" #\o) 4
+test (string-rindex "hello" #\q) #f
+
 ;; XXX string*? are not Unicode/locale-aware -- they are calling
 ;; strncmp(3).  UTF-8 means it probably works as there is an absolute
 ;; order?
@@ -512,7 +522,7 @@ test (equal? (string->pathname "hello")   "hello")	#f
 test (equal? (string->pathname "hello") %P"hello")	#t
 
 ;; all done?
-Tests? (string0 + 336)
+Tests? (string0 + 344)
 
 ;Local Variables:
 ;mode: Idio

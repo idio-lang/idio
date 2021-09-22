@@ -126,6 +126,12 @@ string-error-load "string-errors/substring-oob-length-negative.idio" "substring 
 string-error-load "string-errors/substring-oob-length-too-large.idio" "substring index: out of bounds"
 string-error-load "string-errors/substring-oob-start-beyond-end.idio" "substring index: out of bounds"
 
+string-error-load "string-errors/string-index-bad-string-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/string-index-bad-character-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
+
+string-error-load "string-errors/string-rindex-bad-string-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/string-rindex-bad-character-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
+
 string-error-load "string-errors/string=-bad-first-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 string-error-load "string-errors/string=-bad-second-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 string-error-load "string-errors/string=-bad-remainder-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
@@ -150,4 +156,4 @@ string-error-load "string-errors/strip-string-bad-str-type.idio" "bad parameter 
 string-error-load "string-errors/strip-string-bad-discard-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 
 ;; all done?
-Tests? (string-error0 + 63)
+Tests? (string-error0 + 67)

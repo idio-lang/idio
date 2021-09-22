@@ -1479,51 +1479,11 @@ return the number of code points in `s`		\n\
     return idio_integer (idio_string_len (s));
 }
 
-IDIO idio_string_ref (IDIO s, IDIO index)
+IDIO idio_string_ref_C (IDIO s, size_t i)
 {
     IDIO_ASSERT (s);
-    IDIO_ASSERT (index);
 
     IDIO_TYPE_ASSERT (string, s);
-
-    ptrdiff_t i = -1;
-
-    if (idio_isa_fixnum (index)) {
-	i = IDIO_FIXNUM_VAL (index);
-    } else if (idio_isa_bignum (index)) {
-	if (IDIO_BIGNUM_INTEGER_P (index)) {
-	    /*
-	     * Test Case: string-errors/string-ref-bignum.idio
-	     *
-	     * This is a code coverage case which will (probably)
-	     * provoke the out of bounds error below.
-	     */
-	    i = idio_bignum_ptrdiff_t_value (index);
-	} else {
-	    IDIO index_i = idio_bignum_real_to_integer (index);
-	    if (idio_S_nil == index_i) {
-		/*
-		 * Test Case: string-errors/string-ref-float.idio
-		 *
-		 * string-ref "hello world" 1.5
-		 */
-		idio_error_param_type ("integer", index, IDIO_C_FUNC_LOCATION ());
-
-		return idio_S_notreached;
-	    } else {
-		i = idio_bignum_ptrdiff_t_value (index_i);
-	    }
-	}
-    } else {
-	/*
-	 * Test Case: string-errors/string-ref-unicode.idio
-	 *
-	 * string-ref "hello world" #\a
-	 */
-	idio_error_param_type ("integer", index, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
 
     uint8_t *s8 = NULL;
     uint16_t *s16 = NULL;
@@ -1591,6 +1551,55 @@ IDIO idio_string_ref (IDIO s, IDIO index)
 
     /* probably... */
     return idio_S_notreached;
+}
+
+IDIO idio_string_ref (IDIO s, IDIO index)
+{
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (index);
+
+    IDIO_TYPE_ASSERT (string, s);
+
+    ptrdiff_t i = -1;
+
+    if (idio_isa_fixnum (index)) {
+	i = IDIO_FIXNUM_VAL (index);
+    } else if (idio_isa_bignum (index)) {
+	if (IDIO_BIGNUM_INTEGER_P (index)) {
+	    /*
+	     * Test Case: string-errors/string-ref-bignum.idio
+	     *
+	     * This is a code coverage case which will (probably)
+	     * provoke the out of bounds error below.
+	     */
+	    i = idio_bignum_ptrdiff_t_value (index);
+	} else {
+	    IDIO index_i = idio_bignum_real_to_integer (index);
+	    if (idio_S_nil == index_i) {
+		/*
+		 * Test Case: string-errors/string-ref-float.idio
+		 *
+		 * string-ref "hello world" 1.5
+		 */
+		idio_error_param_type ("integer", index, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    } else {
+		i = idio_bignum_ptrdiff_t_value (index_i);
+	    }
+	}
+    } else {
+	/*
+	 * Test Case: string-errors/string-ref-unicode.idio
+	 *
+	 * string-ref "hello world" #\a
+	 */
+	idio_error_param_type ("integer", index, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_string_ref_C (s, i);
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("string-ref", string_ref, (IDIO s, IDIO index), "s index", "\
@@ -2002,6 +2011,95 @@ through to but excluuding position `pn`		\n\
     }
 
     return r;
+}
+
+IDIO idio_string_index (IDIO s, IDIO c, int from_end)
+{
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (c);
+
+    IDIO_TYPE_ASSERT (string, s);
+    IDIO_TYPE_ASSERT (unicode, c);
+
+    size_t slen;
+
+    if (idio_isa_substring (s)) {
+	slen = IDIO_SUBSTRING_LEN (s);
+    } else {
+	slen = IDIO_STRING_LEN (s);
+    }
+
+    for (size_t i = 0; i < slen; i++) {
+	size_t index = from_end ? slen - 1 - i : i;
+	IDIO sc = idio_string_ref_C (s, index);
+	if (sc == c) {
+	    return idio_fixnum (index);
+	}
+    }
+
+    return idio_S_false;
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("string-index", string_index, (IDIO s, IDIO c), "s c", "\
+return the index of `c` in `s` of `#f`		\n\
+						\n\
+:param s: string				\n\
+:type s: string					\n\
+:param c: code point				\n\
+:type c: unicode				\n\
+:return: index or #f				\n\
+:rtype: integer or #f				\n\
+")
+{
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (c);
+
+    /*
+     * Test Case: string-errors/string-index-bad-string-type.idio
+     *
+     * string-index #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, s);
+
+    /*
+     * Test Case: string-errors/string-index-bad-character-type.idio
+     *
+     * string-index "hello" #t
+     */
+    IDIO_USER_TYPE_ASSERT (unicode, c);
+
+    return idio_string_index (s, c, 0);
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("string-rindex", string_rindex, (IDIO s, IDIO c), "s c", "\
+return the rightmost index of `c` in `s` of `#f`		\n\
+						\n\
+:param s: string				\n\
+:type s: string					\n\
+:param c: code point				\n\
+:type c: unicode				\n\
+:return: index or #f				\n\
+:rtype: integer or #f				\n\
+")
+{
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (c);
+
+    /*
+     * Test Case: string-errors/string-rindex-bad-string-type.idio
+     *
+     * string-rindex #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, s);
+
+    /*
+     * Test Case: string-errors/string-rindex-bad-character-type.idio
+     *
+     * string-rindex "hello" #t
+     */
+    IDIO_USER_TYPE_ASSERT (unicode, c);
+
+    return idio_string_index (s, c, 1);
 }
 
 int idio_string_equal (IDIO s1, IDIO s2)
@@ -3129,6 +3227,8 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (string_set);
     IDIO_ADD_PRIMITIVE (string_fill);
     IDIO_ADD_PRIMITIVE (substring);
+    IDIO_ADD_PRIMITIVE (string_index);
+    IDIO_ADD_PRIMITIVE (string_rindex);
 
     IDIO_ADD_PRIMITIVE (string_ci_le_p);
     IDIO_ADD_PRIMITIVE (string_ci_lt_p);
