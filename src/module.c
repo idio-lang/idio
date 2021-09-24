@@ -58,13 +58,9 @@
 static IDIO idio_modules_hash = idio_S_nil;
 
 /*
- * idio_primitives_module is the set of built-ins -- not modifiable!
+ * idio_Idio_module is the default toplevel module
  *
- * idio_Idio_module is the default toplevel module which imports from
- * idio_primitives_module
- *
- * All new modules implicitly import from idio_Idio_module then
- * idio_primitives_module.
+ * All new modules implicitly import from idio_Idio_module.
  *
  * There is a little bit of artiface as getting and setting the
  * symbols referred to here is really an indirection to
@@ -74,7 +70,6 @@ static IDIO idio_modules_hash = idio_S_nil;
  * condition.c, where it is used, seems wrong.
  */
 
-IDIO idio_primitives_module = idio_S_nil;
 IDIO idio_Idio_module = idio_S_nil;
 IDIO idio_debugger_module = idio_S_nil;
 
@@ -229,9 +224,6 @@ IDIO idio_module (IDIO name)
      * IDIO_MODULE_IMPORTS (module) will result in semi-gibberish for
      * any modules created before idio_job_control_module:
      *
-     *   idio_primitives_module and idio_Idio_module because
-     *   everything imports them
-     *
      *   idio_libc_module because idio_job_control_module isn't
      *   defined at that point
      *
@@ -245,8 +237,7 @@ IDIO idio_module (IDIO name)
      * Which modules dun goofed depends on the order of module
      * initialisation in idio_init().
      */
-    IDIO imports = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
-			       IDIO_LIST1 (idio_primitives_module));
+    IDIO imports = IDIO_LIST1 (IDIO_LIST1 (idio_Idio_module));
     if (idio_S_nil != idio_job_control_module) {
 	imports = idio_pair (IDIO_LIST1 (idio_job_control_module),
 			     imports);
@@ -547,11 +538,6 @@ or #unspec if `default` is not supplied				\n\
 IDIO idio_Idio_module_instance ()
 {
     return idio_Idio_module;
-}
-
-IDIO idio_primitives_module_instance ()
-{
-    return idio_primitives_module;
 }
 
 IDIO idio_module_find_or_create_module (IDIO name)
@@ -976,8 +962,7 @@ IDIO idio_module_visible_imported_symbols (IDIO module, IDIO type)
     IDIO r = idio_S_nil;
 
     IDIO symbols = IDIO_MODULE_EXPORTS (module);
-    if (idio_Idio_module == module ||
-	idio_primitives_module == module) {
+    if (idio_Idio_module == module) {
 	symbols = idio_hash_keys_to_list (IDIO_MODULE_SYMBOLS (module));
     }
 
@@ -1193,7 +1178,6 @@ IDIO idio_module_find_symbol_recurse_imports (IDIO symbol, IDIO imported_module,
      */
     if (idio_S_unspec != sv) {
 	if (idio_Idio_module == imported_module ||
-	    idio_primitives_module == imported_module ||
 	    idio_S_false != idio_list_memq (symbol, IDIO_MODULE_EXPORTS (imported_module))) {
 	    return sv;
 	}
@@ -2113,22 +2097,16 @@ void idio_init_module ()
      * We need to pre-seed the Idio module with the names of these
      * modules.
      *
-     * So *primitives* is a symbol (and value) in the Idio module.  As
-     * is Idio itself -- as a bootstrap for other people to use.
+     * So Idio is a symbol (and value) in the Idio module as a
+     * bootstrap for other people to use.
      *
      * The implied usage is that in idio_module() we set the default
-     * imports list for all other modules to be '(Idio *primitives*)
+     * imports list for all other modules to be '(Idio)
      */
-
-    IDIO pname = IDIO_SYMBOLS_C_INTERN ("*primitives*");
-    idio_primitives_module = idio_module (pname);
-    IDIO_MODULE_IMPORTS (idio_primitives_module) = idio_S_nil;
-    idio_ai_t pm_gci = idio_vm_constants_lookup_or_extend (pname);
-    idio_ai_t pm_gvi = idio_vm_extend_values ();
 
     IDIO Iname = IDIO_SYMBOLS_C_INTERN ("Idio");
     idio_Idio_module = idio_module (Iname);
-    IDIO_MODULE_IMPORTS (idio_Idio_module) = IDIO_LIST1 (IDIO_LIST1 (idio_primitives_module));
+    IDIO_MODULE_IMPORTS (idio_Idio_module) = idio_S_nil;
     idio_ai_t Im_gci = idio_vm_constants_lookup_or_extend (Iname);
     idio_ai_t Im_gvi = idio_vm_extend_values ();
 
@@ -2136,8 +2114,6 @@ void idio_init_module ()
     idio_debugger_module = idio_module (dname);
     idio_ai_t dm_gci = idio_vm_constants_lookup_or_extend (dname);
     idio_ai_t dm_gvi = idio_vm_extend_values ();
-
-    idio_module_set_symbol (pname, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (pm_gci), idio_fixnum (pm_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
 
     idio_module_set_symbol (Iname, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (Im_gci), idio_fixnum (Im_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
 

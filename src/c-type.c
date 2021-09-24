@@ -2430,8 +2430,8 @@ void idio_c_type_add_primitives ()
 {
     /*
      * NB As "<", "==", ">" etc. conflict with operators or primitives
-     * in the *primitives* module then you should access these
-     * directly as "C/>"
+     * in the Idio module then you should access these directly as
+     * "C/>", "C/==", etc..
      */
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_charp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_scharp);

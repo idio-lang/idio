@@ -411,8 +411,8 @@ DOES NOT RETURN :)						\n\
 	 *
 	 * libc/exit #t
 	 *
-	 * NB watch out for *primitives* /exit (without the SPACE)
-	 * which performs a more Idio-ordered exit.
+	 * NB watch out for Idio/exit which performs a more
+	 * Idio-ordered exit.
 	 */
 	idio_error_param_type ("fixnum|C/int", istatus, IDIO_C_FUNC_LOCATION ());
 

@@ -104,7 +104,7 @@ rm -rf d
 osh := (open-output-string)
 pn := %P{\xA9 Ian}
 ; grr, libc/write is found first
-*primitives*/write pn osh
+Idio/write pn osh
 close-handle osh
 
 ;; all done?

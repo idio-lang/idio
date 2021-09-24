@@ -120,7 +120,7 @@ test (output-file-handle? ifh)		#f
 
 test (handle-name ifh)			testfile
 
-fhi := *primitives*/read ifh
+fhi := Idio/read ifh
 close-handle ifh
 
 test (file-handle? ifh)			#t

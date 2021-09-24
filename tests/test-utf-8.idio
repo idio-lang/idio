@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -167,7 +167,7 @@ write str osh				; now includes leading and trailing "s and \s
 os := get-output-string osh
 test (string-length os) 26		; " + 4 orig + 10x \c + "
 ish := open-input-string os
-os = *primitives*/read ish		; now read the string in
+os = Idio/read ish			; now read the string in
 test os str
 
 ; Invalid UTF-8

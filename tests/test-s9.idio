@@ -1103,7 +1103,7 @@ trap ^i/o-closed-error (function (c) {
     call-with-output-file testfile (function (out) {
       write '(this is a call-with-output-file test) out
       close-output-handle out
-      call-with-input-file testfile *primitives*/read
+      call-with-input-file testfile Idio/read
     })
   } '(this is a call-with-output-file test)
 }
@@ -1125,7 +1125,7 @@ test {
   {
     in := open-input-file testfile
     {
-      x := *primitives*/read in
+      x := Idio/read in
       close-input-handle in
       x
     } 
@@ -1150,7 +1150,7 @@ test {
   {
     in := open-input-file testfile
     {
-      x := *primitives*/read in
+      x := Idio/read in
       close-input-handle in
       x
     }
@@ -1168,7 +1168,7 @@ test {
     write '(this is a with-output-to-file test)
   })
 
-  with-input-from-file testfile *primitives*/read
+  with-input-from-file testfile Idio/read
 } '(this is a with-output-to-file test)
 
 define (visibility-check x) {

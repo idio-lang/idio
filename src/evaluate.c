@@ -115,14 +115,13 @@
  *    the evaluation engine and are read-only.)
  *
  *    These are created by the IDIO_ADD_PRIMITIVE macros which
- *    populate a normal list of names in the *primitives* and
- *    *operator* modules.
+ *    populate a normal list of names in the Idio and *operator*
+ *    modules.
  *
- *    *primitives* for the usual culprits ("+", "append-string", etc.)
- *    and *operators* for operators (primarily because, say, the
- *    operator "-" is an obvious name clash with the regular
- *    subtraction primitive "-" and, in fact, is simply a transformer
- *    into that).
+ *    Idio for the usual culprits ("+", "append-string", etc.)  and
+ *    *operators* for operators (primarily because, say, the operator
+ *    "-" is an obvious name clash with the regular subtraction
+ *    primitive "-" and, in fact, is simply a transformer into that).
 
  *    As an aside, template expansion is done in idio_expander_thread
  *    which has idio_expander_module as its current-module --
@@ -594,7 +593,7 @@ IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs, char const *cpp__FIL
     IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (array, cs);
 
-    return idio_export_module_primitive (idio_primitives_module_instance (), d, cs, cpp__FILE__, cpp__LINE__);
+    return idio_export_module_primitive (idio_Idio_module_instance (), d, cs, cpp__FILE__, cpp__LINE__);
 }
 
 IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO cs, IDIO cm)
@@ -1004,7 +1003,7 @@ static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int 
     if (idio_S_false == r) {
 	/*
 	 * NOTICE This must be a recursive lookup.  Otherwise we'll
-	 * not see any bindings in Idio or *primitives*
+	 * not see any bindings in Idio
 	 */
         r = idio_module_find_symbol_recurse (name, cm, 1);
 	if (idio_S_false == r) {

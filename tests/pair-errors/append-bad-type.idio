@@ -1,4 +1,4 @@
 
 ; append is rewritten in s9.idio to be more list-y
 
-*primitives*/append #t #t
+Idio/append #t #t

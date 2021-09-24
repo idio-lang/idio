@@ -166,7 +166,7 @@ trap ^i/o-read-error (function (c) {
   ;; printf "read handle condition\n"
 
   osh := (open-output-string)
-  expr := *primitives*/read osh
+  expr := Idio/read osh
   close-handle osh
   test expr 'caught-a-read-error
 }
@@ -182,7 +182,7 @@ trap ^i/o-write-error (function (c) {
   ;; printf "write handle condition\n"
 
   ish := open-input-string "bob"
-  r := *primitives*/write "Hello" ish
+  r := Idio/write "Hello" ish
   close-handle ish
 
   test r 'caught-a-write-error
@@ -213,14 +213,14 @@ trap ^i/o-closed-error (function (c) {
   ;; printf "closed handle condition\n"
   test {
     call-with-output-file testfile (function (out) {
-      *primitives*/write '(this is a test) out
+      Idio/write '(this is a test) out
 
       ;; the cause of the error -- call-with-output-file will also
       ;; call close-output-handle (generating the condition) but we
       ;; need to close the handle here otherwise call-with-input-file
       ;; will get #eof
       close-output-handle out
-      call-with-input-file testfile *primitives*/read
+      call-with-input-file testfile Idio/read
     })
   } '(this is a test)
 }

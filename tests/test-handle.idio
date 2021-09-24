@@ -67,7 +67,7 @@ define (read-handle ih) {
   test (input-handle? ih) #t
   test (output-handle? ih) #f
 
-  istr := *primitives*/read ih
+  istr := Idio/read ih
   close-handle ih
 
   test (handle? ih) #t
@@ -79,17 +79,17 @@ define (read-handle ih) {
 
 define (multi-line-read-handle ih) {
   test (handle-line ih) 1
-  r-ih := *primitives*/read ih
+  r-ih := Idio/read ih
   test (handle-line ih) 2
 
   seek-handle ih 2
   test (handle-line ih) 0
-  r-ih = *primitives*/read ih
+  r-ih = Idio/read ih
   test (handle-line ih) 0
 
   seek-handle ih 0
   test (handle-line ih) 1
-  r-ih = *primitives*/read ih
+  r-ih = Idio/read ih
   test (handle-line ih) 2
 }
 

@@ -355,7 +355,7 @@ printf "# src-props %d\n" (length (hash-keys %idio-src-properties))
    {
      printf "%d error%s in %d tests.\n" Errors (if (Errors gt 1) "s" "") Tests
      if (not %idio-interactive) {
-       *primitives*/exit 1
+       Idio/exit 1
      }
    })
 

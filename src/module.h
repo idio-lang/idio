@@ -23,7 +23,6 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-extern IDIO idio_primitives_module;
 extern IDIO idio_Idio_module;
 extern IDIO idio_debugger_module;
 
@@ -39,7 +38,6 @@ IDIO idio_module_set_vvi (IDIO module, IDIO msi, IDIO gvi);
 IDIO idio_module_find_module (IDIO name);
 IDIO idio_module_find_or_create_module (IDIO name);
 IDIO idio_Idio_module_instance ();
-IDIO idio_primitives_module_instance ();
 IDIO idio_thread_current_module ();
 IDIO idio_thread_current_env ();
 IDIO idio_module_symbols (IDIO module);
@@ -57,7 +55,6 @@ IDIO idio_module_env_symbol_value_recurse (IDIO symbol, IDIO args);
 IDIO idio_module_set_symbol (IDIO symbol, IDIO value, IDIO module);
 IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module);
 IDIO idio_module_export_symbol_value (IDIO symbol, IDIO value, IDIO module);
-IDIO idio_module_primitive_set_symbol_value (IDIO symbol, IDIO value);
 IDIO idio_module_current_set_symbol_value (IDIO symbol, IDIO value);
 IDIO idio_module_env_set_symbol_value (IDIO symbol, IDIO value);
 IDIO idio_module_toplevel_set_symbol_value (IDIO symbol, IDIO value);

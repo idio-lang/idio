@@ -2090,7 +2090,7 @@ define (meaning-escape-label src label ve nametree escapes flags cs cm) {
 }
 
 define (evaluate-include-file fh cs) {
-  c := *primitives*/read fh
+  c := Idio/read fh
   if (not (eof? fh)) {
     m := evaluate c
     pc := codegen (current-thread) m cs

@@ -434,9 +434,7 @@ void idio_print_value_as_json (IDIO v, IDIO oh, int json5, int depth)
 		 * the error message) is consistent.  Otherwise a
 		 * closure would be equally good.
 		 *
-		 * json5/generate *primitives* / read
-		 *
-		 * (modulo the whitespace which ends the C comment!)
+		 * json5/generate Idio/read
 		 */
 		idio_error_param_value_exp ("json5/generate", "value", v, "JSON5-compatible value", IDIO_C_FUNC_LOCATION ());
 

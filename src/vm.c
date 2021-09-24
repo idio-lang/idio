@@ -257,8 +257,8 @@ int idio_vm_virtualisation_WSL = 0;
  *     to a global one we then need to discover the instance of the
  *     *symbol* within our environment.  Modules are the problem here
  *     as we don't know whether a symbol has been defined in the
- *     current environment or a module it imports (or the Idio or
- *     *primitives* modules) until the time we attempt the reference.
+ *     current environment or a module it imports (or the Idio module)
+ *     until the time we attempt the reference.
  *
  *     Only then can we make a permanent link between the module's
  *     *symbol* reference and the VM's global *value* index.
@@ -7496,7 +7496,7 @@ Does not return						\n\
 	/*
 	 * Test Case: vm-errors/exit-bad-type.idio
 	 *
-	 * *primitives* /exit #t
+	 * Idio/exit #t
 	 *
 	 * NB without the SPACE before the slash which is
 	 * end-of-comment in C.  Otherwise, with vanilla "exit", we

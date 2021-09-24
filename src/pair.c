@@ -543,7 +543,7 @@ list ``a`` is copied, list ``b`` is untouched	\n\
     /*
      * Test Case: pair-errors/append-bad-type.idio
      *
-     * *primitives*\/append #t #t
+     * Idio/append #t #t
      *
      * NB append is redefined to be more list-y
      */
