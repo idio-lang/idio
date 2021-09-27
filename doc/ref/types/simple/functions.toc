@@ -1,0 +1,4 @@
+(rst "functions-intro" 0)
+
+(document Idio function?)
+

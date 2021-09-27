@@ -636,7 +636,7 @@ is `o` an expander				\n\
 						\n\
 :param o: value to test				\n\
 :return: an entry from the expanders table if	\n\
-`o` is an expander or #f			\n\
+	 `o` is an expander or #f		\n\
 ")
 {
     IDIO_ASSERT (o);

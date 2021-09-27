@@ -1,0 +1,23 @@
+(rst "arrays-intro" 0)
+
+(document Idio array?)
+
+(document Idio make-array)
+(document Idio copy-array)
+
+(document Idio array-fill!)
+(document Idio array-length)
+
+(document Idio array-ref)
+(document Idio array-set!)
+
+(document Idio array-push!)
+(document Idio array-pop!)
+(document Idio array-unshift!)
+(document Idio array-shift!)
+
+(document Idio array->list)
+
+(document Idio array-for-each-set)
+
+(document Idio fold-array)

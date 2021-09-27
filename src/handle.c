@@ -948,11 +948,11 @@ ptrdiff_t idio_puts_handle (IDIO h, char const *s, size_t const slen)
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("puts", puts, (IDIO o, IDIO args), "o [handle]", "\
-Write the string ``o`` to ``handle`` or the current	\n\
-output handle						\n\
+Write the printed form of ``o`` to ``handle`` or the	\n\
+current output handle					\n\
 							\n\
 :param o: object to be printed				\n\
-:param handle: handle to puts to			\n\
+:param handle: handle to print to			\n\
 :type handle: handle					\n\
 :return: <unspec>					\n\
 ")
@@ -1610,10 +1610,12 @@ IDIO idio_write_char (IDIO c, IDIO h)
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE1V_DS ("write-char", write_char, (IDIO c, IDIO args), "[handle]", "\
+IDIO_DEFINE_PRIMITIVE1V_DS ("write-char", write_char, (IDIO c, IDIO args), "c [handle]", "\
 write a UTF-8 encoded character to ``handle``		\n\
 or the current output handle				\n\
 							\n\
+:param c: code point to write				\n\
+:type c: unicode					\n\
 :param handle: handle to write to			\n\
 :type handle: handle					\n\
 :return: #unspec					\n\

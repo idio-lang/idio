@@ -389,8 +389,8 @@ define-template (condition type & field-bindings) {
 (define-condition-type-accessors-only ^rt-bitset-size-mismatch-error
 				      ^rt-bitset-error
 				      rt-bitset-size-mismatch-error?
-				      (size1 rt-bitset-bounds-error-size1)
-				      (size2 rt-bitset-bounds-error-size2))
+				      (size1 rt-bitset-size-mismatch-error-size1)
+				      (size2 rt-bitset-size-mismatch-error-size2))
 
 (define-condition-type-accessors-only ^rt-keyword-error
 				      ^runtime-error
@@ -577,7 +577,7 @@ condition-report := #f
        mod-name := (cond
 		    ((module? cond-mod) (module-name cond-mod))
 		    (else cond-mod))
-       cr-printf ": symbol '%s/%s'" mod-name (rt-module-error-symbol c)
+       cr-printf ": symbol '%s/%s'" mod-name (rt-module-symbol-unbound-error-symbol c)
      })
      ((rt-module-error? c) {
        iem c
@@ -714,7 +714,7 @@ condition-report := #f
      ;; ^rt-signal
      ((rt-signal? c) {
        iem c
-       cr-printf "signal %s (%s)" (rt-signal-error-signum c) (libc/signal-name (rt-signal-error-signum c))
+       cr-printf "signal %s (%s)" (rt-signal-signal c) (libc/signal-name (rt-signal-signal c))
      })
 
      (else {

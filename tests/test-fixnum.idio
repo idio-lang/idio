@@ -81,7 +81,7 @@ test (fixnum? (FIXNUM-MIN - 1))		#f
    test (fixnum? ((FIXNUM-MIN - 1) + 1))	#f
  }))
 
-test (fixnum? (unicode->integer #\a))   #t
+test (fixnum? (unicode/unicode->integer #\a))   #t
 
 ;; things that failed the fixnum? test are still integers
 test (integer? 1.0)			#t ; integer bignum

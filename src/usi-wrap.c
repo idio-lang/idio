@@ -56,8 +56,6 @@
 
 #include "usi-wrap.h"
 
-IDIO idio_unicode_module = idio_S_nil;
-
 int idio_usi_isa (IDIO o, int flag)
 {
     IDIO_ASSERT (o);
@@ -490,7 +488,7 @@ return the Numeric_Value of ``cp``		\n\
 Unicode Numeric_Value can be a decimal integer	\n\
 or a rational which is returned as a string	\n\
 						\n\
-A consition is raised if ``cp`` is not Numeric.	\n\
+A condition is raised if ``cp`` is not Numeric.	\n\
 ")
 {
     IDIO_ASSERT (cp);
@@ -678,8 +676,6 @@ int idio_usi_codepoint_has_attribute (idio_unicode_t cp, int flag)
 void idio_init_usi_wrap ()
 {
     idio_module_table_register (idio_usi_wrap_add_primitives, idio_final_usi_wrap, NULL);
-
-    idio_unicode_module = idio_module (IDIO_SYMBOLS_C_INTERN ("unicode"));
 
     /*
      * Create the SRFI-14 char-sets

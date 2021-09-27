@@ -1,0 +1,9 @@
+(rst "string-handles-intro" 0)
+
+(document Idio string-handle?)
+(document Idio input-string-handle?)
+(document Idio open-input-string)
+(document Idio output-string-handle?)
+(document Idio open-output-string)
+(document Idio get-output-string)
+

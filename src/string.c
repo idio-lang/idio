@@ -1064,7 +1064,7 @@ return a pathname of the UTF-8 encoding of `s`\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("string->list", string2list, (IDIO s), "s", "\
-return a list of the Unicode code points in `s`\n\
+return a list of the Unicode code points in `s`	\n\
 						\n\
 :param s: string				\n\
 :type s: string					\n\
@@ -1135,6 +1135,13 @@ return a list of the Unicode code points in `s`\n\
     return r;
 }
 
+/*
+ * Why is list->string here and not in pair.c?
+ *
+ * Probably because knwoing stuff about the internals of strings is
+ * more bespoke than knowing about the internals of lists.  So keep
+ * the knowledge in as few places as possible.
+ */
 IDIO idio_list_list2string (IDIO l)
 {
     IDIO_ASSERT (l);
@@ -1259,7 +1266,15 @@ IDIO idio_list_list2string (IDIO l)
     return so;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("list->string", list2string, (IDIO l))
+IDIO_DEFINE_PRIMITIVE1_DS ("list->string", list2string, (IDIO l), "l", "\
+return a string from the list of the Unicode	\n\
+code points in `l`				\n\
+						\n\
+:param l: list of code points			\n\
+:type s: list					\n\
+:return: string					\n\
+:rtype: string					\n\
+")
 {
     IDIO_ASSERT (l);
 
@@ -2299,14 +2314,14 @@ int idio_string_equal (IDIO s1, IDIO s2)
 #define IDIO_DEFINE_STRING_CI_PRIMITIVE2V(name,cname,cmp)		\
     IDIO_DEFINE_STRING_PRIMITIVE2V (name, string_ ## cname ## _p, cmp, strncasecmp)
 
-IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string<=?", le, <=)
 IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string<?", lt, <)
+IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string<=?", le, <=)
 IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string=?", eq, ==)
 IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string>=?", ge, >=)
 IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string>?", gt, >)
 
-IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci<=?", le, <=)
 IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci<?", lt, <)
+IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci<=?", le, <=)
 IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci=?", eq, ==)
 IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci>=?", ge, >=)
 IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci>?", gt, >)

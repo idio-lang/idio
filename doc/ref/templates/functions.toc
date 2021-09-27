@@ -1,0 +1,5 @@
+(rst "functions-intro" 0)
+
+(document Idio expander?)
+(document Idio syntax-expand)
+(document Idio syntax-match)

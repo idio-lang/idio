@@ -349,7 +349,7 @@ define-template (function* formals & body) {
     loop :+ function (h i) {
       if (i lt (string-length str)) {
 	(loop
-	 (modulo ((h * 65536) + (unicode->integer (string-ref str i)))
+	 (modulo ((h * 65536) + (unicode/unicode->integer (string-ref str i)))
 		 n)
 	 (i + 1))
       } h
@@ -371,7 +371,7 @@ define (&hash-keyword key n) {
   loop :+ function (h i) {
     if (i lt (string-length str)) {
       (loop
-       (modulo ((h * 65536) + (unicode->integer (string-ref str i)))
+       (modulo ((h * 65536) + (unicode/unicode->integer (string-ref str i)))
 	       n)
        (i + 1))
       } h

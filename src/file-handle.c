@@ -1080,7 +1080,7 @@ construct an input pipe handle from `fd` using the optional	\n\
 `name` instead of the default `/dev/fd/{fd}` and	\n\
 the optional mode `mode` instead of ``r``		\n\
 							\n\
-The key difference from a regular *-from-fd is that a	\n\
+The key difference from a regular \\*-from-fd is that a	\n\
 pipe file handle is not seekable.			\n\
 							\n\
 :param fd: file descriptor				\n\
@@ -1109,7 +1109,7 @@ construct an output pipe handle from `fd` using the optional	\n\
 `name` instead of the default `/dev/fd/{fd}` and	\n\
 the optional mode `mode` instead of ``w``		\n\
 							\n\
-The key difference from a regular *-from-fd is that a	\n\
+The key difference from a regular \\*-from-fd is that a	\n\
 pipe file handle is not seekable.			\n\
 							\n\
 :param fd: file descriptor				\n\
@@ -1480,7 +1480,26 @@ IDIO idio_open_file_handle_C (char const *func, IDIO filename, char const *pathn
 	}
     }
 
-    return idio_open_file_handle (filename, pathname, pathname_len, fd, h_type, h_flags, s_flags);
+    IDIO fh = idio_open_file_handle (filename, pathname, pathname_len, fd, h_type, h_flags, s_flags);
+
+    /*
+     * Fake the nominal file position if we are appending.
+     *
+     * Technically,
+     *
+     *   Before each write(2), the file offset is positioned at the
+     *   end of the file, as if with lseek(2).
+     *
+     * so that the file offset is slightly disingenuous.
+     */
+    if (req_fs_flags & O_APPEND) {
+	/* IDIO_HANDLE_POS (fh) = lseek (fd, 0, SEEK_END); */
+	if (0 != IDIO_HANDLE_POS (fh)) {
+	    IDIO_HANDLE_LINE (fh) = 0;
+	}
+    }
+
+    return fh;
 }
 
 /*

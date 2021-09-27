@@ -2725,7 +2725,7 @@ in C, strsignal (sig)						\n\
 a wrapper to libc strsignal(3)					\n\
 								\n\
 :param sig: signal number to describe				\n\
-:type sig : C/int						\n\
+:type sig: C/int						\n\
 :return: string describing errnum				\n\
 :rtype: string							\n\
 								\n\
@@ -2911,7 +2911,7 @@ in C, strerror (errnum)						\n\
 a wrapper to libc strerror(3)					\n\
 								\n\
 :param errnum: error code to describe				\n\
-:type errnum : C/int						\n\
+:type errnum: C/int						\n\
 :return: string describing errnum				\n\
 :rtype: string							\n\
 ")

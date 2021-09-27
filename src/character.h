@@ -23,6 +23,8 @@
 #ifndef CHARACTER_H
 #define CHARACTER_H
 
+extern IDIO idio_character_module;
+
 int idio_isa_character (IDIO o);
 IDIO idio_character_lookup (char const *name);
 

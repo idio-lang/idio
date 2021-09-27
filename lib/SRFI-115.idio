@@ -733,7 +733,7 @@ define (parse-flags ls) {
   loop ls ~none
 }
 
-; unicode.idio defines:
+; SRFI-14.idio (actually, usi-wrap.c) defines:
 ; char-set:nonl
 ; char-set:control
 ; char-set:word-constituent

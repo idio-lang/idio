@@ -1,0 +1,26 @@
+(rst "bitsets-intro" 0)
+
+(document Idio bitset?)
+
+(document Idio make-bitset)
+
+(document Idio bitset-size)
+
+(document Idio bitset-set!)
+(document Idio bitset-clear!)
+(document Idio bitset-ref)
+
+(document Idio copy-bitset)
+(document Idio merge-bitset)
+
+(document Idio and-bitset)
+(document Idio ior-bitset)
+(document Idio xor-bitset)
+(document Idio not-bitset)
+
+(document Idio subtract-bitset)
+
+(document Idio equal-bitset?)
+
+(document Idio bitset-for-each-set)
+(document Idio fold-bitset)

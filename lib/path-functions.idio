@@ -482,7 +482,7 @@ VAL - the pathname to be normalized
 define* (normalize-pathname val (:sep sep "/")) {
   r := #n
 
-  if (not (and (gt (string-length val) 0)
+  if (not (and ((string-length val) gt 0)
 	       (eq? (string-ref val 0) #\/))) {
     val = append-string PWD "/" val
   }

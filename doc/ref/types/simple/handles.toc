@@ -1,0 +1,36 @@
+(rst "handles-intro" 0)
+
+(document Idio handle?)
+(document Idio input-handle?)
+(document Idio output-handle?)
+
+(document Idio handle-line)
+(document Idio handle-location)
+(document Idio handle-name)
+(document Idio handle-pos)
+
+(document Idio closed-handle?)
+(document Idio ready?)
+(document Idio eof?)
+
+(document Idio close-handle)
+(document Idio close-input-handle)
+(document Idio close-output-handle)
+
+(document Idio eof-object?)
+
+(document Idio read-line)
+(document Idio read-lines)
+(document Idio read-char)
+(document Idio peek-char)
+
+(document Idio write)
+(document Idio write-char)
+
+(document Idio puts)
+
+(document Idio seek-handle)
+(document Idio rewind-handle)
+
+(document Idio flush-handle)
+

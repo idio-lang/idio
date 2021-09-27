@@ -103,7 +103,8 @@ load Idio code from ``filename``
 This is the module variant which handles changes to the current module
 and calls
 
-------------------------------
+----
+
   " {
     if (not (string? filename)) (error 'load "not a string" filename)
 
@@ -133,7 +134,8 @@ load Idio code from ``handle``
 This is the module variant which handles changes to the current module
 and calls
 
-------------------------------
+----
+
 " {
     if (not (handle? handle)) (error 'load-handle "not a handle" handle)
 
@@ -163,14 +165,14 @@ and calls
 ;;
 ;; XXX define *after* the above module/load concomitant block!
 
-*features* := #n
-*subfeatures* :~ #n
+*require-features* := #n
+*require-subfeatures* :~ #n
 
 define (require feature & subfeatures) "
 
 Load ``feature`` unless it has previous been successfully required.
 ``subfeatures`` are available to the loaded code as the dynamic
-variable ``*subfeatures*``
+variable ``*require-subfeatures*``
 
 :param feature: the name of the feature
 :type fmt: symbol
@@ -183,12 +185,12 @@ The file to be loaded is ``(symbol->string feature)`` which must
 :return: #t or #f
 
 " {
-  if (memq feature *features*) #t {
-    *subfeatures* = subfeatures
+  if (memq feature *require-features*) #t {
+    *require-subfeatures* = subfeatures
 
     load (symbol->string feature)
 
-    if (memq feature *features*) #t {
+    if (memq feature *require-features*) #t {
       eprintf "%s did not provide %s\n" feature feature
       #f
     }
@@ -197,10 +199,10 @@ The file to be loaded is ``(symbol->string feature)`` which must
 
 define-template (provide feature) {
   ;; XXX need to quote $feature as some function names shadow module
-  ;; names and we just want the symbol(ic name) in *features*
+  ;; names and we just want the symbol(ic name) in *require-features*
   #T{
-    if (not (memq '$feature *features*)) {
-      *features* = pair '$feature *features*
+    if (not (memq '$feature *require-features*)) {
+      *require-features* = pair '$feature *require-features*
     }
   }
 }

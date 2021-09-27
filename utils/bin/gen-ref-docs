@@ -1,0 +1,563 @@
+#! /usr/bin/env idio
+
+#*
+
+gen-ref-docs path/to/file.tree [...]
+
+We're looking to walk down a hierarchy which describes the
+documentation we want to produce and create it in path/to/source/.
+
+.../source is used as it is easy enough to mix in with a nominal
+sphinx-quickstart tree.
+
+As we produce documentation for functions, values etc. we'll tag the
+module and symbol as having been seen.  At the end we can walk over
+all the modules we've seen and look at all the names exported from the
+modules and check that we have seen a request to document them.
+
+We don't have to document everything -- and some names, notably in
+libc, are system-specific whic makes it hard for any one system to be
+sure it has seen all names.
+
+Close enough, though.
+
+*#
+
+module documentation/reference
+
+seen := #{}
+
+; libc/mkdir will get imported and clash so dig out mkdir now
+mkdir := command/%find-exe 'mkdir
+
+#*
+
+separate-pathname
+
+We want (/abs/path/to file ext) from path/to/file.ext
+
+*#
+
+define* (separate-pathname val (:sep sep "/") (:ext-sep ext-sep ".")) {
+  r := #n
+
+  if (not (and (gt (string-length val) 0)
+	       (eq? (string-ref val 0) #\/))) {
+    val = append-string PWD "/" val
+  }
+
+  for-each (function (e) {
+	      (case e
+		    (("")
+		     ;; "///foo" -> ("" "" "" "foo" )
+		      #n)
+		    ((".") #n)
+		    (("..") {
+		      if (pair? r) {
+			r = pt r
+		      }
+		    })
+		    (else {
+		      r = pair e r
+		    }))
+  }) (split-string-exactly val sep)
+
+  base := ph r
+
+  r = reverse (pt r)
+
+  dirname := #f
+
+  if (null? r) {
+    dirname = "/"
+  } {
+    dirname = append-string "/" (join-string sep r)
+  }
+
+  basename := #f
+  ext := #f
+  dot := string-rindex base #\.
+
+  if dot {
+    basename = substring base 0 dot
+    ext = substring base (dot + 1) (string-length base)
+  } {
+    eprintf "ERROR: failed to separate '%s' with '%s'\n" base ext-sep
+    exit 1
+  }
+
+  list dirname basename ext
+}
+
+define (indent-text leader text) {
+  append-string leader (join-string (append-string "\n" leader) (split-string-exactly text "\n"))
+}
+
+define (insert-file out-fh level fn) {
+  if (r? fn) {
+    fh := open-input-file fn
+
+    leader := make-string (level * 3)
+
+    loop :+ function (fh) {
+	      if (not (eof? fh)) {
+		hprintf out-fh "%s%s\n" leader (read-line fh)
+		loop fh
+	      }
+    }
+
+    loop fh
+
+    close-handle fh
+  }
+}
+
+define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
+  fh := open-input-file fn
+
+  out-fbn := append-string outdir "/" fbn
+
+  out-fn := append-string out-fbn  ".rst"
+  out-fh := open-output-file out-fn
+
+  hprintf out-fh ".. include:: %s/global.rst\n\n" (or rel-dir ".")
+
+  ifn := append-string out-fbn "-intro.rst"
+  if (r? ifn) {
+    cat out-fn > out-fn
+    seek-handle out-fh 0 'end
+  }
+
+  loop :+ function (fh) {
+	    p := Idio/read fh
+
+	    if (pair? p) {
+	      (case (ph p)
+		    ((document) {
+		      mod := pht p
+		      sym := phtt p
+
+		      ; For operators the reader will get in the way
+		      ; and try to run the operator.  We can escape
+		      ; the name:
+		      ;
+		      ;   (document Idio \ge)
+		      ;
+		      ; or quote the symbol and we'll unpick it here:
+		      ; (document Idio 'ge)
+		      if (pair? sym) {
+			sym = pht sym
+		      }
+
+		      ;; Some symbols are hard to use in the
+		      ;; filesystem, /, for a start so we allow for a
+		      ;; filesystem-friendly name in the next element.
+		      sym-fn := sym
+		      if (gt (length p) 3) {
+			sym-fn = nth p 4
+		      }
+
+		      ;eprintf "documenting %s/%s\n" mod sym
+
+		      ;; use (void) here as no symbol's value should
+		      ;; be void -- the point being that some symbols
+		      ;; are initialized to #f and we couldn't tell
+		      ;; the difference otherwise
+		      val := symbol-value sym mod (void)
+
+		      if (void? val) {
+			hprintf out-fh ".. %s/%s - XXX not found\n\n" mod sym
+
+			eprintf "generate-toc-file %s: %s %s: failed lookup\n" fbn mod sym
+			#f
+			
+		      } {
+			mod-ht := hash-ref seen mod #f
+			if (not mod-ht) {
+			  mod-ht = make-hash #n #n 256
+			  hash-set! seen mod mod-ht
+			}
+
+			;; many types will have a -doc file
+			dfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-doc.rst"
+
+			(cond
+			 ((function? val) {
+			   sigstr := %property val :sigstr #f
+
+			   ;; try ".../{fixnum}-{mod}-{sym}-sig.rst"
+			   if (or (not sigstr)
+				  (and (string? sigstr)
+				       (eq 0 (string-length sigstr)))) {
+					 sfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-sig.rst"
+					 if (r? sfn) {
+					   sigstr = strip-string (cat-file sfn) "\n"
+					   seek-handle out-fh 0 'end
+					 }
+				       }
+
+			   hprintf out-fh ".. _`%s/%s`:\n\n" mod sym
+
+			   if (eq? mod 'Idio) {
+			     hprintf out-fh ".. function:: %s %s\n\n" sym sigstr
+			   } {
+			     hprintf out-fh ".. function:: %s/%s %s\n\n" mod sym sigstr
+			   }
+
+			   leader := "   "
+
+			   docstr := %property val :docstr-raw #f
+			   if docstr {
+			     hprintf out-fh "%s\n" (indent-text leader docstr)
+			   }
+
+			   insert-file out-fh 1 dfn
+
+			   hprintf out-fh "\n"
+
+			   hash-set! mod-ht sym #t
+			 })
+			 ((struct-type? val) {
+			   if (struct-type-isa? val ^condition) {
+			     hprintf out-fh ".. exception:: %s\n" sym
+			   } {
+			     hprintf out-fh "struct-type: %s\n" sym
+			   }
+
+			   insert-file out-fh 1 dfn
+
+			   hprintf out-fh "\n"
+
+			   hash-set! mod-ht sym #t
+			 })
+			 ((struct-instance? val) {
+			   hprintf out-fh ".. data:: %s\n" sym
+
+			   insert-file out-fh 1 dfn
+
+			   hprintf out-fh "\n"
+
+			   hash-set! mod-ht sym #t
+			 })
+			 ((or (array? val)
+			      (hash? val)) {
+				hprintf out-fh ".. data:: %s\n" sym
+
+				insert-file out-fh 1 dfn
+
+				hprintf out-fh "\n"
+
+				hash-set! mod-ht sym #t
+			      })
+			 ((or (fixnum? val)
+			      (bignum? val)
+			      (string? val)
+			      (pair? val)
+			      (null? val)
+
+			      (C/char? val)
+			      (C/schar? val)
+			      (C/uchar? val)
+			      (C/short? val)
+			      (C/ushort? val)
+			      (C/int? val)
+			      (C/uint? val)
+			      (C/long? val)
+			      (C/ulong? val)
+			      (C/longlong? val)
+			      (C/ulonglong? val)
+			      (C/double? val)
+			      (C/float? val)
+			      (C/pointer? val)
+
+			      (environ? sym)
+			      (dynamic? sym)
+			      (computed? sym)) {
+				hprintf out-fh ".. data:: %s\n" sym
+
+				insert-file out-fh 1 dfn
+
+				hprintf out-fh "\n"
+
+				hash-set! mod-ht sym #t
+			      })
+			 ((symbol? val) {
+			   ; Hmm, there are symbols floating around but
+			   ; we'll also get symbols from the act of
+			   ; running this program which are "less
+			   ; interesting"
+			   module := find-module val #f
+			   if module {
+			     hprintf out-fh "module: %s\n" sym
+			   } {
+			     hprintf out-fh "symbol: %s\n" sym
+			   }
+
+			   insert-file out-fh 1 dfn
+
+			   hprintf out-fh "\n"
+
+			   hash-set! mod-ht sym #t
+			 })
+			 (else {
+			   eprintf "generate-toc-file %s: %s %s=%s: %s is not a handled type\n" fbn mod sym val (type->string val)
+			   #f
+			 }))
+		      }
+		    })
+		    ((rst) {
+		      rfn := append-string dirname "/" (pht p) ".rst"
+		      if (r? rfn) {
+			insert-file out-fh (phtt p) rfn
+		      } {
+			eprintf "ERROR: %s: not readable\n" rfn
+		      }
+		    }))
+
+	      loop fh
+	    }
+  }
+
+  loop fh
+
+  hprintf out-fh "\n\n.. include:: %s/commit.rst\n" (or rel-dir ".")
+
+  close-handle out-fh
+  close-handle fh
+}
+
+define (generate-tree rel-dir tree-fn outdir) {
+  p := separate-pathname tree-fn
+  dirname := ph p
+  basename := pht p
+  ext := phtt p
+
+  printf "%s %s %s\n" dirname basename ext
+
+  out-fn := append-string outdir "/" basename ".rst"
+  out-fh := open-output-file out-fn
+
+  hprintf out-fh ".. include:: %s/global.rst\n\n" (or rel-dir ".")
+
+  tree-fh := open-input-file tree-fn
+
+  loop :+ function (tree-fh) {
+	    p := Idio/read tree-fh
+
+	    if (pair? p) {
+	      (case (ph p)
+		    ((tree) {
+		      subtree := symbol->string (pht p)
+		      tree-fn := append-string dirname "/" subtree "/index.tree"
+		      if (r? tree-fn) {
+
+			; TOC entries indented one level
+			hprintf out-fh "   %s/index\n" subtree
+
+			sub-bd := append-string outdir "/" subtree
+			if (not (d? sub-bd)) {
+			  mkdir -p sub-bd
+			}
+			generate-tree (if rel-dir (append-string "../" rel-dir) "..") tree-fn sub-bd
+		      } {
+			eprintf "ERROR: %s: not readable\n" tree-fn
+		      }
+		    })
+		    ((rst) {
+		      rfn := append-string dirname "/" (pht p) ".rst"
+		      if (r? rfn) {
+			insert-file out-fh (phtt p) rfn
+		      } {
+			eprintf "ERROR: %s: not readable\n" rfn
+		      }
+		    })
+		    ((toc-file) {
+		      toc-name := symbol->string (pht p)
+
+		      toc-fn := append-string dirname "/" toc-name ".toc"
+		      if (r? toc-fn) {
+			hprintf out-fh "   %s\n" toc-name
+
+			generate-toc-file out-fh rel-dir toc-fn dirname toc-name outdir
+		      } {
+			eprintf "ERROR: %s: not readable\n" toc-fn
+		      }
+		    })
+		    ((import) {
+		      mod := pht p
+		      osh := (open-output-string)
+		      hprintf osh "import %s\n" mod
+		      close-handle osh
+		      ish := open-input-string (get-output-string osh)
+		      load-handle ish
+		      close-handle ish
+		    }))
+
+	      loop tree-fh
+	    }
+  }
+
+  loop tree-fh
+
+  close-handle tree-fh
+
+  hprintf out-fh "\n\n.. include:: %s/commit.rst\n" (or rel-dir ".")
+
+  close-handle out-fh
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+
+for-each (function (tree-fn) {
+	    if (r? tree-fn) {
+	      p := separate-pathname tree-fn
+	      dirname := ph p
+
+	      outdir := append-string dirname "/source"
+	      if (not (d? outdir)) {
+		mkdir -p outdir
+	      }
+
+	      generate-tree #f tree-fn outdir
+	    } {
+	      eprintf "ERROR: %s: not readable\n" tree-fn
+	    }
+}) (array->list ARGV)
+
+; summarize what we've missed
+
+for-each (function (mod) {
+	    printf "module %s\n" mod
+	    mod-ht := hash-ref seen mod
+
+	    ;; libc is full of system-specific auto-generated names
+
+	    ;; errno	- E*
+	    ;; rlimits	- RLIMIT_*
+	    ;; signals	- SIG*
+
+	    ;; many open(2) flags are not portable - O_*
+
+	    ;; This creates a documentation-generating mess so we can
+	    ;; avoid the lot and trust that a judicious
+	    ;; document-maintenance guy does the right thing.
+
+	    ;; One useful thing to note is that they are all C/int.
+
+	    ;; Fedora likes an __pid_t amongst a dozen others which
+	    ;; isn't a portable C API typedef name.  We *should* have
+	    ;; the portable name pid_t explicitly mentioned (otherwise
+	    ;; we won't have a portable name) so we can ditch any __*
+	    ;; symbols.
+
+	    sorted-symbols := sort-symbol (fold-left (function (r s) {
+							(cond
+
+							 ;; no environ variables
+							 ((environ? s) r)
+
+							 ;; libc needs some symbol stripping
+							 ((eq? 'libc mod) {
+							   val := symbol-value s mod #f
+							   (cond
+							    ((C/int? val) {
+							      ss := symbol->string s
+							      sl := string-length ss
+							      (cond
+							       ((and (gt sl 1)
+								     (equal? (substring ss 0 1) "E")) r)
+							       ((and (gt sl 7)
+								     (equal? (substring ss 0 7) "RLIMIT_")) r)
+							       ((and (gt sl 3)
+								     (equal? (substring ss 0 3) "SIG")) r)
+							       ((and (gt sl 2)
+								     (equal? (substring ss 0 2) "O_")) r)
+							       (else (pair s r)))
+							    })
+							    ((or (symbol? val)
+								 (primitive? val)) {
+							      ss := symbol->string s
+							      sl := string-length ss
+							      (cond
+							       ((and (gt sl 2)
+								     (equal? (substring ss 0 2) "__"))
+								 r)
+							       (else {
+								 ;; is this actually a sym in this module
+								 ;; and not something we've created as a
+								 ;; by-product of using the symbol?
+								 si := evaluate/find-symbol s mod
+								 if (pair? si) {
+								   orig-mod := module-name (phttt si)
+								   if (eq? orig-mod mod) {
+								     pair s r
+								   } {
+								     eprintf "  %s/%s is actually %s/%s\n" mod s orig-mod s
+								     r
+								   }
+								 } {
+								   eprintf "  %s/%s not found\n" mod s
+								   r
+								 }
+							       }))
+							    })
+							    (else {
+							      pair s r
+							    }))
+							 })
+
+							 (else {
+							   ;; is this actually a sym in this module
+							   ;; and not something we've created as a
+							   ;; by-product of using the symbol?
+							   si := evaluate/find-symbol s mod
+							   if (pair? si) {
+							     orig-mod := module-name (phttt si)
+							     if (eq? orig-mod mod) {
+							       pair s r
+							     } {
+							       if (not (eq? mod 'Idio)) {
+								 eprintf "  %s/%s is actually %s/%s\n" mod s orig-mod s
+							       }
+							       r
+							     }
+							   } {
+							     eprintf "  %s/%s not found\n" mod s
+							     r
+							   }
+							 }))
+	    })#n (module-exports mod))
+
+	    for-each (function (sym) {
+			if (not (hash-ref mod-ht sym #f)) {
+			  val := symbol-value sym mod #f
+			  type := #t
+			  (cond
+			   ((environ? sym) {
+			     type = #f
+			   })
+			   ((dynamic? sym) {
+			     type = "dynamic"
+			   })
+			   ((computed? sym) {
+			     type = "computed"
+			   })
+			   (else {
+			     type = type->string val
+			   }))
+
+			  if type {
+			    printf "  %-30s %s\n" sym type
+			  }
+			  #t
+			}
+	    }) sorted-symbols
+
+	    printf "  %d/%d syms\n" (length (hash-keys mod-ht)) (length sorted-symbols)
+}) (hash-keys seen)
+
+;Local Variables:
+;mode: Idio
+;buffer-file-coding-system: utf-8-unix
+;End:

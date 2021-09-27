@@ -1,0 +1,46 @@
+(rst "strings-intro" 0)
+
+(document Idio string?)
+(document Idio make-string)
+(document Idio string->pathname)
+(document Idio string->list)
+(document Idio list->string)
+(document Idio string->symbol)
+
+(document Idio append-string)
+(document Idio concatenate-string)
+(document Idio copy-string)
+
+(document Idio join-string)
+
+(document Idio string-length)
+(document Idio string-ref)
+(document Idio string-set!)
+(document Idio string-fill!)
+
+(document Idio substring)
+(document Idio string-index)
+(document Idio string-rindex)
+
+(document Idio fields)
+(document Idio split-string)
+(document Idio split-string-exactly)
+
+(document Idio string<? string-lt-p)
+(document Idio string<=? string-le-p)
+(document Idio string=? string-eq-p)
+(document Idio string>=? string-ge-p)
+(document Idio string>? string-gt-p)
+
+(document Idio string-ci<? string-ci-lt-p)
+(document Idio string-ci<=? string-ci-le-p)
+(document Idio string-ci=? string-ci-eq-p)
+(document Idio string-ci>=? string-ci-ge-p)
+(document Idio string-ci>? string-ci-gt-p)
+
+(document Idio strip-string)
+
+; util.c
+(document Idio ->string)
+(document Idio string)
+

@@ -631,7 +631,7 @@ string->number := {
 				((unicode=? (ph d) x) n)
 				(else (v x (pt d) (n + 1))))
 			}
-			v (unicode-downcase x) digits 0
+			v (unicode/->Lowercase x) digits 0
     }
     find-exponent-mark :+ function (c) {
 			    memv c '(#\d #\D #\e #\E #\f #\F #\l #\L #\s #\S)
@@ -710,8 +710,8 @@ string->number := {
     mantissa-digits? :+ function (x) {
 			  (cond
 			   ((null? x)                    #f)
-			   ((unicode-numeric? (ph x))      #t)
-			   ((find-exponent-mark (ph x)) #f)
+			   ((unicode/Number? (ph x))     #t)
+			   ((find-exponent-mark (ph x))  #f)
 			   (else (mantissa-digits? (pt x))))
     }
     conv-real :+ function (lst rdx) {
@@ -771,7 +771,7 @@ string->number := {
 	    }
     if (or (null? lst)
 	   (memv (ph lst) '(#\+ #\- #\.))
-	   (unicode-numeric? (ph lst))) {
+	   (unicode/Number? (ph lst))) {
 	     replace-inexact-digits! lst
 	   }
 

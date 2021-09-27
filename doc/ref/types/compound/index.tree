@@ -1,0 +1,5 @@
+(rst "compound-intro" 0)
+(toc-file pairs)
+(toc-file arrays)
+(toc-file hash-tables)
+(toc-file structs)

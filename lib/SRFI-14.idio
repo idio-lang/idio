@@ -89,6 +89,8 @@ export (
 	 fold-char-set
 )
 
+import unicode
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 define-struct-accessors-only sparse-char-set size planes

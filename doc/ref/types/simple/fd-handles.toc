@@ -1,0 +1,9 @@
+(rst "fd-handles-intro" 0)
+
+(document Idio fd-handle?)
+(document Idio input-fd-handle?)
+(document Idio output-fd-handle?)
+
+(document Idio fd-handle-fd)
+
+(document Idio close-fd-handle-on-exec)

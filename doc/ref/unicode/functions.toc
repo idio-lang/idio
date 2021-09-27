@@ -1,0 +1,41 @@
+(rst "functions-intro" 0)
+
+; unicode.c
+(document unicode unicode->plane)
+(document unicode unicode->plane-codepoint)
+(document unicode unicode->integer)
+
+; usi-wrap.c
+(document unicode ASCII-Decimal_Number?)
+(document unicode ASCII_Hex_Digit?)
+(document unicode Alphabetic?)
+(document unicode Control?)
+(document unicode Decimal_Number?)
+(document unicode Extend?)
+(document unicode Fractional_Number?)
+(document unicode L?)
+(document unicode LV?)
+(document unicode LVT?)
+(document unicode Letter?)
+(document unicode Lowercase?)
+(document unicode Mark?)
+(document unicode Number?)
+(document unicode Punctuation?)
+(document unicode Regional_Indicator?)
+(document unicode Separator?)
+(document unicode SpacingMark?)
+(document unicode Symbol?)
+(document unicode T?)
+(document unicode Titlecase_Letter?)
+(document unicode Uppercase?)
+(document unicode V?)
+(document unicode White_Space?)
+(document unicode ZWJ?)
+
+(document unicode ->Lowercase)
+(document unicode ->Titlecase)
+(document unicode ->Uppercase)
+
+(document unicode numeric-value)
+
+(document unicode describe)

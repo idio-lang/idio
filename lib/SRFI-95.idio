@@ -344,6 +344,6 @@ define (sort-string seq) {
 }
 
 define (sort-symbol seq) {
-  sort (map ->string seq) string<?
+  map pht (sort (map (function (s) (list (->string s) s)) seq) string<? ph)
 }
 

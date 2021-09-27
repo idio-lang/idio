@@ -1,0 +1,8 @@
+% cd .../DIPS
+% python -m venv venv
+% . venv/bin/activate
+(venv) % pip install --upgrade pip
+(venv) % pip install sphinx
+(venv) % pip install sphinx_git
+
+(venv) % make clean html

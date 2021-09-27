@@ -1,0 +1,11 @@
+(rst "bignums-intro" 0)
+
+(document Idio bignum?)
+(document Idio real?)
+(document Idio exact?)
+(document Idio inexact?)
+(document Idio exact->inexact)
+(document Idio inexact->exact)
+(document Idio mantissa)
+(document Idio exponent)
+(document Idio bignum-dump)

@@ -1,0 +1,7 @@
+(rst "functions-intro" 0)
+
+(document json5 parse-file)
+(document json5 parse-fd)
+(document json5 parse-string)
+(document json5 generate)
+(document json5 generate-json)

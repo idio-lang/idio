@@ -72,6 +72,7 @@ export (%idio-interactive
 	with-error-to
 
 	collect-output
+	cat-file
 
 	with-handle-dup
 	with-handle-redir
@@ -538,7 +539,7 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
       })
       ((null? status) {
 	;; this should have been picked up by ECHILD, above...
-	eprintf "pid==0 status==#n errno!=ECHILD??\n"
+	eprintf "mark-process-status: pid==0 status==#n errno!=ECHILD??\n"
       })
       (else {
 	error 'mark-process-status "inconceivable errno!" pid status (libc/errno-name libc/errno)
@@ -2088,6 +2089,15 @@ with-handle-redir := {
        dir-string-h? = output-string-handle?
        dir-msg       = "output"
      })
+     ((eq? type 'append) {
+       get-current-h = current-output-handle
+       open-fd-h     = open-output-fd
+       open-file-h   = function (n) (open-file n "a")
+       set-h!        = set-output-handle!
+       dir-fd-h?     = output-fd-handle?
+       dir-string-h? = output-string-handle?
+       dir-msg       = "append"
+     })
      ((eq? type 'error) {
        get-current-h = current-error-handle
        open-fd-h     = open-output-fd
@@ -2169,6 +2179,13 @@ define-template (collect-output & cmd) {
   }
 }
 
+define (cat-file fn) {
+  fh := open-input-file fn
+  r := read-lines fh
+  close-handle fh
+  r
+}
+
 #*
 
 with-handle-dup type new thunk
@@ -2204,6 +2221,7 @@ with-handle-dup := {
     dir-file-h?   := #f
     dir-string-h? := #f
     msg-h         := #f
+
     (cond
      ((eq? type 'input) {
        get-current-h = current-input-handle
@@ -2292,6 +2310,9 @@ define-infix-operator > 600 {
    ((eq? op '>) {
      type = 'output
    })
+   ((eq? op '>>) {
+     type = 'append
+   })
    ((eq? op '2>) {
      type = 'error
    })
@@ -2314,7 +2335,8 @@ define-infix-operator > 600 {
   result
 }
 
-define-infix-operator < 600 \>
+define-infix-operator >> 600 \>
+define-infix-operator <  600 \>
 define-infix-operator 2> 600 \>
 
 ;; ... <& e1 ...
@@ -2360,7 +2382,7 @@ define-infix-operator >& 600 {
   result
 }
 
-define-infix-operator <& 600 \>&
+define-infix-operator <&  600 \>&
 define-infix-operator 2>& 600 \>&
 
 define (jobs) "display the state of outstanding jobs" {

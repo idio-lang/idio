@@ -1,0 +1,26 @@
+(rst "hash-tables-intro" 0)
+
+(document Idio hash?)
+
+(document Idio make-hash)
+(document Idio alist->hash)
+(document Idio copy-hash)
+(document Idio merge-hash!)
+
+(document Idio hash-size)
+(document Idio hash-equivalence-function)
+(document Idio hash-hash-function)
+
+(document Idio hash-ref)
+(document Idio hash-set!)
+(document Idio hash-delete!)
+
+(document Idio hash-exists?)
+(document Idio hash-update!)
+
+(document Idio hash-keys)
+(document Idio hash-values)
+
+(document Idio hash-walk)
+
+(document Idio fold-hash)

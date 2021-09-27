@@ -23,8 +23,6 @@
 #ifndef USI_WRAP_H
 #define USI_WRAP_H
 
-extern IDIO idio_unicode_module;
-
 int idio_usi_codepoint_is_category (idio_unicode_t cp, int cat);
 int idio_usi_codepoint_has_attribute (idio_unicode_t cp, int flag);
 

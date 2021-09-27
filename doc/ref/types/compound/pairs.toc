@@ -1,0 +1,27 @@
+(rst "pairs-intro" 0)
+
+(document Idio pair?)
+(document Idio pair)
+
+(document Idio ph)
+(document Idio pt)
+
+(document Idio set-ph!)
+(document Idio set-pt!)
+
+(document Idio list)
+(document Idio reverse)
+(document Idio length)
+
+(document Idio append)
+
+(document Idio member)
+(document Idio memq)
+(document Idio memv)
+
+(document Idio assq)
+(document Idio assoc)
+(document Idio assv)
+
+(document Idio list->array)
+(document Idio nth)

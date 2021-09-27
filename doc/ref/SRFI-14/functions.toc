@@ -1,0 +1,42 @@
+(rst "functions-intro" 0)
+
+(document SRFI-14 char-set?)
+
+(document SRFI-14 make-sparse-char-set)
+(document SRFI-14 char-set)
+(document SRFI-14 copy-char-set)
+
+(document SRFI-14 string->char-set)
+(document SRFI-14 ucs-range->char-set)
+(document SRFI-14 char-set->string)
+
+(document SRFI-14 char-set-ref)
+(document SRFI-14 char-set-set!)
+(document SRFI-14 char-set-clear!)
+
+(document SRFI-14 char-set-contains?)
+
+(document SRFI-14 char-upcase)
+(document SRFI-14 char-downcase)
+
+(document SRFI-14 and-char-set)
+(document SRFI-14 ior-char-set)
+(document SRFI-14 merge-char-set)
+(document SRFI-14 xor-char-set)
+(document SRFI-14 not-char-set)
+
+(document SRFI-14 char-set-adjoin)
+(document SRFI-14 char-set-adjoin!)
+(document SRFI-14 char-set-delete)
+(document SRFI-14 char-set-delete!)
+(document SRFI-14 complement-char-set)
+(document SRFI-14 complement-char-set!)
+(document SRFI-14 union-char-set)
+(document SRFI-14 union-char-set!)
+(document SRFI-14 intersection-char-set)
+(document SRFI-14 intersection-char-set!)
+(document SRFI-14 difference-char-set)
+(document SRFI-14 difference-char-set!)
+
+(document SRFI-14 fold-char-set)
+(document SRFI-14 char-set-for-each-set)

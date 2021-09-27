@@ -1,0 +1,4 @@
+(rst "constants-intro" 0)
+
+(document Idio null?)
+(document Idio boolean?)

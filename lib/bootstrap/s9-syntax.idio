@@ -109,6 +109,16 @@ map := {
 	      }
     }
 
+    (cond
+     ((array? a*) {
+       a* = array->list a*
+     })
+     ((hash? a*) {
+       a* = map (function (k) {
+		   list k (hash-ref a* k)
+       }) (hash-keys a*)
+     }))
+
     if (null? a*) {
       error 'map "too few arguments"
     } {

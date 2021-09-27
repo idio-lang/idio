@@ -1,0 +1,3 @@
+(rst "fixnums-intro" 0)
+
+(document Idio fixnum? fixnump)

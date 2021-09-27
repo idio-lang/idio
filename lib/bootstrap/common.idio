@@ -329,7 +329,7 @@ The default padding character is #\{space}
 			       vs = "%"
 			       vs-len = 1
 			     })
-			     ((Alphabetic? k) {
+			     ((unicode/Alphabetic? k) {
 			       v = hash-ref data k #f
 			       if (not v) {
 				 eprintf "%format: %s is not a key in data\n" k
