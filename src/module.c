@@ -301,7 +301,7 @@ IDIO idio_module_set_vci (IDIO module, IDIO mci, IDIO gci)
  * expend.
  */
 IDIO_DEFINE_PRIMITIVE3_DS ("set-module-vci!", set_module_vci, (IDIO m_or_n, IDIO mci, IDIO gci), "module mci gci", "\
-Associate ``mci`` with ``gci`` in ``module``		\n\
+Associate `mci` with `gci` in `module`			\n\
 							\n\
 :param module: module to use				\n\
 :type module: module or symbol				\n\
@@ -409,7 +409,7 @@ IDIO idio_module_set_vvi (IDIO module, IDIO mci, IDIO gvi)
  * expend.
  */
 IDIO_DEFINE_PRIMITIVE3_DS ("set-module-vvi!", set_module_vvi, (IDIO m_or_n, IDIO mci, IDIO gvi), "module mci gvi", "\
-Assoviate ``mci`` with ``gvi`` in ``module``		\n\
+Assoviate `mci` with `gvi` in `module`			\n\
 							\n\
 :param module: module to use				\n\
 :type module: module or symbol				\n\
@@ -696,7 +696,7 @@ Is `o` a module?				\n\
 						\n\
 :param o: value to test				\n\
 :type o: any					\n\
-:return: #t if `o` is a module, #f otherwise	\n\
+:return: ``#t`` if `o` is a module, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -860,8 +860,8 @@ IDIO idio_module_symbols (IDIO m_or_n)
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("module-symbols", module_symbols, (IDIO args), "[module]", "\
-return the symbols in ``module``			\n\
-or the current module if no ``module`` supplied		\n\
+return the symbols in `module`				\n\
+or the current module if no `module` supplied		\n\
 							\n\
 :param module: module to use				\n\
 :type symbol: module or symbol				\n\
@@ -1134,26 +1134,26 @@ IDIO idio_module_direct_reference (IDIO name)
  *
  * We need to use evaluate.idio more!
  */
-IDIO_DEFINE_PRIMITIVE1_DS ("symbol-direct-reference", symbol_direct_reference, (IDIO symbol), "symbol", "\
-find evaluator details for ``symbol``				\n\
+IDIO_DEFINE_PRIMITIVE1_DS ("symbol-direct-reference", symbol_direct_reference, (IDIO sym), "sym", "\
+find evaluator details for symbol `sym`				\n\
 								\n\
-`symbol` is of the form M/S					\n\
+`sym` is of the form M/S					\n\
 								\n\
-:param symbol: symbol to find					\n\
-:type symbol: symbol						\n\
-:return: evaluator details for ``symbol``			\n\
+:param sym: symbol to find					\n\
+:type sym: symbol						\n\
+:return: evaluator details for `sym`				\n\
 ")
 {
-    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (sym);
 
     /*
      * Test Case: module-errors/symbol-direct-reference-bad-type.idio
      *
      * symbol-direct-reference #t
      */
-    IDIO_USER_TYPE_ASSERT (symbol, symbol);
+    IDIO_USER_TYPE_ASSERT (symbol, sym);
 
-    return idio_module_direct_reference (symbol);
+    return idio_module_direct_reference (sym);
 }
 
 /*
@@ -1336,20 +1336,20 @@ IDIO idio_module_find_symbol (IDIO symbol, IDIO m_or_n)
     return idio_module_find_symbol_recurse (symbol, m_or_n, 0);
 }
 
-IDIO_DEFINE_PRIMITIVE1V_DS ("find-symbol", find_symbol, (IDIO symbol, IDIO args), "sym [module]", "\
-find evaluator details for ``symbol`` in ``module``		\n\
-or the current environment if no ``module`` supplied		\n\
+IDIO_DEFINE_PRIMITIVE1V_DS ("find-symbol", find_symbol, (IDIO sym, IDIO args), "sym [mod]", "\
+find evaluator details for symbol `sym` in module `mod`		\n\
+or the current environment if no `mod` supplied			\n\
 								\n\
 This does not recurse into imported modules.			\n\
 								\n\
-:param symbol: symbol to find					\n\
-:type symbol: symbol						\n\
+:param sym: symbol to find					\n\
+:type sym: symbol						\n\
 :param mod: module to search from				\n\
 :type mod: module or module name				\n\
-:return: evaluator details for ``symbol``			\n\
+:return: evaluator details for `sym`				\n\
 ")
 {
-    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (sym);
     IDIO_ASSERT (args);
 
     /*
@@ -1357,7 +1357,7 @@ This does not recurse into imported modules.			\n\
      *
      * find-symbol #t
      */
-    IDIO_USER_TYPE_ASSERT (symbol, symbol);
+    IDIO_USER_TYPE_ASSERT (symbol, sym);
 
     IDIO m_or_n = idio_thread_current_env ();
 
@@ -1369,7 +1369,7 @@ This does not recurse into imported modules.			\n\
 	}
     }
 
-    return idio_module_find_symbol_recurse (symbol, m_or_n, 0);
+    return idio_module_find_symbol_recurse (sym, m_or_n, 0);
 }
 
 /*
@@ -1634,19 +1634,19 @@ IDIO idio_module_env_symbol_value_recurse (IDIO symbol, IDIO args)
  * Recursively find starting at the given module (or the current
  * module if none given)
  */
-IDIO_DEFINE_PRIMITIVE1V_DS ("symbol-value-recurse", symbol_value_recurse, (IDIO symbol, IDIO args), "symbol [mod [default]]", "\
-recursively find ``symbol`` starting in ``mod`` and return its		\n\
-value or ``default`` if no value found					\n\
+IDIO_DEFINE_PRIMITIVE1V_DS ("symbol-value-recurse", symbol_value_recurse, (IDIO sym, IDIO args), "sym [mod [default]]", "\
+recursively find symbol `sym` starting in module `mod` and return its		\n\
+value or `default` if no value found					\n\
 									\n\
-:param symbol: symbol to find						\n\
-:type symbol: symbol							\n\
+:param sym: symbol to find						\n\
+:type sym: symbol							\n\
 :param mod: module to search from					\n\
 :type mod: module or module name					\n\
-:param default: value to return if ``symbol`` is not found		\n\
-:return: value of ``symbol``						\n\
+:param default: value to return if `sym` is not found		\n\
+:return: value of `sym`						\n\
 ")
 {
-    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (sym);
     IDIO_ASSERT (args);
 
     /*
@@ -1654,7 +1654,7 @@ value or ``default`` if no value found					\n\
      *
      * symbol-value-recurse #t
      */
-    IDIO_USER_TYPE_ASSERT (symbol, symbol);
+    IDIO_USER_TYPE_ASSERT (symbol, sym);
     /*
      * Test Case: n/a
      *
@@ -1669,7 +1669,7 @@ value or ``default`` if no value found					\n\
 	args = IDIO_PAIR_T (args);
     }
 
-    return idio_module_symbol_value_recurse (symbol, m_or_n, args);
+    return idio_module_symbol_value_recurse (sym, m_or_n, args);
 }
 
 IDIO idio_module_set_symbol (IDIO symbol, IDIO value, IDIO module)
@@ -1689,19 +1689,19 @@ IDIO idio_module_set_symbol (IDIO symbol, IDIO value, IDIO module)
  *
  * We need to use evaluate.idio more!
  */
-IDIO_DEFINE_PRIMITIVE3_DS ("set-symbol!", set_symbol, (IDIO symbol, IDIO v, IDIO mod), "symbol v mod", "\
-set the information associated with ``symbol`` in ``mod`` to ``v``	\n\
+IDIO_DEFINE_PRIMITIVE3_DS ("set-symbol!", set_symbol, (IDIO sym, IDIO v, IDIO mod), "sym v mod", "\
+set the information associated with symbol `sym` in module `mod` to `v`		\n\
 									\n\
-:param symbol: symbol to use						\n\
-:type symbol: symbol							\n\
+:param sym: symbol to use						\n\
+:type sym: symbol							\n\
 :param v: tuple of value information					\n\
 :type v: list								\n\
 :param mod: module to search from					\n\
 :type mod: module or module name					\n\
-:return: `symbol``							\n\
+:return: `sym`							\n\
 ")
 {
-    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (sym);
     IDIO_ASSERT (v);
     IDIO_ASSERT (mod);
 
@@ -1710,7 +1710,7 @@ set the information associated with ``symbol`` in ``mod`` to ``v``	\n\
      *
      * set-symbol! #t #t #t
      */
-    IDIO_USER_TYPE_ASSERT (symbol, symbol);
+    IDIO_USER_TYPE_ASSERT (symbol, sym);
     /*
      * Test Case: module-errors/set-symbol-bad-v-type.idio
      *
@@ -1718,7 +1718,7 @@ set the information associated with ``symbol`` in ``mod`` to ``v``	\n\
      */
     IDIO_USER_TYPE_ASSERT (list, v);
 
-    return idio_module_set_symbol (symbol, v, mod);
+    return idio_module_set_symbol (sym, v, mod);
 }
 
 IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
@@ -1862,19 +1862,19 @@ IDIO idio_module_env_set_symbol_value (IDIO symbol, IDIO value)
  *
  * We need to use evaluate.idio more!
  */
-IDIO_DEFINE_PRIMITIVE3_DS ("set-symbol-value!", set_symbol_value, (IDIO symbol, IDIO value, IDIO module), "sym val module", "\
-set the value associated with ``symbol`` in ``mod`` to ``val``		\n\
+IDIO_DEFINE_PRIMITIVE3_DS ("set-symbol-value!", set_symbol_value, (IDIO sym, IDIO value, IDIO module), "sym val mod", "\
+set the value associated with `sym` in `mod` to `val`			\n\
 									\n\
-:param symbol: symbol to use						\n\
-:type symbol: symbol							\n\
+:param sym: symbol to use						\n\
+:type sym: symbol							\n\
 :param val: value							\n\
 :type val: any								\n\
-:param module: module to locate `sym` in				\n\
+:param mod: module to locate `sym` in					\n\
 :type mod: module							\n\
-:return: `val``								\n\
+:return: `val`								\n\
 ")
 {
-    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (sym);
     IDIO_ASSERT (value);
     IDIO_ASSERT (module);
 
@@ -1883,7 +1883,7 @@ set the value associated with ``symbol`` in ``mod`` to ``val``		\n\
      *
      * set-symbol-value! #t #t #t
      */
-    IDIO_USER_TYPE_ASSERT (symbol, symbol);
+    IDIO_USER_TYPE_ASSERT (symbol, sym);
     /*
      * Test Case: module-errors/set-symbol-value-bad-module-type.idio
      *
@@ -1891,7 +1891,7 @@ set the value associated with ``symbol`` in ``mod`` to ``val``		\n\
      */
     IDIO_USER_TYPE_ASSERT (module, module);
 
-    return idio_module_set_symbol_value (symbol, value, module);
+    return idio_module_set_symbol_value (sym, value, module);
 }
 
 IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO module)

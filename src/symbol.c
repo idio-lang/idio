@@ -481,12 +481,12 @@ IDIO idio_gensym (char const *pref_prefix, size_t const blen)
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("gensym", gensym, (IDIO args), "[prefix]", "\
 generate a new *unique* symbol using `prefix` (if	\n\
-supplied or ``g``) followed by ``/``			\n\
+supplied or `g`) followed by `/`			\n\
 							\n\
 Such *gensyms* are not guaranteed to be unique if saved.\n\
 							\n\
 :param prefix: (optional) prefix string		\n\
-:type prefix: string or symbol			\n\
+:type prefix: string or symbol, optional	\n\
 						\n\
 :return: symbol					\n\
 ")
@@ -551,7 +551,7 @@ test if `o` is a symbol				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a symbol, #f otherwise	\n\
+:return: ``#t`` if `o` is a symbol, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -646,10 +646,10 @@ IDIO idio_ref_properties (IDIO o, IDIO args)
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("%properties", properties_ref, (IDIO o, IDIO args), "o [default]", "\
 return the properties table of `o` or		\n\
-``default`` if none exist			\n\
+`default` if none exist				\n\
 						\n\
 :param o: value to get properties for		\n\
-:param o: non-#n				\n\
+:param o: non-``#n``				\n\
 :param default: (optional) default value to return if no properties exist	\n\
 :param default: any				\n\
 						\n\
@@ -685,10 +685,10 @@ void idio_set_properties (IDIO o, IDIO properties)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("%set-properties!", properties_set, (IDIO o, IDIO properties), "o properties", "\
-set the properties table of `o` to ``properties``	\n\
+set the properties table of `o` to `properties`	\n\
 						\n\
 :param o: value to set properties for		\n\
-:param o: non-#n				\n\
+:param o: non-``#n``				\n\
 :param properties: properties table		\n\
 :param properties: hash table			\n\
 						\n\
@@ -818,10 +818,10 @@ IDIO idio_ref_property (IDIO o, IDIO property, IDIO args)
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("%property", get_property, (IDIO o, IDIO property, IDIO args), "o kw [default]", "\
 return the property `kw` for `o` or		\n\
-``default`` if no such property exists		\n\
+`default` if no such property exists		\n\
 						\n\
 :param o: value to get properties for		\n\
-:param o: non-#n				\n\
+:param o: non-``#n``				\n\
 :param kw: property				\n\
 :param kw: keyword				\n\
 :param default: (optional) default value to return if no such property exists	\n\
@@ -890,10 +890,10 @@ void idio_set_property (IDIO o, IDIO property, IDIO value)
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("%set-property!", set_property, (IDIO o, IDIO property, IDIO value), "o kw v", "\
-set the property `kw` for `o` to ``v``		\n\
+set the property `kw` for `o` to `v`		\n\
 						\n\
 :param o: value to get properties for		\n\
-:param o: non-#n				\n\
+:param o: non-``#n``				\n\
 :param kw: property				\n\
 :param kw: keyword				\n\
 :param v: value					\n\

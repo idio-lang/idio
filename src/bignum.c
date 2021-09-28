@@ -3920,7 +3920,7 @@ test if `o` is a bignum				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a bignum, #f otherwise	\n\
+:return: ``#t`` if `o` is a bignum, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -3940,7 +3940,7 @@ test if `n` is a real				\n\
 :param n: number to test			\n\
 :type n: bignum					\n\
 						\n\
-:return: #t if `n` is a real, #f otherwise	\n\
+:return: ``#t`` if `n` is a real, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (n);
@@ -3967,7 +3967,7 @@ test if `n` is exact				\n\
 :param n: number to test			\n\
 :type n: bignum	or fixnum			\n\
 						\n\
-:return: #t if `n` is exact, #f otherwise	\n\
+:return: ``#t`` if `n` is exact, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (n);
@@ -4010,7 +4010,7 @@ test if `n` is inexact				\n\
 :param n: number to test			\n\
 :type n: bignum	or fixnum			\n\
 						\n\
-:return: #t if `n` is inexact, #f otherwise	\n\
+:return: ``#t`` if `n` is inexact, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (n);
@@ -4038,7 +4038,7 @@ test if `n` is inexact				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("exact->inexact", exact2inexact, (IDIO n), "n", "\
-convert `n` to inexact				\n\
+return an inexact version of `n`		\n\
 						\n\
 :param n: number to convert			\n\
 :type n: bignum	or fixnum			\n\
@@ -4071,7 +4071,7 @@ convert `n` to inexact				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("inexact->exact", inexact2exact, (IDIO n), "n", "\
-convert `n` to exact				\n\
+return an exact version of `n`			\n\
 						\n\
 :param n: number to convert			\n\
 :type n: bignum	or fixnum			\n\
@@ -4188,7 +4188,8 @@ return the exponent of `n`			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("bignum-dump", bignum_dump, (IDIO n), "n", "\
-dump the bignum structure of `n`	\n\
+dump the bignum structure of `n` to	\n\
+*stderr*				\n\
 					\n\
 :param n: number to dump		\n\
 :type n: bignum				\n\

@@ -211,7 +211,7 @@ test if `o` is an pathname				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an pathname, #f otherwise	\n\
+:return: ``#t`` if `o` is an pathname, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);

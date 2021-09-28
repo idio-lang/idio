@@ -4285,7 +4285,7 @@ IDIO idio_read_expr (IDIO handle)
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("read-number", read_number, (IDIO src, IDIO args), "src [radix]", "\
-read a number from ``src``				\n\
+read a number from `src`				\n\
 							\n\
 :param str: source to read from				\n\
 :type str: handle or string				\n\

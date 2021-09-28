@@ -8,6 +8,6 @@ Numbers in :lname:`Idio` are either "small" integer :ref:`fixnums
 which can be integers, floating point numbers and support a notion of
 exactness.
 
-You can also use the :lname:`C` base types, ``char``, ``int``,
+You can also use the :lname:`C` base types, ``C/char``, ``C/int``,
 etc. and supported ``typedef``\ s thereof, although they are usually
-used within the :ref:`C Module`.
+used within the :ref:`libc Module`.

@@ -51,7 +51,7 @@ which creates a function called ``foo`` which takes two parameters,
 ``a`` and ``b``, and performs some addition on them.
 
 Alternatively (and secretly what ``define`` does under the hood) you
-can create an anonymous function *value* with the special form
+can create an anonymous *function value* with the special form
 ``function``:
 
 .. code-block:: idio
@@ -71,8 +71,21 @@ In practice what ``define`` is doing is:
      a + b
    })
 
-with ``foo`` now available to be used in some way.  It could be passed
-around as an argument or invoked:
+with ``foo`` now available to be used in some way.
+
+Notice the extra set of parentheses around the elements of the
+anonymous function.  Much like you might parenthesise a sub-expression
+in arithmetic, say, ``5 * (1 + 2)``, the parentheses force the
+evaluation of the anonymous function to be a *function value*, hence
+the statement is more like:
+
+.. code-block:: idio
+
+   define foo {function-value}
+
+
+``foo``, or, rather, the function value that ``foo`` is referencing,
+could be passed around as an argument or invoked:
 
 .. code-block:: idio
 
@@ -85,7 +98,7 @@ Special Forms
 
 Much like primitives, special forms exist only in the evaluator and
 cannot be extended.  They are also invoked differently.  Rather than
-"evaluate" each argument and pass the evaluated result to the special
+"evaluate" each argument and pass the evaluated values to the special
 form, the arguments are passed verbatim: numbers, strings, lists,
 etc..
 

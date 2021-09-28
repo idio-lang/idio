@@ -1,17 +1,8 @@
 (rst "file-handles-intro" 0)
 
-(document Idio input-file-handle?)
-
-(document Idio open-input-file)
-(document Idio open-output-file)
-
-(document Idio delete-file)
-(document Idio file-handle-fd)
 (document Idio file-handle?)
-
-(document Idio open-file)
-(document Idio open-file-from-fd)
-(document Idio open-input-file-from-fd)
-(document Idio open-output-file-from-fd)
+(document Idio input-file-handle?)
 (document Idio output-file-handle?)
+
+(document Idio file-handle-fd)
 

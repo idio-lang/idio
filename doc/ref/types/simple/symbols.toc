@@ -1,6 +1,9 @@
 (rst "symbols-intro" 0)
 
 (document Idio symbol?)
+
 (document Idio gensym)
-(document Idio symbol->string)
+(document Idio string->symbol)
+
 (document Idio symbols)
+

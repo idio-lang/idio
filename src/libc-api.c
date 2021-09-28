@@ -2274,14 +2274,15 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-rusage-as-string", libc_struct_rusage_as_stri
 
 IDIO_DEFINE_PRIMITIVE2_DS ("write", libc_write, (IDIO fd, IDIO str), "fd str", "\
 in C, write (fd, str)						\n\
-a wrapper to libc write (2)					\n\
+a wrapper to libc :manpage:`write(2)`				\n\
 								\n\
 :param fd: file descriptor					\n\
 :type fd: C/int							\n\
 :param str: string						\n\
 :type str: string						\n\
-:return: number of bytes written or raises ^system-error	\n\
+:return: number of bytes written				\n\
 :rtype: libc/ssize_t						\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -2325,26 +2326,32 @@ a wrapper to libc write (2)					\n\
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("waitpid", libc_waitpid, (IDIO pid, IDIO args), "pid [options]", "\
 in C, waitpid (pid, statusp, options)				\n\
-a wrapper to libc waitpid(2)					\n\
+a wrapper to libc :manpage:`waitpid(2)`				\n\
 								\n\
 :param pid: process ID						\n\
 :type pid: libc/pid_t						\n\
 :param options: see below					\n\
 :type options: C/int						\n\
-:return: list of (pid_t, statusp) or raises ^system-error	\n\
+:return: list of (pid_t, statusp)				\n\
 :rtype: list							\n\
+:raises ^system-error:						\n\
 								\n\
-WAIT_ANY is defined as -1 in place of ``pid``.			\n\
+``libc/WAIT_ANY`` is defined as -1 for use as `pid`.		\n\
 								\n\
 The following options are defined:				\n\
-WNOHANG								\n\
-WUNTRACED							\n\
+``libc/WNOHANG``						\n\
+``libc/WUNTRACED``						\n\
 								\n\
 Options will be IORed together					\n\
 								\n\
-``statusp`` is C/pointer to a C ``int *``.  See ``WIFEXITED``,	\n\
-``WEXITSTATUS``, ``WIFSIGNALLED``, ``WTERMSIG``, ``WIFSTOPPED``	\n\
-for functions to manipulate ``statusp``.			\n\
+`statusp` is a `C/pointer` to a C ``int *``.			\n\
+								\n\
+.. seealso:: :ref:`WIFEXITED <libc/WIFEXITED>`,	\n\
+	:ref:`WEXITSTATUS <libc/WEXITSTATUS>`,	\n\
+	:ref:`WIFSIGNALED <libc/WIFSIGNALED>`,	\n\
+	:ref:`WTERMSIG <libc/WTERMSIG>`,	\n\
+	:ref:`WIFSTOPPED <libc/WIFSTOPPED>`	\n\
+	for functions to manipulate `statusp`.	\n\
 ")
 {
     IDIO_ASSERT (pid);
@@ -2423,12 +2430,14 @@ for functions to manipulate ``statusp``.			\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("unlink", libc_unlink, (IDIO pathname), "pathname", "\
 in C, unlink (pathname)				\n\
-a wrapper to libc unlink(2)			\n\
+a wrapper to libc :manpage:`unlink(2)`		\n\
 						\n\
 :param pathname: filename to unlink		\n\
 :type pathname: string				\n\
-:return: 0 or raises ^system-error		\n\
+:return: 0					\n\
 :rtype: C/int					\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:				\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -2473,17 +2482,14 @@ a wrapper to libc unlink(2)			\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("uname", libc_uname, (void), "", "\
 in C, uname (utsnamep)						\n\
-a wrapper to libc uname(3)					\n\
+a wrapper to libc :manpage:`uname(3)`				\n\
 								\n\
-:return: struct-utsname or raises ^system-error			\n\
+:return: struct-utsname						\n\
 :rtype: C/pointer						\n\
+:raises ^system-error:						\n\
 								\n\
 Not strictly useful at the moment.  You might want to use	\n\
-``libc/idio-uname`` such as:					\n\
-								\n\
-libc/idio-uname.nodename					\n\
-								\n\
-instead.							\n\
+:ref:`libc/idio-uname <libc/idio-uname>` instead.		\n\
 ")
 {
     struct utsname *utsnamep = idio_alloc (sizeof (struct utsname));
@@ -2504,17 +2510,18 @@ instead.							\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("times", libc_times, (void), "", "\
 in C: times ()							\n\
-a wrapper to libc times(3)					\n\
+a wrapper to libc :manpage:`times(3)`				\n\
 								\n\
-:return: (clock_t, struct-tms) or raises ^system-error		\n\
+:return: (clock_t, struct-tms)					\n\
 :rtype: list							\n\
+:raises ^system-error:						\n\
 								\n\
-times(3) is complicated because we need to return the struct tms\n\
+:manpage:`times(3)` is complicated because we need to return the struct tms\n\
 that the user would have passed in as a pointer and the clock_t,\n\
-elapsed real time, that times(3) returns.			\n\
+elapsed real time, that :manpage:`times(3)` returns.		\n\
 								\n\
-All fields are in clock ticks for which sysconf(_SC_CLK_TCK) is	\n\
-available for reference as the exported symbol CLK_TCK.		\n\
+All fields are in clock ticks for which ``sysconf(_SC_CLK_TCK)`` is	\n\
+available for reference as the exported symbol :ref:`CLK_TCK <libc/CLK_TCK>`.	\n\
 ")
 {
     struct tms* tmsp = idio_alloc (sizeof (struct tms));
@@ -2537,14 +2544,15 @@ available for reference as the exported symbol CLK_TCK.		\n\
 
 IDIO_DEFINE_PRIMITIVE2_DS ("tcsetpgrp", libc_tcsetpgrp, (IDIO fd, IDIO pgrp), "fd pgrp", "\
 in C, tcsetpgrp (fd, pgrp)					\n\
-a wrapper to libc tcsetpgrp(3)					\n\
+a wrapper to libc :manpage:`tcsetpgrp(3)`			\n\
 								\n\
 :param fd: file descriptor					\n\
 :type fd: C/int							\n\
 :param pgrp: PGID						\n\
 :type pgrp: libc/pid_t						\n\
-:return: 0 or raises ^system-error				\n\
+:return: 0							\n\
 :rtype: C/int							\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -2582,7 +2590,7 @@ a wrapper to libc tcsetpgrp(3)					\n\
 
 IDIO_DEFINE_PRIMITIVE3_DS ("tcsetattr", libc_tcsetattr, (IDIO fd, IDIO options, IDIO termios), "fd options termios", "\
 in C, tcsetattr (fd, options, termios)				\n\
-a wrapper to libc tcsetattr(3)					\n\
+a wrapper to libc :manpage:`tcsetattr(3)`			\n\
 								\n\
 :param fd: file descriptor					\n\
 :type fd: C/int							\n\
@@ -2590,14 +2598,15 @@ a wrapper to libc tcsetattr(3)					\n\
 :type options: C/int						\n\
 :param termios: struct termios					\n\
 :type termios: C/pointer					\n\
-:return: 0 or raises ^system-error				\n\
+:return: 0							\n\
 :rtype: C/int							\n\
+:raises ^system-error:						\n\
 								\n\
 The following options are defined:				\n\
 TCSADRAIN							\n\
 TCSAFLUSH							\n\
 								\n\
-See ``tcgetattr`` for obtaining a struct termios.		\n\
+.. seealso:: :ref:`tcgetattr <libc/tcgetattr>` for obtaining a struct termios.	\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -2648,12 +2657,13 @@ See ``tcgetattr`` for obtaining a struct termios.		\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("tcgetpgrp", libc_tcgetpgrp, (IDIO fd), "fd", "\
 in C, tcgetpgrp (fd)						\n\
-a wrapper to libc tcgetpgrp(3)					\n\
+a wrapper to libc :manpage:`tcgetpgrp(3)`			\n\
 								\n\
 :param fd: file descriptor					\n\
 :type fd: C/int							\n\
-:return: PID or raises ^system-error				\n\
+:return: PID							\n\
 :rtype: libc/pid_t						\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -2684,12 +2694,13 @@ a wrapper to libc tcgetpgrp(3)					\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("tcgetattr", libc_tcgetattr, (IDIO fd), "fd", "\
 in C, tcgetattr (fd, termiosp)					\n\
-a wrapper to libc tcgetattr(3)					\n\
+a wrapper to libc :manpage:`tcgetattr(3)`			\n\
 								\n\
 :param fd: file descriptor					\n\
 :type fd: C/int							\n\
-:return: struct termios or raises ^system-error			\n\
+:return: struct termios						\n\
 :rtype: C/pointer						\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -2722,7 +2733,7 @@ a wrapper to libc tcgetattr(3)					\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("strsignal", libc_strsignal, (IDIO sig), "sig", "\
 in C, strsignal (sig)						\n\
-a wrapper to libc strsignal(3)					\n\
+a wrapper to libc :manpage:`strsignal(3)`			\n\
 								\n\
 :param sig: signal number to describe				\n\
 :type sig: C/int						\n\
@@ -2759,7 +2770,7 @@ signal number.							\n\
 
 IDIO_DEFINE_PRIMITIVE2_DS ("strptime", libc_strptime, (IDIO s, IDIO format), "s format", "\
 in C: strptime (s, format)		\n\
-a wrapper to libc strptime(3)		\n\
+a wrapper to libc :manpage:`strptime(3)`\n\
 					\n\
 :param s: time string			\n\
 :type s: string				\n\
@@ -2767,6 +2778,7 @@ a wrapper to libc strptime(3)		\n\
 :type format: string			\n\
 :return:				\n\
 :rtype: C struct tm			\n\
+:raises ^rt-libc-format-error: if `s` or `format` contain an ASCII NUL	\n\
 ")
 {
     IDIO_ASSERT (s);
@@ -2838,7 +2850,7 @@ a wrapper to libc strptime(3)		\n\
 
 IDIO_DEFINE_PRIMITIVE2_DS ("strftime", libc_strftime, (IDIO format, IDIO tm), "format tm", "\
 in C: strftime (format, tm)		\n\
-a wrapper to libc strftime(3)		\n\
+a wrapper to libc :manpage:`strftime(3)`\n\
 					\n\
 :param format: 				\n\
 :type format: string			\n\
@@ -2846,6 +2858,7 @@ a wrapper to libc strftime(3)		\n\
 :type tm: C struct tm			\n\
 :return:				\n\
 :rtype: string				\n\
+:raises ^rt-libc-format-error: if `format` contains an ASCII NUL	\n\
 					\n\
 Internally, libc/BUFSIZ is used for the	\n\
 maximum string size			\n\
@@ -2908,7 +2921,7 @@ maximum string size			\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("strerror", libc_strerror, (IDIO errnum), "errnum", "\
 in C, strerror (errnum)						\n\
-a wrapper to libc strerror(3)					\n\
+a wrapper to libc :manpage:`strerror(3)`			\n\
 								\n\
 :param errnum: error code to describe				\n\
 :type errnum: C/int						\n\
@@ -2952,12 +2965,14 @@ a wrapper to libc strerror(3)					\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("stat", libc_stat, (IDIO pathname), "pathname", "\
 in C: stat (pathname)				\n\
-a wrapper to libc stat(2)			\n\
+a wrapper to libc :manpage:`stat(2)`		\n\
 						\n\
 :param pathname:				\n\
 :type pathname: C/pointer			\n\
-:return: struct-stat or raises ^system-error	\n\
+:return: struct-stat				\n\
 :rtype: struct instance				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:				\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -3001,7 +3016,7 @@ a wrapper to libc stat(2)			\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("sleep", libc_sleep, (IDIO seconds), "seconds", "\
 in C, sleep (seconds)						\n\
-a wrapper to libc sleep(3)					\n\
+a wrapper to libc :manpage:`sleep(3)`				\n\
 								\n\
 :param seconds: seconds to sleep				\n\
 :type seconds: unsigned fixnum or C/uint			\n\
@@ -3033,14 +3048,15 @@ a wrapper to libc sleep(3)					\n\
 
 IDIO_DEFINE_PRIMITIVE2_DS ("signal", libc_signal, (IDIO sig, IDIO handler), "sig handler", "\
 in C, signal (sig, handler)					\n\
-a wrapper to libc signal(2)					\n\
+a wrapper to libc :manpage:`signal(2)`				\n\
 								\n\
 :param sig: signal						\n\
 :type sig: C/int						\n\
-:param handler: signal disposition					\n\
-:type handler: C/pointer						\n\
-:return: previous disposition or raises ^system-error		\n\
+:param handler: signal disposition				\n\
+:type handler: C/pointer					\n\
+:return: previous disposition					\n\
 :rtype: C/pointer						\n\
+:raises ^system-error:						\n\
 								\n\
 The following dispositions are defined:				\n\
 SIG_IGN								\n\
@@ -3084,19 +3100,20 @@ SIG_DFL								\n\
 
 IDIO_DEFINE_PRIMITIVE2_DS ("setrlimit", libc_setrlimit, (IDIO resource, IDIO rlim), "resource rlim", "\
 in C, setrlimit (resource, rlim)				\n\
-a wrapper to libc setrlimit (2)					\n\
+a wrapper to libc :manpage:`setrlimit(2)`			\n\
 								\n\
 :param resource: resource, see below				\n\
 :type resource: C/int						\n\
 :param rlim: struct-rlimit					\n\
 :type rlim: struct instance					\n\
-:return: 0 or raises ^system-error				\n\
+:return: 0							\n\
 :rtype: C/int							\n\
+:raises ^system-error:						\n\
 								\n\
 The resource names follow C conventions such as ``RLIMIT_AS``	\n\
 and ``RLIMIT_NOFILE``.						\n\
 								\n\
-See ``getrlimit`` to obtain a struct-rlimit.			\n\
+.. seealso:: :ref:`getrlimit <libc/getrlimit>` to obtain a `struct-rlimit`.	\n\
 ")
 {
     IDIO_ASSERT (resource);
@@ -3147,14 +3164,15 @@ See ``getrlimit`` to obtain a struct-rlimit.			\n\
 
 IDIO_DEFINE_PRIMITIVE2_DS ("setpgid", libc_setpgid, (IDIO pid, IDIO pgid), "pid pgid", "\
 in C, setpgid (pid, pgid)					\n\
-a wrapper to libc setpgid(2)					\n\
+a wrapper to libc :manpage:`setpgid(2)`				\n\
 								\n\
 :param pid: process ID						\n\
 :type pid: libC/pid_t						\n\
 :param pgid: PGID						\n\
 :type pgid: libc/pid_t						\n\
-:return: 0 or raises ^system-error				\n\
+:return: 0							\n\
 :rtype: C/int							\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (pid);
@@ -3202,8 +3220,8 @@ a wrapper to libc setpgid(2)					\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("getpgid", libc_getpgid, (IDIO pid), "pid", "\
-in C: getpgid (pid)		\n\
-a wrapper to libc getpgid(2)		\n\
+in C: getpgid (pid)			\n\
+a wrapper to libc :manpage:`getpgid(2)`	\n\
 					\n\
 :param pid: 				\n\
 :type pid: libc/pid_t			\n\
@@ -3237,12 +3255,14 @@ a wrapper to libc getpgid(2)		\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("rmdir", libc_rmdir, (IDIO pathname), "pathname", "\
 in C, rmdir (pathname)						\n\
-a wrapper to libc rmdir(2)					\n\
+a wrapper to libc :manpage:`rmdir(2)`				\n\
 								\n\
 :param pathname: directory to rmdir				\n\
 :type pathname: string						\n\
-:return: 0 or raises ^system-error				\n\
+:return: 0							\n\
 :rtype: C/int							\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -3299,7 +3319,7 @@ a wrapper to libc rmdir(2)					\n\
  */
 IDIO_DEFINE_PRIMITIVE1V_DS ("read", libc_read, (IDIO fd, IDIO args), "fd [count]", "\
 in C, read (fd[, count])					\n\
-a wrapper to libc read(2)					\n\
+a wrapper to libc :manpage:`read(2)`				\n\
 								\n\
 :param fd: file descriptor					\n\
 :type fd: C/int							\n\
@@ -3310,9 +3330,9 @@ a wrapper to libc read(2)					\n\
 								\n\
 count defaults to BUFSIZ					\n\
 								\n\
-If read(2) returned 0 then this code returns #<eof>.		\n\
+If :manpage:`read(2)` returned 0 then this code returns ``#<eof>``.	\n\
 								\n\
-If read(2) indicated EAGAIN then this code returns #f.		\n\
+If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -3385,13 +3405,15 @@ If read(2) indicated EAGAIN then this code returns #f.		\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("pipe", libc_pipe, (void), "", "\
 in C, pipe (pipefd)						\n\
-a wrapper to libc pipe(2)					\n\
+a wrapper to libc :manpage:`pipe(2)`				\n\
 								\n\
-:return: pointer to pipe array or raises ^system-error		\n\
+:return: pointer to pipe array					\n\
 :rtype: C/pointer						\n\
+:raises ^system-error:						\n\
 								\n\
-See ``pipe-reader`` and ``pipe-writer`` for accessors to	\n\
-the pipe array.							\n\
+.. seealso:: :ref:`pipe-reader <libc/pipe-reader>` and		\n\
+	:ref:`pipe-writer <libc/pipe-writer>` for accessors to	\n\
+	the pipe array.						\n\
 ")
 {
     int *pipefd = idio_alloc (2 * sizeof (int));
@@ -3418,7 +3440,7 @@ the pipe array.							\n\
  */
 IDIO_DEFINE_PRIMITIVE1_DS ("nanosleep", libc_nanosleep, (IDIO req), "req", "\
 in C: nanosleep (req, rem)		\n\
-a wrapper to libc nanosleep(2)		\n\
+a wrapper to libc :manpage:`nanosleep(2)`	\n\
 					\n\
 :param req: 				\n\
 :type req: C struct timespec or a list	\n\
@@ -3428,9 +3450,9 @@ a wrapper to libc nanosleep(2)		\n\
 ``EINTR`` will return (#f rem)		\n\
 otherwise return (#t rem)		\n\
 					\n\
-``req`` can be a list of (sec [nsec])	\n\
-where ``sec`` can be a libc/time_t|fixnum|bignum	\n\
-and ``nsec`` can be a C/long|fixnum|bignum	\n\
+`req` can be a list of (sec [nsec])	\n\
+where `sec` can be a :ref:`libc/time_t <libc/time_t>` | fixnum | bignum	\n\
+and `nsec` can be a ``C/long`` | fixnum | bignum	\n\
 ")
 {
     IDIO_ASSERT (req);
@@ -3574,7 +3596,7 @@ and ``nsec`` can be a C/long|fixnum|bignum	\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("mktime", libc_mktime, (IDIO tm), "tm", "\
 in C: mktime (tm)		\n\
-a wrapper to libc mktime(3)		\n\
+a wrapper to libc :manpage:`mktime(3)`	\n\
 					\n\
 :param tm: 				\n\
 :type tm: C struct tm			\n\
@@ -3614,13 +3636,15 @@ a wrapper to libc mktime(3)		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("mkstemp", libc_mkstemp, (IDIO template), "template", "\
-in C, mkstemp (template)						\n\
-a wrapper to libc mkstemp(3)					\n\
+in C, mkstemp (template)					\n\
+a wrapper to libc :manpage:`mkstemp(3)`				\n\
 								\n\
 :param template: template template				\n\
 :type template: string						\n\
-:return: a list of (file descriptor and new filename) or raises ^system-error\n\
+:return: a list of (file descriptor and new filename)		\n\
 :rtype: list (C/int, string)					\n\
+:raises ^rt-libc-format-error: if `template` contains an ASCII NUL	\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (template);
@@ -3693,6 +3717,7 @@ a wrapper to libc mkfifo()		\n\
 :type mode: libc/mode_t			\n\
 :return:				\n\
 :rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `path` contains an ASCII NUL	\n\
 ")
 {
     IDIO_ASSERT (path);
@@ -3739,13 +3764,15 @@ a wrapper to libc mkfifo()		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("mkdtemp", libc_mkdtemp, (IDIO template), "template", "\
-in C, mkdtemp (template)						\n\
-a wrapper to libc mkdtemp(3)					\n\
+in C, mkdtemp (template)					\n\
+a wrapper to libc :manpage:`mkdtemp(3)`				\n\
 								\n\
 :param template: directory template				\n\
 :type template: string						\n\
-:return: modified template or raises ^system-error		\n\
+:return: modified template					\n\
 :rtype: string							\n\
+:raises ^rt-libc-format-error: if `template` contains an ASCII NUL	\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (template);
@@ -3802,14 +3829,16 @@ a wrapper to libc mkdtemp(3)					\n\
 
 IDIO_DEFINE_PRIMITIVE2_DS ("mkdir", libc_mkdir, (IDIO pathname, IDIO mode), "pathname mode", "\
 in C, mkdir (pathname, mode)					\n\
-a wrapper to libc mkdir(2)					\n\
+a wrapper to libc :manpage:`mkdir(2)`				\n\
 								\n\
 :param pathname: file name					\n\
 :type pathname: string						\n\
 :param mode: directory mode					\n\
 :type mode: libc/mode_t						\n\
-:return: 0 or raises ^system-error				\n\
+:return: 0							\n\
 :rtype: C/int							\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -3865,12 +3894,14 @@ a wrapper to libc mkdir(2)					\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("lstat", libc_lstat, (IDIO pathname), "pathname", "\
 in C: lstat (pathname)				\n\
-a wrapper to libc lstat(2)			\n\
+a wrapper to libc :manpage:`lstat(2)`		\n\
 						\n\
 :param pathname:				\n\
 :type pathname: C/pointer			\n\
-:return: struct-stat or raises ^system-error	\n\
+:return: struct-stat				\n\
 :rtype: struct instance				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:				\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -3960,7 +3991,7 @@ a wrapper to libc killpg()		\n\
 
 IDIO_DEFINE_PRIMITIVE2_DS ("kill", libc_kill, (IDIO pid, IDIO sig), "pid sig", "\
 in C, kill (pid, sig)						\n\
-a wrapper to libc kill(2)					\n\
+a wrapper to libc :manpage:`kill(2)`				\n\
 								\n\
 :param pid: process ID						\n\
 :type pid: libc/pid_t						\n\
@@ -4006,7 +4037,7 @@ a wrapper to libc kill(2)					\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("isatty", libc_isatty, (IDIO fd), "fd", "\
 in C, isatty (fd)						\n\
-a wrapper to libc isatty(3)					\n\
+a wrapper to libc :manpage:`isatty(3)`				\n\
 								\n\
 :param fd: file descriptor					\n\
 :type fd: C/int							\n\
@@ -4045,14 +4076,14 @@ a wrapper to libc isatty(3)					\n\
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("gmtime", libc_gmtime, (IDIO args), "[t]", "\
 in C: gmtime (t)			\n\
-a wrapper to libc gmtime(3)		\n\
+a wrapper to libc :manpage:`gmtime(3)`	\n\
 					\n\
 :param t: time in seconds since epoch	\n\
 :type t: libc/time_t			\n\
 :return:				\n\
 :rtype: C struct tm			\n\
 					\n\
-``t`` defaults to the result of time(2)	\n\
+`t` defaults to the result of :manpage:`time(2)`	\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -4098,7 +4129,7 @@ a wrapper to libc gmtime(3)		\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("gettimeofday", libc_gettimeofday, (void), "", "\
 in C, gettimeofday ()						\n\
-a wrapper to libc gettimeofday (2)				\n\
+a wrapper to libc :manpage:`gettimeofday(2)`			\n\
 								\n\
 :return: struct-timeval or raises ^system-error			\n\
 :rtype: struct-timeval						\n\
@@ -4131,7 +4162,7 @@ The struct timezone parameter is not used.			\n\
  */
 IDIO_DEFINE_PRIMITIVE1_DS ("getsid", libc_getsid, (IDIO pid), "pid", "\
 in C, getsid (pid)						\n\
-a wrapper to libc getsid(2)					\n\
+a wrapper to libc :manpage:`getsid(2)`				\n\
 								\n\
 :param pid: getsid pid						\n\
 :type pid: libc/pid_t						\n\
@@ -4174,7 +4205,7 @@ a wrapper to libc getsid(2)					\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("getrusage", libc_getrusage, (IDIO who), "who", "\
 in C, getrusage (who, rusagep)					\n\
-a wrapper to libc getrusage(2)					\n\
+a wrapper to libc :manpage:`getrusage(2)`			\n\
 								\n\
 :param who: who, see below					\n\
 :type who: C/int						\n\
@@ -4225,7 +4256,7 @@ The parameter `who` refers to RUSAGE_SELF or RUSAGE_CHILDREN	\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("getrlimit", libc_getrlimit, (IDIO resource), "resource", "\
 in C, getrlimit (resource)					\n\
-a wrapper to libc getrlimit (2)					\n\
+a wrapper to libc :manpage:`getrlimit(2)`			\n\
 								\n\
 :param resource: resource, see below				\n\
 :type resource: C/int						\n\
@@ -4267,7 +4298,7 @@ and ``RLIMIT_NOFILE``.						\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getppid", libc_getppid, (void), "", "\
 in C, getppid ()						\n\
-a wrapper to libc getppid(2)					\n\
+a wrapper to libc :manpage:`getppid(2)`				\n\
 								\n\
 :return: PPID or raises ^system-error				\n\
 :rtype: libc/pid_t						\n\
@@ -4281,7 +4312,7 @@ a wrapper to libc getppid(2)					\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getpid", libc_getpid, (void), "", "\
 in C, getpid ()							\n\
-a wrapper to libc getpid(2)					\n\
+a wrapper to libc :manpage:`getpid(2)`				\n\
 								\n\
 :return: PID or raises ^system-error				\n\
 :rtype: libc/pid_t						\n\
@@ -4295,7 +4326,7 @@ a wrapper to libc getpid(2)					\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getpgrp", libc_getpgrp, (void), "", "\
 in C, getpgrp ()						\n\
-a wrapper to libc getpgrp(2)					\n\
+a wrapper to libc :manpage:`getpgrp(2)`				\n\
 								\n\
 :return: PGID or raises ^system-error				\n\
 :rtype: libc/pid_t						\n\
@@ -4320,7 +4351,7 @@ a wrapper to libc getpgrp(2)					\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getcwd", libc_getcwd, (void), "", "\
 in C, getcwd (buf, size)					\n\
-a wrapper to libc getcwd(3)					\n\
+a wrapper to libc :manpage:`getcwd(3)`				\n\
 								\n\
 :return: CWD or raises ^system-error				\n\
 :rtype: string							\n\
@@ -4401,7 +4432,7 @@ a wrapper to libc getcwd(3)					\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("fstat", libc_fstat, (IDIO fd), "fd", "\
 in C: fstat (fd)				\n\
-a wrapper to libc fstat(2)			\n\
+a wrapper to libc :manpage:`fstat(2)`		\n\
 						\n\
 :param fd:					\n\
 :type fd: C/int					\n\
@@ -4442,7 +4473,7 @@ a wrapper to libc fstat(2)			\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("fork", libc_fork, (void), "", "\
 in C, fork ()							\n\
-a wrapper to libc fork(2)					\n\
+a wrapper to libc :manpage:`fork(2)`				\n\
 								\n\
 :return: 0 or PID						\n\
 :rtype: libc/pid_t						\n\
@@ -4473,7 +4504,7 @@ a wrapper to libc fork(2)					\n\
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("fcntl", libc_fcntl, (IDIO fd, IDIO cmd, IDIO args), "fd cmd [args]", "\
 in C, fcntl (fd, cmd[, args])					\n\
-a wrapper to libc fcntl(2)					\n\
+a wrapper to libc :manpage:`fcntl(2)`				\n\
 								\n\
 :param fd: file descriptor					\n\
 :type fd: C/int							\n\
@@ -4481,8 +4512,9 @@ a wrapper to libc fcntl(2)					\n\
 :type cmd: C/int						\n\
 :param args: fcntl command args					\n\
 :type args: list						\n\
-:return: appropriate value or raises ^system-error		\n\
+:return: appropriate value					\n\
 :rtype: C/int							\n\
+:raises ^system-error:						\n\
 								\n\
 Supported commands include:					\n\
 F_DUPFD								\n\
@@ -4597,14 +4629,15 @@ F_SETFL								\n\
 
 IDIO_DEFINE_PRIMITIVE2_DS ("dup2", libc_dup2, (IDIO oldfd, IDIO newfd), "oldfd newfd", "\
 in C, dup2 (oldfd, newfd)					\n\
-a wrapper to libc dup2(2)					\n\
+a wrapper to libc :manpage:`dup2(2)`				\n\
 								\n\
 :param oldfd: file descriptor					\n\
 :type oldfd: C/int						\n\
 :param newfd: file descriptor					\n\
 :type newfd: C/int						\n\
-:return: new fd or raises ^system-error				\n\
+:return: new fd							\n\
 :rtype: C/int							\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (oldfd);
@@ -4637,12 +4670,13 @@ a wrapper to libc dup2(2)					\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("dup", libc_dup, (IDIO oldfd), "oldfd", "\
 in C, dup (oldfd)						\n\
-a wrapper to libc dup(2)					\n\
+a wrapper to libc :manpage:`dup(2)`				\n\
 								\n\
 :param oldfd: file descriptor					\n\
 :type oldfd: C/int						\n\
-:return: new fd or raises ^system-error				\n\
+:return: new fd							\n\
 :rtype: C/int							\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (oldfd);
@@ -4671,14 +4705,14 @@ a wrapper to libc dup(2)					\n\
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("ctime", libc_ctime, (IDIO args), "[t]", "\
 in C: ctime (t)				\n\
-a wrapper to libc ctime(3)		\n\
+a wrapper to libc :manpage:`ctime(3)`	\n\
 					\n\
 :param t: time in seconds since epoch	\n\
 :type t: libc/time_t			\n\
 :return:				\n\
 :rtype: string				\n\
 					\n\
-``t`` defaults to the result of time(2)	\n\
+`t` defaults to the result of :manpage:`time(2)`	\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -4731,12 +4765,13 @@ a wrapper to libc ctime(3)		\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("close", libc_close, (IDIO fd), "fd", "\
 in C, close (fd)						\n\
-a wrapper to libc close(2)					\n\
+a wrapper to libc :manpage:`close(2)`				\n\
 								\n\
 :param fd: file descriptor					\n\
 :type fd: C/int							\n\
-:return: 0 or raises ^system-error				\n\
+:return: 0							\n\
 :rtype: C/int							\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -4770,12 +4805,14 @@ a wrapper to libc close(2)					\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("chdir", libc_chdir, (IDIO path), "path", "\
 in C, chdir (path)						\n\
-a wrapper to libc chdir(2)					\n\
+a wrapper to libc :manpage:`chdir(2)`				\n\
 								\n\
 :param path: directory name					\n\
 :type path: string						\n\
-:return: 0 or raises ^system-error				\n\
+:return: 0							\n\
 :rtype: C/int							\n\
+:raises ^rt-libc-format-error: if `path` contains an ASCII NUL	\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (path);
@@ -4820,7 +4857,7 @@ a wrapper to libc chdir(2)					\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("asctime", libc_asctime, (IDIO tm), "tm", "\
 in C: asctime (tm)			\n\
-a wrapper to libc asctime(3)		\n\
+a wrapper to libc :manpage:`asctime(3)`	\n\
 					\n\
 :param tm: 				\n\
 :type tm: C struct tm			\n\
@@ -4881,14 +4918,14 @@ a wrapper to libc asctime(3)		\n\
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("localtime", libc_localtime, (IDIO args), "[t]", "\
 in C: localtime (t)			\n\
-a wrapper to libc localtime(3)		\n\
+a wrapper to libc :manpage:`localtime(3)`	\n\
 					\n\
 :param t: time in seconds since epoch	\n\
 :type t: libc/time_t			\n\
 :return:				\n\
 :rtype: C struct tm			\n\
 					\n\
-``t`` defaults to the result of time(2)	\n\
+`t` defaults to the result of :manpage:`time(2)`	\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -4934,7 +4971,7 @@ a wrapper to libc localtime(3)		\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("time", libc_time, (void), "", "\
 in C: time ()				\n\
-a wrapper to libc time(2)		\n\
+a wrapper to libc :manpage:`time(2)`	\n\
 					\n\
 :return:				\n\
 :rtype: libc/time_t			\n\
@@ -4953,7 +4990,7 @@ a wrapper to libc time(2)		\n\
 
 IDIO_DEFINE_PRIMITIVE2_DS ("access", libc_access, (IDIO pathname, IDIO mode), "pathname mode", "\
 in C, access (pathname, mode)					\n\
-a wrapper to libc access(2)					\n\
+a wrapper to libc :manpage:`access(2)`				\n\
 								\n\
 :param pathname: file name					\n\
 :type pathname: string						\n\
@@ -4961,8 +4998,9 @@ a wrapper to libc access(2)					\n\
 :type mode: C/int						\n\
 :return: #t or #f						\n\
 :rtype: boolean							\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 								\n\
-Any non-zero value from access(2) returns #f,			\n\
+Any non-zero value from :manpage:`access(2)` returns #f,	\n\
 no ^system-error is raised.					\n\
 ")
 {

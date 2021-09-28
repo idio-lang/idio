@@ -183,7 +183,7 @@ test if `o` is an character			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an character, #f otherwise	\n\
+:return: ``#t`` if `o` is an character, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -219,7 +219,7 @@ test if `c` is alphabetic			\n\
 						\n\
 This implementation uses libc isalpha()		\n\
 						\n\
-:return: #t if `c` is an alphabetic character, #f otherwise	\n\
+:return: ``#t`` if `c` is an alphabetic character, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (c);
@@ -242,7 +242,7 @@ test if `c` is numeric			\n\
 						\n\
 This implementation uses libc isdigit()		\n\
 						\n\
-:return: #t if `c` is an numeric character, #f otherwise	\n\
+:return: ``#t`` if `c` is an numeric character, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (c);
@@ -265,7 +265,7 @@ test if `c` is whitespace			\n\
 						\n\
 This implementation uses libc isblank() and isspace()		\n\
 						\n\
-:return: #t if `c` is a whitespace character, #f otherwise	\n\
+:return: ``#t`` if `c` is a whitespace character, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (c);
@@ -326,7 +326,7 @@ test if `c` is lower case			\n\
 						\n\
 This implementation uses libc islower()		\n\
 						\n\
-:return: #t if `c` is a lower case character, #f otherwise	\n\
+:return: ``#t`` if `c` is a lower case character, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (c);
@@ -366,7 +366,7 @@ test if `c` is upper case			\n\
 						\n\
 This implementation uses libc isupper()		\n\
 						\n\
-:return: #t if `c` is a upper case character, #f otherwise	\n\
+:return: ``#t`` if `c` is a upper case character, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (c);
@@ -460,7 +460,7 @@ test if character arguments are sorted non-decreasing			\n\
 :param c2: char								\n\
 :param ...: chars							\n\
 									\n\
-:return: #t if arguments are sorted non-decreasing, #f otherwise	\n\
+:return: ``#t`` if arguments are sorted non-decreasing, ``#f`` otherwise	\n\
 "));
 
     fvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_character_module, char_lt_p);
@@ -473,7 +473,7 @@ test if character arguments are sorted increasing		\n\
 :param c2: char							\n\
 :param ...: chars						\n\
 								\n\
-:return: #t if arguments are sorted increasing, #f otherwise	\n\
+:return: ``#t`` if arguments are sorted increasing, ``#f`` otherwise	\n\
 "));
 
     fvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_character_module, char_eq_p);
@@ -486,7 +486,7 @@ test if character arguments are equal			\n\
 :param c2: char						\n\
 :param ...: chars					\n\
 							\n\
-:return: #t if arguments are equal, #f otherwise	\n\
+:return: ``#t`` if arguments are equal, ``#f`` otherwise	\n\
 "));
 
     fvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_character_module, char_ge_p);
@@ -499,7 +499,7 @@ test if character arguments are sorted non-increasing			\n\
 :param c2: char								\n\
 :param ...: chars							\n\
 									\n\
-:return: #t if arguments are sorted non-increasing, #f otherwise	\n\
+:return: ``#t`` if arguments are sorted non-increasing, ``#f`` otherwise	\n\
 "));
 
     fvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_character_module, char_gt_p);
@@ -512,7 +512,7 @@ test if character arguments are sorted decreasing		\n\
 :param c2: char							\n\
 :param ...: chars						\n\
 								\n\
-:return: #t if arguments are sorted decreasing, #f otherwise	\n\
+:return: ``#t`` if arguments are sorted decreasing, ``#f`` otherwise	\n\
 "));
 
     fvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_character_module, char_ci_le_p);
@@ -527,7 +527,7 @@ test if character arguments are sorted non-decreasing case-insensitively		\n\
 											\n\
 This implementation uses libc tolower()							\n\
 											\n\
-:return: #t if arguments are sorted non-decreasing case-insensitively, #f otherwise	\n\
+:return: ``#t`` if arguments are sorted non-decreasing case-insensitively, ``#f`` otherwise	\n\
 "));
 
     fvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_character_module, char_ci_lt_p);
@@ -542,7 +542,7 @@ test if character arguments are sorted increasing case-insensitively		\n\
 										\n\
 This implementation uses libc tolower()						\n\
 										\n\
-:return: #t if arguments are sorted increasing case-insensitively, #f otherwise	\n\
+:return: ``#t`` if arguments are sorted increasing case-insensitively, ``#f`` otherwise	\n\
 "));
 
     fvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_character_module, char_ci_eq_p);
@@ -557,7 +557,7 @@ test if character arguments are equal case-insensitively		\n\
 									\n\
 This implementation uses libc tolower()					\n\
 									\n\
-:return: #t if arguments are equal case-insensitively, #f otherwise	\n\
+:return: ``#t`` if arguments are equal case-insensitively, ``#f`` otherwise	\n\
 "));
 
     fvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_character_module, char_ci_ge_p);
@@ -572,7 +572,7 @@ test if character arguments are sorted non-increasing case-insensitively		\n\
 											\n\
 This implementation uses libc tolower()							\n\
 											\n\
-:return: #t if arguments are sorted non-increasing case-insensitively, #f otherwise	\n\
+:return: ``#t`` if arguments are sorted non-increasing case-insensitively, ``#f`` otherwise	\n\
 "));
 
     fvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_character_module, char_ci_gt_p);
@@ -587,7 +587,7 @@ test if character arguments are sorted decreasing case-insensitively		\n\
 										\n\
 This implementation uses libc tolower()						\n\
 										\n\
-:return: #t if arguments are sorted decreasing case-insensitively, #f otherwise	\n\
+:return: ``#t`` if arguments are sorted decreasing case-insensitively, ``#f`` otherwise	\n\
 "));
 }
 

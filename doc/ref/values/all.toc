@@ -26,8 +26,6 @@
 (document Idio ARGC)
 (document Idio ARGV)
 (document Idio ARGV0)
-(document Idio FIXNUM-MIN)
-(document Idio FIXNUM-MAX)
 (document Idio IDIO_BUILD_COMMIT)
 (document Idio IDIO_BUILD_DATE)
 (document Idio IDIO_BUILD_DESCRIBE)

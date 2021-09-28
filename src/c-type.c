@@ -140,7 +140,7 @@ test if `o` is an C/char				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/char, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/char, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -175,7 +175,7 @@ test if `o` is an C/schar				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/schar, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/schar, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -210,7 +210,7 @@ test if `o` is an C/uchar				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/uchar, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/uchar, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -245,7 +245,7 @@ test if `o` is an C/short				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/short, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/short, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -280,7 +280,7 @@ test if `o` is an C/ushort			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/ushort, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/ushort, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -315,7 +315,7 @@ test if `o` is an C/int				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/int, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/int, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -350,7 +350,7 @@ test if `o` is an C/uint			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/uint, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/uint, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -385,7 +385,7 @@ test if `o` is an C/long				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/long, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/long, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -420,7 +420,7 @@ test if `o` is an C/ulong			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/ulong, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/ulong, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -455,7 +455,7 @@ test if `o` is an C/longlong				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/longlong, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/longlong, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -490,7 +490,7 @@ test if `o` is an C/ulonglong			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/ulonglong, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/ulonglong, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -525,7 +525,7 @@ test if `o` is an C/float			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/float, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/float, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -560,7 +560,7 @@ test if `o` is an C/double			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/double, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/double, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -595,7 +595,7 @@ test if `o` is an C/longdouble			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/longdouble, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/longdouble, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -670,7 +670,7 @@ test if `o` is an C/pointer			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an C/pointer, #f otherwise	\n\
+:return: ``#t`` if `o` is an C/pointer, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);

@@ -5129,7 +5129,7 @@ test if `o` is an environ variable		\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an environ variable, #f otherwise	\n\
+:return: ``#t`` if `o` is an environ variable, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -5153,7 +5153,7 @@ test if `o` is a dynamic variable		\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a dynamic variable, #f otherwise	\n\
+:return: ``#t`` if `o` is a dynamic variable, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -5177,7 +5177,7 @@ test if `o` is a computed variable		\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a computed variable, #f otherwise	\n\
+:return: ``#t`` if `o` is a computed variable, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);

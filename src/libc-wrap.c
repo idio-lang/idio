@@ -234,8 +234,9 @@ tv1 + tv2							\n\
 :type tv1: C/pointer						\n\
 :param tv2: second timeval					\n\
 :type tv2: C/pointer						\n\
-:return: C struct timeval or raises ^system-error		\n\
+:return: C struct timeval					\n\
 :rtype: C/pointer						\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (tv1);
@@ -280,8 +281,9 @@ tv1 - tv2							\n\
 :type tv1: C/pointer						\n\
 :param tv2: second timeval					\n\
 :type tv2: C/pointer						\n\
-:return: C struct timeval or raises ^system-error		\n\
+:return: C struct timeval					\n\
 :rtype: C/pointer						\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (tv1);
@@ -390,7 +392,7 @@ char *idio_getcwd (char const *func, char *buf, size_t const size)
 
 IDIO_DEFINE_PRIMITIVE1_DS ("exit", libc_exit, (IDIO istatus), "status", "\
 in C, close (status)						\n\
-a wrapper to libc exit (3)					\n\
+a wrapper to libc :manpage:`exit(3)`				\n\
 								\n\
 :param status: exit status					\n\
 :type status: fixnum or C/int					\n\
@@ -432,7 +434,7 @@ Return the read end of the pipe array				\n\
 :return: read end of the pipe array				\n\
 :rtype: C/int							\n\
 								\n\
-See ``pipe`` for a constructor ofthe pipe array.		\n\
+.. seealso:: :ref:`pipe <libc/pipe>` for a constructor of the pipe array.	\n\
 ")
 {
     IDIO_ASSERT (ipipefd);
@@ -457,7 +459,7 @@ Return the write end of the pipe array				\n\
 :return: write end of the pipe array				\n\
 :rtype: C/int							\n\
 								\n\
-See ``pipe`` for a constructor ofthe pipe array.		\n\
+.. seealso:: :ref:`pipe <libc/pipe>` for a constructor of the pipe array.	\n\
 ")
 {
     IDIO_ASSERT (ipipefd);
@@ -638,12 +640,13 @@ Otherwise the return value is:					\n\
  */
 IDIO_DEFINE_PRIMITIVE1_DS ("close-if-open", libc_close_if_open, (IDIO fd), "fd", "\
 in C, fcntl(fd, F_GETFD) && close (fd)				\n\
-a wrapper to libc close(2)					\n\
+a wrapper to libc :manpage:`close(2)`				\n\
 								\n\
 :param fd: file descriptor					\n\
 :type fd: C/int							\n\
-:return: 0 or raises ^system-error				\n\
+:return: 0							\n\
 :rtype: C/int							\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -704,8 +707,9 @@ given signal.							\n\
 								\n\
 :param sig: signal						\n\
 :type sig: C/int						\n\
-:return: current disposition or raises ^system-error		\n\
+:return: current disposition					\n\
 :rtype: C/pointer						\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (isig);
@@ -758,7 +762,7 @@ given signal.							\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("WEXITSTATUS", libc_WEXITSTATUS, (IDIO istatus), "status", "\
 in C, WEXITSTATUS (status)					\n\
-a wrapper to libc macro WEXITSTATUS, see waitpid (2)		\n\
+a wrapper to libc macro ``WEXITSTATUS``, see :manpage:`waitpid(2)`	\n\
 								\n\
 :param status: process status					\n\
 :type status: C/pointer						\n\
@@ -782,7 +786,7 @@ a wrapper to libc macro WEXITSTATUS, see waitpid (2)		\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("WIFEXITED", libc_WIFEXITED, (IDIO istatus), "status", "\
 in C, WIFEXITED (status)					\n\
-a wrapper to libc macro WIFEXITED, see waitpid (2)		\n\
+a wrapper to libc macro ``WIFEXITED``, see :manpage:`waitpid(2)`	\n\
 								\n\
 :param status: process status					\n\
 :type status: C/pointer						\n\
@@ -812,7 +816,7 @@ a wrapper to libc macro WIFEXITED, see waitpid (2)		\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("WIFSIGNALED", libc_WIFSIGNALED, (IDIO istatus), "status", "\
 in C, WIFSIGNALED (status)					\n\
-a wrapper to libc macro WIFSIGNALED, see waitpid (2)		\n\
+a wrapper to libc macro ``WIFSIGNALED``, see :manpage:`waitpid(2)`	\n\
 								\n\
 :param status: process status					\n\
 :type status: C/pointer						\n\
@@ -842,7 +846,7 @@ a wrapper to libc macro WIFSIGNALED, see waitpid (2)		\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("WIFSTOPPED", libc_WIFSTOPPED, (IDIO istatus), "status", "\
 in C, WIFSTOPPED (status)					\n\
-a wrapper to libc macro WIFSTOPPED, see waitpid (2)		\n\
+a wrapper to libc macro ``WIFSTOPPED``, see :manpage:`waitpid(2)`	\n\
 								\n\
 :param status: process status					\n\
 :type status: C/pointer						\n\
@@ -872,7 +876,7 @@ a wrapper to libc macro WIFSTOPPED, see waitpid (2)		\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("WTERMSIG", libc_WTERMSIG, (IDIO istatus), "status", "\
 in C, WTERMSIG (status)						\n\
-a wrapper to libc macro WTERMSIG, see waitpid (2)		\n\
+a wrapper to libc macro ``WTERMSIG``, see :manpage:`waitpid(2)`	\n\
 								\n\
 :param status: process status					\n\
 :type status: C/pointer						\n\
@@ -1214,16 +1218,16 @@ char *idio_libc_sig_name (int signum)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("sig-name", libc_sig_name, (IDIO isignum), "signum", "\
-return the short signal name of ``signum``			\n\
+return the short signal name of `signum`			\n\
 								\n\
 :param signum: signal number					\n\
 :type signum: C/int						\n\
 :return: short signal name					\n\
 :rtype: string							\n\
 								\n\
-A short signal name would be \"QUIT\" or \"INT\".		\n\
+A short signal name would be ``QUIT`` or ``INT``.		\n\
 								\n\
-See ``signal-name`` for long versions.				\n\
+.. seealso:: :ref:`signal-name <libc/signal-name>` for long signal names.	\n\
 ")
 {
     IDIO_ASSERT (isignum);
@@ -1244,9 +1248,9 @@ return a list of (number, short name) pairs of known signals	\n\
 :return: map of signal pairs					\n\
 :rtype: list							\n\
 								\n\
-A short signal name would be \"QUIT\" or \"INT\".		\n\
+A short signal name would be ``QUIT`` or ``INT``.		\n\
 								\n\
-See ``signal-names`` for long versions.				\n\
+.. seealso:: :ref:`signal-names <libc/signal-names>` for long signal names.	\n\
 ")
 {
     IDIO r = idio_S_nil;
@@ -1260,16 +1264,16 @@ See ``signal-names`` for long versions.				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("signal-name", libc_signal_name, (IDIO isignum), "signum", "\
-return the long signal name of ``signum``			\n\
+return the long signal name of `signum`				\n\
 								\n\
 :param signum: signal number					\n\
 :type signum: C/int						\n\
 :return: long signal name					\n\
 :rtype: string							\n\
 								\n\
-A long signal name would be \"SIGQUIT\" or \"SIGINT\".		\n\
+A long signal name would be ``SIGQUIT`` or ``SIGINT``.		\n\
 								\n\
-See ``sig-name`` for short versions.				\n\
+.. seealso:: :ref:`sig-name <libc/sig-name>` for short signal names.	\n\
 ")
 {
     IDIO_ASSERT (isignum);
@@ -1290,9 +1294,9 @@ return a list of (number, long name) pairs of known signals	\n\
 :return: map of signal pairs					\n\
 :rtype: list							\n\
 								\n\
-A long signal name would be \"SIGQUIT\" or \"SIGINT\".		\n\
+A long signal name would be ``SIGQUIT`` or ``SIGINT``.		\n\
 								\n\
-See ``sig-names`` for short versions.				\n\
+.. seealso:: :ref:`sig-names <libc/sig-names>` for short signal names.	\n\
 ")
 {
     IDIO r = idio_S_nil;
@@ -2220,7 +2224,7 @@ char *idio_libc_errno_name (int errnum)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("errno-name", libc_errno_name, (IDIO ierrnum), "errnum", "\
-return the error name of ``errnum``				\n\
+return the error name of `errnum`				\n\
 								\n\
 :param errnum: error number					\n\
 :type errnum: C/int						\n\
@@ -2261,14 +2265,14 @@ return a list of (number, name) pairs of known errno numbers	\n\
  * Moral equivalent of strsignal(3) -- identical to errno-name, above.
  */
 IDIO_DEFINE_PRIMITIVE1_DS ("strerrno", libc_strerrno, (IDIO ierrnum), "errnum", "\
-return the error name of ``errnum``				\n\
+return the error name of `errnum`				\n\
 								\n\
 :param errnum: error number					\n\
 :type errnum: C/int						\n\
 :return: error name						\n\
 :rtype: string							\n\
 								\n\
-Identical to ``errno-name``.					\n\
+Identical to :ref:`errno-name <libc/errno-name>`.		\n\
 ")
 {
     IDIO_ASSERT (ierrnum);
@@ -2284,7 +2288,7 @@ Identical to ``errno-name``.					\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("errno/get", libc_errno_get, (void), "", "\
-return ``errno``						\n\
+return `errno`							\n\
 								\n\
 :return: errno							\n\
 :rtype: C/int							\n\
@@ -2463,31 +2467,30 @@ char *idio_libc_rlimit_name (int rlim)
     return idio_libc_rlimit_names[rlim];
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("rlimit-name", libc_rlimit_name, (IDIO irlim), "irlim", "\
-return the string name of the getrlimit(2)      \n\
+IDIO_DEFINE_PRIMITIVE1_DS ("rlimit-name", libc_rlimit_name, (IDIO rlim), "rlim", "\
+return the string name of the :manpage:`getrlimit(2)`      \n\
 C macro						\n\
 						\n\
-:param irlim: the C/int value of the macro	\n\
-						\n\
+:param rlim: the value of the macro		\n\
+:type rlim: C/int				\n\
 :return: a string				\n\
-						\n\
-:raises: ^rt-parameter-type-error		\n\
+:raises ^rt-parameter-type-error:		\n\
 ")
 {
-    IDIO_ASSERT (irlim);
+    IDIO_ASSERT (rlim);
 
     /*
      * Test Case: libc-wrap-errors/rlimit-name-bad-type.idio
      *
      * rlimit-name #t
      */
-    IDIO_USER_C_TYPE_ASSERT (int, irlim);
+    IDIO_USER_C_TYPE_ASSERT (int, rlim);
 
-    return idio_string_C (idio_libc_rlimit_name (IDIO_C_TYPE_int (irlim)));
+    return idio_string_C (idio_libc_rlimit_name (IDIO_C_TYPE_int (rlim)));
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("rlimit-names", libc_rlimit_names, (), "", "\
-return a list of pairs of the getrlimit(2)      \n\
+return a list of pairs of the :manpage:`getrlimit(2)`      \n\
 C macros					\n\
 						\n\
 each pair is the C value and string name	\n\
@@ -2508,7 +2511,7 @@ of the macro					\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("EGID/get", EGID_get, (void), "", "\
 getter for the computed value ``EGID`` which is a call to	\n\
-getegid (2).							\n\
+:manpage:`getegid(2)`.						\n\
 								\n\
 :return: effective group ID					\n\
 :rtype: libc/gid_t						\n\
@@ -2519,12 +2522,13 @@ getegid (2).							\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("EGID/set", EGID_set, (IDIO iegid), "egid", "\
 setter for the computed value ``EGID`` which is a call to	\n\
-setegid (2).							\n\
+:manpage:`setegid(2)`.						\n\
 								\n\
 :param egid: effective group ID					\n\
 :type egid: libc/gid_t						\n\
-:return: 0 or raises ^system-error				\n\
+:return: 0							\n\
 :rtype: C/int							\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (iegid);
@@ -2563,7 +2567,7 @@ setegid (2).							\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("EUID/get", EUID_get, (void), "", "\
 getter for the computed value ``EUID`` which is a call to	\n\
-geteuid (2).							\n\
+:manpage:`geteuid(2)`.						\n\
 								\n\
 :return: effective user ID					\n\
 :rtype: libc/uid_t						\n\
@@ -2574,12 +2578,13 @@ geteuid (2).							\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("EUID/set", EUID_set, (IDIO ieuid), "euid", "\
 setter for the computed value ``EUID`` which is a call to	\n\
-seteuid (2).							\n\
+:manpage:`seteuid(2)`.						\n\
 								\n\
 :param euid: effective user ID					\n\
 :type euid: libc/uid_t						\n\
-:return: 0 or raises ^system-error				\n\
+:return: 0							\n\
 :rtype: C/int							\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (ieuid);
@@ -2618,7 +2623,7 @@ seteuid (2).							\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("GID/get", GID_get, (void), "", "\
 getter for the computed value ``GID`` which is a call to	\n\
-getgid (2).							\n\
+:manpage:`getgid(2)`.						\n\
 								\n\
 :return: real group ID						\n\
 :rtype: libc/gid_t						\n\
@@ -2629,12 +2634,13 @@ getgid (2).							\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("GID/set", GID_set, (IDIO igid), "gid", "\
 setter for the computed value ``GID`` which is a call to	\n\
-setgid (2).							\n\
+:manpage:`setgid(2)`.						\n\
 								\n\
 :param gid: real group ID					\n\
 :type gid: libc/gid_t						\n\
-:return: 0 or raises ^system-error				\n\
+:return: 0							\n\
 :rtype: C/int							\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (igid);
@@ -2673,7 +2679,7 @@ setgid (2).							\n\
 
 IDIO_DEFINE_PRIMITIVE0_DS ("UID/get", UID_get, (void), "", "\
 getter for the computed value ``UID`` which is a call to	\n\
-getuid (2).							\n\
+:manpage:`getuid(2)`.						\n\
 								\n\
 :return: real user ID						\n\
 :rtype: libc/uid_t						\n\
@@ -2684,12 +2690,13 @@ getuid (2).							\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("UID/set", UID_set, (IDIO iuid), "uid", "\
 setter for the computed value ``UID`` which is a call to	\n\
-setuid (2).							\n\
+:manpage:`setuid(2)`.						\n\
 								\n\
 :param uid: real user ID					\n\
 :type uid: libc/uid_t						\n\
-:return: 0 or raises ^system-error				\n\
+:return: 0							\n\
 :rtype: C/int							\n\
+:raises ^system-error:						\n\
 ")
 {
     IDIO_ASSERT (iuid);
@@ -2827,8 +2834,9 @@ is `pathname` a block special device?	\n\
 					\n\
 :param pathname: pathname to stat	\n\
 :type pathname: string			\n\
-:return: #t or #f			\n\
+:return: ``#t`` or ``#f``			\n\
 :rtype: boolean				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -2845,12 +2853,12 @@ is `pathname` a block special device?	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("S_ISBLK", libc_S_ISBLK, (IDIO mode), "mode", "\
-does `mode` represent a block device?	\n\
-					\n\
-:param mode: mode from stat(2)		\n\
-:type mode: libc/mode_t			\n\
-:return: #t or #f			\n\
-:rtype: boolean				\n\
+does `mode` represent a block device?		\n\
+						\n\
+:param mode: mode from :manpage:`stat(2)`	\n\
+:type mode: libc/mode_t				\n\
+:return: ``#t`` or ``#f``			\n\
+:rtype: boolean					\n\
 ")
 {
     IDIO_ASSERT (mode);
@@ -2868,8 +2876,9 @@ is `pathname` a character special device?	\n\
 						\n\
 :param pathname: pathname to stat		\n\
 :type pathname: string				\n\
-:return: #t or #f				\n\
+:return: ``#t`` or ``#f``				\n\
 :rtype: boolean					\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -2887,11 +2896,11 @@ is `pathname` a character special device?	\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("S_ISCHR", libc_S_ISCHR, (IDIO mode), "mode", "\
 does `mode` represent a character device?	\n\
-					\n\
-:param mode: mode from stat(2)		\n\
-:type mode: libc/mode_t			\n\
-:return: #t or #f			\n\
-:rtype: boolean				\n\
+						\n\
+:param mode: mode from :manpage:`stat(2)`	\n\
+:type mode: libc/mode_t				\n\
+:return: ``#t`` or ``#f``			\n\
+:rtype: boolean					\n\
 ")
 {
     IDIO_ASSERT (mode);
@@ -2909,8 +2918,9 @@ is `pathname` a directory?		\n\
 					\n\
 :param pathname: pathname to stat	\n\
 :type pathname: string			\n\
-:return: #t or #f			\n\
+:return: ``#t`` or ``#f``			\n\
 :rtype: boolean				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -2929,9 +2939,9 @@ is `pathname` a directory?		\n\
 IDIO_DEFINE_PRIMITIVE1_DS ("S_ISDIR", libc_S_ISDIR, (IDIO mode), "mode", "\
 does `mode` represent a directory?	\n\
 					\n\
-:param mode: mode from stat(2)		\n\
+:param mode: mode from :manpage:`stat(2)`		\n\
 :type mode: libc/mode_t			\n\
-:return: #t or #f			\n\
+:return: ``#t`` or ``#f``			\n\
 :rtype: boolean				\n\
 ")
 {
@@ -2950,8 +2960,9 @@ does `pathname` exist?			\n\
 					\n\
 :param pathname: pathname to stat	\n\
 :type pathname: string			\n\
-:return: #t or #f			\n\
+:return: ``#t`` or ``#f``			\n\
 :rtype: boolean				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -2972,8 +2983,9 @@ is `pathname` a regular file?		\n\
 					\n\
 :param pathname: pathname to stat	\n\
 :type pathname: string			\n\
-:return: #t or #f			\n\
+:return: ``#t`` or ``#f``			\n\
 :rtype: boolean				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -2990,12 +3002,12 @@ is `pathname` a regular file?		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("S_ISREG", libc_S_ISREG, (IDIO mode), "mode", "\
-does `mode` represent a regular file?	\n\
-					\n\
-:param mode: mode from stat(2)		\n\
-:type mode: libc/mode_t			\n\
-:return: #t or #f			\n\
-:rtype: boolean				\n\
+does `mode` represent a regular file?		\n\
+						\n\
+:param mode: mode from :manpage:`stat(2)`	\n\
+:type mode: libc/mode_t				\n\
+:return: ``#t`` or ``#f``			\n\
+:rtype: boolean					\n\
 ")
 {
     IDIO_ASSERT (mode);
@@ -3013,8 +3025,9 @@ is `pathname` a symlink?		\n\
 					\n\
 :param pathname: pathname to stat	\n\
 :type pathname: string			\n\
-:return: #t or #f			\n\
+:return: ``#t`` or ``#f``			\n\
 :rtype: boolean				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -3048,12 +3061,12 @@ is `pathname` a symlink?		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("S_ISLNK", libc_S_ISLNK, (IDIO mode), "mode", "\
-does `mode` represent a symbolic link?	\n\
-					\n\
-:param mode: mode from stat(2)		\n\
-:type mode: libc/mode_t			\n\
-:return: #t or #f			\n\
-:rtype: boolean				\n\
+does `mode` represent a symbolic link?		\n\
+						\n\
+:param mode: mode from :manpage:`stat(2)`	\n\
+:type mode: libc/mode_t				\n\
+:return: ``#t`` or ``#f``			\n\
+:rtype: boolean					\n\
 ")
 {
     IDIO_ASSERT (mode);
@@ -3071,8 +3084,9 @@ is `pathname` a FIFO?			\n\
 					\n\
 :param pathname: pathname to stat	\n\
 :type pathname: string			\n\
-:return: #t or #f			\n\
+:return: ``#t`` or ``#f``			\n\
 :rtype: boolean				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -3089,12 +3103,12 @@ is `pathname` a FIFO?			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("S_ISFIFO", libc_S_ISFIFO, (IDIO mode), "mode", "\
-does `mode` represent a FIFO?	\n\
-					\n\
-:param mode: mode from stat(2)		\n\
-:type mode: libc/mode_t			\n\
-:return: #t or #f			\n\
-:rtype: boolean				\n\
+does `mode` represent a FIFO?			\n\
+						\n\
+:param mode: mode from :manpage:`stat(2)`	\n\
+:type mode: libc/mode_t				\n\
+:return: ``#t`` or ``#f``			\n\
+:rtype: boolean					\n\
 ")
 {
     IDIO_ASSERT (mode);
@@ -3112,9 +3126,9 @@ does `pathname` pass `access (pathname, R_OK)`?	\n\
 						\n\
 :param pathname: file to test			\n\
 :type pathname: string				\n\
-						\n\
-:return: #t or #f				\n\
+:return: ``#t`` or ``#f``			\n\
 :rtype: boolean					\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -3135,8 +3149,9 @@ is `pathname` a socket?			\n\
 					\n\
 :param pathname: pathname to stat	\n\
 :type pathname: string			\n\
-:return: #t or #f			\n\
+:return: ``#t`` or ``#f``		\n\
 :rtype: boolean				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -3153,12 +3168,12 @@ is `pathname` a socket?			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("S_ISSOCK", libc_S_ISSOCK, (IDIO mode), "mode", "\
-does `mode` represent a socket?		\n\
-					\n\
-:param mode: mode from stat(2)		\n\
-:type mode: libc/mode_t			\n\
-:return: #t or #f			\n\
-:rtype: boolean				\n\
+does `mode` represent a socket?			\n\
+						\n\
+:param mode: mode from :manpage:`stat(2)`	\n\
+:type mode: libc/mode_t				\n\
+:return: ``#t`` or ``#f``			\n\
+:rtype: boolean					\n\
 ")
 {
     IDIO_ASSERT (mode);
@@ -3176,7 +3191,7 @@ is `fd` a terminal?			\n\
 					\n\
 :param fd: file descriptor to stat	\n\
 :type fd: C/int				\n\
-:return: #t or #f			\n\
+:return: ``#t`` or ``#f``			\n\
 :rtype: boolean				\n\
 ")
 {
@@ -3203,9 +3218,9 @@ does `pathname` pass `access (pathname, W_OK)`?	\n\
 						\n\
 :param pathname: file to test			\n\
 :type pathname: string				\n\
-						\n\
-:return: #t or #f				\n\
+:return: ``#t`` or ``#f``			\n\
 :rtype: boolean					\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -3226,9 +3241,9 @@ does `pathname` pass `access (pathname, X_OK)`?	\n\
 						\n\
 :param pathname: file to test			\n\
 :type pathname: string				\n\
-						\n\
-:return: #t or #f				\n\
+:return: ``#t`` or ``#f``			\n\
 :rtype: boolean					\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
 {
     IDIO_ASSERT (pathname);

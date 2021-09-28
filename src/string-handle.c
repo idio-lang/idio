@@ -242,7 +242,14 @@ IDIO idio_reopen_input_string_handle_C (IDIO sh, char const *str, size_t const b
     return sh;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("open-input-string", open_input_string_handle, (IDIO str))
+IDIO_DEFINE_PRIMITIVE1_DS ("open-input-string", open_input_string_handle, (IDIO str), "str", "\
+create an input string handle from `str`	\n\
+						\n\
+:param str: contents of input string handle	\n\
+:type str: string				\n\
+:return: input string handle			\n\
+:rtype: handle					\n\
+")
 {
     IDIO_ASSERT (str);
 
@@ -271,7 +278,12 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-string", open_input_string_handle, (IDIO str
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("open-output-string", open_output_string_handle, (void))
+IDIO_DEFINE_PRIMITIVE0_DS ("open-output-string", open_output_string_handle, (void), "", "\
+create an output string handle			\n\
+						\n\
+:return: output string handle			\n\
+:rtype: handle					\n\
+")
 {
     char *str_C = idio_alloc (IDIO_STRING_HANDLE_DEFAULT_OUTPUT_SIZE);
 
@@ -286,7 +298,13 @@ int idio_isa_string_handle (IDIO o)
 	    IDIO_HANDLE_FLAGS (o) & IDIO_HANDLE_FLAG_STRING);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("string-handle?", string_handlep, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("string-handle?", string_handlep, (IDIO o), "o", "\
+test if `o` is a string handle			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: ``#t`` if `o` is a string handle, ``#f`` otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -307,7 +325,13 @@ int idio_input_string_handlep (IDIO o)
 	    IDIO_INPUTP_HANDLE (o));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("input-string-handle?", input_string_handlep, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("input-string-handle?", input_string_handlep, (IDIO o), "o", "\
+test if `o` is a input string handle		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: ``#t`` if `o` is a input string handle, ``#f`` otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -328,7 +352,13 @@ int idio_output_string_handlep (IDIO o)
 	    IDIO_OUTPUTP_HANDLE (o));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("output-string-handle?", output_string_handlep, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("output-string-handle?", output_string_handlep, (IDIO o), "o", "\
+test if `o` is a output string handle			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: ``#t`` if `o` is a output string handle, ``#f`` otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -674,7 +704,14 @@ IDIO idio_get_output_string (IDIO sh)
     return idio_string_C_len (IDIO_STRING_HANDLE_BUF (sh), IDIO_STRING_HANDLE_END (sh) - IDIO_STRING_HANDLE_BUF (sh));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("get-output-string", get_output_string, (IDIO sh))
+IDIO_DEFINE_PRIMITIVE1_DS ("get-output-string", get_output_string, (IDIO sh), "sh", "\
+return the accumlated string in output string handle `sh`	\n\
+						\n\
+:param sh: output string handle			\n\
+:type sh: output string handle			\n\
+:return: accumulated string			\n\
+:rtype: string					\n\
+")
 {
     IDIO_ASSERT (sh);
 

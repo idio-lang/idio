@@ -187,7 +187,7 @@ test if `o` is a primitive				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a primitive, #f otherwise	\n\
+:return: ``#t`` if `o` is a primitive, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -244,7 +244,7 @@ Return the name of `p`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("primitive-varargs?", primitive_varargsp, (IDIO p), "p", "\
-Return #t if `p` is varargs			\n\
+Return ``#t`` if `p` is varargs			\n\
 						\n\
 :param p: primtive				\n\
 :type p: primitive				\n\

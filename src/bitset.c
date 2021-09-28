@@ -252,7 +252,7 @@ test if `o` is an bitset				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an bitset, #f otherwise	\n\
+:return: ``#t`` if `o` is an bitset, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -561,7 +561,7 @@ merge the bitsets				\n\
 						\n\
 :param args: bitsets to be merged		\n\
 :type args: list				\n\
-:rtype: bitset or #n if no bitsets supplied	\n\
+:rtype: bitset or ``#n`` if no bitsets supplied	\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -623,7 +623,7 @@ logical AND the bitsets				\n\
 						\n\
 :param args: bitsets to be operated on		\n\
 :type args: list				\n\
-:rtype: bitset or #n if no bitsets supplied	\n\
+:rtype: bitset or ``#n`` if no bitsets supplied	\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -685,7 +685,7 @@ logical Inclusive OR the bitsets		\n\
 						\n\
 :param args: bitsets to be operated on		\n\
 :type args: list				\n\
-:rtype: bitset or #n if no bitsets supplied	\n\
+:rtype: bitset or ``#n`` if no bitsets supplied	\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -747,7 +747,7 @@ logical eXclusive OR the bitsets		\n\
 						\n\
 :param args: bitsets to be operated on		\n\
 :type args: list				\n\
-:rtype: bitset or #n if no bitsets supplied	\n\
+:rtype: bitset or ``#n`` if no bitsets supplied	\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -852,7 +852,7 @@ subtract the bitsets				\n\
 						\n\
 :param args: bitsets to be operated on		\n\
 :type args: list				\n\
-:rtype: bitset or #n if no bitsets supplied	\n\
+:rtype: bitset or ``#n`` if no bitsets supplied	\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -1016,7 +1016,7 @@ are the bitsets equal				\n\
 						\n\
 :param args: bitsets to be operated on		\n\
 :type args: list				\n\
-:rtype: bitset or #f if no bitsets supplied	\n\
+:rtype: bitset or ``#f`` if no bitsets supplied	\n\
 ")
 {
     return idio_equal_bitsetp (args) ? idio_S_true : idio_S_false;

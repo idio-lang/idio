@@ -176,7 +176,7 @@ test if `o` is a unicode value				\n\
 							\n\
 :param o: object to test				\n\
 							\n\
-:return: #t if `o` is a unicode value, #f otherwise	\n\
+:return: ``#t`` if `o` is a unicode value, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -721,7 +721,7 @@ test if unicode arguments are equal			\n\
 :param c2: unicode					\n\
 :param ...: unicode					\n\
 							\n\
-:return: #t if arguments are equal, #f otherwise	\n\
+:return: ``#t`` if arguments are equal, ``#f`` otherwise	\n\
 "));
 }
 

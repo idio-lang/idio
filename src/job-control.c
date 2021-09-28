@@ -232,7 +232,7 @@ test if job `job` is stopped			\n\
 						\n\
 :param job: job to test				\n\
 						\n\
-:return: #t if job `job` is stopped, #f otherwise\n\
+:return: ``#t`` if job `job` is stopped, ``#f`` otherwise\n\
 ")
 {
     IDIO_ASSERT (job);
@@ -284,7 +284,7 @@ test if job `job` has completed			\n\
 						\n\
 :param job: job to test				\n\
 						\n\
-:return: #t if job `job` has completed, #f otherwise\n\
+:return: ``#t`` if job `job` has completed, ``#f`` otherwise\n\
 ")
 {
     IDIO_ASSERT (job);
@@ -345,7 +345,7 @@ test if job `job` has failed			\n\
 						\n\
 :param job: job to test				\n\
 						\n\
-:return: #t if job `job` has failed, #f otherwise\n\
+:return: ``#t`` if job `job` has failed, ``#f`` otherwise\n\
 ")
 {
     IDIO_ASSERT (job);
@@ -403,7 +403,7 @@ test if job `job` has a process status		\n\
 						\n\
 :param job: job to test				\n\
 						\n\
-:return: #f if job `job` has a process status, #t otherwise\n\
+:return: ``#f`` if job `job` has a process status, ``#t`` otherwise\n\
 						\n\
 Note that this is the inverse behaviour you might expect.\n\
 ")
@@ -563,7 +563,7 @@ update the process status of pid `pid` with `status`\n\
 :param pid: process id				\n\
 :param status: Unix process status		\n\
 						\n\
-:return: #t if the update was successfull, #f otherwise\n\
+:return: ``#t`` if the update was successfull, ``#f`` otherwise\n\
 ")
 {
     IDIO_ASSERT (ipid);
@@ -2006,7 +2006,7 @@ launch a pipeline of `job_controls`			\n\
 IDIO_DEFINE_PRIMITIVE0_DS ("%interactive?", interactivep, (void), "", "\
 get the current interactiveness			\n\
 						\n\
-:return: #t or #f				\n\
+:return: ``#t`` or ``#f``			\n\
 ")
 {
     IDIO r = idio_S_false;

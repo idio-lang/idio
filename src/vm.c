@@ -2764,7 +2764,7 @@ void idio_reraise_condition (IDIO continuablep, IDIO condition)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("raise", raise, (IDIO c), "c", "\
-raise the condition ``c``				\n\
+raise the condition `c`					\n\
 							\n\
 !! MAY RETURN !!					\n\
 							\n\
@@ -2789,7 +2789,7 @@ raise the condition ``c``				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("reraise", reraise, (IDIO c), "c", "\
-reraise the condition ``c``				\n\
+reraise the condition `c`				\n\
 							\n\
 In particular this rediscovers the top-most trap	\n\
 handler.						\n\
@@ -2874,14 +2874,14 @@ IDIO idio_apply (IDIO fn, IDIO args)
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("apply", apply, (IDIO fn, IDIO args), "fn [args]", "\
-call ``fn`` with ``args``		\n\
+call `fn` with `args`			\n\
 					\n\
-The last element of ``args`` is special.	\n\
+The last element of `args` is special.	\n\
 If it is a list then the elements of that list	\n\
 are appended to the arguments to `fn`	\n\
 					\n\
 apply \\+ 1 2 3				\n\
-apply \\+ 1 2 3 #n			\n\
+apply \\+ 1 2 3 ``#n``			\n\
 apply \\+ 1 2 3 '(4 5)			\n\
 					\n\
 :param fn: function to call		\n\
@@ -2940,7 +2940,7 @@ void idio_vm_dc_hole_push (IDIO hole)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("hole-push!", vm_dc_hole_push, (IDIO hole), "hole", "\
-push ``hole`` onto the VM-wide list of holes			\n\
+push `hole` onto the VM-wide list of holes			\n\
 								\n\
 :param hole:							\n\
 :type hole: a hole						\n\
@@ -2975,7 +2975,7 @@ IDIO idio_vm_dc_hole_pop (void)
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("hole-pop!", vm_dc_hole_pop, (void), "", "\
-pop a ``hole`` from the VM-wide list of holes			\n\
+pop a `hole` from the VM-wide list of holes			\n\
 								\n\
 :return: a cell							\n\
 ")
@@ -3135,7 +3135,7 @@ IDIO idio_vm_call_cc (IDIO proc, int kind)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("%%call/uc", call_uc, (IDIO proc), "proc", "\
-call ``proc`` with the current (undelimited) continuation	\n\
+call `proc` with the current (undelimited) continuation		\n\
 								\n\
 :param proc:							\n\
 :type proc: a closure of 1 argument				\n\
@@ -3156,7 +3156,7 @@ This is the ``%%call/uc`` primitive.				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("%%call/dc", call_dc, (IDIO proc), "proc", "\
-call ``proc`` with the current (delimited) continuation		\n\
+call `proc` with the current (delimited) continuation		\n\
 								\n\
 :param proc:							\n\
 :type proc: a closure of 1 argument				\n\
@@ -3196,13 +3196,13 @@ the format is undefined and subject to arbitrary change	\n\
  * Used by the debugger.
  */
 IDIO_DEFINE_PRIMITIVE2_DS ("%%vm-apply-continuation", vm_apply_continuation, (IDIO n, IDIO val), "n v", "\
-invoke the ``n``th VM continuation with value ``v``		\n\
+invoke the `n`\ :sup:`th` VM continuation with value `v`		\n\
 								\n\
 :param n: the continuation to invoke				\n\
 :type n: (non-negative) integer					\n\
 :param v: the value to pass to the continuation			\n\
 								\n\
-``n`` is subject to a range check on the array of stored	\n\
+`n` is subject to a range check on the array of stored	\n\
 continuations in the VM.					\n\
 								\n\
 The function does not return.					\n\
@@ -3269,7 +3269,7 @@ The function does not return.					\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("%%vm-trace", vm_trace, (IDIO level), "level", "\
-set VM tracing to ``level``				\n\
+set VM tracing to `level`				\n\
 							\n\
 :param level: new VM tracing level			\n\
 :type level: fixnum					\n\
@@ -3293,7 +3293,7 @@ set VM tracing to ``level``				\n\
 
 #ifdef IDIO_VM_DIS
 IDIO_DEFINE_PRIMITIVE1_DS ("%%vm-dis", vm_dis, (IDIO dis), "dis", "\
-set VM live disassembly to to ``dis``			\n\
+set VM live disassembly to to `dis`			\n\
 							\n\
 :param dis: new VM live disassembly setting		\n\
 :type dis: fixnum					\n\
@@ -6540,7 +6540,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("%%idio-dasm", dasm, (IDIO args), "[c]", "\
-generate the disassembler code for closure ``c`` or everything	\n\
+generate the disassembler code for closure `c` or everything	\n\
 								\n\
 :param c: (optional) the closure to disassemble			\n\
 :type c: closure						\n\
@@ -7050,7 +7050,7 @@ IDIO idio_vm_run_C (IDIO thr, idio_ai_t pc)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("vm-run", vm_run, (IDIO thr, IDIO PC), "thr PC", "\
-run code at ``PC`` in thread ``thr``		\n\
+run code at `PC` in thread `thr`		\n\
 						\n\
 :param thr: thread to run			\n\
 :type thr: thread				\n\
@@ -7254,7 +7254,7 @@ IDIO idio_vm_values_ref (idio_ai_t gvi)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("vm-values-ref", vm_values_ref, (IDIO index), "index", "\
-Return the VM's values array entry at ``index``	\n\
+Return the VM's values array entry at `index`	\n\
 						\n\
 :param index: index				\n\
 :type index: integer				\n\
@@ -7477,7 +7477,7 @@ Display a dump of the current thread's state	\n\
  * hum.
  */
 IDIO_DEFINE_PRIMITIVE1_DS ("exit", exit, (IDIO istatus), "status", "\
-attempt to exit with status ``status``			\n\
+attempt to exit with status `status`			\n\
 							\n\
 :param status: exit status				\n\
 :type status: fixnum or C/int				\n\
@@ -7529,13 +7529,13 @@ time_t idio_vm_elapsed (void)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("run-in-thread", run_in_thread, (IDIO thr, IDIO func, IDIO args), "thr func [args]", "\
-Run ``func [args]`` in thread ``thr``.				\n\
+Run `func [args]` in thread `thr`.				\n\
 								\n\
 :param thr: the thread						\n\
 :type thr: thread						\n\
-:param func: a function	or #n					\n\
+:param func: a function	or ``#n``				\n\
 :type func: function						\n\
-:param args: (optional) arguments to ``func``			\n\
+:param args: (optional) arguments to `func`			\n\
 :type args: list						\n\
 ")
 {

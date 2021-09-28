@@ -210,12 +210,12 @@ IDIO idio_posix_regex_regcomp (IDIO rx, IDIO flags)
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("regcomp", regcomp, (IDIO rx, IDIO flags), "rx [flags]", "\
-POSIX regex(3)						\n\
+POSIX :manpage:`regex(3)`				\n\
 							\n\
-compile the regular expression in ``rx`` suitable	\n\
-for subsequent use in ``regexec``			\n\
+compile the regular expression in `rx` suitable		\n\
+for subsequent use in :ref:`regexec <regexec>`	\n\
 						\n\
-The ``flags`` are:	 			\n\
+The `flags` are:	 			\n\
 REG_EXTENDED		 			\n\
 REG_ICASE		 			\n\
 REG_NOSUB (ignored)	 			\n\
@@ -229,7 +229,7 @@ an extra REG_BASIC flag to disable REG_EXTENDED	\n\
 :param flags: regcomp flags			\n\
 :type flags: list of symbols			\n\
 						\n\
-:return: compiled regex(3)			\n\
+:return: compiled :manpage:`regex(3)`		\n\
 :rtype: C/pointer				\n\
 ")
 {
@@ -351,26 +351,26 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
 }
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("regexec", regexec, (IDIO rx, IDIO str, IDIO flags), "rx str [flags]", "\
-POSIX regex(3)						\n\
+POSIX :manpage:`regex(3)`				\n\
 							\n\
-match the regular expression in ``rx`` against the	\n\
-string ``str`` where ``rx`` was compiled using		\n\
-``regcomp``						\n\
+match the regular expression in `rx` against the	\n\
+string `str` where `rx` was compiled using		\n\
+:ref:`regcomp <regcomp>`				\n\
 						\n\
-The ``flags`` are:	 			\n\
+The `flags` are:	 			\n\
 REG_NOTBOL		 			\n\
 REG_NOTEOL		 			\n\
 REG_STARTEND (if supported) 			\n\
 						\n\
 On a successful match an array of the subexpressions	\n\
-in ``rx`` is returned with the first (zero-th) being	\n\
+in `rx` is returned with the first (zero-th) being	\n\
 the entire matched string.				\n\
 						\n\
-If a subexpression in ``rx`` matched the corresponding 	\n\
+If a subexpression in `rx` matched the corresponding 	\n\
 array element will be the matched string.	\n\
 						\n\
-If a subexpression in ``rx`` did not match the 	\n\
-corresponding array element will be #f	.	\n\
+If a subexpression in `rx` did not match the 	\n\
+corresponding array element will be ``#f``	.	\n\
 						\n\
 :param rx: compiled regular expression		\n\
 :type rx: C/pointer				\n\
@@ -379,8 +379,8 @@ corresponding array element will be #f	.	\n\
 :param flags: regexec flags			\n\
 :type flags: list of symbols			\n\
 						\n\
-:return: array of matching subexpressions or #f for no match	\n\
-:rtype: array or #f				\n\
+:return: array of matching subexpressions or ``#f`` for no match	\n\
+:rtype: array or ``#f``				\n\
 ")
 {
     IDIO_ASSERT (rx);

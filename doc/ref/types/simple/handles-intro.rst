@@ -5,12 +5,13 @@ Handle Type
 
 Handles are the entities through which Idio performs input and output.
 
-A *handle* is opaque about it implementation although there are
-several flavours.  There are the obvious *file handles* and a similar
-form, *pipe handles*.  File and pipe handles can be abstracted to *fd
-handles* (file descriptor handles).
+A *handle* is opaque about its implementation although there are
+several flavours.  There are the obvious :ref:`file handles` and a
+similar form, :ref:`pipe handles`.  File and pipe handles can be
+abstracted to :ref:`fd handles` (file descriptor handles).
 
-There are also *string handles* which are useful for transient I/O.
+There are also :ref:`string handles` which are useful for transient
+I/O.
 
 You cannot open handles directly but must use a file, pipe or string
 handle creation method.

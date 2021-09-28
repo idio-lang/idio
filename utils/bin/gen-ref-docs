@@ -89,6 +89,14 @@ define* (separate-pathname val (:sep sep "/") (:ext-sep ext-sep ".")) {
   list dirname basename ext
 }
 
+define (mod-name mod sym) {
+  if (eq? 'Idio mod) {
+    sprintf "%s" sym
+  } {
+    sprintf "%s/%s" mod sym
+  }
+}
+
 define (indent-text leader text) {
   append-string leader (join-string (append-string "\n" leader) (split-string-exactly text "\n"))
 }
@@ -157,6 +165,8 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			sym-fn = nth p 4
 		      }
 
+		      mod-sym := mod-name mod sym
+
 		      ;eprintf "documenting %s/%s\n" mod sym
 
 		      ;; use (void) here as no symbol's value should
@@ -165,7 +175,8 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 		      ;; the difference otherwise
 		      val := symbol-value sym mod (void)
 
-		      if (void? val) {
+		      if (and (void? val)
+			      (not (eq? 'libc mod))) {
 			hprintf out-fh ".. %s/%s - XXX not found\n\n" mod sym
 
 			eprintf "generate-toc-file %s: %s %s: failed lookup\n" fbn mod sym
@@ -182,6 +193,15 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			dfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-doc.rst"
 
 			(cond
+			 ((void? val) {
+			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
+
+			   insert-file out-fh 1 dfn
+
+			   hprintf out-fh "\n"
+
+			   hash-set! mod-ht sym #t
+			 })
 			 ((function? val) {
 			   sigstr := %property val :sigstr #f
 
@@ -196,19 +216,17 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 					 }
 				       }
 
-			   hprintf out-fh ".. _`%s/%s`:\n\n" mod sym
+			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-			   if (eq? mod 'Idio) {
-			     hprintf out-fh ".. function:: %s %s\n\n" sym sigstr
-			   } {
-			     hprintf out-fh ".. function:: %s/%s %s\n\n" mod sym sigstr
-			   }
+			   hprintf out-fh ".. function:: %s %s\n\n" mod-sym sigstr
+			   hprintf out-fh "\n"
 
 			   leader := "   "
 
 			   docstr := %property val :docstr-raw #f
 			   if docstr {
 			     hprintf out-fh "%s\n" (indent-text leader docstr)
+			     hprintf out-fh "\n"
 			   }
 
 			   insert-file out-fh 1 dfn
@@ -221,8 +239,11 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			   if (struct-type-isa? val ^condition) {
 			     hprintf out-fh ".. exception:: %s\n" sym
 			   } {
-			     hprintf out-fh "struct-type: %s\n" sym
+			     hprintf out-fh ".. data:: %s\n" sym
+			     hprintf out-fh "   :type: %s\n" (type->string val)
+			     hprintf out-fh "   :canonical: %s\n" mod-sym
 			   }
+			   hprintf out-fh "\n"
 
 			   insert-file out-fh 1 dfn
 
@@ -231,7 +252,12 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			   hash-set! mod-ht sym #t
 			 })
 			 ((struct-instance? val) {
+			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
+
 			   hprintf out-fh ".. data:: %s\n" sym
+			   hprintf out-fh "   :type: %s\n" (type->string val)
+			   hprintf out-fh "   :canonical: %s\n" mod-sym
+			   hprintf out-fh "\n"
 
 			   insert-file out-fh 1 dfn
 
@@ -241,7 +267,12 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			 })
 			 ((or (array? val)
 			      (hash? val)) {
+				hprintf out-fh ".. _`%s`:\n\n" mod-sym
+
 				hprintf out-fh ".. data:: %s\n" sym
+				hprintf out-fh "   :type: %s\n" (type->string val)
+				hprintf out-fh "   :canonical: %s\n" mod-sym
+				hprintf out-fh "\n"
 
 				insert-file out-fh 1 dfn
 
@@ -273,7 +304,12 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			      (environ? sym)
 			      (dynamic? sym)
 			      (computed? sym)) {
+				hprintf out-fh ".. _`%s`:\n\n" mod-sym
+
 				hprintf out-fh ".. data:: %s\n" sym
+				hprintf out-fh "   :type: %s\n" (type->string val)
+				hprintf out-fh "   :canonical: %s\n" mod-sym
+				hprintf out-fh "\n"
 
 				insert-file out-fh 1 dfn
 
@@ -282,6 +318,8 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 				hash-set! mod-ht sym #t
 			      })
 			 ((symbol? val) {
+			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
+
 			   ; Hmm, there are symbols floating around but
 			   ; we'll also get symbols from the act of
 			   ; running this program which are "less
@@ -290,7 +328,11 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			   if module {
 			     hprintf out-fh "module: %s\n" sym
 			   } {
-			     hprintf out-fh "symbol: %s\n" sym
+			     hprintf out-fh ".. data:: %s\n" sym
+			     hprintf out-fh "   :type: symbol\n"
+			     hprintf out-fh "   :value: '%s\n" val
+			     hprintf out-fh "   :canonical: %s\n" mod-sym
+			     hprintf out-fh "\n"
 			   }
 
 			   insert-file out-fh 1 dfn

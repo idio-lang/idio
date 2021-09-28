@@ -2,8 +2,10 @@
 
 (document Idio string-handle?)
 (document Idio input-string-handle?)
-(document Idio open-input-string)
 (document Idio output-string-handle?)
+
+(document Idio open-input-string)
 (document Idio open-output-string)
+
 (document Idio get-output-string)
 

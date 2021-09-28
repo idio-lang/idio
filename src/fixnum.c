@@ -248,7 +248,7 @@ test if `o` is a fixnum				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an fixnum, #f otherwise	\n\
+:return: ``#t`` if `o` is an fixnum, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -285,11 +285,11 @@ int idio_isa_integer (IDIO o)
 IDIO_DEFINE_PRIMITIVE1_DS ("integer?", integerp, (IDIO o), "o", "\
 test if `o` is an integer			\n\
 						\n\
-a fixnum or a bignum integer			\n\
+a fixnum or an integer bignum			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an integer, #f otherwise	\n\
+:return: ``#t`` if `o` is an integer, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -325,7 +325,7 @@ fixnum or bignum				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an number, #f otherwise	\n\
+:return: ``#t`` if `o` is an number, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);

@@ -102,7 +102,7 @@ test if `o` is a continuation			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a continuation #f otherwise\n\
+:return: ``#t`` if `o` is a continuation ``#f`` otherwise\n\
 ")
 {
     IDIO_ASSERT (o);

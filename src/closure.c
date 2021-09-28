@@ -131,7 +131,7 @@ test if `o` is a procedure			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a procedure, #f otherwise	\n\
+:return: ``#t`` if `o` is a procedure, ``#f`` otherwise	\n\
 						\n\
 A procedure can be either an Idio (closure) or C (primitive) defined function\n\
 ")

@@ -227,7 +227,7 @@ test if `o` is a condition type			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a condition type #f otherwise\n\
+:return: ``#t`` if `o` is a condition type ``#f`` otherwise\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -248,7 +248,7 @@ allocate a condition of condition type `ct`	\n\
 						\n\
 :return: allocated condition			\n\
 						\n\
-The allocated condition will have fields set to #n\n\
+The allocated condition will have fields set to ``#n``\n\
 ")
 {
     IDIO_ASSERT (ct);
@@ -308,7 +308,7 @@ test if `o` is a condition			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a condition #f otherwise	\n\
+:return: ``#t`` if `o` is a condition ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -345,7 +345,7 @@ test if condition `c` is a condition type `ct`	\n\
 :param ct: condition type to assert		\n\
 :type ct: condition type			\n\
 						\n\
-:return: #t if `c` is a condition type `ct`, #f otherwise\n\
+:return: ``#t`` if `c` is a condition type `ct`, ``#f`` otherwise\n\
 ")
 {
     IDIO_ASSERT (c);
@@ -443,16 +443,16 @@ void idio_condition_set_default_handler (IDIO ct, IDIO handler)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("set-default-handler!", set_default_handler, (IDIO ct, IDIO handler), "ct handler", "\
-set the default handler for condition type ``ct`` to	\n\
-``handler``						\n\
+set the default handler for condition type `ct` to	\n\
+`handler`						\n\
 							\n\
-If a condition of type ``ct`` is not otherwise handled	\n\
-then ``handler`` will be invoked with the continuation.	\n\
+If a condition of type `ct` is not otherwise handled	\n\
+then `handler` will be invoked with the continuation.	\n\
 							\n\
 :param ct: condition type				\n\
 :type ct: condition type				\n\
 :param handler: handler for the condition type		\n\
-:type handler: function				\n\
+:type handler: function					\n\
 							\n\
 :return: #<unspec>					\n\
 ")
@@ -488,9 +488,9 @@ void idio_condition_clear_default_handler (IDIO ct)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("clear-default-handler!", clear_default_handler, (IDIO ct), "ct", "\
-unset the default handler for condition type ``ct``	\n\
+unset the default handler for condition type `ct`	\n\
 							\n\
-The default behaviour for conditions of type ``ct`` will\n\
+The default behaviour for conditions of type `ct` will	\n\
 resume.							\n\
 							\n\
 :param ct: condition type				\n\
@@ -700,7 +700,7 @@ This effects an exit-on-error					\n\
 :type c: condition instance					\n\
 :return: as below						\n\
 								\n\
-If the command exits with a non-zero status (from exit(3) or	\n\
+If the command exits with a non-zero status (from :manpage:`exit(3)` or	\n\
 by signal) then we exit the same way.				\n\
 								\n\
 Otherwise #unspec						\n\

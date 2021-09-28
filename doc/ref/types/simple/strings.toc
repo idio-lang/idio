@@ -1,11 +1,12 @@
 (rst "strings-intro" 0)
 
 (document Idio string?)
+(document Idio pathname?)
+
 (document Idio make-string)
-(document Idio string->pathname)
-(document Idio string->list)
 (document Idio list->string)
-(document Idio string->symbol)
+(document Idio symbol->string)
+(document Idio string->pathname)
 
 (document Idio append-string)
 (document Idio concatenate-string)

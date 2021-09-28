@@ -636,7 +636,7 @@ is `o` an expander				\n\
 						\n\
 :param o: value to test				\n\
 :return: an entry from the expanders table if	\n\
-	 `o` is an expander or #f		\n\
+	 `o` is an expander or ``#f``		\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -1150,7 +1150,7 @@ test if `o` is a infix operator		\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a infix operator, #f otherwise	\n\
+:return: ``#t`` if `o` is a infix operator, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -1220,7 +1220,7 @@ test if `o` is a postfix operator		\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a postfix operator, #f otherwise	\n\
+:return: ``#t`` if `o` is a postfix operator, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -1249,7 +1249,7 @@ test if `o` is a operator		\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a operator, #f otherwise	\n\
+:return: ``#t`` if `o` is a operator, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);

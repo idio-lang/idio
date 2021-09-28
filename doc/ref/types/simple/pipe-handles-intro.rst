@@ -5,7 +5,7 @@ Pipe Handles
 
 Pipe handles are the entities through which we perform command
 orchestration pipelines.  They are one underlying implementation of
-handles.
+:ref:`handles <handle type>`.
 
 Pipe handles only really differ from file handles in that you cannot
 *seek* on a pipe handle.

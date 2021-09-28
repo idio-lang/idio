@@ -364,7 +364,7 @@ test if `o` is an hash				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an hash, #f otherwise	\n\
+:return: ``#t`` if `o` is an hash, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -1106,12 +1106,12 @@ IDIO idio_hash_set (IDIO ht, IDIO key, IDIO v)
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("hash-set!", hash_set, (IDIO ht, IDIO key, IDIO v), "ht key v", "\
-set the index of ``key` in hash table ``ht`` to ``v``	\n\
+set the index of `key` in hash table `ht` to `v`	\n\
 							\n\
 :param ht: hash table					\n\
 :type ht: hash table					\n\
-:param key: non-#n value				\n\
-:type key: any non-#n					\n\
+:param key: non-``#n`` value				\n\
+:type key: any non-``#n``				\n\
 :param v: value						\n\
 :type v: a value					\n\
 							\n\
@@ -1244,15 +1244,15 @@ IDIO idio_hash_exists (IDIO h, void *kv)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("hash-exists?", hash_existsp, (IDIO ht, IDIO key), "ht key", "\
-assert whether index of ``key` in hash table ``ht`` has	\n\
+assert whether index of `key` in hash table `ht` has	\n\
 a value							\n\
 							\n\
 :param ht: hash table					\n\
 :type ht: hash table					\n\
-:param key: non-#n value				\n\
-:type key: any non-#n					\n\
+:param key: non-``#n`` value				\n\
+:type key: any non-``#n``				\n\
 							\n\
-:return: #t or #f					\n\
+:return: ``#t`` or ``#f``				\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1336,17 +1336,18 @@ IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args)
 }
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("hash-ref", hash_ref, (IDIO ht, IDIO key, IDIO args), "ht key [default]", "\
-return the value indexed by ``key` in hash table ``ht``	\n\
+return the value indexed by `key` in hash table `ht`	\n\
 							\n\
 :param ht: hash table					\n\
 :type ht: hash table					\n\
-:param key: non-#n value				\n\
-:type key: any non-#n					\n\
-:param default: a default value if ``key`` not found	\n\
-:type default: a thunk or a simple value		\n\
+:param key: non-``#n`` value				\n\
+:type key: any non-``#n``				\n\
+:param default: a default value if `key` not found	\n\
+:type default: a thunk or a simple value, optional	\n\
 							\n\
-:return: value (#unspec if ``key`` not found and no	\n\
-	 ``default`` supplied)				\n\
+:return: value						\n\
+:raises rt-hash-key-not-found-error: if `key` not found	\n\
+	and no `default` supplied			\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1453,13 +1454,13 @@ int idio_hash_delete (IDIO h, void *kv)
  * SRFI 69 -- not an error to delete a non-existent key
  */
 IDIO_DEFINE_PRIMITIVE2_DS ("hash-delete!", hash_delete, (IDIO ht, IDIO key), "ht key", "\
-delete the value associated with index of ``key` in	\n\
-hash table ``ht``					\n\
+delete the value associated with index of `key` in	\n\
+hash table `ht`					\n\
 							\n\
 :param ht: hash table					\n\
 :type ht: hash table					\n\
-:param key: non-#n value				\n\
-:type key: any non-#n					\n\
+:param key: non-``#n`` value				\n\
+:type key: any non-``#n``				\n\
 							\n\
 :return: #unspec					\n\
 ")
@@ -1524,7 +1525,7 @@ IDIO idio_hash_keys_to_list (IDIO h)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("hash-keys", hash_keys, (IDIO ht), "ht", "\
-return a list of the keys of the hash table ``ht``	\n\
+return a list of the keys of the hash table `ht`	\n\
 							\n\
 no order can be presumed				\n\
 							\n\
@@ -1581,7 +1582,7 @@ IDIO idio_hash_values_to_list (IDIO h)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("hash-values", hash_values, (IDIO ht), "ht", "\
-return a list of the values of the hash table ``ht``	\n\
+return a list of the values of the hash table `ht`	\n\
 							\n\
 no order can be presumed				\n\
 							\n\
@@ -1695,21 +1696,20 @@ IDIO idio_hash_make_hash (IDIO args)
 IDIO_DEFINE_PRIMITIVE0V_DS ("make-hash", make_hash, (IDIO args), "[ equiv-func [ hash-func [size]]]", "\
 create a hash table					\n\
 							\n\
-:param hash-func: defaults to ``hash-table-hash``	\n\
-:type hash-func: function				\n\
 :param equiv-func: defaults to ``equal?``		\n\
-:type equiv-func: function or symbol			\n\
-:param size: default to 32				\n\
-:type size: fixnum					\n\
+:type equiv-func: function or symbol, optional		\n\
+:param hash-func: defaults to ``hash-table-hash``	\n\
+:type hash-func: function, optional			\n\
+:param size: defaults to 32				\n\
+:type size: fixnum, optional				\n\
+:return: hash table					\n\
 							\n\
-If either of ``hash-func`` or ``equiv-func`` is ``#n``	\n\
+If either of `hash-func` or `equiv-func` is ``#n``	\n\
 use the default.					\n\
 							\n\
-As an accelerator if ``equiv-comp`` is one of the	\n\
-*symbols* ``eq?``, ``eqv?`` or ``equal?`` then use the	\n\
+As an accelerator if `equiv-comp` is one of the		\n\
+symbols ``'eq?``, ``'eqv?`` or ``'equal?`` then use the	\n\
 underlying C function.					\n\
-							\n\
-:return: hash table					\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -1766,14 +1766,16 @@ IDIO idio_hash_alist_to_hash (IDIO alist, IDIO args)
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("alist->hash", alist2hash, (IDIO alist, IDIO args), "al [args]", "\
-convert association list ``al`` into a hash table	\n\
+convert association list `al` into a hash table		\n\
 							\n\
 :param al: association list				\n\
 :type al: association list				\n\
-:param args: argument for ``make-hash``			\n\
-:type args: (see ``make-hash``)				\n\
+:param args: arguments for ``make-hash``		\n\
+:type args: list, optional				\n\
 							\n\
 :return: hash table					\n\
+							\n\
+.. seealso:: :ref:`make-hash <make-hash>`		\n\
 ")
 {
     IDIO_ASSERT (alist);
@@ -1796,12 +1798,12 @@ convert association list ``al`` into a hash table	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("hash-equivalence-function", hash_equivalence_function, (IDIO ht), "h", "\
-return the ``equiv-func`` of ``h``			\n\
+return the `equiv-func` of `h`				\n\
 							\n\
 :param h: hash table					\n\
 :type h: hash table					\n\
 							\n\
-:return: equivalent function				\n\
+:return: equivalence function				\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1831,12 +1833,12 @@ return the ``equiv-func`` of ``h``			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("hash-hash-function", hash_hash_function, (IDIO ht), "h", "\
-return the ``hash-func`` of ``h``			\n\
+return the `hash-func` of `h`				\n\
 							\n\
 :param h: hash table					\n\
 :type h: hash table					\n\
 							\n\
-:return: hash function					\n\
+:return: hashing function				\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1862,7 +1864,7 @@ return the ``hash-func`` of ``h``			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("hash-size", hash_size, (IDIO ht), "h", "\
-return the key count of ``h``				\n\
+return the key count of `h`				\n\
 							\n\
 :param h: hash table					\n\
 :type h: hash table					\n\
@@ -1903,28 +1905,32 @@ return the key count of ``h``				\n\
  * returned value
  */
 IDIO_DEFINE_PRIMITIVE3V_DS ("hash-update!", hash_update, (IDIO ht, IDIO key, IDIO func, IDIO args), "ht key func [default]", "\
-update the value indexed by ``key` in hash table ``ht``		\n\
+update the value indexed by `key` in hash table `ht`		\n\
 								\n\
 SRFI-69:							\n\
 								\n\
 Semantically equivalent to, but may be implemented more		\n\
 efficiently than, the following code:				\n\
 								\n\
+.. code-block:: idio						\n\
+								\n\
    hash-set! ht key (func (hash-ref ht key [default])))		\n\
 								\n\
-That is, call ``func`` on the existing value and set the	\n\
+That is, call `func` on the existing value and set the		\n\
 key to the returned value					\n\
 								\n\
 :param ht: hash table						\n\
 :type ht: hash table						\n\
-:param key: non-#n value					\n\
-:type key: any non-#n						\n\
+:param key: non-``#n`` value					\n\
+:type key: any non-``#n``					\n\
 :param func: func to generate replacement value			\n\
 :type func: 1-ary function					\n\
 :param default: see ``hash-ref``				\n\
 :type default: see ``hash-ref``					\n\
 								\n\
 :return: #unspec						\n\
+								\n\
+.. seealso:: :ref:`hash-ref <hash-ref>`				\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1957,7 +1963,7 @@ key to the returned value					\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("hash-walk", hash_walk, (IDIO ht, IDIO func), "ht func", "\
-call ``func`` for each ``key` in hash table ``ht``		\n\
+call `func` for each `key` in hash table `ht`			\n\
 								\n\
 :param ht: hash table						\n\
 :type ht: hash table						\n\
@@ -2009,21 +2015,21 @@ call ``func`` for each ``key` in hash table ``ht``		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("fold-hash", fold_hash, (IDIO ht, IDIO func, IDIO val), "ht func val", "\
-call ``func`` for each ``key`` in hash table ``ht`` with	\n\
-arguments: ``key``, the value indexed by ``key`` and ``val``	\n\
+call `func` for each `key` in hash table `ht` with		\n\
+arguments: `key`, the value indexed by `key` and `val`		\n\
 								\n\
-``val`` is updated to the value returned by ``func``		\n\
+`val` is updated to the value returned by `func`		\n\
 								\n\
-The final value of ``val`` is returned				\n\
+The final value of `val` is returned				\n\
 								\n\
 :param ht: hash table						\n\
 :type ht: hash table						\n\
 :param func: func to be called with each key, value, val tuple	\n\
 :type func: 3-ary function					\n\
-:param val: initial value for ``val``				\n\
+:param val: initial value for `val`				\n\
 :type func: value						\n\
 								\n\
-:return: final value of ``val``					\n\
+:return: final value of `val`					\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -2073,7 +2079,8 @@ copy hash table `orig`					\n\
 							\n\
 :param orig: initial hash table				\n\
 :type orig: hash table					\n\
-:param depth: (optional) 'shallow or 'deep (default)	\n\
+:param depth: ``'shallow`` or ``'deep`` (default)	\n\
+:type depth: symbol, optional				\n\
 :return: the new hash table				\n\
 :rtype: hash table					\n\
 ")
@@ -2123,17 +2130,17 @@ copy hash table `orig`					\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("merge-hash!", merge_hash, (IDIO ht1, IDIO ht2), "ht1 ht2", "\
-merge the key/value pairs in hash table ``ht2`` into hash	\n\
-table ``ht1``							\n\
+merge the key/value pairs in hash table `ht2` into hash		\n\
+table `ht1`							\n\
 								\n\
-duplicate keys in ``ht2`` will overwrite keys in `ht1``		\n\
+duplicate keys in `ht2` will overwrite keys in `ht1`		\n\
 								\n\
 :param ht1: hash table						\n\
 :type ht1: hash table						\n\
 :param ht2: hash table						\n\
 :type ht2: hash table						\n\
 								\n\
-:return: ``ht1``						\n\
+:return: `ht1`							\n\
 ")
 {
     IDIO_ASSERT (ht1);

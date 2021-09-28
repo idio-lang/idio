@@ -1,3 +1,6 @@
 (rst "fixnums-intro" 0)
 
 (document Idio fixnum? fixnump)
+(document Idio FIXNUM-MIN)
+(document Idio FIXNUM-MAX)
+

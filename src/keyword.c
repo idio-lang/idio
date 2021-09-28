@@ -254,7 +254,7 @@ test if `o` is an keyword			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an keyword, #f otherwise	\n\
+:return: ``#t`` if `o` is an keyword, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -311,7 +311,7 @@ IDIO_DEFINE_PRIMITIVE0V_DS ("make-keyword-table", make_keyword_table, (IDIO args
 used for constructing property tables		\n\
 						\n\
 :param size: size of underlying hash table	\n\
-:type size: integer				\n\
+:type size: integer, optional			\n\
 						\n\
 :return: keyword table				\n\
 ")
@@ -360,18 +360,19 @@ IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args)
 }
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("keyword-ref", keyword_ref, (IDIO ht, IDIO kw, IDIO args), "kt kw [default]", "\
-return the value indexed by keyword ``kw` in keyword	\n\
-table ``ht``						\n\
+return the value indexed by keyword `kw` in keyword	\n\
+table `ht`						\n\
 							\n\
 :param ht: hash table					\n\
 :type ht: hash table					\n\
 :param kw: keyword index				\n\
 :type kw: keyword					\n\
-:param default: a default value if ``kw`` not found	\n\
-:type default: value					\n\
+:param default: a default value to return if `kw` not found	\n\
+:type default: value, optional				\n\
 							\n\
-:return: value (#unspec if ``key`` not found and no	\n\
-	 ``default`` supplied)				\n\
+:return: value						\n\
+:raises ^rt-hash-key-not-found-error: if `key` is not	\n\
+	found and no `default` is supplied		\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -414,12 +415,12 @@ IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v)
     return idio_S_unspec;
 }
 IDIO_DEFINE_PRIMITIVE3_DS ("keyword-set!", keyword_set, (IDIO ht, IDIO kw, IDIO v), "ht kw v", "\
-set the index of ``kw` in hash table ``ht`` to ``v``	\n\
+set the index of `kw` in hash table `ht` to `v`	\n\
 							\n\
 :param ht: hash table					\n\
 :type ht: hash table					\n\
-:param kw: non-#n value					\n\
-:type kw: any non-#n					\n\
+:param kw: non-``#n`` value				\n\
+:type kw: any non-``#n``				\n\
 :param v: value						\n\
 :type v: a value					\n\
 							\n\

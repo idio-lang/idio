@@ -795,7 +795,7 @@ test if `o` is an array				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an array, #f otherwise	\n\
+:return: ``#t`` if `o` is an array, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -814,11 +814,10 @@ create an array with an initial allocation size of `size`\n\
 						\n\
 :param size: initial array size			\n\
 :type size: integer				\n\
-:param default: default element value		\n\
+:param default: default array element value, defaults to ``#f``	\n\
+:type default: value, optional			\n\
 :return: the new array				\n\
 :rtype: array					\n\
-						\n\
-If no default value is supplied #f is used.	\n\
 ")
 {
     IDIO_ASSERT (size);
@@ -899,8 +898,10 @@ copy array `orig` and add an optional `extra` elements	\n\
 							\n\
 :param orig: initial array				\n\
 :type orig: array					\n\
-:param depth: (optional) 'shallow or 'deep (default)	\n\
-:param extra: (optional) extra elements			\n\
+:param depth: ``'shallow`` or ``'deep`` (default)	\n\
+:type depth: symbol, optional				\n\
+:param extra: how many extra elements, defaults to 0 (zero)	\n\
+:type extra: integer, optional				\n\
 :return: the new array					\n\
 :rtype: array						\n\
 ")
@@ -1376,12 +1377,11 @@ convert `a` to a list				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("array-for-each-set", array_for_each_set, (IDIO a, IDIO func), "a func", "\
-call ``func`` for each element in array table ``a`` with	\n\
-a non-default value with arguments: ``index`` the value at that	\n\
-index								\n\
+call `func` for each element in array `a` with a non-default	\n\
+value with arguments: `index` the value at that	index		\n\
 								\n\
-:param a: array table						\n\
-:type a: array table						\n\
+:param a: array							\n\
+:type a: array							\n\
 :param func: func to be called with each index, value tuple	\n\
 :type func: 2-ary function					\n\
 :return: #unspec						\n\
@@ -1417,21 +1417,21 @@ index								\n\
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("fold-array", fold_array, (IDIO a, IDIO func, IDIO val), "a func val", "\
-call ``func`` for each element in array table ``a`` with	\n\
-arguments:``index``, the value at that index and ``val``	\n\
+call `func` for each element in array `a` with arguments:	\n\
+`index`, the value at that index and `val`			\n\
 								\n\
-``val`` is updated to the value returned by ``func``		\n\
+`val` is updated to the value returned by `func`.		\n\
 								\n\
-The final value of ``val`` is returned				\n\
+The final value of `val` is returned.				\n\
 								\n\
 :param a: array table						\n\
 :type a: array table						\n\
 :param func: func to be called with each index, value, val tuple\n\
 :type func: 3-ary function					\n\
-:param val: initial value for ``val``				\n\
+:param val: initial value for `val`				\n\
 :type func: value						\n\
 								\n\
-:return: final value of ``val``					\n\
+:return: final value of `val`					\n\
 ")
 {
     IDIO_ASSERT (a);

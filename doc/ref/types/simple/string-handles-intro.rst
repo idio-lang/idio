@@ -3,10 +3,11 @@
 String Handles
 ==============
 
-String handles use memory as their backing store otherwise they
-maintain the same interface as file handles.  You can write to a
-string until you run out of memory in the same way you can write to a
-file until you run of space in the file system.
+String handles use memory as their backing store otherwise they are
+one implementation of :ref:`handles <handle type>`.
+
+You can write to a string until you run out of memory in the same way
+you can write to a file until you run of space in the file system.
 
 You can only have input or output handles, not a mixed form.
 

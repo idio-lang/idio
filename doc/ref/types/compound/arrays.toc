@@ -4,6 +4,7 @@
 
 (document Idio make-array)
 (document Idio copy-array)
+(document Idio list->array)
 
 (document Idio array-fill!)
 (document Idio array-length)
@@ -15,8 +16,6 @@
 (document Idio array-pop!)
 (document Idio array-unshift!)
 (document Idio array-shift!)
-
-(document Idio array->list)
 
 (document Idio array-for-each-set)
 

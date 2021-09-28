@@ -212,7 +212,7 @@ create a struct type				\n\
 :param name: struct type name			\n\
 :type name: symbol				\n\
 :param parent: parent struct type		\n\
-:type parent: struct type or #n			\n\
+:type parent: struct type or ``#n``			\n\
 :param fields: field names			\n\
 :type fields: list of symbol			\n\
 						\n\
@@ -261,7 +261,7 @@ test if `o` is a struct type			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a struct type, #f otherwise	\n\
+:return: ``#t`` if `o` is a struct type, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -289,7 +289,7 @@ void idio_free_struct_type (IDIO p)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-type-name", struct_type_name, (IDIO st), "st", "\
-return the name of struct type ``st``		\n\
+return the name of struct type `st`		\n\
 						\n\
 :param st: struct type to query			\n\
 :type st: struct type				\n\
@@ -311,13 +311,13 @@ return the name of struct type ``st``		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-type-parent", struct_type_parent, (IDIO st), "st", "\
-return the parent of struct type ``st``		\n\
+return the parent of struct type `st`		\n\
 						\n\
 :param st: struct type to query			\n\
 :type st: struct type				\n\
 						\n\
 :return: struct type parent			\n\
-:rtype: struct type or #n			\n\
+:rtype: struct type or ``#n``			\n\
 ")
 {
     IDIO_ASSERT (st);
@@ -333,13 +333,13 @@ return the parent of struct type ``st``		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-type-fields", struct_type_fields, (IDIO st), "st", "\
-return the fields of struct type ``st``		\n\
+return the fields of struct type `st`		\n\
 						\n\
 :param st: struct type to query			\n\
 :type st: struct type				\n\
 						\n\
 :return: struct type fields			\n\
-:rtype: list of symbols or #n			\n\
+:rtype: list of symbols or ``#n``			\n\
 ")
 {
     IDIO_ASSERT (st);
@@ -390,15 +390,15 @@ int idio_struct_type_isa (IDIO st, IDIO type)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("struct-type-isa?", struct_type_isa, (IDIO st, IDIO type), "st type", "\
-assert that struct type ``st`` isa a derivative	\n\
-of struct type ``type``				\n\
+assert that struct type `st` isa a derivative	\n\
+of struct type `type`				\n\
 						\n\
 :param st: struct type to query			\n\
 :type st: struct type				\n\
 :param type: struct type to compare		\n\
 :type type: struct type				\n\
 						\n\
-:return: #t/#f					\n\
+:return: ``#t``/``#f``					\n\
 ")
 {
     IDIO_ASSERT (st);
@@ -521,7 +521,7 @@ IDIO idio_struct_instance_copy (IDIO si)
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("make-struct-instance", make_struct_instance, (IDIO st, IDIO values), "st values", "\
-create an instance of struct type ``st`` assigning	\n\
+create an instance of struct type `st` assigning	\n\
 values to the struct type's fields			\n\
 						\n\
 :param st: struct type to create		\n\
@@ -563,7 +563,7 @@ test if `o` is a struct instance		\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a struct instance, #f otherwise	\n\
+:return: ``#t`` if `o` is a struct instance, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -589,7 +589,7 @@ void idio_free_struct_instance (IDIO p)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-instance-type", struct_instance_type, (IDIO si), "si", "\
-return the struct type of struct instance ``si``\n\
+return the struct type of struct instance `si`	\n\
 						\n\
 :param si: struct instance to query		\n\
 :type si: struct instance			\n\
@@ -611,7 +611,7 @@ return the struct type of struct instance ``si``\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-instance-fields", struct_instance_fields, (IDIO si), "si", "\
-return the struct type fields of struct instance ``si``\n\
+return the struct type fields of struct instance `si`	\n\
 						\n\
 :param si: struct instance to query		\n\
 :type si: struct instance			\n\
@@ -709,7 +709,7 @@ IDIO idio_struct_instance_ref (IDIO si, IDIO field)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("struct-instance-ref", struct_instance_ref, (IDIO si, IDIO field), "si field", "\
-return field ``field`` of struct instance ``si``\n\
+return field `field` of struct instance `si`	\n\
 						\n\
 :param si: struct instance to query		\n\
 :type si: struct instance			\n\
@@ -780,11 +780,11 @@ IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index)
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("%struct-instance-ref-direct", struct_instance_ref_direct, (IDIO si, IDIO st, IDIO index), "si st index", "\
-return integer field index ``index`` of struct	\n\
-instance ``si``					\n\
+return integer field index `index` of struct	\n\
+instance `si`					\n\
 						\n\
-struct instance ``si`` is verified as being an	\n\
-instance of struct type ``st``			\n\
+struct instance `si` is verified as being an	\n\
+instance of struct type `st`			\n\
 						\n\
 :param si: struct instance to query		\n\
 :type si: struct instance			\n\
@@ -872,7 +872,7 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("struct-instance-set!", struct_instance_set, (IDIO si, IDIO field, IDIO v), "si field v", "\
-set field ``field`` of struct instance ``si`` to ``v``	\n\
+set field `field` of struct instance `si` to `v`\n\
 						\n\
 :param si: struct instance to modify		\n\
 :type si: struct instance			\n\
@@ -949,11 +949,11 @@ IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v)
 }
 
 IDIO_DEFINE_PRIMITIVE4_DS ("%struct-instance-set-direct!", struct_instance_set_direct, (IDIO si, IDIO st, IDIO index, IDIO v), "si st index v", "\
-set integer field index ``index`` of struct	\n\
-instance ``si``					\n\
+set integer field index `index` of struct	\n\
+instance `si`					\n\
 						\n\
-struct instance ``si`` is verified as being an	\n\
-instance of struct type ``st``			\n\
+struct instance `si` is verified as being an	\n\
+instance of struct type `st`			\n\
 						\n\
 :param si: struct instance to query		\n\
 :type si: struct instance			\n\
@@ -1024,15 +1024,15 @@ int idio_struct_instance_isa (IDIO si, IDIO st)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("struct-instance-isa?", struct_instance_isa, (IDIO si, IDIO st), "si st", "\
-assert that struct instance ``si`` isa a derivative	\n\
-of struct type ``st``				\n\
+assert that struct instance `si` isa a derivative	\n\
+of struct type `st`				\n\
 						\n\
 :param si: struct instance to query		\n\
 :type si: struct instance			\n\
 :param st: struct type to verify		\n\
 :type st: struct type				\n\
 						\n\
-:return: #t/#f					\n\
+:return: ``#t``/``#f``					\n\
 ")
 {
     IDIO_ASSERT (si);

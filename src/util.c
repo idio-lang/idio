@@ -241,9 +241,11 @@ return the type of `o` as a string		\n\
 IDIO_DEFINE_PRIMITIVE1_DS ("zero?", zerop, (IDIO o), "o", "\
 test if `o` is the numeric value zero		\n\
 						\n\
+a fixnum or a bignum with the value zero	\n\
+						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is zero, #f otherwise	\n\
+:return: ``#t`` if `o` is zero, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -261,11 +263,11 @@ test if `o` is the numeric value zero		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("null?", nullp, (IDIO o), "o", "\
-test if `o` is #n				\n\
+test if `o` is ``#n``				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is #n, #f otherwise	\n\
+:return: ``#t`` if `o` is ``#n``, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -294,7 +296,7 @@ test if `o` is void (#void)			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is void, #f otherwise	\n\
+:return: ``#t`` if `o` is void, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -318,7 +320,7 @@ test if symbol `s` is defined in this environment	\n\
 :param s: symbol to test			\n\
 :type s: symbol					\n\
 						\n\
-:return: #t if `s` is defined in this environment, #f otherwise	\n\
+:return: ``#t`` if `s` is defined in this environment, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (s);
@@ -354,7 +356,7 @@ test if `o` is a boolean			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is a boolean			\n\
+:return: ``#t`` if `o` is a boolean			\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -388,7 +390,7 @@ return the boolean inverse of `e`		\n\
 :param e: expression to invert			\n\
 :type e: any					\n\
 						\n\
-:return: #t if `e` is #f, #f otherwise		\n\
+:return: ``#t`` if `e` is ``#f``, ``#f`` otherwise		\n\
 ")
 {
     IDIO_ASSERT (e);
@@ -479,7 +481,7 @@ test if `o1` and `o2` are eq?			\n\
 :param o2: object to test			\n\
 :type o2: any					\n\
 						\n\
-:return: #t if `o1` is eq? to `o2`, #f otherwise\n\
+:return: ``#t`` if `o1` is eq? to `o2`, ``#f`` otherwise\n\
 ")
 {
     IDIO_ASSERT (o1);
@@ -502,7 +504,7 @@ test if `o1` and `o2` are eqv?			\n\
 :param o2: object to test			\n\
 :type o2: any					\n\
 						\n\
-:return: #t if `o1` is eqv? to `o2`, #f otherwise\n\
+:return: ``#t`` if `o1` is eqv? to `o2`, ``#f`` otherwise\n\
 ")
 {
     IDIO_ASSERT (o1);
@@ -531,7 +533,7 @@ test if `o1` and `o2` are equal?			\n\
 :param o2: object to test			\n\
 :type o2: any					\n\
 						\n\
-:return: #t if `o1` is equal? to `o2`, #f otherwise\n\
+:return: ``#t`` if `o1` is equal? to `o2`, ``#f`` otherwise\n\
 ")
 {
     IDIO_ASSERT (o1);
@@ -3019,7 +3021,7 @@ add `f` as a printer for `o`			\n\
 :param f: printer				\n\
 :type f: function				\n\
 						\n\
-`f` will be invoked with the value and #n	\n\
+`f` will be invoked with the value and ``#n``	\n\
 						\n\
 valid object/object types are:			\n\
 struct type					\n\
@@ -3080,7 +3082,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("string", string, (IDIO o), "o", "\
 convert `o` to a string				\n\
 						\n\
 :param o: object to convert			\n\
-						\n\
 :return: a string representation of `o`		\n\
 ")
 {
@@ -3094,11 +3095,10 @@ convert `o` to a string unless it already is	\n\
 a string					\n\
 						\n\
 :param o: object to convert			\n\
-						\n\
-->string differs from string in that it won't	\n\
-stringify a string!				\n\
-						\n\
 :return: a string representation of `o`		\n\
+						\n\
+``->string`` differs from ``string`` in that it won't	\n\
+stringify a string!				\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -3114,7 +3114,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("display-string", display_string, (IDIO o), "o", "\
 convert `o` to a display string			\n\
 						\n\
 :param o: object to convert			\n\
-						\n\
 :return: a string representation of `o`	\n\
 ")
 {
@@ -3609,11 +3608,11 @@ IDIO idio_copy (IDIO o, int depth)
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("copy-value", copy_value, (IDIO v, IDIO args), "v [depth]", "\
-copy ``v`` to `depth`					\n\
+copy `v` to `depth`					\n\
 							\n\
 :param v: value to copy					\n\
 :type v: any						\n\
-:param depth: (optional) 'shallow or 'deep (default)	\n\
+:param depth: (optional) ``'shallow`` or ``'deep`` (default)	\n\
 							\n\
 :return: copy of `v`					\n\
 ")
@@ -3850,7 +3849,7 @@ void idio_dump (IDIO o, int detail)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("idio-dump", idio_dump, (IDIO o), "o", "\
-print the internal details of ``o`` to *stderr*		\n\
+print the internal details of `o` to *stderr*		\n\
 							\n\
 :param o: value to dump					\n\
 :type o: any						\n\
@@ -3887,14 +3886,14 @@ void idio_debug (char const *fmt, IDIO o)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("idio-debug", idio_debug, (IDIO fmt, IDIO o), "fmt o", "\
-print the string value of ``o`` according to `fmt` to	\n\
+print the string value of `o` according to `fmt` to	\n\
 *stderr*						\n\
 							\n\
 There must be a single %s conversion specification	\n\
 							\n\
 idio-debug \"foo is %20s\n\" foo			\n\
 							\n\
-:param fmt: printf(3) format string			\n\
+:param fmt: :manpage:`printf(3)` format string		\n\
 :type fmt: string					\n\
 :param o: value to dump					\n\
 :type o: any						\n\
@@ -3976,7 +3975,7 @@ IDIO idio_add_feature (IDIO f)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("%add-feature", add_feature, (IDIO f), "f", "\
-add feature ``f`` to Idio features			\n\
+add feature `f` to Idio features			\n\
 							\n\
 :param f: feature to add				\n\
 :type f: symbol or string				\n\

@@ -1,8 +1,10 @@
 (rst "pipe-handles-intro" 0)
 
+(document Idio pipe-handle?)
 (document Idio input-pipe-handle?)
+(document Idio output-pipe-handle?)
+
 (document Idio open-input-pipe)
 (document Idio open-output-pipe)
-(document Idio output-pipe-handle?)
+
 (document Idio pipe-handle-fd)
-(document Idio pipe-handle?)

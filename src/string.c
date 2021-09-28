@@ -839,7 +839,7 @@ test if `o` is an string				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: #t if `o` is an string, #f otherwise	\n\
+:return: ``#t`` if `o` is an string, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -858,12 +858,11 @@ create a string with an initial length of `size`\n\
 						\n\
 :param size: initial string size		\n\
 :type size: integer				\n\
-:param fillc: (optional) default character value\n\
-:type fillc: unicode				\n\
+:param fillc: fill character value, defaults to \n\
+	``#\\{space}``				\n\
+:type fillc: unicode, optional			\n\
 :return: the new string				\n\
 :rtype: string					\n\
-						\n\
-If no default value is supplied #\{space} is used.	\n\
 ")
 {
     IDIO_ASSERT (size);
@@ -1338,14 +1337,14 @@ IDIO_DEFINE_PRIMITIVE0V_DS ("append-string", append_string, (IDIO args), "[args]
 append strings								\n\
 									\n\
 :param args: strings to append together					\n\
-:type args: list							\n\
-:return: string	(\"\" if no ``args`` supplied)				\n\
+:type args: list, optional						\n\
+:return: string	(\"\" if no `args` supplied)				\n\
 									\n\
 ``append-string`` takes multiple arguments each of which is		\n\
 a string.								\n\
 									\n\
-Compare to ``concatenate-string`` which takes a single argument,	\n\
-which is a list of strings.						\n\
+.. seealso:: :ref:`concatenate-string <concatenate-string>` which takes	\n\
+	a single argument which is a list of strings.			\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -1393,20 +1392,22 @@ which is a list of strings.						\n\
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("concatenate-string", concatenate_string, (IDIO args), "ls", "\
-concatenate strings in list ``ls``					\n\
+IDIO_DEFINE_PRIMITIVE1_DS ("concatenate-string", concatenate_string, (IDIO args), "[ls]", "\
+concatenate strings in list `ls`					\n\
 									\n\
 :param ls: list of strings to concatenate together			\n\
-:type ls: list								\n\
-:return: string	("" if no ``args`` supplied)				\n\
+:type ls: list, optional						\n\
+:return: string	("" if no `ls` supplied)				\n\
 									\n\
 ``concatenate-string`` takes a single argument,				\n\
 which is a list of strings.  It is roughly comparable to		\n\
 									\n\
-``apply append-string ls``						\n\
+.. code-block:: idio							\n\
 									\n\
-Compare to ``append-string`` takes multiple arguments each of which is	\n\
-a string.								\n\
+   apply append-string ls						\n\
+									\n\
+.. seealso:: :ref:`append-string <append-string>` takes multiple	\n\
+	arguments each of which is a string.				\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -1453,7 +1454,7 @@ a string.								\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("copy-string", copy_string, (IDIO s), "s", "\
-return a copy of `s` which is not eq? to `s`	\n\
+return a copy of `s` which is not ``eq?`` to `s`	\n\
 						\n\
 :param s: string				\n\
 :type s: string					\n\
@@ -2056,14 +2057,14 @@ IDIO idio_string_index (IDIO s, IDIO c, int from_end)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("string-index", string_index, (IDIO s, IDIO c), "s c", "\
-return the index of `c` in `s` of `#f`		\n\
+return the index of `c` in `s` or ``#f``		\n\
 						\n\
 :param s: string				\n\
 :type s: string					\n\
 :param c: code point				\n\
 :type c: unicode				\n\
-:return: index or #f				\n\
-:rtype: integer or #f				\n\
+:return: index or ``#f``				\n\
+:rtype: integer or ``#f``				\n\
 ")
 {
     IDIO_ASSERT (s);
@@ -2087,14 +2088,14 @@ return the index of `c` in `s` of `#f`		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("string-rindex", string_rindex, (IDIO s, IDIO c), "s c", "\
-return the rightmost index of `c` in `s` of `#f`		\n\
+return the rightmost index of `c` in `s` or ``#f``	\n\
 						\n\
 :param s: string				\n\
 :type s: string					\n\
 :param c: code point				\n\
 :type c: unicode				\n\
-:return: index or #f				\n\
-:rtype: integer or #f				\n\
+:return: index or ``#f``				\n\
+:rtype: integer or ``#f``				\n\
 ")
 {
     IDIO_ASSERT (s);
@@ -2773,16 +2774,16 @@ IDIO idio_split_string (IDIO in, IDIO delim, int flags)
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("split-string", split_string, (IDIO in, IDIO args), "in [delim]", "\
-split string ``in`` using characters from ``delim``	\n\
+split string `in` using characters from `delim`		\n\
 into a list of strings					\n\
 							\n\
 :param in: string to split				\n\
 :type in: string					\n\
-:param delim: (optional) string containing delimiter characters	\n\
-:type delim: string					\n\
+:param delim: string containing delimiter characters	\n\
+:type delim: string, optional				\n\
 :return: list (of strings)				\n\
 							\n\
-`delim` defaults to `IFS` which defaults to SPACE TAB NL\n\
+`delim` defaults to :ref:`IFS <IFS>`			\n\
 ")
 {
     IDIO_ASSERT (in);
@@ -2815,16 +2816,16 @@ into a list of strings					\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("split-string-exactly", split_string_exactly, (IDIO in, IDIO args), "in [delim]", "\
-split string ``in`` using characters from ``delim``	\n\
+split string `in` using characters from `delim`		\n\
 into a list	 of strings				\n\
 							\n\
 :param in: string to split				\n\
 :type in: string					\n\
-:param delim: (optional) string containing delimiter characters	\n\
-:type delim: string					\n\
+:param delim: string containing delimiter characters	\n\
+:type delim: string, optional				\n\
 :return: list (of strings)				\n\
 							\n\
-`delim` defaults to `IFS` which defaults to SPACE TAB NL\n\
+`delim` defaults to :ref:`IFS <IFS>`			\n\
 ")
 {
     IDIO_ASSERT (in);
@@ -2857,7 +2858,7 @@ into a list	 of strings				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("fields", fields, (IDIO in), "in", "\
-split string ``in`` using characters from ``IFS``	\n\
+split string `in` using characters from :ref:`IFS <IFS>`\n\
 into an array with the first element the original string\n\
 							\n\
 :param in: string to split				\n\
@@ -2939,8 +2940,8 @@ return a string of `args` interspersed with `delim`	\n\
 :param delim: string				\n\
 :type delim: string				\n\
 :param args: string(s) to be joined		\n\
-:type args: list				\n\
-:return: string	(\"\" if no ``args`` supplied)	\n\
+:type args: list, optional			\n\
+:return: string	(\"\" if no `args` supplied)	\n\
 ")
 {
     IDIO_ASSERT (delim);
@@ -3185,15 +3186,15 @@ IDIO idio_strip_string (IDIO str, IDIO discard, IDIO ends)
 
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("strip-string", strip_string, (IDIO str, IDIO discard, IDIO ends), "str discard [ends]", "\
-return a string which is `str` with leading,	\n\
+return a string which is `str` without leading,	\n\
 trailing (or both) `discard` characters		\n\
 						\n\
 :param str: string				\n\
 :type str: string				\n\
 :param discard: string				\n\
 :type discard: string				\n\
-:param ends: 'left, 'right (default), 'both or 'none	\n\
-:type ends: symbol				\n\
+:param ends: ``'left``, ``'right`` (default), ``'both`` or ``'none``	\n\
+:type ends: symbol, optional			\n\
 :return: string					\n\
 						\n\
 The returned value could be `str` or a substring\n\
