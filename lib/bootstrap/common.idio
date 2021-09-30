@@ -169,55 +169,70 @@ will be overwritten in due course
 
 *#
 
-define (ASCII-Decimal_Number? x) {
-  if (or (eqv? x #\0)
-	 (eqv? x #\1)
-	 (eqv? x #\2)
-	 (eqv? x #\3)
-	 (eqv? x #\4)
-	 (eqv? x #\5)
-	 (eqv? x #\6)
-	 (eqv? x #\7)
-	 (eqv? x #\8)
-	 (eqv? x #\9)) #t #f
+define (ASCII-Decimal_Number? cp) "
+Is `cp` an ASCII ``Decimal_Number?``
+
+:param cp: code point to test
+:type cp: unicode
+:return: boolean
+
+This closure, defined in :file:`lib/bootstrap/common.idio` should be
+overriden by a 'more correct' ``unicode/ASCII-Decimal_Number?``
+primitive in :file:`src/usi-wrap.c` but exists for handling printing
+if bootstrap fails.
+
+" {
+  if (or (eqv? cp #\0)
+	 (eqv? cp #\1)
+	 (eqv? cp #\2)
+	 (eqv? cp #\3)
+	 (eqv? cp #\4)
+	 (eqv? cp #\5)
+	 (eqv? cp #\6)
+	 (eqv? cp #\7)
+	 (eqv? cp #\8)
+	 (eqv? cp #\9)) #t #f
 }
 
 define (%format type fmt & args) "
 
-Return a string from the format string ``fmt`` expanded by any escape
+Return a string from the format string `fmt` expanded by any escape
 sequences.
 
-If `type` is 'args then a % character in the format string starts an
-escape sequence which has the general form %[flags][width][.prec]K
-where K is a printf(3)-ish format character with arguments in `args`.
+If `type` is ``'args`` then a % character in the format string starts
+an escape sequence which has the general form
+:samp:`%[{flags}][{width}][.{prec}]{K}` where :samp:`{K}` is a
+printf(3)-ish format character with arguments in `args`.
 
-If K is an @ character then the list argument is spliced into the
-string converting all elements of the list to string form separated by
-a U+0022 (SPACE) character.
+If :samp:`{K}` is an @ character then the list argument is spliced
+into the string converting all elements of the list to string form
+separated by a U+0022 (SPACE) character.
 
-If `type` is 'keyed then a % character in the format string starts an
-escape sequence which has the general form %[flags][width][.prec]K
-where K is a single Unicode code point (satisfying
-Alphabetic?) which is expected to be a key in the optional
-hash table -- unless it is another % character.  The value associated
-with the key will be printed according to the specification.
+If `type` is ``'keyed`` then a % character in the format string starts
+an escape sequence which has the general form
+:samp:`%[{flags}][{width}][.{prec}]{K}` where :samp:`{K}` is a single
+Unicode code point (satisfying ``Alphabetic?``) which is expected to
+be a key in the optional hash table -- unless it is another %
+character.  The value associated with the key will be printed
+according to the specification.
 
 In both cases:
 
-* if K is a % character then a % is printed according to the
+* if :samp:`{K}` is a % character then a % is printed according to the
   specification
 
-If `type` is 'timeformat then it works similarly to 'keyed except we
-avoid a double application of any precision.  TIMEFORMAT describes a
-%f-like precision to the struct timeval strings.
+If `type` is ``'timeformat`` then it works similarly to ``'keyed``
+except we avoid a double application of any precision.
+:var:`TIMEFORMAT` describes a %f-like precision to the
+``struct-timeval`` strings.
 
-The flags are:
+The :samp:`{flags}` are:
 
 * '-' left align the output within width if applicable.
-* ' ' use #\{space} as the left padding character
-* '0' use #\0 as the left padding character
+* ' ' use ``#\\{space}`` as the left padding character
+* '0' use ``#\\0`` (zero) as the left padding character
 
-The default padding character is #\{space}
+The default padding character is ``#\\{space}``
 " {
   orig-ipcf := idio-print-conversion-format
   orig-ipcp := idio-print-conversion-precision

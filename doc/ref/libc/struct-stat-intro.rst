@@ -1,5 +1,5 @@
 struct stat
------------
+^^^^^^^^^^^
 
 :lname:`Idio` supports tagged references to :lname:`C` ``struct
 stat``:

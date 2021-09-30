@@ -2,5 +2,8 @@
 
 ; unicode.c
 (document Idio unicode?)
+
+(document Idio integer->unicode)
+
 (document Idio unicode=?)
 

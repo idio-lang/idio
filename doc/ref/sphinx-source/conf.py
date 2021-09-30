@@ -20,7 +20,7 @@ sys.path.append(os.path.abspath('./_ext'))
 
 project = 'Idio Language Reference'
 now = datetime.datetime.now()
-copyright = '2021-{0}, Ian Fitchet'.format (now.year)
+copyright = '{0}, Ian Fitchet'.format (now.year)
 author = 'Ian Fitchet'
 
 # The full version, including alpha/beta/rc tags
@@ -37,6 +37,7 @@ extensions = [
     'sphinx_git',
     'aside',
     'idio_lexer',
+    'idio_domain',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -1,5 +1,7 @@
 .. _`C Module`:
 
+.. idio:module:: C
+
 C Module
 ========
 

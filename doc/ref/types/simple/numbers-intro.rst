@@ -10,4 +10,4 @@ exactness.
 
 You can also use the :lname:`C` base types, ``C/char``, ``C/int``,
 etc. and supported ``typedef``\ s thereof, although they are usually
-used within the :ref:`libc Module`.
+used within the :ref:`libc module`.

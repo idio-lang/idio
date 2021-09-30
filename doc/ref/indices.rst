@@ -3,5 +3,5 @@ Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
+* :ref:`Module Index <idio-modindex>`
 * :ref:`search`

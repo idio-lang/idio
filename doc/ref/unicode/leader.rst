@@ -1,5 +1,7 @@
 .. _`unicode module`:
 
+.. idio:module:: unicode
+
 unicode Module
 ==============
 

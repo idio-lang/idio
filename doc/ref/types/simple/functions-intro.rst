@@ -73,6 +73,10 @@ In practice what ``define`` is doing is:
 
 with ``foo`` now available to be used in some way.
 
+.. idio:function:: foo a b
+
+   add `a` and `b`
+
 Notice the extra set of parentheses around the elements of the
 anonymous function.  Much like you might parenthesise a sub-expression
 in arithmetic, say, ``5 * (1 + 2)``, the parentheses force the

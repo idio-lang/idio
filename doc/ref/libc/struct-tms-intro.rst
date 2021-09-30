@@ -1,5 +1,5 @@
 struct tms
-----------
+^^^^^^^^^^
 
 :lname:`Idio` supports tagged references to :lname:`C` ``struct
 tms``:

@@ -218,7 +218,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 
 			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-			   hprintf out-fh ".. function:: %s %s\n\n" mod-sym sigstr
+			   hprintf out-fh ".. idio:function:: %s %s\n\n" mod-sym sigstr
 			   hprintf out-fh "\n"
 
 			   leader := "   "
@@ -237,10 +237,13 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			 })
 			 ((struct-type? val) {
 			   if (struct-type-isa? val ^condition) {
-			     hprintf out-fh ".. exception:: %s\n" sym
+			     hprintf out-fh ".. idio:condition:: %s\n\n" sym
 			   } {
-			     hprintf out-fh ".. data:: %s\n" sym
-			     hprintf out-fh "   :type: %s\n" (type->string val)
+			     hprintf out-fh ".. idio:struct:: %s\n\n" sym
+			     stp := struct-type-parent val
+			     if (not (null? stp)) {
+			       hprintf out-fh "   :parent: %s\n" (struct-type-name stp)
+			     }
 			     hprintf out-fh "   :canonical: %s\n" mod-sym
 			   }
 			   hprintf out-fh "\n"
@@ -254,7 +257,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			 ((struct-instance? val) {
 			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-			   hprintf out-fh ".. data:: %s\n" sym
+			   hprintf out-fh ".. idio:data:: %s\n\n" sym
 			   hprintf out-fh "   :type: %s\n" (type->string val)
 			   hprintf out-fh "   :canonical: %s\n" mod-sym
 			   hprintf out-fh "\n"
@@ -269,7 +272,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			      (hash? val)) {
 				hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-				hprintf out-fh ".. data:: %s\n" sym
+				hprintf out-fh ".. idio:data:: %s\n\n" sym
 				hprintf out-fh "   :type: %s\n" (type->string val)
 				hprintf out-fh "   :canonical: %s\n" mod-sym
 				hprintf out-fh "\n"
@@ -306,7 +309,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			      (computed? sym)) {
 				hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-				hprintf out-fh ".. data:: %s\n" sym
+				hprintf out-fh ".. idio:data:: %s\n\n" sym
 				hprintf out-fh "   :type: %s\n" (type->string val)
 				hprintf out-fh "   :canonical: %s\n" mod-sym
 				hprintf out-fh "\n"
@@ -328,7 +331,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			   if module {
 			     hprintf out-fh "module: %s\n" sym
 			   } {
-			     hprintf out-fh ".. data:: %s\n" sym
+			     hprintf out-fh ".. idio:data:: %s\n\n" sym
 			     hprintf out-fh "   :type: symbol\n"
 			     hprintf out-fh "   :value: '%s\n" val
 			     hprintf out-fh "   :canonical: %s\n" mod-sym

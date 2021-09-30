@@ -19,7 +19,7 @@ The usual constants are:
 .. data:: #t
 
    The boolean value for `true`.  In fact, as any non-``#f`` value is
-   regarded as "true" (that is, it isn't ``#f``) then ``#t`` is
+   regarded as `true` (that is, it isn't ``#f``) then ``#t`` is
    entirely redundant.  It is, however, a useful non-``#f`` value to
    return from a *predicate*.
 

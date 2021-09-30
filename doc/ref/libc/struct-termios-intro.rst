@@ -1,5 +1,5 @@
 struct termios
---------------
+^^^^^^^^^^^^^^
 
 :lname:`Idio` supports tagged references to :lname:`C` ``struct
 termios``:

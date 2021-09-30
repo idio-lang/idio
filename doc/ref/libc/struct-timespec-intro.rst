@@ -1,5 +1,5 @@
 struct timespec
----------------
+^^^^^^^^^^^^^^^
 
 :lname:`Idio` supports tagged references to :lname:`C` ``struct
 timespec``:

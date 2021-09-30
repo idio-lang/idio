@@ -1,5 +1,5 @@
 struct timeval
---------------
+^^^^^^^^^^^^^^
 
 :lname:`Idio` supports tagged references to :lname:`C` ``struct
 timeval``:

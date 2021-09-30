@@ -1,3 +1,3 @@
-Templates functions
--------------------
+Template functions
+------------------
 

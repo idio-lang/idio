@@ -1,5 +1,5 @@
 struct rusage
--------------
+^^^^^^^^^^^^^
 
 :lname:`Idio` supports tagged references to :lname:`C` ``struct
 rusage``:

@@ -18,7 +18,6 @@
 (document Idio &process-keys)
 (document Idio &req-key)
 (document Idio ->circle)
-(document Idio ASCII-Decimal_Number?)
 (document Idio abort)
 (document Idio abs)
 (document Idio acos)
@@ -259,6 +258,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
+; character handling
+
+(document Idio ASCII-Decimal_Number?)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
 ; file handling
 
 (document Idio open-input-file)
@@ -278,7 +283,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
-; file predicates
+; file/terminal predicates
 
 (document Idio b?)
 (document Idio c?)

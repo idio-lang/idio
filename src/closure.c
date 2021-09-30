@@ -39,10 +39,12 @@
 #include "error.h"
 #include "evaluate.h"
 #include "frame.h"
+#include "handle.h"
 #include "idio-string.h"
 #include "keyword.h"
 #include "module.h"
 #include "primitive.h"
+#include "string-handle.h"
 #include "symbol.h"
 #include "vm.h"
 
@@ -92,7 +94,27 @@ IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO
 
     idio_create_properties (c);
     if (idio_S_nil != sigstr) {
-	idio_set_property (c, idio_KW_sigstr, sigstr);
+	IDIO osh = idio_open_output_string_handle_C ();
+	int printed = 0;
+	while (idio_S_nil != sigstr) {
+	    IDIO pname = IDIO_PAIR_H (sigstr);
+	    
+	    if (idio_S_false == pname &&
+		idio_S_nil == IDIO_PAIR_T (sigstr)) {
+		break;
+	    }
+
+	    if (printed) {
+		idio_display_C (" ", osh);
+	    } else {
+		printed = 1;
+	    }
+
+	    idio_display (pname, osh);
+
+	    sigstr = IDIO_PAIR_T (sigstr);
+	}
+	idio_set_property (c, idio_KW_sigstr, idio_get_output_string (osh));
     }
     if (idio_S_nil != docstr) {
 	idio_set_property (c, idio_KW_docstr_raw, docstr);

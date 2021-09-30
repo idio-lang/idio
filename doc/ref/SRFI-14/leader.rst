@@ -1,4 +1,8 @@
-Module SRFI-14
+.. _`SRFI-14 module`:
+
+.. idio:module:: SRFI-14
+
+SRFI-14 Module
 ==============
 
 SRFI-14 introduces the idea of a character set, a *char-set*, whose

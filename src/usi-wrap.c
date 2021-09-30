@@ -199,7 +199,7 @@ void idio_usi_describe_code_point (idio_unicode_t cp)
 	}
     }
 
-    idio_display_C (" - ", oh);
+    idio_display_C (" # ", oh);
     for (int i = 0 ; i < IDIO_USI_FLAG_COUNT; i++) {
 	int printed = 0;
 
@@ -447,9 +447,9 @@ Note that the default Title-case mapping is to	\n\
  * This is used in %format in common.idio
  */
 IDIO_DEFINE_PRIMITIVE1_DS ("ASCII-Decimal_Number?", usi_ASCII_Decimal_Number_p, (IDIO cp), "cp", "\
-Is `cp` an ASCII Decimal_Number?		\n\
+Is `cp` an ASCII ``Decimal_Number?``		\n\
 						\n\
-:param cp: value to convert			\n\
+:param cp: code point to test			\n\
 :type cp: unicode				\n\
 :return: boolean				\n\
 ")
@@ -479,16 +479,15 @@ Is `cp` an ASCII Decimal_Number?		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("numeric-value", usi_numeric_value, (IDIO cp), "cp", "\
-return the Numeric_Value of `cp`		\n\
+return the *Numeric_Value* of `cp`		\n\
 						\n\
 :param cp: code point				\n\
 :type cp: unicode				\n\
 :return: integer or string			\n\
+:raises ^rt-param-value-error: if `cp` is not ``Numeric?``	\n\
 						\n\
-Unicode Numeric_Value can be a decimal integer	\n\
+The Unicode *Numeric_Value* can be a decimal integer	\n\
 or a rational which is returned as a string	\n\
-						\n\
-A condition is raised if `cp` is not Numeric.	\n\
 ")
 {
     IDIO_ASSERT (cp);

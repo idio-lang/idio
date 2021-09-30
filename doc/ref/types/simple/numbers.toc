@@ -4,6 +4,8 @@
 (document Idio number? numberp)
 (document Idio zero?)
 
+(document unicode unicode->integer)
+
 (document Idio \+ add)
 (document Idio \- subtract)
 (document Idio \* multiply)
@@ -32,4 +34,3 @@
 
 ; deprecated
 ;(document Idio integer->char)
-(document Idio integer->unicode)

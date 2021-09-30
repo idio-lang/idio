@@ -1,5 +1,5 @@
 struct utsname
---------------
+^^^^^^^^^^^^^^
 
 :lname:`Idio` supports tagged references to :lname:`C` ``struct
 utsname``:

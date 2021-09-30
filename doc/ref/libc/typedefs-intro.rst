@@ -1,5 +1,7 @@
 .. _`libc typedefs`:
 
+.. idio:module:: libc
+
 libc typedefs
 -------------
 

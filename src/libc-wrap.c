@@ -3122,7 +3122,7 @@ does `mode` represent a FIFO?			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("r?", libc_rp, (IDIO pathname), "pathname", "\
-does `pathname` pass `access (pathname, R_OK)`?	\n\
+does `pathname` pass :samp:`access ({pathname}, R_OK)`?	\n\
 						\n\
 :param pathname: file to test			\n\
 :type pathname: string				\n\
@@ -3214,7 +3214,7 @@ is `fd` a terminal?			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("w?", libc_wp, (IDIO pathname), "pathname", "\
-does `pathname` pass `access (pathname, W_OK)`?	\n\
+does `pathname` pass :samp:`access ({pathname}, W_OK)`?	\n\
 						\n\
 :param pathname: file to test			\n\
 :type pathname: string				\n\
@@ -3237,7 +3237,7 @@ does `pathname` pass `access (pathname, W_OK)`?	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("x?", libc_xp, (IDIO pathname), "pathname", "\
-does `pathname` pass `access (pathname, X_OK)`?	\n\
+does `pathname` pass :samp:`access ({pathname}, X_OK)`?	\n\
 						\n\
 :param pathname: file to test			\n\
 :type pathname: string				\n\
