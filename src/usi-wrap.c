@@ -1174,7 +1174,7 @@ void idio_init_usi_wrap ()
 	}
 
 	/*
-	 * char-set:regional_indicator is Property Regional_Indicator
+	 * char-set:regional-indicator is Property Regional_Indicator
 	 */
 	if (var->flags & IDIO_USI_FLAG_Regional_Indicator) {
 	    if (idio_S_false == bss[regional_indicator]) {
@@ -1186,7 +1186,7 @@ void idio_init_usi_wrap ()
 	}
 
 	/*
-	 * char-set:extend_or_spacing-mark is Property Extend + Property SpacingMark
+	 * char-set:extend-or-spacing-mark is Property Extend + Property SpacingMark
 	 */
 	if (var->flags & IDIO_USI_FLAG_Extend ||
 	    var->flags & IDIO_USI_FLAG_SpacingMark) {
@@ -1199,7 +1199,7 @@ void idio_init_usi_wrap ()
 	}
 
 	/*
-	 * char-set:hangul_l is Property L
+	 * char-set:hangul-l is Property L
 	 */
 	if (var->flags & IDIO_USI_FLAG_L) {
 	    if (idio_S_false == bss[hangul_l]) {
@@ -1211,7 +1211,7 @@ void idio_init_usi_wrap ()
 	}
 
 	/*
-	 * char-set:hangul_v is Property V
+	 * char-set:hangul-v is Property V
 	 */
 	if (var->flags & IDIO_USI_FLAG_V) {
 	    if (idio_S_false == bss[hangul_v]) {
@@ -1223,7 +1223,7 @@ void idio_init_usi_wrap ()
 	}
 
 	/*
-	 * char-set:hangul_t is Property T
+	 * char-set:hangul-t is Property T
 	 */
 	if (var->flags & IDIO_USI_FLAG_T) {
 	    if (idio_S_false == bss[hangul_t]) {
@@ -1235,7 +1235,7 @@ void idio_init_usi_wrap ()
 	}
 
 	/*
-	 * char-set:hangul_lv is Property LV
+	 * char-set:hangul-lv is Property LV
 	 */
 	if (var->flags & IDIO_USI_FLAG_LV) {
 	    if (idio_S_false == bss[hangul_lv]) {
@@ -1247,7 +1247,7 @@ void idio_init_usi_wrap ()
 	}
 
 	/*
-	 * char-set:hangul_lvt is Property LVT
+	 * char-set:hangul-lvt is Property LVT
 	 */
 	if (var->flags & IDIO_USI_FLAG_LVT) {
 	    if (idio_S_false == bss[hangul_lvt]) {

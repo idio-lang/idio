@@ -98,9 +98,20 @@ IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO
 	int printed = 0;
 	while (idio_S_nil != sigstr) {
 	    IDIO pname = IDIO_PAIR_H (sigstr);
-	    
-	    if (idio_S_false == pname &&
-		idio_S_nil == IDIO_PAIR_T (sigstr)) {
+
+	    /*
+	     * Check for last (varargs) arg
+	     */
+	    if (idio_S_nil == IDIO_PAIR_T (sigstr)) {
+		if (idio_S_false != pname) {
+		    if (printed) {
+			idio_display_C (" ", osh);
+		    }
+
+		    idio_display_C ("[", osh);
+		    idio_display (pname, osh);
+		    idio_display_C ("]", osh);
+		}
 		break;
 	    }
 

@@ -175,7 +175,6 @@ make a new condition type			\n\
 :param name: condition type name		\n\
 :param parent: parent condition type		\n\
 :param fields: condition type fields		\n\
-						\n\
 :return: new condition type			\n\
 						\n\
 make a new condition type based on existing condition `parent` with fields `fields`\n\
@@ -226,7 +225,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("condition-type?", condition_typep, (IDIO o), "o", "\
 test if `o` is a condition type			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a condition type ``#f`` otherwise\n\
 ")
 {
@@ -245,10 +243,11 @@ IDIO_DEFINE_PRIMITIVE1_DS ("allocate-condition", allocate_condition, (IDIO ct), 
 allocate a condition of condition type `ct`	\n\
 						\n\
 :param ct: condition type to allocate		\n\
-						\n\
 :return: allocated condition			\n\
 						\n\
 The allocated condition will have fields set to ``#n``\n\
+						\n\
+Used with :ref:`condition <condition>`.		\n\
 ")
 {
     IDIO_ASSERT (ct);
@@ -268,7 +267,6 @@ initialize a condition of condition type `ct` with values `values`\n\
 						\n\
 :param ct: condition type to allocate		\n\
 :param values: initial values for condition fields\n\
-						\n\
 :return: allocated condition			\n\
 ")
 {
@@ -307,7 +305,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("condition?", conditionp, (IDIO o), "o", "\
 test if `o` is a condition			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a condition ``#f`` otherwise	\n\
 ")
 {
@@ -344,7 +341,6 @@ test if condition `c` is a condition type `ct`	\n\
 :type c: condition				\n\
 :param ct: condition type to assert		\n\
 :type ct: condition type			\n\
-						\n\
 :return: ``#t`` if `c` is a condition type `ct`, ``#f`` otherwise\n\
 ")
 {
@@ -378,7 +374,6 @@ return field `field` of condition `c`		\n\
 						\n\
 :param c: condition				\n\
 :param field: field to return			\n\
-						\n\
 :return: field `field` of `c`			\n\
 ")
 {
@@ -407,7 +402,6 @@ set field `field` of condition `c` to value `value`\n\
 :param c: condition				\n\
 :param field: field to set			\n\
 :param value: value to set			\n\
-						\n\
 :return: #<unspec>				\n\
 ")
 {
@@ -453,7 +447,6 @@ then `handler` will be invoked with the continuation.	\n\
 :type ct: condition type				\n\
 :param handler: handler for the condition type		\n\
 :type handler: function					\n\
-							\n\
 :return: #<unspec>					\n\
 ")
 {
@@ -495,7 +488,6 @@ resume.							\n\
 							\n\
 :param ct: condition type				\n\
 :type ct: condition type				\n\
-							\n\
 :return: #<unspec>					\n\
 ")
 {
@@ -514,9 +506,9 @@ resume.							\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("default-SIGCHLD-handler", default_SIGCHLD_handler, (IDIO c), "c", "\
-The default handler for an ^rt-signal-SIGCHLD condition		\n\
+The default handler for an ``^rt-signal-SIGCHLD`` condition		\n\
 								\n\
-This invokes do-job-notification				\n\
+This invokes :ref:`do-job-notification <job-control/do-job-notification>`.	\n\
 								\n\
 :param c: the condition						\n\
 :type c: condition instance					\n\
@@ -524,10 +516,10 @@ This invokes do-job-notification				\n\
 {
     IDIO_ASSERT (c);
 
-    /*
-     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
-     */
-    IDIO_USER_TYPE_ASSERT (condition, c);
+    if (! idio_isa_condition (c)) {
+	idio_debug ("default-SIGCHLD-handler: not a condition: %s\n", c);
+	exit (1);
+    }
 
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
@@ -580,10 +572,10 @@ IDIO idio_condition_exit_on_error (IDIO c)
 {
     IDIO_ASSERT (c);
 
-    /*
-     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
-     */
-    IDIO_USER_TYPE_ASSERT (condition, c);
+    if (! idio_isa_condition (c)) {
+	idio_debug ("exit-on-error: not a condition: %s\n", c);
+	exit (1);
+    }
 
     /*
      * Erm, we just happen to know that ^rt-command-status-error is
@@ -653,7 +645,10 @@ void idio_condition_report (char const *prefix, IDIO c)
     IDIO_C_ASSERT (prefix);
     IDIO_ASSERT (c);
 
-    IDIO_TYPE_ASSERT (condition, c);
+    if (! idio_isa_condition (c)) {
+	idio_debug ("condition_report: not a condition: %s\n", c);
+	return;
+    }
 
     /*
      * The PID part requires an nnn up to 18 digits (intmax?) plus
@@ -692,26 +687,27 @@ void idio_condition_report (char const *prefix, IDIO c)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("default-rcse-handler", default_rcse_handler, (IDIO c), "c", "\
-The default handler for an ^rt-command-status-error condition	\n\
-								\n\
-This effects an exit-on-error					\n\
-								\n\
+The default handler for an ``^rt-command-status-error`` condition	\n\
 :param c: the condition						\n\
 :type c: condition instance					\n\
-:return: as below						\n\
+:return: see below						\n\
 								\n\
-If the command exits with a non-zero status (from :manpage:`exit(3)` or	\n\
-by signal) then we exit the same way.				\n\
+If the command exits with a non-zero status (from		\n\
+:manpage:`exit(3)` or by signal) then we exit the same way.	\n\
 								\n\
 Otherwise #unspec						\n\
+								\n\
+See :ref:`suppress-exit-on-error! <suppress-exit-on-error!>`	\n\
+for means to change the default behaviour.			\n\
+								\n\
 ")
 {
     IDIO_ASSERT (c);
 
-    /*
-     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
-     */
-    IDIO_USER_TYPE_ASSERT (condition, c);
+    if (! idio_isa_condition (c)) {
+	idio_debug ("default-rcse-handler: not a condition: %s\n", c);
+	exit (1);
+    }
 
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
@@ -736,9 +732,7 @@ Otherwise #unspec						\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("default-racse-handler", default_racse_handler, (IDIO c), "c", "\
-The default handler for an ^rt-async-command-status-error condition	\n\
-								\n\
-This returns #unspec						\n\
+The default handler for an ``^rt-async-command-status-error`` condition	\n\
 								\n\
 :param c: the condition						\n\
 :type c: condition instance					\n\
@@ -749,10 +743,10 @@ The default behaviour is to ignore failed asynchronous processes\n\
 {
     IDIO_ASSERT (c);
 
-    /*
-     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
-     */
-    IDIO_USER_TYPE_ASSERT (condition, c);
+    if (! idio_isa_condition (c)) {
+	idio_debug ("default-racse-handler: not a condition: %s\n", c);
+	exit (1);
+    }
 
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
@@ -796,10 +790,10 @@ does not return per se						\n\
 {
     IDIO_ASSERT (c);
 
-    /*
-     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
-     */
-    IDIO_USER_TYPE_ASSERT (condition, c);
+    if (! idio_isa_condition (c)) {
+	idio_debug ("default-condition-handler: not a condition: %s\n", c);
+	exit (1);
+    }
 
     IDIO thr = idio_thread_current_thread ();
 

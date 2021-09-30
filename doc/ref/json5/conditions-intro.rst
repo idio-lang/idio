@@ -1,4 +1,4 @@
-.. idio:module:: json5
+.. idio:currentmodule:: json5
 
 json5 conditions
 ----------------

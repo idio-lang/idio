@@ -1,4 +1,4 @@
-.. idio:module:: command
+.. idio:currentmodule:: command
 
 command functions
 -----------------

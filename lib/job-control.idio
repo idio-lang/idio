@@ -194,11 +194,28 @@ export-struct %process-substitution-job		read fd path dir suppress
 
 %%process-substitution-jobs := #{}
 
-define (add-process-substitution-job job psj) {
+define (add-process-substitution-job job psj) "
+Update the set of process substitution jobs with new job `job`.
+
+:param job: new job
+:type job: an instance of :ref:`%idio-job <job-control/%idio-job>`
+:param job: process substituion details
+:type job: an instance of :ref:`%process-substitution <job-control/%process-substitution>`
+
+" {
   hash-set! %%process-substitution-jobs job psj
 }
 
-define (tidy-process-substitution-job job) {
+define (tidy-process-substitution-job job) "
+Update the set of process substitution jobs on the completion of job `job`
+
+:param job: completed job
+:type job: an instance of :ref:`%idio-job <job-control/%idio-job>`
+
+This may involve active closing of file descriptors and/or removal of
+entries in the file system.
+
+" {
   if (hash-exists? %%process-substitution-jobs job) {
     jd := job-detail job
     psj := hash-ref %%process-substitution-jobs job

@@ -1,4 +1,4 @@
-.. idio:module:: job-control
+.. idio:currentmodule:: job-control
 
 job-control values
 ------------------

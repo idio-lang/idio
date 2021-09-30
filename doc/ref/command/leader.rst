@@ -1,6 +1,6 @@
-.. _`command module`:
-
 .. idio:module:: command
+
+.. _`command module`:
 
 command Module
 ==============

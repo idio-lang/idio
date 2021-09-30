@@ -1,6 +1,6 @@
-.. _`SRFI-14 module`:
-
 .. idio:module:: SRFI-14
+
+.. _`SRFI-14 module`:
 
 SRFI-14 Module
 ==============

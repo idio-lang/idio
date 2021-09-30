@@ -1,4 +1,4 @@
-.. idio:module:: C
+.. idio:currentmodule:: C
 
 C Functions
 -----------

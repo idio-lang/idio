@@ -442,7 +442,23 @@ condition-report := #f
 {
   extension-callbacks := make-hash #n #n 4
 
-  condition-report-extend = function (ct cb) {
+  condition-report-extend = function (ct cb) "
+extend :ref:`condition-report <condition-report>` to handle condition
+type `ct`
+
+:param ct: condition type
+:type ct: condition type
+:param cb: callback handler
+:type cb: 3-ary function
+:return: #<unspec>
+
+`cb` will be invoked as :samp:`{cb} {c} iem cr-printf` where
+:samP:`{c}` is the condition instance, ``iem`` adds the standard
+``^idio-error`` information to the report and ``cr-printf`` is a
+:ref:`printf <printf>`-like function to add more information to the
+report.
+
+  " {
 			      if (struct-type? ct) {
 				if (function? cb) {
 				  hash-set! extension-callbacks ct cb
@@ -458,9 +474,11 @@ condition-report := #f
 
 :param prefix: a distinguishing string
 :param c: the condition
-:param args: print to optional handle
+:type c: condition instance
+:param handle: print to handle, defaults to current output handle
+:type handle: handle, optional
 
-:return: unspecified
+:return: #<unspec>
   " {
     oh := (current-output-handle)
     if (and (not (null? args))

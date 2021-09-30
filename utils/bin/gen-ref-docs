@@ -141,6 +141,18 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 
 	    if (pair? p) {
 	      (case (ph p)
+		    ((nodocument) {
+		      mod := pht p
+		      sym := phtt p
+
+		      mod-ht := hash-ref seen mod #f
+		      if (not mod-ht) {
+			mod-ht = make-hash #n #n 256
+			hash-set! seen mod mod-ht
+		      }
+
+		      hash-set! mod-ht sym #t
+		    })
 		    ((document) {
 		      mod := pht p
 		      sym := phtt p
@@ -212,21 +224,39 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 					 sfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-sig.rst"
 					 if (r? sfn) {
 					   sigstr = strip-string (cat-file sfn) "\n"
-					   seek-handle out-fh 0 'end
 					 }
 				       }
 
 			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-			   hprintf out-fh ".. idio:function:: %s %s\n\n" mod-sym sigstr
-			   hprintf out-fh "\n"
+			   if (expander? (string->symbol mod-sym)) {
+			     ;; with a template the thing we have in
+			     ;; our hands is the expander function,
+			     ;; not the underlying template so all our
+			     ;; facts are wrong.
 
-			   leader := "   "
+			     ;; we need to use the manually crafted
+			     ;; data until someone figures out a way
+			     ;; to retrieve any live data
+			     sfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-sig.rst"
+			     if (r? sfn) {
+			       sigstr = strip-string (cat-file sfn) "\n"
+			     }
 
-			   docstr := %property val :docstr-raw #f
-			   if docstr {
-			     hprintf out-fh "%s\n" (indent-text leader docstr)
+			     hprintf out-fh ".. idio:template:: %s %s\n\n" mod-sym sigstr
 			     hprintf out-fh "\n"
+			   } {
+			     hprintf out-fh ".. idio:function:: %s %s\n\n" mod-sym sigstr
+			     hprintf out-fh "\n"
+
+			     leader := "   "
+
+			     docstr := %property val :docstr-raw #f
+			     if docstr {
+			       hprintf out-fh "%s\n" (indent-text leader docstr)
+			       hprintf out-fh "\n"
+			     }
+
 			   }
 
 			   insert-file out-fh 1 dfn
@@ -236,14 +266,40 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			   hash-set! mod-ht sym #t
 			 })
 			 ((struct-type? val) {
+			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
+
 			   if (struct-type-isa? val ^condition) {
 			     hprintf out-fh ".. idio:condition:: %s\n\n" sym
+			     hprintf out-fh "\n"
+
+			     parent := struct-type-parent val
+			     if (not (null? parent)) {
+			       hprintf out-fh "   :parent: %s\n" (struct-type-name parent)
+			     }
+
+			     loop :+ function (f*) {
+				       if (null? f*) #n {
+					 hprintf out-fh "   :field: %s\n" (ph f*)
+					 loop (pt f*)
+				       }
+			     }
+			     loop (struct-type-fields val)
 			   } {
 			     hprintf out-fh ".. idio:struct:: %s\n\n" sym
+
 			     stp := struct-type-parent val
 			     if (not (null? stp)) {
 			       hprintf out-fh "   :parent: %s\n" (struct-type-name stp)
 			     }
+
+			     loop :+ function (f*) {
+				       if (null? f*) #n {
+					 hprintf out-fh "   :field: %s\n" (ph f*)
+					 loop (pt f*)
+				       }
+			     }
+			     loop (struct-type-fields val)
+
 			     hprintf out-fh "   :canonical: %s\n" mod-sym
 			   }
 			   hprintf out-fh "\n"
@@ -257,7 +313,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			 ((struct-instance? val) {
 			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-			   hprintf out-fh ".. idio:data:: %s\n\n" sym
+			   hprintf out-fh ".. idio:value:: %s\n\n" sym
 			   hprintf out-fh "   :type: %s\n" (type->string val)
 			   hprintf out-fh "   :canonical: %s\n" mod-sym
 			   hprintf out-fh "\n"
@@ -272,7 +328,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			      (hash? val)) {
 				hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-				hprintf out-fh ".. idio:data:: %s\n\n" sym
+				hprintf out-fh ".. idio:value:: %s\n\n" sym
 				hprintf out-fh "   :type: %s\n" (type->string val)
 				hprintf out-fh "   :canonical: %s\n" mod-sym
 				hprintf out-fh "\n"
@@ -304,14 +360,21 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			      (C/float? val)
 			      (C/pointer? val)
 
-			      (environ? sym)
 			      (dynamic? sym)
 			      (computed? sym)) {
 				hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-				hprintf out-fh ".. idio:data:: %s\n\n" sym
+				hprintf out-fh ".. idio:value:: %s\n\n" sym
 				hprintf out-fh "   :type: %s\n" (type->string val)
 				hprintf out-fh "   :canonical: %s\n" mod-sym
+
+				(cond
+				 ((dynamic? (string->symbol mod-sym)) {
+				   hprintf out-fh "   :scope: dynamic\n"
+				 })
+				 ((computed? (string->symbol mod-sym)) {
+				   hprintf out-fh "   :computed:\n"
+				 }))
 				hprintf out-fh "\n"
 
 				insert-file out-fh 1 dfn
@@ -331,7 +394,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			   if module {
 			     hprintf out-fh "module: %s\n" sym
 			   } {
-			     hprintf out-fh ".. idio:data:: %s\n\n" sym
+			     hprintf out-fh ".. idio:value:: %s\n\n" sym
 			     hprintf out-fh "   :type: symbol\n"
 			     hprintf out-fh "   :value: '%s\n" val
 			     hprintf out-fh "   :canonical: %s\n" mod-sym
@@ -482,6 +545,10 @@ for-each (function (mod) {
 	    ;; rlimits	- RLIMIT_*
 	    ;; signals	- SIG*
 
+	    ;; and the ^system-error-E* and ^rt-signal-SIG*
+	    ;; struct-types in Idio (the ^rt-signal-SIG* are used by
+	    ;; the VM)
+
 	    ;; many open(2) flags are not portable - O_*
 
 	    ;; This creates a documentation-generating mess so we can
@@ -497,6 +564,7 @@ for-each (function (mod) {
 	    ;; symbols.
 
 	    sorted-symbols := sort-symbol (fold-left (function (r s) {
+							val := symbol-value s mod #f
 							(cond
 
 							 ;; no environ variables
@@ -504,7 +572,6 @@ for-each (function (mod) {
 
 							 ;; libc needs some symbol stripping
 							 ((eq? 'libc mod) {
-							   val := symbol-value s mod #f
 							   (cond
 							    ((C/int? val) {
 							      ss := symbol->string s
@@ -522,34 +589,41 @@ for-each (function (mod) {
 							    })
 							    ((or (symbol? val)
 								 (primitive? val)) {
-							      ss := symbol->string s
-							      sl := string-length ss
-							      (cond
-							       ((and (gt sl 2)
-								     (equal? (substring ss 0 2) "__"))
-								 r)
-							       (else {
-								 ;; is this actually a sym in this module
-								 ;; and not something we've created as a
-								 ;; by-product of using the symbol?
-								 si := evaluate/find-symbol s mod
-								 if (pair? si) {
-								   orig-mod := module-name (phttt si)
-								   if (eq? orig-mod mod) {
-								     pair s r
-								   } {
-								     eprintf "  %s/%s is actually %s/%s\n" mod s orig-mod s
-								     r
-								   }
-								 } {
-								   eprintf "  %s/%s not found\n" mod s
-								   r
-								 }
-							       }))
-							    })
+								   ss := symbol->string s
+								   sl := string-length ss
+								   (cond
+								    ((and (gt sl 2)
+									  (equal? (substring ss 0 2) "__"))
+								      r)
+								    (else {
+								      ;; is this actually a sym in this module
+								      ;; and not something we've created as a
+								      ;; by-product of using the symbol?
+								      si := evaluate/find-symbol s mod
+								      if (pair? si) {
+									orig-mod := module-name (phttt si)
+									if (eq? orig-mod mod) {
+									  pair s r
+									} {
+									  eprintf "  %s/%s is actually %s/%s\n" mod s orig-mod s
+									  r
+									}
+								      } {
+									eprintf "  %s/%s not found\n" mod s
+									r
+								      }
+								    }))
+								 })
 							    (else {
 							      pair s r
 							    }))
+							 })
+
+							 ((struct-type? val) {
+							   (cond
+							    ((struct-type-isa? val ^rt-signal) r)
+							    ((struct-type-isa? val ^system-error) r)
+							    (else (pair s r)))
 							 })
 
 							 (else {
@@ -572,7 +646,7 @@ for-each (function (mod) {
 							     r
 							   }
 							 }))
-	    })#n (module-exports mod))
+	    }) #n (module-exports mod))
 
 	    for-each (function (sym) {
 			if (not (hash-ref mod-ht sym #f)) {

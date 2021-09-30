@@ -92,6 +92,8 @@ export (
 import unicode
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; sparse-char-set is defined in usi-wrap.c
 
 define-struct-accessors-only sparse-char-set size planes
 
@@ -216,7 +218,7 @@ Invoke `f` on each code point in char-set `cs`
 define (char-set & cps) "
 Return a character set containing the given code points.
 
-The character set will be the same size as char-set:empty.
+The character set will be the same size as :ref:`char-set:empty <SRFI-14/char-set:empty>`.
 " {
   cs := make-sparse-char-set (sparse-char-set-size char-set:empty)
   loop :+ function (cps) {
@@ -228,7 +230,9 @@ The character set will be the same size as char-set:empty.
   loop cps
 }
 
-define (copy-char-set cs) {
+define (copy-char-set cs) "
+Return a copy of char-set `cs`
+" {
   (cond
    ((sparse-char-set? cs) {
      new := make-sparse-char-set (sparse-char-set-size cs)
@@ -246,7 +250,18 @@ define (copy-char-set cs) {
    (else (error 'copy-char-set "not a char-set" cs)))
 }
 
-define (string->char-set str & base?) {
+define (string->char-set str & base?) "
+
+Return a char-set derived from the code points in `str`.  Use
+:ref:`char-set:empty <SRFI-14/char-set:empty>` as the inital char-set
+unless `base?` is supplied.
+
+:param str: string to use to set code points
+:type str: string
+:param base?: initial char-set, defaults to :ref:`char-set:empty <SRFI-14/char-set:empty>`
+:type base?: char-set, optional
+
+" {
   cs := #n
   if (pair? base?) {
     cs? := ph base?
@@ -266,7 +281,11 @@ define (string->char-set str & base?) {
       })
 }
 
-define (char-set->string cs) {
+define (char-set->string cs) "
+
+Return a string derived from the code points in `cs`.
+
+" {
   n := fold-char-set cs (function (cp i) (+ i 1)) 0
   m := fold-char-set cs (function (cp max) {
 			       if (cp gt max) cp max
@@ -286,7 +305,20 @@ define (%ucs-range->char-set bs n e) {
     %ucs-range->char-set bs (n + 1) e
   }
 }
-define (ucs-range->char-set s e & base?) {
+define (ucs-range->char-set s e & base?) "
+
+Return a char-set derived from the raange of code points from `s` to
+`e` inclusive.  Use :ref:`char-set:empty <SRFI-14/char-set:empty>` as
+the inital char-set unless `base?` is supplied.
+
+:param s: starting code point
+:type s: integer
+:param e: ending code point
+:type e: integer
+:param base?: initial char-set, defaults to :ref:`char-set:empty <SRFI-14/char-set:empty>`
+:type base?: char-set, optional
+
+" {
   cs := #n
   if (pair? base?) {
     cs? := ph base?
@@ -468,7 +500,7 @@ Delete the code points from character set cs with side-effects.
 define (and-char-set & css) "
 Logical AND the code points from the character sets.
 
-If no arguments are passed the return value is char-set:empty.
+If no arguments are passed the return value is :ref:`char-set:empty <SRFI-14/char-set:empty>`.
 " {
   loop :+ function (css res) {
 	    if (null? css) res {
@@ -502,7 +534,7 @@ If no arguments are passed the return value is char-set:empty.
 define (ior-char-set & css) "
 Logical Inclusive OR the code points from the character sets.
 
-If no arguments are passed the return value is char-set:full.
+If no arguments are passed the return value is :ref:`char-set:full <SRFI-14/char-set:full>`.
 " {
   loop :+ function (css res) {
 	    if (null? css) res {
@@ -540,7 +572,7 @@ define merge-char-set ior-char-set
 define (xor-char-set & css) "
 Logical eXclusive OR the code points from the character sets.
 
-If no arguments are passed the return value is char-set:empty.
+If no arguments are passed the return value is :ref:`char-set:empty <SRFI-14/char-set:empty>`.
 " {
   loop :+ function (css res) {
 	    if (null? css) res {
@@ -645,7 +677,7 @@ define union-char-set ior-char-set
 define (union-char-set! & css) "
 Union of the code points from character set cs with side-effects.
 
-If no arguments are passed the return value is a copy of char-set:empty.
+If no arguments are passed the return value is a copy of :ref:`char-set:empty <SRFI-14/char-set:empty>`.
 " {
   if (pair? css) {
     apply union-char-set css
@@ -659,7 +691,7 @@ define intersection-char-set and-char-set
 define (intersection-char-set! & css) "
 Intersection of the code points from character set cs with side-effects.
 
-If no arguments are passed the return value is a copy of char-set:full.
+If no arguments are passed the return value is a copy of :ref:`char-set:full <SRFI-14/char-set:full>`.
 " {
   if (pair? css) {
     apply and-char-set css

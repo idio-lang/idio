@@ -1,4 +1,4 @@
-.. idio:module:: SRFI-14
+.. idio:currentmodule:: SRFI-14
 
 char-set functions
 ------------------

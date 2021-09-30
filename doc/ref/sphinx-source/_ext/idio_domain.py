@@ -255,9 +255,9 @@ class IdioTemplateDirective(IdioDirective):
     NAME = 'template'
     LABEL = 'Idio template'
 
-class IdioDataDirective(IdioDirective):
-    NAME = 'data'
-    LABEL = 'Idio data'
+class IdioValueDirective(IdioDirective):
+    NAME = 'value'
+    LABEL = 'Idio value'
 
 class IdioConditionDirective(IdioDirective):
     NAME = 'condition'
@@ -354,14 +354,14 @@ class IdioDomain(Domain):
 
     # object_types and directives should match
 
-    # 'data' represents variables that might change and constants
+    # 'value' represents variables that might change and constants
     # (that shouldn't)
     object_types = {
         'type':      ObjType ('type', 'type', 'obj'),
         'module':    ObjType ('module', 'module', 'obj'),
         'function':  ObjType ('function', 'function', 'obj'),
         'template':  ObjType ('template', 'template', 'obj'),
-        'data':      ObjType ('data', 'data', 'obj'),
+        'value':     ObjType ('value', 'value', 'obj'),
         'condition': ObjType ('condition', 'condition', 'obj'),
         'struct': ObjType ('struct', 'struct', 'obj'),
                     }
@@ -373,7 +373,7 @@ class IdioDomain(Domain):
         'currentmodule': IdioCurrentModule,
         'function':      IdioFunctionDirective,
         'template':      IdioTemplateDirective,
-        'data':          IdioDataDirective,
+        'value':         IdioValueDirective,
         'condition':     IdioConditionDirective,        
         'struct':        IdioStructDirective,        
     }
@@ -384,7 +384,7 @@ class IdioDomain(Domain):
         'module':    IdioXRefRole,
         'function':  IdioXRefRole,
         'template':  IdioXRefRole,
-        'data':      IdioXRefRole,
+        'value':     IdioXRefRole,
         'condition': IdioXRefRole,        
         'struct':    IdioXRefRole,        
     }

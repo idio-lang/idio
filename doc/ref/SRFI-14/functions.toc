@@ -1,5 +1,6 @@
 (rst "functions-intro" 0)
 
+;(document SRFI-14 sparse-char-set)
 (document SRFI-14 char-set?)
 
 (document SRFI-14 make-sparse-char-set)

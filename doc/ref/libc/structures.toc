@@ -1,5 +1,11 @@
 (rst "structures-intro" 0)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+
+;; These are all CSI-style structure accessors.  There is no
+;; Idio-level knowledge of what lies behind the C/pointer
+
 (rst "struct-rlimit-intro" 0)
 (document libc struct-rlimit-ref)
 (document libc struct-rlimit-set!)

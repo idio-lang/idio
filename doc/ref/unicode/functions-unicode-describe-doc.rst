@@ -1,5 +1,5 @@
-The :ref:`unicode/describe` reports a pseudo *Unicode
-Character Database* entry plus the Categories and Properties
+The :ref:`unicode/describe <unicode/describe>` reports a pseudo
+*Unicode Character Database* entry plus the Categories and Properties
 associated with the code point and indications of any Lowercase,
 Uppercase or Titlecase variants and any possible *Numeric_Value*.
 

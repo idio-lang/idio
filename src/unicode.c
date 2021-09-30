@@ -175,7 +175,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("unicode?",  unicode_p, (IDIO o), "o", "\
 test if `o` is a unicode value				\n\
 							\n\
 :param o: object to test				\n\
-							\n\
 :return: ``#t`` if `o` is a unicode value, ``#f`` otherwise	\n\
 ")
 {
@@ -190,67 +189,64 @@ test if `o` is a unicode value				\n\
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("unicode->plane",  unicode2plane, (IDIO c), "c", "\
-return the Unicode plane of `c`		\n\
+IDIO_DEFINE_PRIMITIVE1_DS ("unicode->plane",  unicode2plane, (IDIO cp), "cp", "\
+return the Unicode plane of `cp`		\n\
 					\n\
-:param c: unicode to analyse		\n\
-					\n\
-:return: Unicode plane `c`		\n\
+:param cp: unicode to analyse		\n\
+:return: Unicode plane `cp`		\n\
 :rtype: fixnum				\n\
 ")
 {
-    IDIO_ASSERT (c);
+    IDIO_ASSERT (cp);
 
     /*
      * Test Case: unicode-errors/unicode2plane-bad-type.idio
      *
      * unicode->plane #t
      */
-    IDIO_USER_TYPE_ASSERT (unicode, c);
+    IDIO_USER_TYPE_ASSERT (unicode, cp);
 
-    return idio_fixnum (IDIO_UNICODE_VAL (c) >> 16);
+    return idio_fixnum (IDIO_UNICODE_VAL (cp) >> 16);
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("unicode->plane-codepoint",  unicode2plane_codepoint, (IDIO c), "c", "\
-return the lower 16 bits of `c`		\n\
+IDIO_DEFINE_PRIMITIVE1_DS ("unicode->plane-codepoint",  unicode2plane_codepoint, (IDIO cp), "cp", "\
+return the lower 16 bits of `cp`		\n\
 					\n\
-:param c: unicode to convert		\n\
-					\n\
-:return: lower 16 bits of of `c`	\n\
+:param cp: unicode to convert		\n\
+:return: lower 16 bits of of `cp`	\n\
 :rtype: fixnum				\n\
 ")
 {
-    IDIO_ASSERT (c);
+    IDIO_ASSERT (cp);
 
     /*
      * Test Case: unicode-errors/unicode2plane-codepoint-bad-type.idio
      *
      * unicode->plane-codepoint #t
      */
-    IDIO_USER_TYPE_ASSERT (unicode, c);
+    IDIO_USER_TYPE_ASSERT (unicode, cp);
 
-    return idio_fixnum (IDIO_UNICODE_VAL (c) & 0xffff);
+    return idio_fixnum (IDIO_UNICODE_VAL (cp) & 0xffff);
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("unicode->integer",  unicode2integer, (IDIO c), "c", "\
-convert `c` to an integer		\n\
+IDIO_DEFINE_PRIMITIVE1_DS ("unicode->integer",  unicode2integer, (IDIO cp), "cp", "\
+convert `cp` to an integer		\n\
 					\n\
-:param c: unicode to convert		\n\
-					\n\
-:return: integer conversion of `c`	\n\
+:param cp: unicode to convert		\n\
+:return: integer conversion of `cp`	\n\
 :rtype: fixnum				\n\
 ")
 {
-    IDIO_ASSERT (c);
+    IDIO_ASSERT (cp);
 
     /*
      * Test Case: unicode-errors/unicode2integer-bad-type.idio
      *
      * unicode->integer #t
      */
-    IDIO_USER_TYPE_ASSERT (unicode, c);
+    IDIO_USER_TYPE_ASSERT (unicode, cp);
 
-    return idio_fixnum (IDIO_UNICODE_VAL (c));
+    return idio_fixnum (IDIO_UNICODE_VAL (cp));
 }
 
 /*
@@ -713,14 +709,13 @@ void idio_unicode_add_primitives ()
      */
     IDIO fvi = IDIO_ADD_PRIMITIVE (unicode_eq_p);
     IDIO p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("c1 c2 [...]"));
+    idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("cp1 cp2 [...]"));
     idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if unicode arguments are equal			\n\
 							\n\
-:param c1: unicode					\n\
-:param c2: unicode					\n\
+:param cp1: unicode					\n\
+:param cp2: unicode					\n\
 :param ...: unicode					\n\
-							\n\
 :return: ``#t`` if arguments are equal, ``#f`` otherwise	\n\
 "));
 }

@@ -1,3 +1,5 @@
+.. idio:currentmodule:: libc
+
 libc structures
 ---------------
 

@@ -1,6 +1,6 @@
-.. _`libc module`:
-
 .. idio:module:: libc
+
+.. _`libc module`:
 
 libc Module
 ===========

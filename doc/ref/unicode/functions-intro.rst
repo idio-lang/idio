@@ -1,4 +1,4 @@
-.. idio:module:: unicode
+.. idio:currentmodule:: unicode
 
 unicode functions
 -----------------

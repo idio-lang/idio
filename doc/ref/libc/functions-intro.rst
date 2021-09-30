@@ -1,4 +1,4 @@
-.. idio:module:: libc
+.. idio:currentmodule:: libc
 
 libc functions
 --------------

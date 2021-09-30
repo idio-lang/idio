@@ -1,4 +1,4 @@
-.. _`structs`:
+.. _`struct type`:
 
 Structs
 =======

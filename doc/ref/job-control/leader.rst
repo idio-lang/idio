@@ -1,6 +1,6 @@
-.. _`job-control module`:
-
 .. idio:module:: job-control
+
+.. _`job-control module`:
 
 Job Control Module
 ==================

@@ -25,3 +25,5 @@
 
 (document Idio define-struct)
 (document Idio define-struct-accessors-only)
+(document Idio export-struct)
+(document Idio export-struct-accessors-only)
