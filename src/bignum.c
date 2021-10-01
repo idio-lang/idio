@@ -4161,7 +4161,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("exponent", exponent, (IDIO n), "n", "\
 return the exponent of `n`			\n\
 						\n\
 :param n: number to find exponent of		\n\
-:type n: bignum	or fixnum			\n\
+:type n: bignum					\n\
 						\n\
 :return: exponent of `n`			\n\
 ")

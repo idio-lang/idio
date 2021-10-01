@@ -1,11 +1,17 @@
 (rst "numbers-intro" 0)
 
+(rst "number-predicates" 0)
 (document Idio integer? integerp)
 (document Idio number? numberp)
 (document Idio zero?)
 
+(rst "number-constructors" 0)
 (document unicode unicode->integer)
 
+; deprecated
+;(document Idio integer->char)
+
+(rst "number-functions" 0)
 (document Idio \+ add)
 (document Idio \- subtract)
 (document Idio \* multiply)
@@ -32,5 +38,3 @@
 (document Idio binary-ge)
 (document Idio binary-gt)
 
-; deprecated
-;(document Idio integer->char)

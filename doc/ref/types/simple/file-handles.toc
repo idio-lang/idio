@@ -1,8 +1,10 @@
 (rst "file-handles-intro" 0)
 
+(rst "file-handle-predicates" 0)
 (document Idio file-handle?)
 (document Idio input-file-handle?)
 (document Idio output-file-handle?)
 
+(rst "file-handle-attributes" 0)
 (document Idio file-handle-fd)
 

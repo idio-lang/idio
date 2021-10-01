@@ -1,9 +1,12 @@
 (rst "unicode-intro" 0)
 
 ; unicode.c
+(rst "unicode-predicates" 0)
 (document Idio unicode?)
 
+(rst "unicode-constructors" 0)
 (document Idio integer->unicode)
 
+(rst "unicode-functions" 0)
 (document Idio unicode=?)
 

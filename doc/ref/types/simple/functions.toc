@@ -1,4 +1,9 @@
 (rst "functions-intro" 0)
 
+(rst "function-predicates" 0)
 (document Idio function?)
+(document Idio expander?)
 
+(document Idio function)
+(document Idio function*)
+(document Idio function/return)

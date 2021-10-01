@@ -1,10 +1,13 @@
 (rst "pipe-handles-intro" 0)
 
+(rst "pipe-handle-predicates" 0)
 (document Idio pipe-handle?)
 (document Idio input-pipe-handle?)
 (document Idio output-pipe-handle?)
 
+(rst "pipe-handle-constructors" 0)
 (document Idio open-input-pipe)
 (document Idio open-output-pipe)
 
+(rst "pipe-handle-attributes" 0)
 (document Idio pipe-handle-fd)

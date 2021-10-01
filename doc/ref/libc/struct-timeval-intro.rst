@@ -1,3 +1,5 @@
+.. _`libc/struct-timeval`:
+
 struct timeval
 ^^^^^^^^^^^^^^
 

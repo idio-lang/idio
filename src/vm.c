@@ -3196,13 +3196,13 @@ the format is undefined and subject to arbitrary change	\n\
  * Used by the debugger.
  */
 IDIO_DEFINE_PRIMITIVE2_DS ("%%vm-apply-continuation", vm_apply_continuation, (IDIO n, IDIO val), "n v", "\
-invoke the `n`\ :sup:`th` VM continuation with value `v`		\n\
+invoke the `n`\\ :sup:`th` VM continuation with value `v`	\n\
 								\n\
 :param n: the continuation to invoke				\n\
 :type n: (non-negative) integer					\n\
 :param v: the value to pass to the continuation			\n\
 								\n\
-`n` is subject to a range check on the array of stored	\n\
+`n` is subject to a range check on the array of stored		\n\
 continuations in the VM.					\n\
 								\n\
 The function does not return.					\n\

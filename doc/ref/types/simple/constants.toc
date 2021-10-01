@@ -1,5 +1,6 @@
 (rst "constants-intro" 0)
 
+(rst "constant-predicates" 0)
 (document Idio boolean?)
 (document Idio null?)
 (document Idio void)

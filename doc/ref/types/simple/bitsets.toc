@@ -1,15 +1,19 @@
 (rst "bitsets-intro" 0)
 
+(rst "bitset-predicates" 0)
 (document Idio bitset?)
 
+(rst "bitset-constructors" 0)
 (document Idio make-bitset)
 
+(rst "bitset-attributes" 0)
 (document Idio bitset-size)
 
 (document Idio bitset-set!)
 (document Idio bitset-clear!)
 (document Idio bitset-ref)
 
+(rst "bitset-functions" 0)
 (document Idio copy-bitset)
 (document Idio merge-bitset)
 

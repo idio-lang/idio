@@ -45,12 +45,20 @@ class desc_idio_parameterlist(addnodes.desc_parameterlist):
     """Node for an Idio parameter list."""
     child_text_separator = ' '
 
-def visit_idio_parameterlist(self, node):
+def visit_html_idio_parameterlist(self, node):
     self.first_param = True
     self.body.append(' ')
     self.param_separator = node.child_text_separator
 
-def depart_idio_parameterlist(self, node):
+def depart_html_idio_parameterlist(self, node):
+    pass
+
+def visit_text_idio_parameterlist(self, node):
+    self.first_param = True
+    self.add_text(' ')
+    self.param_separator = node.child_text_separator
+
+def depart_text_idio_parameterlist(self, node):
     pass
 
 class desc_idio_parameter(addnodes.desc_parameter):
@@ -75,10 +83,10 @@ def depart_html_idio_parameter(self, node):
 
 def visit_text_idio_parameter(self, node):
     if not self.first_param:
-        self.body.append(self.param_separator)
+        self.add_text(self.param_separator)
     else:
         self.first_param = False
-    self.body.append(node.astext())
+    self.add_text(node.astext())
     raise nodes.SkipNode
 
 
@@ -464,8 +472,8 @@ class IdioDomain(Domain):
 def setup(app):
     app.add_domain(IdioDomain)
     app.add_node(desc_idio_parameterlist,
-                 html=(visit_idio_parameterlist, depart_idio_parameterlist),
-                 text=(visit_idio_parameterlist, depart_idio_parameterlist))
+                 html=(visit_html_idio_parameterlist, depart_html_idio_parameterlist),
+                 text=(visit_text_idio_parameterlist, depart_text_idio_parameterlist))
     app.add_node(desc_idio_parameter,
                  html=(visit_html_idio_parameter, depart_html_idio_parameter),
                  text=(visit_text_idio_parameter, depart_text_idio_parameter))

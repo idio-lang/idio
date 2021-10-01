@@ -230,11 +230,11 @@ A simple function to calculate the sum of two C struct timevals \n\
 								\n\
 tv1 + tv2							\n\
 								\n\
-:param tv1: first timeval					\n\
+:param tv1: :ref:`struct-timeval <libc/struct-timeval>`		\n\
 :type tv1: C/pointer						\n\
-:param tv2: second timeval					\n\
+:param tv2: :ref:`struct-timeval <libc/struct-timeval>`		\n\
 :type tv2: C/pointer						\n\
-:return: C struct timeval					\n\
+:return: :ref:`struct-timeval <libc/struct-timeval>`		\n\
 :rtype: C/pointer						\n\
 :raises ^system-error:						\n\
 ")
@@ -277,11 +277,11 @@ struct timevals							\n\
 								\n\
 tv1 - tv2							\n\
 								\n\
-:param tv1: first timeval					\n\
+:param tv1: :ref:`struct-timeval <libc/struct-timeval>`		\n\
 :type tv1: C/pointer						\n\
-:param tv2: second timeval					\n\
+:param tv2: :ref:`struct-timeval <libc/struct-timeval>`		\n\
 :type tv2: C/pointer						\n\
-:return: C struct timeval					\n\
+:return: :ref:`struct-timeval <libc/struct-timeval>`		\n\
 :rtype: C/pointer						\n\
 :raises ^system-error:						\n\
 ")
@@ -391,13 +391,13 @@ char *idio_getcwd (char const *func, char *buf, size_t const size)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("exit", libc_exit, (IDIO istatus), "status", "\
-in C, close (status)						\n\
+in C, :samp:`exit ({status})`					\n\
 a wrapper to libc :manpage:`exit(3)`				\n\
 								\n\
 :param status: exit status					\n\
 :type status: fixnum or C/int					\n\
 								\n\
-DOES NOT RETURN :)						\n\
+**DOES NOT RETURN** :)						\n\
 ")
 {
     IDIO_ASSERT (istatus);
@@ -639,7 +639,7 @@ Otherwise the return value is:					\n\
  * sort of expect to fail.  Here we have two system calls.
  */
 IDIO_DEFINE_PRIMITIVE1_DS ("close-if-open", libc_close_if_open, (IDIO fd), "fd", "\
-in C, fcntl(fd, F_GETFD) && close (fd)				\n\
+in C, :samp:`fcntl({fd}, F_GETFD) && close ({fd})`		\n\
 a wrapper to libc :manpage:`close(2)`				\n\
 								\n\
 :param fd: file descriptor					\n\
@@ -761,7 +761,7 @@ given signal.							\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("WEXITSTATUS", libc_WEXITSTATUS, (IDIO istatus), "status", "\
-in C, WEXITSTATUS (status)					\n\
+in C, :samp:`WEXITSTATUS ({status})`				\n\
 a wrapper to libc macro ``WEXITSTATUS``, see :manpage:`waitpid(2)`	\n\
 								\n\
 :param status: process status					\n\
@@ -785,7 +785,7 @@ a wrapper to libc macro ``WEXITSTATUS``, see :manpage:`waitpid(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("WIFEXITED", libc_WIFEXITED, (IDIO istatus), "status", "\
-in C, WIFEXITED (status)					\n\
+in C, :samp:`WIFEXITED ({status})`				\n\
 a wrapper to libc macro ``WIFEXITED``, see :manpage:`waitpid(2)`	\n\
 								\n\
 :param status: process status					\n\
@@ -815,7 +815,7 @@ a wrapper to libc macro ``WIFEXITED``, see :manpage:`waitpid(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("WIFSIGNALED", libc_WIFSIGNALED, (IDIO istatus), "status", "\
-in C, WIFSIGNALED (status)					\n\
+in C, :samp:`WIFSIGNALED ({status})`				\n\
 a wrapper to libc macro ``WIFSIGNALED``, see :manpage:`waitpid(2)`	\n\
 								\n\
 :param status: process status					\n\
@@ -845,7 +845,7 @@ a wrapper to libc macro ``WIFSIGNALED``, see :manpage:`waitpid(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("WIFSTOPPED", libc_WIFSTOPPED, (IDIO istatus), "status", "\
-in C, WIFSTOPPED (status)					\n\
+in C, :samp:`WIFSTOPPED ({status})`				\n\
 a wrapper to libc macro ``WIFSTOPPED``, see :manpage:`waitpid(2)`	\n\
 								\n\
 :param status: process status					\n\
@@ -875,7 +875,7 @@ a wrapper to libc macro ``WIFSTOPPED``, see :manpage:`waitpid(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("WTERMSIG", libc_WTERMSIG, (IDIO istatus), "status", "\
-in C, WTERMSIG (status)						\n\
+in C, :samp:`WTERMSIG ({status})`				\n\
 a wrapper to libc macro ``WTERMSIG``, see :manpage:`waitpid(2)`	\n\
 								\n\
 :param status: process status					\n\
@@ -2834,7 +2834,7 @@ is `pathname` a block special device?	\n\
 					\n\
 :param pathname: pathname to stat	\n\
 :type pathname: string			\n\
-:return: ``#t`` or ``#f``			\n\
+:return: ``#t`` or ``#f``		\n\
 :rtype: boolean				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
@@ -2876,7 +2876,7 @@ is `pathname` a character special device?	\n\
 						\n\
 :param pathname: pathname to stat		\n\
 :type pathname: string				\n\
-:return: ``#t`` or ``#f``				\n\
+:return: ``#t`` or ``#f``			\n\
 :rtype: boolean					\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
@@ -2918,7 +2918,7 @@ is `pathname` a directory?		\n\
 					\n\
 :param pathname: pathname to stat	\n\
 :type pathname: string			\n\
-:return: ``#t`` or ``#f``			\n\
+:return: ``#t`` or ``#f``		\n\
 :rtype: boolean				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
@@ -2941,7 +2941,7 @@ does `mode` represent a directory?	\n\
 					\n\
 :param mode: mode from :manpage:`stat(2)`		\n\
 :type mode: libc/mode_t			\n\
-:return: ``#t`` or ``#f``			\n\
+:return: ``#t`` or ``#f``		\n\
 :rtype: boolean				\n\
 ")
 {
@@ -2960,7 +2960,7 @@ does `pathname` exist?			\n\
 					\n\
 :param pathname: pathname to stat	\n\
 :type pathname: string			\n\
-:return: ``#t`` or ``#f``			\n\
+:return: ``#t`` or ``#f``		\n\
 :rtype: boolean				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
@@ -2983,7 +2983,7 @@ is `pathname` a regular file?		\n\
 					\n\
 :param pathname: pathname to stat	\n\
 :type pathname: string			\n\
-:return: ``#t`` or ``#f``			\n\
+:return: ``#t`` or ``#f``		\n\
 :rtype: boolean				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
@@ -3025,7 +3025,7 @@ is `pathname` a symlink?		\n\
 					\n\
 :param pathname: pathname to stat	\n\
 :type pathname: string			\n\
-:return: ``#t`` or ``#f``			\n\
+:return: ``#t`` or ``#f``		\n\
 :rtype: boolean				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
@@ -3084,7 +3084,7 @@ is `pathname` a FIFO?			\n\
 					\n\
 :param pathname: pathname to stat	\n\
 :type pathname: string			\n\
-:return: ``#t`` or ``#f``			\n\
+:return: ``#t`` or ``#f``		\n\
 :rtype: boolean				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 ")
@@ -3191,7 +3191,7 @@ is `fd` a terminal?			\n\
 					\n\
 :param fd: file descriptor to stat	\n\
 :type fd: C/int				\n\
-:return: ``#t`` or ``#f``			\n\
+:return: ``#t`` or ``#f``		\n\
 :rtype: boolean				\n\
 ")
 {

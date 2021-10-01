@@ -1,10 +1,15 @@
 (rst "keywords-intro" 0)
 
-(document Idio make-keyword)
+(rst "keyword-predicates" 0)
 (document Idio keyword?)
-(document Idio keyword->string)
+
+(rst "keyword-constructors" 0)
+(document Idio make-keyword)
+
+(rst "keyword-functions" 0)
 (document Idio keywords)
 
+(rst "keyword-tables" 0)
 (document Idio make-keyword-table)
 (document Idio keyword-ref)
 (document Idio keyword-set!)

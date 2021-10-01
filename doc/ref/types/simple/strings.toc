@@ -1,25 +1,30 @@
 (rst "strings-intro" 0)
 
+(rst "string-predicates" 0)
 (document Idio string?)
 (document Idio pathname?)
 
+(rst "string-constructors" 0)
 (document Idio make-string)
+(document Idio substring)
 (document Idio list->string)
 (document Idio symbol->string)
+(document Idio keyword->string)
 (document Idio string->pathname)
 
+(rst "string-attributes" 0)
+(document Idio string-length)
+(document Idio string-ref)
+(document Idio string-set!)
+(document Idio string-fill!)
+
+(rst "string-functions" 0)
 (document Idio append-string)
 (document Idio concatenate-string)
 (document Idio copy-string)
 
 (document Idio join-string)
 
-(document Idio string-length)
-(document Idio string-ref)
-(document Idio string-set!)
-(document Idio string-fill!)
-
-(document Idio substring)
 (document Idio string-index)
 (document Idio string-rindex)
 

@@ -200,7 +200,7 @@ Update the set of process substitution jobs with new job `job`.
 :param job: new job
 :type job: an instance of :ref:`%idio-job <job-control/%idio-job>`
 :param job: process substituion details
-:type job: an instance of :ref:`%process-substitution <job-control/%process-substitution>`
+:type job: an instance of :ref:`%process-substitution-job <job-control/%process-substitution-job>`
 
 " {
   hash-set! %%process-substitution-jobs job psj

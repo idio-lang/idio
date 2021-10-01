@@ -1,24 +1,41 @@
 (rst "functions-intro" 0)
 
-(document job-control %idio-jobs)
-(document job-control %prep-process)
-(document job-control background-job)
-(document job-control bg-job)
-(document job-control cat-file)
-(document job-control collect-output)
-(document job-control default-child-handler)
-(document job-control do-job-notification)
-(document job-control foreground-job)
-(document job-control format-job-detail)
-(document job-control job-detail)
-(document job-control job-failed)
 (document job-control jobs)
-(document job-control pipeline-detail)
 (document job-control wait)
-(document job-control wait-for-job)
-(document job-control with-error-to)
-(document job-control with-handle-dup)
-(document job-control with-handle-redir)
-(document job-control with-input-from)
-(document job-control with-output-to)
+
+; meta-commands
+(rst "job-meta-commands" 0)
+(nodocument job-control collect-output)
+(nodocument job-control fg-job)
+(nodocument job-control bg-job)
+(nodocument job-control named-pipe-into)
+(nodocument job-control pipe-into)
+(nodocument job-control named-pipe-from)
+(nodocument job-control pipe-from)
+(nodocument job-control time)
+
+(document job-control cat-file)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; internals
+
+(nodocument job-control with-input-from)
+(nodocument job-control with-output-to)
+(nodocument job-control with-error-to)
+
+(nodocument job-control with-handle-dup)
+(nodocument job-control with-handle-redir)
+
+(nodocument job-control %prep-process)
+(nodocument job-control foreground-job)
+(nodocument job-control background-job)
+
+(nodocument job-control default-child-handler)
+(nodocument job-control do-job-notification)
+(nodocument job-control format-job-detail)
+(nodocument job-control job-detail)
+(nodocument job-control job-failed)
+(nodocument job-control pipeline-detail)
+(nodocument job-control wait-for-job)
 

@@ -1,3 +1,5 @@
+.. _`libc/struct-timespec`:
+
 struct timespec
 ^^^^^^^^^^^^^^^
 

@@ -165,13 +165,33 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 		      ;
 		      ; or quote the symbol and we'll unpick it here:
 		      ; (document Idio 'ge)
-		      if (pair? sym) {
-			sym = pht sym
-		      }
+		      ;
+		      ; The exception is \& which becomes the
+		      ; pair-separator token
+		      (cond
+		       ((pair? sym) {
+			 sym = pht sym
+		       })
+		       (else {
+
+			 ;; yuk!  We really shouldn't need to know
+			 ;; this...
+			 (case (type->string sym)
+			       (("CONSTANT_TOKEN") {
+				 ;; & -> "&", other tokens becomes
+				 ;; "T/..."
+				 sym = string->symbol (sprintf "%s" sym)
+			       }))
+		       }))
 
 		      ;; Some symbols are hard to use in the
 		      ;; filesystem, /, for a start so we allow for a
 		      ;; filesystem-friendly name in the next element.
+		      ;;
+		      ;; Note that some file-system friendly names are
+		      ;; also operators!
+		      ;;
+		      ;; (document C \> \gt)
 		      sym-fn := sym
 		      if (gt (length p) 3) {
 			sym-fn = nth p 4
@@ -360,8 +380,8 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			      (C/float? val)
 			      (C/pointer? val)
 
-			      (dynamic? sym)
-			      (computed? sym)) {
+			      (dynamic? (string->symbol mod-sym))
+			      (computed? (string->symbol mod-sym))) {
 				hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
 				hprintf out-fh ".. idio:value:: %s\n\n" sym

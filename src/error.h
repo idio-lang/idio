@@ -37,6 +37,7 @@ void idio_error_warning_message (char const *format, ...);
 void idio_error_alloc (char const *m);
 void idio_error_param_type (char const *etype, IDIO who, IDIO c_location);
 void idio_error_param_type_msg (char const *msg, IDIO c_location);
+void idio_error_param_type_msg_args (char const *msg, IDIO args, IDIO c_location);
 void idio_error_param_type_C (char const *etype, IDIO who, char const *file, char const *func, int line);
 void idio_error_const_param (char const *type_name, IDIO who, IDIO c_location);
 void idio_error_const_param_C (char const *type_name, IDIO who, char const *file, char const *func, int line);

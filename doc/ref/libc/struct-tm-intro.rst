@@ -1,3 +1,5 @@
+.. _`libc/struct-tm`:
+
 struct tm
 ^^^^^^^^^
 

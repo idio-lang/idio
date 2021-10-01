@@ -1,13 +1,21 @@
 (rst "pairs-intro" 0)
 
+(rst "pair-predicates" 0)
 (document Idio pair?)
+(document Idio list?)
 
+(rst "pair-constructors" 0)
 (document Idio pair)
+(document Idio list)
 (document Idio string->list)
 (document Idio array->list)
 
+(rst "pair-attributes" 0)
 (document Idio ph)
 (document Idio pt)
+
+(document Idio set-ph!)
+(document Idio set-pt!)
 
 (rst "pair-accessors" 0)
 (document Idio phh)
@@ -38,11 +46,9 @@
 (document Idio pttt)
 (document Idio pttth)
 (document Idio ptttt)
+(document Idio nth)
 
-(document Idio set-ph!)
-(document Idio set-pt!)
-
-(document Idio list)
+(rst "pair-functions" 0)
 (document Idio reverse)
 (document Idio length)
 
@@ -56,4 +62,3 @@
 (document Idio assoc)
 (document Idio assv)
 
-(document Idio nth)

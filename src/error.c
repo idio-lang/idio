@@ -248,6 +248,41 @@ void idio_error_param_type_msg (char const *msg, IDIO c_location)
     /* notreached */
 }
 
+void idio_error_param_type_msg_args (char const *msg, IDIO args, IDIO c_location)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (args);
+    IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+
+    if (idio_S_nil != args) {
+	idio_display_C (" ", msh);
+	idio_display (args, msh);
+    }
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       location,
+					       detail));
+
+    idio_raise_condition (idio_S_false, c);
+    /* notreached */
+}
+
 /*
  * Used by IDIO_TYPE_ASSERT and IDIO_USER_TYPE_ASSERT
  */

@@ -1,3 +1,5 @@
+.. _`libc/struct-rlimit`:
+
 struct rlimit
 ^^^^^^^^^^^^^
 

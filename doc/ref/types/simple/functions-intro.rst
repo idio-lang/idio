@@ -26,12 +26,16 @@ processing :lname:`Idio` parameters can be tiresome so generally
 primitives are written for actions that user-defined functions cannot
 do like alter memory.  Hence all of the value-manipulating functions
 are primitives as they have to poke around in the underlying
-implementation to return, say, the size of an array which you might
+implementation to return, say, the size of an array -- which you might
 reasonably guess is going to be a ``size_t`` in a :lname:`C`
-``struct``.
+``struct`` -- and return it as an :lname:`Idio` integer.
 
-Otherwise someone might write a primitive where speed is considered
-important.
+Otherwise someone might write a primitive:
+
+* where speed is considered important
+
+* as an interface to a library of support functions, as with
+  :ref:`libc <libc module>`, for example.
 
 Closures
 --------
@@ -73,20 +77,15 @@ In practice what ``define`` is doing is:
 
 with ``foo`` now available to be used in some way.
 
-.. idio:function:: foo a b
-
-   add `a` and `b`
-
 Notice the extra set of parentheses around the elements of the
 anonymous function.  Much like you might parenthesise a sub-expression
 in arithmetic, say, ``5 * (1 + 2)``, the parentheses force the
 evaluation of the anonymous function to be a *function value*, hence
-the statement is more like:
+the ``define`` statement is more like:
 
 .. code-block:: idio
 
    define foo {function-value}
-
 
 ``foo``, or, rather, the function value that ``foo`` is referencing,
 could be passed around as an argument or invoked:
@@ -100,11 +99,11 @@ should return 5.
 Special Forms
 -------------
 
-Much like primitives, special forms exist only in the evaluator and
-cannot be extended.  They are also invoked differently.  Rather than
-"evaluate" each argument and pass the evaluated values to the special
-form, the arguments are passed verbatim: numbers, strings, lists,
-etc..
+Special forms exist only in the evaluator and cannot be extended.
+
+They are also invoked differently.  Rather than "evaluate" each
+argument and pass the evaluated values to the special form, the
+arguments are passed verbatim: numbers, strings, lists, etc..
 
 The special form can invoke its associated behavioural code.  By and
 large that behavioural code is about processing those arguments such
@@ -118,9 +117,14 @@ like special forms in that no arguments are evaluated but are passed
 verbatim.  The result of a template should be something that can be
 immediately re-evaluated.
 
-Using templates is fraught with complications in that they are run by
-the evaluator, in other words, not at the time user code is running,
-and their result is re-evaluated giving their operation a meta quality
-to them.  They are also evaluated in a different *environment* (memory
-space, if you like).
+.. attention::
 
+   Using templates is fraught with complications in that they are run
+   by the evaluator, in other words, not at the time user code is
+   running, and their result is recursively re-evaluated giving their
+   operation a meta quality to them.  They are also evaluated in a
+   different *environment* (memory space, if you like).
+
+   As if that isn't enough, the entity the user sees when using a
+   template is actually a function, called an *expander*, which hides
+   the template functionality.

@@ -1,21 +1,25 @@
 (rst "arrays-intro" 0)
 
+(rst "array-predicates" 0)
 (document Idio array?)
 
+(rst "array-constructors" 0)
 (document Idio make-array)
 (document Idio copy-array)
 (document Idio list->array)
 
-(document Idio array-fill!)
+(rst "array-attributes" 0)
 (document Idio array-length)
 
 (document Idio array-ref)
 (document Idio array-set!)
 
+(rst "array-functions" 0)
 (document Idio array-push!)
 (document Idio array-pop!)
 (document Idio array-unshift!)
 (document Idio array-shift!)
+(document Idio array-fill!)
 
 (document Idio array-for-each-set)
 

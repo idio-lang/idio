@@ -1,18 +1,20 @@
 (rst "handles-intro" 0)
 
+(rst "handle-predicates" 0)
 (document Idio handle?)
 (document Idio input-handle?)
 (document Idio output-handle?)
+(document Idio closed-handle?)
+(document Idio ready?)
+(document Idio eof?)
 
+(rst "handle-attributes" 0)
 (document Idio handle-line)
 (document Idio handle-pos)
 (document Idio handle-name)
 (document Idio handle-location)
 
-(document Idio closed-handle?)
-(document Idio ready?)
-(document Idio eof?)
-
+(rst "handle-functions" 0)
 (document Idio close-handle)
 (document Idio close-input-handle)
 (document Idio close-output-handle)

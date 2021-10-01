@@ -1,6 +1,10 @@
 (rst "structures-intro" 0)
 
-(document job-control %idio-job)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; %idio-job
+
+(document job-control %idio-job idio-job)
 (document job-control %idio-job?)
 (document job-control make-%idio-job)
 
@@ -32,7 +36,11 @@
 (nodocument job-control set-%idio-job-timing-end!)
 (nodocument job-control set-%idio-job-timing-start!)
 
-(document job-control %idio-process)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; %idio-process
+
+(document job-control %idio-process idio-process)
 (document job-control %idio-process?)
 (document job-control make-%idio-process)
 
@@ -49,6 +57,10 @@
 (nodocument job-control set-%idio-process-pid!)
 (nodocument job-control set-%idio-process-status!)
 (nodocument job-control set-%idio-process-stopped!)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; %process-substitution-job
 
 (document job-control %process-substitution-job)
 (document job-control %process-substitution-job?)

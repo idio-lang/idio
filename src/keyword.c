@@ -328,17 +328,17 @@ used for constructing property tables		\n\
     return idio_hash_make_keyword_table (args);
 }
 
-IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args)
+IDIO idio_keyword_ref (IDIO kt, IDIO kw, IDIO args)
 {
-    IDIO_ASSERT (ht);
+    IDIO_ASSERT (kt);
     IDIO_ASSERT (kw);
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (hash, ht);
+    IDIO_TYPE_ASSERT (hash, kt);
     IDIO_TYPE_ASSERT (keyword, kw);
     IDIO_TYPE_ASSERT (list, args);
 
-    IDIO v = idio_hash_ref (ht, kw);
+    IDIO v = idio_hash_ref (kt, kw);
 
     if (idio_S_unspec != v) {
 	return v;
@@ -359,23 +359,23 @@ IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE2V_DS ("keyword-ref", keyword_ref, (IDIO ht, IDIO kw, IDIO args), "kt kw [default]", "\
+IDIO_DEFINE_PRIMITIVE2V_DS ("keyword-ref", keyword_ref, (IDIO kt, IDIO kw, IDIO args), "kt kw [default]", "\
 return the value indexed by keyword `kw` in keyword	\n\
-table `ht`						\n\
+table `kt`						\n\
 							\n\
-:param ht: hash table					\n\
-:type ht: hash table					\n\
+:param kt: keyword table				\n\
+:type kt: keyword table					\n\
 :param kw: keyword index				\n\
 :type kw: keyword					\n\
 :param default: a default value to return if `kw` not found	\n\
 :type default: value, optional				\n\
 							\n\
 :return: value						\n\
-:raises ^rt-hash-key-not-found-error: if `key` is not	\n\
+:raises ^rt-keyword-error: if `key` is not		\n\
 	found and no `default` is supplied		\n\
 ")
 {
-    IDIO_ASSERT (ht);
+    IDIO_ASSERT (kt);
     IDIO_ASSERT (kw);
     IDIO_ASSERT (args);
 
@@ -384,7 +384,7 @@ table `ht`						\n\
      *
      * keyword-ref #t #t
      */
-    IDIO_USER_TYPE_ASSERT (hash, ht);
+    IDIO_USER_TYPE_ASSERT (hash, kt);
     /*
      * Test Case: keyword-errors/keyword-ref-bad-keyword-type.idio
      *
@@ -398,36 +398,36 @@ table `ht`						\n\
      */
     IDIO_USER_TYPE_ASSERT (list, args);
 
-    return idio_keyword_ref (ht, kw, args);
+    return idio_keyword_ref (kt, kw, args);
 }
 
-IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v)
+IDIO idio_keyword_set (IDIO kt, IDIO kw, IDIO v)
 {
-    IDIO_ASSERT (ht);
+    IDIO_ASSERT (kt);
     IDIO_ASSERT (kw);
     IDIO_ASSERT (v);
 
-    IDIO_TYPE_ASSERT (hash, ht);
+    IDIO_TYPE_ASSERT (hash, kt);
     IDIO_TYPE_ASSERT (keyword, kw);
 
-    idio_hash_put (ht, kw, v);
+    idio_hash_put (kt, kw, v);
 
     return idio_S_unspec;
 }
-IDIO_DEFINE_PRIMITIVE3_DS ("keyword-set!", keyword_set, (IDIO ht, IDIO kw, IDIO v), "ht kw v", "\
-set the index of `kw` in hash table `ht` to `v`	\n\
+IDIO_DEFINE_PRIMITIVE3_DS ("keyword-set!", keyword_set, (IDIO kt, IDIO kw, IDIO v), "kt kw v", "\
+set the index of `kw` in keyword table `kt` to `v`	\n\
 							\n\
-:param ht: hash table					\n\
-:type ht: hash table					\n\
-:param kw: non-``#n`` value				\n\
-:type kw: any non-``#n``				\n\
+:param kt: keyword table				\n\
+:type kt: keyword table					\n\
+:param kw: keyword index				\n\
+:type kw: keyword					\n\
 :param v: value						\n\
 :type v: a value					\n\
 							\n\
 :return: #unspec					\n\
 ")
 {
-    IDIO_ASSERT (ht);
+    IDIO_ASSERT (kt);
     IDIO_ASSERT (kw);
     IDIO_ASSERT (v);
 
@@ -436,7 +436,7 @@ set the index of `kw` in hash table `ht` to `v`	\n\
      *
      * keyword-set! #t #t #t
      */
-    IDIO_USER_TYPE_ASSERT (hash, ht);
+    IDIO_USER_TYPE_ASSERT (hash, kt);
     /*
      * Test Case: keyword-errors/keyword-set-bad-keyword-type.idio
      *
@@ -444,7 +444,7 @@ set the index of `kw` in hash table `ht` to `v`	\n\
      */
     IDIO_USER_TYPE_ASSERT (keyword, kw);
 
-    return idio_keyword_set (ht, kw, v);
+    return idio_keyword_set (kt, kw, v);
 }
 
 void idio_keyword_add_primitives ()

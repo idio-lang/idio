@@ -1,19 +1,25 @@
 (rst "structs-intro" 0)
 
+(rst "struct-type-predicates" 0)
 (document Idio struct-type?)
 (document Idio struct-type-isa?)
 
+(rst "struct-type-constructors" 0)
 (document Idio make-struct-type)
 
+(rst "struct-type-attributes" 0)
 (document Idio struct-type-name)
-(document Idio struct-type-fields)
 (document Idio struct-type-parent)
+(document Idio struct-type-fields)
 
+(rst "struct-instance-predicates" 0)
 (document Idio struct-instance?)
 (document Idio struct-instance-isa?)
 
+(rst "struct-instance-constructors" 0)
 (document Idio make-struct-instance)
 
+(rst "struct-instance-attributes" 0)
 (document Idio struct-instance-type)
 (document Idio struct-instance-fields)
 
