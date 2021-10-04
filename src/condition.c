@@ -1078,13 +1078,15 @@ Does not return.						\n\
      */
 
     IDIO eh = idio_thread_current_error_handle ();
-    idio_display_C ("\nreset-condition-handler: ", eh);
+    if (! IDIO_CLOSEDP_HANDLE (eh)) {
+	idio_display_C ("\nreset-condition-handler: ", eh);
 
-    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
-    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
-    idio_display_C (": ", eh);
-    idio_display (c, eh);
-    idio_display_C ("\n", eh);
+	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
+	idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
+	idio_display_C (": ", eh);
+	idio_display (c, eh);
+	idio_display_C ("\n", eh);
+    }
 
     /*
      * As the reset-condition-handler we'll go back to the first krun

@@ -158,6 +158,8 @@ define (job-as-string job seen) {
 
     procs-loop (%idio-job-procs job)
 
+    hprintf r "in=%s out=%s err=%s " (%idio-job-stdin job) (%idio-job-stdout job) (%idio-job-stderr job)
+
     hprintf r "rt?%s %s %s a?=%s" (%idio-job-report-timing job) (%idio-job-timing-start job) (%idio-job-timing-end job) (%idio-job-async job)
 
     hprintf r ">"
@@ -556,7 +558,11 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
       })
       ((null? status) {
 	;; this should have been picked up by ECHILD, above...
-	eprintf "mark-process-status: pid==0 status==#n errno!=ECHILD??\n"
+	eprintf "mark-process-status: pid=%s status=%s errno=%s !=ECHILD??\n" pid status libc/errno
+	for-each (function (job) {
+		    eprintf "mark-process-status: %s\n" job
+	}) %idio-jobs
+	#t
       })
       (else {
 	error 'mark-process-status "inconceivable errno!" pid status (libc/errno-name libc/errno)
@@ -1079,7 +1085,13 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
    ((C/int? infile) {
      if (not (C/== infile STDIN_FILENO)) {
        dup2 infile STDIN_FILENO
-       close infile
+
+       if (and (C/> infile STDERR_FILENO)
+	       (not (C/== infile outfile))
+	       (not (C/== infile errfile))) {
+		 close infile
+	       }
+
        set-input-handle! (open-input-file-from-fd STDIN_FILENO)
      }
    })
@@ -1096,7 +1108,12 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
    ((C/int? outfile) {
      if (not (C/== outfile STDOUT_FILENO)) {
        dup2 outfile STDOUT_FILENO
-       close outfile
+
+       if (and (C/> outfile STDERR_FILENO)
+	       (not (C/== outfile errfile))) {
+		 close outfile
+	       }
+
        set-output-handle! (open-output-file-from-fd STDOUT_FILENO)
      }
    })
@@ -1104,12 +1121,19 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
 
   (cond
    ((pathname? errfile) {
-     set-error-handle! (open-output-file errfile)
+     efh := open-output-file errfile
+     efd := file-handle-fd efh
+     dup2 efd STDERR_FILENO
+     close-handle efh
+     set-error-handle! (open-output-file-from-fd STDERR_FILENO)
    })
    ((C/int? errfile) {
      if (not (C/== errfile STDERR_FILENO)) {
        dup2 errfile STDERR_FILENO
-       close errfile
+
+       if (C/> errfile STDERR_FILENO) {
+	 close errfile
+       }
        set-error-handle! (open-output-file-from-fd errfile)
      }
    })
@@ -1352,7 +1376,7 @@ define-infix-operator | 700 {
 
   w-pipe		 := gensym 'w-pipe
   pipeline-r-fdn         := gensym 'pl-r-fd
-  close-pipeline-r-fd    := gensym 'close-pl-r-fd
+  close-pipeline-r-fh    := gensym 'close-pl-r-fh
   pipeline-w-phn         := gensym 'pl-w-h
   cmd-r-fdn              := gensym 'cmd-r-fdn
 
@@ -1381,7 +1405,7 @@ define-infix-operator | 700 {
 
       $w-pipe               := #f
       $pipeline-r-fdn       := #f
-      $close-pipeline-r-fd  := #f
+      $close-pipeline-r-fh  := #f
       $pipeline-w-phn       := #f
       (cond
        ((eq? $use-w-pipe 'named) {
@@ -1407,8 +1431,8 @@ define-infix-operator | 700 {
        (else {
 	 $pipeline-r-fdn         = (libc/stdin-fileno) ; STDIN_FILENO
 	 if (pair? $pipeline-r-fdn) {
-	   $pipeline-r-fdn       = ph $pipeline-r-fdn
-	   $close-pipeline-r-fd = $pipeline-r-fdn
+	   $close-pipeline-r-fh = ph $pipeline-r-fdn
+	   $pipeline-r-fdn       = fd-handle-fd $close-pipeline-r-fh
 	 }
        }))
       ;; set $cmd-r-fdn now as it is used immediately in the loop
@@ -1703,8 +1727,8 @@ define-infix-operator | 700 {
 	    $status = background-job $job #f
 	  }))
 
-	 if $close-pipeline-r-fd {
-	   libc/close $close-pipeline-r-fd
+	 if $close-pipeline-r-fh {
+	   close-handle $close-pipeline-r-fh
 	 }
 
 	 if $recover-pipeline-w-fd {
@@ -1754,7 +1778,7 @@ define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) 
 
   w-pipe           := gensym 'w-pipe
   cmd-r-fdn        := gensym 'cmd-r-fdn
-  close-cmd-r-fd   := gensym 'close-cmd-r-fd
+  close-cmd-r-fh   := gensym 'close-cmd-r-fh
   cmd-w-phn        := gensym 'cmd-w-phn
 
   r-pipe           := gensym 'r-pipe
@@ -1777,7 +1801,7 @@ define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) 
 
       $w-pipe         := #f
       $cmd-r-fdn      := #f
-      $close-cmd-r-fd := #f
+      $close-cmd-r-fh := #f
       $cmd-w-phn      := #f
       (cond
        ((eq? $use-w-pipe 'named) {
@@ -1803,10 +1827,10 @@ define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) 
        })
        (else {
 	 $cmd-r-fdn        = (libc/stdin-fileno) ; STDIN_FILENO
-	 $close-cmd-r-fd   = #f
+	 $close-cmd-r-fh   = #f
 	 if (pair? $cmd-r-fdn) {
-	   $cmd-r-fdn      = ph $cmd-r-fdn
-	   $close-cmd-r-fd = $cmd-r-fdn
+	   $close-cmd-r-fh = ph $cmd-r-fdn
+	   $cmd-r-fdn      = fd-handle-fd $close-cmd-r-fh
 	 }
        }))
 
@@ -1970,8 +1994,8 @@ define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) 
 	    $status = background-job $job #f
 	  }))
 
-	 if $close-cmd-r-fd {
-	   libc/close $close-cmd-r-fd
+	 if $close-cmd-r-fh {
+	   close-handle $close-cmd-r-fh
 	 }
 
 	 if $recover-cmd-w-fd {
@@ -2128,42 +2152,43 @@ with-handle-redir := {
 
     ;; old and new handles
     old-h := (get-current-h)
-    new-h := #f
+    tmp-h := #f
 
-    ;; if we create a new handle we need to close it afterwards
+    ;; if we *create* a new handle we need to close it afterwards
     close-h := #f
 
     (cond
-     ((dir-fd-h? s/d)      (new-h = s/d))
-     ((fd-handle? s/d)     (error 'with-handle-redir (append-string "not an " dir-msg "-fd-handle") s/d))
-     ((dir-string-h? s/d)  (new-h = s/d))
-     ((string-handle? s/d) (error 'with-handle-redir (append-string "not an " dir-msg "-string-handle") s/d))
+     ((dir-fd-h? s/d)      (tmp-h = s/d))
+     ((fd-handle? s/d)     (error 'with-handle-redir (append-string "not an " dir-msg " fd-handle") s/d))
+     ((dir-string-h? s/d)  (tmp-h = s/d))
+     ((string-handle? s/d) (error 'with-handle-redir (append-string "not an " dir-msg " string-handle") s/d))
      ((string? s/d) {
-       new-h = open-file-h s/d
-       close-fd-handle-on-exec new-h
+       tmp-h = open-file-h s/d
+       close-fd-handle-on-exec tmp-h
        close-h = #t
      })
      ((null? s/d) {
-       new-h = open-file-h "/dev/null"
-       close-fd-handle-on-exec new-h
+       tmp-h = open-file-h "/dev/null"
+       close-fd-handle-on-exec tmp-h
        close-h = #t
      })
      (else (error 'with-handle-redir (append-string "unexpected " dir-msg) s/d)))
 
-    if new-h {
-      set-h! new-h
+    if tmp-h {
+      set-h! tmp-h
     } {
       error 'with-handle-redir (append-string "unexpected " dir-msg) s/d
     }
 
+    r := #f
+
     unwind-protect {
-      (thunk)
+      r = (thunk)
     } {
-      if close-h {
-	close-handle new-h
-      }
       set-h! old-h
     }
+
+    r
   }
 }
 
@@ -2298,11 +2323,15 @@ with-handle-dup := {
        error 'with-handle-dup (append-string "unexpected " msg-h) new
      }))
 
+    r := #f
+
     unwind-protect {
-      (thunk)
+      r = (thunk)
     } {
       set-h! old-h
     }
+
+    r
   }
 }
 
