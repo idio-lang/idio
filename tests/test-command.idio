@@ -385,20 +385,38 @@ trap ^rt-command-status-error (function (c) {
     ;; stdout to a file
     test (io-check -o where-out > redir-outfile) #t
 
+    ;; append stdout to a file
+    test (io-check -o where-out >> redir-outfile) #t
+
     ;; stderr to a file
     test (io-check -e where-err 2> redir-errfile) #t
+
+    ;; append stderr to a file
+    test (io-check -e where-err 2>> redir-errfile) #t
 
     ;; stdout to a file & stderr to same
     test (io-check -o where-out -e where-out > redir-outfile 2>& 1) #t
 
+    ;; append stdout to a file & stderr to same
+    test (io-check -o where-out -e where-out >> redir-outfile 2>& 1) #t
+
     ;; stderr to a file & stdout to same
     test (io-check -o where-err -e where-err 2> redir-errfile >& 2) #t
+
+    ;; append stderr to a file & stdout to same
+    test (io-check -o where-err -e where-err 2>> redir-errfile >& 2) #t
 
     ;; stdout to /dev/null
     test (io-check -o null > #n) #t
 
+    ;; append stdout to /dev/null
+    test (io-check -o null >> #n) #t
+
     ;; stderr to /dev/null
     test (io-check -e null 2> #n) #t
+
+    ;; append stderr to /dev/null
+    test (io-check -e null 2>> #n) #t
 
     ;; stdout to a pipe
     test (io-check -o "pipe" | cat > #n) #t
@@ -539,4 +557,4 @@ if (x? a-e-str) {
 }
 
 ;; all done?
-Tests? (command0 + 102)
+Tests? (command0 + 132)

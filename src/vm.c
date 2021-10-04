@@ -757,11 +757,13 @@ void idio_vm_debug (IDIO thr, char const *prefix, idio_ai_t stack_start)
     idio_debug ("   func=%s\n", IDIO_THREAD_FUNC (thr));
     idio_debug ("    env=%s\n", IDIO_THREAD_ENV (thr));
     idio_debug ("  frame=%s\n", IDIO_THREAD_FRAME (thr));
+
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     idio_debug ("   t/sp=% 3s\n", IDIO_THREAD_TRAP_SP (thr));
     idio_debug ("   d/sp=% 3s\n", IDIO_THREAD_DYNAMIC_SP (thr));
     idio_debug ("   e/sp=% 3s\n", IDIO_THREAD_ENVIRON_SP (thr));
 #endif
+
     idio_debug ("     in=%s\n", IDIO_THREAD_INPUT_HANDLE (thr));
     idio_debug ("    out=%s\n", IDIO_THREAD_OUTPUT_HANDLE (thr));
     idio_debug ("    err=%s\n", IDIO_THREAD_ERROR_HANDLE (thr));
@@ -960,6 +962,7 @@ static void idio_vm_preserve_state (IDIO thr)
     IDIO_TYPE_ASSERT (thread, thr);
 
     idio_array_push_n (IDIO_THREAD_STACK (thr),
+
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
 		       6,
 		       IDIO_THREAD_ENVIRON_SP (thr),
@@ -968,6 +971,7 @@ static void idio_vm_preserve_state (IDIO thr)
 #else
 		       3,
 #endif
+
 		       IDIO_THREAD_FRAME (thr),
 		       IDIO_THREAD_ENV (thr),
 		       idio_SM_preserve_state);
@@ -1982,6 +1986,7 @@ static void idio_vm_push_dynamic (IDIO thr, idio_ai_t gvi, IDIO val)
 	idio_array_push (stack, idio_fixnum (-1));
     }
 #endif
+
     idio_array_push (stack, val);
     idio_array_push (stack, idio_fixnum (gvi));
     idio_array_push (stack, idio_SM_dynamic);
@@ -1999,6 +2004,7 @@ static void idio_vm_pop_dynamic (IDIO thr)
     }
     IDIO_THREAD_STACK_POP ();	/* vi */
     IDIO_THREAD_STACK_POP ();	/* val */
+
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     IDIO_THREAD_DYNAMIC_SP (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_DYNAMIC_SP (thr));
@@ -2015,6 +2021,7 @@ IDIO idio_vm_dynamic_ref (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO args)
     IDIO_TYPE_ASSERT (list, args);
 
     IDIO stack = IDIO_THREAD_STACK (thr);
+
 #ifdef IDIO_VM_DYNAMIC_REF
     idio_ai_t sp = IDIO_FIXNUM_VAL (IDIO_THREAD_DYNAMIC_SP (thr));
 #else
@@ -2069,6 +2076,7 @@ void idio_vm_dynamic_set (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO v)
     IDIO_TYPE_ASSERT (thread, thr);
 
     IDIO stack = IDIO_THREAD_STACK (thr);
+
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     idio_ai_t sp = IDIO_FIXNUM_VAL (IDIO_THREAD_DYNAMIC_SP (thr));
 #else
@@ -2138,6 +2146,7 @@ static void idio_vm_push_environ (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO v
 	idio_array_push (stack, idio_fixnum (-1));
     }
 #endif
+
     idio_array_push (stack, val);
     idio_array_push (stack, idio_fixnum (gvi));
     idio_array_push (stack, idio_SM_environ);
@@ -2155,6 +2164,7 @@ static void idio_vm_pop_environ (IDIO thr)
     }
     IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_STACK_POP ();
+
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     IDIO_THREAD_ENVIRON_SP (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_ENVIRON_SP (thr));
@@ -2171,6 +2181,7 @@ IDIO idio_vm_environ_ref (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO args)
     IDIO_TYPE_ASSERT (list, args);
 
     IDIO stack = IDIO_THREAD_STACK (thr);
+
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     idio_ai_t sp = IDIO_FIXNUM_VAL (IDIO_THREAD_ENVIRON_SP (thr));
 #else
@@ -2225,6 +2236,7 @@ void idio_vm_environ_set (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO v)
     IDIO_TYPE_ASSERT (thread, thr);
 
     IDIO stack = IDIO_THREAD_STACK (thr);
+
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     idio_ai_t sp = IDIO_FIXNUM_VAL (IDIO_THREAD_ENVIRON_SP (thr));
 #else
@@ -2391,6 +2403,7 @@ void idio_vm_push_trap (IDIO thr, IDIO handler, IDIO fmci, idio_ai_t next)
 	idio_array_push (stack, idio_fixnum (-1));
     }
 #endif
+
     idio_array_push (stack, fmci);
     idio_array_push (stack, handler);
     idio_array_push (stack, idio_SM_trap);
@@ -2408,6 +2421,7 @@ static void idio_vm_pop_trap (IDIO thr)
     }
     IDIO_THREAD_STACK_POP ();	/* handler */
     IDIO_THREAD_STACK_POP ();	/* fmci */
+
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     IDIO_THREAD_TRAP_SP (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_TRAP_SP (thr));
@@ -2427,6 +2441,7 @@ static void idio_vm_restore_trap (IDIO thr)
 	idio_vm_panic (thr, "restore-trap: not a fixnum");
     }
     IDIO_TYPE_ASSERT (fixnum, trap_sp);
+
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     IDIO_THREAD_TRAP_SP (thr) = trap_sp;
 #endif
@@ -2622,6 +2637,7 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR, int re
 	if (IHR) {
 	    /* tailp = IDIO_VM_INVOKE_REGULAR_CALL; */
 	    idio_vm_preserve_all_state (thr); /* for RESTORE-ALL-STATE */
+
 #ifndef IDIO_VM_DYNAMIC_REGISTERS
 	    idio_ai_t next_tsp = IDIO_FIXNUM_VAL (idio_array_ref_index (stack, trap_sp - 3));
 	    idio_vm_push_trap (thr,
@@ -2629,6 +2645,7 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR, int re
 			       idio_array_ref_index (stack, next_tsp - 2),
 			       IDIO_FIXNUM_VAL (idio_array_ref_index (stack, next_tsp - 3)));
 #endif
+
 	    if (isa_closure) {
 		idio_array_push (stack, idio_fixnum (idio_vm_IHR_pc)); /* => (POP-TRAP) RESTORE-ALL-STATE, RETURN */
 		idio_array_push (stack, idio_SM_return);
@@ -2637,6 +2654,7 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR, int re
 	    }
 	} else {
 	    idio_vm_preserve_state (thr);      /* for RESTORE-STATE */
+
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
 	    idio_array_push (stack, otrap_sp); /* for RESTORE-TRAP */
 #else
@@ -2646,6 +2664,7 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR, int re
 			       idio_array_ref_index (stack, next_tsp - 2),
 			       IDIO_FIXNUM_VAL (idio_array_ref_index (stack, next_tsp - 3)));
 #endif
+
 	    if (idio_S_true == continuablep) {
 		if (isa_closure) {
 		    idio_array_push (stack, idio_fixnum (idio_vm_CHR_pc)); /* => POP/RESTORE-TRAP, RESTORE-STATE, RETURN */
@@ -3018,6 +3037,10 @@ IDIO idio_vm_restore_continuation_data (IDIO k, IDIO val)
     IDIO_TYPE_ASSERT (continuation, k);
 
     IDIO thr = IDIO_CONTINUATION_THR (k);
+    if (! idio_isa_thread (thr)) {
+	idio_debug ("restore-continuation: not a thread: %s\n", thr);
+	exit (1);
+    }
 
     IDIO_THREAD_PC (thr)		= IDIO_CONTINUATION_PC (k);
     IDIO k_stack = IDIO_CONTINUATION_STACK (k);
@@ -3044,11 +3067,13 @@ IDIO idio_vm_restore_continuation_data (IDIO k, IDIO val)
     IDIO_THREAD_FRAME (thr)		= IDIO_CONTINUATION_FRAME (k);
     IDIO_THREAD_ENV (thr)		= IDIO_CONTINUATION_ENV (k);
     memcpy (IDIO_THREAD_JMP_BUF (thr), IDIO_CONTINUATION_JMP_BUF (k), sizeof (sigjmp_buf));
+
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     IDIO_THREAD_ENVIRON_SP (thr)	= IDIO_CONTINUATION_ENVIRON_SP (k);
     IDIO_THREAD_DYNAMIC_SP (thr)	= IDIO_CONTINUATION_DYNAMIC_SP (k);
     IDIO_THREAD_TRAP_SP (thr)		= IDIO_CONTINUATION_TRAP_SP (k);
 #endif
+
 #ifdef IDIO_CONTINUATION_HANDLES
     /*
      * Hmm, slight complication.  Auto-restoring file descriptors
@@ -3067,6 +3092,7 @@ IDIO idio_vm_restore_continuation_data (IDIO k, IDIO val)
     IDIO_THREAD_OUTPUT_HANDLE (thr)	= IDIO_CONTINUATION_OUTPUT_HANDLE (k);
     IDIO_THREAD_ERROR_HANDLE (thr)	= IDIO_CONTINUATION_ERROR_HANDLE (k);
 #endif
+
     IDIO_THREAD_MODULE (thr)		= IDIO_CONTINUATION_MODULE (k);
     /*
      * In the same vein, restoring IDIO_THREAD_HOLES also messes with
@@ -3079,6 +3105,7 @@ IDIO idio_vm_restore_continuation_data (IDIO k, IDIO val)
     IDIO_THREAD_VAL (thr)		= val;
 
     idio_thread_set_current_thread (thr);
+
     return thr;
 }
 

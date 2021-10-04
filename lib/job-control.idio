@@ -2137,7 +2137,7 @@ with-handle-redir := {
        set-h!        = set-output-handle!
        dir-fd-h?     = output-fd-handle?
        dir-string-h? = output-string-handle?
-       dir-msg       = "append"
+       dir-msg       = "appendable output"
      })
      ((eq? type 'error) {
        get-current-h = current-error-handle
@@ -2147,6 +2147,15 @@ with-handle-redir := {
        dir-fd-h?     = output-fd-handle?
        dir-string-h? = output-string-handle?
        dir-msg       = "output"
+     })
+     ((eq? type 'append-error) {
+       get-current-h = current-error-handle
+       open-fd-h     = open-output-fd
+       open-file-h   = function (n) (open-file n "a")
+       set-h!        = set-error-handle!
+       dir-fd-h?     = output-fd-handle?
+       dir-string-h? = output-string-handle?
+       dir-msg       = "appendable error"
      })
      (else (error 'with-handle-redir "unexpected handle type" type)))
 
@@ -2362,6 +2371,9 @@ define-infix-operator > 600 {
    ((eq? op '2>) {
      type = 'error
    })
+   ((eq? op '2>>) {
+     type = 'append-error
+   })
    (else (error op "unexpected op" op)))
 
   result := #n
@@ -2381,9 +2393,10 @@ define-infix-operator > 600 {
   result
 }
 
-define-infix-operator >> 600 \>
-define-infix-operator <  600 \>
-define-infix-operator 2> 600 \>
+define-infix-operator >>  600 \>
+define-infix-operator <   600 \>
+define-infix-operator 2>  600 \>
+define-infix-operator 2>> 600 \>
 
 ;; ... <& e1 ...
 ;; ... >& e1 ...

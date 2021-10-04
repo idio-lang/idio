@@ -2323,12 +2323,12 @@ IDIO_DEFINE_PRIMITIVE1V_DS ("waitpid", libc_waitpid, (IDIO pid, IDIO args), "pid
 in C, :samp:`waitpid ({pid}, status[, {options}])`   \n\
 a wrapper to libc :manpage:`waitpid(2)`		     \n\
 						     \n\
-:param pid: process ID				     \n\
+:param pid: Process ID				     \n\
 :type pid: libc/pid_t				     \n\
 :param options: see below			     \n\
 :type options: C/int, optional			     \n\
-:return: list of (libc/pid_t, *status*)		     \n\
-:rtype: list					     \n\
+:return: list of (pid, *status*)		     \n\
+:rtype: list  of (libc/pid_t, C/pointer or ``#n``)   \n\
 :raises ^system-error:				     \n\
 						     \n\
 ``libc/WAIT_ANY`` is defined as -1 for use as `pid`. \n\
@@ -2346,7 +2346,7 @@ Options will be IORed together			     \n\
 	:ref:`WIFSIGNALED <libc/WIFSIGNALED>`,	     \n\
 	:ref:`WTERMSIG <libc/WTERMSIG>`,	     \n\
 	:ref:`WIFSTOPPED <libc/WIFSTOPPED>`	     \n\
-	for functions to manipulate `status`.	     \n\
+	for functions to manipulate *status*.	     \n\
 ")
 {
     IDIO_ASSERT (pid);
@@ -2390,11 +2390,14 @@ Options will be IORed together			     \n\
 		 * erroring.
 		 */
 		IDIO stray_pids = idio_module_symbol_value (idio_job_control_stray_pids_sym, idio_job_control_module, idio_S_nil);
-		IDIO spid = idio_hash_ref (stray_pids, pid);
-		if (idio_S_unspec != spid) {
-		    fprintf (stderr, "%6d: waitpid: recovered stray pid %d\n", getpid (), C_pid);
-		    idio_hash_delete (stray_pids, pid);
-		    return IDIO_LIST2 (pid, spid);
+
+		if (C_pid > 0) {
+		    IDIO spid = idio_hash_ref (stray_pids, pid);
+		    if (idio_S_unspec != spid) {
+			fprintf (stderr, "%6d: waitpid: recovered stray pid %d\n", getpid (), C_pid);
+			idio_hash_delete (stray_pids, pid);
+			return IDIO_LIST2 (pid, spid);
+		    }
 		}
 
 		return IDIO_LIST2 (idio_libc_pid_t (0), idio_S_nil);

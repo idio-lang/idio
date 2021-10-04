@@ -84,6 +84,7 @@ if (e? testfile) {
 
 Errors := 0
 Tests := 0
+Notify := #f
 
 define (seq) {
   n := 1
@@ -105,7 +106,9 @@ define (fail expr result expected) {
 
 define (test3 expr result expected) {
   set! Tests (1 + Tests)
-  ;edisplay* "test #" Tests ":" expr "=> (equal? " result expected " )"
+  if Notify {
+    edisplay* "test #" Tests ":" expr "=> (equal? " result expected " )"
+  }
   if (not (equal? result expected)) {
     fail expr result expected
   }
@@ -345,7 +348,7 @@ test-load "test-job-control.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? 6343
+Tests? 6373
 
 if (e? testfile) (delete-file testfile)
 

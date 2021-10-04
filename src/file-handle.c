@@ -1480,23 +1480,6 @@ IDIO idio_open_file_handle_C (char const *func, IDIO filename, char const *pathn
 
     IDIO fh = idio_open_file_handle (filename, pathname, pathname_len, fd, h_type, h_flags, s_flags);
 
-    /*
-     * Fake the nominal file position if we are appending.
-     *
-     * Technically,
-     *
-     *   Before each write(2), the file offset is positioned at the
-     *   end of the file, as if with lseek(2).
-     *
-     * so that the file offset is slightly disingenuous.
-     */
-    if (req_fs_flags & O_APPEND) {
-	/* IDIO_HANDLE_POS (fh) = lseek (fd, 0, SEEK_END); */
-	if (0 != IDIO_HANDLE_POS (fh)) {
-	    IDIO_HANDLE_LINE (fh) = 0;
-	}
-    }
-
     return fh;
 }
 
