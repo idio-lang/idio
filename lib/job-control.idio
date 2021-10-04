@@ -636,7 +636,19 @@ define (format-job-info job msg) "display to stderr `msg` alongside job `job` de
   }
 }
 
-define (format-job-detail job & args) {
+define (format-job-detail job & args) "
+
+display a normalised form of `job`
+
+:param job: job to report on
+:type job: %idio-job
+:param handle: output handle, defaults to :ref:`current-output-handle <current-output-handle>`
+:type handle: output handle, optional
+
+The actual form of the report is subject to change and should not be
+relied on.
+
+" {
   oh := (current-output-handle)
   if (pair? args) {
     oh = ph args

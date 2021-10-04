@@ -385,8 +385,26 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 				hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
 				hprintf out-fh ".. idio:value:: %s\n\n" sym
-				hprintf out-fh "   :type: %s\n" (type->string val)
-				hprintf out-fh "   :canonical: %s\n" mod-sym
+
+				;; the type for C/type? is invariably
+				;; wrong as we want the typedef'd
+				;; variant
+				if (not (C/type? val)) {
+				  (cond
+				   ((pathname? val) {
+				     hprintf out-fh "   :type: pathname\n"
+				   })
+				   ((or (null? val)
+					(boolean? val)) {
+					  #t
+				   })
+				   (else {
+				     hprintf out-fh "   :type: %s\n" (type->string val)
+				   }))
+				}
+				if (not (eq? mod 'Idio)) {
+				  hprintf out-fh "   :canonical: %s\n" mod-sym
+				}
 
 				(cond
 				 ((dynamic? (string->symbol mod-sym)) {

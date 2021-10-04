@@ -566,7 +566,7 @@ This invokes :ref:`do-job-notification <job-control/do-job-notification>`.	\n\
  * Some common code.
  *
  * The basic premise is to fall on our sword in the same way the child
- * did thus propgating the exit status up the process tree.
+ * did thus propagating the exit status up the process tree.
  */
 IDIO idio_condition_exit_on_error (IDIO c)
 {

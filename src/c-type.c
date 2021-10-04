@@ -136,11 +136,11 @@ int idio_isa_C_char (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("char?", C_charp, (IDIO o), "o", "\
-test if `o` is an C/char				\n\
+test if `o` is a C/char				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/char, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/char, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -171,11 +171,11 @@ int idio_isa_C_schar (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("schar?", C_scharp, (IDIO o), "o", "\
-test if `o` is an C/schar				\n\
+test if `o` is a C/schar				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/schar, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/schar, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -206,11 +206,11 @@ int idio_isa_C_uchar (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("uchar?", C_ucharp, (IDIO o), "o", "\
-test if `o` is an C/uchar				\n\
+test if `o` is a C/uchar				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/uchar, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/uchar, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -241,11 +241,11 @@ int idio_isa_C_short (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("short?", C_shortp, (IDIO o), "o", "\
-test if `o` is an C/short				\n\
+test if `o` is a C/short				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/short, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/short, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -276,11 +276,11 @@ int idio_isa_C_ushort (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("ushort?", C_ushortp, (IDIO o), "o", "\
-test if `o` is an C/ushort			\n\
+test if `o` is a C/ushort			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/ushort, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/ushort, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -311,11 +311,11 @@ int idio_isa_C_int (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("int?", C_intp, (IDIO o), "o", "\
-test if `o` is an C/int				\n\
+test if `o` is a C/int				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/int, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/int, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -346,11 +346,11 @@ int idio_isa_C_uint (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("uint?", C_uintp, (IDIO o), "o", "\
-test if `o` is an C/uint			\n\
+test if `o` is a C/uint			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/uint, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/uint, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -381,11 +381,11 @@ int idio_isa_C_long (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("long?", C_longp, (IDIO o), "o", "\
-test if `o` is an C/long				\n\
+test if `o` is a C/long				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/long, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/long, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -416,11 +416,11 @@ int idio_isa_C_ulong (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("ulong?", C_ulongp, (IDIO o), "o", "\
-test if `o` is an C/ulong			\n\
+test if `o` is a C/ulong			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/ulong, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/ulong, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -451,11 +451,11 @@ int idio_isa_C_longlong (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("longlong?", C_longlongp, (IDIO o), "o", "\
-test if `o` is an C/longlong				\n\
+test if `o` is a C/longlong				\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/longlong, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/longlong, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -486,11 +486,11 @@ int idio_isa_C_ulonglong (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("ulonglong?", C_ulonglongp, (IDIO o), "o", "\
-test if `o` is an C/ulonglong			\n\
+test if `o` is a C/ulonglong			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/ulonglong, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/ulonglong, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -521,11 +521,11 @@ int idio_isa_C_float (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("float?", C_floatp, (IDIO o), "o", "\
-test if `o` is an C/float			\n\
+test if `o` is a C/float			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/float, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/float, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -556,11 +556,11 @@ int idio_isa_C_double (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("double?", C_doublep, (IDIO o), "o", "\
-test if `o` is an C/double			\n\
+test if `o` is a C/double			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/double, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/double, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -591,11 +591,11 @@ int idio_isa_C_longdouble (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("longdouble?", C_longdoublep, (IDIO o), "o", "\
-test if `o` is an C/longdouble			\n\
+test if `o` is a C/longdouble			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/longdouble, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/longdouble, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -666,11 +666,11 @@ int idio_isa_C_pointer (IDIO co)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("pointer?", C_pointerp, (IDIO o), "o", "\
-test if `o` is an C/pointer			\n\
+test if `o` is a C/pointer			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is an C/pointer, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is a C/pointer, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -719,6 +719,25 @@ int idio_isa_C_type (IDIO o)
     }
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("type?", C_typep, (IDIO o), "o", "\
+test if `o` is a C/ type			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: ``#t`` if `o` is a C/ type, ``#f`` otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_C_type (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 /*
  * XXX a char is not a number -- try using a signed char!
  */
@@ -744,6 +763,25 @@ int idio_isa_C_number (IDIO o)
     }
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("number?", C_numberp, (IDIO o), "o", "\
+test if `o` is a C/ number			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: ``#t`` if `o` is a C/ number, ``#f`` otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_C_number (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 int idio_isa_C_integral (IDIO o)
 {
     switch (idio_type (o)) {
@@ -763,6 +801,25 @@ int idio_isa_C_integral (IDIO o)
     }
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("integral?", C_integralp, (IDIO o), "o", "\
+test if `o` is a C/ integral			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: ``#t`` if `o` is a C/ integral, ``#f`` otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_C_integral (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 int idio_isa_C_unsigned (IDIO o)
 {
     switch (idio_type (o)) {
@@ -775,6 +832,25 @@ int idio_isa_C_unsigned (IDIO o)
     default:
 	return 0;
     }
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("unsigned?", C_unsignedp, (IDIO o), "o", "\
+test if `o` is a C/ unsigned			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: ``#t`` if `o` is a C/ unsigned, ``#f`` otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_C_unsigned (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
 }
 
 /*
@@ -2458,6 +2534,12 @@ void idio_c_type_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_doublep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_longdoublep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_pointerp);
+
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_typep);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_numberp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_integralp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_unsignedp);
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_le);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_lt);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_eq);

@@ -32,8 +32,8 @@
 (nodocument job-control background-job)
 
 (nodocument job-control default-child-handler)
-(nodocument job-control do-job-notification)
-(nodocument job-control format-job-detail)
+(document job-control do-job-notification)
+(document job-control format-job-detail)
 (nodocument job-control job-detail)
 (nodocument job-control job-failed)
 (nodocument job-control pipeline-detail)

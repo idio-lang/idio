@@ -6,19 +6,32 @@ affect the environment the job is run in.
 
 Not all the meta-commands work together.
 
-* ``collect-output`` returns the *stdout* of the job as a string.
+* ``collect-output`` collects the output from a job
 
-* ``fg-job`` returns the job in the foreground.  This is the default
-  and the meta-command exists for completeness.
+  :return: the *stdout* of the job
+  :rtype: string
 
-* ``bg-job`` returns the job in the background.
+  This is the equivalent of :lname:`Bash`'s ``$(...)``.
+
+* ``fg-job`` runs the job in the foreground
+
+  :return: the *stdout* of the job
+  :rtype: string
+
+  This is the default and the meta-command exists for completeness.
+
+* ``bg-job`` runs the job in the background
+
+  This is the equivalent of most shell's ``... &``.
 
 * ``pipe-into`` directs the *stdin* of the job to the read-end of a
   :manpage:`pipe(2)` and an output pipe handle derived from the
-  write-end of the pipe is returned.
+  write-end of the pipe is returned
 
   Whatever the caller writes to this pipe handle will be delivered to
   the *stdin* of the job.
+
+  This is similar to :lname:`Perl`'s ``open ("| ...")``.
 
 * ``named-pipe-into`` directs the *stdin* of the job from a named pipe
   and that pipe name is returned.

@@ -1,48 +1,85 @@
 (rst "values-intro" 0)
 
-(document Idio *idio-features*)
-(document Idio *regcomp-array*)
-(document Idio *require-features*)
-(document Idio *require-subfeatures*)
-(document Idio 2pi)
-(document Idio 3pi/2)
-(document Idio 3pi/4)
-(document Idio 5pi/4)
-(document Idio 7pi/4)
-(document Idio ARGC)
-(document Idio ARGV)
-(document Idio ARGV0)
-(document Idio EGID)
-(document Idio EUID)
-(document Idio GID)
-(document Idio GROUPS)
-(document Idio IDIO_BUILD_COMMIT)
-(document Idio IDIO_BUILD_DATE)
-(document Idio IDIO_BUILD_DESCRIBE)
-(document Idio IDIO_BUILD_TIMESTAMP)
-(document Idio IDIO_CMD)
-(document Idio IDIO_CMD_PATH)
-(document Idio IDIO_EXE)
-(document Idio IDIO_MM_VERSION)
-(document Idio IDIO_PID)
-(document Idio IDIO_SYSTEM_ARCH)
-(document Idio IDIO_VERSION)
+(rst "general-values" 0)
+(document Idio IDIOLIB)
 (document Idio IFS)
 (document Idio PID)
 (document Idio PPID)
 (document Idio SECONDS)
+(nodocument Idio SECONDS/get)
 (document Idio TIMEFORMAT)
+
+(rst "environment-values" 0)
+(document Idio HOME)
+(document Idio LOGNAME)
+(document Idio SHELL)
+
+(rst "invocation-values" 0)
+(document Idio ARGC)
+(document Idio ARGV)
+(document Idio ARGV0)
+(document Idio IDIO_CMD)
+(document Idio IDIO_CMD_PATH)
+(document Idio IDIO_EXE)
+
+(document Idio IDIO_PID)
+
 (document Idio UID)
+(document Idio EUID)
+(document Idio GID)
+(document Idio EGID)
+(document Idio GROUPS)
+
+(rst "executable-values" 0)
+(document Idio IDIO_VERSION)
+(document Idio IDIO_MM_VERSION)
+(document Idio IDIO_SYSTEM_ARCH)
+(document Idio IDIO_BUILD_DATE)
+(document Idio IDIO_BUILD_TIMESTAMP)
+(document Idio IDIO_BUILD_COMMIT)
+(document Idio IDIO_BUILD_DESCRIBE)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; printing
+
+(rst "printing-values" 0)
 (document Idio idio-print-conversion-format)
 (document Idio idio-print-conversion-precision)
-(document Idio pi)
-(document Idio pi/2)
-(document Idio pi/4)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ; command status error handling
 
+(rst "error-suppression-values" 0)
 (document Idio suppress-exit-on-error! suppress-exit-on-error)
 (document Idio suppress-pipefail! suppress-pipefail)
 (document Idio suppress-async-command-report! suppress-async-command-report)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+;
+
+(rst "idio-features" 0)
+(document Idio *idio-features* idio-features)
+
+(nodocument Idio *regcomp-array*)
+
+
+(nodocument Idio *require-features*)
+(nodocument Idio *require-subfeatures*)
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; s9
+
+(nodocument Idio pi)
+(nodocument Idio pi/2)
+(nodocument Idio pi/4)
+(nodocument Idio 2pi)
+(nodocument Idio 3pi/2)
+(nodocument Idio 3pi/4)
+(nodocument Idio 5pi/4)
+(nodocument Idio 7pi/4)

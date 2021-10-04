@@ -52,6 +52,7 @@
 #include "libc-wrap.h"
 #include "module.h"
 #include "pair.h"
+#include "path.h"
 #include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
@@ -918,8 +919,8 @@ void idio_env_init_idiolib (char const *argv0, size_t const argv0_len)
      * While we are here, set IDIO_CMD and IDIO_EXE.
      */
     idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD"), idio_string_C_len (argv0, argv0_len), idio_Idio_module_instance ());
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD_PATH"), idio_string_C_len (a0rp, a0rp_len), idio_Idio_module_instance ());
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_EXE"), idio_string_C_len (erp, erp_len), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD_PATH"), idio_pathname_C_len (a0rp, a0rp_len), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_EXE"), idio_pathname_C_len (erp, erp_len), idio_Idio_module_instance ());
 
     if (erp_len > 0) {
 	idio_env_extend_IDIOLIB (erp, erp_len, 1);

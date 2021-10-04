@@ -17,6 +17,11 @@
 (document C longdouble?)
 (document C pointer?)
 
+(document C type?)
+(document C number?)
+(document C integral?)
+(document C unsigned?)
+
 (rst "type-constructors" 0)
 (document C integer->)
 (document C integer->unsigned)

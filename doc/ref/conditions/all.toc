@@ -24,7 +24,7 @@
 (document Idio ^error)
 (document Idio error?)
 
-(document Idio ^idio-error)
+(document Idio ^idio-error idio-error)
 (document Idio idio-error?)
 (document Idio idio-error-message)
 (document Idio idio-error-location)
@@ -196,11 +196,11 @@
 (document Idio rt-command-exec-error?)
 (document Idio rt-command-exec-error-errno)
 
-(document Idio ^rt-command-status-error)
+(document Idio ^rt-command-status-error rt-command-status-error)
 (document Idio rt-command-status-error?)
 (document Idio rt-command-status-error-status)
 
-(document Idio ^rt-async-command-status-error)
+(document Idio ^rt-async-command-status-error rt-async-command-status-error)
 (document Idio rt-async-command-status-error?)
 
 

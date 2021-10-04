@@ -99,7 +99,7 @@ case "${uname_a[0]}" in
     build_date=$(date -r "${now}" +%Y-%m-%d)
 
     # timestamp should be RFC3339/ISO8601 and whilst FreeBSD date
-    # supports the -Iseconds flag for ISIO8601 (and OpenBSD doesn't)
+    # supports the -Iseconds flag for ISO8601 (and OpenBSD doesn't)
     # we can't rely on it as it likes to use T/nothing rather than T/Z
     # anyway.
     #

@@ -473,12 +473,19 @@ report.
   condition-report = function (prefix c & args) "print a report on condition `c`
 
 :param prefix: a distinguishing string
+:type prefix: string
 :param c: the condition
 :type c: condition instance
 :param handle: print to handle, defaults to current output handle
 :type handle: handle, optional
-
 :return: #<unspec>
+
+The form of the report is not fixed and should not be relied upon.
+
+Most reports are a single line but some, notably for
+:ref:`^rt-command-status-error <^rt-command-status-error>`, may be
+multiple lines.
+
   " {
     oh := (current-output-handle)
     if (and (not (null? args))
