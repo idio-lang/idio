@@ -57,36 +57,36 @@ handle-error-load := {
 }
 
 handle-error-load "handle-errors/read-char-bad-handle.idio" "handle read error"
-handle-error-load "handle-errors/read-char-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a input handle"
-handle-error-load "handle-errors/close-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
-handle-error-load "handle-errors/close-input-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a input handle"
+handle-error-load "handle-errors/read-char-bad-type.idio" "bad parameter type: '#t' a constant is not a input handle"
+handle-error-load "handle-errors/close-bad-type.idio" "bad parameter type: '#t' a constant is not a handle"
+handle-error-load "handle-errors/close-input-bad-type.idio" "bad parameter type: '#t' a constant is not a input handle"
 handle-error-load "handle-errors/close-input-bad-handle.idio" "handle '*stdout*' is not a input handle"
-handle-error-load "handle-errors/close-output-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a output handle"
+handle-error-load "handle-errors/close-output-bad-type.idio" "bad parameter type: '#t' a constant is not a output handle"
 handle-error-load "handle-errors/close-output-bad-handle.idio" "handle '*stdin*' is not a output handle"
 
-handle-error-load "handle-errors/closed-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
+handle-error-load "handle-errors/closed-handle-bad-type.idio" "bad parameter type: '#t' a constant is not a handle"
 
-handle-error-load "handle-errors/flush-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
+handle-error-load "handle-errors/flush-handle-bad-type.idio" "bad parameter type: '#t' a constant is not a handle"
 
-handle-error-load "handle-errors/seek-handle-bad-handle-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
-handle-error-load "handle-errors/seek-handle-bad-pos-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
-handle-error-load "handle-errors/seek-handle-bad-whence-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+handle-error-load "handle-errors/seek-handle-bad-handle-type.idio" "bad parameter type: '#t' a constant is not a handle"
+handle-error-load "handle-errors/seek-handle-bad-pos-type.idio" "bad parameter type: '#t' a constant is not a integer"
+handle-error-load "handle-errors/seek-handle-bad-whence-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 handle-error-load "handle-errors/seek-handle-bad-whence-value.idio" "seek-handle whence='maybe': 'maybe' is invalid: 'set, 'end or 'cur"
 
-handle-error-load "handle-errors/rewind-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
+handle-error-load "handle-errors/rewind-handle-bad-type.idio" "bad parameter type: '#t' a constant is not a handle"
 
-handle-error-load "handle-errors/set-input-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
-handle-error-load "handle-errors/set-output-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
-handle-error-load "handle-errors/set-error-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
+handle-error-load "handle-errors/set-input-handle-bad-type.idio" "bad parameter type: '#t' a constant is not a handle"
+handle-error-load "handle-errors/set-output-handle-bad-type.idio" "bad parameter type: '#t' a constant is not a handle"
+handle-error-load "handle-errors/set-error-handle-bad-type.idio" "bad parameter type: '#t' a constant is not a handle"
 
-handle-error-load "handle-errors/write-char-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
+handle-error-load "handle-errors/write-char-bad-type.idio" "bad parameter type: '#t' a constant is not a unicode"
 handle-error-load "handle-errors/write-char-noncharacter.idio" "write-char Unicode code point: U+FDD0 is not a character"
 
 handle-error-load "handle-errors/display-bad-handle.idio" "handle write error"
-handle-error-load "handle-errors/display-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a output handle"
+handle-error-load "handle-errors/display-bad-type.idio" "bad parameter type: '#t' a constant is not a output handle"
 
-handle-error-load "handle-errors/handle-location-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
-handle-error-load "handle-errors/handle-name-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
+handle-error-load "handle-errors/handle-location-bad-type.idio" "bad parameter type: '#t' a constant is not a handle"
+handle-error-load "handle-errors/handle-name-bad-type.idio" "bad parameter type: '#t' a constant is not a handle"
 
 ;; all done?
 Tests? (handle-error0 + 23)

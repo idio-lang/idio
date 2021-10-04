@@ -62,16 +62,16 @@ unicode-error-load := {
   }
 }
 
-unicode-error-load "unicode-errors/unicode2plane-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
+unicode-error-load "unicode-errors/unicode2plane-bad-type.idio" "bad parameter type: '#t' a constant is not a unicode"
 
-unicode-error-load "unicode-errors/unicode2plane-codepoint-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
+unicode-error-load "unicode-errors/unicode2plane-codepoint-bad-type.idio" "bad parameter type: '#t' a constant is not a unicode"
 
-unicode-error-load "unicode-errors/unicode2integer-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
+unicode-error-load "unicode-errors/unicode2integer-bad-type.idio" "bad parameter type: '#t' a constant is not a unicode"
 
-unicode-error-load "unicode-errors/unicode-eq-bad-first-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
-unicode-error-load "unicode-errors/unicode-eq-bad-second-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
-unicode-error-load "unicode-errors/unicode-eq-bad-args-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
-unicode-error-load "unicode-errors/unicode-eq-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
+unicode-error-load "unicode-errors/unicode-eq-bad-first-type.idio" "bad parameter type: '#t' a constant is not a unicode"
+unicode-error-load "unicode-errors/unicode-eq-bad-second-type.idio" "bad parameter type: '#t' a constant is not a unicode"
+unicode-error-load "unicode-errors/unicode-eq-bad-args-type.idio" "bad parameter type: '#t' a constant is not a unicode"
+unicode-error-load "unicode-errors/unicode-eq-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a unicode"
 
 ;; all done?
 Tests? (unicode-error0 + 7)

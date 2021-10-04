@@ -63,50 +63,50 @@ hash-error-load := {
   }
 }
 
-hash-error-load "hash-errors/hashing-return-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
-hash-error-load "hash-errors/hashing-return-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+hash-error-load "hash-errors/hashing-return-bad-type.idio" "bad parameter type: '#t' a constant is not a integer"
+hash-error-load "hash-errors/hashing-return-float.idio" "bad parameter type: '1.1e+0' a bignum is not a integer"
 hash-error-load "hash-errors/hashing-return-negative-fixnum.idio" "hashing function has returned a negative value"
 hash-error-load "hash-errors/hashing-return-negative-bignum.idio" "hashing function has returned a negative value"
 
-hash-error-load "hash-errors/hash-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-set-bad-type.idio" "bad parameter type: '#t' a constant is not a hash"
 hash-error-load "hash-errors/hash-set-nil-key.idio" "hash-set! key: is nil"
 
-hash-error-load "hash-errors/hash-exists-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-exists-bad-type.idio" "bad parameter type: '#t' a constant is not a hash"
 hash-error-load "hash-errors/hash-exists-nil-key.idio" "hash-exists? key: is nil"
 
-hash-error-load "hash-errors/hash-ref-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-ref-bad-type.idio" "bad parameter type: '#t' a constant is not a hash"
 hash-error-load "hash-errors/hash-ref-nil-key.idio" "hash-ref key: is nil"
 hash-error-load "hash-errors/hash-ref-non-existent-key.idio" "key not found"
 
-hash-error-load "hash-errors/hash-delete-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-delete-bad-type.idio" "bad parameter type: '#t' a constant is not a hash"
 hash-error-load "hash-errors/hash-delete-nil-key.idio" "hash-delete! key: is nil"
 
-hash-error-load "hash-errors/hash-keys-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
-hash-error-load "hash-errors/hash-values-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-keys-bad-type.idio" "bad parameter type: '#t' a constant is not a hash"
+hash-error-load "hash-errors/hash-values-bad-type.idio" "bad parameter type: '#t' a constant is not a hash"
 
-hash-error-load "hash-errors/make-hash-size-float.idio" "bad parameter type: '1.0e+1' a BIGNUM is not a fixnum"
+hash-error-load "hash-errors/make-hash-size-float.idio" "bad parameter type: '1.0e+1' a bignum is not a fixnum"
 
-hash-error-load "hash-errors/alist2hash-bad-alist.idio" "bad parameter type: 'b' a CONSTANT_UNICODE is not a not a pair in alist"
-hash-error-load "hash-errors/alist2hash-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+hash-error-load "hash-errors/alist2hash-bad-alist.idio" "bad parameter type: 'b' a unicode is not a not a pair in alist"
+hash-error-load "hash-errors/alist2hash-bad-type.idio" "bad parameter type: '#t' a constant is not a list"
 
-hash-error-load "hash-errors/hash-equivalence-function-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
-hash-error-load "hash-errors/hash-hash-function-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
-hash-error-load "hash-errors/hash-size-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-equivalence-function-bad-type.idio" "bad parameter type: '#t' a constant is not a hash"
+hash-error-load "hash-errors/hash-hash-function-bad-type.idio" "bad parameter type: '#t' a constant is not a hash"
+hash-error-load "hash-errors/hash-size-bad-type.idio" "bad parameter type: '#t' a constant is not a hash"
 
-hash-error-load "hash-errors/hash-update-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-update-bad-type.idio" "bad parameter type: '#t' a constant is not a hash"
 
-hash-error-load "hash-errors/hash-walk-bad-hash-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
-hash-error-load "hash-errors/hash-walk-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function"
+hash-error-load "hash-errors/hash-walk-bad-hash-type.idio" "bad parameter type: '#t' a constant is not a hash"
+hash-error-load "hash-errors/hash-walk-bad-func-type.idio" "bad parameter type: '#t' a constant is not a function"
 
-hash-error-load "hash-errors/fold-hash-bad-hash-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
-hash-error-load "hash-errors/fold-hash-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function"
+hash-error-load "hash-errors/fold-hash-bad-hash-type.idio" "bad parameter type: '#t' a constant is not a hash"
+hash-error-load "hash-errors/fold-hash-bad-func-type.idio" "bad parameter type: '#t' a constant is not a function"
 
-hash-error-load "hash-errors/copy-hash-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/copy-hash-bad-type.idio" "bad parameter type: '#t' a constant is not a hash"
 hash-error-load "hash-errors/copy-hash-bad-depth-value.idio" "copy-hash depth='completely': should be 'deep or 'shallow"
-hash-error-load "hash-errors/copy-hash-bad-depth-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+hash-error-load "hash-errors/copy-hash-bad-depth-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 
-hash-error-load "hash-errors/merge-hash-bad-first-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
-hash-error-load "hash-errors/merge-hash-bad-second-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/merge-hash-bad-first-type.idio" "bad parameter type: '#t' a constant is not a hash"
+hash-error-load "hash-errors/merge-hash-bad-second-type.idio" "bad parameter type: '#t' a constant is not a hash"
 
 ;; all done?
 Tests? (hash-error0 + 31)

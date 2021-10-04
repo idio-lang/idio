@@ -64,39 +64,39 @@ pair-error-load := {
   }
 }
 
-pair-error-load "pair-errors/ph-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a pair"
+pair-error-load "pair-errors/ph-bad-type.idio" "bad parameter type: '#t' a constant is not a pair"
 
-pair-error-load "pair-errors/set-ph-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a pair"
+pair-error-load "pair-errors/set-ph-bad-type.idio" "bad parameter type: '#t' a constant is not a pair"
 
-pair-error-load "pair-errors/pt-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a pair"
+pair-error-load "pair-errors/pt-bad-type.idio" "bad parameter type: '#t' a constant is not a pair"
 
-pair-error-load "pair-errors/set-pt-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a pair"
+pair-error-load "pair-errors/set-pt-bad-type.idio" "bad parameter type: '#t' a constant is not a pair"
 
-pair-error-load "pair-errors/reverse-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+pair-error-load "pair-errors/reverse-bad-type.idio" "bad parameter type: '#t' a constant is not a list"
 
-pair-error-load "pair-errors/list2array-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+pair-error-load "pair-errors/list2array-bad-type.idio" "bad parameter type: '#t' a constant is not a list"
 
-pair-error-load "pair-errors/length-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+pair-error-load "pair-errors/length-bad-type.idio" "bad parameter type: '#t' a constant is not a list"
 
-pair-error-load "pair-errors/append-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+pair-error-load "pair-errors/append-bad-type.idio" "bad parameter type: '#t' a constant is not a list"
 
-pair-error-load "pair-errors/memq-bad-list-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+pair-error-load "pair-errors/memq-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
 
-pair-error-load "pair-errors/memv-bad-list-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+pair-error-load "pair-errors/memv-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
 
-pair-error-load "pair-errors/member-bad-list-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+pair-error-load "pair-errors/member-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
 
-pair-error-load "pair-errors/assq-bad-list-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
-pair-error-load "pair-errors/assq-bad-pair.idio" "bad parameter type: '3' a FIXNUM is not a pair"
+pair-error-load "pair-errors/assq-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
+pair-error-load "pair-errors/assq-bad-pair.idio" "bad parameter type: '3' a fixnum is not a pair"
 
-pair-error-load "pair-errors/assv-bad-list-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
-pair-error-load "pair-errors/assv-bad-pair.idio" "bad parameter type: '3' a FIXNUM is not a pair"
+pair-error-load "pair-errors/assv-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
+pair-error-load "pair-errors/assv-bad-pair.idio" "bad parameter type: '3' a fixnum is not a pair"
 
-pair-error-load "pair-errors/assoc-bad-list-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
-pair-error-load "pair-errors/assoc-bad-pair.idio" "bad parameter type: '3' a FIXNUM is not a pair"
+pair-error-load "pair-errors/assoc-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
+pair-error-load "pair-errors/assoc-bad-pair.idio" "bad parameter type: '3' a fixnum is not a pair"
 
-pair-error-load "pair-errors/nth-bad-list-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
-pair-error-load "pair-errors/nth-bad-index-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+pair-error-load "pair-errors/nth-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
+pair-error-load "pair-errors/nth-bad-index-type.idio" "bad parameter type: '#t' a constant is not a integer"
 
 ;; all done?
 Tests? (pair-error0 + 19)

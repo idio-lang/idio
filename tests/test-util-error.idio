@@ -62,7 +62,7 @@ util-error-load := {
   }
 }
 
-util-error-load "util-errors/defined-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+util-error-load "util-errors/defined-bad-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 
 util-error-load "util-errors/equal-c-long-double.idio" "equality for C long double is not supported"
 
@@ -78,12 +78,12 @@ util-error-load "util-errors/copy-value-bad-struct-instance.idio" "copy-value st
 util-error-load "util-errors/copy-value-bad-type.idio" "copy-value value='#<PRIM list>': invalid type"
 
 util-error-load "util-errors/copy-value-bad-depth.idio" "copy-value depth='badly': should be 'deep or 'shallow"
-util-error-load "util-errors/copy-value-bad-depth-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+util-error-load "util-errors/copy-value-bad-depth-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 
-util-error-load "util-errors/idio-debug-bad-format-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+util-error-load "util-errors/idio-debug-bad-format-type.idio" "bad parameter type: '#t' a constant is not a string"
 util-error-load "util-errors/idio-debug-format.idio" "idio-debug fmt='hello\x00%s': contains an ASCII NUL"
 
-util-error-load "util-errors/add-feature-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol|string"
+util-error-load "util-errors/add-feature-bad-type.idio" "bad parameter type: '#t' a constant is not a symbol|string"
 
 ;; all done?
 Tests? (util-error0 + 13)

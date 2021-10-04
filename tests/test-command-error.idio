@@ -177,7 +177,7 @@ command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-3.idio" "Fil
 PATH = OPATH
 
 command-parent-error-load "command-errors/find-exe-bad-format.idio" "command contains an ASCII NUL"
-command-parent-error-load "command-errors/find-exe-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol|string"
+command-parent-error-load "command-errors/find-exe-bad-type.idio" "bad parameter type: '#t' a constant is not a symbol|string"
 command-parent-error-load "command-errors/find-exe-not-found.idio" "command not found (foo)"
 PATH = OPATH
 
@@ -188,11 +188,11 @@ command-parent-error-load "command-errors/arg-glob-format.idio" "glob contains a
 ;; test case.
 ;command-parent-error-load "command-errors/arg-glob-aborted.idio" "pattern glob failed"
 
-command-parent-error-load "command-errors/arg-constant-idio.idio" "can't convert a CONSTANT_IDIO to an execve argument: inconvertible constant"
+command-parent-error-load "command-errors/arg-constant-idio.idio" "can't convert a constant to an execve argument: inconvertible constant"
 command-parent-error-load "command-errors/arg-string-format.idio" "argument contains an ASCII NUL"
 command-parent-error-load "command-errors/arg-substring-format.idio" "argument contains an ASCII NUL"
 command-parent-error-load "command-errors/arg-bad-struct.idio" "can't convert a %idio-job to an execve argument: only ~path structs"
-command-parent-error-load "command-errors/arg-bad-value.idio" "can't convert a STRUCT_TYPE to an execve argument: inconvertible type"
+command-parent-error-load "command-errors/arg-bad-value.idio" "can't convert a struct-type to an execve argument: inconvertible type"
 
 OPATH := PATH
 command-parent-error-load "command-errors/exec-not-found.idio" "command not found (foo #n)"

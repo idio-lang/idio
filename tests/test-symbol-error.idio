@@ -65,23 +65,23 @@ symbol-error-load := {
 }
 
 symbol-error-load "symbol-errors/gensym-prefix-bad-format.idio" "gensym: prefix contains an ASCII NUL"
-symbol-error-load "symbol-errors/gensym-prefix-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string|symbol"
+symbol-error-load "symbol-errors/gensym-prefix-bad-type.idio" "bad parameter type: '#t' a constant is not a string|symbol"
 
-symbol-error-load "symbol-errors/symbol2string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+symbol-error-load "symbol-errors/symbol2string-bad-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 
 symbol-error-load "symbol-errors/properties-nil.idio" "value is #n"
 symbol-error-load "symbol-errors/properties-non-existent.idio" "no properties exist"
 
-symbol-error-load "symbol-errors/set-properties-bad-properties-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+symbol-error-load "symbol-errors/set-properties-bad-properties-type.idio" "bad parameter type: '#t' a constant is not a hash"
 
 symbol-error-load "symbol-errors/property-nil.idio" "value is #n"
 symbol-error-load "symbol-errors/property-properties-non-existent.idio" "no properties exist"
 symbol-error-load "symbol-errors/property-non-existent.idio" "key not found"
 
-symbol-error-load "symbol-errors/property-bad-keyword-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a keyword"
+symbol-error-load "symbol-errors/property-bad-keyword-type.idio" "bad parameter type: '#t' a constant is not a keyword"
 
 symbol-error-load "symbol-errors/set-property-nil.idio" "value is #n"
-symbol-error-load "symbol-errors/set-property-bad-keyword-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a keyword"
+symbol-error-load "symbol-errors/set-property-bad-keyword-type.idio" "bad parameter type: '#t' a constant is not a keyword"
 
 ;; all done?
 Tests? (symbol-error0 + 12)

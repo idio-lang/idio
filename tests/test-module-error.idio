@@ -66,62 +66,62 @@ module-error-load := {
   }
 }
 
-module-error-load "module-errors/set-module-vci-bad-mci-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum"
-module-error-load "module-errors/set-module-vci-bad-gci-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum"
+module-error-load "module-errors/set-module-vci-bad-mci-type.idio" "bad parameter type: '#t' a constant is not a fixnum"
+module-error-load "module-errors/set-module-vci-bad-gci-type.idio" "bad parameter type: '#t' a constant is not a fixnum"
 module-error-load "module-errors/set-module-vci-unbound.idio" "module name unbound"
-module-error-load "module-errors/set-module-vci-bad-module-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a module|symbol"
+module-error-load "module-errors/set-module-vci-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module|symbol"
 
-module-error-load "module-errors/set-module-vvi-bad-mci-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum"
-module-error-load "module-errors/set-module-vvi-bad-gvi-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum"
+module-error-load "module-errors/set-module-vvi-bad-mci-type.idio" "bad parameter type: '#t' a constant is not a fixnum"
+module-error-load "module-errors/set-module-vvi-bad-gvi-type.idio" "bad parameter type: '#t' a constant is not a fixnum"
 module-error-load "module-errors/set-module-vvi-unbound.idio" "module name unbound"
-module-error-load "module-errors/set-module-vvi-bad-module-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a module|symbol"
+module-error-load "module-errors/set-module-vvi-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module|symbol"
 
-module-error-load "module-errors/find-module-bad-name-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+module-error-load "module-errors/find-module-bad-name-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 module-error-load "module-errors/find-module-unbound.idio" "module name unbound"
 
-module-error-load "module-errors/find-or-create-module-bad-name-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+module-error-load "module-errors/find-or-create-module-bad-name-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 
-module-error-load "module-errors/set-current-module-bad-module-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a module"
+module-error-load "module-errors/set-current-module-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module"
 
-module-error-load "module-errors/set-module-imports-bad-module-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a module"
-module-error-load "module-errors/set-module-imports-bad-imports-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list|nil"
+module-error-load "module-errors/set-module-imports-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module"
+module-error-load "module-errors/set-module-imports-bad-imports-type.idio" "bad parameter type: '#t' a constant is not a list|nil"
 
-module-error-load "module-errors/set-module-exports-bad-module-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a module"
-module-error-load "module-errors/set-module-exports-bad-exports-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
-module-error-load "module-errors/set-module-exports-bad-exports-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list|nil"
+module-error-load "module-errors/set-module-exports-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module"
+module-error-load "module-errors/set-module-exports-bad-exports-arg-type.idio" "bad parameter type: '#t' a constant is not a symbol"
+module-error-load "module-errors/set-module-exports-bad-exports-type.idio" "bad parameter type: '#t' a constant is not a list|nil"
 
-module-error-load "module-errors/module-name-bad-module-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a module"
+module-error-load "module-errors/module-name-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module"
 
 module-error-load "module-errors/module-imports-unbound.idio" "module name unbound"
-module-error-load "module-errors/module-imports-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a module|symbol"
+module-error-load "module-errors/module-imports-bad-type.idio" "bad parameter type: '#t' a constant is not a module|symbol"
 
 module-error-load "module-errors/module-exports-unbound.idio" "module name unbound"
-module-error-load "module-errors/module-exports-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a module|symbol"
+module-error-load "module-errors/module-exports-bad-type.idio" "bad parameter type: '#t' a constant is not a module|symbol"
 
 module-error-load "module-errors/module-symbols-unbound.idio" "module name unbound"
-module-error-load "module-errors/module-symbols-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a module|symbol"
+module-error-load "module-errors/module-symbols-bad-type.idio" "bad parameter type: '#t' a constant is not a module|symbol"
 
-module-error-load "module-errors/symbol-direct-reference-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+module-error-load "module-errors/symbol-direct-reference-bad-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 
 module-error-load "module-errors/find-symbol-module-unbound.idio" "module name unbound"
 
-module-error-load "module-errors/find-symbol-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+module-error-load "module-errors/find-symbol-bad-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 
 module-error-load "module-errors/symbol-value-module-unbound.idio" "module name unbound"
-module-error-load "module-errors/symbol-value-bad-module-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a module|symbol"
+module-error-load "module-errors/symbol-value-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module|symbol"
 
-module-error-load "module-errors/symbol-value-bad-symbol-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+module-error-load "module-errors/symbol-value-bad-symbol-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 
 module-error-load "module-errors/symbol-value-recurse-module-unbound.idio" "module name unbound"
-module-error-load "module-errors/symbol-value-recurse-bad-module-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a module|symbol"
+module-error-load "module-errors/symbol-value-recurse-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module|symbol"
 
-module-error-load "module-errors/symbol-value-recurse-bad-symbol-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+module-error-load "module-errors/symbol-value-recurse-bad-symbol-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 
-module-error-load "module-errors/set-symbol-bad-symbol-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
-module-error-load "module-errors/set-symbol-bad-v-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+module-error-load "module-errors/set-symbol-bad-symbol-type.idio" "bad parameter type: '#t' a constant is not a symbol"
+module-error-load "module-errors/set-symbol-bad-v-type.idio" "bad parameter type: '#t' a constant is not a list"
 
-module-error-load "module-errors/set-symbol-value-bad-symbol-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
-module-error-load "module-errors/set-symbol-value-bad-module-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a module"
+module-error-load "module-errors/set-symbol-value-bad-symbol-type.idio" "bad parameter type: '#t' a constant is not a symbol"
+module-error-load "module-errors/set-symbol-value-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module"
 
 ;; all done?
 Tests? (module-error0 + 37)

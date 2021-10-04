@@ -228,11 +228,11 @@ read-error-load "read-errors/unexpected-rbracket-emb.idio" "unexpected ']'" 2
 
 read-error-load "read-errors/hash-format-eof.idio" "#-format EOF" 1
 
-read-error-load "read-errors/exact-expected-number.idio" "number expected after #e: got SYMBOL" 1
-read-error-load "read-errors/exact-expected-number-emb.idio" "number expected after #e: got SYMBOL" 2
+read-error-load "read-errors/exact-expected-number.idio" "number expected after #e: got symbol" 1
+read-error-load "read-errors/exact-expected-number-emb.idio" "number expected after #e: got symbol" 2
 
-read-error-load "read-errors/inexact-expected-number.idio" "number expected after #i: got SYMBOL" 1
-read-error-load "read-errors/inexact-expected-number-emb.idio" "number expected after #i: got SYMBOL" 2
+read-error-load "read-errors/inexact-expected-number.idio" "number expected after #i: got symbol" 1
+read-error-load "read-errors/inexact-expected-number-emb.idio" "number expected after #i: got symbol" 2
 
 read-error-load "read-errors/not-ready-for-hash-format.idio" "not ready for '#<' format" 1
 read-error-load "read-errors/not-ready-for-hash-format-emb.idio" "not ready for '#<' format" 2

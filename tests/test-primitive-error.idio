@@ -64,11 +64,11 @@ primitive-error-load := {
   }
 }
 
-primitive-error-load "primitive-errors/primitive-arity-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a primitive"
+primitive-error-load "primitive-errors/primitive-arity-bad-type.idio" "bad parameter type: '#t' a constant is not a primitive"
 
-primitive-error-load "primitive-errors/primitive-name-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a primitive"
+primitive-error-load "primitive-errors/primitive-name-bad-type.idio" "bad parameter type: '#t' a constant is not a primitive"
 
-primitive-error-load "primitive-errors/primitive-varargs-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a primitive"
+primitive-error-load "primitive-errors/primitive-varargs-bad-type.idio" "bad parameter type: '#t' a constant is not a primitive"
 
 ;; all done?
 Tests? (primitive-error0 + 3)

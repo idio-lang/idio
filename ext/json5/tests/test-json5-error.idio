@@ -70,19 +70,19 @@ json5-error-load := {
 }
 
 ; json5-api.c
-json5-error-load "json5-errors/generate-hash-bad-key-type.idio" "json5/generate member name='#t' a CONSTANT_IDIO is not a JSON5-compatible value"
+json5-error-load "json5-errors/generate-hash-bad-key-type.idio" "json5/generate member name='#t' a constant is not a JSON5-compatible value"
 
-json5-error-load "json5-errors/generate-bad-constant-value-1.idio" "json5/generate value='#<void>' a CONSTANT_IDIO is not a JSON5-compatible value"
-json5-error-load "json5-errors/generate-bad-constant-value-2.idio" "json5/generate value='a' a CONSTANT_UNICODE is not a JSON5-compatible value"
+json5-error-load "json5-errors/generate-bad-constant-value-1.idio" "json5/generate value='#<void>' a constant is not a JSON5-compatible value"
+json5-error-load "json5-errors/generate-bad-constant-value-2.idio" "json5/generate value='a' a unicode is not a JSON5-compatible value"
 
 ; JSON5 only
-json5-error-load "json5-errors/generate-bad-symbol-value-ECMAIdentifierPart.idio" "json5/generate symbol='part*invalid' a SYMBOL is not a JSON5-compatible value (ECMAIdentifierPart)"
-json5-error-load "json5-errors/generate-bad-symbol-value-ECMAIdentifierStart.idio" "json5/generate symbol='*invalid' a SYMBOL is not a JSON5-compatible value (ECMAIdentifierStart)"
+json5-error-load "json5-errors/generate-bad-symbol-value-ECMAIdentifierPart.idio" "json5/generate symbol='part*invalid' a symbol is not a JSON5-compatible value (ECMAIdentifierPart)"
+json5-error-load "json5-errors/generate-bad-symbol-value-ECMAIdentifierStart.idio" "json5/generate symbol='*invalid' a symbol is not a JSON5-compatible value (ECMAIdentifierStart)"
 
 ; JSON only
-json5-error-load "json5-errors/generate-json-bad-value-symbol.idio" "json5/generate-json value='invalid' a SYMBOL is not a JSON-compatible value"
+json5-error-load "json5-errors/generate-json-bad-value-symbol.idio" "json5/generate-json value='invalid' a symbol is not a JSON-compatible value"
 
-json5-error-load "json5-errors/generate-bad-value-type.idio" "json5/generate value='#<PRIM read>' a PRIMITIVE is not a JSON5-compatible value"
+json5-error-load "json5-errors/generate-bad-value-type.idio" "json5/generate value='#<PRIM read>' a primitive is not a JSON5-compatible value"
 
 ; json5-parser.c
 json5-error-load "json5-errors/parse-array-invalid-value.idio" "json5/parse array at 0: invalid value at 2"

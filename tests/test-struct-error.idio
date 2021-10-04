@@ -66,59 +66,59 @@ struct-error-load := {
 ;; test the various possible errors in struct.c including an embedded
 ;; variant to check we pick up the correct line number
 
-struct-error-load "struct-errors/make-struct-type-bad-field-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+struct-error-load "struct-errors/make-struct-type-bad-field-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 
-struct-error-load "struct-errors/make-struct-type-bad-name-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
-struct-error-load "struct-errors/make-struct-type-bad-parent-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_type"
-struct-error-load "struct-errors/make-struct-type-bad-fields-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+struct-error-load "struct-errors/make-struct-type-bad-name-type.idio" "bad parameter type: '#t' a constant is not a symbol"
+struct-error-load "struct-errors/make-struct-type-bad-parent-type.idio" "bad parameter type: '#t' a constant is not a struct_type"
+struct-error-load "struct-errors/make-struct-type-bad-fields-type.idio" "bad parameter type: '#t' a constant is not a list"
 
-struct-error-load "struct-errors/struct-type-name-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_type"
+struct-error-load "struct-errors/struct-type-name-bad-type.idio" "bad parameter type: '#t' a constant is not a struct_type"
 
-struct-error-load "struct-errors/struct-type-parent-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_type"
+struct-error-load "struct-errors/struct-type-parent-bad-type.idio" "bad parameter type: '#t' a constant is not a struct_type"
 
-struct-error-load "struct-errors/struct-type-fields-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_type"
+struct-error-load "struct-errors/struct-type-fields-bad-type.idio" "bad parameter type: '#t' a constant is not a struct_type"
 
-struct-error-load "struct-errors/struct-type-isa-bad-st-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_type"
-struct-error-load "struct-errors/struct-type-isa-bad-type-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_type"
+struct-error-load "struct-errors/struct-type-isa-bad-st-type.idio" "bad parameter type: '#t' a constant is not a struct_type"
+struct-error-load "struct-errors/struct-type-isa-bad-type-type.idio" "bad parameter type: '#t' a constant is not a struct_type"
 
 struct-error-load "struct-errors/make-struct-instance-too-few-values.idio" "make-struct-instance: not enough values: 1 < 2"
 
 struct-error-load "struct-errors/make-struct-instance-too-many-values.idio" "make-struct-instance: too many values: 3 > 2"
 
-struct-error-load "struct-errors/make-struct-instance-bad-st-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_type"
+struct-error-load "struct-errors/make-struct-instance-bad-st-type.idio" "bad parameter type: '#t' a constant is not a struct_type"
 
-struct-error-load "struct-errors/struct-instance-type-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_instance"
+struct-error-load "struct-errors/struct-instance-type-bad-type.idio" "bad parameter type: '#t' a constant is not a struct_instance"
 
-struct-error-load "struct-errors/struct-instance-fields-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_instance"
+struct-error-load "struct-errors/struct-instance-fields-bad-type.idio" "bad parameter type: '#t' a constant is not a struct_instance"
 
 struct-error-load "struct-errors/struct-instance-ref-non-existent.idio" "field 'z' not found"
 
-struct-error-load "struct-errors/struct-instance-ref-bad-si-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_instance"
-struct-error-load "struct-errors/struct-instance-ref-bad-field-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+struct-error-load "struct-errors/struct-instance-ref-bad-si-type.idio" "bad parameter type: '#t' a constant is not a struct_instance"
+struct-error-load "struct-errors/struct-instance-ref-bad-field-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 
 struct-error-load "struct-errors/struct-instance-ref-direct-negative.idio" "%struct-instance-ref-direct bounds error: -1 < 0"
 struct-error-load "struct-errors/struct-instance-ref-direct-non-existent.idio" "%struct-instance-ref-direct bounds error: 3 >= 2"
 
-struct-error-load "struct-errors/struct-instance-ref-direct-bad-si-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_instance"
-struct-error-load "struct-errors/struct-instance-ref-direct-bad-st-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_type"
-struct-error-load "struct-errors/struct-instance-ref-direct-bad-index-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum"
+struct-error-load "struct-errors/struct-instance-ref-direct-bad-si-type.idio" "bad parameter type: '#t' a constant is not a struct_instance"
+struct-error-load "struct-errors/struct-instance-ref-direct-bad-st-type.idio" "bad parameter type: '#t' a constant is not a struct_type"
+struct-error-load "struct-errors/struct-instance-ref-direct-bad-index-type.idio" "bad parameter type: '#t' a constant is not a fixnum"
 struct-error-load "struct-errors/struct-instance-ref-direct-wrong-type.idio" "%struct-instance-ref-direct: a 'foo' is not a '^error'"
 
 struct-error-load "struct-errors/struct-instance-set-non-existent.idio" "field 'z' not found"
 
-struct-error-load "struct-errors/struct-instance-set-bad-si-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_instance"
-struct-error-load "struct-errors/struct-instance-set-bad-field-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+struct-error-load "struct-errors/struct-instance-set-bad-si-type.idio" "bad parameter type: '#t' a constant is not a struct_instance"
+struct-error-load "struct-errors/struct-instance-set-bad-field-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 
 struct-error-load "struct-errors/struct-instance-set-direct-negative.idio" "%struct-instance-set-direct! bounds error: -1 < 0"
 struct-error-load "struct-errors/struct-instance-set-direct-non-existent.idio" "%struct-instance-set-direct! bounds error: 3 >= 2"
 
-struct-error-load "struct-errors/struct-instance-set-direct-bad-si-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_instance"
-struct-error-load "struct-errors/struct-instance-set-direct-bad-st-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_type"
-struct-error-load "struct-errors/struct-instance-set-direct-bad-index-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum"
+struct-error-load "struct-errors/struct-instance-set-direct-bad-si-type.idio" "bad parameter type: '#t' a constant is not a struct_instance"
+struct-error-load "struct-errors/struct-instance-set-direct-bad-st-type.idio" "bad parameter type: '#t' a constant is not a struct_type"
+struct-error-load "struct-errors/struct-instance-set-direct-bad-index-type.idio" "bad parameter type: '#t' a constant is not a fixnum"
 struct-error-load "struct-errors/struct-instance-set-direct-wrong-type.idio" "%struct-instance-set-direct!: a 'foo' is not a '^error'"
 
-struct-error-load "struct-errors/struct-instance-isa-bad-si-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_instance"
-struct-error-load "struct-errors/struct-instance-isa-bad-type-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_type"
+struct-error-load "struct-errors/struct-instance-isa-bad-si-type.idio" "bad parameter type: '#t' a constant is not a struct_instance"
+struct-error-load "struct-errors/struct-instance-isa-bad-type-type.idio" "bad parameter type: '#t' a constant is not a struct_type"
 
 ;; all done?
 Tests? (struct-error0 + 34)

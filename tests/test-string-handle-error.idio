@@ -65,11 +65,11 @@ string-handle-error-load := {
   }
 }
 
-string-handle-error-load "string-handle-errors/open-input-string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-handle-error-load "string-handle-errors/open-input-string-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
 
 string-handle-error-load "string-handle-errors/ready-closed-handle.idio" "handle already closed"
 
-string-handle-error-load "string-handle-errors/get-output-string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string_handle"
+string-handle-error-load "string-handle-errors/get-output-string-bad-type.idio" "bad parameter type: '#t' a constant is not a string_handle"
 
 ;; all done?
 Tests? (string-handle-error0 + 3)

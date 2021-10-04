@@ -55,54 +55,54 @@ fixnum-error-load := {
   }
 }
 
-fixnum-error-load "fixnum-errors/floor-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
+fixnum-error-load "fixnum-errors/floor-bad-type.idio" "bad parameter type: '#t' a constant is not a number"
 
 fixnum-error-load "fixnum-errors/remainder-divide-by-zero.idio" "fixnum divide by zero"
-fixnum-error-load "fixnum-errors/remainder-fixnum-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
-fixnum-error-load "fixnum-errors/remainder-bignum-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
-fixnum-error-load "fixnum-errors/remainder-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
+fixnum-error-load "fixnum-errors/remainder-fixnum-bad-type.idio" "bad parameter type: '#t' a constant is not a number"
+fixnum-error-load "fixnum-errors/remainder-bignum-bad-type.idio" "bad parameter type: '#t' a constant is not a number"
+fixnum-error-load "fixnum-errors/remainder-bad-type.idio" "bad parameter type: '#t' a constant is not a number"
 
 fixnum-error-load "fixnum-errors/quotient-divide-by-zero.idio" "fixnum divide by zero"
-fixnum-error-load "fixnum-errors/quotient-fixnum-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
-fixnum-error-load "fixnum-errors/quotient-bignum-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
-fixnum-error-load "fixnum-errors/quotient-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
+fixnum-error-load "fixnum-errors/quotient-fixnum-bad-type.idio" "bad parameter type: '#t' a constant is not a number"
+fixnum-error-load "fixnum-errors/quotient-bignum-bad-type.idio" "bad parameter type: '#t' a constant is not a number"
+fixnum-error-load "fixnum-errors/quotient-bad-type.idio" "bad parameter type: '#t' a constant is not a number"
 
 ;; The C macro arithmetic primitives all follow the same code (being
 ;; the same macro and all) so we only need run through some exemplars
 
 ;; 0+-arg prefix arithmetic functions
-fixnum-error-load "fixnum-errors/prefix-add-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
+fixnum-error-load "fixnum-errors/prefix-add-bad-type.idio" "bad parameter type: '#t' a constant is not a number"
 
 ;; 1+-arg prefix arithmetic functions
-fixnum-error-load "fixnum-errors/prefix-subtract-bad-type-1.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
-fixnum-error-load "fixnum-errors/prefix-subtract-bad-type-2.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
+fixnum-error-load "fixnum-errors/prefix-subtract-bad-type-1.idio" "bad parameter type: '#t' a constant is not a number"
+fixnum-error-load "fixnum-errors/prefix-subtract-bad-type-2.idio" "bad parameter type: '#t' a constant is not a number"
 
 ;; / prefix arithmetic function
-fixnum-error-load "fixnum-errors/prefix-divide-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
+fixnum-error-load "fixnum-errors/prefix-divide-bad-type.idio" "bad parameter type: '#t' a constant is not a number"
 
 ;; 1+-arg prefix comparison functions
-fixnum-error-load "fixnum-errors/prefix-eq-bad-type-1.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
-fixnum-error-load "fixnum-errors/prefix-eq-bad-type-2.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
+fixnum-error-load "fixnum-errors/prefix-eq-bad-type-1.idio" "bad parameter type: '#t' a constant is not a number"
+fixnum-error-load "fixnum-errors/prefix-eq-bad-type-2.idio" "bad parameter type: '#t' a constant is not a number"
 
 ;; infix binary arithmetic functions
-fixnum-error-load "fixnum-errors/infix-add-bad-type-1.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
-fixnum-error-load "fixnum-errors/infix-add-bad-type-2.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
+fixnum-error-load "fixnum-errors/infix-add-bad-type-1.idio" "bad parameter type: '#t' a constant is not a number"
+fixnum-error-load "fixnum-errors/infix-add-bad-type-2.idio" "bad parameter type: '#t' a constant is not a number"
 
 ;; infix binary / arithmetic functions
-fixnum-error-load "fixnum-errors/infix-divide-bad-type-1.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
-fixnum-error-load "fixnum-errors/infix-divide-bad-type-2.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
+fixnum-error-load "fixnum-errors/infix-divide-bad-type-1.idio" "bad parameter type: '#t' a constant is not a number"
+fixnum-error-load "fixnum-errors/infix-divide-bad-type-2.idio" "bad parameter type: '#t' a constant is not a number"
 
 ;; infix binary comparison functions
-fixnum-error-load "fixnum-errors/infix-eq-bad-type-1.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
-fixnum-error-load "fixnum-errors/infix-eq-bad-type-2.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
+fixnum-error-load "fixnum-errors/infix-eq-bad-type-1.idio" "bad parameter type: '#t' a constant is not a number"
+fixnum-error-load "fixnum-errors/infix-eq-bad-type-2.idio" "bad parameter type: '#t' a constant is not a number"
 
 ;; characters are deprecated!
-fixnum-error-load "fixnum-errors/integer2char-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+fixnum-error-load "fixnum-errors/integer2char-bad-type.idio" "bad parameter type: '#t' a constant is not a integer"
 fixnum-error-load "fixnum-errors/integer2char-bignum-range.idio" "invalid integer"
 
 fixnum-error-load "fixnum-errors/integer2unicode-fixnum-invalid-code-point.idio" "integer->unicode code point: U+110000: is invalid"
 fixnum-error-load "fixnum-errors/integer2unicode-bignum-invalid-code-point.idio" "integer->unicode code point: U+110000: is invalid"
-fixnum-error-load "fixnum-errors/integer2unicode-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+fixnum-error-load "fixnum-errors/integer2unicode-bad-type.idio" "bad parameter type: '#t' a constant is not a integer"
 fixnum-error-load "fixnum-errors/integer2unicode-fixnum-range.idio" "integer->unicode code point: U+-1: cannot be negative"
 fixnum-error-load "fixnum-errors/integer2unicode-bignum-range.idio" "integer->unicode code point: U+-1: cannot be negative"
 
