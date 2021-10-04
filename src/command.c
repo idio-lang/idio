@@ -51,6 +51,8 @@
 #include "env.h"
 #include "error.h"
 #include "evaluate.h"
+#include "file-handle.h"
+#include "fixnum.h"
 #include "frame.h"
 #include "handle.h"
 #include "idio-string.h"
@@ -1233,8 +1235,13 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
      * Given we have a hotchpotch of objects, create an array and just
      * push anything we want to keep on the end.
      *
-     * Of course, we want to push the array itself on the stack (and
-     * pop it off again when we're done).
+     * We don't want to use idio_gc_protect(), here, because of
+     * continuations which might be fired when the VM runs.  If they
+     * do get fired then nothing will idio_gc_expose() the protected
+     * array.
+     *
+     * So, we want to push the array itself on the stack (and pop it
+     * off again when we're done).
      *
      * If a continuation is invoked then the stack should be safely
      * cleared (in practice, replaced) for us.
@@ -1257,33 +1264,34 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
     IDIO cmd_sym;
     cmd_sym = idio_module_symbol_value (idio_S_stdin_fileno, idio_libc_module, idio_S_nil);
     IDIO job_stdin = idio_vm_invoke_C (thr, IDIO_LIST1 (cmd_sym));
+    idio_array_push (protected, job_stdin);
+
+    IDIO job_stdin_fd = job_stdin;
     IDIO close_stdin = idio_S_false;
     if (idio_isa_pair (job_stdin)) {
-	job_stdin = IDIO_PAIR_H (job_stdin);
-	close_stdin = job_stdin;
+	close_stdin = IDIO_PAIR_H (job_stdin);
+	job_stdin_fd = idio_C_int (IDIO_FILE_HANDLE_FD (close_stdin));
     }
-    idio_array_push (protected, job_stdin);
-    idio_array_push (protected, close_stdin);
 
     cmd_sym = idio_module_symbol_value (idio_S_stdout_fileno, idio_libc_module, idio_S_nil);
     IDIO job_stdout = idio_vm_invoke_C (thr, IDIO_LIST1 (cmd_sym));
+    idio_array_push (protected, job_stdout);
+
     IDIO recover_stdout = idio_S_false;
     if (idio_isa_pair (job_stdout)) {
 	recover_stdout = IDIO_PAIR_HT (job_stdout);
 	job_stdout = IDIO_PAIR_H (job_stdout);
     }
-    idio_array_push (protected, job_stdout);
-    idio_array_push (protected, recover_stdout);
 
     cmd_sym = idio_module_symbol_value (idio_S_stderr_fileno, idio_libc_module, idio_S_nil);
     IDIO job_stderr = idio_vm_invoke_C (thr, IDIO_LIST1 (cmd_sym));
+    idio_array_push (protected, job_stderr);
+
     IDIO recover_stderr = idio_S_false;
     if (idio_isa_pair (job_stderr)) {
 	recover_stderr = IDIO_PAIR_HT (job_stderr);
 	job_stderr = IDIO_PAIR_H (job_stderr);
     }
-    idio_array_push (protected, job_stderr);
-    idio_array_push (protected, recover_stderr);
 
     /*
      * That was the last call to idio_vm_invoke_C() in this function
@@ -1329,7 +1337,7 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
 				     idio_pair (idio_S_false,
 				     idio_pair (idio_S_false,
 				     idio_pair (idio_S_nil,
-				     idio_pair (job_stdin,
+				     idio_pair (job_stdin_fd,
 				     idio_pair (job_stdout,
 				     idio_pair (job_stderr,
 				     idio_pair (idio_S_false,
@@ -1351,11 +1359,19 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
      * we've intended to direct the output of a standard *nix command
      * into a, say, string handle.  *nix commands obviously(?) do not
      * know anything about string handles they only know about file
-     * descriptors.  So we've taken the libery of redirecting the
+     * descriptors.  So we've taken the liberty of redirecting the
      * command's output to a temporary file and intend to replay that
      * output into the desired string handle.
      *
      * stdin is pretty easy, we just close the temporary input handle.
+     *
+     * Erm, except we must close the file handle if it was supplied
+     * (as the first element of the list from stdin-fileno).  If we
+     * just close the FD then we have a file handle which will get
+     * finalized in the future.  However, the FD in that file handle
+     * is free to be reused.  We can get caught out by a newly created
+     * file handle using FD being closed under its feet when the GC
+     * reaps the one left over on the heap.
      *
      * For stdout and stderr, we've sent the output to a temporary
      * file which we hold as job_stdout/job_stderr.  We need to open
@@ -1373,21 +1389,27 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
      */
 
     if (idio_S_false != close_stdin) {
-	if (close (IDIO_C_TYPE_int (close_stdin)) < 0) {
-	    /*
-	     * Test Case: ??
-	     *
-	     * This is a file descriptor opened onto a temporary file
-	     * (which has been unlinked).
-	     *
-	     * It's not obvious how you provoke close(2) into failing
-	     * under these circumstances.
-	     */
-	    idio_command_free_argv1 (argv);
+	if (idio_close_handle (close_stdin) < 0) {
+	    if (EBADF == errno) {
+		char em[BUFSIZ];
+		snprintf (em, BUFSIZ, "[%d] ici 0: close (%d): EBADF", getpid (), IDIO_FILE_HANDLE_FD (close_stdin));
+		perror (em);
+	    } else {
+		/*
+		 * Test Case: ??
+		 *
+		 * This is a file descriptor opened onto a temporary file
+		 * (which has been unlinked).
+		 *
+		 * It's not obvious how you provoke close(2) into failing
+		 * under these circumstances.
+		 */
+		idio_command_free_argv1 (argv);
 
-	    idio_error_system_errno ("close", close_stdin, IDIO_C_FUNC_LOCATION ());
+		idio_error_system_errno ("close", job_stdin, IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
+		return idio_S_notreached;
+	    }
 	}
     }
 

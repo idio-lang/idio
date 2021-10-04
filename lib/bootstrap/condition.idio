@@ -539,7 +539,7 @@ condition-report := #f
      ((system-error? c) {
        cr-printf "%s:" (idio-error-location c)
        cr-printf "%s:" (struct-type-name (struct-instance-type c))
-       cr-printf "%s (%s) => %s (%s/errno %s)" (system-error-function c) (idio-error-detail c) (libc/errno-name (system-error-errno c)) (idio-error-message c) (system-error-errno c)
+       cr-printf "%s (%s): %s (errno=%s %s)" (system-error-function c) (idio-error-detail c) (libc/errno-name (system-error-errno c)) (system-error-errno c) (idio-error-message c)
      })
 
      ;; ^static-error

@@ -524,10 +524,10 @@ This invokes do-job-notification				\n\
 {
     IDIO_ASSERT (c);
 
-    /*
-     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
-     */
-    IDIO_USER_TYPE_ASSERT (condition, c);
+    if (! idio_isa_condition (c)) {
+	idio_debug ("default-SIGCHLD-handler: not a condition: %s\n", c);
+	exit (1);
+    }
 
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
@@ -580,10 +580,10 @@ IDIO idio_condition_exit_on_error (IDIO c)
 {
     IDIO_ASSERT (c);
 
-    /*
-     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
-     */
-    IDIO_USER_TYPE_ASSERT (condition, c);
+    if (! idio_isa_condition (c)) {
+	idio_debug ("exit-on-error: not a condition: %s\n", c);
+	exit (1);
+    }
 
     /*
      * Erm, we just happen to know that ^rt-command-status-error is
@@ -653,7 +653,10 @@ void idio_condition_report (char const *prefix, IDIO c)
     IDIO_C_ASSERT (prefix);
     IDIO_ASSERT (c);
 
-    IDIO_TYPE_ASSERT (condition, c);
+    if (! idio_isa_condition (c)) {
+	idio_debug ("condition_report: not a condition: %s\n", c);
+	return;
+    }
 
     /*
      * The PID part requires an nnn up to 18 digits (intmax?) plus
@@ -708,10 +711,10 @@ Otherwise #unspec						\n\
 {
     IDIO_ASSERT (c);
 
-    /*
-     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
-     */
-    IDIO_USER_TYPE_ASSERT (condition, c);
+    if (! idio_isa_condition (c)) {
+	idio_debug ("default-rcse-handler: not a condition: %s\n", c);
+	exit (1);
+    }
 
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
@@ -749,10 +752,10 @@ The default behaviour is to ignore failed asynchronous processes\n\
 {
     IDIO_ASSERT (c);
 
-    /*
-     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
-     */
-    IDIO_USER_TYPE_ASSERT (condition, c);
+    if (! idio_isa_condition (c)) {
+	idio_debug ("default-racse-handler: not a condition: %s\n", c);
+	exit (1);
+    }
 
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
@@ -796,10 +799,10 @@ does not return per se						\n\
 {
     IDIO_ASSERT (c);
 
-    /*
-     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
-     */
-    IDIO_USER_TYPE_ASSERT (condition, c);
+    if (! idio_isa_condition (c)) {
+	idio_debug ("default-condition-handler: not a condition: %s\n", c);
+	exit (1);
+    }
 
     IDIO thr = idio_thread_current_thread ();
 
@@ -1084,13 +1087,15 @@ Does not return.						\n\
      */
 
     IDIO eh = idio_thread_current_error_handle ();
-    idio_display_C ("\nreset-condition-handler: ", eh);
+    if (! IDIO_CLOSEDP_HANDLE (eh)) {
+	idio_display_C ("\nreset-condition-handler: ", eh);
 
-    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
-    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
-    idio_display_C (": ", eh);
-    idio_display (c, eh);
-    idio_display_C ("\n", eh);
+	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
+	idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
+	idio_display_C (": ", eh);
+	idio_display (c, eh);
+	idio_display_C ("\n", eh);
+    }
 
     /*
      * As the reset-condition-handler we'll go back to the first krun

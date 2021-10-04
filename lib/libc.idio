@@ -186,73 +186,77 @@ have the impending *nix process read from.
 The temporary file code is derived from Bash's here document code
 (lib/sh/tmpfile.c).
 
+XXX we return the file handle for the input string not a file
+descriptor
+
 *#
 
 define (stdin-fileno) {
-  ih := (current-input-handle)
+  cih := (current-input-handle)
   (cond
-   ((input-file-handle? ih) (fd-handle-fd ih))
-   ((file-handle? ih) (error 'stdin-fileno "not an input-file-handle" ih))
-   ((input-string-handle? ih) {
+   ((input-file-handle? cih) (fd-handle-fd cih))
+   ((file-handle? cih) (error 'stdin-fileno "not an input-file-handle" cih))
+   ((input-string-handle? cih) {
      ;; 1. create and open a temporary file
-     fd+name := %make-tmp-fd "idio-ish"
-     handle := open-input-file-from-fd (ph fd+name) (pht fd+name) "r+"
+     fd+name := %make-tmp-fd "idio-ish-"
+     name := pht fd+name
+     handle := open-input-file-from-fd (ph fd+name) name "r+"
      ;; 2. write the string to it
-     display (get-output-string ih) handle
+     display (get-output-string cih) handle
      ;; 3. *before* we unlink or close the original fd, open as
      ;; the input file
-     fd := fd-handle-fd (open-input-file (pht fd+name))
+     ifh := open-input-file name
      ;; 4. unlink and close the original -- this flushes any
      ;; output!
-     unlink (pht fd+name)
+     unlink name
      close-handle handle
      ;; 5. set the close-on-exec flag
-     fcntl fd F_SETFD FD_CLOEXEC
-     ;; 6. return the fd of "stdin" -- as a list to mark it
-     ;; special
-     list fd
+     close-fd-handle-on-exec ifh
+     ;; 6. return the fd of "stdin" and ifh to prevent it being
+     ;; garbage collected -- as a list to mark it special
+     list ifh
    })
-   (else (error 'stdin-fileno "unexpected current-input-handle" ih)))
+   (else (error 'stdin-fileno "unexpected current-input-handle" cih)))
 }
 
 ;;
 define (stdout-fileno) {
-  oh := (current-output-handle)
+  coh := (current-output-handle)
   (cond
-   ((output-file-handle? oh) (fd-handle-fd oh))
-   ((file-handle? oh) (error 'stdout-fileno "not an output-file-handle" oh))
-   ((output-string-handle? oh) {
+   ((output-file-handle? coh) (fd-handle-fd coh))
+   ((file-handle? coh) (error 'stdout-fileno "not an output-file-handle" coh))
+   ((output-string-handle? coh) {
      ;; 1. create a temporary file
-     fd+name := %make-tmp-fd "idio-osh"
+     fd+name := %make-tmp-fd "idio-osh-"
      ;; 2. unlink the tmpfile
      unlink (pht fd+name)
      ;; 3. set the close-on-exec flag
      fcntl (ph fd+name) F_SETFD FD_CLOEXEC
-     ;; 4. return the tuple {fd,oh} of "stdout" -- as a list to
+     ;; 4. return the tuple {fd,coh} of "stdout" -- as a list to
      ;; mark it special
-     list (ph fd+name) oh
+     list (ph fd+name) coh
    })
-   (else (error 'stdout-fileno "unexpected current-output-handle" oh)))
+   (else (error 'stdout-fileno "unexpected current-output-handle" coh)))
 }
 
 ;;
 define (stderr-fileno) {
-  eh := (current-error-handle)
+  ceh := (current-error-handle)
   (cond
-   ((output-file-handle? eh) (fd-handle-fd eh))
-   ((file-handle? eh) (error 'stderr-fileno "not an output-file-handle" eh))
-   ((output-string-handle? eh) {
+   ((output-file-handle? ceh) (fd-handle-fd ceh))
+   ((file-handle? ceh) (error 'stderr-fileno "not an output-file-handle" ceh))
+   ((output-string-handle? ceh) {
      ;; 1. create a temporary file
-     fd+name := %make-tmp-fd "idio-esh"
+     fd+name := %make-tmp-fd "idio-esh-"
      ;; 2. unlink the tmpfile
      unlink (pht fd+name)
      ;; 3. set the close-on-exec flag
      fcntl (ph fd+name) F_SETFD FD_CLOEXEC
-     ;; 4. return the tuple {fd,eh} of "stderr" -- as a list to
+     ;; 4. return the tuple {fd,ceh} of "stderr" -- as a list to
      ;; mark it special
-     list (ph fd+name) eh
+     list (ph fd+name) ceh
    })
-   (else (error 'stderr-fileno "unexpected current-error-handle" eh)))
+   (else (error 'stderr-fileno "unexpected current-error-handle" ceh)))
 }
 
 
