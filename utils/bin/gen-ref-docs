@@ -177,7 +177,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			 ;; yuk!  We really shouldn't need to know
 			 ;; this...
 			 (case (type->string sym)
-			       (("CONSTANT_TOKEN") {
+			       (("constant (token)") {
 				 ;; & -> "&", other tokens becomes
 				 ;; "T/..."
 				 sym = string->symbol (sprintf "%s" sym)

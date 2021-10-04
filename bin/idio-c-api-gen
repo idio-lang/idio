@@ -1903,14 +1903,14 @@ export \(
 				  ;; -ref
 				  hprintf api-c-fh #S{
 IDIO_DEFINE_PRIMITIVE2_DS ("struct-${struct-idio-id}-ref", ${c-module-name}_struct_${struct-name}_ref, (IDIO ${var}, IDIO member), "${var} member", "\\
-in C, ${var}->member			\\n\\
+in C, :samp:`\{${var}\}->\{member\}`			\\n\\
 					\\n\\
-:param ${var}: C struct ${struct-name}	\\n\\
+:param ${var}: :ref:`struct-${struct-name} <${c-module-name}/struct-${struct-name}>`	\\n\\
 :type ${var}: C/pointer		\\n\\
-:param member: C struct member		\\n\\
+:param member: member name		\\n\\
 :type member: symbol			\\n\\
-:return: ${struct-name}->member		\\n\\
-:rtype:	varies on member		\\n\\
+:return: `${struct-name}` -> `member`		\\n\\
+:rtype:	varies on `member`		\\n\\
 ")
 \{
     IDIO_ASSERT (${var});
@@ -1928,7 +1928,7 @@ ${tc-test}
 				  close-handle tc-fh
 
 				  hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
 				  hprintf api-c-fh #S{
     /*
@@ -2104,16 +2104,15 @@ ${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-ref member='not
 				  ;; -set!
 				  hprintf api-c-fh #S{
 IDIO_DEFINE_PRIMITIVE3_DS ("struct-${struct-idio-id}-set!", ${c-module-name}_struct_${struct-name}_set, (IDIO ${var}, IDIO member, IDIO val), "${var} member val", "\\
-in C, ${var}->member = val		\\n\\
+in C, :samp:`\{${var}\}->\{member\} = \{val\}`		\\n\\
 					\\n\\
-:param ${var}: C struct ${struct-name}	\\n\\
+:param ${var}: :ref:`struct-${struct-name} <${c-module-name}/struct-${struct-name}>`	\\n\\
 :type ${var}: C/pointer		\\n\\
-:param member: C struct member		\\n\\
+:param member: member name		\\n\\
 :type member: symbol			\\n\\
-:param val: C/type val			\\n\\
-:type val: varies on member		\\n\\
-:return: ${struct-name}->member		\\n\\
-:rtype:	varies on member		\\n\\
+:param val: a C/ type			\\n\\
+:type val: varies on `member`		\\n\\
+:return: #<unspec>		\\n\\
 ")
 \{
     IDIO_ASSERT (${var});
@@ -2133,7 +2132,7 @@ ${tc-test}
 				  close-handle tc-fh
 
 				  hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
 				  hprintf api-c-fh #S{
     /*
@@ -2240,7 +2239,7 @@ ${tc-test}
 						      (regex-case member-alloc-name
 								  ("(.*)\\[]" {
 								    hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
 								    hprintf api-c-fh #S{
 	IDIO_USER_C_TYPE_ASSERT (pointer, val);
@@ -2261,7 +2260,7 @@ ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO
 								  })
 								  ("(.*)\\*" {
 								    hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
 								    hprintf api-c-fh #S{
 	IDIO_USER_C_TYPE_ASSERT (pointer, val);
@@ -2282,7 +2281,7 @@ ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO
 								  })
 								  (else {
 								    hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
 								    hprintf api-c-fh #S{
 	IDIO_USER_C_TYPE_ASSERT (pointer, val);
@@ -2300,7 +2299,7 @@ ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO
 						  } {
 						    accessor := get/create member-type-DIE 'c-type-accessor
 								    hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a ${mod-name}/${member-i-c-type-name}"}
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a ${mod-name}/${member-i-c-type-name}"}
 
 						    hprintf api-c-fh #S{
 	IDIO_USER_${mod-name}_TYPE_ASSERT (${member-i-c-type-name}, val);
@@ -2467,7 +2466,7 @@ IDIO idio_${struct-c-id}_as_string (struct ${struct-name} *${varp})
 				  ;; Idio -as-string
 				  hprintf api-c-fh #S{
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-${struct-idio-id}-as-string", ${c-module-name}_struct_${struct-name}_as_string, (IDIO ${var}), "${var}", "\\
-:param ${var}: C struct ${struct-name}	\\n\\
+:param ${var}: :ref:`struct-${struct-name} <${c-module-name}/struct-${struct-name}>`	\\n\\
 :type ${var}: C/pointer			\\n\\
 :return: string				\\n\\
 :rtype:	string				\\n\\
@@ -2487,7 +2486,7 @@ ${tc-test}
 				  close-handle tc-fh
 
 				  hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
 				  hprintf api-c-fh #S{
     /*
@@ -2686,7 +2685,7 @@ ${tc-test}
 
 					      if (alloc-required? fp-type-id) {
 						hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
 						hprintf api-c-fh #S{
     IDIO_USER_C_TYPE_ASSERT (pointer, ${fp-name});
@@ -2694,7 +2693,7 @@ ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO
 }
 					      } {
 						hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a ${mod-name}/${fp-i-c-type-name}"}
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a ${mod-name}/${fp-i-c-type-name}"}
 
 						hprintf api-c-fh #S{
     IDIO_USER_${mod-name}_TYPE_ASSERT (${fp-i-c-type-name}, ${fp-name});
