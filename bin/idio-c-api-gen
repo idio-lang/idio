@@ -394,7 +394,7 @@ for-each (function (lib-n) {
 		;; on a theme of reading object files.
 
 		(cond-expand
-		 (uname/sysname/Darwin {
+		 ("uname/sysname/Darwin" {
 		   cwd := PWD
 		   (unwind-protect {
 		     libc/chdir lib-dn
@@ -587,12 +587,12 @@ for-each (function (lib-n) {
 		   (unwind-protect {
 		     libc/chdir lib-dn
 		     (cond-expand
-		      ((or uname/sysname/FreeBSD
-			   uname/sysname/OpenBSD) {
+		      ((or "uname/sysname/FreeBSD"
+			   "uname/sysname/OpenBSD") {
 			gmake -C api-dn api-o-fn
 			objdump-flags = "-W"
 		      })
-		      (uname/sysname/SunOS {
+		      ("uname/sysname/SunOS" {
 			make -C api-dn api-o-fn
 			objdump-flags = "-W"
 		      })
