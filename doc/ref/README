@@ -1,0 +1,130 @@
+
+ Idio Reference Documentation
+ ============================
+
+The Idio Reference Documentation is generated from a number of
+sources:
+
+1. the source code itself where signature and documentation strings
+are available
+
+2. .rst files in this hierarchy
+
+We also want this to be as simple as possible.  But no simpler.
+
+reStructuredText
+----------------
+
+The target output is reStructuredText for sphinx which complicates
+things because of the need to update toctrees (Table of Contents)
+whilst also generating the text.
+
+sphinx
+------
+
+Follow the example in doc/ref/BOOTSTRAP to install the necessary
+components for sphinx.
+
+gen-ref-docs
+------------
+
+utils/bin/gen-ref-docs is a script that will walk around a hierarchy
+of .tree files and follow their contents, each simple tuples of
+instructions.
+
+gen-ref-docs will look at all the exported names of the modules it is
+asked to report on and flag up if they are not mentioned by a
+document/nodocument instruction.
+
+document/nodocument instructions look like
+
+(document {module} {name})
+
+Some C functions are created by CPP macros and are cumbersome to add
+documentation for so, if a signature or documentation string cannot be
+found then the script looks for:
+
+{toc-file}-{module}-{name}-sig.rst
+{toc-file}-{module}-{name}-doc.rst
+
+If ...-{sig}.rst exists it will be used in preference to any built-in
+value.  This covers the case where template-generated functions have
+gensym'd names and we can document normallized names instead.
+
+In addition to any built-in documentation gen-ref-docs will try to add
+any {toc-file}-{module}-{name}-doc.rst as additional documentation.
+
+Some names have potentially awkward (for the file-system/user) code
+points, "/" being a good example, "*" being another.
+
+document allows you to specify an "easy name":
+
+(document Idio *idio-features* idio-features)
+
+and will use the easy name in preference:
+
+{toc-file}-{module}-{easy-name}-doc.rst
+
+The rst command indicates a filename and a level of indentation to be
+used.  The level of indentation might be useful if the documentation
+being inserted was written bounded to the 0th column but is inserted
+inside a .. note:: statement, say, and requires 1 level of
+indentation.
+
+A suitable usage script might be doc/ref/update:
+
+>>>>
+#! /bin/bash
+
+cd ${0%/*}
+
+# change make to gmake according to system
+(cd ../.. ; make)
+
+. venv/bin/activate
+
+make clean html && (cd build; rsync -a --delete html /var/www/html/doc/ref)
+<<<<
+
+Note the use of a re-make to ensure that the live built-in
+documentation is up to date.
+
+General Structure
+-----------------
+
+index.tree:
+
+  ;; include some standard blurb and a toctree
+  (rst "leader" 0)
+
+  ;; include the job-control tree: {name}/index.tree
+  (tree job-control)
+
+job-control/index.tree:
+
+  ;; include some standard blurb and a toctree
+  (rst "leader" 0)
+
+  ;; include a file generating a ToC entry: {name}.toc
+  (toc-file functions)
+  (toc-file structures)
+
+job-control/functions.toc:
+
+  ;; include some blurb about job-control functions
+  (rst "functions-intro" 0)
+
+  ;; add the built-in documentation for a couple of function
+  (document job-control jobs)
+  (document job-control wait)
+
+  ;; document the meta-commands
+  (rst "job-meta-commands" 0)
+
+  ;; do not use the built-in documentation for the meta-commands (if there was any)
+  (nodocument job-control collect-output)
+
+job-control/structures.toc:
+
+  ;; declare an "easy name" for something with potentially awkward code points
+  (document job-control %idio-job idio-job)

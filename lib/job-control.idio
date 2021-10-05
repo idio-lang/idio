@@ -727,7 +727,7 @@ relied on.
 	  }
 }
 
-define (do-job-notification) "notify of any job status changes" {
+define (do-job-notification) "notify the user of any job status changes" {
   (update-status)
 
   failed-jobs := #n
@@ -2062,7 +2062,19 @@ define-template (named-pipe-from & cmd) {
   #T{ fork-command #f #f 'named #t $@cmd }
 }
 
-define (wait & jobs) {
+define (wait & jobs) "
+loop over `jobs` waiting for each job in turn to change status
+
+:param jobs: jobs to wait for, defaults to :ref:`%idio-jobs <job-control/%idio-jobs>`
+:type jobs: list of :ref:`%idio-job <job-control/%idio-job>`, optional
+:return: unspecified
+
+A job's status changes if it is stopped or completes.
+
+If there are any `jobs` then :ref:`do-job-notification
+<job-control/do-job-notification>` will be called.
+
+" {
   notify := #f
 
   loop :+ function (jobs) {
@@ -2242,7 +2254,13 @@ define-template (collect-output & cmd) {
   }
 }
 
-define (cat-file fn) {
+define (cat-file fn) "
+return the contents of `fn`
+
+:param fn: filename
+:type fn: string
+
+" {
   fh := open-input-file fn
   r := read-lines fh
   close-handle fh

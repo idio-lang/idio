@@ -2,7 +2,7 @@
 
 (rst "string-predicates" 0)
 (document Idio string?)
-(document Idio pathname?)
+(document Idio pathname? pathname-p)
 
 (rst "string-constructors" 0)
 (document Idio make-string)
@@ -11,6 +11,10 @@
 (document Idio symbol->string)
 (document Idio keyword->string)
 (document Idio string->pathname)
+
+; util.c
+(document Idio ->string)
+(document Idio string)
 
 (rst "string-attributes" 0)
 (document Idio string-length)
@@ -45,8 +49,4 @@
 (document Idio string-ci>? string-ci-gt-p)
 
 (document Idio strip-string)
-
-; util.c
-(document Idio ->string)
-(document Idio string)
 

@@ -15,8 +15,8 @@ meaning it is "easy" to augment.  Some behaviour still uses the
 equivalent functionality in the :lname:`C` code base.
 
 Many activities occur in the execution of a job from arranging I/O,
-pipelines, fork/exec and whether or not the command actually
-succeeded.
+pipelines, fork/exec and determining whether or not the command
+actually succeeded.
 
 All of the individual activities can raise conditions however the
 primary condition raised by `job-control` is

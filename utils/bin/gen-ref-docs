@@ -238,14 +238,10 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 			   sigstr := %property val :sigstr #f
 
 			   ;; try ".../{fixnum}-{mod}-{sym}-sig.rst"
-			   if (or (not sigstr)
-				  (and (string? sigstr)
-				       (eq 0 (string-length sigstr)))) {
-					 sfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-sig.rst"
-					 if (r? sfn) {
-					   sigstr = strip-string (cat-file sfn) "\n"
-					 }
-				       }
+			   sfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-sig.rst"
+			   if (r? sfn) {
+			     sigstr = strip-string (cat-file sfn) "\n"
+			   }
 
 			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
 

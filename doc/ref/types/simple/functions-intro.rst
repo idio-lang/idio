@@ -43,7 +43,8 @@ Closures
 Closures are user-defined functions and allow the convenient
 abstraction of sections of code.
 
-Normally you would define a closure with the special form ``define``:
+Normally you would define a closure with the special form :ref:`define
+<define>`:
 
 .. code-block:: idio
 
@@ -56,7 +57,7 @@ which creates a function called ``foo`` which takes two parameters,
 
 Alternatively (and secretly what ``define`` does under the hood) you
 can create an anonymous *function value* with the special form
-``function``:
+:ref:`function <function>`:
 
 .. code-block:: idio
 
@@ -108,6 +109,8 @@ arguments are passed verbatim: numbers, strings, lists, etc..
 The special form can invoke its associated behavioural code.  By and
 large that behavioural code is about processing those arguments such
 that byte code can be generated and subsequently run.
+
+For more details see :ref:`special forms <special forms>`.
 
 Templates
 ---------

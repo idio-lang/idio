@@ -251,15 +251,7 @@
 ;
 ; file handling
 
-(document Idio open-input-file)
-(document Idio open-output-file)
-
 (document Idio delete-file)
-
-(document Idio open-file)
-(document Idio open-file-from-fd)
-(document Idio open-input-file-from-fd)
-(document Idio open-output-file-from-fd)
 
 (document Idio call-with-input-file)
 (document Idio call-with-output-file)

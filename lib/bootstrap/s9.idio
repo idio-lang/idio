@@ -57,7 +57,12 @@ define (map f a b) {
 
 ;; List procedures
 
-define (list? x) {
+define (list? x) "
+is `x` a list?
+
+:param x: value to test
+:return: boolean
+" {
   l? :+ function (x y) {
 	  (cond
 	   ((eq? x y) #f)
@@ -118,7 +123,13 @@ fold-right := {
 append := {
   fold-left := fold-left
 
-  function a {
+  function a "
+append the lists of `a`
+
+:param a: list of lists
+:return: combined list
+:retype: list
+  " {
     append2 :+ function (a b) {
 		 if (null? a) b {
 		   append2 (pt a) (pair (ph a) b)

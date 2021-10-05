@@ -25,7 +25,7 @@ The input form for a string is the usual ``"..."``, that is a U+0022
 (QUOTATION MARK) delimited value.
 
 The collected bytes are assumed to be part of a valid UTF-8 sequence.
-If the byte sequence is invalid UTF-8 you will get the (standard)
+If the byte sequence is invalid UTF-8 you will get the (standard) �,
 U+FFFD (REPLACEMENT CHARACTER) and the decoding will resume *with the
 next byte*.  This may result in several replacement characters being
 generated.

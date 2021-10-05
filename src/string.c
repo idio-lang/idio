@@ -1397,7 +1397,7 @@ concatenate strings in list `ls`					\n\
 									\n\
 :param ls: list of strings to concatenate together			\n\
 :type ls: list, optional						\n\
-:return: string	("" if no `ls` supplied)				\n\
+:return: string	(\"\" if no `ls` supplied)				\n\
 									\n\
 ``concatenate-string`` takes a single argument,				\n\
 which is a list of strings.  It is roughly comparable to		\n\
@@ -1895,7 +1895,7 @@ existing storage allocation for `s`		\n\
  */
 IDIO_DEFINE_PRIMITIVE3_DS ("substring", substring, (IDIO s, IDIO p0, IDIO pn), "s p0 pn", "\
 return a substring of `s` from position `p0`	\n\
-through to but excluuding position `pn`		\n\
+through to but excluding position `pn`		\n\
 						\n\
 :param s: string				\n\
 :type s: string					\n\
@@ -1903,7 +1903,8 @@ through to but excluuding position `pn`		\n\
 :type p0: integer				\n\
 :param pn: position				\n\
 :type pn: integer				\n\
-:return: string					\n\
+:return: the substring				\n\
+:rtype: string					\n\
 ")
 {
     IDIO_ASSERT (s);
@@ -2779,11 +2780,14 @@ into a list of strings					\n\
 							\n\
 :param in: string to split				\n\
 :type in: string					\n\
-:param delim: string containing delimiter characters	\n\
+:param delim: delimiter characters, defaults to :ref:`IFS <IFS>`	\n\
 :type delim: string, optional				\n\
 :return: list (of strings)				\n\
 							\n\
-`delim` defaults to :ref:`IFS <IFS>`			\n\
+Adjacent characters from `delim` are considered a	\n\
+single delimiter.					\n\
+							\n\
+.. seealso:: :ref:`split-string-exactly <split-string-exactly>`	\n\
 ")
 {
     IDIO_ASSERT (in);
@@ -2821,11 +2825,14 @@ into a list	 of strings				\n\
 							\n\
 :param in: string to split				\n\
 :type in: string					\n\
-:param delim: string containing delimiter characters	\n\
+:param delim: delimiter characters, defaults to :ref:`IFS <IFS>`	\n\
 :type delim: string, optional				\n\
 :return: list (of strings)				\n\
 							\n\
-`delim` defaults to :ref:`IFS <IFS>`			\n\
+Adjacent characters from `delim` are considered		\n\
+separate delimiters.					\n\
+							\n\
+.. seealso:: :ref:`split-string <split-string>`		\n\
 ")
 {
     IDIO_ASSERT (in);
@@ -2864,6 +2871,11 @@ into an array with the first element the original string\n\
 :param in: string to split				\n\
 :type in: string					\n\
 :return: array (of strings)				\n\
+							\n\
+Adjacent characters from :var:`IFS` are considered a	\n\
+single delimiter.					\n\
+							\n\
+.. seealso:: :ref:`split-string <split-string>`		\n\
 ")
 {
     IDIO_ASSERT (in);

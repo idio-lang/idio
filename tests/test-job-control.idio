@@ -111,7 +111,7 @@ job-control-error-load := {
 
     exp-tests := 1
 
-    ;eprintf "loading #%s %s looking for %s\n" n filename exp
+    ;eprintf "loading #%s (async) %s looking for %s\n" n filename exp
 
     ; standard pipe lock
     jcel-lock := (libc/pipe)

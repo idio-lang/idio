@@ -1004,20 +1004,21 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-file-from-fd", open_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
-construct an input file handle from `fd` using the optional	\n\
-`name` instead of the default :file:`/dev/fd/{fd}` and	\n\
-the optional mode `mode` instead of `r`			\n\
+construct an input file handle from `fd` using the name	\n\
+`name` and mode `mode`					\n\
 							\n\
 :param fd: file descriptor				\n\
 :type fd: C/int						\n\
-:param name: file name for display			\n\
+:param name: file name for display, defaults to :file:`/dev/fd/{fd}`	\n\
 :type name: string, optional				\n\
-:param mode: file mode for opening			\n\
+:param mode: file mode for opening, defaults to ``\"r\"``	\n\
 :type mode: string, optional				\n\
 :return: file handle					\n\
 :rtype: handle						\n\
 							\n\
 Use ``#n`` for `name` if you only want to set `mode`	\n\
+							\n\
+See :ref:`open-file <open-file>` for `mode` values.	\n\
 ")
 {
     IDIO_ASSERT (ifd);
@@ -1027,20 +1028,21 @@ Use ``#n`` for `name` if you only want to set `mode`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-input-file-from-fd", open_input_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
-construct an input file handle from `fd` using the optional	\n\
-`name` instead of the default :file:`/dev/fd/{fd}` and	\n\
-the optional mode `mode` instead of `r`			\n\
+construct an input file handle from `fd` using the name	\n\
+`name` and mode `mode`					\n\
 							\n\
 :param fd: file descriptor				\n\
 :type fd: C/int						\n\
-:param name: file name for display			\n\
+:param name: file name for display, defaults to :file:`/dev/fd/{fd}`	\n\
 :type name: string, optional				\n\
-:param mode: file mode for opening			\n\
+:param mode: file mode for opening, defaults to ``\"r\"``	\n\
 :type mode: string, optional				\n\
 :return: file handle					\n\
 :rtype: handle						\n\
 							\n\
 Use ``#n`` for `name` if you only want to set `mode`	\n\
+							\n\
+See :ref:`open-file <open-file>` for `mode` values.	\n\
 ")
 {
     IDIO_ASSERT (ifd);
@@ -1050,21 +1052,21 @@ Use ``#n`` for `name` if you only want to set `mode`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-output-file-from-fd", open_output_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
-construct an output file handle from `fd` using the optional	\n\
-`name` instead of the default :file:`/dev/fd/{fd}` and	\n\
-the optional mode `mode` instead of `w`			\n\
+construct an output file handle from `fd` using the name	\n\
+`name` and mode `mode`			 		\n\
 							\n\
 :param fd: file descriptor				\n\
 :type fd: C/int						\n\
-:param name: file name for display			\n\
+:param name: file name for display, defaults to :file:`/dev/fd/{fd}`	\n\
 :type name: string, optional				\n\
-:param mode: file mode for opening			\n\
+:param mode: file mode for opening, defaults to ``\"w\"``	\n\
 :type mode: string, optional				\n\
-							\n\
 :return: file handle					\n\
 :rtype: handle						\n\
 							\n\
 Use ``#n`` for `name` if you only want to set `mode`	\n\
+							\n\
+See :ref:`open-file <open-file>` for `mode` values.	\n\
 ")
 {
     IDIO_ASSERT (ifd);
@@ -1074,24 +1076,21 @@ Use ``#n`` for `name` if you only want to set `mode`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-input-pipe", open_input_pipe_handle, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
-construct an input pipe handle from `fd` using the optional	\n\
-`name` instead of the default :file:`/dev/fd/{fd}` and	\n\
-the optional mode `mode` instead of `r`			\n\
-							\n\
-The key difference from a regular \\*-from-fd is that a	\n\
-pipe file handle is not seekable.			\n\
+construct an input pipe handle from `fd` using the name	\n\
+`name` and mode `mode`			 		\n\
 							\n\
 :param fd: file descriptor				\n\
 :type fd: C/int						\n\
-:param name: file name for display			\n\
+:param name: file name for display, defaults to :file:`/dev/fd/{fd}`	\n\
 :type name: string, optional				\n\
-:param mode: file mode for opening			\n\
+:param mode: file mode for opening, defaults to ``\"r\"``	\n\
 :type mode: string, optional				\n\
-							\n\
 :return: pipe file handle				\n\
 :rtype: handle						\n\
 							\n\
 Use ``#n`` for `name` if you only want to set `mode`	\n\
+							\n\
+See :ref:`open-file <open-file>` for `mode` values.	\n\
 ")
 {
     IDIO_ASSERT (ifd);
@@ -1102,25 +1101,23 @@ Use ``#n`` for `name` if you only want to set `mode`	\n\
     return ph;
 }
 
-IDIO_DEFINE_PRIMITIVE1V_DS ("open-output-pipe", open_output_pipe_handle, (IDIO ifd, IDIO args), "fd [name]", "\
-construct an output pipe handle from `fd` using the optional	\n\
-`name` instead of the default :file:`/dev/fd/{fd}` and	\n\
-the optional mode `mode` instead of `w`			\n\
-							\n\
-The key difference from a regular \\*-from-fd is that a	\n\
-pipe file handle is not seekable.			\n\
+IDIO_DEFINE_PRIMITIVE1V_DS ("open-output-pipe", open_output_pipe_handle, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
+construct an output pipe handle from `fd` using the name	\n\
+`name` and mode `mode`			 		\n\
 							\n\
 :param fd: file descriptor				\n\
 :type fd: C/int						\n\
-:param name: file name for display			\n\
+:param name: file name for display, defaults to :file:`/dev/fd/{fd}`	\n\
 :type name: string, optional				\n\
-:param mode: file mode for opening			\n\
+:param mode: file mode for opening, defaults to ``\"w\"``	\n\
 :type mode: string, optional				\n\
 							\n\
 :return: pipe file handle				\n\
 :rtype: handle						\n\
 							\n\
 Use ``#n`` for `name` if you only want to set `mode`	\n\
+							\n\
+See :ref:`open-file <open-file>` for `mode` values.	\n\
 ")
 {
     IDIO_ASSERT (ifd);
@@ -1568,7 +1565,6 @@ open input file `name` using mode `mode`		\n\
 :type name: string					\n\
 :param mode: open mode					\n\
 :type mode: string					\n\
-							\n\
 :return: file handle					\n\
 :rtype: handle						\n\
 ")
@@ -1584,7 +1580,6 @@ open input file `name`					\n\
 							\n\
 :param name: file name					\n\
 :type name: string					\n\
-							\n\
 :return: file handle					\n\
 :rtype: handle						\n\
 ")
@@ -1599,7 +1594,6 @@ open output file `name`					\n\
 							\n\
 :param name: file name					\n\
 :type name: string					\n\
-							\n\
 :return: file handle					\n\
 :rtype: handle						\n\
 ")
@@ -1674,7 +1668,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("file-handle?", file_handlep, (IDIO o), "o", "\
 test if `o` is a file handle			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a file handle, ``#f`` otherwise	\n\
 ")
 {
@@ -1701,7 +1694,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("input-file-handle?", input_file_handlep, (IDIO o), "
 test if `o` is an input file handle		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an input file handle, ``#f`` otherwise	\n\
 ")
 {
@@ -1728,7 +1720,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("output-file-handle?", output_file_handlep, (IDIO o),
 test if `o` is an output file handle		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an output file handle, ``#f`` otherwise	\n\
 ")
 {
@@ -1749,7 +1740,6 @@ file handle `fh`				\n\
 						\n\
 :param fh: file handle to query			\n\
 :type fh: file handle				\n\
-						\n\
 :return: file descriptor			\n\
 :rtype: C/int					\n\
 ")
@@ -1791,7 +1781,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("fd-handle?", fd_handlep, (IDIO o), "o", "\
 test if `o` is a fd handle			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a fd handle, ``#f`` otherwise	\n\
 ")
 {
@@ -1818,7 +1807,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("input-fd-handle?", input_fd_handlep, (IDIO o), "o", 
 test if `o` is an input fd handle		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an input fd handle, ``#f`` otherwise	\n\
 ")
 {
@@ -1845,7 +1833,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("output-fd-handle?", output_fd_handlep, (IDIO o), "o"
 test if `o` is an output fd handle		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an output fd handle, ``#f`` otherwise	\n\
 ")
 {
@@ -1866,7 +1853,6 @@ fd handle `fdh`					\n\
 						\n\
 :param fdh: fd handle to query			\n\
 :type fdh: fd handle				\n\
-						\n\
 :return: file descriptor			\n\
 :rtype: C/int					\n\
 ")
@@ -1899,7 +1885,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("pipe-handle?", pipe_handlep, (IDIO o), "o", "\
 test if `o` is a pipe handle			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a pipe handle, ``#f`` otherwise	\n\
 ")
 {
@@ -1926,7 +1911,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("input-pipe-handle?", input_pipe_handlep, (IDIO o), "
 test if `o` is an input pipe handle		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an input pipe handle, ``#f`` otherwise	\n\
 ")
 {
@@ -1953,7 +1937,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("output-pipe-handle?", output_pipe_handlep, (IDIO o),
 test if `o` is an output pipe handle		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an output pipe handle, ``#f`` otherwise	\n\
 ")
 {
@@ -1974,7 +1957,6 @@ pipe handle `ph`				\n\
 						\n\
 :param ph: pipe handle to query			\n\
 :type ph: pipe handle				\n\
-						\n\
 :return: file descriptor			\n\
 :rtype: C/int					\n\
 ")
@@ -3767,7 +3749,6 @@ possible file name extensions			\n\
 						\n\
 :param filename: file to search for		\n\
 :type filename: string				\n\
-						\n\
 :return: the full pathname to `filename`	\n\
 :rtype: string					\n\
 ")
@@ -4017,7 +3998,6 @@ does `remove (filename)` succeed?		\n\
 						\n\
 :param filename: file to delete			\n\
 :type filename: string				\n\
-						\n\
 :return: ``#t`` on success			\n\
 :raises ^i/o-filename-error: if `filename` contains an ASCII NUL\n\
 :raises ^file-handle-error:			\n\

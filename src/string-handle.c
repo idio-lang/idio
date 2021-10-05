@@ -705,7 +705,7 @@ IDIO idio_get_output_string (IDIO sh)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("get-output-string", get_output_string, (IDIO sh), "sh", "\
-return the accumlated string in output string handle `sh`	\n\
+return the accumulated string in output string handle `sh`	\n\
 						\n\
 :param sh: output string handle			\n\
 :type sh: output string handle			\n\

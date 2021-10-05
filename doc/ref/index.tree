@@ -1,5 +1,7 @@
 (rst "leader" 0)
 
+(tree reader)
+(tree evaluator)
 (tree types)
 (tree functions)
 (tree values)

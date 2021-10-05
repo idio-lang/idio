@@ -302,7 +302,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("handle?", handlep, (IDIO o), "o", "\
 test if `o` is a handle				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a handle, ``#f`` otherwise	\n\
 :rtype: boolean					\n\
 ")
@@ -322,7 +321,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("input-handle?", input_handlep, (IDIO o), "o", "\
 test if `o` is an input handle				\n\
 							\n\
 :param o: object to test				\n\
-							\n\
 :return: ``#t`` if `o` is an input handle, ``#f`` otherwise	\n\
 :rtype: boolean						\n\
 ")
@@ -343,7 +341,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("output-handle?", output_handlep, (IDIO o), "o", "\
 test if `o` is an output handle				\n\
 							\n\
 :param o: object to test				\n\
-							\n\
 :return: ``#t`` if `o` is an output handle, ``#f`` otherwise	\n\
 :rtype: boolean						\n\
 ")
@@ -611,7 +608,6 @@ return the next Unicode code point from `handle`	\n\
 							\n\
 :param handle: handle to observe, defaults to the current input handle	\n\
 :type handle: handle, optional				\n\
-							\n\
 :return: Unicode code point				\n\
 :rtype: unicode						\n\
 ")
@@ -652,7 +648,6 @@ test if `handle` is not supplied is at end-of-file	\n\
 							\n\
 :param handle: handle to test, defaults to the current input handle	\n\
 :type handle: handle, optional				\n\
-							\n\
 :return: ``#t`` if `handle` is at end-of-file, ``#f`` otherwise	\n\
 :rtype: boolean						\n\
 ")
@@ -943,22 +938,26 @@ ptrdiff_t idio_puts_handle (IDIO h, char const *s, size_t const slen)
     return n;
 }
 
-IDIO_DEFINE_PRIMITIVE1V_DS ("puts", puts, (IDIO o, IDIO args), "o [handle]", "\
-Write the printed form of `o` to `handle`		\n\
+IDIO_DEFINE_PRIMITIVE1V_DS ("puts", puts, (IDIO s, IDIO args), "s [handle]", "\
+Write the printed form of `s` to `handle`		\n\
 							\n\
-:param o: object to be printed				\n\
+:param s: string to be printed				\n\
+:type s: string						\n\
 :param handle: handle to print to, defaults to the current output handle	\n\
 :type handle: handle, optional				\n\
-:return: <unspec>					\n\
+:return: the number of bytes written			\n\
+:rtype: integer						\n\
 ")
 {
-    IDIO_ASSERT (o);
+    IDIO_ASSERT (s);
     IDIO_ASSERT (args);
+
+    IDIO_USER_TYPE_ASSERT (string, s)
 
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_WRITE);
 
     size_t size = 0;
-    char *str = idio_string_as_C (o, &size);
+    char *str = idio_string_as_C (s, &size);
 
     ptrdiff_t n = idio_puts_handle (h, str, size);
 
@@ -1429,7 +1428,7 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("read", read, (IDIO args), "[handle]", "\
-read an Idio statement from `handle`			\n\
+read an Idio expression from `handle`			\n\
 							\n\
 :param handle: handle to read from, defaults to the current input handle	\n\
 :type handle: handle, optional				\n\
@@ -1964,6 +1963,8 @@ Return the current line number of handle `handle`	\n\
 :type handle: handle					\n\
 :return: line number					\n\
 :rtype: integer						\n\
+							\n\
+The handle's `line` can be invalidated by :ref:`seek-handle <seek-handle>`.	\n\
 ")
 {
     IDIO_ASSERT (handle);
@@ -2021,6 +2022,8 @@ in handle `handle`					\n\
 :type handle: handle					\n\
 :return: handle location				\n\
 :rtype: string						\n\
+							\n\
+The handle's `line` can be invalidated by :ref:`seek-handle <seek-handle>`.	\n\
 ")
 {
     IDIO_ASSERT (h);
@@ -2040,7 +2043,6 @@ return the name associated with handle `handle`	\n\
 						\n\
 :param handle: handle to query			\n\
 :type handle: handle				\n\
-						\n\
 :return: name					\n\
 :rtype: string					\n\
 ")

@@ -5,8 +5,8 @@
 ; %idio-job
 
 (document job-control %idio-job idio-job)
-(document job-control %idio-job?)
-(document job-control make-%idio-job)
+(document job-control %idio-job? idio-job-p)
+(document job-control make-%idio-job make-idio-job)
 
 (nodocument job-control %idio-job-async)
 (nodocument job-control %idio-job-notified)
@@ -41,8 +41,8 @@
 ; %idio-process
 
 (document job-control %idio-process idio-process)
-(document job-control %idio-process?)
-(document job-control make-%idio-process)
+(document job-control %idio-process? idio-process-p)
+(document job-control make-%idio-process make-idio-process)
 
 (nodocument job-control %idio-process-argv)
 (nodocument job-control %idio-process-completed)
@@ -63,8 +63,8 @@
 ; %process-substitution-job
 
 (document job-control %process-substitution-job)
-(document job-control %process-substitution-job?)
-(document job-control make-%process-substitution-job)
+(document job-control %process-substitution-job? process-substitution-job-p)
+(document job-control make-%process-substitution-job make-process-substitution-job)
 
 (nodocument job-control %process-substitution-job)
 (nodocument job-control %process-substitution-job-dir)

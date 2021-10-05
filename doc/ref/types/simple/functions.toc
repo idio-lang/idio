@@ -4,6 +4,6 @@
 (document Idio function?)
 (document Idio expander?)
 
-(document Idio function)
 (document Idio function*)
-(document Idio function/return)
+
+(nodocument Idio function/return)

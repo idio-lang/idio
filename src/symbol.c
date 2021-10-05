@@ -480,15 +480,15 @@ IDIO idio_gensym (char const *pref_prefix, size_t const blen)
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("gensym", gensym, (IDIO args), "[prefix]", "\
-generate a new *unique* symbol using `prefix` (if	\n\
-supplied or `g`) followed by `/`			\n\
+generate a new *unique* symbol using `prefix` followed by `/`	\n\
 							\n\
 Such *gensyms* are not guaranteed to be unique if saved.\n\
 							\n\
-:param prefix: (optional) prefix string		\n\
+:param prefix: prefix string, defaults to ``\"g\"``	\n\
 :type prefix: string or symbol, optional	\n\
 						\n\
-:return: symbol					\n\
+:return: unique symbol				\n\
+:rtype: symbol					\n\
 ")
 {
     IDIO_ASSERT (args);

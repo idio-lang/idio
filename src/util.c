@@ -285,7 +285,10 @@ test if `o` is ``#n``				\n\
  * The result of the successful application of nothing...
  */
 IDIO_DEFINE_PRIMITIVE0_DS ("void", void, (void), "", "\
-:return: #<void>	\n\
+:return: #<void>			\n\
+					\n\
+Somewhat disingenuous as the act of calling	\n\
+a function cannot be no computation...	\n\
 ")
 {
     return idio_S_void;
@@ -3097,8 +3100,8 @@ a string					\n\
 :param o: object to convert			\n\
 :return: a string representation of `o`		\n\
 						\n\
-``->string`` differs from ``string`` in that it won't	\n\
-stringify a string!				\n\
+``->string`` differs from :ref:`string <string>`	\n\
+in that it won't stringify a string!		\n\
 ")
 {
     IDIO_ASSERT (o);
