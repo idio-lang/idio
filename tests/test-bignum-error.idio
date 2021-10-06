@@ -91,6 +91,9 @@ bignum-error-load "bignum-errors/bignum-divide-overflow.idio" "exponent overflow
 bignum-error-load "bignum-errors/read-bignum-underflow.idio" "exponent underflow"
 bignum-error-load "bignum-errors/read-bignum-overflow.idio" "exponent overflow"
 
+bignum-error-load "bignum-errors/quotient-a-non-integer-bignum.idio" "quotient a='1.1e+0' a bignum is not a integer bignum"
+bignum-error-load "bignum-errors/quotient-b-non-integer-bignum.idio" "quotient b='1.1e+0' a bignum is not a integer bignum"
+
 bignum-error-load "bignum-errors/remainder-a-non-integer-bignum.idio" "remainder a='1.1e+0' a bignum is not a integer bignum"
 bignum-error-load "bignum-errors/remainder-b-non-integer-bignum.idio" "remainder b='1.1e+0' a bignum is not a integer bignum"
 
@@ -109,4 +112,4 @@ bignum-error-load "bignum-errors/exponent-bad-type.idio" "bad parameter type: '#
 bignum-error-load "bignum-errors/bignum-dump-bad-type.idio" "bad parameter type: '#t' a constant is not a bignum"
 
 ;; all done?
-Tests? (bignum-error0 + 28)
+Tests? (bignum-error0 + 30)
