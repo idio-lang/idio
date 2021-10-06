@@ -223,7 +223,7 @@ test-load := {
   n := 0
 
   function (filename) {
-    if (not (string? filename)) (error 'load "not a string" filename)
+    if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "not a string" filename)
 
     tests0 := Tests
     tv-before := (libc/gettimeofday)

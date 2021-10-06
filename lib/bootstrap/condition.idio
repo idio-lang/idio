@@ -56,7 +56,7 @@ define-template (define-condition-type-accessors-only name parent pred-fname & f
                   if ($pred-fname $arg) {
                     condition-ref $arg '$(ph field)
 		  } {
-		    error '$(pht field) '$pred-fname "not a condition:" $arg
+		    error/type ^rt-parameter-type-error '$(pht field) '$pred-fname "not a condition:" $arg
 		  }
                 }
 	     }
@@ -213,6 +213,10 @@ define-template (condition type & field-bindings) {
 (define-condition-type-accessors-only ^runtime-error
 				      ^idio-error
 				      runtime-error?)
+
+(define-condition-type-accessors-only ^rt-syntax-error
+				      ^runtime-error
+				      rt-syntax-error?)
 
 (define-condition-type-accessors-only ^rt-parameter-error
 				      ^runtime-error
@@ -463,10 +467,10 @@ report.
 				if (function? cb) {
 				  hash-set! extension-callbacks ct cb
 				} {
-				  error 'condition-report-extend "not a function" cb
+				  error/type ^rt-parameter-type-error 'condition-report-extend "not a function" cb
 				}
 			      } {
-				error 'condition-report-extend "not a struct-type" ct
+				error/type ^rt-parameter-type-error 'condition-report-extend "not a struct-type" ct
 			      }
   }
 
@@ -577,6 +581,11 @@ multiple lines.
      })
 
      ;; ^runtime-error (lots!)
+
+     ;; ^rt-syntax-error
+     ((rt-syntax-error? c) {
+       iem c
+     })
 
      ;; ^rt-parameter-error
      ((rt-parameter-error? c) {

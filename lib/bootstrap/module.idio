@@ -106,7 +106,7 @@ and calls
 ----
 
   " {
-    if (not (string? filename)) (error 'load "not a string" filename)
+    if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "not a string" filename)
 
     cmod := (current-module)
     load-r := #n
@@ -137,7 +137,7 @@ and calls
 ----
 
 " {
-    if (not (handle? handle)) (error 'load-handle "not a handle" handle)
+    if (not (handle? handle)) (error/type ^rt-parameter-type-error 'load-handle "not a handle" handle)
 
     cmod := (current-module)
     load-handle-r := #n
@@ -247,7 +247,7 @@ define (%module-import importer module*) {
 		 mod := find-module mod-name #f
 		 if mod {
 		   loop (pt m*) (pair (list mod) r)
-		 } (error '%module-import "failed to instantiate module" mod-name)
+		 } (error/type ^rt-module-error '%module-import "failed to instantiate module" mod-name)
 	       }
 	     }))
   }
@@ -273,7 +273,7 @@ define (%module-export exporter symbols) {
 	      if (symbol? sym) {
 		loop (pt syms) (if (memq sym result) result (pair sym result))
 	      } {
-		error 'export "not a symbol" sym
+		error/type ^rt-parameter-type-error 'export "not a symbol" sym
 	      }
 	    }
   }

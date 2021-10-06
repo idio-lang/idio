@@ -120,7 +120,7 @@ map := {
      }))
 
     if (null? a*) {
-      error 'map "too few arguments"
+      error/type ^rt-parameter-error 'map "too few arguments"
     } {
       map2 a* '#n
     }
@@ -129,7 +129,7 @@ map := {
 
 define (for-each f & a*) {
   if (null? a*) {
-    error 'for-each "too few arguments"
+    error/type ^rt-parameter-error 'for-each "too few arguments"
   } {
     apply map f a*
   }
@@ -292,7 +292,7 @@ define (syntax-expand bound tmpl env) {
 		       eenv := assq '... env
 
 		       if (not eenv) {
-			 error 'syntax-rules "template without matching ... in pattern" tmpl env
+			 error/type ^rt-parameter-value-error 'syntax-rules "template without matching ... in pattern" tmpl env
 		       } {
 			 set-ph! eenv '(#f)
 			 (map (function (x)
@@ -361,16 +361,16 @@ define-template define-syntax {
 
   function (name rules) {
     (cond
-     ((not (symbol? name))			(error 'define-syntax "expected symbol" name))
+     ((not (symbol? name))			(error/type ^rt-parameter-type-error 'define-syntax "expected symbol" name))
      ((or (not (pair? rules))
-	  (not (eq? 'syntax-rules (ph rules)))) (error name "expected syntax-rules, got" rules))
+	  (not (eq? 'syntax-rules (ph rules)))) (error/type ^rt-parameter-type-error name "expected syntax-rules, got" rules))
      ((or (not (pair? (pt rules)))
-	  (not (pair? (ptt rules))))		(error name "syntax-rules: too few arguments" rules))
-     ((not (keywords-ok? (pht rules)))		(error name "syntax-rules: malformed keyword list" (pht rules)))
-     ((not (rules-ok? (ptt rules)))		(error name "syntax-rules: invalid clause in rules" (ptt rules)))
+	  (not (pair? (ptt rules))))		(error/type ^rt-parameter-error name "syntax-rules: too few arguments" rules))
+     ((not (keywords-ok? (pht rules)))		(error/type ^rt-parameter-value-error name "syntax-rules: malformed keyword list" (pht rules)))
+     ((not (rules-ok? (ptt rules)))		(error/type ^rt-syntax-error name "syntax-rules: invalid clause in rules" (ptt rules)))
      (else {
        app := (gensym args)
-       default := #T{ ((else (error '$name "invalid syntax" $app))) }
+       default := #T{ ((else (error/type ^rt-syntax-error '$name "invalid syntax" $app))) }
 
        #T{
 	 define-template $(pair name app) {

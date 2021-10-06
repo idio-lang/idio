@@ -272,7 +272,7 @@ define (job-is-stopped job) "test if job `job` is stopped
 
 :return: #t if job `job` is stopped, #f otherwise
 " {
-  if (null? job) (error 'job-is-stopped "null job" job)
+  if (null? job) (error/type ^rt-parameter-nil-error 'job-is-stopped "null job" job)
 
   loop :+ function (procs) {
 	    (cond
@@ -291,7 +291,7 @@ define (job-is-completed job) "test if job `job` has completed
 
 :return: #t if job `job` has completed, #f otherwise
 " {
-  if (null? job) (error 'job-is-completed "null job" job)
+  if (null? job) (error/type ^rt-parameter-nil-error 'job-is-completed "null job" job)
 
   loop :+ function (procs) {
 	    (cond
@@ -316,7 +316,7 @@ define (job-failed job) "test if job `job` has failed
 If ``suppress-pipefail!`` is not ``#f`` then nominally failed
 left-hand processes are ignored
 " {
-  if (null? job) (error 'job-failed "null job" job)
+  if (null? job) (error/type ^rt-parameter-nil-error 'job-failed "null job" job)
 
   loop :+ function (procs) {
 	    if (null? procs) #f {
@@ -360,7 +360,7 @@ Note that this is the inverse behaviour you might expect.
 If ``suppress-pipefail!`` is not ``#f`` then nominally failed
 left-hand processes are ignored
 " {
-  if (null? job) (error 'job-status "null job" job)
+  if (null? job) (error/type ^rt-parameter-nil-error 'job-status "null job" job)
 
   loop :+ function (procs) {
 	    if (null? procs) #t {
@@ -406,7 +406,7 @@ value can be: exit status for 'exit or signal number for 'killed
 If ``suppress-pipefail!`` is not ``#f`` then nominally failed
 left-hand processes are ignored
 " {
-  if (null? job) (error 'job-detail "null job" job)
+  if (null? job) (error/type ^rt-parameter-nil-error 'job-detail "null job" job)
 
   last-proc := #f
 
@@ -462,7 +462,7 @@ define (pipeline-detail job) "return the process status of each process in the p
 kind can be: 'exit or 'killed
 value can be: exit status for 'exit or signal number for 'killed
 " {
-  if (null? job) (error 'pipeline-detail "null job" job)
+  if (null? job) (error/type ^rt-parameter-nil-error 'pipeline-detail "null job" job)
 
   loop :+ function (procs st) {
 	    if (null? procs) (reverse st) {
@@ -565,12 +565,12 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
 	#t
       })
       (else {
-	error 'mark-process-status "inconceivable errno!" pid status (libc/errno-name libc/errno)
+	error/type ^runtime-error 'mark-process-status "inconceivable errno!" pid status (libc/errno-name libc/errno)
       }))
      })
    (else {
      ;; an error in waitpid would have been signalled there
-     error 'mark-process-status "inconceivable!" pid status
+     error/type ^runtime-error 'mark-process-status "inconceivable!" pid status
    }))
 }
 
@@ -1107,7 +1107,7 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
        set-input-handle! (open-input-file-from-fd STDIN_FILENO)
      }
    })
-   (else (error 'prep-io "unexpected infile format" infile)))
+   (else (error/type ^rt-parameter-type-error 'prep-io "unexpected infile format" infile)))
 
   (cond
    ((pathname? outfile) {
@@ -1129,7 +1129,7 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
        set-output-handle! (open-output-file-from-fd STDOUT_FILENO)
      }
    })
-   (else (error 'prep-io "unexpected outfile format" outfile)))
+   (else (error/type ^rt-parameter-type-error 'prep-io "unexpected outfile format" outfile)))
 
   (cond
    ((pathname? errfile) {
@@ -1149,7 +1149,7 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
        set-error-handle! (open-output-file-from-fd errfile)
      }
    })
-   (else (error 'prep-io "unexpected errfile format" errfile)))
+   (else (error/type ^rt-parameter-type-error 'prep-io "unexpected errfile format" errfile)))
 }
 
 define (%prep-process pgid infile outfile errfile foreground async-job) "prepare the current process
@@ -1267,7 +1267,7 @@ define-infix-operator | 700 {
   split :+ function (op op-args expr after) {
 	     (cond
 	      ((null? after)		(reverse (pair (reverse expr) op-args)))
-	      ((not (pair? after))	(error '| "bad syntax" op (reverse op-args) after))
+	      ((not (pair? after))	(error/type ^rt-syntax-error '| "bad syntax" op (reverse op-args) after))
 	      ((eq? op (ph after))	(split op (pair (reverse expr) op-args) #n (pt after)))
 	      (else			(split op op-args (pair (ph after) expr) (pt after))))
   }
@@ -2181,7 +2181,7 @@ with-handle-redir := {
        dir-string-h? = output-string-handle?
        dir-msg       = "appendable error"
      })
-     (else (error 'with-handle-redir "unexpected handle type" type)))
+     (else (error/type ^rt-parameter-type-error 'with-handle-redir "unexpected handle type" type)))
 
     ;; old and new handles
     old-h := (get-current-h)
@@ -2192,9 +2192,9 @@ with-handle-redir := {
 
     (cond
      ((dir-fd-h? s/d)      (tmp-h = s/d))
-     ((fd-handle? s/d)     (error 'with-handle-redir (append-string "not an " dir-msg " fd-handle") s/d))
+     ((fd-handle? s/d)     (error/type ^rt-parameter-type-error 'with-handle-redir (append-string "not an " dir-msg " fd-handle") s/d))
      ((dir-string-h? s/d)  (tmp-h = s/d))
-     ((string-handle? s/d) (error 'with-handle-redir (append-string "not an " dir-msg " string-handle") s/d))
+     ((string-handle? s/d) (error/type ^rt-parameter-type-error 'with-handle-redir (append-string "not an " dir-msg " string-handle") s/d))
      ((string? s/d) {
        tmp-h = open-file-h s/d
        close-fd-handle-on-exec tmp-h
@@ -2205,12 +2205,12 @@ with-handle-redir := {
        close-fd-handle-on-exec tmp-h
        close-h = #t
      })
-     (else (error 'with-handle-redir (append-string "unexpected " dir-msg) s/d)))
+     (else (error/type ^rt-parameter-type-error 'with-handle-redir (append-string "unexpected " dir-msg) s/d)))
 
     if tmp-h {
       set-h! tmp-h
     } {
-      error 'with-handle-redir (append-string "unexpected " dir-msg) s/d
+      error/type ^rt-parameter-type-error 'with-handle-redir (append-string "unexpected " dir-msg) s/d
     }
 
     r := #f
@@ -2325,7 +2325,7 @@ with-handle-dup := {
        dir-string-h? = output-string-handle?
        msg-h         = "output"
      })
-     (else (error 'with-handle-dup "unexpected handle type" type)))
+     (else (error/type ^rt-parameter-value-error 'with-handle-dup "unexpected handle type" type)))
 
     ;; old and new handles
     old-h := (get-current-h)
@@ -2335,9 +2335,9 @@ with-handle-dup := {
      ((dir-file-h? new) {
        new-h = new
      })
-     ((file-handle? new) (error 'with-handle-dup (append-string "not an " msg-h "-file-handle") new))
+     ((file-handle? new) (error/type ^rt-parameter-type-error 'with-handle-dup (append-string "not an " msg-h "-file-handle") new))
      ((dir-string-h? new) (new-h = new))
-     ((string-handle? new) (error 'with-handle-dup (append-string "not an " msg-h "-string-handle") new))
+     ((string-handle? new) (error/type ^rt-parameter-type-error 'with-handle-dup (append-string "not an " msg-h "-string-handle") new))
      ((or (C/int? new)
 	  (fixnum? new)) {
 	    if (C/int? new) (new = C/->integer new)
@@ -2352,14 +2352,14 @@ with-handle-dup := {
 	       new-h = (current-error-handle)
 	     }))
 	  })
-     (else (error 'with-handle-dup (append-string "unexpected " msg-h) new)))
+     (else (error/type ^rt-parameter-type-error 'with-handle-dup (append-string "unexpected " msg-h) new)))
 
     (cond
      (new-h {
        set-h! new-h
      })
      (else {
-       error 'with-handle-dup (append-string "unexpected " msg-h) new
+       error/type ^rt-parameter-value-error 'with-handle-dup (append-string "unexpected " msg-h) new
      }))
 
     r := #f
@@ -2404,7 +2404,7 @@ define-infix-operator > 600 {
    ((eq? op '2>>) {
      type = 'append-error
    })
-   (else (error op "unexpected op" op)))
+   (else (error/type ^rt-parameter-value-error op "unexpected op" op)))
 
   result := #n
 
@@ -2452,7 +2452,7 @@ define-infix-operator >& 600 {
    ((eq? op '2>&) {
      type = 'error
    })
-   (else (error op "unexpected op" op)))
+   (else (error/type ^rt-parameter-value-error op "unexpected op" op)))
 
   result := #n
 

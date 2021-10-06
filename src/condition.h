@@ -142,6 +142,7 @@ extern IDIO idio_condition_st_function_error_type;
 extern IDIO idio_condition_st_function_arity_error_type;
 
 extern IDIO idio_condition_runtime_error_type;
+extern IDIO idio_condition_rt_syntax_error_type;
 extern IDIO idio_condition_rt_parameter_error_type;
 extern IDIO idio_condition_rt_parameter_type_error_type;
 extern IDIO idio_condition_rt_const_parameter_error_type;

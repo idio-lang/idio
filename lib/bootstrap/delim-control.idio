@@ -501,7 +501,7 @@ define-template (for var-clauses test & body) {
 	      ((or (not (pair? clauses))
 		   (not (pair? (ph clauses)))
 		   (not (symbol? (phh clauses)))
-		   (not (pair? (pth clauses)))) (error 'for "invalid syntax" clauses))
+		   (not (pair? (pth clauses)))) (error/type ^rt-syntax-error 'for "invalid syntax" clauses))
 	      (else (split (pt clauses)
 			   (pair (phh clauses) vars)
 			   (pair (phth clauses) inits)

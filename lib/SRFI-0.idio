@@ -93,10 +93,10 @@ define (cond-expand-expander clause*) {
    })
 
    ((not (pair? clause*))
-    (error 'cond-expand "bad clauses" clause*))
+    (error/type ^rt-parameter-type-error 'cond-expand "bad clauses" clause*))
 
    ((not (pair? (ph clause*)))
-    (error 'cond-expand "bad clause" (ph clause*)))
+    (error/type ^rt-parameter-type-error 'cond-expand "bad clause" (ph clause*)))
 
    (else {
      clause := ph clause*
@@ -111,7 +111,7 @@ define (cond-expand-expander clause*) {
 	  ;; Test Case: evaluation-errors/cond-expand-else-not-last.idio
 
 	  ;; cond-expand (else 1) (#t 2)
-	  error 'cond-expand "else not in last clause" clause*
+	  error/type ^rt-syntax-error 'cond-expand "else not in last clause" clause*
 	}
       })
 
@@ -172,7 +172,7 @@ define (cond-expand-expander clause*) {
 		    ;; (cond-expand ((not) body) c*)
 		    ;; (cond-expand ((not req1 ...) body) c*)
 
-		    error 'cond-expand "not: bad clause" clause
+		    error/type ^rt-syntax-error 'cond-expand "not: bad clause" clause
 		  } {
 		    ;; (cond-expand ((not req1) body) c*)
 
@@ -187,7 +187,7 @@ define (cond-expand-expander clause*) {
 	 })
 
 	 (else
-	  (error 'cond-expand "bad feature requirement" clause)))
+	  (error/type ^rt-parameter-value-error 'cond-expand "bad feature requirement" clause)))
       })
 
       (else {

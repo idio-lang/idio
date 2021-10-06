@@ -91,7 +91,7 @@ fold-left := {
     }
 
     if (null? a*) {
-      error 'fold-left "too few arguments"
+      error/type ^rt-parameter-error 'fold-left "too few arguments"
     } {
       fold a* b
     }
@@ -113,7 +113,7 @@ fold-right := {
     }
 
     if (null? a*) {
-      error 'fold-right "too few arguments"
+      error/type ^rt-parameter-error 'fold-right "too few arguments"
     } {
       foldr (map-ph reverse a*) b
     }
@@ -148,7 +148,7 @@ append the lists of `a`
 define (list-tail x n) {
   (cond
    ((zero? n) x)
-   ((null? x) (error 'list-tail "index out of range" n))
+   ((null? x) (error/type ^rt-parameter-value-error 'list-tail "index out of range" n))
    (else (list-tail (pt x) (- n 1))))
 }
 
@@ -172,7 +172,7 @@ map := {
     }
 
     if (null? a*) {
-      error 'map "too few arguments"
+      error/type ^rt-parameter-error 'map "too few arguments"
     } {
       map2 a* '#n
     }
@@ -517,7 +517,7 @@ define (sqrt square) {
   }
 
   if (negative? square) {
-    error 'sqrt "negative argument" square
+    error/type ^rt-parameter-value-error 'sqrt "negative argument" square
   } {
     rt := sqrt2 square 0
     if (square eq (* rt rt)) {
@@ -616,14 +616,14 @@ define number->string {
 		   (cond
 		    ((null? radix) 10)
 		    ((le 2 (ph radix) 36) (ph radix))
-		    (else (error 'number->string "invalid radix"
-						 (ph radix))))
+		    (else (error/type ^rt-parameter-value-error 'number->string "invalid radix"
+										(ph radix))))
     }
 
     r := (get-radix)
     (cond
      ((not (or (integer? n) (10 eq r)))
-      (error 'number->string "real number needs a radix of 10" n))
+      (error/type ^rt-parameter-value-error 'number->string "real number needs a radix of 10" n))
      ((integer? n) (conv-int (inexact->exact n) r))
      (else (conv-real n)))
   }
@@ -715,7 +715,7 @@ string->number := {
     }
     radix-ten? :+ function (rdx) {
 		    if (not (10 eq rdx)) {
-		      if (null? radix) #f (error 'string->number "real number needs a radix of 10")
+		      if (null? radix) #f (error/type ^rt-parameter-value-error 'string->number "real number needs a radix of 10")
 		    } #t
     }
     mantissa-digits? :+ function (x) {
@@ -760,7 +760,7 @@ string->number := {
 		   (cond
 		    ((null? radix) 10)
 		    ((le 2 (ph radix) 36) (ph radix))
-		    (else (error 'string->number "invalid radix" (ph radix))))
+		    (else (error/type ^rt-parameter-value-error 'string->number "invalid radix" (ph radix))))
     }
 
     set! inexact #f
@@ -859,7 +859,7 @@ define (check-bindings b who) {
 	(not (pair? (ph b)))
 	(not (symbol? (phh b)))
 	(not (pair? (pth b)))
-	(not (null? (ptth b)))) (error 'check-bindings (append-string who ": invalid syntax") b))
+	(not (null? (ptth b)))) (error/type ^rt-syntax-error 'check-bindings (append-string who ": invalid syntax") b))
    (else (check-bindings (pt b) who)))
 }
 
@@ -882,7 +882,7 @@ define-template %ext-let {
 
     if (symbol? a1) {
       if (null? a3) {
-        error 'named-let "missing body" #T{ let $a1 $a2 $@a3 }
+        error/type ^rt-parameter-value-error 'named-let "missing body" #T{ let $a1 $a2 $@a3 }
       } {
 	check-bindings a2 "let"
 	va := split a2 '#n '#n
@@ -911,7 +911,7 @@ define-template (case key & clauses) {
 		    ((null? c*) '#n)
 		    ((or (not (pair? c*))
 			 (not (pair? (ph c*)))
-			 (not (pair? (pth c*)))) (error 'case "invalid syntax" c*))
+			 (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'case "invalid syntax" c*))
 		    ((null? (pt c*)) {
 		      if (eq? 'else (phh c*)) {
 			#T{ ((else $@(pth c*))) }
@@ -941,7 +941,7 @@ define-template (do var-clauses test & body) {
 	      ((or (not (pair? clauses))
 		   (not (pair? (ph clauses)))
 		   (not (symbol? (phh clauses)))
-		   (not (pair? (pth clauses)))) (error 'do "invalid syntax" clauses))
+		   (not (pair? (pth clauses)))) (error/type ^rt-syntax-error 'do "invalid syntax" clauses))
 	      (else (split (pt clauses)
 			   (pair (phh clauses) vars)
 			   (pair (phth clauses) inits)
@@ -952,7 +952,7 @@ define-template (do var-clauses test & body) {
 
   if (or (not (pair? test))
 	 (not (list? (pt test)))) {
-	   error 'do "invalid syntax" test
+	   error/type ^rt-syntax-error 'do "invalid syntax" test
 	 } {
 	   loop := (gensym)
 	   var+init+step := split var-clauses '#n '#n '#n

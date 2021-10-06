@@ -1,6 +1,6 @@
 #*
 
-Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -377,7 +377,7 @@ define (pl-parser) {
 								 ((2) #n) \
 								 (else {
 								   eprintf "%s: %s elements in code point range: %s\n" (handle-location (current-input-handle)) (length range) line
-								   error 'pl-parser "unexpected number of elements" line
+								   error/type ^runtime-error 'pl-parser "unexpected number of elements" line
 								 })
 
 					     cond ((string=? (pht dcp_parts) " White_Space ") {
@@ -420,7 +420,7 @@ define (dcp-parser) {
 								 ((2) #n) \
 								 (else {
 								   eprintf "%s: %s elements in code point range: %s\n" (handle-location (current-input-handle)) (length range) line
-								   error 'dcp-parser "unexpected number of elements" line
+								   error/type ^runtime-error 'dcp-parser "unexpected number of elements" line
 								 })
 
 					     cond ((string=? (pht dcp_parts) " Lowercase ") {
@@ -468,7 +468,7 @@ define (gbp-parser) {
 								 ((2) #n) \
 								 (else {
 								   eprintf "%s: %s elements in code point range: %s\n" (handle-location (current-input-handle)) (length range) line
-								   error 'gbp-parser "unexpected number of elements" line
+								   error/type ^runtime-error 'gbp-parser "unexpected number of elements" line
 								 })
 
 

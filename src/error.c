@@ -572,15 +572,15 @@ void idio_error_C (char const *msg, IDIO args, IDIO c_location)
     /* notreached */
 }
 
-IDIO_DEFINE_PRIMITIVE2V_DS ("error", error, (IDIO loc, IDIO msg, IDIO args), "loc msg args", "\
+IDIO_DEFINE_PRIMITIVE2V_DS ("error", error, (IDIO loc, IDIO msg, IDIO args), "loc msg [detail]", "\
 raise an ^idio-error				\n\
 						\n\
-:param loc: location				\n\
+:param loc: function name			\n\
 :type loc: symbol				\n\
 :param msg: error message			\n\
 :type loc: string				\n\
-:param args: detail				\n\
-:type args: list				\n\
+:param detail: detailed arguments, defaults to ``#n``	\n\
+:type detail: list, optional			\n\
 						\n\
 This does not return!				\n\
 ")
@@ -593,6 +593,60 @@ This does not return!				\n\
     IDIO_USER_TYPE_ASSERT (string, msg);
 
     idio_error (loc, msg, args, loc);
+
+    return idio_S_notreached;
+}
+
+IDIO_DEFINE_PRIMITIVE3V_DS ("error/type", error_type, (IDIO ct, IDIO loc, IDIO msg, IDIO args), "ct loc msg [detail]", "\
+raise an ^idio-error				\n\
+						\n\
+:param ct: condition type			\n\
+:type ct: condition type			\n\
+:param loc: function name			\n\
+:type loc: symbol				\n\
+:param msg: error message			\n\
+:type loc: string				\n\
+:param detail: detailed arguments, defaults to ``#n``	\n\
+:type detail: list, optional			\n\
+						\n\
+This does not return!				\n\
+")
+{
+    IDIO_ASSERT (ct);
+    IDIO_ASSERT (loc);
+    IDIO_ASSERT (msg);
+    IDIO_ASSERT (args);
+
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
+    IDIO_USER_TYPE_ASSERT (symbol, loc);
+    IDIO_USER_TYPE_ASSERT (string, msg);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display (msg, sh);
+    if (idio_S_nil != args) {
+	idio_display_C (" ", sh);
+	idio_display (args, sh);
+    }
+
+    if (idio_isa_symbol (loc)) {
+	idio_display_C (" at ", sh);
+	idio_display (loc, sh);
+    }
+
+    /*
+     * XXX
+     *
+     * This struct_instance creation should be altering the number of
+     * arguments based ont he type of condition.
+     */
+    IDIO c = idio_struct_instance (ct,
+				   IDIO_LIST3 (idio_get_output_string (sh),
+					       location,
+					       args));
+
+    idio_raise_condition (idio_S_false, c);
 
     return idio_S_notreached;
 }
@@ -691,6 +745,7 @@ void idio_error_divide_by_zero (char const *msg, IDIO nums, IDIO c_location)
 void idio_error_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (error);
+    IDIO_ADD_PRIMITIVE (error_type);
 }
 
 void idio_init_error ()

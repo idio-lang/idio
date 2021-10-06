@@ -250,10 +250,10 @@ The default padding character is ``#\\{space}``
      ((eq? type 'keyed) {
        if (pair? args) {
 	 data = ph args
-	 if (not (hash? data)) (error '%format "not a hash table" data)
+	 if (not (hash? data)) (error/type ^rt-parameter-type-error '%format "not a hash table" data)
        }
      })
-     (else (error '%format "unexpected format type" type)))
+     (else (error/type ^rt-parameter-type-error '%format "unexpected format type" type)))
 
     cp-loop :+ (function (i e) {
 		  if (i ge e) #n {
@@ -384,7 +384,7 @@ The default padding character is ``#\\{space}``
 			     ((unicode=? k #\@) {
 			       if (null? args) {
 				 eprintf "not enough args for %%%s at .%d in %s\n" k i fmt
-				 error '%format "not enough args for %" k
+				 error/type ^rt-parameter-error '%format "not enough args for %" k
 			       }
 
 			       v = ph args
@@ -408,7 +408,7 @@ The default padding character is ``#\\{space}``
 			     (else {
 			       if (null? args) {
 				 eprintf "not enough args for %%%s at %d/%d in '%s'\n" k i e fmt
-				 error '%format "not enough args for %" k
+				 error/type ^rt-parameter-error '%format "not enough args for %" k
 			       }
 
 			       v = ph args

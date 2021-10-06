@@ -35,7 +35,7 @@ array-error-load := {
   n := 0
 
   function (filename msg) {
-    if (not (string? filename)) (error 'load "not a string" filename)
+    if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "not a string" filename)
 
     n = n + 1
 

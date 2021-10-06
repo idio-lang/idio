@@ -44,7 +44,7 @@ define-template (regex-case e & clauses) {
 		      ((null? c*) (reverse r))
 		      ((or (not (pair? c*))
 			   (not (pair? (ph c*)))
-			   (not (pair? (pth c*)))) (error 'regex-case "invalid syntax" c*))
+			   (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'regex-case "invalid syntax" c*))
 		      ((null? (pt c*)) {
 			if (eq? 'else (phh c*)) {
 			  reverse r
@@ -67,7 +67,7 @@ define-template (regex-case e & clauses) {
 		    ((null? c*) '#n)
 		    ((or (not (pair? c*))
 			 (not (pair? (ph c*)))
-			 (not (pair? (pth c*)))) (error 'case "invalid syntax" c*))
+			 (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'regex-case "invalid syntax" c*))
 		    ((null? (pt c*)) {
 		      if (eq? 'else (phh c*)) {
 			#T{
@@ -115,7 +115,7 @@ define-template (pattern-case e & clauses) {
 		      ((null? c*) (reverse r))
 		      ((or (not (pair? c*))
 			   (not (pair? (ph c*)))
-			   (not (pair? (pth c*)))) (error 'pattern-case "invalid syntax" c*))
+			   (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'pattern-case "invalid syntax" c*))
 		      ((null? (pt c*)) {
 			if (eq? 'else (phh c*)) {
 			  reverse r
@@ -138,7 +138,7 @@ define-template (pattern-case e & clauses) {
 		    ((null? c*) '#n)
 		    ((or (not (pair? c*))
 			 (not (pair? (ph c*)))
-			 (not (pair? (pth c*)))) (error 'case "invalid syntax" c*))
+			 (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'pattern-case "invalid syntax" c*))
 		    ((null? (pt c*)) {
 		      if (eq? 'else (phh c*)) {
 			#T{

@@ -100,7 +100,7 @@ We'll follow the style of Bash .../lib/sh/tmpfile.c
 
 define (%get-sys-tmpdir) {
   loop :+ function (dirs) {
-	    if (null? dirs) (error '%get-sys-tmpdir "no remaining %sys-tmpdirs" %sys-tmpdirs) {
+	    if (null? dirs) (error/type ^rt-runtime-error '%get-sys-tmpdir "no remaining %sys-tmpdirs" %sys-tmpdirs) {
 	      dir := ph dirs
 	      if (and (d? dir)
 		      (w? dir)) dir {
@@ -195,7 +195,7 @@ define (stdin-fileno) {
   cih := (current-input-handle)
   (cond
    ((input-file-handle? cih) (fd-handle-fd cih))
-   ((file-handle? cih) (error 'stdin-fileno "not an input-file-handle" cih))
+   ((file-handle? cih) (error/type ^rt-parameter-type-error 'stdin-fileno "not an input-file-handle" cih))
    ((input-string-handle? cih) {
      ;; 1. create and open a temporary file
      fd+name := %make-tmp-fd "idio-ish-"
@@ -216,7 +216,7 @@ define (stdin-fileno) {
      ;; garbage collected -- as a list to mark it special
      list ifh
    })
-   (else (error 'stdin-fileno "unexpected current-input-handle" cih)))
+   (else (error/type ^rt-parameter-type-error 'stdin-fileno "unexpected current-input-handle" cih)))
 }
 
 ;;
@@ -224,7 +224,7 @@ define (stdout-fileno) {
   coh := (current-output-handle)
   (cond
    ((output-file-handle? coh) (fd-handle-fd coh))
-   ((file-handle? coh) (error 'stdout-fileno "not an output-file-handle" coh))
+   ((file-handle? coh) (error/type ^rt-parameter-type-error 'stdout-fileno "not an output-file-handle" coh))
    ((output-string-handle? coh) {
      ;; 1. create a temporary file
      fd+name := %make-tmp-fd "idio-osh-"
@@ -236,7 +236,7 @@ define (stdout-fileno) {
      ;; mark it special
      list (ph fd+name) coh
    })
-   (else (error 'stdout-fileno "unexpected current-output-handle" coh)))
+   (else (error/type ^rt-parameter-type-error 'stdout-fileno "unexpected current-output-handle" coh)))
 }
 
 ;;
@@ -244,7 +244,7 @@ define (stderr-fileno) {
   ceh := (current-error-handle)
   (cond
    ((output-file-handle? ceh) (fd-handle-fd ceh))
-   ((file-handle? ceh) (error 'stderr-fileno "not an output-file-handle" ceh))
+   ((file-handle? ceh) (error/type ^rt-parameter-type-error 'stderr-fileno "not an output-file-handle" ceh))
    ((output-string-handle? ceh) {
      ;; 1. create a temporary file
      fd+name := %make-tmp-fd "idio-esh-"
@@ -256,7 +256,7 @@ define (stderr-fileno) {
      ;; mark it special
      list (ph fd+name) ceh
    })
-   (else (error 'stderr-fileno "unexpected current-error-handle" ceh)))
+   (else (error/type ^rt-parameter-type-error 'stderr-fileno "unexpected current-error-handle" ceh)))
 }
 
 
@@ -295,7 +295,7 @@ keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
 	 }
        }) (libc/rlimit-names)
 
-       if (null? resource) (error 'getrlimit "bad resource" resource "from" res)
+       if (null? resource) (error/type ^rt-parameter-nil-error 'getrlimit "bad resource" resource "from" res)
      }))
 
     orig-getrlimit resource
@@ -334,7 +334,7 @@ keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
 	 }
        }) (libc/rlimit-names)
 
-       if (null? resource) (error 'setrlimit "bad resource" resource "from" res)
+       if (null? resource) (error/type ^rt-parameter-nil-error 'setrlimit "bad resource" resource "from" res)
      }))
 
     orig-setrlimit resource rlim

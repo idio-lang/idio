@@ -102,6 +102,7 @@ IDIO idio_condition_st_function_error_type;
 IDIO idio_condition_st_function_arity_error_type;
 
 IDIO idio_condition_runtime_error_type;
+IDIO idio_condition_rt_syntax_error_type;
 IDIO idio_condition_rt_parameter_error_type;
 IDIO idio_condition_rt_parameter_type_error_type;
 IDIO idio_condition_rt_const_parameter_error_type;
@@ -1225,6 +1226,8 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_st_function_arity_error_type, "^st-function-arity-error", idio_condition_st_function_error_type);
 
     IDIO_DEFINE_CONDITION0 (idio_condition_runtime_error_type, "^runtime-error", idio_condition_idio_error_type);
+
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_syntax_error_type, "^rt-syntax-error", idio_condition_runtime_error_type);
 
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_error_type, "^rt-parameter-error", idio_condition_runtime_error_type);
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_type_error_type, "^rt-parameter-type-error", idio_condition_rt_parameter_error_type);

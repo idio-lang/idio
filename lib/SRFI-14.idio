@@ -138,7 +138,7 @@ define char-set? sparse-char-set?
 define (char-set-size cs) {
   (cond
    ((sparse-char-set? cs) (sparse-char-set-size cs))
-   (else (error 'char-set-size "not a char-set" cs)))
+   (else (error/type ^rt-parameter-type-error 'char-set-size "not a char-set" cs)))
 }
 
 define (count-sparse-char-set-planes cs) "
@@ -146,7 +146,7 @@ Return the largest Unicode Plane used by this char-set.
 " {
   (cond
    ((sparse-char-set? cs) (unicode->plane (integer->unicode ((sparse-char-set-size cs) - 1))))
-   (else (error 'count-sparse-char-set-planes "not a char-set" cs)))
+   (else (error/type ^rt-parameter-type-error 'count-sparse-char-set-planes "not a char-set" cs)))
 }
 
 define char-set-planes count-sparse-char-set-planes
@@ -212,7 +212,7 @@ Invoke `f` on each code point in char-set `cs`
 	   }
 	 })
    })
-   (else (error 'char-set-for-each-set "not a char-set" cs)))
+   (else (error/type ^rt-parameter-type-error 'char-set-for-each-set "not a char-set" cs)))
 }
 
 define (char-set & cps) "
@@ -247,7 +247,7 @@ Return a copy of char-set `cs`
 	   }
 	 })
    })
-   (else (error 'copy-char-set "not a char-set" cs)))
+   (else (error/type ^rt-parameter-type-error 'copy-char-set "not a char-set" cs)))
 }
 
 define (string->char-set str & base?) "
@@ -267,7 +267,7 @@ unless `base?` is supplied.
     cs? := ph base?
     if (char-set? cs?) {
       cs = copy-char-set cs?
-    } (error 'string->char-set "not a char-set" cs?)
+    } (error/type ^rt-parameter-type-error 'string->char-set "not a char-set" cs?)
   } {
     cs = copy-char-set char-set:empty
   }
@@ -324,7 +324,7 @@ the inital char-set unless `base?` is supplied.
     cs? := ph base?
     if (char-set? cs?) {
       cs = copy-char-set cs?
-    } (error 'ucs-range->char-set "not a char-set" cs?)
+    } (error/type ^rt-parameter-type-error 'ucs-range->char-set "not a char-set" cs?)
   } {
     cs = copy-char-set char-set:empty
   }
@@ -363,14 +363,14 @@ Is the code point cp in the character set cs?
 
   (cond
    ((sparse-char-set? cs) {
-     if (ge (unicode->integer cp) (sparse-char-set-size cs)) (error 'char-set-ref "cp greater than char-set size" cp (sparse-char-set-size cs))
+     if (ge (unicode->integer cp) (sparse-char-set-size cs)) (error/type ^rt-parameter-value-error 'char-set-ref "cp greater than char-set size" cp (sparse-char-set-size cs))
 
      bs := array-ref (sparse-char-set-planes cs) (unicode->plane cp)
      if bs {
        bitset-ref bs (unicode->plane-codepoint cp)
      } #f
    })
-   (else (error 'char-set-ref "not a char-set" cs)))
+   (else (error/type ^rt-parameter-type-error 'char-set-ref "not a char-set" cs)))
 }
 
 define char-set-contains? char-set-ref
@@ -384,7 +384,7 @@ Add the code point to character set cs.
 
   (cond
    ((sparse-char-set? cs) {
-     if (ge (unicode->integer cp) (sparse-char-set-size cs)) (error 'char-set-set! "cp greater than char-set size" cp (sparse-char-set-size cs))
+     if (ge (unicode->integer cp) (sparse-char-set-size cs)) (error/type ^rt-parameter-value-error 'char-set-set! "cp greater than char-set size" cp (sparse-char-set-size cs))
 
      plane := unicode->plane cp
      bs := array-ref (sparse-char-set-planes cs) plane
@@ -406,7 +406,7 @@ Add the code point to character set cs.
 
      bitset-set! bs (unicode->plane-codepoint cp)
    })
-   (else (error 'char-set-set! "not a char-set" cs)))
+   (else (error/type ^rt-parameter-type-error 'char-set-set! "not a char-set" cs)))
 }
 
 define (char-set-clear! cs cp) "
@@ -418,7 +418,7 @@ Remove the code point from character set cs.
 
   (cond
    ((sparse-char-set? cs) {
-     if (ge (unicode->integer cp) (sparse-char-set-size cs)) (error 'char-set-clear! "cp greater than char-set size" cp (sparse-char-set-size cs))
+     if (ge (unicode->integer cp) (sparse-char-set-size cs)) (error/type ^rt-parameter-value-error 'char-set-clear! "cp greater than char-set size" cp (sparse-char-set-size cs))
 
      bs := array-ref (sparse-char-set-planes cs) (unicode->plane cp)
      if bs {
@@ -428,7 +428,7 @@ Remove the code point from character set cs.
        bs
      }
    })
-   (else (error 'char-set-clear! "not a char-set" cs)))
+   (else (error/type ^rt-parameter-type-error 'char-set-clear! "not a char-set" cs)))
 }
 
 define (char-set-adjoin-loop cs cps) {
@@ -436,7 +436,7 @@ define (char-set-adjoin-loop cs cps) {
     setter! := #n
     (cond
      ((sparse-char-set? cs) (setter! = char-set-set!))
-     (else (error 'char-set-adjoin "not a char-set" cs)))
+     (else (error/type ^rt-parameter-type-error 'char-set-adjoin "not a char-set" cs)))
     ch := (ph cps)
     (cond
      ((integer? ch) (setter! cs ch))
@@ -470,7 +470,7 @@ define (char-set-delete-loop cs cps) {
     clearer! := #n
     (cond
      ((sparse-char-set? cs) (clearer! = char-set-set!))
-     (else (error 'char-set-delete "not a char-set" cs)))
+     (else (error/type ^rt-parameter-type-error 'char-set-delete "not a char-set" cs)))
     (cond
      ((integer? ch) (clearer! cs ch))
      ((unicode? ch) (clearer! cs (unicode->integer ch))))
@@ -520,7 +520,7 @@ If no arguments are passed the return value is :ref:`char-set:empty <SRFI-14/cha
 		     })
 
 	       })
-	       (else (error 'and-char-set "not a char-set" cs)))
+	       (else (error/type ^rt-parameter-type-error 'and-char-set "not a char-set" cs)))
 
 	      loop (pt css) res
 	    }
@@ -555,7 +555,7 @@ If no arguments are passed the return value is :ref:`char-set:full <SRFI-14/char
 
 	       })
 	       (else {
-		 (error 'ior-char-set "not a char-set" cs)
+		 (error/type ^rt-parameter-type-error 'ior-char-set "not a char-set" cs)
 	       }))
 
 	      loop (pt css) res
@@ -592,7 +592,7 @@ If no arguments are passed the return value is :ref:`char-set:empty <SRFI-14/cha
 		     })
 
 	       })
-	       (else (error 'xor-char-set "not a char-set" cs)))
+	       (else (error/type ^rt-parameter-type-error 'xor-char-set "not a char-set" cs)))
 
 	      loop (pt css) res
 	    }
@@ -629,7 +629,7 @@ Logical complement the code points from the character set.
 	 })
 
    })
-   (else (error 'not-char-set "not a char-set" cs)))
+   (else (error/type ^rt-parameter-type-error 'not-char-set "not a char-set" cs)))
 }
 
 define complement-char-set not-char-set
@@ -661,7 +661,7 @@ Subtract the code points of the character sets css from cs.
 		     })
 
 	       })
-	       (else (error 'subtract-char-set "not a char-set" cs)))
+	       (else (error/type ^rt-parameter-type-error 'subtract-char-set "not a char-set" cs)))
 
 	      loop (pt css) res
 	    }
@@ -740,7 +740,7 @@ Invoke `f` on each code point in char-set `cs` and `v` returning the accumulated
    ((bitset? cs) {
      fold-bitset cs f v
    })
-   (else (error 'fold-char-set "not a char-set" cs)))
+   (else (error/type ^rt-parameter-type-error 'fold-char-set "not a char-set" cs)))
 }
 
 provide SRFI-14
