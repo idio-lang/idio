@@ -3724,10 +3724,31 @@ IDIO idio_bignum_primitive_remainder (IDIO a, IDIO b)
     IDIO_TYPE_ASSERT (bignum, a);
     IDIO_TYPE_ASSERT (bignum, b);
 
-    a = idio_bignum_integer_argument (a);
-    b = idio_bignum_integer_argument (b);
+    IDIO ia = idio_bignum_integer_argument (a);
+    if (idio_S_nil == ia) {
+	/*
+	 * Test Case: bignum-errors/remainder-a-non-integer-bignum.idio
+	 *
+	 * remainder 1.1 1
+	 */
+	idio_error_param_value_exp ("remainder", "a", a, "integer bignum", IDIO_C_FUNC_LOCATION ());
 
-    IDIO ibd = idio_bignum_divide (a, b);
+	return idio_S_notreached;
+    }
+
+    IDIO ib = idio_bignum_integer_argument (b);
+    if (idio_S_nil == ib) {
+	/*
+	 * Test Case: bignum-errors/remainder-b-non-integer-bignum.idio
+	 *
+	 * remainder 1.1 1
+	 */
+	idio_error_param_value_exp ("remainder", "b", b, "integer bignum", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO ibd = idio_bignum_divide (ia, ib);
 
     /* idio_debug ("bignum_remainder: %s\n", ibd); */
 

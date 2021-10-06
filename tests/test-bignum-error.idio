@@ -43,15 +43,15 @@ bignum-error-load := {
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-bignum-error
 	  ^rt-number-error
-	  ^rt-parameter-type-error) (function (c) {
-				       ;eprintf "bignum-error #%s: %s %s\n" n msg (idio-error-location c)
-				       test (idio-error-message c) msg
+	  ^rt-parameter-error) (function (c) {
+				  ;eprintf "bignum-error #%s: %s %s\n" n msg (idio-error-location c)
+				  test (idio-error-message c) msg
 
-				       if (not (string=? (idio-error-message c) msg)) {
-					 condition-report (append-string "bignum-error-load: " filename) c (current-error-handle)
-				       }
-				       
-				       trap-return 'bignum-error
+				  if (not (string=? (idio-error-message c) msg)) {
+				    condition-report (append-string "bignum-error-load: " filename) c (current-error-handle)
+				  }
+
+				  trap-return 'bignum-error
 	  }) {
 	    t0 := Tests
 	    (symbol-value 'load 'Idio) filename
@@ -91,6 +91,9 @@ bignum-error-load "bignum-errors/bignum-divide-overflow.idio" "exponent overflow
 bignum-error-load "bignum-errors/read-bignum-underflow.idio" "exponent underflow"
 bignum-error-load "bignum-errors/read-bignum-overflow.idio" "exponent overflow"
 
+bignum-error-load "bignum-errors/remainder-a-non-integer-bignum.idio" "remainder a='1.1e+0' a bignum is not a integer bignum"
+bignum-error-load "bignum-errors/remainder-b-non-integer-bignum.idio" "remainder b='1.1e+0' a bignum is not a integer bignum"
+
 bignum-error-load "bignum-errors/lt-non-bignum.idio" "bad parameter type: '#t' a constant is not a bignum"
 bignum-error-load "bignum-errors/le-non-bignum.idio" "bad parameter type: '#t' a constant is not a bignum"
 bignum-error-load "bignum-errors/eq-non-bignum.idio" "bad parameter type: '#t' a constant is not a bignum"
@@ -106,4 +109,4 @@ bignum-error-load "bignum-errors/exponent-bad-type.idio" "bad parameter type: '#
 bignum-error-load "bignum-errors/bignum-dump-bad-type.idio" "bad parameter type: '#t' a constant is not a bignum"
 
 ;; all done?
-Tests? (bignum-error0 + 26)
+Tests? (bignum-error0 + 28)
