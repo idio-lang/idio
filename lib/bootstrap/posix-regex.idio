@@ -19,7 +19,15 @@
 ;; posix-regex.idio
 ;;
 
-define (regex-matches rx str) {
+define (regex-matches rx str) "
+does `rx` match `str`?
+
+:param rx: regular expression
+:type rx: string
+:param str: string to match against
+:type str: string
+:return: see :ref:`regexec <regexec>`
+" {
   regexec (regcomp rx) str
 }
 

@@ -95,7 +95,7 @@ define-template (module name) {
   orig-load-handle := load-handle
 
   load = function (filename) "
-load Idio code from ``filename``
+load Idio code from `filename`
 
 :param filename: the filename to load from
 :type filename: string
@@ -126,7 +126,7 @@ and calls
   %set-property! load :docstr-raw (append-string (%property load :docstr-raw) (%property orig-load :docstr-raw))
 
   load-handle = function (handle) "
-load Idio code from ``handle``
+load Idio code from `handle`
 
 :param handle: the handle to load from
 :type handle: handle
@@ -170,19 +170,18 @@ and calls
 
 define (require feature & subfeatures) "
 
-Load ``feature`` unless it has previous been successfully required.
-``subfeatures`` are available to the loaded code as the dynamic
+Load `feature` unless it has previous been successfully required.
+`subfeatures` are available to the loaded code as the dynamic
 variable ``*require-subfeatures*``
 
 :param feature: the name of the feature
 :type fmt: symbol
 :param subfeatures: names of subfeatures
-:type args: list
-
-The file to be loaded is ``(symbol->string feature)`` which must
-``(provide feature)``.
-
+:type args: list, optional
 :return: #t or #f
+
+The file to be loaded is :samp:`(symbol->string {feature})` which must
+:samp:`(provide {feature})`.
 
 " {
   if (memq feature *require-features*) #t {

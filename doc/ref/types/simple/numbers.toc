@@ -8,18 +8,11 @@
 (rst "number-constructors" 0)
 (document unicode unicode->integer)
 
-; deprecated
-;(document Idio integer->char)
-
 (rst "number-functions" 0)
 (document Idio \+ add)
 (document Idio \- subtract)
 (document Idio \* multiply)
 (document Idio \/ divide)
-
-(document Idio floor)
-(document Idio remainder)
-(document Idio quotient)
 
 (document Idio \lt)
 (document Idio \le)

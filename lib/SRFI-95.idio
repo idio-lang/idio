@@ -63,7 +63,22 @@
 ;;; such that for all 1 <= i <= m,
 ;;;	(not (less? (list-ref list i) (list-ref list (- i 1)))).
 ;@
-define (sorted? seq less? & opt-key) {
+define (sorted? seq less? & opt-key) "
+Is sequence `seq` sorted?
+
+:param seq: sequence to be verified as sorted
+:type seq: list or array
+:param less?: 2-ary function that computes *less than*
+:type less?: function
+:param opt-key: accessor function, defaults to :ref:`identity <identity>`
+:type opt-key: function, optional
+
+For a list (x0 x1 ... xm), ``sorted?`` returns `true` when for all 1
+<= i <= m:
+
+    :samp:`(not ({less?} (list-ref list i) (list-ref list (- i 1))))`
+
+" {
   key := if (null? opt-key) identity (ph opt-key)
 
   (cond
@@ -105,7 +120,23 @@ define (sorted? seq less? & opt-key) {
 ;;; interleaved so that (sorted? (merge a b less?) less?).
 ;;; Note:  this does _not_ accept arrays.  See below.
 ;@
-define (merge a b less? & opt-key) {
+define (merge a b less? & opt-key) "
+merge pre-sorted lists `a` and `b`
+
+:param a: sorted list
+:type a: list
+:param b: sorted list
+:type b: list
+:param less?: 2-ary function that computes *less than*
+:type less?: function
+:param opt-key: accessor function, defaults to :ref:`identity <identity>`
+:type opt-key: function, optional
+
+returns a new list in which the elements of a and b have been stably
+interleaved so that :samp:`(sorted? (merge {a} {b} {less?}) {less?})`
+is `true`.
+
+" {
   key := if (null? opt-key) identity (ph opt-key)
 
   (cond
@@ -189,7 +220,19 @@ define (sort:merge! a b less? key) {
 ;;; a single sorted list including the elements of both.  Note: this
 ;;; does _not_ accept arrays.
 ;@
-define (merge! a b less? & opt-key) {
+define (merge! a b less? & opt-key) "
+a destructive merge of pre-sorted lists `a` and `b`
+
+:param a: sorted list
+:type a: list
+:param b: sorted list
+:type b: list
+:param less?: 2-ary function that computes *less than*
+:type less?: function
+:param opt-key: accessor function, defaults to :ref:`identity <identity>`
+:type opt-key: function, optional
+
+" {
   sort:merge! a b less? (if (null? opt-key) identity (ph opt-key))
 }
 
@@ -277,7 +320,17 @@ define (rank-1-array->list array) {
 ;;; R. A. O'Keefe adapted it to work destructively in Scheme.
 ;;; A. Jaffer modified to always return the original list.
 ;@
-define (sort! seq less? & opt-key) {
+define (sort! seq less? & opt-key) "
+destructively sort the sequence `seq` using comparitor `less?`
+
+:param seq: sequence
+:type seq: list or array
+:param less?: 2-ary function that computes *less than*
+:type less?: function
+:param opt-key: accessor function, defaults to :ref:`identity <identity>`
+:type opt-key: function, optional
+
+" {
   key := if (null? opt-key) #f (ph opt-key)
 
   (cond
@@ -318,7 +371,17 @@ define (sort! seq less? & opt-key) {
 ;;; allocated" except for sharing structure with "the last argument",
 ;;; so (append x #n) ought to be a standard way of copying a list x.
 ;@
-define (sort seq less? & opt-key) {
+define (sort seq less? & opt-key) "
+sort the sequence `seq` using comparitor `less?`
+
+:param seq: sequence
+:type seq: list or array
+:param less?: 2-ary function that computes *less than*
+:type less?: function
+:param opt-key: accessor function, defaults to :ref:`identity <identity>`
+:type opt-key: function, optional
+
+" {
   key := if (null? opt-key) #f (ph opt-key)
 
   ;;%%vm-trace 1
@@ -339,11 +402,29 @@ define (sort seq less? & opt-key) {
    }))
 }
 
-define (sort-string seq) {
+define (sort-string seq) "
+sort the strings `seq` using comparitor :ref:`string\\<? <string\\<?>`
+
+:param seq: sequence of strings
+:type seq: list
+
+" {
   sort seq string<?
 }
 
-define (sort-symbol seq) {
+define (sort-symbol seq) "
+sort the symbols `seq`
+
+:param seq: sequence of symbols
+:type seq: list
+
+:Example:
+
+.. code-block:: idio
+
+   sort-symbol (module-exports libc)
+
+" {
   map pht (sort (map (function (s) (list (->string s) s)) seq) string<? ph)
 }
 

@@ -1,0 +1,7 @@
+(rst "properties" 0)
+
+(document Idio %properties)
+(document Idio %set-properties!)
+(document Idio %property)
+(document Idio %set-property!)
+

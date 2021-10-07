@@ -58,21 +58,21 @@ WRT - the element in the path to be operated on
 *#
 
 define* (path-modify var val act wrt (:sep sep ":") (:once once? #f) (:test test? #f)) {
-  orig-dirs := split-string (symbol-value var (current-module)) sep
+  orig-dirs := split-string-exactly (symbol-value var (current-module)) sep
 
   if once? {
     (case act
 	  ((first start last end after before) {
 	    if (member val orig-dirs) {
 	      path-modify var #n 'remove val
-	      orig-dirs = split-string (symbol-value var (current-module)) sep
+	      orig-dirs = split-string-exactly (symbol-value var (current-module)) sep
 	    }
 	  }))
   }
 
   new-dirs := #n
   if (string? val) {
-    new-dirs = split-string val sep
+    new-dirs = split-string-exactly val sep
   }
 
   if test? {
@@ -235,7 +235,11 @@ VAR - the name of the path to be manipulated, eg. PATH, CLASSPATH
 *#
 
 define* (path-verify var (:sep sep ":") (:test test? #f)) {
-  path-modify var (symbol-value var (current-module)) 'verify #n :sep sep :test test?
+  if test? {
+    path-modify var (symbol-value var (current-module)) 'verify #n :sep sep :test test?
+  } {
+    error/type ^rt-parameter-error 'path-verify "no :test predicate supplied"
+  }
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -305,11 +309,11 @@ define* (path-remove-first var old (:sep sep ":")) {
 
 #*
 
-trim-path VAR [keyword arguments]
+trim-path VAL [keyword arguments]
 
 Remove duplicate elements in a path after the first
 
-VAR - the name of the path to be manipulated, eg. PATH, CLASSPATH
+VAL - the value of the path to be manipulated, eg. PATH, CLASSPATH
 
 [keyword arguments]:
 
@@ -317,14 +321,14 @@ VAR - the name of the path to be manipulated, eg. PATH, CLASSPATH
 
 *#
 
-define* (trim-path var (:sep sep ":")) {
+define* (trim-path val (:sep sep ":")) {
   seen := #n
 
   for-each (function (e) {
 	      if (not (member e seen)) {
 		seen = pair e seen
 	      }
-  }) (split-string var sep)
+  }) (split-string-exactly val sep)
 
   join-string sep (reverse seen)
 }
@@ -335,7 +339,7 @@ define* (trim-path var (:sep sep ":")) {
 
 std-paths ACT VAL [keyword arguments]
 
-Call the function path_ACT for PATH with VAL/bin and MANPATH with
+Call the function path-ACT for PATH with VAL/bin and MANPATH with
 VAL/share/man (or VAL/man) if either exists.
 
 ACT - the suffix of the path function, eg. append to give
@@ -382,7 +386,7 @@ define* (std-paths act val (:sep sep ":") (:once once? #f) (:test test? #f)) {
 				  }))
 			  }
 	      }) '("share/man" "man")
-  }) (split-string val sep)
+  }) (split-string-exactly val sep)
 }
 
 define* (std-paths-unique act val (:sep sep ":") (:test test? #f)) {
@@ -454,7 +458,7 @@ define* (all-paths act val (:sep sep ":") (:once once? #f) (:test test? #f)) {
 			path-act 'LD_LIBRARY_PATH ld :sep sep :once once? :test test?
 		      }))
 	      }
-  }) (split-string val sep)
+  }) (split-string-exactly val sep)
 }
 
 define* (all-paths-unique act val (:sep sep ":") (:test test? #f)) {

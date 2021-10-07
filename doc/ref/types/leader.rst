@@ -1,3 +1,5 @@
+.. _`Idio types`:
+
 Idio Types
 ==========
 

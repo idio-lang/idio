@@ -16,8 +16,8 @@ reStructuredText
 ----------------
 
 The target output is reStructuredText for sphinx which complicates
-things because of the need to update toctrees (Table of Contents)
-whilst also generating the text.
+things because of the need to update toctrees (Table of Contents) in
+one file whilst also generating the text in another.
 
 sphinx
 ------
@@ -40,6 +40,12 @@ document/nodocument instructions look like
 
 (document {module} {name})
 
+With nodocument no generating any documentation but flagging the name
+as having been seen to avoid a warning.
+
+Note: the names in gen-ref-docs itself are indistinguishable from a
+nominal set of Idio names so they need to be flagged as nodocument.
+
 Some C functions are created by CPP macros and are cumbersome to add
 documentation for so, if a signature or documentation string cannot be
 found then the script looks for:
@@ -49,19 +55,26 @@ found then the script looks for:
 
 If ...-{sig}.rst exists it will be used in preference to any built-in
 value.  This covers the case where template-generated functions have
-gensym'd names and we can document normallized names instead.
+gensym'd names and we can document normalized names instead.
 
 In addition to any built-in documentation gen-ref-docs will try to add
 any {toc-file}-{module}-{name}-doc.rst as additional documentation.
+This is useful where adding complex sphinx documentation to either
+Idio or C source code is considered annoying.
 
-Some names have potentially awkward (for the file-system/user) code
-points, "/" being a good example, "*" being another.
+Some Idio names have potentially awkward code points (for the either
+the file-system or the user adding the documentation), "/" being a
+good example, "*" being another.
 
 document allows you to specify an "easy name":
 
+(document {module} {name} {easy-name})
+
+for example:
+
 (document Idio *idio-features* idio-features)
 
-and will use the easy name in preference:
+and gen-ref-docs will use the easy name in preference:
 
 {toc-file}-{module}-{easy-name}-doc.rst
 
@@ -70,6 +83,9 @@ used.  The level of indentation might be useful if the documentation
 being inserted was written bounded to the 0th column but is inserted
 inside a .. note:: statement, say, and requires 1 level of
 indentation.
+
+Running
+-------
 
 A suitable usage script might be doc/ref/update:
 
@@ -86,8 +102,8 @@ cd ${0%/*}
 make clean html && (cd build; rsync -a --delete html /var/www/html/doc/ref)
 <<<<
 
-Note the use of a re-make to ensure that the live built-in
-documentation is up to date.
+Note the use of make to ensure that the live built-in documentation is
+up to date.
 
 General Structure
 -----------------

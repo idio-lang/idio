@@ -645,16 +645,16 @@ IDIO idio_ref_properties (IDIO o, IDIO args)
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("%properties", properties_ref, (IDIO o, IDIO args), "o [default]", "\
-return the properties table of `o` or		\n\
-`default` if none exist				\n\
+return the properties table for `o`		\n\
 						\n\
 :param o: value to get properties for		\n\
-:param o: non-``#n``				\n\
-:param default: (optional) default value to return if no properties exist	\n\
-:param default: any				\n\
-						\n\
-:return: properties table, default or raise ^rt-hash-key-not-found condition	\n\
-:rtype: as above				\n\
+:type o: any non-``#n``				\n\
+:param default: value to return if no properties exist	\n\
+:type default: any, optional			\n\
+:return: properties table			\n\
+:rtype: keyword table				\n\
+:raise ^rt-parameter-nil-error:			\n\
+:raise ^rt-hash-key-not-found-error:		\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -685,14 +685,17 @@ void idio_set_properties (IDIO o, IDIO properties)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("%set-properties!", properties_set, (IDIO o, IDIO properties), "o properties", "\
-set the properties table of `o` to `properties`	\n\
+set the properties table for `o` to `properties`	\n\
 						\n\
 :param o: value to set properties for		\n\
-:param o: non-``#n``				\n\
+:type o: any non-``#n``				\n\
 :param properties: properties table		\n\
-:param properties: hash table			\n\
-						\n\
+:param properties: keyword table		\n\
 :return: #unspec				\n\
+:raise ^rt-parameter-nil-error:			\n\
+						\n\
+.. seealso:: :ref:`make-keyword-table <make-keyword-table>`	\n\
+		for a means to create a proprty table	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -817,18 +820,18 @@ IDIO idio_ref_property (IDIO o, IDIO property, IDIO args)
 }
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("%property", get_property, (IDIO o, IDIO property, IDIO args), "o kw [default]", "\
-return the property `kw` for `o` or		\n\
-`default` if no such property exists		\n\
+return the property `kw` for `o`		\n\
 						\n\
 :param o: value to get properties for		\n\
-:param o: non-``#n``				\n\
+:type o: any non-``#n``				\n\
 :param kw: property				\n\
-:param kw: keyword				\n\
-:param default: (optional) default value to return if no such property exists	\n\
-:param default: any				\n\
-						\n\
-:return: property, default or raise ^rt-hash-key-not-found condition	\n\
-:rtype: as above				\n\
+:type kw: keyword				\n\
+:param default: value to return if no such property exists	\n\
+:type default: any, optional			\n\
+:return: property value				\n\
+:rtype: any					\n\
+:raise ^rt-parameter-nil-error:			\n\
+:raise ^rt-hash-key-not-found-error:		\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -892,14 +895,14 @@ void idio_set_property (IDIO o, IDIO property, IDIO value)
 IDIO_DEFINE_PRIMITIVE3_DS ("%set-property!", set_property, (IDIO o, IDIO property, IDIO value), "o kw v", "\
 set the property `kw` for `o` to `v`		\n\
 						\n\
-:param o: value to get properties for		\n\
-:param o: non-``#n``				\n\
+:param o: value to set properties for		\n\
+:type o: non-``#n``				\n\
 :param kw: property				\n\
-:param kw: keyword				\n\
+:type kw: keyword				\n\
 :param v: value					\n\
-:param v: any					\n\
-						\n\
+:type v: any					\n\
 :return: #unspec				\n\
+:raise ^rt-parameter-nil-error:			\n\
 ")
 {
     IDIO_ASSERT (o);

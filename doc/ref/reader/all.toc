@@ -1,5 +1,7 @@
 (rst "functions" 0)
+
 (document Idio read)
+(nodocument Idio read-expr)
 
 (rst "operators" 0)
 

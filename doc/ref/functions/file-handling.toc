@@ -1,0 +1,9 @@
+(rst "file-handling" 0)
+
+(document Idio delete-file)
+
+(document Idio call-with-input-file)
+(document Idio call-with-output-file)
+(document Idio with-input-from-file)
+(document Idio with-output-to-file)
+

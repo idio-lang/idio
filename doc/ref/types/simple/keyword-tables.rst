@@ -1,3 +1,5 @@
+.. _`keyword table type`:
+
 Keyword Tables
 --------------
 

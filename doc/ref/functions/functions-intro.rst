@@ -1,3 +1,3 @@
-Idio functions
------------------
+Idio Functions
+--------------
 

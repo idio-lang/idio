@@ -479,15 +479,15 @@ IDIO idio_module_find_module (IDIO name)
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("find-module", find_module, (IDIO name, IDIO args), "name [default]", "\
-Find the module called `name` otherwise return `default`	\n\
-or #unspec if `default` is not supplied				\n\
+Find the module called `name`					\n\
 								\n\
 :param name: module name to look for				\n\
-:type module: symbol						\n\
-:param default: (optional) return value if `name` is not found	\n\
-:type default: any						\n\
+:type name: symbol						\n\
+:param default: return value if `name` is not found		\n\
+:type default: any, optional					\n\
 :return: module called `name` or `default` (or #unspec)		\n\
 :rtype: module							\n\
+:raises ^rt-module-error:					\n\
 ")
 {
     IDIO_ASSERT (name);
@@ -559,7 +559,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("%find-or-create-module", find_or_create_module, (IDI
 Find the module called `name` or create one	\n\
 						\n\
 :param name: module name to look for		\n\
-:type module: symbol				\n\
+:type name: symbol				\n\
 :return: module called `name`			\n\
 :rtype: module					\n\
 ")
@@ -731,11 +731,11 @@ Return the name of `module`			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("module-imports", module_imports, (IDIO m_or_n), "mod", "\
-Return the imports of `mod`			\n\
+Return the modules imported by `mod`			\n\
 						\n\
 :param mod: module to query			\n\
 :type mod: module or name			\n\
-:return: module imports				\n\
+:return: imported modules			\n\
 :rtype: list					\n\
 ")
 {
@@ -773,11 +773,11 @@ Return the imports of `mod`			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("module-exports", module_exports, (IDIO m_or_n), "mod", "\
-Return the exports of `mod`			\n\
+Return the exported names of `mod`			\n\
 						\n\
 :param mod: module to query			\n\
 :type mod: module or name			\n\
-:return: module exports				\n\
+:return: exported names				\n\
 :rtype: list					\n\
 ")
 {
@@ -861,11 +861,10 @@ IDIO idio_module_symbols (IDIO m_or_n)
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("module-symbols", module_symbols, (IDIO args), "[module]", "\
 return the symbols in `module`				\n\
-or the current module if no `module` supplied		\n\
 							\n\
-:param module: module to use				\n\
-:type symbol: module or symbol				\n\
-:return: symbol						\n\
+:param module: module to use, defaults to the current module	\n\
+:type module: module or symbol, optional		\n\
+:return: list of symbols				\n\
 :rtype: list						\n\
 ")
 {

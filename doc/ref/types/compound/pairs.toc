@@ -17,6 +17,9 @@
 (document Idio set-ph!)
 (document Idio set-pt!)
 
+(document Idio list-ref)
+(document Idio list-tail)
+
 (rst "pair-accessors" 0)
 (document Idio phh)
 (document Idio phhh)

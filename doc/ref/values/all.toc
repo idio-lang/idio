@@ -1,3 +1,7 @@
+(document Idio dynamic?)
+(document Idio environ?)
+(document Idio computed?)
+
 (rst "values-intro" 0)
 
 (rst "general-values" 0)

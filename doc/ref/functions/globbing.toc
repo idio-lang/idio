@@ -1,0 +1,7 @@
+(rst "globbing" 0)
+
+(document Idio ~path)
+(document Idio ~path?)
+(document Idio make-~path)
+(document Idio ~path-pattern)
+(document Idio set-~path-pattern!)

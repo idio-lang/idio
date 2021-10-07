@@ -247,7 +247,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("fixnum?", fixnump, (IDIO o), "o", "\
 test if `o` is a fixnum				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an fixnum, ``#f`` otherwise	\n\
 ")
 {
@@ -288,7 +287,6 @@ test if `o` is an integer			\n\
 a fixnum or an integer bignum			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an integer, ``#f`` otherwise	\n\
 ")
 {
@@ -324,7 +322,6 @@ test if `o` is a number				\n\
 fixnum or bignum				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an number, ``#f`` otherwise	\n\
 ")
 {
@@ -622,8 +619,8 @@ return the floor of `a`				\n\
 						\n\
 :param a: number				\n\
 :type a: fixnum or bignum			\n\
-						\n\
 :return: floor of `a`				\n\
+:rtype: integer					\n\
 ")
 {
     IDIO_ASSERT (a);
@@ -674,7 +671,6 @@ return the remainder of `a` less `floor (b)`	\n\
 :type a: fixnum or bignum			\n\
 :param b: number				\n\
 :type b: fixnum or bignum			\n\
-						\n\
 :return: remainder of `a` modulo `floor(b)`	\n\
 :rtype: fixnum or bignum			\n\
 ")
@@ -764,7 +760,6 @@ return the quotient `a / b`			\n\
 :type a: fixnum or bignum			\n\
 :param b: number				\n\
 :type b: fixnum or bignum			\n\
-						\n\
 :return: quotient of `a / b`			\n\
 :rtype: fixnum or bignum			\n\
 ")
@@ -1271,7 +1266,6 @@ convert integer `i` to a character		\n\
 						\n\
 :param i: number				\n\
 :type i: integer				\n\
-						\n\
 :return: character				\n\
 :rtype: character				\n\
 "
@@ -1320,7 +1314,6 @@ convert integer `i` to a Unicode code point	\n\
 						\n\
 :param i: number				\n\
 :type i: integer				\n\
-						\n\
 :return: Unicode code point			\n\
 :rtype: unicode					\n\
 ")

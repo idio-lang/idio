@@ -7,7 +7,7 @@ Functions are the cornerstone of any programming language allowing
 users to abstract and parameterize parts of their code.
 
 Functions in :lname:`Idio` are first class values and can and, indeed,
-commonly are passed as arguments or the value returned by another
+are commonly passed as arguments or the value returned by another
 function.
 
 There are two basic kinds of functions, *primitives* and *closures*,

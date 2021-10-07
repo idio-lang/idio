@@ -1,0 +1,26 @@
+(rst "printing" 0)
+
+; common.idio
+(rst "printing-functions" 0)
+(document Idio printf)
+(document Idio eprintf)
+(document Idio sprintf)
+
+(document Idio hprintf)
+(document Idio format)
+(document Idio %format)
+
+(document Idio display)
+(document Idio display*)
+(document Idio edisplay)
+(document Idio edisplay*)
+
+(document Idio newline)
+
+(document Idio display-string)
+
+(document Idio add-as-string)
+(nodocument Idio %%add-as-string)
+(nodocument Idio %%value-as-string)
+(nodocument Idio %printf)
+

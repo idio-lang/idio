@@ -145,14 +145,28 @@ append the lists of `a`
   }
 }
 
-define (list-tail x n) {
+define (list-tail x n) "
+return the list after the first `n` elements of `x`
+
+:param x: list to examine
+:type x: list
+:param n: number of elements to skip
+:type n: integer
+" {
   (cond
    ((zero? n) x)
    ((null? x) (error/type ^rt-parameter-value-error 'list-tail "index out of range" n))
    (else (list-tail (pt x) (- n 1))))
 }
 
-define (list-ref x n) {
+define (list-ref x n) "
+return the element of `x` at position `n`
+
+:param x: list to examine
+:type x: list
+:param n: index of element to access
+:type n: integer
+" {
   ph (list-tail x n)
 }
 
@@ -181,11 +195,36 @@ map := {
 
 ;; Arithmetic procedures
 
-define (abs x) (if (x lt 0) (- x) x)
+define (abs x) "
+return the absolute value of `x`
 
-define (even? x) (zero? (remainder x 2))
+:param x: number
+:type x: number
+:return: absolute value of `x`
+:rtype: number
+" (if (x lt 0) (- x) x)
 
-define (expt x y) {
+define (even? x) "
+is `x` even?
+
+:param x: number
+:type x: number
+:return: ``#t`` if `x` is even, ``#f`` otherwise
+:rtype: boolean
+" (zero? (remainder x 2))
+
+define (expt x y) "
+raise `x` to the power of `y`
+
+:param x: number
+:type x: number
+:param y: number
+:type y: number
+:return: `x` to the power `y`
+:rtype: number
+
+.. seealso:: :ref:`exp <exp>`
+" {
   square :+ function (x) (* x x)
   expt2 :+ function (x y) {
 	     (cond
@@ -203,7 +242,16 @@ define (expt x y) {
 gcd := {
   fold-left := fold-left
 
-  function a {
+  function a "
+return the greatest common divisor of the numbers in `a`
+
+:param a: list of numbers
+:type a: list
+:return: greatest common divisor
+:rtype: number
+
+If no numbers are provided the result is 0.
+" {
     gcd2 :+ function (a b) {
 	      (cond
 	       ((zero? b) a)
@@ -219,7 +267,16 @@ gcd := {
 lcm := {
   fold-left := fold-left
 
-  function a {
+  function a "
+return the least common multiple of the numbers in `a`
+
+:param a: list of numbers
+:type a: list
+:return: lowest common multiple
+:rtype: number
+
+If no numbers are provided the result is 1.
+" {
     lcm2 :+ function (a b) {
 	      cd := (gcd a b)
 
@@ -234,7 +291,18 @@ lcm := {
 max := {
   fold-left := fold-left
 
-  function (a & b) {
+  function (a & b) "
+return the largest of the numbers in `a` and the numbers in the list `b`
+
+:param a: number
+:type a: number
+:param b: list of numbers
+:type b: list
+:return: largest number
+:rtype: number
+
+If any number is inexact the result is inexact.
+" {
     fold-left (function (a b) {
 		 if (or (inexact? a) (inexact? b)) {
 		   exact->inexact (if (a gt b) a b)
@@ -248,7 +316,18 @@ max := {
 min := {
   fold-left := fold-left
 
-  function (a & b) {
+  function (a & b) "
+return the smallest of the numbers in `a` and the numbers in the list `b`
+
+:param a: number
+:type a: number
+:param b: list of numbers
+:type b: list
+:return: smallest number
+:rtype: number
+
+If any number is inexact the result is inexact.
+" {
     fold-left (function (a b) {
 		 if (or (inexact? a) (inexact? b)) {
 		   exact->inexact (if (a lt b) a b)
@@ -259,7 +338,16 @@ min := {
   }
 }
 
-define (modulo a b) {
+define (modulo a b) "
+return `a` modulo `b`
+
+:param a: number
+:type a: integer
+:param b: number
+:type b: integer
+:return: `a` module `b`
+:rtype: integer
+" {
   rem := remainder a b
 
   (cond
@@ -268,15 +356,50 @@ define (modulo a b) {
    (else (+ b rem)))
 }
 
-define (negative? x) (x lt 0)
+define (negative? x) "
+is `x` less than 0?
 
-define (odd? x) (not (even? x))
+:param x: number
+:type x: number
+:return: ``#t`` if `x` is less than zero, ``#f`` otherwise
+:rtype: boolean
+" (x lt 0)
 
-define (positive? x) (x gt 0)
+define (odd? x) "
+is `x` odd?
 
-define (ceiling x) (- (floor (- x)))
+:param x: number
+:type x: number
+:return: ``#t`` if `x` is odd, ``#f`` otherwise
+:rtype: boolean
+" (not (even? x))
 
-define (round x) {
+define (positive? x) "
+is `x` greater than 0?
+
+:param x: number
+:type x: number
+:return: ``#t`` if `x` is greater than zero, ``#f`` otherwise
+:rtype: boolean
+" (x gt 0)
+
+define (ceiling x) "
+return the smallest `integer` less than `x`
+
+:param x: number
+:type x: number
+:return: smallest integer less than `x`
+:rtype: integer
+" (- (floor (- x)))
+
+define (round x) "
+return the `integer` closest to `x`
+
+:param x: number
+:type x: number
+:return: integer closest to `x`
+:rtype: integer
+" {
   x+ := 0.5 + x
   rx := floor x+
 
@@ -286,7 +409,14 @@ define (round x) {
 	  } rx
 }
 
-define (truncate x) {
+define (truncate x) "
+return the `integer` furthest from 0 but no further than `x`
+
+:param x: number
+:type x: number
+:return: integer furthest from 0 but not further than `x`
+:rtype: integer
+" {
   (if (x lt 0) ceiling floor) x
 }
 
@@ -300,7 +430,16 @@ define (fact2 x r) {
 exp := {
   fact2 := fact2
 
-  function (x) {
+  function (x) "
+raise Euler's number, `e`, to the power of `x`
+
+:param x: number
+:type x: number
+:return: `e` to the power `x`
+:rtype: number
+
+.. seealso:: :ref:`expt <expt>` and  :ref:`log <log>`
+" {
     e-series :+ function (x y r last) {
 		  if (r eq last) r {
 		    (e-series x
@@ -327,7 +466,16 @@ exp := {
   }
 }
 
-define (log x) {
+define (log x) "
+return the natural logarithm of `x`
+
+:param x: number
+:type x: number
+:return: natural log of `x`
+:rtype: number
+
+.. seealso:: :ref:`exp <exp>`
+" {
   l-series :+ function (x y r last lim) {
 		(cond
 		 ((and lim (zero? lim)) r)
@@ -403,7 +551,14 @@ cos := {
   3pi/2 := 3pi/2
   2pi := 2pi
 
-  function (x) {
+  function (x) "
+return the cosine of `x`
+
+:param x: number
+:type x: number
+:return: cosine of `x`
+:rtype: number
+" {
     x := ->circle x
 
     (cond
@@ -426,7 +581,14 @@ sin := {
   3pi/2 := 3pi/2
   2pi := 2pi
 
-  function (x) {
+  function (x) "
+return the sine of `x`
+
+:param x: number
+:type x: number
+:return: sine of `x`
+:rtype: number
+" {
     x := ->circle x
 
     (cond
@@ -458,7 +620,14 @@ tan := {
   5pi/4 := 5pi/4
   7pi/4 := 7pi/4
 
-  function (x) {
+  function (x) "
+return the tangent of `x`
+
+:param x: number
+:type x: number
+:return: tangent of `x`
+:rtype: number
+" {
     x := ->circle x
     (cond
      ((or (x eq 0)     (x eq  pi))   (if (inexact? x)  #i0.0  0.0))
@@ -482,7 +651,14 @@ atan := {
 		 }
   }
 
-  function (x) {
+  function (x) "
+return the arctangent of `x`
+
+:param x: number
+:type x: number
+:return: arctangent of `x`
+:rtype: number
+" {
     (cond
      ((negative? x) (- (at-series (- x) 0.0 0 1)))
      ((x gt 1) (pi/2 - (atan (/ x))))
@@ -490,7 +666,14 @@ atan := {
   }
 }
 
-define (asin x) {
+define (asin x) "
+return the arcsine of `x`
+
+:param x: number
+:type x: number
+:return: arcsine of `x`
+:rtype: number
+" {
   (cond
    ((1 eq x) (2 * (atan x)))
    ((negative? x) (- (asin (- x))))
@@ -501,7 +684,14 @@ acos := {
   pi := pi
   pi/2 := pi/2
 
-  function (x) {
+  function (x) "
+return the arccosine of `x`
+
+:param x: number
+:type x: number
+:return: arccosine of `x`
+:rtype: number
+" {
     (cond
      ((-1 eq x) pi)
      ((1  eq x) 0)
@@ -509,7 +699,14 @@ acos := {
   }
 }
 
-define (sqrt square) {
+define (sqrt square) "
+return the square root of `square`
+
+:param square: number
+:type square: number
+:return: square root of `square`
+:rtype: number
+" {
   sqrt2 :+ function (x last) {
 	     if (last eq x) x {
 	       sqrt2 ((x + (square / x)) / 2) x
@@ -808,14 +1005,32 @@ define (array & x) (list->array x)
 
 ;; Input/output procedures
 
-define (call-with-input-file file proc) {
+define (call-with-input-file file proc) "
+return the result of calling `proc` with a file handle open to `file` for input
+
+:param file: file name
+:type file: string
+:param proc: function of 1 argument
+:type proc: function
+:return: result of calling `proc`
+:rtype: any
+" {
   f := open-input-file file
   r := proc f
   close-input-handle f
   r
 }
 
-define (call-with-output-file file proc) {
+define (call-with-output-file file proc) "
+return the result of calling `proc` with a file handle open to `file` for output
+
+:param file: file name
+:type file: string
+:param proc: function of 1 argument
+:type proc: function
+:return: result of calling `proc`
+:rtype: any
+" {
   f := open-output-file file
   r := proc f
   close-output-handle f
@@ -825,7 +1040,17 @@ define (call-with-output-file file proc) {
 with-input-from-file := {
   set-input-handle! := set-input-handle!
 
-  function (file thunk) {
+  function (file thunk) "
+return the result of calling `thunk` in the context of the current
+input handle being a file handle open to `file` for input
+
+:param file: file name
+:type file: string
+:param thunk: function of 0 arguments
+:type thunk: function
+:return: result of calling `thunk`
+:rtype: any
+" {
     outer-handle := (current-input-handle)
     new-handle := open-input-file file
     set-input-handle! new-handle
@@ -839,7 +1064,17 @@ with-input-from-file := {
 with-output-to-file := {
   set-output-handle! := set-output-handle!
 
-  function (file thunk) {
+  function (file thunk) "
+return the result of calling `thunk` in the context of the current
+output handle being a file handle open to `file` for output
+
+:param file: file name
+:type file: string
+:param thunk: function of 0 arguments
+:type thunk: function
+:return: result of calling `thunk`
+:rtype: any
+" {
     outer-handle := (current-output-handle)
     new-handle := open-output-file file
     set-output-handle! new-handle

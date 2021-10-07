@@ -1,0 +1,20 @@
+(rst "predicates" 0)
+
+(document Idio b?)
+(document Idio c?)
+(document Idio d?)
+(document Idio e?)
+(document Idio f?)
+(document Idio l?)
+(document Idio p?)
+(document Idio r?)
+(document Idio s?)
+(document Idio T?)
+(document Idio w?)
+(document Idio x?)
+
+; not used (and wrong anyway?)
+(nodocument Idio s9/atom?)
+(nodocument Idio defined?)
+(nodocument Idio %defined?)
+

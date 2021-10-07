@@ -1,5 +1,7 @@
 .. idio:currentmodule:: C
 
+.. _`c module types`:
+
 C Types
 -------
 

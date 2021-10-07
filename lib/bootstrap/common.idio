@@ -19,7 +19,7 @@
 ;; common.idio
 ;;
 
-define (atom? x) "predicate to test if object is an atom
+define (s9/atom? x) "predicate to test if object is an atom
 
 :param x: object to test
 " {
@@ -73,7 +73,12 @@ define-syntax with-values-from \
     ((with-values-from formals expression body ...)
      (call-with-values (function () expression) (function formals body ...))))
 
-define (display* & x*) {
+define (display* & x*) "
+display ``#\{space}`` -separated `x*` to the current output handle
+
+:param x*: values to print
+:return: <unspec>
+" {
   p :+ function (x* first) {
 	 if (not (null? x*)) {
 	   if (not first) (write-char #\{space})
@@ -86,15 +91,30 @@ define (display* & x*) {
   (newline)
 }
 
-define (ewrite x) {
+define (ewrite x) "
+:ref:`write <write>` `x` to the current error handle
+
+:param x*: values to print
+:return: <unspec>
+" {
   write x (current-error-handle)
 }
 
-define (edisplay x) {
+define (edisplay x) "
+:ref:`display <display>` `x` to the current error handle
+
+:param x*: values to print
+:return: <unspec>
+" {
   display x (current-error-handle)
 }
 
-define (edisplay* & x*) {
+define (edisplay* & x*) "
+display ``#\{space}`` -separated `x*` to the current error handle
+
+:param x*: values to print
+:return: <unspec>
+" {
   p :+ function (x* first) {
 	 if (not (null? x*)) {
 	   if (not first) (write-char #\{space} (current-error-handle))
@@ -224,13 +244,13 @@ In both cases:
 If `type` is ``'timeformat`` then it works similarly to ``'keyed``
 except we avoid a double application of any precision.
 :var:`TIMEFORMAT` describes a %f-like precision to the
-``struct-timeval`` strings.
+:ref:`struct-timeval <libc/struct-timeval>` strings.
 
 The :samp:`{flags}` are:
 
-* '-' left align the output within width if applicable.
-* ' ' use ``#\\{space}`` as the left padding character
-* '0' use ``#\\0`` (zero) as the left padding character
+* ``-`` left align the output within :samp:`{width}` if applicable.
+* `` `` use ``#\\{space}`` as the left padding character
+* ``0`` use ``#\\0`` (zero) as the left padding character
 
 The default padding character is ``#\\{space}``
 " {
@@ -501,22 +521,24 @@ The default padding character is ``#\\{space}``
 }
 
 define (format fmt & args) "
-Call %format with 'args
+Call :ref:`%format <%format>`:
+
+%format 'args `fmt` `args`
 " {
   apply %format 'args fmt args
 }
 
 define (hprintf handle fmt & args) "
 
-Invoke the ``display`` function on ``handle`` with the result of
-applying ``format`` to ``fmt`` and ``args``.
+Invoke the :ref:`display <display>` function on `handle` with the
+result of applying :ref:`format <format>` to `fmt` and `args`.
 
 :param handle: the handle to load from
 :type handle: handle
 :param fmt: the format string for printf
 :type fmt: string
 :param args: any args for the format string
-:type args: list
+:type args: list, optional
 
 :return: #unspec
 " {
@@ -525,13 +547,13 @@ applying ``format`` to ``fmt`` and ``args``.
 
 define (printf fmt & args) "
 
-Invoke the ``hprintf`` function on the current output handle with
-``fmt`` and ``args``
+Invoke the :ref:`hprintf <hprintf>` function on the current output
+handle with `fmt` and `args`
 
 :param fmt: the format string for printf
 :type fmt: string
 :param args: any args for the format string
-:type args: list
+:type args: list, optional
 
 :return: #unspec
 " {
@@ -540,13 +562,13 @@ Invoke the ``hprintf`` function on the current output handle with
 
 define (eprintf fmt & args) "
 
-Invoke the ``hprintf`` function on the current error handle with
-``fmt`` and ``args``
+Invoke the :ref:`hprintf <hprintf>` function on the current error
+handle with `fmt` and `args`
 
 :param fmt: the format string for printf
 :type fmt: string
 :param args: any args for the format string
-:type args: list
+:type args: list, optional
 
 :return: #unspec
 " {
@@ -555,13 +577,13 @@ Invoke the ``hprintf`` function on the current error handle with
 
 define (sprintf fmt & args) "
 
-Invoke the ``hprintf`` function on an output string handle with
-``fmt`` and ``args`` and return the resultant string
+Invoke the :ref:`hprintf <hprintf>` function on an output string
+handle with `fmt` and `args` and return the resultant string
 
 :param fmt: the format string for printf
 :type fmt: string
 :param args: any args for the format string
-:type args: list
+:type args: list, optional
 
 :return: string
 " {
@@ -578,7 +600,17 @@ Invoke the ``hprintf`` function on an output string handle with
 
 TIMEFORMAT :~ "Real %.3R\nUser %.3U\nSyst %.3S\n"
 
-define (hms t) {
+define (hms t) "
+return a normalized `H:MM:SS[.mmm]` for `t`
+
+:param t: time
+:type t: number
+:return: normalised form
+:rtype: string
+
+`H:` and `MM:` are only added if the less significant component
+overruns (ie. is greater than 60).
+" {
   s := t
   m := 0
   h := 0
@@ -692,7 +724,7 @@ Report the Real, User and System time for the invocation of
 
 proc [args]
 
-The report format is defined in `TIMEFORMAT`.
+The report format is defined in :ref:`TIMEFORMAT <TIMEFORMAT>`.
 
 This takes after Bash's time_command
 " {

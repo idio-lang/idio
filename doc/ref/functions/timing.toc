@@ -1,0 +1,8 @@
+(rst "timing" 0)
+
+(document Idio time)
+(document Idio time-command)
+(document Idio times)
+
+(document Idio hms)
+

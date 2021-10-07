@@ -68,6 +68,8 @@ specific condition types.
 
       * ``^runtime-error``
 
+	* ``^rt-syntax-error``
+
 	* ``^rt-parameter-error``
 
 	  * ``^rt-parameter-type-error``

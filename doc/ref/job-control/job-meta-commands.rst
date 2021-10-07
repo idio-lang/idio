@@ -1,3 +1,5 @@
+.. _`job-control/job meta-commands`:
+
 job meta-commands
 -----------------
 

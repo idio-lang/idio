@@ -1,4 +1,4 @@
-This is either the name of the running script or is identical to
+This is either the name of the running `script` or is identical to
 :ref:`IDIO_CMD <IDIO_CMD>`.
 
 This is similar to :lname:`Bash`'s :var:`$0` (and :var:`BASH_ARGV0`)

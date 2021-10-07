@@ -1,0 +1,121 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; Thread state
+
+(rst "thread-state" 0)
+
+(document Idio current-error-handle)
+(document Idio current-input-handle)
+(document Idio current-output-handle)
+
+(document Idio set-input-handle!)
+(document Idio set-output-handle!)
+(document Idio set-error-handle!)
+
+(document Idio current-module)
+(nodocument Idio %set-current-module!)
+
+(document Idio gc/collect)
+(document Idio idio-debug)
+(document Idio idio-dump)
+(document Idio idio-thread-state)
+
+(document Idio run-in-thread)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; VM
+
+; s9.idio
+(nodocument Idio %ext-let)
+
+(document Idio let)
+(document Idio let*)
+(document Idio letrec)
+
+(document Idio suppress-errors!)
+(document Idio trap)
+(document Idio trap*)
+(document Idio for)
+(document Idio while)
+(document Idio values)
+
+(document Idio setter)
+
+(document Idio debugger)
+
+(document Idio trap-return-tag)
+(document Idio unwind-protect-tag)
+(document Idio yield-record-tag)
+(document Idio yield-tag)
+(document Idio default-prompt-tag)
+(document Idio default-reset-tag)
+(document Idio for-loop-break-tag)
+(document Idio for-loop-continue-tag)
+(document Idio function-return-hole)
+(document Idio function-return-tag)
+
+(document Idio continuation?)
+(document Idio call-with-values)
+(document Idio call/cc)
+
+(nodocument Idio %%vm-apply-continuation)
+(nodocument Idio %%vm-continuations)
+(nodocument Idio %%call/dc)
+(nodocument Idio %%call/uc)
+(nodocument Idio %%vm-trace)
+(nodocument Idio %%idio-dasm)
+(nodocument Idio %add-feature)
+(nodocument Idio %idio-lexical-object)
+(nodocument Idio %idio-src-properties)
+(nodocument Idio %interactive?)
+
+(nodocument Idio %vm-frame-tree)
+(nodocument Idio %vm-trap-state)
+
+(nodocument Idio vm/hole-pop!)
+(nodocument Idio vm/hole-push!)
+(nodocument Idio vm/holes)
+(nodocument Idio vm/make-hole)
+(nodocument Idio hole-k)
+(nodocument Idio hole-marked?)
+(nodocument Idio hole-tagged?)
+(nodocument Idio tag-exists?)
+(nodocument Idio abort)
+(nodocument Idio abort-top!)
+(nodocument Idio break)
+(nodocument Idio continue)
+(nodocument Idio control)
+(nodocument Idio control*)
+(nodocument Idio control-at)
+(nodocument Idio control-at*)
+(nodocument Idio control-shift-at*)
+(nodocument Idio define-module)
+(nodocument Idio define/return)
+(nodocument Idio dyn-wind-yield/prompt-at)
+(nodocument Idio dyn-wind-yield/reset)
+(nodocument Idio dynamic-wind)
+(nodocument Idio make-prompt-tag)
+(nodocument Idio make-yield-record)
+(nodocument Idio pp-holes)
+(nodocument Idio prompt)
+(nodocument Idio prompt*)
+(nodocument Idio prompt-at)
+(nodocument Idio prompt-at*)
+(nodocument Idio reset)
+(nodocument Idio reset*)
+(nodocument Idio reset-at)
+(nodocument Idio return)
+(nodocument Idio shift)
+(nodocument Idio shift*)
+(nodocument Idio shift-at)
+(nodocument Idio shift-at*)
+(nodocument Idio trap-return)
+(nodocument Idio try-yield)
+(nodocument Idio unwind-till-marked!)
+(nodocument Idio unwind-till-tagged!)
+(nodocument Idio unwind-to*)
+(nodocument Idio yield)
+(nodocument Idio yield/control-at)
+(nodocument Idio yield/shift)
+

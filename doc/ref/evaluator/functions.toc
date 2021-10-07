@@ -1,0 +1,15 @@
+(rst "functions-intro" 0)
+
+(document evaluate evaluate)
+
+(document Idio symbol-value)
+(nodocument evaluate symbol-value-recurse)
+(nodocument evaluate set-symbol-value!)
+
+(nodocument evaluate find-symbol)
+(nodocument evaluate set-symbol!)
+(nodocument evaluate symbol-direct-reference)
+
+(nodocument evaluate set-module-vci!)
+(nodocument evaluate set-module-vvi!)
+

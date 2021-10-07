@@ -1,0 +1,6 @@
+(rst "equality" 0)
+
+(document Idio eq?)
+(document Idio eqv?)
+(document Idio equal?)
+

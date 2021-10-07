@@ -14,6 +14,9 @@
 (document Idio define-condition-type/accessors define-condition-type-accessors)
 (document Idio define-condition-type-accessors-only)
 
+(document Idio raise)
+(document Idio reraise)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ; condition type hierarchy
@@ -109,6 +112,9 @@
 
 (document Idio ^runtime-error)
 (document Idio runtime-error?)
+
+(document Idio ^rt-syntax-error)
+(document Idio rt-syntax-error?)
 
 (document Idio ^rt-parameter-error)
 (document Idio rt-parameter-error?)

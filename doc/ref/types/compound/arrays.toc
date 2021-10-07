@@ -7,6 +7,7 @@
 (document Idio make-array)
 (document Idio copy-array)
 (document Idio list->array)
+(document Idio array)
 
 (rst "array-attributes" 0)
 (document Idio array-length)

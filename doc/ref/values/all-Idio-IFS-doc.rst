@@ -1,4 +1,4 @@
-:default: " \\t\\n"
+:default: " \\t\\n" (SPACE TAB NEWLINE)
 
 :var:`IFS` is the Input [#]_ Field Separator and is the default value
 used when :ref:`fields <fields>` is used to split a string into

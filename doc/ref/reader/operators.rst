@@ -1,9 +1,8 @@
 Reader Operators
 ----------------
 
-Reader Operators are :ref:`templates <templates>` that operate on the
-Abstract Syntax Tree.  Their purpose is to rewrite the AST to
-normalize expressions.
+Reader :ref:`operators <operators>` operate on the Abstract Syntax
+Tree.  Their purpose is to rewrite the AST to normalize expressions.
 
 Having read an expression in, the reader will scan it for operators
 and apply the operator to the "before" and "after" parts of the
@@ -16,7 +15,8 @@ a form so the original expression needs to be rewritten.
 
 For many infix operators you can imagine that it is easy enough to
 rewrite the expression with the symbol for the operator now in first
-place: samp:`+ 1 2` as `+` is the general addition function.
+place :samp:`+ 1 2` as the symbol `+` will evaluate to the general
+addition function.
 
 The general :ref:`+ <+>` function handles a number of varargs
 possibilities whereas we know that the infix `+` operator is a binary

@@ -1,5 +1,6 @@
 .. _ISO10646: https://en.wikipedia.org/wiki/Universal_Coded_Character_Set
 .. _ISO8859-1: https://en.wikipedia.org/wiki/ISO/IEC_8859-1
+.. _R5RS: https://schemers.org/Documents/Standards/R5RS/
 .. _RFC3339: https://datatracker.ietf.org/doc/html/rfc3339
 .. _SRFI-0: https://srfi.schemers.org/srfi-0/srfi-0.html
 .. _SRFI-14: https://srfi.schemers.org/srfi-14/srfi-14.html

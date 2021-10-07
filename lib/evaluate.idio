@@ -2089,6 +2089,7 @@ define (meaning-escape-label src label ve nametree escapes flags cs cm) {
   list I-ESCAPER-LABEL-REF ci vm
 }
 
+;; XXX is this the C code's "load e"?
 define (evaluate-include-file fh cs) {
   c := Idio/read fh
   if (not (eof? fh)) {
@@ -2778,7 +2779,16 @@ define (meaning src e nametree escapes flags cs cm) {
   }
 }
 
-define (evaluate src & constants) {
+define (evaluate src & constants) "
+evaluate Idio source code `src` in the context of `constants` and
+return intermediate code for the code generator
+
+:param src: Idio source code
+:type src: Abstract Syntax Tree
+:param constants: context, defaults to the VM's constants table
+:type constants: array
+
+" {
   c* := #n
   if (pair? constants) {
     c* = ph constants

@@ -2,6 +2,7 @@
 
 (toc-file constants)
 (toc-file numbers)
+(toc-file arithmetic)
 (toc-file fixnums)
 (toc-file bignums)
 (toc-file unicode)

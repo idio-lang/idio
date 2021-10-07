@@ -285,7 +285,7 @@ test if `o` is ``#n``				\n\
  * The result of the successful application of nothing...
  */
 IDIO_DEFINE_PRIMITIVE0_DS ("void", void, (void), "", "\
-:return: #<void>			\n\
+:return: ``#<void>``			\n\
 					\n\
 Somewhat disingenuous as the act of calling	\n\
 a function cannot be no computation...	\n\
@@ -299,7 +299,7 @@ test if `o` is void (#void)			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
-:return: ``#t`` if `o` is void, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is ``#<void>``, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -477,7 +477,7 @@ int idio_equalp (void const *o1, void const *o2)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("eq?", eqp, (IDIO o1, IDIO o2), "o1 o2", "\
-test if `o1` and `o2` are eq?			\n\
+test if `o1` and `o2` are indistinguishable in memeory	\n\
 						\n\
 :param o1: object to test			\n\
 :type o1: any					\n\
@@ -500,7 +500,10 @@ test if `o1` and `o2` are eq?			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("eqv?", eqvp, (IDIO o1, IDIO o2), "o1 o2", "\
-test if `o1` and `o2` are eqv?			\n\
+test if `o1` and `o2` are equivalent		\n\
+						\n\
+Numbers and strings can be different in memory	\n\
+but have the same value.			\n\
 						\n\
 :param o1: object to test			\n\
 :type o1: any					\n\
@@ -529,7 +532,9 @@ test if `o1` and `o2` are eqv?			\n\
  */
 
 IDIO_DEFINE_PRIMITIVE2_DS ("equal?", equalp, (IDIO o1, IDIO o2), "o1 o2", "\
-test if `o1` and `o2` are equal?			\n\
+test if `o1` and `o2` are semantically the same	\n\
+						\n\
+R5RS suggests that the values *print* the same.	\n\
 						\n\
 :param o1: object to test			\n\
 :type o1: any					\n\
@@ -2276,7 +2281,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 				     * format "%4q" 10		; "  10"
 				     */
 #ifdef IDIO_DEBUG
-				    fprintf (stderr, "as-string: unexpected conversion format: '%c' (%#x).  Using 'd' for %" PRIdPTR " @%d.\n", (int) f, (int) f, IDIO_FIXNUM_VAL (o), depth);
+				    fprintf (stderr, "as-string: unexpected conversion format: '%c' (%#x).  Using 'g' for %" PRIdPTR " @%d.\n", (int) f, (int) f, IDIO_FIXNUM_VAL (o), depth);
 #endif
 				    memcpy (fmt + fmt_len++, "g", 1);
 				    break;

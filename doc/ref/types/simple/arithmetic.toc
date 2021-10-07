@@ -1,0 +1,41 @@
+(rst "arithmetic" 0)
+
+;; s9.idio
+(document Idio even?)
+(document Idio odd?)
+(document Idio positive?)
+(document Idio negative?)
+
+(document Idio abs)
+(document Idio quotient)	; primitive
+(document Idio expt)
+(document Idio gcd)
+(document Idio lcm)
+(document Idio max)
+(document Idio min)
+
+(document Idio remainder)	; primitive
+(document Idio modulo)
+(document Idio floor)		; primitive
+(document Idio ceiling)
+(document Idio round)
+(document Idio truncate)
+
+(nodocument Idio fact2)
+(document Idio exp)
+(document Idio log)
+
+(nodocument Idio ->circle)
+(nodocument Idio p-series)
+
+(document Idio cos)
+(document Idio sin)
+(document Idio tan)
+
+(document Idio atan)
+(document Idio acos)
+(document Idio asin)
+
+(document Idio sqrt)
+
+

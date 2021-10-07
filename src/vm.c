@@ -2788,7 +2788,7 @@ raise the condition `c`					\n\
 !! MAY RETURN !!					\n\
 							\n\
 :param c: condition to raise				\n\
-:type fmt: condition					\n\
+:type c: condition					\n\
 							\n\
 :return: #unspec					\n\
 ")
@@ -2814,7 +2814,7 @@ In particular this rediscovers the top-most trap	\n\
 handler.						\n\
 							\n\
 :param c: condition to raise				\n\
-:type fmt: condition					\n\
+:type c: condition					\n\
 ")
 {
     IDIO_ASSERT (c);

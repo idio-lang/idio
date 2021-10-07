@@ -216,13 +216,13 @@ compile the regular expression in `rx` suitable		\n\
 for subsequent use in :ref:`regexec <regexec>`	\n\
 						\n\
 The `flags` are:	 			\n\
-REG_EXTENDED		 			\n\
-REG_ICASE		 			\n\
-REG_NOSUB (ignored)	 			\n\
-REG_NEWLINE		 			\n\
+``REG_EXTENDED``	 			\n\
+``REG_ICASE``		 			\n\
+``REG_NOSUB`` (ignored)	 			\n\
+``REG_NEWLINE``		 			\n\
 						\n\
-This code defaults to REG_EXTENDED so there is	\n\
-an extra REG_BASIC flag to disable REG_EXTENDED	\n\
+This code defaults to ``REG_EXTENDED`` so there is	\n\
+an extra ``REG_BASIC`` flag to disable ``REG_EXTENDED``	\n\
 						\n\
 :param rx: regular expression			\n\
 :type rx: string				\n\
@@ -358,9 +358,9 @@ string `str` where `rx` was compiled using		\n\
 :ref:`regcomp <regcomp>`				\n\
 						\n\
 The `flags` are:	 			\n\
-REG_NOTBOL		 			\n\
-REG_NOTEOL		 			\n\
-REG_STARTEND (if supported) 			\n\
+``REG_NOTBOL``		 			\n\
+``REG_NOTEOL``		 			\n\
+``REG_STARTEND`` (if supported)			\n\
 						\n\
 On a successful match an array of the subexpressions	\n\
 in `rx` is returned with the first (zero-th) being	\n\

@@ -25,6 +25,8 @@
 (document Idio peek-char)
 
 (document Idio write)
+(document Idio ewrite)
+
 (document Idio write-char)
 
 (document Idio puts)

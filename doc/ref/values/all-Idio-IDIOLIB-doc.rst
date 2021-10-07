@@ -9,8 +9,10 @@ things to note:
    will be *prepended* to any user-supplied :envvar:`IDIOLIB`
    environment variable.
 
-#. if you used a *virtualenv*-style setup then :program:`idio` will
-   determine the :file:`lib` directory that corresponds with the
-   virtualenv being used.  This directory will be *prepended* to any
-   user-supplied :envvar:`IDIOLIB` environment variable.
+#. if you used a *virtualenv*-style setup (where the :program:`idio`
+   found on your :envvar:`PATH` is a symlink to a real executable)
+   then :program:`idio` will determine the :file:`lib` directory that
+   corresponds with the virtualenv being used.  This directory will be
+   *prepended* to any user-supplied :envvar:`IDIOLIB` environment
+   variable.
 

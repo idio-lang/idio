@@ -404,8 +404,16 @@ include
 ^^^^^^^
 
 The ``include`` special form is used by the evaluator to pause,
-:ref:`load <load>` another file and then resume processing the current
+``load`` another file and then resume processing the current
 file.
+
+.. note::
+
+   The :lname:`C` defined ``include`` special form uses the :lname:`C`
+   primitive load function not any redefinition.
+
+   The :lname:`Idio` defined ``include`` special form simply opens the
+   file and evaluates each expression.
 
 .. parsed-literal::
 

@@ -1,0 +1,8 @@
+(rst "loading" 0)
+
+(document Idio load)
+(document Idio load-handle)
+(document Idio provide)
+(document Idio require)
+(document Idio import)
+
