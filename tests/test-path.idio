@@ -59,28 +59,52 @@ touch -a -t "200001010000.02" f2
 p := make-struct-instance ~path (append-string d "/a")
 test (length p) 1
 
+g := glob (append-string d "/a")
+test (length g) 1
+
 p = make-struct-instance ~path (append-string d "/*")
 test (length p) 3
+
+g = glob (append-string d "/*")
+test (length g) 3
 
 p = make-struct-instance ~path (append-string d "/a*")
 test (length p) 1
 
+g = glob (append-string d "/a*")
+test (length g) 1
+
 p = make-struct-instance ~path (append-string d "/*a")
 test (length p) 1
 
+g = glob (append-string d "/*a")
+test (length g) 1
+
 p = make-struct-instance ~path (append-string d "/[ab]")
 test (length p) 2
+
+g = glob (append-string d "/[ab]")
+test (length g) 2
 
 ;; glob(7) on CentOS 7: POSIX says [^...] is undefined
 p = make-struct-instance ~path (append-string d "/[!ab]")
 test (length p) 1
 
+g = glob (append-string d "/[!ab]")
+test (length g) 1
+
 p = make-struct-instance ~path (append-string d "/[a-b]")
 test (length p) 2
+
+g = glob (append-string d "/[a-b]")
+test (length g) 2
 
 ; code coverage -- no match
 p = make-struct-instance ~path (append-string d "/ZZZ")
 test (length p) 0
+
+g = glob (append-string d "/ZZZ")
+test (length g) 0
 
 ;; The use of POSIX character classes is not well supported.  In fact
 ;; only CentOS 7 supports them.
@@ -90,6 +114,10 @@ test (length p) 0
 
 ;; XXX should be [:lower:] but for lack of OS support.
 p = make-struct-instance ~path (append-string d "/[a-z]")
+test (length p) 3
+
+g = glob (append-string d "/[a-z]")
+test (length g) 3
 
 ;; The stat() sorts use "C/<" as a comparator, so numerically smallest
 ;; first
@@ -108,4 +136,4 @@ Idio/write pn osh
 close-handle osh
 
 ;; all done?
-Tests? (path0 + 13)
+Tests? (path0 + 23)

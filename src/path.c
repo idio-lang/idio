@@ -280,35 +280,20 @@ int idio_isa_fifo_pathname (IDIO o)
 	      (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o)) & IDIO_STRING_FLAG_FIFO_PATHNAME))));
 }
 
-IDIO idio_path_expand (IDIO p)
+IDIO idio_glob_expand (IDIO s)
 {
-    IDIO_ASSERT (p);
+    IDIO_ASSERT (s);
 
-    IDIO_TYPE_ASSERT (struct_instance, p);
+    IDIO_TYPE_ASSERT (string, s);
 
-    if (! idio_struct_type_isa (IDIO_STRUCT_INSTANCE_TYPE (p), idio_path_type)) {
-	/*
-	 * Test Case: ??
-	 *
-	 * Coding error.  The only caller, idio_vm_values_ref() does
-	 * the same test.
-	 */
-	idio_error_param_type ("~path", p, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    IDIO pat = IDIO_STRUCT_INSTANCE_FIELDS (p, IDIO_PATH_PATTERN);
-
-    IDIO_TYPE_ASSERT (string, pat);
     size_t size = 0;
-    char *pat_C = idio_string_as_C (pat, &size);
+    char *s_C = idio_string_as_C (s, &size);
 
     /*
      * Use size + 1 to avoid a truncation warning -- we're just seeing
-     * if pat_C includes a NUL
+     * if s_C includes a NUL
      */
-    size_t C_size = idio_strnlen (pat_C, size + 1);
+    size_t C_size = idio_strnlen (s_C, size + 1);
     if (C_size != size) {
 	/*
 	 * Test Case: path-errors/pattern-bad-format.idio
@@ -316,9 +301,9 @@ IDIO idio_path_expand (IDIO p)
 	 * p := make-struct-instance ~path (join-string (make-string 1 #U+0) '("hello" "world"))
 	 * length p
 	 */
-	IDIO_GC_FREE (pat_C);
+	IDIO_GC_FREE (s_C);
 
-	idio_path_error_C ("pattern contains an ASCII NUL", p, IDIO_C_FUNC_LOCATION ());
+	idio_path_error_C ("pattern contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -326,7 +311,7 @@ IDIO idio_path_expand (IDIO p)
     glob_t g;
     IDIO r = idio_S_nil;
 
-    int ret = glob (pat_C, 0, NULL, &g);
+    int ret = glob (s_C, 0, NULL, &g);
 
     switch (ret) {
     case GLOB_NOMATCH:
@@ -348,22 +333,65 @@ IDIO idio_path_expand (IDIO p)
 	 * notably passing GLOB_ERR.
 	 */
 	globfree (&g);
-	IDIO_GC_FREE (pat_C);
-	idio_path_error_C ("pattern glob failed", p, IDIO_C_FUNC_LOCATION ());
+	IDIO_GC_FREE (s_C);
+	idio_path_error_C ("pattern glob failed", s, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	break;
     }
 
     globfree (&g);
-    IDIO_GC_FREE (pat_C);
+    IDIO_GC_FREE (s_C);
 
     return idio_list_reverse (r);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("glob", glob, (IDIO s), "s", "\
+glob expand `s`					\n\
+						\n\
+:param s: :manpage:`glob(3)` pattern		\n\
+:type s: string					\n\
+:return: list of matching pathnames		\n\
+:rtype: list					\n\
+:raises ^rt-glob-error:				\n\
+")
+{
+    IDIO_ASSERT (s);
+
+    IDIO_USER_TYPE_ASSERT (string, s);
+
+    return idio_glob_expand (s);
+}
+
+IDIO idio_path_expand (IDIO p)
+{
+    IDIO_ASSERT (p);
+
+    IDIO_TYPE_ASSERT (struct_instance, p);
+
+    if (! idio_struct_type_isa (IDIO_STRUCT_INSTANCE_TYPE (p), idio_path_type)) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.  The only caller, idio_vm_values_ref() does
+	 * the same test.
+	 */
+	idio_error_param_type ("~path", p, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO pat = IDIO_STRUCT_INSTANCE_FIELDS (p, IDIO_PATH_PATTERN);
+
+    IDIO_TYPE_ASSERT (string, pat);
+
+    return idio_glob_expand (pat);
 }
 
 void idio_path_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (pathname_p);
+    IDIO_ADD_PRIMITIVE (glob);
 }
 
 void idio_init_path ()
