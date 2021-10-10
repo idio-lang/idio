@@ -86,7 +86,7 @@ static void idio_pathname_error (IDIO msg, IDIO detail, IDIO c_location)
     /* notreached */
 }
 
-static void idio_path_base_error (IDIO msg, IDIO pattern, IDIO c_location)
+static void idio_glob_base_error (IDIO msg, IDIO pattern, IDIO c_location)
 {
     IDIO_ASSERT (msg);
     IDIO_ASSERT (pattern);
@@ -116,19 +116,19 @@ static void idio_path_base_error (IDIO msg, IDIO pattern, IDIO c_location)
     /* notreached */
 }
 
-static void idio_path_error_C (char const *msg, IDIO pattern, IDIO c_location)
+static void idio_glob_error_C (char const *msg, IDIO pattern, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (pattern);
     IDIO_ASSERT (c_location);
 
-    IDIO_TYPE_ASSERT (struct_instance, pattern);
+    IDIO_TYPE_ASSERT (string, pattern);
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
-    idio_path_base_error (idio_get_output_string (msh), pattern, c_location);
+    idio_glob_base_error (idio_get_output_string (msh), pattern, c_location);
 
     /* notreached */
 }
@@ -303,7 +303,7 @@ IDIO idio_glob_expand (IDIO s)
 	 */
 	IDIO_GC_FREE (s_C);
 
-	idio_path_error_C ("pattern contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
+	idio_glob_error_C ("pattern contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -334,7 +334,7 @@ IDIO idio_glob_expand (IDIO s)
 	 */
 	globfree (&g);
 	IDIO_GC_FREE (s_C);
-	idio_path_error_C ("pattern glob failed", s, IDIO_C_FUNC_LOCATION ());
+	idio_glob_error_C ("pattern glob failed", s, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	break;
