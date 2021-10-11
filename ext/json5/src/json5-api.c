@@ -24,6 +24,7 @@
 
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 
 #include <assert.h>
 #include <ffi.h>
@@ -161,9 +162,9 @@ void idio_print_value_as_json_indent (IDIO oh, int depth)
 
 void idio_print_bignum_as_json (IDIO v, IDIO oh, int json5, int depth)
 {
-    IDIO_ASSERT (a);
+    IDIO_ASSERT (v);
 
-    IDIO_TYPE_ASSERT (bignum, a);
+    IDIO_TYPE_ASSERT (bignum, v);
 
     size_t size = 0;
     char *bs = idio_bignum_as_string (v, &size);

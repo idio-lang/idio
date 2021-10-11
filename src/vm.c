@@ -3094,14 +3094,8 @@ IDIO idio_vm_restore_continuation_data (IDIO k, IDIO val)
 #endif
 
     IDIO_THREAD_MODULE (thr)		= IDIO_CONTINUATION_MODULE (k);
-    /*
-     * In the same vein, restoring IDIO_THREAD_HOLES also messes with
-     * trap-return as it will restore the [outer-k] that runs the code
-     * after the unwind-protect and still in the body of the trap.
-     */
-    /*
     IDIO_THREAD_HOLES (thr)		= idio_copy_pair (IDIO_CONTINUATION_HOLES (k), IDIO_COPY_DEEP);
-    */
+
     IDIO_THREAD_VAL (thr)		= val;
 
     idio_thread_set_current_thread (thr);
@@ -3696,13 +3690,16 @@ int idio_vm_run1 (IDIO thr)
 
     IDIO_IA_T bc = idio_all_code;
 
-    if (IDIO_THREAD_PC(thr) < 0) {
-	fprintf (stderr, "\n\nidio_vm_run1: PC %td < 0\n", IDIO_THREAD_PC (thr));
+    idio_ai_t pc = IDIO_THREAD_PC (thr);
+    if (pc < 0) {
+	fprintf (stderr, "\n\nidio_vm_run1: PC %td < 0\n", pc);
 	idio_vm_panic (thr, "idio_vm_run1: bad PC!");
-    } else if (IDIO_THREAD_PC(thr) > IDIO_IA_USIZE (bc)) {
-	fprintf (stderr, "\n\nidio_vm_run1: PC %td > max code PC %" PRIdPTR "\n", IDIO_THREAD_PC (thr), IDIO_IA_USIZE (bc));
+    } else if (pc > IDIO_IA_USIZE (bc)) {
+	fprintf (stderr, "\n\nidio_vm_run1: PC %td > max code PC %" PRIdPTR "\n", pc, IDIO_IA_USIZE (bc));
 	idio_vm_panic (thr, "idio_vm_run1: bad PC!");
     }
+
+    IDIO_VM_RUN_DIS ("              %6zd [%3zd] ", pc, idio_array_size (IDIO_THREAD_STACK (thr)));
 
     IDIO_I ins = IDIO_THREAD_FETCH_NEXT (bc);
 
@@ -3714,7 +3711,7 @@ int idio_vm_run1 (IDIO thr)
     }
 #endif
 
-    IDIO_VM_RUN_DIS ("idio_vm_run1: %5zd %3d: ", IDIO_THREAD_PC (thr) - 1, ins);
+    IDIO_VM_RUN_DIS ("%3d: ", ins);
 
     switch (ins) {
     case IDIO_A_SHALLOW_ARGUMENT_REF0:
@@ -4777,6 +4774,8 @@ int idio_vm_run1 (IDIO thr)
 	    idio_display_C ("ABORT to toplevel (PC ", dosh);
 	    idio_display (idio_fixnum (IDIO_CONTINUATION_PC (k)), dosh);
 	    idio_display_C (")", dosh);
+
+	    IDIO_ARRAY_USIZE (idio_vm_krun) = 2;
 
 	    /* ABORT to main should be in slot #0 */
 	    idio_array_insert_index (idio_vm_krun, IDIO_LIST2 (k, idio_get_output_string (dosh)), 1);
@@ -6713,10 +6712,27 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
     IDIO_TYPE_ASSERT (thread, thr);
 
     /*
+     * https://stackoverflow.com/questions/7996825/why-volatile-works-for-setjmp-longjmp
+     *
+     * siglongjmp() clobbers registers so "save" or flag important
+     * automatic variables in *this* function in/as a volatile before
+     * the sigsetjmp(), to be restored afterwards
+     *
+     * Obviously this only affects variables that can be stored in
+     * registers (numbers, pointers) although there's no way of
+     * knowing which have been stored in a register.
+     *
+     * Most of these variables are (effectively) single use archives
+     * so simply mark the variable as volatile and no need to restore
+     * to an efficient automatic/register variable.
+     */
+    IDIO_v v_thr = thr;
+
+    /*
      * Save a continuation in case things get ropey and we have to
      * bail out.
      */
-    idio_ai_t krun_p0 = idio_array_size (idio_vm_krun);
+    volatile idio_ai_t krun_p0 = idio_array_size (idio_vm_krun);
     if (0 == krun_p0 &&
 	thr != idio_expander_thread) {
 	fprintf (stderr, "How is krun 0?\n");
@@ -6727,8 +6743,8 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
     }
 
     IDIO_THREAD_PC (thr) = pc;
-    idio_ai_t PC0 = IDIO_THREAD_PC (thr);
-    idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
+    volatile idio_ai_t v_PC0 = IDIO_THREAD_PC (thr);
+    volatile idio_ai_t v_ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (IDIO_VM_RUN_C == caller) {
 	/*
@@ -6749,22 +6765,24 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
     if (gettimeofday (&t0, NULL) == -1) {
 	perror ("gettimeofday");
     }
-    uintptr_t loops0 = idio_vm_run_loops;
+    volatile uintptr_t v_loops0 = idio_vm_run_loops;
 #endif
 
-    int gc_pause = idio_gc_get_pause ("idio_vm_run");
+    volatile int v_gc_pause = idio_gc_get_pause ("idio_vm_run");
 
+    /*
+     * As sigjmp_buf is storing the registers I'm guessing it is too
+     * big to be stored in a register itself.
+     *
+     * Don't quote me on that, though.
+     */
     sigjmp_buf osjb;
     memcpy (osjb, IDIO_THREAD_JMP_BUF (thr), sizeof (sigjmp_buf));
 
     /*
      * Ready ourselves for idio_raise_condition/continuations to
      * clear the decks.
-     *
-     * NB Keep counters/timers above this sigsetjmp (otherwise they
-     * get reset -- duh)
      */
-    int sjv = sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1);
 
     /*
      * Hmm, we really should consider caring whether we got here from
@@ -6772,31 +6790,43 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
      *
      * I'm not sure we do care.
      */
-    switch (sjv) {
+    switch (sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1)) {
     case 0:
 	break;
     case IDIO_VM_SIGLONGJMP_CONDITION:
-	idio_gc_reset ("idio_vm_run/condition", gc_pause);
+	idio_gc_reset ("idio_vm_run/condition", v_gc_pause);
 	break;
     case IDIO_VM_SIGLONGJMP_CONTINUATION:
-	idio_gc_reset ("idio_vm_run/continuation", gc_pause);
+	idio_gc_reset ("idio_vm_run/continuation", v_gc_pause);
 	break;
     case IDIO_VM_SIGLONGJMP_CALLCC:
-	idio_gc_reset ("idio_vm_run/callcc", gc_pause);
+	idio_gc_reset ("idio_vm_run/callcc", v_gc_pause);
 	break;
     case IDIO_VM_SIGLONGJMP_EVENT:
-	idio_gc_reset ("idio_vm_run/event", gc_pause);
+	idio_gc_reset ("idio_vm_run/event", v_gc_pause);
 	break;
     case IDIO_VM_SIGLONGJMP_EXIT:
 	fprintf (stderr, "NOTICE: idio_vm_run/exit (%d) for PID %d\n", idio_exit_status, getpid ());
-	idio_gc_reset ("idio_vm_run/exit", gc_pause);
+	idio_gc_reset ("idio_vm_run/exit", v_gc_pause);
 	idio_final ();
 	exit (idio_exit_status);
 	break;
     default:
-	fprintf (stderr, "setjmp: unexpected value: %d\n", sjv);
+	fprintf (stderr, "setjmp: unexpected value\n");
 	break;
     }
+
+    /*
+     * This is where the problems arise post-siglongjmp().
+     */
+    if (!idio_isa_thread (v_thr)) {
+	fprintf (stderr, "\n\n\nrun: v_thr corrupt:\n");
+	idio_debug ("thr     =%s\n", thr);
+	idio_debug ("v_thr   =%s\n", v_thr);
+	idio_debug ("curr thr=%s\n", idio_thread_current_thread ());
+	abort ();
+    }
+    thr = v_thr;
 
     /*
      * Finally, run the VM code with idio_vm_run1(), one instruction
@@ -6953,6 +6983,9 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 	}
     }
 
+    /*
+     * XXX I just don't like this -- but it works.
+     */
     memcpy (IDIO_THREAD_JMP_BUF (thr), osjb, sizeof (sigjmp_buf));
 
 #ifdef IDIO_DEBUG
@@ -6976,7 +7009,7 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
      * test.idio	=> ~1750/ms (~40/ms under valgrind)
      * counter.idio	=> ~6000/ms (~10-15k/ms in a lean build)
      */
-    uintptr_t loops = (idio_vm_run_loops - loops0);
+    uintptr_t loops = (idio_vm_run_loops - v_loops0);
     if (loops > 500000 &&
 	(td.tv_sec ||
 	 td.tv_usec > 500000)) {
@@ -7013,17 +7046,17 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
     idio_ai_t krun_p = 0;
     if (IDIO_VM_RUN_C == caller) {
 	if (IDIO_THREAD_PC (thr) != (idio_vm_FINISH_pc + 1)) {
-	    fprintf (stderr, "vm-run: THREAD %td failed to run to FINISH: PC %td != %td\n", PC0, IDIO_THREAD_PC (thr), (idio_vm_FINISH_pc + 1));
-	    idio_vm_dasm (thr, idio_all_code, PC0, IDIO_THREAD_PC (thr));
+	    fprintf (stderr, "vm-run: THREAD %td failed to run to FINISH: PC %td != %td\n", v_PC0, IDIO_THREAD_PC (thr), (idio_vm_FINISH_pc + 1));
+	    idio_vm_dasm (thr, idio_all_code, v_PC0, IDIO_THREAD_PC (thr));
 	    bail = 1;
 	}
 
 	idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
 
-	if (ss != ss0) {
-	    fprintf (stderr, "vm-run: THREAD failed to consume stack: SP0 %td -> %td\n", ss0 - 1, ss - 1);
+	if (ss != v_ss0) {
+	    fprintf (stderr, "vm-run: THREAD failed to consume stack: SP0 %td -> %td\n", v_ss0 - 1, ss - 1);
 	    idio_vm_decode_thread (thr);
-	    if (ss < ss0) {
+	    if (ss < v_ss0) {
 		fprintf (stderr, "\n\nNOTICE: current stack smaller than when we started\n");
 	    }
 	    bail = 1;

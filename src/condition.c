@@ -1037,9 +1037,15 @@ does not return per se						\n\
 	fprintf (stderr, "restart-condition-handler: restoring krun #%td: ", krun_p);
 	idio_debug ("%s\n", IDIO_PAIR_HT (krun));
 #ifdef IDIO_DEBUG
+	fprintf (stderr, "restart-condition-handler: thread state before krun restored:\n");
 	idio_vm_thread_state (idio_thread_current_thread ());
+	fprintf (stderr, "restart-condition-handler: thread state to be restored:\n");
+	idio_debug ("thr=%s\n", IDIO_CONTINUATION_THR (IDIO_PAIR_H (krun)));
+	fprintf (stderr, "PC=%td\n", IDIO_CONTINUATION_PC (IDIO_PAIR_H (krun)));
+	idio_vm_decode_stack (IDIO_CONTINUATION_STACK (IDIO_PAIR_H (krun)));
 #endif
 	idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+
 	return idio_S_notreached;
     }
 

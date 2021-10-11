@@ -1192,8 +1192,17 @@ typedef struct idio_s idio_t;
  *
  * ``IDIO`` entities are the (references to) Idio values that are used
  * everywhere.  They are typedef'd to be pointers to &struct idio_s.
+ *
+ * NB volatility (see sigsetjmp()) affects automatic variables in the
+ * function containing sigsetjmp() that might have been put into
+ * registers, here, pointers.
+ *
+ * So we want the *pointer* to be volatile and care (slightly) less
+ * about the idio_t, the thing the pointer points to -- which is
+ * relatively unlikely to fit into a register anyway.
  */
-typedef idio_t* IDIO;
+typedef idio_t*			IDIO;
+typedef idio_t* volatile	IDIO_v;
 
 typedef struct idio_root_s {
     struct idio_root_s *next;

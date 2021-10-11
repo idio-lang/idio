@@ -459,7 +459,7 @@ int main (int argc, char **argv, char **envp)
      * libraries etc..
      */
     int sargc = 0;
-    char **sargv = (char **) idio_alloc ((argc + 1) * sizeof (char *));
+    char ** volatile sargv = (char **) idio_alloc ((argc + 1) * sizeof (char *));
     sargv[0] = argv[0];
     sargv[1] = NULL;	/* just in case */
 
@@ -474,6 +474,7 @@ int main (int argc, char **argv, char **envp)
     idio_env_init_idiolib (argv[0], idio_strnlen (argv[0], PATH_MAX));
 
     IDIO thr = idio_thread_current_thread ();
+    IDIO_v v_thr = thr;
 
     /*
      * Conditions raised during the bootstrap will need a sigsetjmp in
@@ -490,9 +491,8 @@ int main (int argc, char **argv, char **envp)
      * idio_vm_run() then we'll get a per-run sigsetjmp which will
      * override this.
      */
-    int sjv = sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1);
 
-    switch (sjv) {
+    switch (sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1)) {
     case 0:
 	break;
     case IDIO_VM_SIGLONGJMP_EXIT:
@@ -502,12 +502,19 @@ int main (int argc, char **argv, char **envp)
 	exit (idio_exit_status);
 	break;
     default:
-	fprintf (stderr, "sigsetjmp: bootstrap failed with sjv %d: exit (%d)\n", sjv, idio_exit_status);
+	fprintf (stderr, "sigsetjmp: bootstrap failed: exit (%d)\n", idio_exit_status);
 	IDIO_GC_FREE (sargv);
 	idio_final ();
 	exit (idio_exit_status);
 	break;
     }
+
+    /*
+     * Not strictly necessary as any non-zero return from sigsetjmp()
+     * results in an exit of some kind but we can leave it in to cover
+     * any developer experimentation.
+     */
+    thr = v_thr;
 
     /*
      * Save a continuation for exit.
@@ -552,9 +559,7 @@ int main (int argc, char **argv, char **envp)
      * or, more importantly, adding the redefined value to to set of
      * VM kruns
      */
-    sjv = sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1);
-
-    switch (sjv) {
+    switch (sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1)) {
     case 0:
 	break;
     case IDIO_VM_SIGLONGJMP_EXIT:
@@ -566,12 +571,17 @@ int main (int argc, char **argv, char **envp)
 	exit (idio_exit_status);
 	break;
     default:
-	fprintf (stderr, "sigsetjmp: script failed with sjv %d: exit (%d)\n", sjv, idio_exit_status);
+	fprintf (stderr, "sigsetjmp: script failed: exit (%d)\n", idio_exit_status);
 	IDIO_GC_FREE (sargv);
 	idio_final ();
 	exit (idio_exit_status);
 	break;
     }
+
+    /*
+     * Not strictly necessary... see above.
+     */
+    thr = v_thr;
 
     /*
      * Save a continuation for exit.
@@ -624,9 +634,8 @@ int main (int argc, char **argv, char **envp)
 			 * here we can print the offending filename in
 			 * case no-one else did.
 			 */
-			sjv = sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1);
 
-			switch (sjv) {
+			switch (sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1)) {
 			case 0:
 			    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, filename));
 			    break;
@@ -641,12 +650,17 @@ int main (int argc, char **argv, char **envp)
 			    exit (idio_exit_status);
 			    break;
 			default:
-			    fprintf (stderr, "sigsetjmp: load %s: failed with sjv %d\n", argv[i], sjv);
+			    fprintf (stderr, "sigsetjmp: load %s: failed\n", argv[i]);
 			    IDIO_GC_FREE (sargv);
 			    idio_final ();
 			    exit (1);
 			    break;
 			}
+
+			/*
+			 * Not strictly necessary... see above.
+			 */
+			thr = v_thr;
 		    }
 		    break;
 		default:
@@ -730,9 +744,8 @@ int main (int argc, char **argv, char **envp)
 	 * condition/loop but at least here we can print the offending
 	 * filename in case no-one else did.
 	 */
-	sjv = sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1);
 
-	switch (sjv) {
+	switch (sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1)) {
 	case 0:
 	    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, filename));
 	    break;
@@ -747,12 +760,17 @@ int main (int argc, char **argv, char **envp)
 	    exit (idio_exit_status);
 	    break;
 	default:
-	    fprintf (stderr, "sigsetjmp: load %s: failed with sjv %d\n", sargv[0], sjv);
+	    fprintf (stderr, "sigsetjmp: load %s: failed\n", sargv[0]);
 	    IDIO_GC_FREE (sargv);
 	    idio_final ();
 	    exit (1);
 	    break;
 	}
+
+	/*
+	 * Not strictly necessary... see above.
+	 */
+	thr = v_thr;
     } else {
 	/*
 	 * If the terminal isn't a tty perhaps we shouldn't start the
@@ -766,9 +784,8 @@ int main (int argc, char **argv, char **envp)
 	/*
 	 * See commentary above re: sigsetjmp.
 	 */
-	sjv = sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1);
 
-	switch (sjv) {
+	switch (sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1)) {
 	case 0:
 	    break;
 	case IDIO_VM_SIGLONGJMP_CONDITION:
@@ -789,11 +806,16 @@ int main (int argc, char **argv, char **envp)
 	    idio_final ();
 	    exit (idio_exit_status);
 	default:
-	    fprintf (stderr, "sigsetjmp: repl failed with sjv %d\n", sjv);
+	    fprintf (stderr, "sigsetjmp: repl failed\n");
 	    IDIO_GC_FREE (sargv);
 	    exit (1);
 	    break;
 	}
+
+	/*
+	 * Not strictly necessary... see above.
+	 */
+	thr = v_thr;
 
 	/* repl */
 	idio_load_handle_C (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);

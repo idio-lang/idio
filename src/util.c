@@ -2591,7 +2591,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			    t = idio_as_string (IDIO_THREAD_MODULE (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-			    IDIO_STRCAT (r, sizep, "\n  holes=");
+			    char *hs;
+			    size_t hs_size = idio_asprintf (&hs, "\n  holes=%zd ", idio_list_length (IDIO_THREAD_HOLES (o)));
+			    IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
+
 			    t_size = 0;
 			    t = idio_as_string (IDIO_THREAD_HOLES (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);

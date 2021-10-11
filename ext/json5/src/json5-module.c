@@ -24,6 +24,7 @@
 
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 
 #include <assert.h>
 #include <ffi.h>
@@ -43,6 +44,7 @@
 #include "idio.h"
 #include "idio-string.h"
 #include "json5-system.h"
+#include "malloc.h"
 #include "module.h"
 #include "pair.h"
 #include "string-handle.h"
