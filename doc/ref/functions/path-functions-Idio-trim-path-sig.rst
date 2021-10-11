@@ -1,1 +1,1 @@
-val :sep=":"
+val (:sep ":")

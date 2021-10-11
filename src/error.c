@@ -598,7 +598,7 @@ This does not return!				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE3V_DS ("error/type", error_type, (IDIO ct, IDIO loc, IDIO msg, IDIO args), "ct loc msg [detail]", "\
-raise an ^idio-error				\n\
+raise a `ct` condition				\n\
 						\n\
 :param ct: condition type			\n\
 :type ct: condition type			\n\

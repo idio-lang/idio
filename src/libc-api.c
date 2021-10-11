@@ -3452,7 +3452,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("nanosleep", libc_nanosleep, (IDIO req), "req", "\
 in C: :samp:`nanosleep ({req}, rem)`            \n\
 a wrapper to libc :manpage:`nanosleep(2)`       \n\
                                                 \n\
-:param req:                                     \n\
+:param req: see below				\n\
 :type req: :ref:`struct-timespec <libc/struct-timespec>` or a list	\n\
 :return:  (completed? *rem*)                    \n\
 :rtype: list                                    \n\

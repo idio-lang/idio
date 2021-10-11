@@ -163,7 +163,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("function?", functionp, (IDIO o), "o", "\
 test if `o` is a procedure			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a procedure, ``#f`` otherwise	\n\
 						\n\
 A procedure can be either an Idio (closure) or C (primitive) defined function\n\
@@ -184,7 +183,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("setter", setter, (IDIO p), "p", "\
 return the setter of `p`			\n\
 						\n\
 :param p: procedure				\n\
-						\n\
+:type p: function				\n\
 :return: the setter of `p`			\n\
 ")
 {

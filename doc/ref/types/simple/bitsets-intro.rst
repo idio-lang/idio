@@ -43,11 +43,11 @@ By way of example:
 
 * ``#B{ 32 001 }`` is much like hexadecimal 0x0004
 
-* ``#B{ 32 1:1 }`` is much like hexadecimal 0x0010
+* ``#B{ 32 8:1 }`` is much like hexadecimal 0x0100
 
-* ``#B{ 32 1 2-3 }`` is much like hexadecimal 0xFF01
+* ``#B{ 32 1 10-18 }`` is much like hexadecimal 0xFF01
 
-* ``#B{ 32 01 2-2 00000001 }`` is much like hexadecimal 0x8F02
+* ``#B{ 32 01 10-10 00000001 }`` is much like hexadecimal 0x8F02
 
 * ``#B{ 65536 30-30 11000000 01111110 60:01111110 }`` is the bitset of
   Unicode's *ASCII_Hex_Digit* Property in Plane 0, this it, bits

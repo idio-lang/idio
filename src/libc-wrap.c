@@ -1245,7 +1245,7 @@ A short signal name would be ``QUIT`` or ``INT``.		\n\
 IDIO_DEFINE_PRIMITIVE0_DS ("sig-names", libc_sig_names, (void), "", "\
 return a list of (number, short name) pairs of known signals	\n\
 								\n\
-:return: map of signal pairs					\n\
+:return: association list of signal pairs			\n\
 :rtype: list							\n\
 								\n\
 A short signal name would be ``QUIT`` or ``INT``.		\n\
@@ -2247,7 +2247,7 @@ return the error name of `errnum`				\n\
 IDIO_DEFINE_PRIMITIVE0_DS ("errno-names", libc_errno_names, (void), "", "\
 return a list of (number, name) pairs of known errno numbers	\n\
 								\n\
-:return: map of errno pairs					\n\
+:return: association list of errno pairs			\n\
 :rtype: list							\n\
 ")
 {

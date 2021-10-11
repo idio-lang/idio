@@ -794,7 +794,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("array?", arrayp, (IDIO o), "o", "\
 test if `o` is an array				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an array, ``#f`` otherwise	\n\
 ")
 {
@@ -1019,7 +1018,7 @@ set all the elements of `a` to `fill`		\n\
 :param a: the array to fill			\n\
 :type a: array					\n\
 :param fill: value to use for fill		\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (a);
@@ -1236,7 +1235,7 @@ set the `index` of `a` to `v`			\n\
 :param index: index				\n\
 :type index: integer				\n\
 :param v: value 				\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 :raises: ^rt-array-bounds-error			\n\
 ")
 {
@@ -1260,7 +1259,7 @@ append `v` to `a`				\n\
 :param a: the array				\n\
 :type a: array					\n\
 :param v: value 				\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 :raises: ^rt-array-bounds-error			\n\
 						\n\
 Treats `a` as a stack and appends `v` to the end\n\
@@ -1312,7 +1311,7 @@ unshifts `v` onto `a`				\n\
 :param a: the array				\n\
 :type a: array					\n\
 :param v: value 				\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 						\n\
 Treats `a` as a stack and unshifts (prepends) `v` to the start\n\
 ")
@@ -1384,7 +1383,7 @@ value with arguments: `index` the value at that	index		\n\
 :type a: array							\n\
 :param func: func to be called with each index, value tuple	\n\
 :type func: 2-ary function					\n\
-:return: #unspec						\n\
+:return: ``#<unspec>``						\n\
 ")
 {
     IDIO_ASSERT (a);
@@ -1430,7 +1429,6 @@ The final value of `val` is returned.				\n\
 :type func: 3-ary function					\n\
 :param val: initial value for `val`				\n\
 :type func: value						\n\
-								\n\
 :return: final value of `val`					\n\
 ")
 {

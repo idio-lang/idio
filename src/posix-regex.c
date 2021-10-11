@@ -228,7 +228,6 @@ an extra ``REG_BASIC`` flag to disable ``REG_EXTENDED``	\n\
 :type rx: string				\n\
 :param flags: regcomp flags			\n\
 :type flags: list of symbols			\n\
-						\n\
 :return: compiled :manpage:`regex(3)`		\n\
 :rtype: C/pointer				\n\
 ")
@@ -378,7 +377,6 @@ corresponding array element will be ``#f``	.	\n\
 :type rx: string				\n\
 :param flags: regexec flags			\n\
 :type flags: list of symbols			\n\
-						\n\
 :return: array of matching subexpressions or ``#f`` for no match	\n\
 :rtype: array or ``#f``				\n\
 ")

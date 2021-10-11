@@ -1,5 +1,6 @@
 (rst "functions-intro" 0)
 
+(document Idio not)
 (document Idio when)
 (document Idio unless)
 
@@ -19,12 +20,8 @@
 (document Idio unwind-protect)
 (document Idio with-values-from)
 (document Idio apply)
-(document Idio error)
-(document Idio error/type)
 (document Idio exit)
 (document Idio identity)
-(document Idio not)
-(document Idio read-number)
 
 (document Idio value-index)
 (document Idio set-value-index!)

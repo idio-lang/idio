@@ -210,7 +210,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("pathname?", pathname_p, (IDIO o), "o", "\
 test if `o` is an pathname				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an pathname, ``#f`` otherwise	\n\
 ")
 {

@@ -485,7 +485,7 @@ Find the module called `name`					\n\
 :type name: symbol						\n\
 :param default: return value if `name` is not found		\n\
 :type default: any, optional					\n\
-:return: module called `name` or `default` (or #unspec)		\n\
+:return: module called `name` or `default` (or ``#<unspec>``)	\n\
 :rtype: module							\n\
 :raises ^rt-module-error:					\n\
 ")
@@ -591,7 +591,7 @@ Set the current module to `module`		\n\
 						\n\
 :param module: module to use			\n\
 :type module: module				\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (module);
@@ -615,7 +615,7 @@ Set the imports of `module` to `imports`	\n\
 :type module: module				\n\
 :param imports: import list to use		\n\
 :type module: list				\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (module);
@@ -651,7 +651,7 @@ Set the exports of `module` to `exports`	\n\
 :type module: module				\n\
 :param exports: export list to use		\n\
 :type module: list				\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (module);
@@ -1954,7 +1954,7 @@ print the internal details of `module`		\n\
 						\n\
 :param module: the module to dump		\n\
 :type module: module				\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (mo);

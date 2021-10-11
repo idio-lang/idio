@@ -231,7 +231,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("job-is-stopped", job_is_stopped, (IDIO job), "job", 
 test if job `job` is stopped			\n\
 						\n\
 :param job: job to test				\n\
-						\n\
+:type job: struct-instance			\n\
 :return: ``#t`` if job `job` is stopped, ``#f`` otherwise\n\
 ")
 {
@@ -283,7 +283,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("job-is-completed", job_is_completed, (IDIO job), "jo
 test if job `job` has completed			\n\
 						\n\
 :param job: job to test				\n\
-						\n\
+:type job: struct-instance			\n\
 :return: ``#t`` if job `job` has completed, ``#f`` otherwise\n\
 ")
 {
@@ -344,7 +344,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("job-failed", job_failed, (IDIO job), "job", "\
 test if job `job` has failed			\n\
 						\n\
 :param job: job to test				\n\
-						\n\
+:type job: struct-instance			\n\
 :return: ``#t`` if job `job` has failed, ``#f`` otherwise\n\
 ")
 {
@@ -402,7 +402,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("job-status", job_status, (IDIO job), "job", "\
 test if job `job` has a process status		\n\
 						\n\
 :param job: job to test				\n\
-						\n\
+:type job: struct-instance			\n\
 :return: ``#f`` if job `job` has a process status, ``#t`` otherwise\n\
 						\n\
 Note that this is the inverse behaviour you might expect.\n\
@@ -456,7 +456,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("job-detail", job_detail, (IDIO job), "job", "\
 return the process status of job `job`		\n\
 						\n\
 :param job: job					\n\
-						\n\
+:type job: struct-instance			\n\
 :return: a (kind value) list			\n\
 						\n\
 kind can be: 'exit or 'killed			\n\
@@ -560,9 +560,10 @@ static int idio_job_control_mark_process_status (pid_t pid, int status)
 IDIO_DEFINE_PRIMITIVE2_DS ("mark-process-status", mark_process_status, (IDIO ipid, IDIO istatus), "pid status", "\
 update the process status of pid `pid` with `status`\n\
 						\n\
-:param pid: process id				\n\
+:param pid: Process ID				\n\
+:type pid: libc/pid_t				\n\
 :param status: Unix process status		\n\
-						\n\
+:type status: C/pointer				\n\
 :return: ``#t`` if the update was successfull, ``#f`` otherwise\n\
 ")
 {
@@ -649,7 +650,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("wait-for-job", wait_for_job, (IDIO job), "job", "\
 wait for job `job` to be stopped or completed	\n\
 						\n\
 :param job: job					\n\
-						\n\
+:type job: struct-instance			\n\
 :return: job status				\n\
 ")
 {
@@ -693,8 +694,9 @@ IDIO_DEFINE_PRIMITIVE2_DS ("format-job-info", format_job_info, (IDIO job, IDIO m
 display to stderr `msg` alongside job `job` details\n\
 						\n\
 :param job: job					\n\
+:type job: struct-instance			\n\
 :param msg: string				\n\
-						\n\
+:type msg: string				\n\
 :return: #<unspec>				\n\
 ")
 {
@@ -961,8 +963,9 @@ IDIO_DEFINE_PRIMITIVE2_DS ("foreground-job", foreground_job, (IDIO job, IDIO ico
 place job `job` in the foreground\n\
 						\n\
 :param job: job					\n\
+:type job: struct-instance			\n\
 :param cont: boolean				\n\
-						\n\
+:type cont: boolean				\n\
 :return: job status				\n\
 						\n\
 If `cont` is set a SIGCONT is sent to the process group\n\
@@ -1025,8 +1028,9 @@ IDIO_DEFINE_PRIMITIVE2_DS ("background-job", background_job, (IDIO job, IDIO ico
 place job `job` in the background\n\
 						\n\
 :param job: job					\n\
+:type job: struct-instance			\n\
 :param cont: boolean				\n\
-						\n\
+:type cont: boolean				\n\
 :return: 0					\n\
 						\n\
 If `cont` is set a SIGCONT is sent to the process group\n\
@@ -1109,7 +1113,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("hangup-job", hangup_job, (IDIO job), "job", "\
 hangup job `job`				\n\
 						\n\
 :param job: job					\n\
-						\n\
+:type job: struct-instance			\n\
 :return: #<unspec>				\n\
 						\n\
 Send the process group of `job` a SIGCONT then a SIGHUP\n\
@@ -1275,7 +1279,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("mark-job-as-running", mark_job_as_running, (IDIO job
 mark job `job` as running			\n\
 						\n\
 :param job: job					\n\
-						\n\
+:type job: struct-instance			\n\
 :return: #<unspec>				\n\
 						\n\
 In particular, mark job `job` as not stopped\n\
@@ -1321,8 +1325,9 @@ IDIO_DEFINE_PRIMITIVE2_DS ("continue-job", continue_job, (IDIO job, IDIO iforegr
 mark job `job` as running and foreground it if required\n\
 						\n\
 :param job: job					\n\
+:type job: struct-instance			\n\
 :param foreground: boolean			\n\
-						\n\
+:type foreground: boolean			\n\
 :return: #<unspec>				\n\
 ")
 {
@@ -1896,7 +1901,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("%launch-job", launch_job, (IDIO job), "job", "\
 launch job `job`				\n\
 						\n\
 :param job: job					\n\
-						\n\
+:type job: struct-instance			\n\
 :return: #<unspec>				\n\
 ")
 {
@@ -1919,7 +1924,6 @@ IDIO_DEFINE_PRIMITIVE0V_DS ("%launch-pipeline", launch_pipeline, (IDIO job_contr
 launch a pipeline of `job_controls`			\n\
 						\n\
 :param job_controls: list of job_controls		\n\
-						\n\
 :return: #<unspec>				\n\
 ")
 {

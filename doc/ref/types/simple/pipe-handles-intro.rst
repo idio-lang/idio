@@ -15,8 +15,9 @@ meta-commands like ``pipe-into`` and ``pipe-from`` which will return
 pipe handles.
 
 Ordinarily you might simply cease using a handle and have it collected
-by the GC but in the case of all forms of fd pipe-handles you will
-want to actively close them to avoid running out of pipe descriptors.
-:lname:`Idio` has no defence against you using everything up unwisely.
+by the GC in due course but in the case of all forms of fd-handles you
+may want to actively close them to avoid running out of file
+descriptors.  :lname:`Idio` has no defence against you using up
+limited resources unwisely.
 
 

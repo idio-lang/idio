@@ -248,7 +248,7 @@ print the Unicode attributes of `o`		\n\
 						\n\
 :param o: value to describe			\n\
 :type o: unicode or string			\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (o);

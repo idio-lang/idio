@@ -9,7 +9,7 @@ one implementation of :ref:`handles <handle type>`.
 You can write to a string until you run out of memory in the same way
 you can write to a file until you run of space in the file system.
 
-You can only have input or output handles, not a mixed form.
+You can only have input or output string handles, not a mixed form.
 
 An output string handle requires an extra step,
 :samp:`get-output-string {string-handle}` to retrieve the string in

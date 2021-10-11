@@ -73,10 +73,10 @@ Is sequence `seq` sorted?
 :param opt-key: accessor function, defaults to :ref:`identity <identity>`
 :type opt-key: function, optional
 
-For a list (x0 x1 ... xm), ``sorted?`` returns `true` when for all 1
-<= i <= m:
+For a list ``(x0 x1 ... xm)``, ``sorted?`` returns `true` when for all
+1 <= i <= m:
 
-    :samp:`(not ({less?} (list-ref list i) (list-ref list (- i 1))))`
+    :samp:`(not ({less?} (list-ref list {i}) (list-ref list (- {i} 1))))`
 
 " {
   key := if (null? opt-key) identity (ph opt-key)

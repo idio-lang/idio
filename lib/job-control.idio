@@ -2072,7 +2072,8 @@ loop over `jobs` waiting for each job in turn to change status
 A job's status changes if it is stopped or completes.
 
 If there are any `jobs` then :ref:`do-job-notification
-<job-control/do-job-notification>` will be called.
+<job-control/do-job-notification>` will be called when all of the jobs
+have changed state.
 
 " {
   notify := #f

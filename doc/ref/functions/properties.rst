@@ -1,3 +1,5 @@
+.. _`property tables`:
+
 Value Properties
 ^^^^^^^^^^^^^^^^
 

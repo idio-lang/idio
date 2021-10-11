@@ -86,7 +86,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("pair?", pair_p, (IDIO o), "o", "\
 test if `o` is a pair				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a pair, ``#f`` otherwise	\n\
 ")
 {
@@ -105,7 +104,6 @@ IDIO_DEFINE_PRIMITIVE0V_DS ("list", list, (IDIO args), "args", "\
 return `args` as a list				\n\
 						\n\
 :param args: arguments to convert		\n\
-						\n\
 :return: list of `args`				\n\
 :rtype: list					\n\
 ")
@@ -154,7 +152,6 @@ return the head of pair `p`			\n\
 						\n\
 :param p: pair to query				\n\
 :type p: pair					\n\
-						\n\
 :return: head of `p`				\n\
 ")
 {
@@ -177,8 +174,7 @@ set the head of pair `p` to `v`			\n\
 :type p: pair					\n\
 :param v: value					\n\
 :type v: any					\n\
-						\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (p);
@@ -222,7 +218,6 @@ return the tail of pair `p`			\n\
 						\n\
 :param p: pair to query				\n\
 :type p: pair					\n\
-						\n\
 :return: tail of `p`				\n\
 ")
 {
@@ -245,8 +240,7 @@ set the tail of pair `p` to `v`			\n\
 :type p: pair					\n\
 :param v: value					\n\
 :type v: any					\n\
-						\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (p);
@@ -331,7 +325,6 @@ reverse the list `l`				\n\
 						\n\
 :param l: list to reverse			\n\
 :type l: list					\n\
-						\n\
 :return: reversed list				\n\
 ")
 {
@@ -372,7 +365,6 @@ convert list `l` to an array			\n\
 						\n\
 :param l: list to be converted			\n\
 :type l: list					\n\
-						\n\
 :return: array					\n\
 :rtype: array					\n\
 ")
@@ -414,7 +406,6 @@ return the number of elements in list `l`	\n\
 						\n\
 :param l: list to count				\n\
 :type l: list					\n\
-						\n\
 :return: number of elements in `l`		\n\
 :rtype: integer					\n\
 ")
@@ -527,8 +518,6 @@ list `a` is copied, list `b` is untouched	\n\
 :param a: list to be appended to		\n\
 :type a: list					\n\
 :param b: list to be appended			\n\
-:type b: list					\n\
-						\n\
 :return: combined list				\n\
 :rtype: list					\n\
 ")
@@ -616,14 +605,13 @@ IDIO idio_list_memq (IDIO k, IDIO l)
 
 IDIO_DEFINE_PRIMITIVE2_DS ("memq", memq, (IDIO k, IDIO l), "k l", "\
 return the remainder of the list `l` from the	\n\
-first incidence of an element eq? `k`		\n\
-or ``#f`` if `k` is not in `l`			\n\
+first incidence of an element :ref:`eq? <eq?>`	\n\
+`k` or ``#f`` if `k` is not in `l`		\n\
 						\n\
 :param k: object to search for			\n\
 :type k: any					\n\
 :param l: list to search in			\n\
 :type l: list					\n\
-						\n\
 :return: a list starting from `k`, ``#f`` if `k` is not in `l`\n\
 ")
 {
@@ -658,14 +646,13 @@ IDIO idio_list_memv (IDIO k, IDIO l)
 
 IDIO_DEFINE_PRIMITIVE2_DS ("memv", memv, (IDIO k, IDIO l), "k l", "\
 return the remainder of the list `l` from the	\n\
-first incidence of an element eqv? `k`		\n\
-or ``#f`` if `k` is not in `l`			\n\
+first incidence of an element :ref:`eqv? <eqv?>`	\n\
+`k` or ``#f`` if `k` is not in `l`		\n\
 						\n\
 :param k: object to search for			\n\
 :type k: any					\n\
 :param l: list to search in			\n\
 :type l: list					\n\
-						\n\
 :return: a list starting from `k`, ``#f`` if `k` is not in `l`\n\
 ")
 {
@@ -700,14 +687,13 @@ IDIO idio_list_member (IDIO k, IDIO l)
 
 IDIO_DEFINE_PRIMITIVE2_DS ("member", member, (IDIO k, IDIO l), "k l", "\
 return the remainder of the list `l` from the	\n\
-first incidence of an element equal? `k`	\n\
-or ``#f`` if `k` is not in `l`			\n\
+first incidence of an element :ref:`equal? <equal?>`	\n\
+`k` or ``#f`` if `k` is not in `l`		\n\
 						\n\
 :param k: object to search for			\n\
 :type k: any					\n\
 :param l: list to search in			\n\
 :type l: list					\n\
-						\n\
 :return: a list starting from `k`, ``#f`` if `k` is not in `l`\n\
 ")
 {
@@ -760,14 +746,13 @@ IDIO idio_list_assq (IDIO k, IDIO l)
 
 IDIO_DEFINE_PRIMITIVE2_DS ("assq", assq, (IDIO k, IDIO l), "k l", "\
 return the first entry of association list `l`	\n\
-with a key eq? `k`				\n\
+with a key :ref:`eq? <eq?>` `k`			\n\
 or ``#f`` if `k` is not a key in `l`		\n\
 						\n\
 :param k: object to search for			\n\
 :type k: any					\n\
 :param l: association list to search in		\n\
 :type l: list					\n\
-						\n\
 :return: the list (`k` & value), ``#f`` if `k` is not a key in `l`\n\
 ")
 {
@@ -820,14 +805,13 @@ IDIO idio_list_assv (IDIO k, IDIO l)
 
 IDIO_DEFINE_PRIMITIVE2_DS ("assv", assv, (IDIO k, IDIO l), "k l", "\
 return the first entry of association list `l`	\n\
-with a key eqv? `k`				\n\
+with a key :ref:`eqv? <eqv?>` `k`		\n\
 or ``#f`` if `k` is not a key in `l`		\n\
 						\n\
 :param k: object to search for			\n\
 :type k: any					\n\
 :param l: association list to search in		\n\
 :type l: list					\n\
-						\n\
 :return: the list (`k` & value), ``#f`` if `k` is not a key in `l`\n\
 ")
 {
@@ -880,14 +864,13 @@ IDIO idio_list_assoc (IDIO k, IDIO l)
 
 IDIO_DEFINE_PRIMITIVE2_DS ("assoc", assoc, (IDIO k, IDIO l), "k l", "\
 return the first entry of association list `l`	\n\
-with a key equal? `k`				\n\
+with a key :ref:`equal? <equal?>` `k`		\n\
 or ``#f`` if `k` is not a key in `l`		\n\
 						\n\
 :param k: object to search for			\n\
 :type k: any					\n\
 :param l: association list to search in		\n\
 :type l: list					\n\
-						\n\
 :return: the list (`k` & value), ``#f`` if `k` is not a key in `l`\n\
 ")
 {

@@ -74,10 +74,10 @@ define-syntax with-values-from \
      (call-with-values (function () expression) (function formals body ...))))
 
 define (display* & x*) "
-display ``#\{space}`` -separated `x*` to the current output handle
+display ``#\\{space}`` -separated `x*` to the current output handle
 
 :param x*: values to print
-:return: <unspec>
+:return: ``#<unspec>``
 " {
   p :+ function (x* first) {
 	 if (not (null? x*)) {
@@ -95,7 +95,7 @@ define (ewrite x) "
 :ref:`write <write>` `x` to the current error handle
 
 :param x*: values to print
-:return: <unspec>
+:return: ``#<unspec>``
 " {
   write x (current-error-handle)
 }
@@ -104,16 +104,16 @@ define (edisplay x) "
 :ref:`display <display>` `x` to the current error handle
 
 :param x*: values to print
-:return: <unspec>
+:return: ``#<unspec>``
 " {
   display x (current-error-handle)
 }
 
 define (edisplay* & x*) "
-display ``#\{space}`` -separated `x*` to the current error handle
+display ``#\\{space}`` -separated `x*` to the current error handle
 
 :param x*: values to print
-:return: <unspec>
+:return: ``#<unspec>``
 " {
   p :+ function (x* first) {
 	 if (not (null? x*)) {
@@ -216,41 +216,44 @@ if bootstrap fails.
 
 define (%format type fmt & args) "
 
-Return a string from the format string `fmt` expanded by any escape
-sequences.
+Return a string from the format string `fmt` expanded by any *escape
+sequences*.
 
-If `type` is ``'args`` then a % character in the format string starts
-an escape sequence which has the general form
+If `type` is ``'args`` then a ``%`` character in the format string
+starts an escape sequence which has the general form
 :samp:`%[{flags}][{width}][.{prec}]{K}` where :samp:`{K}` is a
-printf(3)-ish format character with arguments in `args`.
+:manpage:`printf(3)`-ish format character with arguments in `args`.
 
-If :samp:`{K}` is an @ character then the list argument is spliced
+If :samp:`{K}` is an ``@`` character then the list argument is spliced
 into the string converting all elements of the list to string form
 separated by a U+0022 (SPACE) character.
 
-If `type` is ``'keyed`` then a % character in the format string starts
-an escape sequence which has the general form
+If `type` is ``'keyed`` then a ``%`` character in the format string
+starts an escape sequence which has the general form
 :samp:`%[{flags}][{width}][.{prec}]{K}` where :samp:`{K}` is a single
 Unicode code point (satisfying ``Alphabetic?``) which is expected to
-be a key in the optional hash table -- unless it is another %
+be a key in the optional hash table -- unless it is another ``%``
 character.  The value associated with the key will be printed
 according to the specification.
 
-In both cases:
-
-* if :samp:`{K}` is a % character then a % is printed according to the
-  specification
+In both cases if :samp:`{K}` is a ``%`` character then a ``%`` is
+printed according to the specification
 
 If `type` is ``'timeformat`` then it works similarly to ``'keyed``
 except we avoid a double application of any precision.
-:var:`TIMEFORMAT` describes a %f-like precision to the
+:var:`TIMEFORMAT` describes a ``%f``-like precision to the
 :ref:`struct-timeval <libc/struct-timeval>` strings.
 
 The :samp:`{flags}` are:
 
-* ``-`` left align the output within :samp:`{width}` if applicable.
-* `` `` use ``#\\{space}`` as the left padding character
-* ``0`` use ``#\\0`` (zero) as the left padding character
+.. csv-table::
+   :header: `flag`, effect, code point
+   :widths: auto
+   :align: left
+
+   ``-``, left align the output within :samp:`{width}`, U+002D (HYPHEN-MINUS)
+   :literal:`\\ `, use ``#\\{space}`` as the left padding character, U+0020 (SPACE)
+   ``0``, use ``#\\0`` (zero) as the left padding character, U+0030 (DIGIT ZERO)
 
 The default padding character is ``#\\{space}``
 " {
@@ -523,7 +526,7 @@ The default padding character is ``#\\{space}``
 define (format fmt & args) "
 Call :ref:`%format <%format>`:
 
-%format 'args `fmt` `args`
+:samp:`%format 'args {fmt} {args}`
 " {
   apply %format 'args fmt args
 }
@@ -539,8 +542,7 @@ result of applying :ref:`format <format>` to `fmt` and `args`.
 :type fmt: string
 :param args: any args for the format string
 :type args: list, optional
-
-:return: #unspec
+:return: ``#<unspec>``
 " {
   display (apply format fmt args) handle
 }
@@ -555,7 +557,7 @@ handle with `fmt` and `args`
 :param args: any args for the format string
 :type args: list, optional
 
-:return: #unspec
+:return: ``#<unspec>``
 " {
   apply hprintf (current-output-handle) fmt args
 }
@@ -570,7 +572,7 @@ handle with `fmt` and `args`
 :param args: any args for the format string
 :type args: list, optional
 
-:return: #unspec
+:return: ``#<unspec>``
 " {
   apply hprintf (current-error-handle) fmt args
 }

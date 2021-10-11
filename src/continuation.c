@@ -101,7 +101,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("continuation?", continuation_p, (IDIO o), "o", "\
 test if `o` is a continuation			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a continuation ``#f`` otherwise\n\
 ")
 {

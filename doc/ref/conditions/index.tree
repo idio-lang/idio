@@ -1,3 +1,5 @@
 (rst "leader" 0)
 
-(toc-file all)
+(toc-file conditions)
+(toc-file handlers)
+(toc-file raising)

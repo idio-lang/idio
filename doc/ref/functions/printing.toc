@@ -1,4 +1,4 @@
-(rst "printing" 0)
+(rst "printing-values" 0)
 
 ; common.idio
 (rst "printing-functions" 0)

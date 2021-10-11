@@ -480,13 +480,12 @@ IDIO idio_gensym (char const *pref_prefix, size_t const blen)
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("gensym", gensym, (IDIO args), "[prefix]", "\
-generate a new *unique* symbol using `prefix` followed by `/`	\n\
+generate a new *unique* symbol using `prefix` followed by ``/``	\n\
 							\n\
 Such *gensyms* are not guaranteed to be unique if saved.\n\
 							\n\
 :param prefix: prefix string, defaults to ``\"g\"``	\n\
 :type prefix: string or symbol, optional	\n\
-						\n\
 :return: unique symbol				\n\
 :rtype: symbol					\n\
 ")
@@ -550,7 +549,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("symbol?", symbol_p, (IDIO o), "o", "\
 test if `o` is a symbol				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a symbol, ``#f`` otherwise	\n\
 ")
 {
@@ -569,8 +567,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("symbol->string", symbol2string, (IDIO s), "s", "\
 convert symbol `s` into a string		\n\
 						\n\
 :param s: symbol to convert			\n\
-:param s: symbol				\n\
-						\n\
+:type s: symbol					\n\
 :return: string					\n\
 :rtype: string					\n\
 ")
@@ -690,8 +687,8 @@ set the properties table for `o` to `properties`	\n\
 :param o: value to set properties for		\n\
 :type o: any non-``#n``				\n\
 :param properties: properties table		\n\
-:param properties: keyword table		\n\
-:return: #unspec				\n\
+:type properties: keyword table			\n\
+:return: ``#<unspec>``				\n\
 :raise ^rt-parameter-nil-error:			\n\
 						\n\
 .. seealso:: :ref:`make-keyword-table <make-keyword-table>`	\n\
@@ -901,7 +898,7 @@ set the property `kw` for `o` to `v`		\n\
 :type kw: keyword				\n\
 :param v: value					\n\
 :type v: any					\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 :raise ^rt-parameter-nil-error:			\n\
 ")
 {

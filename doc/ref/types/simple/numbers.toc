@@ -7,6 +7,7 @@
 
 (rst "number-constructors" 0)
 (document unicode unicode->integer)
+(document Idio read-number)
 
 (rst "number-functions" 0)
 (document Idio \+ add)

@@ -171,8 +171,8 @@ and calls
 define (require feature & subfeatures) "
 
 Load `feature` unless it has previous been successfully required.
-`subfeatures` are available to the loaded code as the dynamic
-variable ``*require-subfeatures*``
+`subfeatures` are available to the loaded code as the dynamic variable
+`require-subfeatures*`.
 
 :param feature: the name of the feature
 :type fmt: symbol
@@ -181,7 +181,7 @@ variable ``*require-subfeatures*``
 :return: #t or #f
 
 The file to be loaded is :samp:`(symbol->string {feature})` which must
-:samp:`(provide {feature})`.
+:ref:`provide <provide>` `feature`.
 
 " {
   if (memq feature *require-features*) #t {

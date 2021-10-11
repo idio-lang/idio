@@ -13,8 +13,9 @@ Ordinarily you would create input or output file handles with
 {mode}` for some choice of :samp:`{mode}`.
 
 Ordinarily you might simply cease using a handle and have it collected
-by the GC but in the case of all forms fd file-handles you will want
-to actively close them to avoid running out of file descriptors.
-:lname:`Idio` has no defence against you using everything up unwisely.
+by the GC in due course but in the case of all forms of fd-handles you
+may want to actively close them to avoid running out of file
+descriptors.  :lname:`Idio` has no defence against you using up
+limited resources unwisely.
 
 

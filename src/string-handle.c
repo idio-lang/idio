@@ -302,7 +302,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("string-handle?", string_handlep, (IDIO o), "o", "\
 test if `o` is a string handle			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a string handle, ``#f`` otherwise	\n\
 ")
 {
@@ -329,7 +328,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("input-string-handle?", input_string_handlep, (IDIO o
 test if `o` is a input string handle		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a input string handle, ``#f`` otherwise	\n\
 ")
 {
@@ -356,7 +354,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("output-string-handle?", output_string_handlep, (IDIO
 test if `o` is a output string handle			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a output string handle, ``#f`` otherwise	\n\
 ")
 {

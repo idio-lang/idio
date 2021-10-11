@@ -215,7 +215,6 @@ create a struct type				\n\
 :type parent: struct type or ``#n``			\n\
 :param fields: field names			\n\
 :type fields: list of symbol			\n\
-						\n\
 :return: struct type				\n\
 :rtype: struct type				\n\
 ")
@@ -260,7 +259,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-type?", struct_typep, (IDIO o), "o", "\
 test if `o` is a struct type			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a struct type, ``#f`` otherwise	\n\
 ")
 {
@@ -293,7 +291,6 @@ return the name of struct type `st`		\n\
 						\n\
 :param st: struct type to query			\n\
 :type st: struct type				\n\
-						\n\
 :return: struct type name			\n\
 :rtype: symbol					\n\
 ")
@@ -315,7 +312,6 @@ return the parent of struct type `st`		\n\
 						\n\
 :param st: struct type to query			\n\
 :type st: struct type				\n\
-						\n\
 :return: struct type parent			\n\
 :rtype: struct type or ``#n``			\n\
 ")
@@ -337,7 +333,6 @@ return the fields of struct type `st`		\n\
 						\n\
 :param st: struct type to query			\n\
 :type st: struct type				\n\
-						\n\
 :return: struct type fields			\n\
 :rtype: list of symbols or ``#n``			\n\
 ")
@@ -397,7 +392,6 @@ of struct type `type`				\n\
 :type st: struct type				\n\
 :param type: struct type to compare		\n\
 :type type: struct type				\n\
-						\n\
 :return: ``#t``/``#f``					\n\
 ")
 {
@@ -528,7 +522,6 @@ values to the struct type's fields			\n\
 :type st: struct type				\n\
 :param values: values for fields		\n\
 :type type: list				\n\
-						\n\
 :return: struct instance			\n\
 ")
 {
@@ -562,7 +555,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-instance?", struct_instancep, (IDIO o), "o", 
 test if `o` is a struct instance		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a struct instance, ``#f`` otherwise	\n\
 ")
 {
@@ -593,7 +585,6 @@ return the struct type of struct instance `si`	\n\
 						\n\
 :param si: struct instance to query		\n\
 :type si: struct instance			\n\
-						\n\
 :return: struct type				\n\
 :rtype: struct type				\n\
 ")
@@ -615,7 +606,6 @@ return the struct type fields of struct instance `si`	\n\
 						\n\
 :param si: struct instance to query		\n\
 :type si: struct instance			\n\
-						\n\
 :return: struct type fields			\n\
 :rtype: list					\n\
 ")
@@ -715,7 +705,6 @@ return field `field` of struct instance `si`	\n\
 :type si: struct instance			\n\
 :param field: field name			\n\
 :type field: symbol				\n\
-						\n\
 :return: value					\n\
 ")
 {
@@ -792,7 +781,6 @@ instance of struct type `st`			\n\
 :type st: struct type				\n\
 :param index: field index			\n\
 :type index: fixnum				\n\
-						\n\
 :return: value					\n\
 ")
 {
@@ -880,8 +868,7 @@ set field `field` of struct instance `si` to `v`\n\
 :type field: symbol				\n\
 :param v: value					\n\
 :type v: value					\n\
-						\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (si);
@@ -963,8 +950,7 @@ instance of struct type `st`			\n\
 :type index: fixnum				\n\
 :param v: value					\n\
 :type v: value					\n\
-						\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (si);
@@ -1031,7 +1017,6 @@ of struct type `st`				\n\
 :type si: struct instance			\n\
 :param st: struct type to verify		\n\
 :type st: struct type				\n\
-						\n\
 :return: ``#t``/``#f``					\n\
 ")
 {

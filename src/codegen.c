@@ -343,7 +343,7 @@ IDIO_DEFINE_PRIMITIVE2_DS ("codegen-constants-lookup-or-extend", codegen_constan
 Find `v` in `cs` or extend `cs`			\n\
 						\n\
 :param cs: constants				\n\
-:type args: array				\n\
+:type cs: array					\n\
 :param v: constant				\n\
 :type v: any					\n\
 :return: index					\n\

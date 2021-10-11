@@ -1,7 +1,7 @@
 define a function with optional and keyword arguments
 
-The `formals` for ``function*`` become
-:token:`~SRFI-89:extended-formals`:
+The `formals` for ``function*`` are interpreted as the (SRFI-89_)
+grammar :token:`~SRFI-89:extended-formals`:
 
 .. productionlist:: SRFI-89
    extended_formals : variable | ( `extended_def_formals` )
@@ -22,21 +22,32 @@ The `formals` for ``function*`` become
 
 :Example:
 
+Define a function `f` which takes one normal positional parameter,
+`a`, and an optional positional parameter, `b`, which defaults to
+``#f``:
+
 .. code-block:: idio
 		
-   define* (f a (b #f)) (list a b)
+   define* (f a (b #f)) {
+     list a b
+   }
 
    f 1                  ; '(1 #f)
    f 1 2                ; '(1 2)
 
 A :token:`keyword` does not need to be the same word as the
-:token:`variable` it sets:
+:token:`variable` it sets so here we define a function `g` which takes
+a normal positional parameter, `a`, and an optional keyword parameter,
+``:mykey``, which is accessed in the function as `b` and defaults to
+``#f``:
 
 :Example:
 
 .. code-block:: idio
 
-   define* (g a (:mykey b #f)) (list a b)
+   define* (g a (:mykey b #f)) {
+     list a b
+   }
 
    f 1                  ; '(1 #f)
    f 1 :mykey 2         ; '(1 2)
@@ -45,11 +56,17 @@ Unlike regular ``function`` definitions,
 :token:`~SRFI-89:optional_positional` and :token:`~SRFI-89:named`
 parameters can default to expressions involving previous parameters.
 
+Here, the optional positional parameter `b` defaults to :samp:`{a} *
+2` and the optional keyword parameter, ``:mykey``, accessed in the
+function as `c` defaults to :samp:`{a} * {b}`:
+
 :Example:
 
 .. code-block:: idio
 
-   define* (h a (b (a * 2)) (:mykey c (a * b))) (list a b c)
+   define* (h a (b (a * 2)) (:mykey c (a * b))) {
+     list a b c
+   }
 
    h 2                  ; '(2 4 8)
    h 2 3                ; '(2 3 6)

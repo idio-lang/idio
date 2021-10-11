@@ -611,8 +611,8 @@ IDIO idio_expanderp (IDIO name)
 	    } else {
 		/*
 		 * idio_module_current_symbol_value_recurse()
-		 * nominally returns #unspec but when the template was
-		 * defined we extended the VM's values which means
+		 * nominally returns #<unspec> but when the template
+		 * was defined we extended the VM's values which means
 		 * we'll get back the default value, #undef
 		 */
 		if (idio_S_undef == lv) {
@@ -1149,7 +1149,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("infix-operator?", infix_operatorp, (IDIO o), "o", "\
 test if `o` is a infix operator		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a infix operator, ``#f`` otherwise	\n\
 ")
 {
@@ -1219,7 +1218,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("postfix-operator?", postfix_operatorp, (IDIO o), "o"
 test if `o` is a postfix operator		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a postfix operator, ``#f`` otherwise	\n\
 ")
 {
@@ -1248,7 +1246,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("operator?", operatorp, (IDIO o), "o", "\
 test if `o` is a operator		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a operator, ``#f`` otherwise	\n\
 ")
 {

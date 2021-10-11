@@ -182,7 +182,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("char?",  char_p, (IDIO o), "o", "\
 test if `o` is an character			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an character, ``#f`` otherwise	\n\
 ")
 {
@@ -201,7 +200,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("char->integer",  char2integer, (IDIO c), "c", "\
 convert `c` to an integer				\n\
 						\n\
 :param c: character to convert			\n\
-						\n\
 :return: integer (fixnum) conversion of `c`	\n\
 ")
 {
@@ -459,7 +457,6 @@ test if character arguments are sorted non-decreasing			\n\
 :param c1: char								\n\
 :param c2: char								\n\
 :param ...: chars							\n\
-									\n\
 :return: ``#t`` if arguments are sorted non-decreasing, ``#f`` otherwise	\n\
 "));
 
@@ -472,7 +469,6 @@ test if character arguments are sorted increasing		\n\
 :param c1: char							\n\
 :param c2: char							\n\
 :param ...: chars						\n\
-								\n\
 :return: ``#t`` if arguments are sorted increasing, ``#f`` otherwise	\n\
 "));
 
@@ -485,7 +481,6 @@ test if character arguments are equal			\n\
 :param c1: char						\n\
 :param c2: char						\n\
 :param ...: chars					\n\
-							\n\
 :return: ``#t`` if arguments are equal, ``#f`` otherwise	\n\
 "));
 
@@ -498,7 +493,6 @@ test if character arguments are sorted non-increasing			\n\
 :param c1: char								\n\
 :param c2: char								\n\
 :param ...: chars							\n\
-									\n\
 :return: ``#t`` if arguments are sorted non-increasing, ``#f`` otherwise	\n\
 "));
 
@@ -511,7 +505,6 @@ test if character arguments are sorted decreasing		\n\
 :param c1: char							\n\
 :param c2: char							\n\
 :param ...: chars						\n\
-								\n\
 :return: ``#t`` if arguments are sorted decreasing, ``#f`` otherwise	\n\
 "));
 
@@ -524,10 +517,9 @@ test if character arguments are sorted non-decreasing case-insensitively		\n\
 :param c1: char										\n\
 :param c2: char										\n\
 :param ...: chars									\n\
+:return: ``#t`` if arguments are sorted non-decreasing case-insensitively, ``#f`` otherwise	\n\
 											\n\
 This implementation uses libc tolower()							\n\
-											\n\
-:return: ``#t`` if arguments are sorted non-decreasing case-insensitively, ``#f`` otherwise	\n\
 "));
 
     fvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_character_module, char_ci_lt_p);
@@ -539,10 +531,9 @@ test if character arguments are sorted increasing case-insensitively		\n\
 :param c1: char									\n\
 :param c2: char									\n\
 :param ...: chars								\n\
+:return: ``#t`` if arguments are sorted increasing case-insensitively, ``#f`` otherwise	\n\
 										\n\
 This implementation uses libc tolower()						\n\
-										\n\
-:return: ``#t`` if arguments are sorted increasing case-insensitively, ``#f`` otherwise	\n\
 "));
 
     fvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_character_module, char_ci_eq_p);
@@ -554,10 +545,9 @@ test if character arguments are equal case-insensitively		\n\
 :param c1: char								\n\
 :param c2: char								\n\
 :param ...: chars							\n\
+:return: ``#t`` if arguments are equal case-insensitively, ``#f`` otherwise	\n\
 									\n\
 This implementation uses libc tolower()					\n\
-									\n\
-:return: ``#t`` if arguments are equal case-insensitively, ``#f`` otherwise	\n\
 "));
 
     fvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_character_module, char_ci_ge_p);
@@ -569,10 +559,9 @@ test if character arguments are sorted non-increasing case-insensitively		\n\
 :param c1: char										\n\
 :param c2: char										\n\
 :param ...: chars									\n\
+:return: ``#t`` if arguments are sorted non-increasing case-insensitively, ``#f`` otherwise	\n\
 											\n\
 This implementation uses libc tolower()							\n\
-											\n\
-:return: ``#t`` if arguments are sorted non-increasing case-insensitively, ``#f`` otherwise	\n\
 "));
 
     fvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_character_module, char_ci_gt_p);
@@ -584,10 +573,9 @@ test if character arguments are sorted decreasing case-insensitively		\n\
 :param c1: char									\n\
 :param c2: char									\n\
 :param ...: chars								\n\
+:return: ``#t`` if arguments are sorted decreasing case-insensitively, ``#f`` otherwise	\n\
 										\n\
 This implementation uses libc tolower()						\n\
-										\n\
-:return: ``#t`` if arguments are sorted decreasing case-insensitively, ``#f`` otherwise	\n\
 "));
 }
 

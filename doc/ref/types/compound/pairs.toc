@@ -57,11 +57,11 @@
 
 (document Idio append)
 
-(document Idio member)
 (document Idio memq)
 (document Idio memv)
+(document Idio member)
 
 (document Idio assq)
-(document Idio assoc)
 (document Idio assv)
+(document Idio assoc)
 

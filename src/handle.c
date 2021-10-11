@@ -701,7 +701,7 @@ Close the handle `handle`				\n\
 							\n\
 :param handle: handle to close				\n\
 :type handle: handle					\n\
-:return: <unspec>					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (h);
@@ -727,7 +727,7 @@ Close the input handle `handle`				\n\
 							\n\
 :param handle: handle to close				\n\
 :type handle: input handle				\n\
-:return: <unspec>					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (h);
@@ -754,7 +754,7 @@ Close the output handle `handle`				\n\
 							\n\
 :param handle: handle to close				\n\
 :type handle: output handle				\n\
-:return: <unspec>					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (h);
@@ -993,7 +993,7 @@ Invoke the flush method on `handle`			\n\
 							\n\
 :param handle: handle to flush				\n\
 :type handle: handle					\n\
-:return: <unspec>					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (h);
@@ -1196,7 +1196,7 @@ the handle's line number to 1				\n\
 							\n\
 :param handle: handle to rewind				\n\
 :type handle: handle					\n\
-:return: <unspec>					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (h);
@@ -1275,7 +1275,7 @@ Set the current input handle to `handle`		\n\
 							\n\
 :param handle: handle to use				\n\
 :type handle: handle					\n\
-:return: <unspec>					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (h);
@@ -1297,7 +1297,7 @@ Set the current output handle to `handle`		\n\
 							\n\
 :param handle: handle to use				\n\
 :type handle: handle					\n\
-:return: <unspec>					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (h);
@@ -1319,7 +1319,7 @@ Set the current error handle to `handle`		\n\
 							\n\
 :param handle: handle to use				\n\
 :type handle: handle					\n\
-:return: <unspec>					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (h);
@@ -1479,7 +1479,7 @@ IDIO idio_read_line (IDIO h)
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("read-line", read_line, (IDIO args), "[handle]", "\
-read a string from `handle` up to a #\\{newline} character	\n\
+read a string from `handle` up to a ``#\\{newline}`` character	\n\
 								\n\
 :param handle: handle to read from, defaults to the current input handle	\n\
 :type handle: handle, optional					\n\
@@ -1573,7 +1573,7 @@ write the printed representation of `o` to `handle`	\n\
 :param o: object					\n\
 :param handle: handle to write to, defaults to the current output handle	\n\
 :type handle: handle, optional				\n\
-:return: <unspec>					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -1604,7 +1604,7 @@ write a UTF-8 encoded character to `handle`		\n\
 :type c: unicode					\n\
 :param handle: handle to write to, defaults to the current output handle	\n\
 :type handle: handle, optional				\n\
-:return: #unspec					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (c);
@@ -1647,7 +1647,7 @@ write a UTF-8 encoded U+000A character to `handle`	\n\
 							\n\
 :param handle: handle to write to, defaults to the current output handle	\n\
 :type handle: handle, optional				\n\
-:return: #unspec					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -1700,7 +1700,7 @@ display `o` to `handle`					\n\
 :param o: object					\n\
 :param handle: handle to write to, defaults to the current output handle	\n\
 :type handle: handle, optional				\n\
-:return: <unspec>					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -1740,7 +1740,7 @@ num	specifies a maximum limit on the output		\n\
 :param fmt: format string				\n\
 :type fmt: string					\n\
 :param args: optional arguments to printf		\n\
-:return: <unspec>					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (h);

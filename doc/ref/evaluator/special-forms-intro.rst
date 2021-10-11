@@ -100,7 +100,7 @@ commonly called a closure.
 
 .. parsed-literal::
 
-   function *formals* *body*
+   function *formals* *[docstr]* *body*
 
 `formals` declares the parameters for the closure and arguments passed
 to the function are available through the named parameters within the
@@ -130,6 +130,11 @@ to the function are available through the named parameters within the
   * :samp:`(a & b)` would suggest one formal parameter and zero or
     more other parameters bundled up into a list and made available
     through the symbol ``b``.
+
+The optional `docstr` allows the user to describe their function.
+This text will be used in :ref:`help <help>` output as well as used to
+generate documentation like this.  It should take the form of
+reStructuredText targeting the sphinx documentation system.
 
 `body` is a single expression although commonly a block is used as a
 synonym for the :ref:`begin <begin>` sequence special form.
@@ -205,6 +210,9 @@ Special Form.  It is equivalent to many languages' ``if ... elif
 
   The ``else`` clause can only appear at the end
 
+If no clauses satisfy and there is no ``else`` clause, ``cond``
+returns ``#<void>``.
+
 set!
 ^^^^
 
@@ -219,7 +227,7 @@ name.  It has an ``=`` synonym and an ``=`` reader operator.
 
 .. note::
 
-   Technically, ``set!`` doesn't modify any value but changes a
+   Technically, ``set!`` doesn't modify any *value* but changes a
    reference to point to a different value.
 
    From a user perspective, the variable has a different value.
@@ -373,8 +381,7 @@ The ``block`` special form is largely a synonym for the :ref:`begin
 <begin>` sequencing special form but it does create a new lexical
 context.
 
-Variables created within a block are no longer accessible outside the
-block.
+Variables created within a block are not accessible outside the block.
 
 Amongst other things this allows for the creation of privately scoped
 variables.
@@ -399,6 +406,8 @@ one of the types in `conditions` or a descendent thereof then
 * return a value on behalf of the erroring function by simply returning a value
 
 * can raise the condition to a previously established handler
+
+See :ref:`condition handlers` for further information.
 
 include
 ^^^^^^^

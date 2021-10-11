@@ -1001,7 +1001,16 @@ string->number := {
 
 ;; Array procedures
 
-define (array & x) (list->array x)
+define (array & x) "
+construct an array from `x`
+
+:param x: elements for the array
+:type x: list
+:return: array constructed from the elements of `x`
+:rtype: array
+
+this simply calls :ref:`list->array <list->array>`
+" (list->array x)
 
 ;; Input/output procedures
 

@@ -42,4 +42,5 @@ If `:once` is `true` then
   In particular, subsequent instances of `val` may be removed or `val`
   may not be appended depending on the current elements of `var`.
 
-The `:test` flag might be :ref:`d? <d?>`, :ref:`e? <e?>` or :ref:`f? <f?>`.
+The `:test` flag might be one of the standard predicates, :ref:`d?
+<d?>`, :ref:`e? <e?>` or :ref:`f? <f?>`, or something bespoke.

@@ -229,7 +229,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("type->string", type_string, (IDIO o), "o", "\
 return the type of `o` as a string		\n\
 						\n\
 :param o: object				\n\
-						\n\
 :return: a string representation of the type of `o`	\n\
 ")
 {
@@ -244,7 +243,6 @@ test if `o` is the numeric value zero		\n\
 a fixnum or a bignum with the value zero	\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is zero, ``#f`` otherwise	\n\
 ")
 {
@@ -266,7 +264,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("null?", nullp, (IDIO o), "o", "\
 test if `o` is ``#n``				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is ``#n``, ``#f`` otherwise	\n\
 ")
 {
@@ -295,10 +292,9 @@ a function cannot be no computation...	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("void?", voidp, (IDIO o), "o", "\
-test if `o` is void (#void)			\n\
+test if `o` is void (``#<void>``)		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is ``#<void>``, ``#f`` otherwise	\n\
 ")
 {
@@ -322,7 +318,6 @@ test if symbol `s` is defined in this environment	\n\
 						\n\
 :param s: symbol to test			\n\
 :type s: symbol					\n\
-						\n\
 :return: ``#t`` if `s` is defined in this environment, ``#f`` otherwise	\n\
 ")
 {
@@ -358,7 +353,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("boolean?", booleanp, (IDIO o), "o", "\
 test if `o` is a boolean			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a boolean			\n\
 ")
 {
@@ -378,7 +372,6 @@ return `e`					\n\
 						\n\
 :param e: expression to return			\n\
 :type e: any					\n\
-						\n\
 :return: `e`					\n\
 ")
 {
@@ -392,7 +385,6 @@ return the boolean inverse of `e`		\n\
 						\n\
 :param e: expression to invert			\n\
 :type e: any					\n\
-						\n\
 :return: ``#t`` if `e` is ``#f``, ``#f`` otherwise		\n\
 ")
 {
@@ -483,7 +475,6 @@ test if `o1` and `o2` are indistinguishable in memeory	\n\
 :type o1: any					\n\
 :param o2: object to test			\n\
 :type o2: any					\n\
-						\n\
 :return: ``#t`` if `o1` is eq? to `o2`, ``#f`` otherwise\n\
 ")
 {
@@ -509,7 +500,6 @@ but have the same value.			\n\
 :type o1: any					\n\
 :param o2: object to test			\n\
 :type o2: any					\n\
-						\n\
 :return: ``#t`` if `o1` is eqv? to `o2`, ``#f`` otherwise\n\
 ")
 {
@@ -540,7 +530,6 @@ R5RS suggests that the values *print* the same.	\n\
 :type o1: any					\n\
 :param o2: object to test			\n\
 :type o2: any					\n\
-						\n\
 :return: ``#t`` if `o1` is equal? to `o2`, ``#f`` otherwise\n\
 ")
 {
@@ -3038,8 +3027,7 @@ valid object/object types are:			\n\
 struct type					\n\
 struct instance					\n\
 C/pointer (with CSI)				\n\
-						\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -3331,7 +3319,6 @@ value-index is not efficient			\n\
 :type o: any					\n\
 :param i: index					\n\
 :type i: any					\n\
-						\n\
 :return: the indexed value			\n\
 ")
 {
@@ -3419,7 +3406,6 @@ value-index is not efficient			\n\
 :type i: any					\n\
 :param v: value					\n\
 :type v: any					\n\
-						\n\
 :return: the indexed value			\n\
 ")
 {
@@ -3624,7 +3610,6 @@ copy `v` to `depth`					\n\
 :param v: value to copy					\n\
 :type v: any						\n\
 :param depth: (optional) ``'shallow`` or ``'deep`` (default)	\n\
-							\n\
 :return: copy of `v`					\n\
 ")
 {
@@ -3864,8 +3849,7 @@ print the internal details of `o` to *stderr*		\n\
 							\n\
 :param o: value to dump					\n\
 :type o: any						\n\
-							\n\
-:return: #unspec					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -3908,8 +3892,7 @@ idio-debug \"foo is %20s\n\" foo			\n\
 :type fmt: string					\n\
 :param o: value to dump					\n\
 :type o: any						\n\
-							\n\
-:return: #unspec					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (fmt);

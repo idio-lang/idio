@@ -2790,7 +2790,7 @@ raise the condition `c`					\n\
 :param c: condition to raise				\n\
 :type c: condition					\n\
 							\n\
-:return: #unspec					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (c);
@@ -2895,18 +2895,20 @@ IDIO idio_apply (IDIO fn, IDIO args)
 IDIO_DEFINE_PRIMITIVE1V_DS ("apply", apply, (IDIO fn, IDIO args), "fn [args]", "\
 call `fn` with `args`			\n\
 					\n\
-The last element of `args` is special.	\n\
-If it is a list then the elements of that list	\n\
-are appended to the arguments to `fn`	\n\
-					\n\
-apply \\+ 1 2 3				\n\
-apply \\+ 1 2 3 ``#n``			\n\
-apply \\+ 1 2 3 '(4 5)			\n\
-					\n\
 :param fn: function to call		\n\
 :type fn: function			\n\
 :param args: arguments to `fn`		\n\
 :type args: parameters plus list	\n\
+					\n\
+The last element of `args` is special.	\n\
+If it is a list then the elements of that list	\n\
+are appended to the arguments to `fn`	\n\
+					\n\
+.. code-block:: idio			\n\
+					\n\
+   apply \\+ 1 2 3		; 6	\n\
+   apply \\+ 1 2 3 #n		; 6	\n\
+   apply \\+ 1 2 3 '(4 5)	; 15	\n\
 ")
 {
     IDIO_ASSERT (fn);
@@ -3295,7 +3297,7 @@ set VM tracing to `level`				\n\
 :param level: new VM tracing level			\n\
 :type level: fixnum					\n\
 							\n\
-:return: #unspec					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (level);
@@ -3319,7 +3321,7 @@ set VM live disassembly to to `dis`			\n\
 :param dis: new VM live disassembly setting		\n\
 :type dis: fixnum					\n\
 							\n\
-:return: #unspec					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (dis);
@@ -7517,7 +7519,7 @@ void idio_vm_thread_state (IDIO thr)
 IDIO_DEFINE_PRIMITIVE0_DS ("idio-thread-state", idio_thread_state, (), "", "\
 Display a dump of the current thread's state	\n\
 						\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     idio_vm_thread_state (idio_thread_current_thread ());

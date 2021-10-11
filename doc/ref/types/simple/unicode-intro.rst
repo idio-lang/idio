@@ -12,13 +12,15 @@ direct interaction with integers, they are a separate type.
 Reader Forms
 ------------
 
-The canonical reader form is :samp:`#U+HHHH` where the number of hex
+The canonical reader form is :samp:`#U+{HHHH}` where the number of hex
 digits, :samp:`{H}`, is "enough."  Leading zeroes are not required,
 ``#U+127`` is the same as ``#U+0127``.
 
 An alternate reader form is :samp:`#\\x` where :samp:`{x}` is the
 UTF-8 representation of the code point -- for example, ``#\ħ`` would
-be read as U+0127 (LATIN SMALL LETTER H WITH STROKE).
+be read as U+0127 (LATIN SMALL LETTER H WITH STROKE).  Clearly, the
+usefulness of this form is dependent of general support by fonts and
+editors.
 
 A final reader form is for a limited number of named characters, say,
 ``#\{newline}``, with the name in braces.

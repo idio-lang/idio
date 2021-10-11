@@ -96,3 +96,61 @@ know that a filename starts with ISO8859-1_'s 0xA9 (the same
 0xA9, and not the UTF-8 sequence 0xC2 0xA9, then we can create such a
 string: ``%P"\xa9..."``.
 
+Interpolated Strings
+^^^^^^^^^^^^^^^^^^^^
+
+From time to time it is convenient to want to expand references to
+variables inside a string.  There is a special form for such
+interpolated strings:
+
+    ``#S{...${expr}...}``
+
+Here, everything between the outermost matching ``{`` and ``}`` are
+scanned for instances of the *interpolation sigil*, ``$``.  A matching
+set of ``{`` and ``}`` is read in and the expression therein is
+evaluated, the result being converted to a string (if required) and
+replacing the interpolated expression.  The rest of the string is
+added in a similar way.
+
+If you want to embed an actual interpolation sigil, ``$``, you can
+escape it with the default escape character ``\``:
+
+    ``#S{Your \$PATH will be '${(frob-path)}'!}``
+
+Whatever the call to ``frob-path`` returns will be converted to a
+string (if necessary) giving a string equivalent to:
+
+    ``"Your $PATH will be '...'!"``
+
+In this particular case, there's little advantage over using
+:ref:`sprintf <sprintf>` etc. but in code generation it is much more
+convenient to see (pre-)constructed variable references *in situ* in
+the expected output.
+
+There are two options you can pass, between the ``S`` and opening
+brace: an alternative interpolation sigil and an alternative escape
+character.
+
+In effect, normal behaviour is:
+
+    ``#S$\{...}``
+
+If you only want to change the escape character, use ``.`` for the
+interpolation sigil -- which implies that the interpolation sigil
+cannot be ``.``.
+
+If the use of braces, ``{`` and ``}``, means you would need to escape
+``}`` a lot you can use parenthesis or brackets as the delimiting
+pair:
+
+.. code-block:: idio
+
+   ; generate some C code
+   printf #S[
+   if ($condition) {
+       doit(${c-name arg1}, ${c-name arg2});
+   }
+   ]
+
+although you can only use braces for the expression delimiters.
+

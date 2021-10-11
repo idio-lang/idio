@@ -4290,7 +4290,7 @@ read a number from `src`				\n\
 :param str: source to read from				\n\
 :type str: handle or string				\n\
 :param radix: use radix, defaults to 10			\n\
-:type radix: fixnum					\n\
+:type radix: fixnum, optional				\n\
 :return: number						\n\
 ")
 {

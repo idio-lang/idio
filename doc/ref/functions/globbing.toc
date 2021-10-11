@@ -1,5 +1,6 @@
 (rst "globbing" 0)
 
+(document Idio glob)
 (document Idio ~path)
 (document Idio ~path?)
 (document Idio make-~path)

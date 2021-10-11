@@ -126,13 +126,13 @@ C Types
 
   Any other format specifier is treated as ``%u``.
 
-  Any format specifier other than ``%s`` may elicit a warning.
+  Any other format specifier other than ``%s`` may elicit a warning.
 
 * ``%[efg]`` for floating point types
 
   Any other format specifier is treated as ``%g``.
 
-  Any format specifier other than ``%s`` may elicit a warning.
+  Any other format specifier other than ``%s`` may elicit a warning.
 
 ``C/pointer`` types have the option to be printed by a bespoke
 printer.  See :ref:`add-as-string <add-as-string>`.

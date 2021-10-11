@@ -174,9 +174,13 @@ IDIO_DEFINE_PRIMITIVE2V_DS ("make-condition-type", make_condition_type, (IDIO na
 make a new condition type			\n\
 						\n\
 :param name: condition type name		\n\
+:type name: symbol				\n\
 :param parent: parent condition type		\n\
-:param fields: condition type fields		\n\
+:type parent: ``#n`` or condition type		\n\
+:param fields: field names			\n\
+:type fields: list of symbols			\n\
 :return: new condition type			\n\
+:rtype: condition type				\n\
 						\n\
 make a new condition type based on existing condition `parent` with fields `fields`\n\
 ")
@@ -244,7 +248,9 @@ IDIO_DEFINE_PRIMITIVE1_DS ("allocate-condition", allocate_condition, (IDIO ct), 
 allocate a condition of condition type `ct`	\n\
 						\n\
 :param ct: condition type to allocate		\n\
+:type ct: condition type			\n\
 :return: allocated condition			\n\
+:rtype: struct-instance				\n\
 						\n\
 The allocated condition will have fields set to ``#n``\n\
 						\n\
@@ -267,8 +273,11 @@ IDIO_DEFINE_PRIMITIVE1V_DS ("make-condition", make_condition, (IDIO ct, IDIO val
 initialize a condition of condition type `ct` with values `values`\n\
 						\n\
 :param ct: condition type to allocate		\n\
-:param values: initial values for condition fields\n\
+:type ct: condition type			\n\
+:param values: initial values for condition fields	\n\
+:type values: list				\n\
 :return: allocated condition			\n\
+:rtype: struct-instance				\n\
 ")
 {
     IDIO_ASSERT (ct);
@@ -374,6 +383,7 @@ IDIO_DEFINE_PRIMITIVE2_DS ("condition-ref", condition_ref, (IDIO c, IDIO field),
 return field `field` of condition `c`		\n\
 						\n\
 :param c: condition				\n\
+:type c: struct-instance			\n\
 :param field: field to return			\n\
 :return: field `field` of `c`			\n\
 ")
@@ -401,9 +411,11 @@ IDIO_DEFINE_PRIMITIVE3_DS ("condition-set!", condition_set, (IDIO c, IDIO field,
 set field `field` of condition `c` to value `value`\n\
 						\n\
 :param c: condition				\n\
+:type c: struct-instance			\n\
 :param field: field to set			\n\
+:type field: symbol				\n\
 :param value: value to set			\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (c);
@@ -448,7 +460,7 @@ then `handler` will be invoked with the continuation.	\n\
 :type ct: condition type				\n\
 :param handler: handler for the condition type		\n\
 :type handler: function					\n\
-:return: #<unspec>					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (ct);
@@ -489,7 +501,7 @@ resume.							\n\
 							\n\
 :param ct: condition type				\n\
 :type ct: condition type				\n\
-:return: #<unspec>					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (ct);
@@ -689,6 +701,7 @@ void idio_condition_report (char const *prefix, IDIO c)
 
 IDIO_DEFINE_PRIMITIVE1_DS ("default-rcse-handler", default_rcse_handler, (IDIO c), "c", "\
 The default handler for an ``^rt-command-status-error`` condition	\n\
+								\n\
 :param c: the condition						\n\
 :type c: condition instance					\n\
 :return: see below						\n\
@@ -696,7 +709,7 @@ The default handler for an ``^rt-command-status-error`` condition	\n\
 If the command exits with a non-zero status (from		\n\
 :manpage:`exit(3)` or by signal) then we exit the same way.	\n\
 								\n\
-Otherwise #unspec						\n\
+Otherwise ``#<unspec>``						\n\
 								\n\
 See :ref:`suppress-exit-on-error! <suppress-exit-on-error!>`	\n\
 for means to change the default behaviour.			\n\
@@ -737,7 +750,7 @@ The default handler for an ``^rt-async-command-status-error`` condition	\n\
 								\n\
 :param c: the condition						\n\
 :type c: condition instance					\n\
-:return: #unspec						\n\
+:return: ``#<unspec>``						\n\
 								\n\
 The default behaviour is to ignore failed asynchronous processes\n\
 ")
@@ -960,7 +973,7 @@ does not return per se						\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("restart-condition-handler", restart_condition_handler, (IDIO c), "c", "\
-Invoke a VMM restart handler for `c`				\n\
+Invoke a VM restart handler for `c`				\n\
 								\n\
 :param c: the condition						\n\
 :type c: condition instance					\n\
@@ -1009,7 +1022,7 @@ does not return per se						\n\
 	} else if (idio_struct_type_isa (sit, idio_condition_rt_async_command_status_error_type)) {
 	    /* return idio_command_rcse_handler (c); */
 	    idio_debug ("restart-c-h: racse = %s\n", c);
-	    fprintf (stderr, "restart-c-h: racse?? =>> #unspec\n");
+	    fprintf (stderr, "restart-c-h: racse?? =>> #<unspec>\n");
 	    return idio_S_unspec;
 	} else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
 	    /* return idio_command_rcse_handler (c); */

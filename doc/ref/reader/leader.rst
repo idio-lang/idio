@@ -21,7 +21,7 @@ The matching part of the reader gives rise to a standard form, say:
    add `a` to `b`
    ...
    " {
-     ;; calculate a result in a redundant variable
+     ;; calculate a result in a local variable
      r := a + b
 
      ;; return the result
@@ -34,8 +34,9 @@ the body is not complete until line 10.
 
 An :lname:`Idio` expression of multiple words is always a list.  So,
 even though the example didn't start and end with a parenthesis, the
-AST for that expression will be :samp:`(define ({name} {formals})
-{docstr} {body})`.
+AST for that expression will be
+
+    :samp:`(define ({name} {formals}) {docstr} {body})`
 
 Similarly:
 
@@ -62,7 +63,8 @@ programming language idioms win out.
 
 Consider line 9 in the above example:
 
-* do you intend to return the value from the addition of `a` and `b`?
+* do you intend to return `r`, the value from the addition of `a` and
+  `b`?
 
 * do you want to run the external program that is called whatever the
   *value* of `r` is?
@@ -85,7 +87,7 @@ in parentheses:
 
    (ls)
 
-This forces :lname:`Idio` to interpret the expression as a list of a
+This forces :lname:`Idio` to interpret the expression as a *list* of a
 single symbol.  A list will be evaluated as a "function" call where,
 here, the function name, a plain symbol, means the VM will seek an
 external program from the current :envvar:`PATH`.

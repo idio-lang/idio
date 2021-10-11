@@ -8,9 +8,11 @@ keyword arguments:
 :param \:sep: the element separator, defaults to ``:``
 :type \:sep: string, optional
 :param \:test: apply the predicate on the path segment
-:type \:test: predicate (function)
+:type \:test: predicate (function), **required**
 
-The `:test` keyword argument is required.
+.. note::
+
+   The `:test` keyword argument is required.
 
 :Example:
 

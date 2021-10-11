@@ -18,21 +18,22 @@ of each file:
    table indexed by file name
 
    You could put the entire :ref:`struct-stat <libc/struct-stat>`
-   struct in the hash table or just the ``st_size`` member.
+   struct in the hash table or just the ``st_size`` member depending
+   on what you want your accessor function to do.
 
 #. create a named, or anonymous, accessor function that, given a file
    name, retrieves the corresponding ``st_size`` member from the hash
    table
 
 #. the ``st_size`` member is a :lname:`C` type so we can use
-   :ref:`C/\< <C/\<>` as the "less than" function
+   :ref:`C/\< <C/\<>` as the "less than" comparison function
 
 #. call :ref:`sort <sort>` with the list of file names, ``C/<`` and
    your accessor function
 
-Obviously, you call :ref:`reverse <reverse>` if you want the files
-sorted in the opposite order.
+Obviously, you call :ref:`reverse <reverse>` if you want the file
+names sorted in the opposite order.
 
-Functions for sorting by ``st_atime``, ``st_ctime``, ``st_atime`` and
-``st_size`` are below.
+Functions for sorting file names by ``st_atime``, ``st_ctime``,
+``st_atime`` and ``st_size`` are below.
 

@@ -24,8 +24,7 @@ functions available otherwise it can't access the struct internals.
 
 From the :lname:`C` perspective, we have defined a struct type and we
 only need to have :lname:`Idio` define the predicate, an instance
-constructor and accessors.  This is done in
-:file:`lib/bootstrap/struct.idio` with calls to
+constructor and accessors.  This is done with calls to
 :ref:`define-struct-accessors-only <define-struct-accessors-only>`.
 
 From the :lname:`Idio` perspective, we need to define a struct type

@@ -3961,7 +3961,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("bignum?", bignump, (IDIO o), "o", "\
 test if `o` is a bignum				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a bignum, ``#f`` otherwise	\n\
 ")
 {
@@ -3981,7 +3980,6 @@ test if `n` is a real				\n\
 						\n\
 :param n: number to test			\n\
 :type n: bignum					\n\
-						\n\
 :return: ``#t`` if `n` is a real, ``#f`` otherwise	\n\
 ")
 {
@@ -4008,7 +4006,6 @@ test if `n` is exact				\n\
 						\n\
 :param n: number to test			\n\
 :type n: bignum	or fixnum			\n\
-						\n\
 :return: ``#t`` if `n` is exact, ``#f`` otherwise	\n\
 ")
 {
@@ -4051,7 +4048,6 @@ test if `n` is inexact				\n\
 						\n\
 :param n: number to test			\n\
 :type n: bignum	or fixnum			\n\
-						\n\
 :return: ``#t`` if `n` is inexact, ``#f`` otherwise	\n\
 ")
 {
@@ -4084,7 +4080,6 @@ return an inexact version of `n`		\n\
 						\n\
 :param n: number to convert			\n\
 :type n: bignum	or fixnum			\n\
-						\n\
 :return: inexact value of `n`			\n\
 ")
 {
@@ -4117,7 +4112,6 @@ return an exact version of `n`			\n\
 						\n\
 :param n: number to convert			\n\
 :type n: bignum	or fixnum			\n\
-						\n\
 :return: exact value of `n`			\n\
 ")
 {
@@ -4162,7 +4156,6 @@ return the mantissa of `n`			\n\
 						\n\
 :param n: number to find mantissa of		\n\
 :type n: bignum	or fixnum			\n\
-						\n\
 :return: mantissa of `n`			\n\
 ")
 {
@@ -4204,7 +4197,6 @@ return the exponent of `n`			\n\
 						\n\
 :param n: number to find exponent of		\n\
 :type n: bignum					\n\
-						\n\
 :return: exponent of `n`			\n\
 ")
 {
@@ -4235,8 +4227,7 @@ dump the bignum structure of `n` to	\n\
 					\n\
 :param n: number to dump		\n\
 :type n: bignum				\n\
-					\n\
-:return: #unspec			\n\
+:return: ``#<unspec>``			\n\
 ")
 {
     IDIO_ASSERT (n);

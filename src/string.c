@@ -838,7 +838,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("string?", string_p, (IDIO o), "o", "\
 test if `o` is an string				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an string, ``#f`` otherwise	\n\
 ")
 {
@@ -1800,7 +1799,7 @@ positions start at 0				\n\
 :type index: integer				\n\
 :param c: code point				\n\
 :type c: unicode				\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 						\n\
 `string-set!` will fail if `c` is wider than the\n\
 existing storage allocation for `s`		\n\
@@ -1833,7 +1832,7 @@ set all positions of `s` to `fill`		\n\
 :type s: string					\n\
 :param fill: code point				\n\
 :type fill: unicode				\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 						\n\
 `string-fill!` will fail if `c` is wider than the\n\
 existing storage allocation for `s`		\n\

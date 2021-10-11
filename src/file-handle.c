@@ -1111,7 +1111,6 @@ construct an output pipe handle from `fd` using the name	\n\
 :type name: string, optional				\n\
 :param mode: file mode for opening, defaults to ``\"w\"``	\n\
 :type mode: string, optional				\n\
-							\n\
 :return: pipe file handle				\n\
 :rtype: handle						\n\
 							\n\

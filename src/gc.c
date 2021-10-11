@@ -2315,7 +2315,7 @@ void idio_gc_set_verboseness (int n)
 IDIO_DEFINE_PRIMITIVE0_DS ("gc/collect", gc_collect, (void), "", "\
 invoke the garbage collector			\n\
 						\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     idio_gc_collect (idio_gc, IDIO_GC_COLLECT_GEN, "gc/collect");

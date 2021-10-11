@@ -5,6 +5,7 @@
 (document Idio primitive?)
 (document Idio expander?)
 
+(rst "function-constructors" 0)
 (document Idio define* define-star)
 (document Idio function* function-star)
 

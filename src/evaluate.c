@@ -4347,7 +4347,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
 		    IDIO ettt = IDIO_PAIR_T (ett);
-		    IDIO ettth = idio_S_void; /* default: (if #f e) -> #void */
+		    IDIO ettth = idio_S_void; /* default: (if #f e) -> #<void> */
 		    if (idio_isa_pair (ettt)) {
 			ettth = IDIO_PAIR_H (ettt);
 		    }
@@ -5128,7 +5128,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("environ?", environp, (IDIO o), "o", "\
 test if `o` is an environ variable		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an environ variable, ``#f`` otherwise	\n\
 ")
 {
@@ -5152,7 +5151,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("dynamic?", dynamicp, (IDIO o), "o", "\
 test if `o` is a dynamic variable		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a dynamic variable, ``#f`` otherwise	\n\
 ")
 {
@@ -5176,7 +5174,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("computed?", computedp, (IDIO o), "o", "\
 test if `o` is a computed variable		\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a computed variable, ``#f`` otherwise	\n\
 ")
 {

@@ -4,6 +4,7 @@
 
 (rst "thread-state" 0)
 
+(rst "thread-accessors" 0)
 (document Idio current-error-handle)
 (document Idio current-input-handle)
 (document Idio current-output-handle)
@@ -33,9 +34,6 @@
 (document Idio let*)
 (document Idio letrec)
 
-(document Idio suppress-errors!)
-(document Idio trap)
-(document Idio trap*)
 (document Idio for)
 (document Idio while)
 (document Idio values)
@@ -110,7 +108,6 @@
 (nodocument Idio shift*)
 (nodocument Idio shift-at)
 (nodocument Idio shift-at*)
-(nodocument Idio trap-return)
 (nodocument Idio try-yield)
 (nodocument Idio unwind-till-marked!)
 (nodocument Idio unwind-till-tagged!)

@@ -754,11 +754,16 @@ IDIO_DEFINE_PRIMITIVE1V_DS ("%find-exe", find_exe, (IDIO command), "command", "\
 find `command` on PATH				\n\
 						\n\
 :param command: command name			\n\
-						\n\
+:type command: symbol or string			\n\
 :return: pathname of `command`			\n\
 ")
 {
     IDIO_ASSERT (command);
+
+    /*
+     * idio_command_find_exe() via idio_command_string_C() will handle
+     * either a symbol or a string
+     */
 
     char *pathname = idio_command_find_exe (command);
     if (NULL == pathname) {
@@ -1548,8 +1553,9 @@ IDIO_DEFINE_PRIMITIVE1V_DS ("%exec", exec, (IDIO command, IDIO args), "command [
 exec `command` `args`				\n\
 						\n\
 :param command: command name			\n\
-:param args: (optional) arguments		\n\
-						\n\
+:type command: symbol				\n\
+:param args: arguments				\n\
+:type args: list, optional			\n\
 :return: #<unspec>				\n\
 ")
 {

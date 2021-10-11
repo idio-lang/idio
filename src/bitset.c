@@ -251,7 +251,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("bitset?", bitset_p, (IDIO o), "o", "\
 test if `o` is an bitset				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an bitset, ``#f`` otherwise	\n\
 ")
 {
@@ -411,7 +410,7 @@ clear bit `bit` in bitset `bs`			\n\
 :type bs: bitset				\n\
 :param bit: bit					\n\
 :type bit: unicode or integer			\n\
-:return: #unspec				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (bs);
@@ -477,7 +476,7 @@ get bit `bit` in bitset `bs`			\n\
 :type bs: bitset				\n\
 :param bit: bit					\n\
 :type bit: unicode or integer			\n\
-:rtype: #unspec					\n\
+:rtype: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (bs);
@@ -1029,7 +1028,9 @@ invoke `f` on each bit in bitset `bs` that is set\n\
 :type bs: bitset				\n\
 :param f: function to invoke on each set bit	\n\
 :type f: function of 1 arg			\n\
-:rtype: #unspec					\n\
+:rtype: ``#<unspec>``				\n\
+						\n\
+The argument to `f` will be the index of the bit	\n\
 ")
 {
     IDIO_ASSERT (bs);
@@ -1087,6 +1088,10 @@ accumulating the result in `v`			\n\
 :type v: any					\n\
 :return: the accumulated value			\n\
 :rtype: any					\n\
+						\n\
+For each set bit, the arguments to `f` will be	\n\
+the index of the bit and `v` and `v` is		\n\
+subsequently set to the result of `f`.		\n\
 ")
 {
     IDIO_ASSERT (bs);

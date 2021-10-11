@@ -5,7 +5,7 @@ You can load more source code with :ref:`load <load>`.
 
 ``load`` will search for the file to be loaded on :ref:`IDIOLIB
 <IDIOLIB>` although *extensions* will be given priority over simple
-files.  You should not use a filename extension, eg. "file:`.idio`.
+files.  You should not use a filename extension, eg. :file:`.idio`.
 
 require / provide
 """""""""""""""""

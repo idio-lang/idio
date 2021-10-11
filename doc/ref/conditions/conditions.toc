@@ -6,21 +6,21 @@
 
 (rst "condition-types-intro" 0)
 
+(rst "condition-types-predicates" 0)
 (document Idio condition-type?)
 
+(rst "condition-types-constructors" 0)
 (document Idio make-condition-type)
 
 (document Idio define-condition-type)
 (document Idio define-condition-type/accessors define-condition-type-accessors)
 (document Idio define-condition-type-accessors-only)
 
-(document Idio raise)
-(document Idio reraise)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ; condition type hierarchy
 
+(rst "condition-types-hierarchy" 0)
 (document Idio ^condition)
 (document Idio condition?)
 
@@ -289,29 +289,18 @@
 
 (rst "condition-instances-intro" 0)
 
+(rst "condition-instances-predicates" 0)
 (document Idio condition-isa?)
 
+(rst "condition-instances-constructors" 0)
 (document Idio make-condition)
 (document Idio allocate-condition)
 (document Idio condition)
 
+(rst "condition-instances-accessors" 0)
 (document Idio condition-ref)
 (document Idio condition-set!)
 
+(rst "condition-instances-functions" 0)
 (document Idio condition-report)
 (document Idio condition-report-extend)
-
-
-
-(document Idio default-condition-handler)
-(document Idio set-default-handler!)
-(document Idio clear-default-handler!)
-
-(document Idio default-SIGCHLD-handler)
-(document Idio default-racse-handler)
-(document Idio default-rcse-handler)
-
-(document Idio reset-condition-handler)
-(document Idio restart-condition-handler)
-
-(document Idio with-condition-handler)

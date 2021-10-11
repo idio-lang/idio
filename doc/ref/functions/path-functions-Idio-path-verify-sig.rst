@@ -1,1 +1,1 @@
-val :sep=":" :test=#f
+val (:sep ":") (:test #f)

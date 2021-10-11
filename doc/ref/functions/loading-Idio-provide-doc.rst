@@ -1,4 +1,4 @@
-Update the list of features with `feature`
+Update the list of required features with `feature`
 
 :param feature: feature name
 :type feature: symbol

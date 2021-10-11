@@ -174,7 +174,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("make-keyword", make_keyword, (IDIO s), "s", "\
 create a keyword from `s`			\n\
 						\n\
 :param s: keyword				\n\
-:type size: symbol or string			\n\
+:type s: symbol or string			\n\
 :return: keyword				\n\
 :rtype: keyword					\n\
 ")
@@ -253,7 +253,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("keyword?", keyword_p, (IDIO o), "o", "\
 test if `o` is an keyword			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an keyword, ``#f`` otherwise	\n\
 ")
 {
@@ -273,7 +272,6 @@ convert keyword `kw` to a string		\n\
 						\n\
 :param kw: keyword to convert			\n\
 :type kw: keyword				\n\
-						\n\
 :return: string					\n\
 ")
 {
@@ -312,7 +310,6 @@ used for constructing property tables		\n\
 						\n\
 :param size: size of underlying hash table	\n\
 :type size: integer, optional			\n\
-						\n\
 :return: keyword table				\n\
 ")
 {
@@ -369,7 +366,6 @@ table `kt`						\n\
 :type kw: keyword					\n\
 :param default: a default value to return if `kw` not found	\n\
 :type default: value, optional				\n\
-							\n\
 :return: value						\n\
 :raises ^rt-keyword-error: if `key` is not		\n\
 	found and no `default` is supplied		\n\
@@ -423,8 +419,7 @@ set the index of `kw` in keyword table `kt` to `v`	\n\
 :type kw: keyword					\n\
 :param v: value						\n\
 :type v: a value					\n\
-							\n\
-:return: #unspec					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (kt);

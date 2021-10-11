@@ -139,7 +139,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("char?", C_charp, (IDIO o), "o", "\
 test if `o` is a C/char				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/char, ``#f`` otherwise	\n\
 ")
 {
@@ -174,7 +173,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("schar?", C_scharp, (IDIO o), "o", "\
 test if `o` is a C/schar				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/schar, ``#f`` otherwise	\n\
 ")
 {
@@ -209,7 +207,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("uchar?", C_ucharp, (IDIO o), "o", "\
 test if `o` is a C/uchar				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/uchar, ``#f`` otherwise	\n\
 ")
 {
@@ -244,7 +241,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("short?", C_shortp, (IDIO o), "o", "\
 test if `o` is a C/short				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/short, ``#f`` otherwise	\n\
 ")
 {
@@ -279,7 +275,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("ushort?", C_ushortp, (IDIO o), "o", "\
 test if `o` is a C/ushort			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/ushort, ``#f`` otherwise	\n\
 ")
 {
@@ -314,7 +309,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("int?", C_intp, (IDIO o), "o", "\
 test if `o` is a C/int				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/int, ``#f`` otherwise	\n\
 ")
 {
@@ -349,7 +343,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("uint?", C_uintp, (IDIO o), "o", "\
 test if `o` is a C/uint			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/uint, ``#f`` otherwise	\n\
 ")
 {
@@ -384,7 +377,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("long?", C_longp, (IDIO o), "o", "\
 test if `o` is a C/long				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/long, ``#f`` otherwise	\n\
 ")
 {
@@ -419,7 +411,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("ulong?", C_ulongp, (IDIO o), "o", "\
 test if `o` is a C/ulong			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/ulong, ``#f`` otherwise	\n\
 ")
 {
@@ -454,7 +445,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("longlong?", C_longlongp, (IDIO o), "o", "\
 test if `o` is a C/longlong				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/longlong, ``#f`` otherwise	\n\
 ")
 {
@@ -489,7 +479,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("ulonglong?", C_ulonglongp, (IDIO o), "o", "\
 test if `o` is a C/ulonglong			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/ulonglong, ``#f`` otherwise	\n\
 ")
 {
@@ -524,7 +513,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("float?", C_floatp, (IDIO o), "o", "\
 test if `o` is a C/float			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/float, ``#f`` otherwise	\n\
 ")
 {
@@ -559,7 +547,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("double?", C_doublep, (IDIO o), "o", "\
 test if `o` is a C/double			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/double, ``#f`` otherwise	\n\
 ")
 {
@@ -594,7 +581,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("longdouble?", C_longdoublep, (IDIO o), "o", "\
 test if `o` is a C/longdouble			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/longdouble, ``#f`` otherwise	\n\
 ")
 {
@@ -669,7 +655,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("pointer?", C_pointerp, (IDIO o), "o", "\
 test if `o` is a C/pointer			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/pointer, ``#f`` otherwise	\n\
 ")
 {
@@ -723,7 +708,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("type?", C_typep, (IDIO o), "o", "\
 test if `o` is a C/ type			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/ type, ``#f`` otherwise	\n\
 ")
 {
@@ -767,7 +751,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("number?", C_numberp, (IDIO o), "o", "\
 test if `o` is a C/ number			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/ number, ``#f`` otherwise	\n\
 ")
 {
@@ -805,7 +788,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("integral?", C_integralp, (IDIO o), "o", "\
 test if `o` is a C/ integral			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/ integral, ``#f`` otherwise	\n\
 ")
 {
@@ -838,7 +820,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("unsigned?", C_unsignedp, (IDIO o), "o", "\
 test if `o` is a C/ unsigned			\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is a C/ unsigned, ``#f`` otherwise	\n\
 ")
 {
@@ -1705,7 +1686,6 @@ convert C integer `i` to an Idio integer	\n\
 						\n\
 :param o: C integer to convert			\n\
 :type o: C/ integer type			\n\
-						\n\
 :return: Idio integer				\n\
 :rtype: integer					\n\
 ")
@@ -2427,7 +2407,6 @@ perform a C bitwise-OR on `v1` etc.	\n\
 					\n\
 :param v1: C integer			\n\
 :type v1: C/int				\n\
-					\n\
 :return: C integer			\n\
 :rtype: C/int				\n\
 ")
@@ -2451,7 +2430,6 @@ perform a C bitwise-AND on `v1` etc.	\n\
 					\n\
 :param v1: C integer			\n\
 :type v1: C/int				\n\
-					\n\
 :return: C integer			\n\
 :rtype: C/int				\n\
 ")
@@ -2475,7 +2453,6 @@ perform a C bitwise-XOR on `v1` etc.	\n\
 					\n\
 :param v1: C integer			\n\
 :type v1: C/int				\n\
-					\n\
 :return: C integer			\n\
 :rtype: C/int				\n\
 ")
@@ -2499,7 +2476,6 @@ perform a C bitwise-complement on `v1`	\n\
 					\n\
 :param v1: C integer			\n\
 :type v1: C/int				\n\
-					\n\
 :return: C integer			\n\
 :rtype: C/int				\n\
 ")

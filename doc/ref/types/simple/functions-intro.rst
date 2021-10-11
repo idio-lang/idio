@@ -97,6 +97,20 @@ could be passed around as an argument or invoked:
 
 should return 5.
 
+Closure Environment
+^^^^^^^^^^^^^^^^^^^
+
+When a closure is *created* it is associated with the current *frame of
+execution* and the current module.  Together these describe both the
+locally defined (through containing functions' parameters) local
+variables as well as the set of *free variables* defined in this and
+any imported modules.
+
+When a closure is *run* all it has from the calling environment are
+the (evaluated) arguments passed to it.  When the VM starts executing
+the instructions of the closure it will be using the stored execution
+frame and module associated with the closure's definition.
+
 Special Forms
 -------------
 

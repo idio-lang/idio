@@ -363,7 +363,6 @@ IDIO_DEFINE_PRIMITIVE1_DS ("hash?", hash_p, (IDIO o), "o", "\
 test if `o` is an hash				\n\
 						\n\
 :param o: object to test			\n\
-						\n\
 :return: ``#t`` if `o` is an hash, ``#f`` otherwise	\n\
 ")
 {
@@ -1114,8 +1113,7 @@ set the index of `key` in hash table `ht` to `v`	\n\
 :type key: any non-``#n``				\n\
 :param v: value						\n\
 :type v: a value					\n\
-							\n\
-:return: #unspec					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1251,7 +1249,6 @@ a value							\n\
 :type ht: hash table					\n\
 :param key: non-``#n`` value				\n\
 :type key: any non-``#n``				\n\
-							\n\
 :return: ``#t`` or ``#f``				\n\
 ")
 {
@@ -1344,7 +1341,6 @@ return the value indexed by `key` in hash table `ht`	\n\
 :type key: any non-``#n``				\n\
 :param default: a default value if `key` not found	\n\
 :type default: a thunk or a simple value, optional	\n\
-							\n\
 :return: value						\n\
 :raises rt-hash-key-not-found-error: if `key` not found	\n\
 	and no `default` supplied			\n\
@@ -1461,8 +1457,7 @@ hash table `ht`					\n\
 :type ht: hash table					\n\
 :param key: non-``#n`` value				\n\
 :type key: any non-``#n``				\n\
-							\n\
-:return: #unspec					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1531,8 +1526,7 @@ no order can be presumed				\n\
 							\n\
 :param ht: hash table					\n\
 :type ht: hash table					\n\
-							\n\
-:return: #unspec					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1588,8 +1582,7 @@ no order can be presumed				\n\
 							\n\
 :param ht: hash table					\n\
 :type ht: hash table					\n\
-							\n\
-:return: #unspec					\n\
+:return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1772,7 +1765,6 @@ convert association list `al` into a hash table		\n\
 :type al: association list				\n\
 :param args: arguments for ``make-hash``		\n\
 :type args: list, optional				\n\
-							\n\
 :return: hash table					\n\
 							\n\
 .. seealso:: :ref:`make-hash <make-hash>`		\n\
@@ -1802,7 +1794,6 @@ return the `equiv-func` of `h`				\n\
 							\n\
 :param h: hash table					\n\
 :type h: hash table					\n\
-							\n\
 :return: equivalence function				\n\
 ")
 {
@@ -1837,7 +1828,6 @@ return the `hash-func` of `h`				\n\
 							\n\
 :param h: hash table					\n\
 :type h: hash table					\n\
-							\n\
 :return: hashing function				\n\
 ")
 {
@@ -1868,7 +1858,6 @@ return the key count of `h`				\n\
 							\n\
 :param h: hash table					\n\
 :type h: hash table					\n\
-							\n\
 :return: key count					\n\
 ")
 {
@@ -1927,8 +1916,7 @@ key to the returned value					\n\
 :type func: 1-ary function					\n\
 :param default: see ``hash-ref``				\n\
 :type default: see ``hash-ref``					\n\
-								\n\
-:return: #unspec						\n\
+:return: ``#<unspec>``						\n\
 								\n\
 .. seealso:: :ref:`hash-ref <hash-ref>`				\n\
 ")
@@ -1969,8 +1957,7 @@ call `func` for each `key` in hash table `ht`			\n\
 :type ht: hash table						\n\
 :param func: func to be called with each key, value pair	\n\
 :type func: 2-ary function					\n\
-								\n\
-:return: #unspec						\n\
+:return: ``#<unspec>``						\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -2028,7 +2015,6 @@ The final value of `val` is returned				\n\
 :type func: 3-ary function					\n\
 :param val: initial value for `val`				\n\
 :type func: value						\n\
-								\n\
 :return: final value of `val`					\n\
 ")
 {
@@ -2139,7 +2125,6 @@ duplicate keys in `ht2` will overwrite keys in `ht1`		\n\
 :type ht1: hash table						\n\
 :param ht2: hash table						\n\
 :type ht2: hash table						\n\
-								\n\
 :return: `ht1`							\n\
 ")
 {
