@@ -2280,7 +2280,7 @@ generic function instead.
 'output, 'error
 
 {new} can be:
-1. a handle (file or string)
+1. a handle (fd or string)
 2. a C int or fixnum which will be interpreted as the name of the
    file descriptor to call dup2(2) with
 
@@ -2300,7 +2300,7 @@ with-handle-dup := {
     ;; handle-oriented indirection function/variables
     get-current-h := #f
     set-h!        := #f
-    dir-file-h?   := #f
+    dir-fd-h?     := #f
     dir-string-h? := #f
     msg-h         := #f
 
@@ -2308,21 +2308,21 @@ with-handle-dup := {
      ((eq? type 'input) {
        get-current-h = current-input-handle
        set-h!        = set-input-handle!
-       dir-file-h?   = input-file-handle?
+       dir-fd-h?     = input-fd-handle?
        dir-string-h? = input-string-handle?
        msg-h         = "input"
      })
      ((eq? type 'output) {
        get-current-h = current-output-handle
        set-h!        = set-output-handle!
-       dir-file-h?   = output-file-handle?
+       dir-fd-h?     = output-fd-handle?
        dir-string-h? = output-string-handle?
        msg-h         = "output"
      })
      ((eq? type 'error) {
        get-current-h = current-error-handle
        set-h!        = set-error-handle!
-       dir-file-h?   = output-file-handle?
+       dir-fd-h?     = output-fd-handle?
        dir-string-h? = output-string-handle?
        msg-h         = "output"
      })
@@ -2333,10 +2333,10 @@ with-handle-dup := {
     new-h := #f
 
     (cond
-     ((dir-file-h? new) {
+     ((dir-fd-h? new) {
        new-h = new
      })
-     ((file-handle? new) (error/type ^rt-parameter-type-error 'with-handle-dup (append-string "not an " msg-h "-file-handle") new))
+     ((fd-handle? new) (error/type ^rt-parameter-type-error 'with-handle-dup (append-string "not an " msg-h "-fd-handle") new))
      ((dir-string-h? new) (new-h = new))
      ((string-handle? new) (error/type ^rt-parameter-type-error 'with-handle-dup (append-string "not an " msg-h "-string-handle") new))
      ((or (C/int? new)
