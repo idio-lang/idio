@@ -60,6 +60,10 @@ test (C/float? v)	#f
 test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#t
+test (C/unsigned? v)	#f
 
 v := C/integer-> 0 'schar
 test (C/char? v)	#f
@@ -77,6 +81,10 @@ test (C/float? v)	#f
 test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#t
+test (C/unsigned? v)	#f
 
 v := C/integer-> 0 'uchar
 test (C/char? v)	#f
@@ -94,6 +102,10 @@ test (C/float? v)	#f
 test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#t
+test (C/unsigned? v)	#t
 
 v := C/integer-> 0 'short
 test (C/char? v)	#f
@@ -111,6 +123,10 @@ test (C/float? v)	#f
 test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#t
+test (C/unsigned? v)	#f
 
 v := C/integer-> 0 'ushort
 test (C/char? v)	#f
@@ -128,6 +144,10 @@ test (C/float? v)	#f
 test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#t
+test (C/unsigned? v)	#t
 
 v := C/integer-> 0 'int
 test (C/char? v)	#f
@@ -145,6 +165,10 @@ test (C/float? v)	#f
 test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#t
+test (C/unsigned? v)	#f
 
 v := C/integer-> 0 'uint
 test (C/char? v)	#f
@@ -162,6 +186,10 @@ test (C/float? v)	#f
 test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#t
+test (C/unsigned? v)	#t
 
 v := C/integer-> 0 'long
 test (C/char? v)	#f
@@ -179,6 +207,10 @@ test (C/float? v)	#f
 test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#t
+test (C/unsigned? v)	#f
 
 v := C/integer-> 0 'ulong
 test (C/char? v)	#f
@@ -196,6 +228,10 @@ test (C/float? v)	#f
 test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#t
+test (C/unsigned? v)	#t
 
 v := C/integer-> 0 'longlong
 test (C/char? v)	#f
@@ -213,6 +249,10 @@ test (C/float? v)	#f
 test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#t
+test (C/unsigned? v)	#f
 
 v := C/integer-> 0 'ulonglong
 test (C/char? v)	#f
@@ -230,6 +270,10 @@ test (C/float? v)	#f
 test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#t
+test (C/unsigned? v)	#t
 
 v := C/number-> 0 'float
 test (C/char? v)	#f
@@ -247,6 +291,10 @@ test (C/float? v)	#t
 test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#f
+test (C/unsigned? v)	#f
 
 v := C/number-> 0 'double
 test (C/char? v)	#f
@@ -264,6 +312,10 @@ test (C/float? v)	#f
 test (C/double? v)	#t
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#f
+test (C/unsigned? v)	#f
 
 v := C/number-> 0 'longdouble
 test (C/char? v)	#f
@@ -281,6 +333,10 @@ test (C/float? v)	#f
 test (C/double? v)	#f
 test (C/longdouble? v)	#t
 test (C/pointer? v)	#f
+test (C/type? v)	#t
+test (C/number? v)	#t
+test (C/integral? v)	#f
+test (C/unsigned? v)	#f
 
 v := libc/NULL
 test (C/char? v)	#f
@@ -298,6 +354,10 @@ test (C/float? v)	#f
 test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#t
+test (C/type? v)	#t
+test (C/number? v)	#f
+test (C/integral? v)	#f
+test (C/unsigned? v)	#f
 
 test (C/char?       (C/integer-> 1 'char))		#t
 test (C/schar?      (C/integer-> 1 'schar))		#t
@@ -370,4 +430,4 @@ c-uintmax-max := C/->number libc/UINTMAX_MAX
 test (C/->number (C/integer->unsigned c-uintmax-max libc/uintmax_t)) c-uintmax-max
 
 ;; all done?
-Tests? (c-type0 + 298)
+Tests? (c-type0 + 358)

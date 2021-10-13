@@ -728,6 +728,7 @@ test if `o` is a C/ type			\n\
 int idio_isa_C_number (IDIO o)
 {
     switch (idio_type (o)) {
+    case IDIO_TYPE_C_CHAR:
     case IDIO_TYPE_C_SCHAR:
     case IDIO_TYPE_C_UCHAR:
     case IDIO_TYPE_C_SHORT:
@@ -768,6 +769,7 @@ test if `o` is a C/ number			\n\
 int idio_isa_C_integral (IDIO o)
 {
     switch (idio_type (o)) {
+    case IDIO_TYPE_C_CHAR:
     case IDIO_TYPE_C_SCHAR:
     case IDIO_TYPE_C_UCHAR:
     case IDIO_TYPE_C_SHORT:
