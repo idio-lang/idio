@@ -16,9 +16,6 @@
 (document Idio current-module)
 (nodocument Idio %set-current-module!)
 
-(document Idio gc/collect)
-(document Idio idio-debug)
-(document Idio idio-dump)
 (document Idio idio-thread-state)
 
 (document Idio run-in-thread)
@@ -30,32 +27,30 @@
 ; s9.idio
 (nodocument Idio %ext-let)
 
-(document Idio let)
-(document Idio let*)
-(document Idio letrec)
+(nodocument Idio let)
+(nodocument Idio let*)
+(nodocument Idio letrec)
 
-(document Idio for)
-(document Idio while)
-(document Idio values)
+(nodocument Idio for)
+(nodocument Idio while)
+(nodocument Idio values)
 
-(document Idio setter)
+(nodocument Idio setter)
 
-(document Idio debugger)
+(nodocument Idio debugger)
 
-(document Idio trap-return-tag)
-(document Idio unwind-protect-tag)
-(document Idio yield-record-tag)
-(document Idio yield-tag)
-(document Idio default-prompt-tag)
-(document Idio default-reset-tag)
-(document Idio for-loop-break-tag)
-(document Idio for-loop-continue-tag)
-(document Idio function-return-hole)
-(document Idio function-return-tag)
+(nodocument Idio trap-return-tag)
+(nodocument Idio unwind-protect-tag)
+(nodocument Idio yield-record-tag)
+(nodocument Idio yield-tag)
+(nodocument Idio default-prompt-tag)
+(nodocument Idio default-reset-tag)
+(nodocument Idio for-loop-break-tag)
+(nodocument Idio for-loop-continue-tag)
+(nodocument Idio function-return-hole)
+(nodocument Idio function-return-tag)
 
-(document Idio continuation?)
-(document Idio call-with-values)
-(document Idio call/cc)
+(nodocument Idio call-with-values)
 
 (nodocument Idio %%vm-apply-continuation)
 (nodocument Idio %%vm-continuations)

@@ -469,7 +469,7 @@ int idio_equalp (void const *o1, void const *o2)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("eq?", eqp, (IDIO o1, IDIO o2), "o1 o2", "\
-test if `o1` and `o2` are indistinguishable in memeory	\n\
+test if `o1` and `o2` are indistinguishable in memory	\n\
 						\n\
 :param o1: object to test			\n\
 :type o1: any					\n\
@@ -2237,9 +2237,6 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			    fmt_len = idio_snprintf (fmt, 30, "%%.%d", prec);
 
 			    switch (type) {
-			    case IDIO_TYPE_C_DOUBLE:
-				memcpy (fmt + fmt_len++, "l", 1);
-				break;
 			    case IDIO_TYPE_C_LONGDOUBLE:
 				memcpy (fmt + fmt_len++, "L", 1);
 				break;
@@ -3300,21 +3297,6 @@ if `i` is a function then invoke (`i` `o`)	\n\
 						\n\
 otherwise index the object `o` by `i`		\n\
 						\n\
-indexable object types are:			\n\
-pair:			(nth o i)		\n\
-string:			(string-ref o i)	\n\
-array:			(array-ref o i)		\n\
-hash:			(hash-ref o i)		\n\
-struct instance:	(struct-instance-ref o i)	\n\
-						\n\
-Note that, in particular for struct instance,	\n\
-the symbol used for a symbolic field name may	\n\
-have been evaluated to a value.			\n\
-						\n\
-Quote if necessary: o.'i			\n\
-						\n\
-value-index is not efficient			\n\
-						\n\
 :param o: object to index			\n\
 :type o: any					\n\
 :param i: index					\n\
@@ -3384,21 +3366,6 @@ value-index is not efficient			\n\
 
 IDIO_DEFINE_PRIMITIVE3_DS ("set-value-index!", set_value_index, (IDIO o, IDIO i, IDIO v), "o i v", "\
 set value of the object `o` indexed by `i` to `v`	\n\
-						\n\
-indexable object types are:			\n\
-pair:			(nth o i)		\n\
-string:			(string-ref o i)	\n\
-array:			(array-ref o i)		\n\
-hash:			(hash-ref o i)		\n\
-struct instance:	(struct-instance-ref o i)	\n\
-						\n\
-Note that, in particular for struct instance,	\n\
-the symbol used for a symbolic field name may	\n\
-have been evaluated to a value.			\n\
-						\n\
-Quote if necessary: o.'i			\n\
-						\n\
-value-index is not efficient			\n\
 						\n\
 :param o: object to index			\n\
 :type o: any					\n\
@@ -3609,7 +3576,8 @@ copy `v` to `depth`					\n\
 							\n\
 :param v: value to copy					\n\
 :type v: any						\n\
-:param depth: (optional) ``'shallow`` or ``'deep`` (default)	\n\
+:param depth: ``'shallow`` or ``'deep`` (default)	\n\
+:type depth: symbol, optional				\n\
 :return: copy of `v`					\n\
 ")
 {

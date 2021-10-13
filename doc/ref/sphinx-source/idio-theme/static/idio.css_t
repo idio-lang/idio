@@ -27,6 +27,17 @@
 
 body {
     font-size: unset;
+
+    /*
+     * Hmm.  Different HTML generators generate different output (news
+     * at 11).
+     *
+     * The older code generated <<div class="section">> for which
+     * alabaster had <<div.body > .section>> whereas the newer code
+     * generates <<section id="...">> which isn't picked up by anything.
+     */
+
+    text-align: {{ theme_body_text_align }};
 }
 
 @media screen and (max-width: 875px) {

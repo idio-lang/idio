@@ -711,9 +711,9 @@ If the command exits with a non-zero status (from		\n\
 								\n\
 Otherwise ``#<unspec>``						\n\
 								\n\
-See :ref:`suppress-exit-on-error! <suppress-exit-on-error!>`	\n\
-for means to change the default behaviour.			\n\
-								\n\
+.. seealso:: :ref:`suppress-exit-on-error! <suppress-exit-on-error!>`	\n\
+	and :ref:`suppress-pipefail! <suppress-pipefail!>`	\n\
+	for means to change the default behaviour.		\n\
 ")
 {
     IDIO_ASSERT (c);
@@ -752,7 +752,11 @@ The default handler for an ``^rt-async-command-status-error`` condition	\n\
 :type c: condition instance					\n\
 :return: ``#<unspec>``						\n\
 								\n\
-The default behaviour is to ignore failed asynchronous processes\n\
+The default behaviour is to report but otherwise ignore failed	\n\
+asynchronous processes						\n\
+								\n\
+.. seealso:: :ref:`suppress-async-command-report! <suppress-async-command-report!>`	\n\
+	for means to change the default behaviour.		\n\
 ")
 {
     IDIO_ASSERT (c);
@@ -973,7 +977,8 @@ does not return per se						\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("restart-condition-handler", restart_condition_handler, (IDIO c), "c", "\
-Invoke a VM restart handler for `c`				\n\
+Restart the VM with the continuation of the current top-level	\n\
+expression.							\n\
 								\n\
 :param c: the condition						\n\
 :type c: condition instance					\n\
@@ -1077,7 +1082,7 @@ does not return per se						\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("reset-condition-handler", reset_condition_handler, (IDIO c), "c", "\
-Reset the VM!							\n\
+Stop the VM and exit non-zero.					\n\
 								\n\
 :param c: the condition						\n\
 :type c: condition instance					\n\

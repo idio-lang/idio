@@ -603,11 +603,14 @@ return a (possibly named) pipe with pathnames for each end	\n\
 :return: see below						\n\
 :rtype: list							\n\
 								\n\
-On /dev/fd supporting systems the return value is:		\n\
-(rfd, wfd, rname, wname)					\n\
+On /dev/fd supporting systems the return value is the four	\n\
+element list:							\n\
 								\n\
-Otherwise the return value is:					\n\
-(#f, #f, pipe-name, pipe-name, tmpdir)				\n\
+    :samp:`({rfd}, {wfd}, {rname}, {wname})`			\n\
+								\n\
+Otherwise the return value is the five element list:		\n\
+								\n\
+    :samp:`(#f, #f, {pipe-name}, {pipe-name}, {tmpdir})`	\n\
 ")
 {
     return idio_libc_proc_subst_named_pipe (1);
@@ -619,11 +622,14 @@ return a (possibly named) pipe with pathnames for each end	\n\
 :return: see below						\n\
 :rtype: list							\n\
 								\n\
-On /dev/fd supporting systems the return value is:		\n\
-(rfd, wfd, rname, wname)					\n\
+On /dev/fd supporting systems the return value is the four	\n\
+element list:							\n\
 								\n\
-Otherwise the return value is:					\n\
-(#f, #f, pipe-name, pipe-name, tmpdir)				\n\
+    :samp:`({rfd}, {wfd}, {rname}, {wname})`			\n\
+								\n\
+Otherwise the return value is the five element list:		\n\
+								\n\
+    :samp:`(#f, #f, {pipe-name}, {pipe-name}, {tmpdir})`	\n\
 ")
 {
     return idio_libc_proc_subst_named_pipe (0);
@@ -637,10 +643,14 @@ Otherwise the return value is:					\n\
  * The alternative is "suppress-errors! ^system-error libc/close fd"
  * which is an awful lot of template and trap code for something we
  * sort of expect to fail.  Here we have two system calls.
+ *
+ * It should probably be only the one system call.
  */
 IDIO_DEFINE_PRIMITIVE1_DS ("close-if-open", libc_close_if_open, (IDIO fd), "fd", "\
 in C, :samp:`fcntl({fd}, F_GETFD) && close ({fd})`		\n\
-a wrapper to libc :manpage:`close(2)`				\n\
+								\n\
+This exists to avoid :ref:`close <libc/close>` reacting to	\n\
+``EBADF`` which is handled specially.				\n\
 								\n\
 :param fd: file descriptor					\n\
 :type fd: C/int							\n\
@@ -703,13 +713,15 @@ signal-handler (sig)						\n\
 A helper function to advise of the current disposition for a	\n\
 given signal.							\n\
 								\n\
-== (libc/signal-handler SIGPIPE) SIG_IGN			\n\
-								\n\
 :param sig: signal						\n\
 :type sig: C/int						\n\
 :return: current disposition					\n\
 :rtype: C/pointer						\n\
 :raises ^system-error:						\n\
+								\n\
+The following dispositions are defined:				\n\
+``libc/SIG_IGN``						\n\
+``libc/SIG_DFL``						\n\
 ")
 {
     IDIO_ASSERT (isig);
@@ -790,7 +802,7 @@ a wrapper to libc macro ``WIFEXITED``, see :manpage:`waitpid(2)`	\n\
 								\n\
 :param status: process status					\n\
 :type status: C/pointer						\n\
-:return: #t if the child exited normally or #f			\n\
+:return: ``#t`` if the child exited normally or ``#f``		\n\
 :rtype: boolean							\n\
 ")
 {
@@ -820,7 +832,7 @@ a wrapper to libc macro ``WIFSIGNALED``, see :manpage:`waitpid(2)`	\n\
 								\n\
 :param status: process status					\n\
 :type status: C/pointer						\n\
-:return: #t if the child was terminated by a signal or #f	\n\
+:return: ``#t`` if the child was terminated by a signal or ``#f``	\n\
 :rtype: boolean							\n\
 ")
 {
@@ -850,7 +862,7 @@ a wrapper to libc macro ``WIFSTOPPED``, see :manpage:`waitpid(2)`	\n\
 								\n\
 :param status: process status					\n\
 :type status: C/pointer						\n\
-:return: #t if the child was stopped by a signal or #f		\n\
+:return: ``#t`` if the child was stopped by a signal or ``#f``	\n\
 :rtype: boolean							\n\
 ")
 {
@@ -1243,7 +1255,7 @@ A short signal name would be ``QUIT`` or ``INT``.		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("sig-names", libc_sig_names, (void), "", "\
-return a list of (number, short name) pairs of known signals	\n\
+return a list of :samp:`({number} & {short name})` pairs of known signals	\n\
 								\n\
 :return: association list of signal pairs			\n\
 :rtype: list							\n\
@@ -1289,7 +1301,7 @@ A long signal name would be ``SIGQUIT`` or ``SIGINT``.		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("signal-names", libc_signal_names, (void), "", "\
-return a list of (number, long name) pairs of known signals	\n\
+return a list of :samp:`({number} & {long name})` pairs of known signals	\n\
 								\n\
 :return: map of signal pairs					\n\
 :rtype: list							\n\
@@ -2245,7 +2257,7 @@ return the error name of `errnum`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("errno-names", libc_errno_names, (void), "", "\
-return a list of (number, name) pairs of known errno numbers	\n\
+return a list of :samp:`({number} & {name})` pairs of known errno numbers	\n\
 								\n\
 :return: association list of errno pairs			\n\
 :rtype: list							\n\
@@ -2490,7 +2502,7 @@ C macro						\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("rlimit-names", libc_rlimit_names, (), "", "\
-return a list of pairs of the :manpage:`getrlimit(2)`      \n\
+return a list of :samp:`({number} & {name})` pairs of the :manpage:`getrlimit(2)`      \n\
 C macros					\n\
 						\n\
 each pair is the C value and string name	\n\
@@ -2939,7 +2951,7 @@ is `pathname` a directory?		\n\
 IDIO_DEFINE_PRIMITIVE1_DS ("S_ISDIR", libc_S_ISDIR, (IDIO mode), "mode", "\
 does `mode` represent a directory?	\n\
 					\n\
-:param mode: mode from :manpage:`stat(2)`		\n\
+:param mode: mode from :manpage:`stat(2)`	\n\
 :type mode: libc/mode_t			\n\
 :return: ``#t`` or ``#f``		\n\
 :rtype: boolean				\n\

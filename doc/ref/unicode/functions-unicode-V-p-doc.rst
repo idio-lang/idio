@@ -1,4 +1,4 @@
-Is `cp` a ``V?``
+Does `cp` have the Unicode Property ``V``?
 
 :param cp: code point to test
 :type cp: unicode

@@ -4,9 +4,9 @@ Condition Handlers
 ------------------
 
 Handling errors in :lname:`Idio` works differently to many programming
-languages.  In those, when an exception is raised then execution is
-*unwound* to where the handler is and the handler is executed and
-control continues from after the exception handling block.  Think
+languages.  In those, when an exception is raised then the computation
+state is *unwound* to where the handler is and the handler is executed
+and control continues from after the exception handling block.  Think
 ``try``/``except`` in :lname:`Python`.
 
 In :lname:`Idio`, when a condition is raised the VM *pauses* the
@@ -15,14 +15,17 @@ walks back through the execution state looking to see if any handlers
 have been established for this condition type (or an ancestor of this
 condition type).
 
-If one is found the associated *handler* is run which can do a number
-of things:
+If one is found the associated *handler* is called with the condition
+as an argument which can do a number of things:
 
 #. it can return a value in which case that value is used *in place
    of* the errant computation and the original computation continues
+   as if the errant computation had returned whatever the handler has
+   just returned
 
-   This isn't used by the :lname:`Idio` defined errors as they are not
-   normally something easily recoverable from.
+   This isn't used by the :lname:`Idio` defined error handlers as the
+   conditions are not normally something easily recoverable from.
+   There is an example below of unwise intervention.
 
    It also requires that the handler have some intimate knowledge of
    the state of processing at the time of the error.
@@ -31,7 +34,7 @@ of things:
    <^i/o-no-such-file-error>` handler around a call to :ref:`open-file
    <open-file>`.  The expectation of the calling code is to receive an
    open file handle and so, if you want to handle the missing file by
-   "quickly creating and opening" another file in its stead to return
+   "quickly creating and opening another file" in its stead to return
    the open file handle, you also need to return the correct type of
    file (input or output) and with the correct mode.
 
@@ -129,8 +132,9 @@ value:
    }
 
 This shows our handler as being incredibly naïve as now we get an
-:ref:`^rt-parameter-type-error <^rt-parameter-type-error>` as the
-addition, ``+``, won't accept the symbol as a valid type.
+:ref:`^rt-parameter-type-error <^rt-parameter-type-error>` in the next
+expression as the addition, ``+``, won't accept the symbol as a valid
+type.
 
 We can revert to the more common ``try``/``expect`` behaviour by
 returning from the ``trap`` itself with :ref:`trap-return

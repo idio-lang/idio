@@ -1,6 +1,6 @@
 .. idio:currentmodule:: unicode
 
-unicode functions
+unicode Functions
 -----------------
 
 The *predicates* in this list are asserting some Unicode *Category* or

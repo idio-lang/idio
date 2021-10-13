@@ -98,7 +98,9 @@ We'll follow the style of Bash .../lib/sh/tmpfile.c
 %default-tmpname-prefix := "idio-tmp-"
 %%mkstemp-template := "XXXXXX"
 
-define (%get-sys-tmpdir) {
+define (%get-sys-tmpdir) "
+Discover a writeable *system* directory for temporary files.
+" {
   loop :+ function (dirs) {
 	    if (null? dirs) (error/type ^rt-runtime-error '%get-sys-tmpdir "no remaining %sys-tmpdirs" %sys-tmpdirs) {
 	      dir := ph dirs
@@ -109,12 +111,21 @@ define (%get-sys-tmpdir) {
 	    }
   }
 
-  if %sys-tmpdir %sys-tmpdir {
+  if (not %sys-tmpdir) {
     %sys-tmpdir = loop %sys-tmpdirs
   }
+
+  %sys-tmpdir
 }
 
-define (%get-tmpdir) {
+define (%get-tmpdir) "
+Discover a writeable directory for temporary files.
+
+Try the environment variable :envvar:`TMPDIR` if it exists or fall
+back to the results from :ref:`libc/%get-sys-tmpdir
+<libc/%get-sys-tmpdir>`.
+
+" {
   tmpdir := #f
 
   if (and (environ? 'TMPDIR)
@@ -126,7 +137,20 @@ define (%get-tmpdir) {
       }
 }
 
-define (%make-tmp-fd & args) {
+define (%make-tmp-fd & args) "
+
+create a temporary file and return an open file descriptor to it and
+its name
+
+:param prefix: prefix for file name, defaults to ``\"idio-tmp-\"``
+:type prefix: string, optional
+:return: list of open fd and file name
+:rtype: list
+
+This is a wrapper to :ref:`libc/mkstemp <libc/mkstemp>` using the
+temporary directory from :ref:`libc/%get-tmpdir <libc/%get-tmpdir>`.
+
+" {
   tmpdir := (%get-tmpdir)
   prefix := %default-tmpname-prefix
   if (not (null? args)) {
@@ -139,21 +163,55 @@ define (%make-tmp-fd & args) {
   mkstemp tmpfilename
 }
 
-define (make-tmp-file & prefix) {
+define (make-tmp-file & prefix) "
+create a temporary file and return its name
+
+:param prefix: prefix for file name, defaults to ``\"idio-tmp-\"``
+:type prefix: string, optional
+:return: file name
+:rtype: pathname
+
+This is a wrapper to :ref:`libc/%make-tmp-fd <libc/make-tmp-fd>` and
+closing the returned file descriptor.
+
+" {
   fd+name := apply %make-tmp-fd prefix
 
   close (ph fd+name)
   pht fd+name
 }
 
-define (make-tmp-fd & prefix) {
+define (make-tmp-fd & prefix) "
+create a temporary file and return an open file descriptor to it
+
+:param prefix: prefix for file name, defaults to ``\"idio-tmp-\"``
+:type prefix: string, optional
+:return: open file descriptor
+:rtype: C/int
+
+This is a wrapper to :ref:`libc/%make-tmp-fd <libc/make-tmp-fd>` and
+unlinking the returned file name.
+
+" {
   fd+name := apply %make-tmp-fd prefix
 
   unlink (pht fd+name)
   ph fd+name
 }
 
-define (make-tmp-file-handle & prefix) {
+define (make-tmp-file-handle & prefix) "
+create a temporary file and return an open file handle to it
+
+:param prefix: prefix for file name, defaults to ``\"idio-tmp-\"``
+:type prefix: string, optional
+:return: file handle
+:rtype: handle
+
+This is a wrapper to :ref:`libc/%make-tmp-fd <libc/make-tmp-fd>` and
+unlinking the returned file name and opening a file handle from the
+returned file descriptor.
+
+" {
   fd+name := apply %make-tmp-fd prefix
 
   ;; mkstemp opens the file for reading and writing and we should
@@ -161,7 +219,19 @@ define (make-tmp-file-handle & prefix) {
   open-file-from-fd (ph fd+name) (pht fd+name) "rwe"
 }
 
-define (make-tmp-dir & args) {
+define (make-tmp-dir & args) "
+
+create a temporary directory and return its name
+
+:param prefix: prefix for directory name, defaults to ``\"idio-tmp-\"``
+:type prefix: string, optional
+:return: directory name
+:rtype: pathname
+
+This is a wrapper to :ref:`libc/mkdtemp <libc/mkdtemp>` using the
+temporary directory from :ref:`libc/%get-tmpdir <libc/%get-tmpdir>`.
+
+" {
   tmpdir := (%get-tmpdir)
   prefix := %default-tmpname-prefix
   if (not (null? args)) {
@@ -191,7 +261,18 @@ descriptor
 
 *#
 
-define (stdin-fileno) {
+define (stdin-fileno) "
+return the file descriptor of the current input handle
+
+:return: file descriptor or a list of a file descriptor
+
+If the current input handle is a string handle then its contents are
+written to a temporary file and a file descriptor open to that file is
+returned as the head of a list.  
+
+The caller should close the file descriptor when the task is complete.
+
+" {
   cih := (current-input-handle)
   (cond
    ((input-file-handle? cih) (fd-handle-fd cih))
@@ -220,7 +301,20 @@ define (stdin-fileno) {
 }
 
 ;;
-define (stdout-fileno) {
+define (stdout-fileno) "
+return the file descriptor of the current output handle
+
+:return: file descriptor or a list of a file descriptor
+
+If the current output handle is a string handle then a temporary file
+is created and a file descriptor open to that file is returned as the
+head of a list.  
+
+When the task is complete, the caller should rewind the file pointer
+and read the contents of the file back in before closing the file
+descriptor.
+
+" {
   coh := (current-output-handle)
   (cond
    ((output-file-handle? coh) (fd-handle-fd coh))
@@ -240,7 +334,20 @@ define (stdout-fileno) {
 }
 
 ;;
-define (stderr-fileno) {
+define (stderr-fileno) "
+return the file descriptor of the current error handle
+
+:return: file descriptor or a list of a file descriptor
+
+If the current error handle is a string handle then a temporary file
+is created and a file descriptor open to that file is returned as the
+head of a list.  
+
+When the task is complete, the caller should rewind the file pointer
+and read the contents of the file back in before closing the file
+descriptor.
+
+" {
   ceh := (current-error-handle)
   (cond
    ((output-file-handle? ceh) (fd-handle-fd ceh))
@@ -267,12 +374,13 @@ define (stderr-fileno) {
 getrlimit = {
   orig-getrlimit := getrlimit
 
-  function (res) "define a more convenient `getrlimit` which can use a :nickname
+  function (res) "
+
+a more convenient `getrlimit` which can use a :samp:`:{nickname}`
 keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
 
-:param res: either the ``libc/RLIMIT_*`` symbol or C/int or :* keyword
+:param res: either the ``libc/RLIMIT_*`` symbol or C/int or :samp:`:{nickname}` keyword
 :rtype: struct-rlimit
-
 :return: struct-rlimit
   " {
     resource := #n
@@ -305,14 +413,14 @@ keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
 setrlimit = {
   orig-setrlimit := setrlimit
 
-  function (res rlim) "define a more convenient `setrlimit` which can use a :nickname
+  function (res rlim) "
+
+a more convenient `setrlimit` which can use a :samp:`:{nickname}`
 keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
 
-:param res: either the ``libc/RLIMIT_*`` symbol or C/int or :* keyword
+:param res: either the ``libc/RLIMIT_*`` symbol or C/int or :samp:`:{nickname}` keyword
 :param rlim: struct-rlimit
-:rtype: #unspec
-
-:return: #unspec
+:return: ``#<unspec>``
   " {
     resource := #n
     (cond

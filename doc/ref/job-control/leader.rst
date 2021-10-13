@@ -2,8 +2,10 @@
 
 .. _`job-control module`:
 
-Job Control Module
-==================
+******************
+job-control Module
+******************
+
 
 Job Control in :lname:`Idio` is very closely allied to the description
 of `Job Control
@@ -56,5 +58,5 @@ to any `true` value.
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 

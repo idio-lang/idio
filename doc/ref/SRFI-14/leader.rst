@@ -2,12 +2,13 @@
 
 .. _`SRFI-14 module`:
 
+**************
 SRFI-14 Module
-==============
+**************
 
-SRFI-14 introduces the idea of a character set, a *char-set*, whose
+`SRFI-14`_ introduces the idea of a character set, a *char-set*, whose
 membership can be tested.  These are used predominantly in the regular
-expression matching code of SRFI-115.
+expression matching code of `SRFI-115`_.
 
 .. toctree::
    :maxdepth: 2

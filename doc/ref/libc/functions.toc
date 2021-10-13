@@ -40,8 +40,6 @@
 (document libc rmdir)
 (document libc setpgid)
 (document libc setrlimit)
-(document libc sig-name)
-(document libc sig-names)
 (document libc signal)
 (document libc signal-handler)
 (document libc sleep)
@@ -75,21 +73,23 @@
 (document libc S_ISREG)
 (document libc S_ISSOCK)
 
-(document libc stderr-fileno)
 (document libc stdin-fileno)
 (document libc stdout-fileno)
+(document libc stderr-fileno)
 
 (document libc make-tmp-dir)
 (document libc make-tmp-fd)
 (document libc make-tmp-file)
 (document libc make-tmp-file-handle)
 
-(document libc %file-access)
-(document libc %get-sys-tmpdir)
+(document libc %make-tmp-fd pct-make-tmp-fd)
 (document libc %get-tmpdir)
-(document libc %make-tmp-fd)
+(document libc %get-sys-tmpdir)
+(nodocument libc %file-access)
 
+(document libc sig-name)
 (document libc signal-name)
+(document libc sig-names)
 (document libc signal-names)
 
 (document libc errno-name)

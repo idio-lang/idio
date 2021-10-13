@@ -30,10 +30,11 @@ The usual constants are:
    The most useful use of this value is for marking the end of a chain
    of :ref:`pairs <pair type>` -- commonly known as a list.
 
-----
+Other Constants
+^^^^^^^^^^^^^^^
 
 Most other constants do not have constructors for use in source code,
-they exist *a priori*.  Their printed form is always unacceptable to
+they exist *in machina*.  Their printed form is always unacceptable to
 the reader.
 
 Other constants that may appear include:
@@ -42,9 +43,11 @@ Other constants that may appear include:
 
    No useful value.
 
-   Most functions that *set* something return ``#<unspec>``.  Scholars
-   (and laymen) disagree on what the result of the computation to
-   modify memory should be in which case none shall be correct.
+   Most functions that *set* something return ``#<unspec>``.
+
+   Scholars (and laymen) disagree on what the result of the
+   *computation* to modify memory should be in which case none shall
+   be correct.
 
    Printing also returns ``#<unspec>`` for similarly arcane reasons.
 
@@ -61,7 +64,7 @@ Other constants that may appear include:
 
    The result of no computation!
 
-   There are two usual instances of no computation:
+   There are several instances of no computation:
 
    #. a conditional statement where the condition is *false* and there
       is no alternate clause:
@@ -78,7 +81,10 @@ Other constants that may appear include:
 	 Idio> (begin)
 	 #<void>
 
-   In both cases, *something* must be returned.
+   #. a ``case`` expression where no match exists and there is no else
+      clause:
+
+   In all cases, *something* must be returned.
 
 .. data:: #<eof>
 
@@ -86,4 +92,21 @@ Other constants that may appear include:
 
    .. seealso:: :ref:`eof? <eof?>` and :ref:`eof-object?
                 <eof-object?>`.
+
+Other Kinds of Constants
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Where possible, :lname:`Idio` uses constants internally for other
+purposes, rather than :lname:`C` integers *per se*.
+
+The are groups of constants for:
+
+* reader tokens as source code is being read in and converted to an
+  Abstract Syntax Tree
+
+* generalized intermediate code from the evaluator to the code
+  generator
+
+* :ref:`Unicode <unicode type>` is a distinct set of constants as is
+  its (deprecated) predecessor "character" type
 

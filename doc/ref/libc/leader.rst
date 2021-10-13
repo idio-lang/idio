@@ -2,8 +2,9 @@
 
 .. _`libc module`:
 
+***********
 libc Module
-===========
+***********
 
 This is the :lname:`Idio` interface to the :lname:`C` standard
 library.

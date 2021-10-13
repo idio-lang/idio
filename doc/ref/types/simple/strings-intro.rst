@@ -16,7 +16,8 @@ system will be a pathname.
 Consequently, you cannot directly compare a file name from the file
 system to a string from your source code.  See :ref:`string->pathname
 <string->pathname>` for a conversion function.  There is no reverse
-function (pathname to string) as there is no encoding in a file name.
+function (pathname to string) as there is no encoding in a file name,
+it is just a sequence of bytes.
 
 Reader Form
 -----------
@@ -90,17 +91,23 @@ Pathnames
 ``%P"..."`` (or ``%P(...)`` or ``%P{...}`` or ``%P[...]``) where the
 ``...`` is a regular string as above.
 
-That's where the ``\x`` escape for strings comes into its own.  If we
-know that a filename starts with ISO8859-1_'s 0xA9 (the same
-"character" as ©, U+00A9 (COPYRIGHT SIGN)), as in a literal byte,
+That's where the :samp:`\\x{HH}` escape for strings comes into its
+own.  If we know that a filename starts with ISO8859-1_'s 0xA9 (the
+same "character" as ©, U+00A9 (COPYRIGHT SIGN)), as in a literal byte,
 0xA9, and not the UTF-8 sequence 0xC2 0xA9, then we can create such a
 string: ``%P"\xa9..."``.
+
+Pathnames, or strings being used as pathnames, with an ASCII NUL
+(``\x00``) will result in a format error when they are attempted to be
+used.  They are perfectly valid code points for :lname:`Idio` strings
+but it is not possible to have an ASCII NUL in a :lname:`C` string,
+being passed to the operating system's API.
 
 Interpolated Strings
 ^^^^^^^^^^^^^^^^^^^^
 
 From time to time it is convenient to want to expand references to
-variables inside a string.  There is a special form for such
+variables inside a string.  There is a special reader form for such
 interpolated strings:
 
     ``#S{...${expr}...}``
@@ -127,7 +134,7 @@ In this particular case, there's little advantage over using
 convenient to see (pre-)constructed variable references *in situ* in
 the expected output.
 
-There are two options you can pass, between the ``S`` and opening
+There are two options you can pass, between the ``#S`` and opening
 brace: an alternative interpolation sigil and an alternative escape
 character.
 
@@ -140,8 +147,8 @@ interpolation sigil -- which implies that the interpolation sigil
 cannot be ``.``.
 
 If the use of braces, ``{`` and ``}``, means you would need to escape
-``}`` a lot you can use parenthesis or brackets as the delimiting
-pair:
+braces within the interpolated string a lot you can use parenthesis or
+brackets as the delimiting pair:
 
 .. code-block:: idio
 
@@ -152,5 +159,6 @@ pair:
    }
    ]
 
-although you can only use braces for the expression delimiters.
+although note that you can only use braces for the expression
+delimiters.
 

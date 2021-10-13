@@ -13,3 +13,8 @@
 (nodocument evaluate set-module-vci!)
 (nodocument evaluate set-module-vvi!)
 
+;; not strictly evaluator functionality...
+(document Idio cond-expand)
+(document Idio %add-feature add-feature)
+
+

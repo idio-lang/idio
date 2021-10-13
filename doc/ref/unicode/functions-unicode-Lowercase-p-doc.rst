@@ -1,4 +1,4 @@
-Is `cp` ``Lowercase?``
+Does `cp` have the Unicode Property ``Lowercase``?
 
 :param cp: code point to test
 :type cp: unicode

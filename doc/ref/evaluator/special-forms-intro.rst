@@ -3,7 +3,8 @@
 Special Forms
 -------------
 
-
+Special forms are pseudo-functions handled directly by the evaluator.
+They cannot be extended or altered.
 
 Sequence Forms
 ^^^^^^^^^^^^^^
@@ -19,7 +20,7 @@ what they return and what they return if no expressions are passed.
    and ...
    or ...
 
-.. _`begin`:
+.. _`begin special form`:
 
 begin
 """""
@@ -30,6 +31,8 @@ the last expression.
 This is the normal block of code behaviour.
 
 If no expressions are passed, ``begin`` returns ``#<void>``.
+
+.. _`and special form`:
 
 and
 """
@@ -42,6 +45,8 @@ If all of the expression return a `true` value then ``and`` returns
 the value of the last expression.
 
 If no expressions are passed, ``and`` returns ``#t``.
+
+.. _`or special form`:
 
 or
 ""
@@ -66,6 +71,8 @@ operators.  The default reader escape character is ``\``.
    \e
 
 ``escape`` continues evaluation with its argument.
+
+.. _`quote special form`:
 
 quote
 ^^^^^
@@ -137,7 +144,8 @@ generate documentation like this.  It should take the form of
 reStructuredText targeting the sphinx documentation system.
 
 `body` is a single expression although commonly a block is used as a
-synonym for the :ref:`begin <begin>` sequence special form.
+synonym for the :ref:`begin <begin special form>` sequence special
+form.
 
 function+
 ^^^^^^^^^
@@ -374,12 +382,14 @@ The variable :ref:`SECONDS <SECONDS>` returns the number of seconds
 the program has been running for.  It has no associated `setter` so
 trying to give it a value is an error.
 
+.. _`block special form`:
+
 block
 ^^^^^
 
 The ``block`` special form is largely a synonym for the :ref:`begin
-<begin>` sequencing special form but it does create a new lexical
-context.
+<begin special form>` sequencing special form but it does create a new
+lexical context.
 
 Variables created within a block are not accessible outside the block.
 

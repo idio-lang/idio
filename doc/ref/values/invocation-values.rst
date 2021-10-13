@@ -1,5 +1,5 @@
 Invocation Values
------------------
+^^^^^^^^^^^^^^^^^
 
 When :program:`idio` is invoked it treats its arguments as:
 

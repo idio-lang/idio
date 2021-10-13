@@ -599,7 +599,7 @@ static void idio_job_control_update_status (void)
 IDIO_DEFINE_PRIMITIVE0_DS ("update-status", update_status, (), "", "\
 update the process status of any outstanding pids\n\
 						\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     idio_job_control_update_status ();
@@ -697,7 +697,7 @@ display to stderr `msg` alongside job `job` details\n\
 :type job: struct-instance			\n\
 :param msg: string				\n\
 :type msg: string				\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (job);
@@ -1114,7 +1114,7 @@ hangup job `job`				\n\
 						\n\
 :param job: job					\n\
 :type job: struct-instance			\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 						\n\
 Send the process group of `job` a SIGCONT then a SIGHUP\n\
 ")
@@ -1280,7 +1280,7 @@ mark job `job` as running			\n\
 						\n\
 :param job: job					\n\
 :type job: struct-instance			\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 						\n\
 In particular, mark job `job` as not stopped\n\
 ")
@@ -1328,7 +1328,7 @@ mark job `job` as running and foreground it if required\n\
 :type job: struct-instance			\n\
 :param foreground: boolean			\n\
 :type foreground: boolean			\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (job);
@@ -1492,8 +1492,7 @@ prepare the current process			\n\
 :param errfile: file descriptor for stderr	\n\
 :param foreground: boolean			\n\
 :param async: boolean				\n\
-						\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 						\n\
 Place the current process in `pgid` and dup() stdin, stdout and stderr.\n\
 Place the current process in the foreground if requested.\n\
@@ -1902,7 +1901,7 @@ launch job `job`				\n\
 						\n\
 :param job: job					\n\
 :type job: struct-instance			\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (job);
@@ -1924,7 +1923,7 @@ IDIO_DEFINE_PRIMITIVE0V_DS ("%launch-pipeline", launch_pipeline, (IDIO job_contr
 launch a pipeline of `job_controls`			\n\
 						\n\
 :param job_controls: list of job_controls		\n\
-:return: #<unspec>				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (job_controls);

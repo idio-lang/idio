@@ -1,8 +1,8 @@
-:default: " \\t\\n" (SPACE TAB NEWLINE)
+:default: ``" \t\n"`` (SPACE TAB NEWLINE)
 
-:var:`IFS` is the Input [#]_ Field Separator and is the default value
-used when :ref:`fields <fields>` is used to split a string into
-substrings.
+:var:`IFS` is the Input [#]_ Field Separator and is the value used by
+:ref:`fields <fields>` or the default value used by :ref:`split-string
+<split-string>` to split a string into substrings.
 
 .. [#] In :lname:`Bash` it is the *Internal* Field Separator and is
        used for both input and output field separation processing and

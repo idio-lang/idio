@@ -97,6 +97,53 @@ could be passed around as an argument or invoked:
 
 should return 5.
 
+Closure Parameters
+^^^^^^^^^^^^^^^^^^
+
+The formal parameters of a closure (named or anonymous) can take a
+confusing set of forms primarily because of support for a varargs
+parameter but also because of the two ways closures are created.
+
+In general, if you specify `n` formal ("positional") parameters then
+the caller must supply `n` arguments when the closure is invoked.  Any
+more or less is an error.
+
+If you specify a varargs parameters in addition to `n` formal
+parameters then the user must supply *at least* `n` arguments and any
+remaining arguments are bundled up into a list.  If there were no
+extra arguments, the list is ``#n`` (the empty list) otherwise the
+list will be the extra arguments.
+
+If we assume there is a `body` of some kind following these
+stub-expressions:
+
+.. csv-table::
+   :header: define, function, notes
+   :widths: 40, 40, 50
+   :align: left
+
+   :samp:`define ({foo})`, :samp:`function #n`, no parameters at all
+   :samp:`define ({foo} {a} {b})`, :samp:`function ({a} {b})`, two positional parameters
+   :samp:`define ({foo} {a} {b} & {c})`, :samp:`function ({a} {b} & {c})`, two positional parameters and a varargs parameter `c`
+   :samp:`define ({foo} & {c})`, :samp:`function {c}`, no positional parameters and only a varargs parameter `c`
+   
+Note in the final example that ``function`` is given a single symbol
+instead of a list of parameters to indicate there is only a varargs
+parameter.
+
+By way of example, epitomising elegance (or ingenious laziness) the
+function :ref:`list <list>` is defined as:
+
+.. code-block:: idio
+
+   define (list & x) x
+
+Here, ``list`` only takes a varargs parameter, that is all of its
+arguments are bundled up into a list by the evaluator.  As ``list``'s
+job is to return a list from its arguments and the evaluator has done
+all the heavy lifting then ``list``'s body is simply to return the
+list it was given as its varargs parameter `x`.
+
 Closure Environment
 ^^^^^^^^^^^^^^^^^^^
 
@@ -114,7 +161,8 @@ frame and module associated with the closure's definition.
 Special Forms
 -------------
 
-Special forms exist only in the evaluator and cannot be extended.
+Special forms exist only in the evaluator and cannot be extended or
+altered.
 
 They are also invoked differently.  Rather than "evaluate" each
 argument and pass the evaluated values to the special form, the

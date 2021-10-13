@@ -9,11 +9,11 @@ There are many :lname:`C` *typedef*\ s in use in :lname:`Idio` which
 are *essential* for correct interaction with the :lname:`C` API.
 
 There will be a type definition, say, ``pid_t``, which maps directly
-or through a chain of other typedefs to a :lname:`C` base type
+to, or through a chain of other typedefs to, a :lname:`C` base type
 definition, a symbol, say, ``'int``.
 
 In parallel, there is a type predicate, say, ``pid_t?``, which maps
-directly or through a chain of other predicates to a :ref:`C <C
+directly to, or through a chain of other predicates to, a :ref:`C <C
 module>` predicate, say, ``C/int?``.
 
 .. rst-class:: center

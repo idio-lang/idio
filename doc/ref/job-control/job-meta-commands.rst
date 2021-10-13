@@ -1,7 +1,7 @@
 .. _`job-control/job meta-commands`:
 
 job meta-commands
------------------
+^^^^^^^^^^^^^^^^^
 
 There are a number of words that can precede a job which generally
 affect the environment the job is run in.
@@ -13,7 +13,8 @@ Not all the meta-commands work together.
   :return: the *stdout* of the job
   :rtype: string
 
-  This is the equivalent of :lname:`Bash`'s ``$(...)``.
+  This is the equivalent of :lname:`Bash`'s *Command Substitution*,
+  ``$(...)``.
 
 * ``fg-job`` runs the job in the foreground
 
@@ -51,7 +52,12 @@ Not all the meta-commands work together.
   On many systems the pipe's name will be :file:`/dev/fd/{n}` but on
   some systems it will be a FIFO in the file system.
 
-  This is the equivalent of :lname:`Bash`'s ``>(...)``.
+  This is the equivalent of :lname:`Bash`'s *Process Substitution*
+  form ``>(...)``.
+
+  The job is an *asynchronous* command and if it does not exit with a
+  zero status will raise an :ref:`^rt-async-command-status-error
+  <^rt-async-command-status-error>`.
 
 * ``pipe-from`` directs the *stdout* of the job to the write-end of a
   :manpage:`pipe(2)` and an input pipe handle derived from the
@@ -76,7 +82,12 @@ Not all the meta-commands work together.
   On many systems the pipe's name will be :file:`/dev/fd/{n}` but on
   some systems it will be a FIFO in the file system.
 
-  This is the equivalent of :lname:`Bash`'s ``<(...)``.
+  This is the equivalent of :lname:`Bash`'s *Process Substitution*
+  form ``<(...)``.
+
+  The job is an *asynchronous* command and if it does not exit with a
+  zero status will raise an :ref:`^rt-async-command-status-error
+  <^rt-async-command-status-error>`.
 
 * ``time`` flags that a report on the accumulated resources of the job
   should be produced when the job completes

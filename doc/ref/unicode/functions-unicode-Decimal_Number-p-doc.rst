@@ -1,4 +1,4 @@
-Is `cp` a ``Decimal_Number?``
+Is `cp` in the Unicode Category ``Nd``?
 
 :param cp: code point to test
 :type cp: unicode

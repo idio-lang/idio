@@ -17,9 +17,7 @@ Lists
 Lists are an emergent property of chained pairs and are commonly
 written and printed without superfluous chaining punctuation so:
 
-.. parsed-literal::
-
-   (*e1* & (*e2* & (*e3* & #n)))
+    :samp:`({e1} & ({e2} & ({e3} & #n)))`
 
 is the more convenient:
 

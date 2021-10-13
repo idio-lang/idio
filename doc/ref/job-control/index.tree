@@ -1,5 +1,6 @@
 (rst "leader" 0)
 
+(toc-file operators)
 (toc-file functions)
 (toc-file structures)
 (toc-file values)

@@ -1,7 +1,7 @@
 (rst "raising-intro" 0)
 
 (document Idio error)
-(document Idio error/type)
+(document Idio error/type error-type)
 (document Idio raise)
 (document Idio reraise)
 

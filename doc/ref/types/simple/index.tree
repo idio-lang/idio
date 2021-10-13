@@ -16,3 +16,4 @@
 (toc-file string-handles)
 (toc-file bitsets)
 (toc-file functions)
+(toc-file continuations)

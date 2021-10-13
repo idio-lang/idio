@@ -190,16 +190,16 @@ will be overwritten in due course
 *#
 
 define (ASCII-Decimal_Number? cp) "
-Is `cp` an ASCII ``Decimal_Number?``
+Is `cp` an ASCII digit?
 
 :param cp: code point to test
 :type cp: unicode
 :return: boolean
 
 This closure, defined in :file:`lib/bootstrap/common.idio` should be
-overriden by a 'more correct' ``unicode/ASCII-Decimal_Number?``
-primitive in :file:`src/usi-wrap.c` but exists for handling printing
-if bootstrap fails.
+overriden by the 'more correct' :ref:`unicode/ASCII-Decimal_Number?
+<unicode/ASCII-Decimal_Number?>` primitive in :file:`src/usi-wrap.c`
+but exists for handling printing if bootstrap fails.
 
 " {
   if (or (eqv? cp #\0)

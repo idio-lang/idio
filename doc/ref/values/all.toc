@@ -1,8 +1,8 @@
+(rst "values-intro" 0)
+
 (document Idio dynamic?)
 (document Idio environ?)
 (document Idio computed?)
-
-(rst "values-intro" 0)
 
 (rst "general-values" 0)
 (document Idio IDIOLIB)
@@ -14,6 +14,7 @@
 (document Idio TIMEFORMAT)
 
 (rst "environment-values" 0)
+(document Idio PATH)
 (document Idio HOME)
 (document Idio LOGNAME)
 (document Idio SHELL)

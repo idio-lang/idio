@@ -31,7 +31,8 @@ and typedefs thereof and a pointer type:
 Equality tests of ``C/longdouble`` are, at best, untested.
 
 The ``C/pointer`` type is used to carry references to :lname:`C`
-allocated memory.
+allocated memory.  They will usually be tagged such that the GC will
+free the referenced memory when it collects the value.
 
 There is a special form of ``C/pointer`` with a *C Structure
 Identifier* tag which allows for the implicit use of accessors and

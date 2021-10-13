@@ -344,7 +344,7 @@ set bit `bit` in bitset `bs`			\n\
 :type bs: bitset				\n\
 :param bit: bit					\n\
 :type bit: unicode or integer			\n\
-:return: #unsepc				\n\
+:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (bs);

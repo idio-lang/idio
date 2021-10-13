@@ -1,7 +1,8 @@
 .. _`reader`:
 
+***********
 Idio Reader
-===========
+***********
 
 The *reader*'s role is to consume UTF-8 source code and construct an
 Abstract Syntax Tree suitable for the :ref:`evaluator <evaluator>`.
@@ -29,8 +30,9 @@ The matching part of the reader gives rise to a standard form, say:
    }
 
 Here the starting ``"`` on line 1 means the documentation string is
-not complete until line 4 where the ``{`` before the end of line means
-the body is not complete until line 10.
+not complete until the matching ``"`` on line 4 where the ``{`` before
+the end of line means the body is not complete until the matching
+``}`` on line 10.
 
 An :lname:`Idio` expression of multiple words is always a list.  So,
 even though the example didn't start and end with a parenthesis, the
@@ -105,5 +107,5 @@ such lists and simple values looks, by and large, like the original
 source code.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 

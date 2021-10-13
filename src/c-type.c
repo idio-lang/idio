@@ -705,10 +705,10 @@ int idio_isa_C_type (IDIO o)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("type?", C_typep, (IDIO o), "o", "\
-test if `o` is a C/ type			\n\
+test if `o` is any C type			\n\
 						\n\
 :param o: object to test			\n\
-:return: ``#t`` if `o` is a C/ type, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is any C type, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -749,10 +749,10 @@ int idio_isa_C_number (IDIO o)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("number?", C_numberp, (IDIO o), "o", "\
-test if `o` is a C/ number			\n\
+test if `o` is any C numeric type		\n\
 						\n\
 :param o: object to test			\n\
-:return: ``#t`` if `o` is a C/ number, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is any C numeric type, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -787,10 +787,10 @@ int idio_isa_C_integral (IDIO o)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("integral?", C_integralp, (IDIO o), "o", "\
-test if `o` is a C/ integral			\n\
+test if `o` is any C integral numeric type	\n\
 						\n\
 :param o: object to test			\n\
-:return: ``#t`` if `o` is a C/ integral, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is any C integral numeric type, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -819,10 +819,10 @@ int idio_isa_C_unsigned (IDIO o)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("unsigned?", C_unsignedp, (IDIO o), "o", "\
-test if `o` is a C/ unsigned			\n\
+test if `o` is any C unsigned numeric type	\n\
 						\n\
 :param o: object to test			\n\
-:return: ``#t`` if `o` is a C/ unsigned, ``#f`` otherwise	\n\
+:return: ``#t`` if `o` is any C unsigned numeric type, ``#f`` otherwise	\n\
 ")
 {
     IDIO_ASSERT (o);

@@ -3742,14 +3742,14 @@ char *idio_find_libfile (IDIO file, size_t *libfile_C_lenp)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("find-lib", find_lib, (IDIO file), "filename", "\
-search `IDIOLIB` for `filename` with a set of	\n\
+IDIO_DEFINE_PRIMITIVE1_DS ("find-lib", find_lib, (IDIO file), "libname", "\
+search `IDIOLIB` for `libname` with a set of	\n\
 possible file name extensions			\n\
 						\n\
-:param filename: file to search for		\n\
-:type filename: string				\n\
-:return: the full pathname to `filename`	\n\
-:rtype: string					\n\
+:param libname: library name to search for	\n\
+:type libname: string				\n\
+:return: pathname to `libname`			\n\
+:rtype: pathname or ``#f``			\n\
 ")
 {
     IDIO_ASSERT (file);
@@ -3764,10 +3764,10 @@ possible file name extensions			\n\
     size_t r_C_len = 0;
     char *r_C = idio_find_libfile (file, &r_C_len);
 
-    IDIO r = idio_S_nil;
+    IDIO r = idio_S_false;
 
     if (NULL != r_C) {
-	r = idio_string_C_len (r_C, r_C_len);
+	r = idio_pathname_C_len (r_C, r_C_len);
 	IDIO_GC_FREE (r_C);
     }
 

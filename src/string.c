@@ -2787,6 +2787,8 @@ Adjacent characters from `delim` are considered a	\n\
 single delimiter.					\n\
 							\n\
 .. seealso:: :ref:`split-string-exactly <split-string-exactly>`	\n\
+	which treats `delim` more fastidiously		\n\
+	and :ref:`fields <fields>` which returns an array	\n\
 ")
 {
     IDIO_ASSERT (in);
@@ -2874,7 +2876,8 @@ into an array with the first element the original string\n\
 Adjacent characters from :var:`IFS` are considered a	\n\
 single delimiter.					\n\
 							\n\
-.. seealso:: :ref:`split-string <split-string>`		\n\
+.. seealso:: :ref:`split-string <split-string>` which	\n\
+	returns a list	\n\
 ")
 {
     IDIO_ASSERT (in);

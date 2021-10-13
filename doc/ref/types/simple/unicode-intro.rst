@@ -19,14 +19,13 @@ digits, :samp:`{H}`, is "enough."  Leading zeroes are not required,
 An alternate reader form is :samp:`#\\x` where :samp:`{x}` is the
 UTF-8 representation of the code point -- for example, ``#\ħ`` would
 be read as U+0127 (LATIN SMALL LETTER H WITH STROKE).  Clearly, the
-usefulness of this form is dependent of general support by fonts and
+usefulness of this form is dependent on general support by fonts and
 editors.
 
 A final reader form is for a limited number of named characters, say,
-``#\{newline}``, with the name in braces.
-
-We could, but we don't, use the Unicode Character Database names, say,
-``#\{LATIN SMALL LETTER H WITH STROKE}``.
+``#\{newline}``, with the name in braces.  We could, but we don't, use
+the Unicode Character Database names, say, ``#\{LATIN SMALL LETTER H
+WITH STROKE}``.
 
 Instead the set of names is limited to:
 

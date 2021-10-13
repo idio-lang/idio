@@ -1,7 +1,8 @@
 .. _`Idio functions`:
 
+**************
 Idio Functions
-==============
+**************
 
 Type-specific functions (predicates, constructors, accessors, etc.)
 are documented under :ref:`Idio types`.

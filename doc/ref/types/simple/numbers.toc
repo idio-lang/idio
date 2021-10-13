@@ -3,7 +3,6 @@
 (rst "number-predicates" 0)
 (document Idio integer? integerp)
 (document Idio number? numberp)
-(document Idio zero?)
 
 (rst "number-constructors" 0)
 (document unicode unicode->integer)

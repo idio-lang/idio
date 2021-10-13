@@ -7544,7 +7544,13 @@ attempt to exit with status `status`			\n\
 :param status: exit status				\n\
 :type status: fixnum or C/int				\n\
 							\n\
-Does not return						\n\
+Does not return [#]_.					\n\
+							\n\
+This form will attempt to run through the full system shutdown.	\n\
+							\n\
+.. seealso:: :ref:`libc/exit <libc/exit>` for a more abrupt exit	\n\
+							\n\
+.. [#] YMMV						\n\
 ")
 {
     IDIO_ASSERT (istatus);

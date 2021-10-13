@@ -16,3 +16,6 @@ things to note:
    *prepended* to any user-supplied :envvar:`IDIOLIB` environment
    variable.
 
+In both cases, a :file:`.../lib` will only be prepended if the
+executable/symlink `name` was :file:`.../bin/{name}`, ie. the
+immediate directory name must be :file:`bin`.

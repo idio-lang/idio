@@ -4292,6 +4292,10 @@ read a number from `src`				\n\
 :param radix: use radix, defaults to 10			\n\
 :type radix: fixnum, optional				\n\
 :return: number						\n\
+							\n\
+``read-number`` supports bases up to 36 for which the	\n\
+normal hexadecimal digits are extended to all ASCII	\n\
+``Alphabetic`` code points: ``0-9a-z`` and ``0-9A-Z``	\n\
 ")
 {
     IDIO_ASSERT (src);

@@ -3,6 +3,7 @@
 ;; s9.idio
 (document Idio even?)
 (document Idio odd?)
+(document Idio zero?)
 (document Idio positive?)
 (document Idio negative?)
 

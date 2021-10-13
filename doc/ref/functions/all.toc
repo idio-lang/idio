@@ -4,33 +4,37 @@
 (document Idio when)
 (document Idio unless)
 
-(document Idio cond-expand)
-
 (document Idio case)
 (document Idio do)
-(document Idio delay)
-(document Idio force)
 
-(document Idio any-null?)
+(nodocument Idio delay)
+(nodocument Idio force)
+
+(nodocument Idio any-null?)
 (document Idio map)
 (document Idio for-each)
 (document Idio fold-left)
 (document Idio fold-right)
 
 (document Idio unwind-protect)
-(document Idio with-values-from)
+(document Idio dynamic-wind)
+(nodocument Idio with-values-from)
 (document Idio apply)
 (document Idio exit)
 (document Idio identity)
 
 (document Idio value-index)
-(document Idio set-value-index!)
+(document Idio set-value-index! set-value-index)
 
 (document Idio copy-value)
 (document Idio find-lib)
 
 
 (document Idio type->string)
+
+(document Idio gc/collect)
+(document Idio idio-debug)
+(document Idio idio-dump)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
@@ -45,7 +49,7 @@
 ;
 ; doc
 (document Idio help)
-(document Idio autodoc)
+(nodocument Idio autodoc)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;

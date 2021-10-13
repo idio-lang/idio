@@ -1,4 +1,4 @@
-:default: "Real %.3R\\nUser %.3U\\nSyst %.3S\\n"
+:default: ``"Real %.3R\nUser %.3U\nSyst %.3S\n"``
 
 :var:`TIMEFORMAT` is a string describing the report for the :ref:`time
 <time>` command (or meta-command).

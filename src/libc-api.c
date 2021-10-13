@@ -470,7 +470,7 @@ in C, :samp:`{termios}->{member} = {val}`	\n\
 :type member: symbol			\n\
 :param val: a C/ type			\n\
 :type val: varies on `member`		\n\
-:return: #<unspec>			\n\
+:return: ``#<unspec>``			\n\
 ")
 {
     IDIO_ASSERT (termios);
@@ -829,7 +829,7 @@ in C, :samp:`{tm}->{member} = {val}`	\n\
 :type member: symbol			\n\
 :param val: a C/ type			\n\
 :type val: varies on `member`		\n\
-:return: #<unspec>			\n\
+:return: ``#<unspec>``			\n\
 ")
 {
     IDIO_ASSERT (tm);
@@ -1504,7 +1504,7 @@ in C, :samp:`{timespec}->{member} = {val}`	\n\
 :type member: symbol			\n\
 :param val: a C/ type			\n\
 :type val: varies on `member`		\n\
-:return: #<unspec>			\n\
+:return: ``#<unspec>``			\n\
 ")
 {
     IDIO_ASSERT (timespec);
@@ -1752,7 +1752,7 @@ in C, :samp:`{rlimit}->{member} = {val}`	\n\
 :type member: symbol			\n\
 :param val: a C/ type			\n\
 :type val: varies on `member`		\n\
-:return: #<unspec>			\n\
+:return: ``#<unspec>``			\n\
 ")
 {
     IDIO_ASSERT (rlimit);
@@ -1956,7 +1956,7 @@ in C, :samp:`{timeval}->{member} = {val}`	\n\
 :type member: symbol			\n\
 :param val: a C/ type			\n\
 :type val: varies on `member`		\n\
-:return: #<unspec>			\n\
+:return: ``#<unspec>``			\n\
 ")
 {
     IDIO_ASSERT (timeval);
@@ -2482,7 +2482,7 @@ IDIO_DEFINE_PRIMITIVE0_DS ("uname", libc_uname, (void), "", "\
 in C, :samp:`uname (utsname)`					\n\
 a wrapper to libc :manpage:`uname(3)`				\n\
 								\n\
-:return: struct-utsname						\n\
+:return: :ref:`struct-utsname <libc/struct-utsname>`		\n\
 :rtype: C/pointer						\n\
 :raises ^system-error:						\n\
 								\n\
@@ -2507,7 +2507,7 @@ Not strictly useful at the moment.  You might want to use	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("times", libc_times, (void), "", "\
-in C: :samp:`times ()`						\n\
+in C, :samp:`times ()`						\n\
 a wrapper to libc :manpage:`times(3)`				\n\
 								\n\
 :return: (clock_t, :ref:`struct-tms <libc/struct-tms>`)		\n\
@@ -2520,8 +2520,7 @@ pointer and the ``clock_t``, elapsed real time, that		\n\
 :manpage:`times(3)` returns.					\n\
 								\n\
 All fields are in clock ticks for which ``sysconf(_SC_CLK_TCK)``	\n\
-is available for reference as the exported symbol		\n\
-:ref:`CLK_TCK <libc/CLK_TCK>`.					\n\
+is available for reference as ``libc/CLK_TCK``.			\n\
 ")
 {
     struct tms* tmsp = idio_alloc (sizeof (struct tms));
@@ -2769,7 +2768,7 @@ signal number.							\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("strptime", libc_strptime, (IDIO s, IDIO format), "s format", "\
-in C: :samp:`strptime ({s}, {format})`	\n\
+in C, :samp:`strptime ({s}, {format})`	\n\
 a wrapper to libc :manpage:`strptime(3)`\n\
 					\n\
 :param s: time string			\n\
@@ -2849,7 +2848,7 @@ a wrapper to libc :manpage:`strptime(3)`\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("strftime", libc_strftime, (IDIO format, IDIO tm), "format tm", "\
-in C: :samp:`strftime ({format}, {tm})`	\n\
+in C, :samp:`strftime ({format}, {tm})`	\n\
 a wrapper to libc :manpage:`strftime(3)`\n\
 					\n\
 :param format: 				\n\
@@ -2970,7 +2969,7 @@ a wrapper to libc :manpage:`strerror(3)`			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("stat", libc_stat, (IDIO pathname), "pathname", "\
-in C: :samp:`stat ({pathname})`			\n\
+in C, :samp:`stat ({pathname})`			\n\
 a wrapper to libc :manpage:`stat(2)`		\n\
 						\n\
 :param pathname: filename to stat		\n\
@@ -3226,7 +3225,7 @@ a wrapper to libc :manpage:`setpgid(2)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("getpgid", libc_getpgid, (IDIO pid), "pid", "\
-in C: :samp:`getpgid ({pid})`		\n\
+in C, :samp:`getpgid ({pid})`		\n\
 a wrapper to libc :manpage:`getpgid(2)`	\n\
 					\n\
 :param pid: 				\n\
@@ -3449,12 +3448,12 @@ a wrapper to libc :manpage:`pipe(2)`			       \n\
  * halfway...
  */
 IDIO_DEFINE_PRIMITIVE1_DS ("nanosleep", libc_nanosleep, (IDIO req), "req", "\
-in C: :samp:`nanosleep ({req}, rem)`            \n\
+in C, :samp:`nanosleep ({req}, rem)`            \n\
 a wrapper to libc :manpage:`nanosleep(2)`       \n\
                                                 \n\
 :param req: see below				\n\
 :type req: :ref:`struct-timespec <libc/struct-timespec>` or a list	\n\
-:return:  (completed? *rem*)                    \n\
+:return:  (`completed?` *rem*)			\n\
 :rtype: list                                    \n\
 :raises ^system-error:				\n\
                                                 \n\
@@ -3608,7 +3607,7 @@ and `nsec` can be a ``C/long`` | fixnum | bignum	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("mktime", libc_mktime, (IDIO tm), "tm", "\
-in C: :samp:`mktime ({tm})`		\n\
+in C, :samp:`mktime ({tm})`		\n\
 a wrapper to libc :manpage:`mktime(3)`	\n\
 					\n\
 :param tm: 				\n\
@@ -3722,7 +3721,7 @@ a wrapper to libc :manpage:`mkstemp(3)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("mkfifo", libc_mkfifo, (IDIO path, IDIO mode), "path mode", "\
-in C: :samp:`mkfifo ({path}, {mode})`	\n\
+in C, :samp:`mkfifo ({path}, {mode})`	\n\
 a wrapper to libc mkfifo()		\n\
 					\n\
 :param path: filename of FIFO		\n\
@@ -3908,7 +3907,7 @@ a wrapper to libc :manpage:`mkdir(2)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("lstat", libc_lstat, (IDIO pathname), "pathname", "\
-in C: :samp:`lstat ({pathname})`		\n\
+in C, :samp:`lstat ({pathname})`		\n\
 a wrapper to libc :manpage:`lstat(2)`		\n\
 						\n\
 :param pathname: filename to stat		\n\
@@ -3963,7 +3962,7 @@ a wrapper to libc :manpage:`lstat(2)`		\n\
  * Code coverage: must think of something!
  */
 IDIO_DEFINE_PRIMITIVE2_DS ("killpg", libc_killpg, (IDIO pgrp, IDIO sig), "pgrp sig", "\
-in C: :samp:`killpg ({pgrp}, {sig})`	\n\
+in C, :samp:`killpg ({pgrp}, {sig})`	\n\
 a wrapper to libc killpg(3)		\n\
 					\n\
 :param pgrp: Process Group ID		\n\
@@ -4093,7 +4092,7 @@ a wrapper to libc :manpage:`isatty(3)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("gmtime", libc_gmtime, (IDIO args), "[t]", "\
-in C: :samp:`gmtime ({t})`		\n\
+in C, :samp:`gmtime ({t})`		\n\
 a wrapper to libc :manpage:`gmtime(3)`	\n\
 					\n\
 :param t: time in seconds since epoch, defaults to the result of :manpage:`time(2)`	\n\
@@ -4232,7 +4231,7 @@ a wrapper to libc :manpage:`getrusage(2)`			\n\
 :rtype: C/pointer						\n\
 :raises ^system-error:						\n\
 								\n\
-The parameter `who` refers to ``libc/RUSAGE_SELF` or		\n\
+The parameter `who` refers to ``libc/RUSAGE_SELF`` or		\n\
 ``libc/RUSAGE_CHILDREN``					\n\
 ")
 {
@@ -4459,7 +4458,7 @@ a wrapper to libc :manpage:`getcwd(3)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("fstat", libc_fstat, (IDIO fd), "fd", "\
-in C: :samp:`fstat ({fd})`			\n\
+in C, :samp:`fstat ({fd})`			\n\
 a wrapper to libc :manpage:`fstat(2)`		\n\
 						\n\
 :param fd: file descriptor			\n\
@@ -4734,7 +4733,7 @@ a wrapper to libc :manpage:`dup(2)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("ctime", libc_ctime, (IDIO args), "[t]", "\
-in C: :samp:`ctime ({t})`		\n\
+in C, :samp:`ctime ({t})`		\n\
 a wrapper to libc :manpage:`ctime(3)`	\n\
 					\n\
 :param t: time in seconds since epoch, defaults to the result of :manpage:`time(2)`	\n\
@@ -4885,7 +4884,7 @@ a wrapper to libc :manpage:`chdir(2)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("asctime", libc_asctime, (IDIO tm), "tm", "\
-in C: :samp:`asctime ({tm})`		\n\
+in C, :samp:`asctime ({tm})`		\n\
 a wrapper to libc :manpage:`asctime(3)`	\n\
 					\n\
 :param tm: :ref:`struct-tm <libc/struct-tm>`	\n\
@@ -4947,7 +4946,7 @@ a wrapper to libc :manpage:`asctime(3)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("localtime", libc_localtime, (IDIO args), "[t]", "\
-in C: :samp:`localtime ({t})`			\n\
+in C, :samp:`localtime ({t})`			\n\
 a wrapper to libc :manpage:`localtime(3)`	\n\
 						\n\
 :param t: time in seconds since epoch, defaults to the result of :manpage:`time(2)`	\n\
@@ -4999,7 +4998,7 @@ a wrapper to libc :manpage:`localtime(3)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("time", libc_time, (void), "", "\
-in C: :samp:`time ()`			\n\
+in C, :samp:`time ()`			\n\
 a wrapper to libc :manpage:`time(2)`	\n\
 					\n\
 :return: seconds since epoch		\n\
@@ -5026,11 +5025,11 @@ a wrapper to libc :manpage:`access(2)`				\n\
 :type pathname: string						\n\
 :param mode: accessibility check(s)				\n\
 :type mode: C/int						\n\
-:return: #t or #f						\n\
+:return: ``#t`` or ``#f``					\n\
 :rtype: boolean							\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 								\n\
-Any non-zero value from :manpage:`access(2)` returns #f,	\n\
+Any non-zero value from :manpage:`access(2)` returns ``#f``,	\n\
 no ^system-error is raised.					\n\
 ")
 {

@@ -19,6 +19,7 @@
 
 (document Idio list-ref)
 (document Idio list-tail)
+(document Idio nth)
 
 (rst "pair-accessors" 0)
 (document Idio phh)
@@ -49,7 +50,6 @@
 (document Idio pttt)
 (document Idio pttth)
 (document Idio ptttt)
-(document Idio nth)
 
 (rst "pair-functions" 0)
 (document Idio reverse)

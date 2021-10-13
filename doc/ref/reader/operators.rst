@@ -25,3 +25,20 @@ particular case, the `+` infix operator rewrites the expressions as
 :samp:`binary-+ 1 2` where :ref:`binary-+ <binary-+>` is expecting
 exactly two arguments.
 
+Standard Operators
+^^^^^^^^^^^^^^^^^^
+
+There are a number of standard operators and modules can define their
+own.  An obvious operator for the :ref:`job-control module` to define
+is ``|``.
+
+.. csv-table::
+   :widths: auto
+   :align: left
+
+   ``+`` ``-`` ``*`` ``/``, infix binary arithmetic
+   ``lt`` ``le`` ``eq`` ``ge`` ``gt``, infix binary numeric comparison
+   ``and`` ``or``, infix multiple logical sequence :ref:`and <and special form>` and :ref:`or <or special form>`
+   ``=+`` ``+=``, infix :ref:`array-push! <array-push!>` and :ref:`array-unshift! <array-unshift!>` operators
+   ``=-`` ``-=``, postfix :ref:`array-pop! <array-pop!>` and :ref:`array-shift! <array-shift!>` operators
+   ``.``, infix :ref:`value-index <value-index>`

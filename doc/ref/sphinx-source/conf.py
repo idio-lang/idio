@@ -62,7 +62,8 @@ html_theme_path = ['.']
 # Alabaster theme options
 html_theme_options = {
     'code_font_family': "'Source Code Pro', 'Consolas', 'Menlo', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', monospace",
-    'font_family': "'Open Sans', 'Verdana', serif"
+    'font_family': "'Open Sans', 'Verdana', serif",
+    'body_text_align': "justify"
 }
 
 # affects creation of last_updated used in the footer block in
