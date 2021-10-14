@@ -6,9 +6,10 @@
 C Module
 ********
 
-The C module represents the :lname:`C` base types and functions.  Most
-of the functions and values you are thinking of are in :ref:`libc
-module`.
+The C module represents the :lname:`C` base types and functions.
+
+Most of the functions and values required to do interact with the
+environment are in :ref:`libc module` and others.
 
 .. toctree::
    :maxdepth: 2

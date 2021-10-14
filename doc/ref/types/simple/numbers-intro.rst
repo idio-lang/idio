@@ -11,7 +11,7 @@ exactness.
 You can also use the :lname:`C` base types, ``C/char``, ``C/int``,
 etc. and supported ``typedef``\ s thereof, although they are usually
 passed verbatim within :lname:`C`-oriented modules like :ref:`libc
-<libc module>`.
+<libc module>` and operations involving them only accept like types.
 
 Reader Forms
 ------------

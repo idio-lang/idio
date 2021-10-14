@@ -1,3 +1,3 @@
-Operator Functions
+Constant Functions
 ------------------
 

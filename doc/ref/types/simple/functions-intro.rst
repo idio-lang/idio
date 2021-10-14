@@ -97,6 +97,8 @@ could be passed around as an argument or invoked:
 
 should return 5.
 
+.. _`closure parameters`:
+
 Closure Parameters
 ^^^^^^^^^^^^^^^^^^
 
@@ -127,12 +129,19 @@ stub-expressions:
    :samp:`define ({foo} {a} {b} & {c})`, :samp:`function ({a} {b} & {c})`, two positional parameters and a varargs parameter `c`
    :samp:`define ({foo} & {c})`, :samp:`function {c}`, no positional parameters and only a varargs parameter `c`
    
-Note in the final example that ``function`` is given a single symbol
-instead of a list of parameters to indicate there is only a varargs
-parameter.
+Note that:
 
-By way of example, epitomising elegance (or ingenious laziness) the
-function :ref:`list <list>` is defined as:
+* in the first example, ``function`` is given ``#n``, the empty list,
+  directly.  ``define`` always uses :samp:`pt {formals}` as the list
+  of parameters and the :ref:`pt <pt>` of a list of one element is
+  ``#n``.
+
+* in the final example, ``function`` is given a single symbol instead
+  of a list of parameters to indicate there is only a varargs
+  parameter.
+
+By way of example, epitomising elegance (or legitimising laziness),
+the function :ref:`list <list>` is defined as:
 
 .. code-block:: idio
 
@@ -141,7 +150,7 @@ function :ref:`list <list>` is defined as:
 Here, ``list`` only takes a varargs parameter, that is all of its
 arguments are bundled up into a list by the evaluator.  As ``list``'s
 job is to return a list from its arguments and the evaluator has done
-all the heavy lifting then ``list``'s body is simply to return the
+all the heavy lifting then ``list``'s `body` is simply to return the
 list it was given as its varargs parameter `x`.
 
 Closure Environment

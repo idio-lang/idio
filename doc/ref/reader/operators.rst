@@ -15,10 +15,10 @@ a form so the original expression needs to be rewritten.
 
 For many infix operators you can imagine that it is easy enough to
 rewrite the expression with the symbol for the operator now in first
-place :samp:`+ 1 2` as the symbol `+` will evaluate to the general
+place :samp:`+ 1 2` as the symbol `+` will evaluate to the arithmetic
 addition function.
 
-The general :ref:`+ <+>` function handles a number of varargs
+The arithmetic :ref:`+ <+>` function handles a number of varargs
 possibilities whereas we know that the infix `+` operator is a binary
 addition function, that is it always has two arguments.  So, in this
 particular case, the `+` infix operator rewrites the expressions as

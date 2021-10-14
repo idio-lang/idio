@@ -1,3 +1,5 @@
+.. _JSON5: https://json5.org
+.. _JSON: https://www.json.org/json-en.html
 .. _ISO10646: https://en.wikipedia.org/wiki/Universal_Coded_Character_Set
 .. _ISO8859-1: https://en.wikipedia.org/wiki/ISO/IEC_8859-1
 .. _R5RS: https://schemers.org/Documents/Standards/R5RS/

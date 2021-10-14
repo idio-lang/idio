@@ -4,6 +4,7 @@
 (document Idio boolean?)
 (document Idio null?)
 (document Idio void?)
-(document Idio void)
 (document Idio eof-object?)
 
+(rst "constant-functions" 0)
+(document Idio void)

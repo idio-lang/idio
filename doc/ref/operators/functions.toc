@@ -1,6 +1,3 @@
 (rst "functions-intro" 0)
 
-(document Idio infix-operator?)
-(document Idio operator-expand)
-(document Idio operator?)
-(document Idio postfix-operator?)
+(nodocument Idio operator-expand)

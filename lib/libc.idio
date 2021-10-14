@@ -376,12 +376,18 @@ getrlimit = {
 
   function (res) "
 
-a more convenient `getrlimit` which can use a :samp:`:{nickname}`
-keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
+a more convenient :manpage:`getrlimit(2)` which can use a
+:samp:`:{nickname}` keyword, eg. ``:NOFILE`` for
+``libc/RLIMIT_NOFILE``
 
 :param res: either the ``libc/RLIMIT_*`` symbol or C/int or :samp:`:{nickname}` keyword
-:rtype: struct-rlimit
-:return: struct-rlimit
+:return: :ref:`struct-rlimit <libc/struct-rlimit>`
+:rtype: C/pointer
+:raises ^system-error:
+
+The resource names follow C conventions such as ``libc/RLIMIT_AS`` and
+``libc/RLIMIT_NOFILE``.
+
   " {
     resource := #n
     (cond
@@ -415,12 +421,19 @@ setrlimit = {
 
   function (res rlim) "
 
-a more convenient `setrlimit` which can use a :samp:`:{nickname}`
-keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
+a more convenient :manpage:`setrlimit(2)` which can use a
+:samp:`:{nickname}` keyword, eg. ``:NOFILE`` for
+``libc/RLIMIT_NOFILE``
 
 :param res: either the ``libc/RLIMIT_*`` symbol or C/int or :samp:`:{nickname}` keyword
-:param rlim: struct-rlimit
+:param rlim: :ref:`struct-rlimit <libc/struct-rlimit>`
+:type rlim: C/pointer
 :return: ``#<unspec>``
+:raises ^system-error:
+
+The resource names follow C conventions such as ``libc/RLIMIT_AS`` and
+``libc/RLIMIT_NOFILE``.
+
   " {
     resource := #n
     (cond

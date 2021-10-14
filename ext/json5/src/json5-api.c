@@ -465,7 +465,7 @@ generate the JSON5 UTF-8 for ``v``	\n\
 :return: JSON5 representation of ``v``	\n\
 :rtype: string / #unspec		\n\
 					\n\
-See also ``json5/generate-json``	\n\
+See also :ref:`json5/generate-json <json5/generate-json>`	\n\
 ")
 {
     IDIO_ASSERT (v);
@@ -495,7 +495,7 @@ generate the JSON UTF-8 for ``v``	\n\
 :return: JSON representation of ``v``	\n\
 :rtype: string / #unspec		\n\
 					\n\
-See also ``json5/generate``		\n\
+See also :ref:`json5/generate <json5/generate>`		\n\
 ")
 {
     IDIO_ASSERT (v);

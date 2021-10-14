@@ -116,9 +116,11 @@ make-sparse-char-set = {
   orig-make := make-sparse-char-set
 
   function (size & o) "
-Create a sparse-char-set of size elements.  If an array of 17 elements
-is also supplied it will be used as the planes of the sparse-char-set
-otherwise an empty array of 17 elements will be used.
+
+Create a sparse-char-set of `size` elements.  If an array of 17
+elements is also supplied it will be used as the planes of the
+sparse-char-set otherwise an empty array of 17 elements will be used.
+
 " {
     planes := #n
     if (and (pair? o)
@@ -307,14 +309,14 @@ define (%ucs-range->char-set bs n e) {
 }
 define (ucs-range->char-set s e & base?) "
 
-Return a char-set derived from the raange of code points from `s` to
+Return a char-set derived from the range of code points from `s` to
 `e` inclusive.  Use :ref:`char-set:empty <SRFI-14/char-set:empty>` as
 the inital char-set unless `base?` is supplied.
 
 :param s: starting code point
-:type s: integer
+:type s: unicode
 :param e: ending code point
-:type e: integer
+:type e: unicode
 :param base?: initial char-set, defaults to :ref:`char-set:empty <SRFI-14/char-set:empty>`
 :type base?: char-set, optional
 
@@ -335,10 +337,10 @@ the inital char-set unless `base?` is supplied.
 define (char-upcase cp) "
 Return the uppercase variant of ``cp`` if one exists or cp
 
-:param cp: Unicode code point
-:type cp: integer
+:param cp: code point
+:type cp: unicode
 :return: uppercase variant of ``cp``
-:rtype: integer
+:rtype: unicode
 "  {
   ->Uppercase cp
 }
@@ -346,10 +348,10 @@ Return the uppercase variant of ``cp`` if one exists or cp
 define (char-downcase cp) "
 Return the lowercase variant of ``cp`` if one exists or cp
 
-:param cp: Unicode code point
-:type cp: integer
+:param cp: code point
+:type cp: unicode
 :return: lowercase variant of ``cp``
-:rtype: integer
+:rtype: unicode
 "{
   ->Lowercase cp
 }

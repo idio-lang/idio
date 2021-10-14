@@ -13,8 +13,8 @@ The usual constants are:
 
    The boolean value for `false`.
 
-   This is the only value that is tested for.  Any other value is
-   considered to be `true`.
+   This is the **only** value that is tested for.  *Any* other value
+   is considered to be `true`.
 
 .. data:: #t
 
@@ -31,7 +31,7 @@ The usual constants are:
    of :ref:`pairs <pair type>` -- commonly known as a list.
 
 Other Constants
-^^^^^^^^^^^^^^^
+---------------
 
 Most other constants do not have constructors for use in source code,
 they exist *in machina*.  Their printed form is always unacceptable to
@@ -81,8 +81,8 @@ Other constants that may appear include:
 	 Idio> (begin)
 	 #<void>
 
-   #. a ``case`` expression where no match exists and there is no else
-      clause:
+   #. a ``cond`` or ``case`` expression where no match exists and
+      there is no ``else`` clause:
 
    In all cases, *something* must be returned.
 
@@ -107,6 +107,6 @@ The are groups of constants for:
 * generalized intermediate code from the evaluator to the code
   generator
 
-* :ref:`Unicode <unicode type>` is a distinct set of constants as is
+* :ref:`unicode <unicode type>` is a distinct set of constants as is
   its (deprecated) predecessor "character" type
 

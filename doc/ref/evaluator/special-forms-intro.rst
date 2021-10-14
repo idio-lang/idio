@@ -72,6 +72,19 @@ operators.  The default reader escape character is ``\``.
 
 ``escape`` continues evaluation with its argument.
 
+For example, the infix operator ``+`` expects numbers as arguments so
+we might make a mis-type before escaping it:
+
+.. code-block:: idio-console
+
+   Idio> apply + 1 2 3
+   ...:^rt-parameter-type-error:bad parameter type: '#<PRIM apply>' a primitive is not a number
+   ...
+   #<unspec>
+   Idio> apply \+ 1 2 3
+   6
+
+
 .. _`quote special form`:
 
 quote
@@ -86,6 +99,19 @@ its argument.  The default reader quote character is ``'``.
    'e
 
 ``quote`` returns its argument unevaluated.
+
+For example, any parenthesised list is considered a function call so
+we need to quote any literal lists:
+
+.. code-block:: idio-console
+
+   Idio> printf "a list %s\n" (1 2 3)
+   ...:^rt-function-error:cannot invoke constant type: detail (1)
+   ...
+   Idio> printf "a list %s\n" '(1 2 3)
+   a list (1 2 3)
+   #<unspec>
+
 
 quasiquote
 ^^^^^^^^^^
@@ -113,30 +139,8 @@ commonly called a closure.
 to the function are available through the named parameters within the
 `body` of the function.
 
-`formals` takes several forms itself:
-
-* ``#n`` for no arguments
-
-  This is often referred to as a *thunk*.
-
-* a symbol which indicates that all arguments are to be bundled up as
-  a list and made accessible within the function through the symbol
-
-* a list of one or more positional parameters and an optional varargs
-  parameter separated by an ``&`` character
-
-  It is an error to not pass enough arguments to satisfy the number of
-  positional parameters.
-
-  It is an error to pass more arguments than the number of positional
-  parameters when there is no varargs parameter.
-
-  * :samp:`(a b)` would suggest two positional parameters and no
-    varargs parameter
-
-  * :samp:`(a & b)` would suggest one formal parameter and zero or
-    more other parameters bundled up into a list and made available
-    through the symbol ``b``.
+`formals` takes several forms, see :ref:`closure parameters <closure
+parameters>` and the extended forms in :ref:`function* <function*>`.
 
 The optional `docstr` allows the user to describe their function.
 This text will be used in :ref:`help <help>` output as well as used to
@@ -175,6 +179,8 @@ the value returned by ``if``.
 
 If `condition` evaluates to ``#f`` and there is no `alternative` then
 ``if`` returns ``#<void>``.
+
+.. _`cond special form`:
 
 cond
 ^^^^
@@ -216,7 +222,7 @@ Special Form.  It is equivalent to many languages' ``if ... elif
 
   Evaluate `...` returning its value as the value from ``cond``.
 
-  The ``else`` clause can only appear at the end
+  The ``else`` clause can only appear as the last clause
 
 If no clauses satisfy and there is no ``else`` clause, ``cond``
 returns ``#<void>``.
@@ -378,9 +384,9 @@ It has a ``:$`` reader operator.
 Here, `getter` and `setter` are functions of no args and one arg,
 respectively, which retrieve or set some, usually, volatile value.
 
-The variable :ref:`SECONDS <SECONDS>` returns the number of seconds
-the program has been running for.  It has no associated `setter` so
-trying to give it a value is an error.
+The value of variable :ref:`SECONDS <SECONDS>` when evaluated returns
+the number of seconds the program has been running for.  It has no
+associated `setter` so trying to give it a value is an error.
 
 .. _`block special form`:
 

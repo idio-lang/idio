@@ -12,9 +12,10 @@ There will be a type definition, say, ``pid_t``, which maps directly
 to, or through a chain of other typedefs to, a :lname:`C` base type
 definition, a symbol, say, ``'int``.
 
-In parallel, there is a type predicate, say, ``pid_t?``, which maps
-directly to, or through a chain of other predicates to, a :ref:`C <C
-module>` predicate, say, ``C/int?``.
+In parallel, there is a corresponding type predicate, here,
+``pid_t?``, which maps directly to, or through a chain of other
+predicates to, the corresponding :ref:`C <C module>` predicate, here,
+``C/int?``.
 
 .. rst-class:: center
 
@@ -31,10 +32,12 @@ intermediate mappings.
 
 ----
 
-The following mappings are for the system this documentation was built
-on and are representative of that system, not yours.
+.. attention::
 
-The complete set of typedefs and predicates are defined for your
-system in :file:`lib/libc-api.idio`.
+   The following mappings are for the system this documentation was
+   built on and are representative of that system, not yours.
+
+   The complete set of typedefs and predicates are defined for your
+   system in :file:`lib/libc-api.idio`.
 
 
