@@ -1,3 +1,5 @@
+.. _`POSIX regex`:
+
 POSIX regex
 ^^^^^^^^^^^
 

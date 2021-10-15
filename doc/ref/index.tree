@@ -13,6 +13,7 @@
 (tree libc)
 (tree json5)
 (tree SRFI-14)
+(tree SRFI-115)
 
 
 (tree templates)

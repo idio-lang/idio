@@ -23,13 +23,13 @@ https://github.com/ashinn/chibi-scheme/blob/master/lib/chibi/regexp.scm.
 
 module SRFI-115
 export (regexp regexp? valid-sre? rx regexp->sre char-set->sre
-						 regexp-matches regexp-matches? regexp-search
-						 regexp-replace regexp-replace-all
-						 regexp-fold regexp-extract regexp-split regexp-partition
-						 regexp-match? regexp-match-count
-						 regexp-match-submatch regexp-match-submatch/list
-						 regexp-match-submatch-start regexp-match-submatch-end
-						 regexp-match->list regexp-match->sexp)
+	regexp-matches regexp-matches? regexp-search
+	regexp-replace regexp-replace-all
+	regexp-fold regexp-extract regexp-split regexp-partition
+	regexp-match? regexp-match-count
+	regexp-match-submatch regexp-match-submatch/list
+	regexp-match-submatch-start regexp-match-submatch-end
+	regexp-match->list regexp-match->sexp)
 
 import SRFI-14
 import unicode
@@ -210,7 +210,18 @@ define (make-regexp-match+ len rx str) {
 define (make-regexp-match-for-rx rx str) {
   make-regexp-match+ (Rx-num-save-indexes rx) rx str
 }
-define (regexp-match-count md) {
+define (regexp-match-count md) "
+
+Returns the number of submatches of `regexp-match`, regardless of
+whether they matched or not.  Does not include the implicit zero full
+match in the count.
+
+:param regexp-match: regexp-match
+:type regexp-match: struct-instance
+:return: number of submatches
+:rtype: integer
+
+" {
   (quotient (array-length (regexp-match-matches md)) 2) - 1
 }
 
@@ -255,7 +266,19 @@ define (copy-regexp-match md) {
 ;;> submatch \var{n}, possibly as a list for a submatch-list, or
 ;;> \scheme{#f} if not matched.
 
-define (regexp-match-submatch/list md n) {
+define (regexp-match-submatch/list md n) "
+
+As per :ref:`regexp-match-submatch <SRFI-115/regexp-match-submatch>`
+except returns the full list of matches, if any.
+
+:param regexp-match: regexp-match
+:type regexp-match: struct-instance
+:param field: field identifier
+:type field: integer or symbol
+:return: submatches or ``#f``
+:rtype: list or ``#f``
+
+" {
   n := if (integer? n) n (regexp-match-name-offset md n)
 
   (cond
@@ -283,7 +306,28 @@ define (regexp-match-submatch/list md n) {
 ;;> Returns the matching substring for the given named or indexed
 ;;> submatch \var{n}, or \scheme{#f} if not matched.
 
-define (regexp-match-submatch md n) {
+define (regexp-match-submatch md n) "
+
+Returns the substring matched in `regexp-match` corresponding to
+`field`, either an integer or a symbol for a named submatch.  Index 0
+refers to the entire match, index 1 to the first lexicographic
+submatch, and so on.  If there are multiple submatches with the same
+name, the first which matched is returned.  If passed an integer
+outside the range of matches, or a symbol which does not correspond to
+a named submatch of the pattern, it is an error.  If the corresponding
+submatch did not match, returns false.
+
+The result of extracting a submatch after the original matched string
+has been mutated is unspecified.
+
+:param regexp-match: regexp-match
+:type regexp-match: struct-instance
+:param field: field identifier
+:type field: integer or symbol
+:return: submatch string or ``#f``
+:rtype: string or ``#f``
+
+" {
   res := regexp-match-submatch/list md n
 
   if (pair? res) (ph res) res
@@ -306,7 +350,19 @@ define (regexp-match-submatch-start+end md n) {
 ;;> Returns the start index for the given named or indexed submatch
 ;;> \var{n}, or \scheme{#f} if not matched.
 
-define (regexp-match-submatch-start md n) {
+define (regexp-match-submatch-start md n) "
+
+Returns the start index for `regexp-match` corresponding to `field` as
+per :ref:`regexp-match-submatch <SRFI-115/regexp-match-submatch>`.
+
+:param regexp-match: regexp-match
+:type regexp-match: struct-instance
+:param field: field identifier
+:type field: integer or symbol
+:return: submatch starting index
+:rtype: integer
+
+" {
   (cond
    ((regexp-match-submatch-start+end md n) => ph)
    (else #f))
@@ -315,7 +371,19 @@ define (regexp-match-submatch-start md n) {
 ;;> Returns the end index for the given named or indexed submatch
 ;;> \var{n}, or \scheme{#f} if not matched.
 
-define (regexp-match-submatch-end md n) {
+define (regexp-match-submatch-end md n) "
+
+Returns the end index for `regexp-match` corresponding to `field` as
+per :ref:`regexp-match-submatch <SRFI-115/regexp-match-submatch>`.
+
+:param regexp-match: regexp-match
+:type regexp-match: struct-instance
+:param field: field identifier
+:type field: integer or symbol
+:return: submatch ending index
+:rtype: integer
+
+" {
   (cond
    ((regexp-match-submatch-start+end md n) => pt)
    (else #f))
@@ -357,14 +425,34 @@ define (regexp-match-convert recurse? md str) {
 ;;> Convert an regexp-match result to a list of submatches, beginning
 ;;> with the full match, using \scheme{#f} for unmatched submatches.
 
-define (regexp-match->list md) {
+define (regexp-match->list md) "
+
+Returns a list of all submatches in `regexp-match` as string or false,
+beginning with the entire match 0.
+
+:param regexp-match: regexp-match
+:type regexp-match: struct-instance
+:return: list of submatches
+:rtype: list
+
+" {
   regexp-match-convert #f md #f
 }
 
 ;;> Convert an regexp-match result to a forest of submatches, beginning
 ;;> with the full match, using \scheme{#f} for unmatched submatches.
 
-define (regexp-match->sexp md) {
+define (regexp-match->sexp md) "
+
+Convert `regexp-match` to a forest of submatches, beginning with the
+full match, using ``#f`` for unmatched submatches.
+
+:param regexp-match: regexp-match
+:type regexp-match: struct-instance
+:return: sexp
+:rtype: list
+
+" {
   regexp-match-convert #t md #f
 }
 
@@ -699,21 +787,68 @@ define (regexp-run search? rx str & o) {
 ;;> Match the given regexp or SRE against the entire string and return
 ;;> the match data on success.  Returns \scheme{#f} on failure.
 
-define (regexp-matches rx str & o) {
+define (regexp-matches rx str & o) "
+
+Returns an regexp-match object if `re` successfully matches the entire
+string `str` from `start` (inclusive) to `end` (exclusive), or ``#f``
+if the match fails.  The regexp-match object will contain information
+needed to extract any submatches.
+
+:param re: SRE or regexp
+:type re: list or struct-instance
+:param str: string to match
+:type str: string
+:param start: starting index, defaults to 0
+:type start: integer, optional
+:param end: ending index, defaults to string length
+:type end: integer, optional
+:return: regexp-match object
+:rtype: struct-instance
+
+" {
   apply regexp-run #f rx str o
 }
 
 ;;> Match the given regexp or SRE against the entire string and return
 ;;> the \scheme{#t} on success.  Returns \scheme{#f} on failure.
 
-define (regexp-matches? rx str & o) {
+define (regexp-matches? rx str & o) "
+
+Returns ``#t`` if `re` matches `str` as in :ref:`regexp-matches
+<SRFI-115/regexp-matches>`, or ``#f`` otherwise.
+
+:param re: SRE or regexp
+:type re: list or struct-instance
+:param str: string to match
+:type str: string
+:return: boolean
+
+" {
   and (apply regexp-matches rx str o) #t
 }
 
 ;;> Search for the given regexp or SRE within string and return
 ;;> the match data on success.  Returns \scheme{#f} on failure.
 
-define (regexp-search rx str & o) {
+define (regexp-search rx str & o) "
+
+Returns an regexp-match object if `re` successfully matches a
+substring of `str` from `start` (inclusive) to `end` (exclusive), or
+``#f`` if the match fails.  The regexp-match object will contain
+information needed to extract any submatches.
+
+:param re: SRE or regexp
+:type re: list or struct-instance
+:param str: string to match
+:type str: string
+:param start: starting index, defaults to 0
+:type start: integer, optional
+:param end: ending index, defaults to string length
+:type end: integer, optional
+:return: regexp-match object
+:rtype: struct-instance
+
+" {
   apply regexp-run #t rx str o
 }
 
@@ -903,7 +1038,13 @@ define (non-greedy-sre? sre) {
 	     (any non-greedy-sre? (pt sre)))))
 }
 
-define (valid-sre? x) {
+define (valid-sre? x) "
+Is `x` a valid SRE?
+
+:param x: value to test
+:type x: any
+:return: boolean
+" {
   trap ^idio-error (function (c) #f) {
     regexp x
     #t
@@ -960,7 +1101,17 @@ define (sre->char-set sre & o) {
    (else (error/type ^rt-parameter-type-error 'sre-char-set "invalid sre char-set" sre)))
 }
 
-define (char-set->sre cset) {
+define (char-set->sre cset) "
+
+Returns an SRE corresponding to the given SRFI 14 character set
+`cset`.
+
+:param cset: SRFI-14 character set
+:type cset: struct-instance
+:return: SRE
+:type cset: list
+
+" {
   list (char-set->string cset)
 }
 
@@ -1000,7 +1151,20 @@ define (sre-expand-reps from to sre) {
 
 ;;> Compile an \var{sre} into a regexp.
 
-define (regexp sre & o) {
+define (regexp sre & o) "
+Compiles a regexp if given an object whose structure matches the SRE syntax.
+
+Returns `sre` unmodified if it is already a regexp.
+
+:param sre: SRE
+:param sre: list
+:param flags: flags
+:param flags: list
+:return: regexp
+:rtype: struct-instance
+:raises ^rt-parameter-value-error:
+
+" {
   current-index := 2
   current-match := 0
   current-id := 0
@@ -1291,7 +1455,38 @@ define (regexp sre & o) {
 ;;>
 ;;> By default \var{finish} just returns \var{acc}.
 
-define (regexp-fold rx kons knil str & o) {
+define (regexp-fold rx kons knil str & o) "
+
+The fundamental regexp matching iterator.
+
+Repeatedly searches `str` for the regexp `re` so long as a match can
+be found.  On each successful match, applies :samp:`({kons} {i}
+{regexp-match} {str} {acc})` where `i` is the index since the last
+match (beginning with `start`), `regexp-match` is the resulting match,
+and `acc` is the result of the previous `kons` application, beginning
+with `knil`.  When no more matches can be found, calls `finish` with
+the same arguments, except that `regexp-match` is ``#f``.
+
+By default `finish` just returns `acc`.
+
+:param re: SRE or regexp
+:type re: list or struct-instance
+:param kons: accumulation function
+:type kons: function
+:param knil: accumlated result
+:type knil: any
+:param str: string to match
+:type str: string
+:param finish: result function, defaults to a function returning `acc`
+:type finish: function, optional
+:param start: starting index, defaults to 0
+:type start: integer, optional
+:param end: ending index, defaults to string length
+:type end: integer or ``#f``, optional
+:return: according to `finish`
+:rtype: any
+
+" {
   rx := regexp rx
   finish := if (pair? o) (ph o) (function (from md str acc) acc)
   o := if (pair? o) (pt o) o
@@ -1321,7 +1516,23 @@ define (regexp-fold rx kons knil str & o) {
 ;;> Extracts all non-empty substrings of \var{str} which match
 ;;> \var{re} between \var{start} and \var{end} as a list of strings.
 
-define (regexp-extract rx str & o) {
+define (regexp-extract rx str & o) "
+
+Extracts all non-empty substrings of `str` which match `re` between
+`start` and `end` as a list of strings.
+
+:param re: SRE or regexp
+:type re: list or struct-instance
+:param str: string to match
+:type str: string
+:param start: starting index, defaults to 0
+:type start: integer, optional
+:param end: ending index, defaults to string length
+:type end: integer, optional
+:return: list of matching strings
+:rtype: list
+
+" {
   (apply regexp-fold
 	 rx
 	 (function (from md str a) {
@@ -1338,7 +1549,23 @@ define (regexp-extract rx str & o) {
 ;;> Splits \var{str} into a list of strings separated by matches of
 ;;> \var{re}.
 
-define (regexp-split rx str & o) {
+define (regexp-split rx str & o) "
+
+Splits `str` into a list of (possibly empty) strings separated by
+non-empty matches of `re`.
+
+:param re: SRE or regexp
+:type re: list or struct-instance
+:param str: string to match
+:type str: string
+:param start: starting index, defaults to 0
+:type start: integer, optional
+:param end: ending index, defaults to string length
+:type end: integer, optional
+:return: list of matching strings
+:rtype: list
+
+" {
   ;; start and end in indices passed to regexp-fold
   start := if (pair? o) (ph o) 0
   end := if (and (pair? o) (pair? (pt o))) (pht o) (string-length str)
@@ -1371,7 +1598,34 @@ define (regexp-split rx str & o) {
 ;;> degenerate case where \var{str} is the empty string, the
 ;;> result is \scheme{("")}.
 
-define (regexp-partition rx str & o) {
+define (regexp-partition rx str & o) "
+
+Partitions `str` into a list of non-empty strings matching `re`,
+interspersed with the unmatched portions of the string.  The first and
+every odd element is an unmatched substring, which will be the empty
+string if `re` matches at the beginning of the string or end of the
+previous match.  The second and every even element will be a substring
+matching `re`.  If the final match ends at the end of the string, no
+trailing empty string will be included.  Thus, in the degenerate case
+where `str` is the empty string, the result is ``(\"\")`` .
+
+Note that ``regexp-partition`` is equivalent to interleaving the
+results of :ref:`regexp-split <SRFI-115/regexp-split>` and
+:ref:`regexp-extract <SRFI-115/regexp-extract>`, starting with the
+former.
+
+:param re: SRE or regexp
+:type re: list or struct-instance
+:param str: string to match
+:type str: string
+:param start: starting index, defaults to 0
+:type start: integer, optional
+:param end: ending index, defaults to string length
+:type end: integer, optional
+:return: list of matching strings
+:rtype: list
+
+" {
   start := if (pair? o) (ph o) 0
   end := if (and (pair? o) (pair? (pt o))) (pht o) (string-length str)
 
@@ -1388,7 +1642,7 @@ define (regexp-partition rx str & o) {
 		       (pair left (pt a)))
 	})
   }
-  
+
   define (final from md str a) {
     (if (or (from lt end) (null? (pt a)))
 	(pair (substring str (ph a) end) (pt a))
@@ -1415,7 +1669,40 @@ define (regexp-partition rx str & o) {
 ;;> a value of \scheme{#f} for \var{end} is equivalent to
 ;;> \scheme{(string-length str)}.
 
-define (regexp-replace rx str subst & o) {
+define (regexp-replace rx str subst & o) "
+
+Returns a new string replacing the `count`\ :sup:`th` match of `re` in
+`str` the `subst`, where the zero-indexed `count` defaults to
+zero (i.e. the first match).  If there are not `count` matches,
+returns the selected substring unmodified.
+
+`subst` can be a string, an integer or symbol indicating the contents
+of a numbered or named submatch of `re`, ``'pre`` for the substring to
+the left of the match, or ``'post`` for the substring to the right of
+the match.
+
+The optional parameters `start` and `end` restrict both the matching
+and the substitution, to the given indices, such that the result is
+equivalent to omitting these parameters and replacing on
+:samp:`(substring {str} {start} {end})`.  As a convenience, a value of
+``#f`` for `end` is equivalent to :samp:`(string-length {str})`.
+
+:param re: SRE or regexp
+:type re: list or struct-instance
+:param str: string to match
+:type str: string
+:param subst: replacement
+:type subst: see above
+:param start: starting index, defaults to 0
+:type start: integer, optional
+:param end: ending index, defaults to string length
+:type end: integer or ``#f``, optional
+:param count: replacement index count, defaults to zero
+:type count: integer, optional
+:return: (possibly) modified string
+:rtype: string
+
+" {
   start := if (and (pair? o) (ph o)) (ph o) 0
   o := if (pair? o) (pt o) #n
   end := if (and (pair? o) (ph o)) (ph o) (string-length str)
@@ -1444,7 +1731,25 @@ define (regexp-replace rx str subst & o) {
 ;;> Equivalent to \var{regexp-replace}, but replaces all occurrences
 ;;> of \var{re} in \var{str}.
 
-define (regexp-replace-all rx str subst & o) {
+define (regexp-replace-all rx str subst & o) "
+
+Equivalent to :ref:`regexp-replace <SRFI-115/regexp-replace>` but
+replaces all occurrences of `re` in `str`
+
+:param re: SRE or regexp
+:type re: list or struct-instance
+:param str: string to match
+:type str: string
+:param subst: replacement
+:type subst: see above
+:param start: starting index, defaults to 0
+:type start: integer, optional
+:param end: ending index, defaults to string length
+:type end: integer or ``#f``, optional
+:return: (possibly) modified string
+:rtype: string
+
+" {
   start := if (and (pair? o) (ph o)) (ph o) 0
   o := if (pair? o) (pt o) #n
   end := if (and (pair? o) (ph o)) (ph o) (string-length str)

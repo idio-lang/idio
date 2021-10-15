@@ -730,7 +730,7 @@ Invoke `f` on each code point in char-set `cs` and `v` returning the accumulated
    ((sparse-char-set? cs) {
      nplanes := count-sparse-char-set-planes cs
      (do ((i 0 (i + 1)))
-	 ((== i nplanes)
+	 ((eq i nplanes)
 	  v)
 	 {
 	   bs := array-ref (sparse-char-set-planes cs) i
