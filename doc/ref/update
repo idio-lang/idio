@@ -1,7 +1,0 @@
-#! /bin/bash
-
-cd ${0%/*}
-
-. venv/bin/activate
-
-make clean html text && (cd build; rsync -a --delete html study:src/docs/ref/build)

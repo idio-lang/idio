@@ -595,6 +595,13 @@ int main (int argc, char **argv, char **envp)
 
     idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
+    /*
+     * Handle options
+     *
+     * The enum options is to maintain state round the loop.
+     * Non-argument options can just set a flag.
+     */
+    int import_debugger = 0;
     enum options {
 	OPTION_NONE,
 	OPTION_LOAD,
@@ -672,6 +679,8 @@ int main (int argc, char **argv, char **envp)
 	    } else if (strncmp (argv[i], "--", 2) == 0) {
 		if (strncmp (argv[i], "--vm-reports", 12) == 0) {
 		    idio_vm_reports = 1;
+		} else if (strncmp (argv[i], "--debugger", 10) == 0) {
+		    import_debugger = 1;
 		} else if (strncmp (argv[i], "--load", 6) == 0) {
 		    option = OPTION_LOAD;
 		} else if ('\0' == argv[i][2]) {
@@ -777,7 +786,14 @@ int main (int argc, char **argv, char **envp)
 	 * REPL.  In practice, though, this acts like a crude:
 	 * load-handle *stdin*
 	 */
-	idio_job_control_set_interactive (idio_job_control_tty_isatty);
+	if (idio_job_control_tty_isatty) {
+	    idio_job_control_set_interactive (1);
+
+	    if (import_debugger) {
+		IDIO lsh = idio_open_input_string_handle_C (IDIO_STATIC_STR_LEN ("import debugger"));
+		idio_load_handle_C (lsh, idio_read, idio_evaluate, idio_vm_constants);
+	    }
+	}
 
 	int gc_pause = idio_gc_get_pause ("REPL");
 

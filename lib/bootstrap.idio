@@ -66,7 +66,7 @@ import SRFI-0				; cond-expand
 import job-control			; override C primitives
 import unicode
 
-;; don't create a code dump if there are no debug symbols
+;; don't create a core dump if there are no debug symbols
 (cond-expand
  ((not IDIO_DEBUG) {
    rl := libc/getrlimit libc/RLIMIT_CORE
