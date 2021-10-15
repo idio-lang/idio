@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; debug.idio
+;; debugger.idio
 ;;
 
 module debugger

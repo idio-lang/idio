@@ -16,7 +16,9 @@
 ;;
 
 ;;
-;; SRFI-0.idio -- a re-imagining thereof
+;; SRFI-0.idio -- Feature-based conditional expansion
+;;
+;; re-imagining thereof
 ;;
 
 #*

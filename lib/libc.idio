@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; libc-wrap.idio
+;; libc.idio
 ;;
 
 module libc

@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; test.idio
+;; test.idio -- Idio self-tests
 ;;
 
 #*
@@ -64,14 +64,17 @@ the jumble of test cases in these test files.
 
 *#
 
-;; orignally ported from
+;; originally ported from
 ;;
 ;; Scheme 9 from Empty Space
 ;; By Nils M Holm <nmh@t3x.org>, 2007,2008,2009
 ;;
 ;; but only test-s9.idio remaining (still many hundreds of tests)
 
-require init
+import libc
+import job-control
+import SRFI-14
+import SRFI-115
 
 testfile := "__testfile__"
 

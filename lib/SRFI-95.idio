@@ -16,7 +16,9 @@
 ;;
 
 ;;
-;; SRFI-95.idio -- a port thereof
+;; SRFI-95.idio -- Sorting and Merging
+;;
+;; a port thereof
 ;;
 
 ;; Copyright (C) Aubrey Jaffer 2006. All Rights Reserved.

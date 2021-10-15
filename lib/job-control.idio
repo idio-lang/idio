@@ -16,8 +16,9 @@
 ;;
 
 ;;
-;; command.idio
+;; job-control.idio
 ;;
+
 module job-control
 
 #*
