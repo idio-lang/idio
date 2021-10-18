@@ -432,6 +432,18 @@ void idio_add_terminal_signals ()
     idio_add_terminal_signal (SIGTERM);
 }
 
+static void idio_usage (char *argv0)
+{
+    fprintf (stderr, "%s: [Idio-args] [script-name [script-args]]\n\n", argv0);
+    fprintf (stderr, "Idio options:\n\n");
+    fprintf (stderr, "  --load NAME		load NAME and continue processing\n");
+    fprintf (stderr, "  --debugger		enable the debugger if interactive\n");
+    fprintf (stderr, "  --vm-reports		enable various VM reports\n");
+
+    fprintf (stderr, "\n");
+    fprintf (stderr, "  --help		print this message and quit\n");
+}
+
 int main (int argc, char **argv, char **envp)
 {
     /*
@@ -683,6 +695,9 @@ int main (int argc, char **argv, char **envp)
 		    import_debugger = 1;
 		} else if (strncmp (argv[i], "--load", 6) == 0) {
 		    option = OPTION_LOAD;
+		} else if (strncmp (argv[i], "--help", 10) == 0) {
+		    idio_usage (argv[0]);
+		    exit (0);
 		} else if ('\0' == argv[i][2]) {
 		    in_idio_options = 0;
 		}

@@ -8,7 +8,7 @@
 
 (document Idio hprintf)
 (document Idio format)
-(document Idio %format)
+(document Idio %format -format)
 
 (document Idio display)
 (document Idio display*)

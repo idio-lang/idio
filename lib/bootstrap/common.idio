@@ -222,7 +222,8 @@ sequences*.
 If `type` is ``'args`` then a ``%`` character in the format string
 starts an escape sequence which has the general form
 :samp:`%[{flags}][{width}][.{prec}]{K}` where :samp:`{K}` is a
-:manpage:`printf(3)`-ish format character with arguments in `args`.
+:manpage:`printf(3)`-ish conversion specifier character with arguments
+in `args`.
 
 If :samp:`{K}` is an ``@`` character then the list argument is spliced
 into the string converting all elements of the list to string form

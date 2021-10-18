@@ -59,11 +59,39 @@ html_theme = 'idio-theme'
 
 html_theme_path = ['.']
 
+html_short_title = 'Idio Reference'
+
 # Alabaster theme options
 html_theme_options = {
     'code_font_family': "'Source Code Pro', 'Consolas', 'Menlo', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', monospace",
     'font_family': "'Open Sans', 'Verdana', serif",
-    'body_text_align': "justify"
+    'body_text_align': "justify",
+
+    'description': 'the programmable shell',
+
+    # Watch button URL will be
+    # https://github.com/{github_user}/{github_repo}
+    'github_button': True,
+    'github_user': 'idio-lang',
+    'github_repo': 'idio',
+
+    # Normally these would be used in the sidebar navigation.html
+    # (which we comment out below) but we re-use in the header
+    'extra_nav_links': {
+        'Home': '/',
+        'Reference': '/docs/ref/',
+        'DIPS': '/docs/DIPS/',
+    },
+}
+
+html_sidebars = {
+    '**': [
+        'about.html',
+        # 'navigation.html',
+        'relations.html',
+        'searchbox.html',
+        'donate.html',
+    ]
 }
 
 # affects creation of last_updated used in the footer block in

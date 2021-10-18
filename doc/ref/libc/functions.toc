@@ -98,5 +98,7 @@
 (document libc rlimit-name)
 (document libc rlimit-names)
 
+(document libc open-flag-names)
+
 (document libc proc-subst-named-pipe-from)
 (document libc proc-subst-named-pipe-into)

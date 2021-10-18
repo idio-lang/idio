@@ -26,7 +26,7 @@ immediately different, being a list, but also because the iteration
 key, ``+``, ``*``, ``?``, etc., lead the term(s) they affect.
 
 `SRFI-115`_ has plenty of documentation and examples but some
-approximate [#]_ comparisons, noting ``:`` for a sequence or regexps
+approximate [#]_ comparisons, noting ``:`` for a sequence of regexps
 and ``$`` for submatches, are:
 
 .. csv-table::
