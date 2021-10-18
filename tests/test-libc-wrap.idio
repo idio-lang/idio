@@ -377,6 +377,8 @@ sprintf "%s" errno
 
 (rlimit-names)
 
+(open-flag-names)
+
 egid := (C/->integer EGID)		; fixnum
 EGID = (C/integer-> egid libc/gid_t)	; C/int
 

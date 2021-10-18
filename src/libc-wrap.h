@@ -143,6 +143,12 @@ extern IDIO idio_libc_struct_stat;
 	}								\
     }
 
+#define IDIO_LIBC_OPEN_FLAG(n) {					\
+	IDIO open_flag_sym = idio_symbols_C_intern (#n, sizeof (#n) - 1); \
+	idio_libc_export_symbol_value (open_flag_sym, idio_C_int (n));	\
+	idio_array_push (idio_libc_open_flag_names, open_flag_sym);	\
+    }
+
 extern IDIO idio_vm_signal_handler_conditions;
 extern char **idio_libc_signal_names;
 void idio_libc_format_error (char const *msg, IDIO name, IDIO c_location);

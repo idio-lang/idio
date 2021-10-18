@@ -82,6 +82,7 @@ char **idio_libc_signal_names = NULL;
 IDIO idio_vm_errno_conditions;
 char **idio_libc_errno_names = NULL;
 char **idio_libc_rlimit_names = NULL;
+IDIO idio_libc_open_flag_names = idio_S_nil;
 
 static long idio_SC_CLK_TCK = 0;
 
@@ -2521,6 +2522,186 @@ of the macro					\n\
     return idio_list_reverse (r);
 }
 
+static void idio_libc_set_open_flag_names ()
+{
+    idio_libc_open_flag_names = idio_array (30);
+    idio_gc_protect_auto (idio_libc_open_flag_names);
+
+    /* all platforms */
+#if defined (O_RDONLY)
+    IDIO_LIBC_OPEN_FLAG (O_RDONLY);
+#endif
+
+    /* all platforms */
+#if defined (O_WRONLY)
+    IDIO_LIBC_OPEN_FLAG (O_WRONLY);
+#endif
+
+    /* all platforms */
+#if defined (O_RDWR)
+    IDIO_LIBC_OPEN_FLAG (O_RDWR);
+#endif
+
+    /* all platforms */
+#if defined (O_APPEND)
+    IDIO_LIBC_OPEN_FLAG (O_APPEND);
+#endif
+
+    /* all platforms */
+#if defined (O_CLOEXEC)
+    IDIO_LIBC_OPEN_FLAG (O_CLOEXEC);
+#endif
+
+    /* all platforms */
+#if defined (O_CREAT)
+    IDIO_LIBC_OPEN_FLAG (O_CREAT);
+#endif
+
+    /* all platforms */
+#if defined (O_EXCL)
+    IDIO_LIBC_OPEN_FLAG (O_EXCL);
+#endif
+
+    /* all platforms */
+#if defined (O_NDELAY)
+    IDIO_LIBC_OPEN_FLAG (O_NDELAY);
+#endif
+
+    /* all platforms */
+#if defined (O_NOFOLLOW)
+    IDIO_LIBC_OPEN_FLAG (O_NOFOLLOW);
+#endif
+
+    /* all platforms */
+#if defined (O_NONBLOCK)
+    IDIO_LIBC_OPEN_FLAG (O_NONBLOCK);
+#endif
+
+    /* all platforms */
+#if defined (O_TRUNC)
+    IDIO_LIBC_OPEN_FLAG (O_TRUNC);
+#endif
+
+    /* all platforms */
+#if defined (FD_CLOEXEC)
+    IDIO_LIBC_OPEN_FLAG (FD_CLOEXEC);
+#endif
+
+    /* some platforms */
+#if defined (O_ASYNC)
+    IDIO_LIBC_OPEN_FLAG (O_ASYNC);
+#endif
+
+    /* some platforms */
+#if defined (O_DIRECT)
+    IDIO_LIBC_OPEN_FLAG (O_DIRECT);
+#endif
+
+    /* some platforms */
+#if defined (O_DIRECTORY)
+    IDIO_LIBC_OPEN_FLAG (O_DIRECTORY);
+#endif
+
+    /* some platforms */
+#if defined (O_DSYNC)
+    IDIO_LIBC_OPEN_FLAG (O_DSYNC);
+#endif
+
+    /* some platforms */
+#if defined (O_EXEC)
+    IDIO_LIBC_OPEN_FLAG (O_EXEC);
+#endif
+
+    /* some platforms */
+#if defined (O_EXLOCK)
+    IDIO_LIBC_OPEN_FLAG (O_EXLOCK);
+#endif
+
+    /* some platforms */
+#if defined (O_FSYNC)
+    IDIO_LIBC_OPEN_FLAG (O_FSYNC);
+#endif
+
+    /* some platforms */
+#if defined (O_LARGEFILE)
+    IDIO_LIBC_OPEN_FLAG (O_LARGEFILE);
+#endif
+
+    /* some platforms */
+#if defined (O_NOATIME)
+    IDIO_LIBC_OPEN_FLAG (O_NOATIME);
+#endif
+
+    /* some platforms */
+#if defined (O_NOCTTY)
+    IDIO_LIBC_OPEN_FLAG (O_NOCTTY);
+#endif
+
+    /* some platforms */
+#if defined (O_PATH)
+    IDIO_LIBC_OPEN_FLAG (O_PATH);
+#endif
+
+    /* some platforms */
+#if defined (O_SEARCH)
+    IDIO_LIBC_OPEN_FLAG (O_SEARCH);
+#endif
+
+    /* some platforms */
+#if defined (O_SHLOCK)
+    IDIO_LIBC_OPEN_FLAG (O_SHLOCK);
+#endif
+
+    /* some platforms */
+#if defined (O_SYNC)
+    IDIO_LIBC_OPEN_FLAG (O_SYNC);
+#endif
+
+    /* some platforms */
+#if defined (O_TMPFILE)
+    IDIO_LIBC_OPEN_FLAG (O_TMPFILE);
+#endif
+
+    /* SunOS */
+#if defined (O_NOLINKS)
+    IDIO_LIBC_OPEN_FLAG (O_NOLINKS);
+#endif
+
+    /* SunOS */
+#if defined (O_RSYNC)
+    IDIO_LIBC_OPEN_FLAG (O_RSYNC);
+#endif
+
+    /* SunOS */
+#if defined (O_XATTR)
+    IDIO_LIBC_OPEN_FLAG (O_XATTR);
+#endif
+
+    /* FreeBSD */
+#if defined (O_VERIFY)
+    IDIO_LIBC_OPEN_FLAG (O_VERIFY);
+#endif
+
+    /* FreeBSD */
+#if defined (O_RESOLVE_BENEATH)
+    IDIO_LIBC_OPEN_FLAG (O_RESOLVE_BENEATH);
+#endif
+
+    /* Mac OS X */
+#if defined (O_EVTONLY)
+    IDIO_LIBC_OPEN_FLAG (O_EVTONLY);
+#endif
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("open-flag-names", libc_open_flag_names, (), "", "\
+return a list of the :manpage:`open(2)` O_* flags	\n\
+						\n\
+:return: a list of flag names			\n\
+")
+{
+    return idio_array_to_list (idio_libc_open_flag_names);
+}
+
 IDIO_DEFINE_PRIMITIVE0_DS ("EGID/get", EGID_get, (void), "", "\
 getter for the computed value ``EGID`` which is a call to	\n\
 :manpage:`getegid(2)`.						\n\
@@ -3303,6 +3484,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strerrno);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rlimit_name);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rlimit_names);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_open_flag_names);
 
     IDIO_ADD_PRIMITIVE (libc_bp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_S_ISBLK);
@@ -3371,97 +3553,6 @@ void idio_init_libc_wrap ()
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("F_SETFD"), idio_C_int (F_SETFD), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("F_GETFL"), idio_C_int (F_GETFL), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("F_SETFL"), idio_C_int (F_SETFL), idio_libc_module);
-
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_RDONLY"), idio_C_int (O_RDONLY), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_WRONLY"), idio_C_int (O_WRONLY), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_RDWR"), idio_C_int (O_RDWR), idio_libc_module);
-
-    /* available on all platforms */
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_APPEND"), idio_C_int (O_APPEND), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_CLOEXEC"), idio_C_int (O_CLOEXEC), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_CREAT"), idio_C_int (O_CREAT), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_EXCL"), idio_C_int (O_EXCL), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_NDELAY"), idio_C_int (O_NDELAY), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_NOFOLLOW"), idio_C_int (O_NOFOLLOW), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_NONBLOCK"), idio_C_int (O_NONBLOCK), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_TRUNC"), idio_C_int (O_TRUNC), idio_libc_module);
-
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("FD_CLOEXEC"), idio_C_int (FD_CLOEXEC), idio_libc_module);
-
-    /* available on some platforms */
-#if defined(O_ASYNC)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_ASYNC"), idio_C_int (O_ASYNC), idio_libc_module);
-#endif
-#if defined(O_DIRECT)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_DIRECT"), idio_C_int (O_DIRECT), idio_libc_module);
-#endif
-#if defined(O_DIRECTORY)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_DIRECTORY"), idio_C_int (O_DIRECTORY), idio_libc_module);
-#endif
-#if defined(O_DSYNC)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_DSYNC"), idio_C_int (O_DSYNC), idio_libc_module);
-#endif
-#if defined(O_EXEC)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_EXEC"), idio_C_int (O_EXEC), idio_libc_module);
-#endif
-#if defined(O_EXLOCK)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_EXLOCK"), idio_C_int (O_EXLOCK), idio_libc_module);
-#endif
-#if defined(O_FSYNC)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_FSYNC"), idio_C_int (O_FSYNC), idio_libc_module);
-#endif
-#if defined(O_LARGEFILE)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_LARGEFILE"), idio_C_int (O_LARGEFILE), idio_libc_module);
-#endif
-#if defined(O_NOATIME)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_NOATIME"), idio_C_int (O_NOATIME), idio_libc_module);
-#endif
-#if defined(O_NOCTTY)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_NOCTTY"), idio_C_int (O_NOCTTY), idio_libc_module);
-#endif
-#if defined(O_PATH)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_PATH"), idio_C_int (O_PATH), idio_libc_module);
-#endif
-#if defined(O_SEARCH)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_SEARCH"), idio_C_int (O_SEARCH), idio_libc_module);
-#endif
-#if defined(O_SHLOCK)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_SHLOCK"), idio_C_int (O_SHLOCK), idio_libc_module);
-#endif
-#if defined(O_SYNC)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_SYNC"), idio_C_int (O_SYNC), idio_libc_module);
-#endif
-#if defined(O_TMPFILE)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_TMPFILE"), idio_C_int (O_TMPFILE), idio_libc_module);
-#endif
-
-    /*
-     * The following are single platform only:
-     *
-     * FreeBSD: O_VERIFY O_RESOLVE_BENEATH
-     *
-     * SunOS: O_NOLINKS O_RSYNC O_XATTR
-     *
-     * Mac OS: O_EVTONLY
-     */
-#if defined(O_VERIFY)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_VERIFY"), idio_C_int (O_VERIFY), idio_libc_module);
-#endif
-#if defined(O_RESOLVE_BENEATH)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_RESOLVE_BENEATH"), idio_C_int (O_RESOLVE_BENEATH), idio_libc_module);
-#endif
-#if defined(O_NOLINNKS)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_NOLINNKS"), idio_C_int (O_NOLINNKS), idio_libc_module);
-#endif
-#if defined(O_RSYNC)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_RSYNC"), idio_C_int (O_RSYNC), idio_libc_module);
-#endif
-#if defined(O_XATTR)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_XATTR"), idio_C_int (O_XATTR), idio_libc_module);
-#endif
-#if defined(O_EVTONLY)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("O_EVTONLY"), idio_C_int (O_EVTONLY), idio_libc_module);
-#endif
 
     /* limits.h */
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("CHAR_MAX"), idio_C_char (CHAR_MAX), idio_libc_module);
@@ -3559,6 +3650,8 @@ void idio_init_libc_wrap ()
     idio_libc_set_errno_names ();
 
     idio_libc_set_rlimit_names ();
+
+    idio_libc_set_open_flag_names ();
 
     /*
      * Define some host/user/process variables
