@@ -185,9 +185,9 @@ If `condition` evaluates to ``#f`` and there is no `alternative` then
 cond
 ^^^^
 
-The ``cond`` special form is an abstraction of the :ref:`if <if>`
-Special Form.  It is equivalent to many languages' ``if ... elif
-... elif ... else ...``.
+The ``cond`` special form is an abstraction of the :ref:`if <if
+special form>` Special Form.  It is equivalent to many languages' ``if
+... elif ... elif ... else ...``.
 
 .. parsed-literal::
 

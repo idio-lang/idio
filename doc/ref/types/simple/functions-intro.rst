@@ -44,7 +44,7 @@ Closures are user-defined functions and allow the convenient
 abstraction of sections of code.
 
 Normally you would define a closure with the special form :ref:`define
-<define>`:
+<define special form>`:
 
 .. code-block:: idio
 
@@ -57,7 +57,7 @@ which creates a function called ``foo`` which takes two parameters,
 
 Alternatively (and secretly what ``define`` does under the hood) you
 can create an anonymous *function value* with the special form
-:ref:`function <function>`:
+:ref:`function <function special form>`:
 
 .. code-block:: idio
 

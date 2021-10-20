@@ -7,7 +7,7 @@ from sphinx.util.docutils import SphinxDirective
 # the git-oriented features are derived from Daniel Watkins'
 # sphinx-git code
 
-from datetime import datetime
+from datetime import datetime, timezone
 from git import Repo
 
 ##############################
@@ -114,8 +114,8 @@ class GitCommitDirective (SphinxDirective):
         self.sha_length = self.options.get ('sha_length',
                                             self.default_sha_length)
 
-        now = datetime.now()
-        text = "Last built on {0} at {1} from ".format (now.strftime ("%Y/%m/%d"), now.strftime ("%H:%M:%S"))
+        now = datetime.now(timezone.utc)
+        text = "Last built at {0} from ".format (now.strftime ("%Y-%m-%dT%H:%M:%SZ%z"))
         if 'commit' in self.options:
             text += "{0}".format (self.commit.hexsha[:self.sha_length])
         if 'branch' in self.options and self.branch_name is not None:
