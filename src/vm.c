@@ -4757,11 +4757,11 @@ int idio_vm_run1 (IDIO thr)
 	    return 0;
 	}
 	break;
-    case IDIO_A_ABORT:
+    case IDIO_A_PUSH_ABORT:
 	{
 	    uint64_t o = idio_vm_fetch_varuint (thr);
 
-	    IDIO_VM_RUN_DIS ("ABORT to PC +%" PRIu64 "\n", o);
+	    IDIO_VM_RUN_DIS ("PUSH-ABORT to PC +%" PRIu64 "\n", o);
 
 	    /*
 	     * A continuation right now would just lead us back into
@@ -4777,10 +4777,14 @@ int idio_vm_run1 (IDIO thr)
 	    idio_display (idio_fixnum (IDIO_CONTINUATION_PC (k)), dosh);
 	    idio_display_C (")", dosh);
 
-	    IDIO_ARRAY_USIZE (idio_vm_krun) = 2;
+	    idio_array_push (idio_vm_krun, IDIO_LIST2 (k, idio_get_output_string (dosh)));
+	}
+	break;
+    case IDIO_A_POP_ABORT:
+	{
+	    IDIO_VM_RUN_DIS ("POP-ABORT\n");
 
-	    /* ABORT to main should be in slot #0 */
-	    idio_array_insert_index (idio_vm_krun, IDIO_LIST2 (k, idio_get_output_string (dosh)), 1);
+	    idio_array_pop (idio_vm_krun);
 	}
 	break;
     case IDIO_A_ALLOCATE_FRAME1:
@@ -6150,13 +6154,18 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("RETURN\n");
 	    }
 	    break;
-	case IDIO_A_ABORT:
+	case IDIO_A_PUSH_ABORT:
 	    {
 		uint64_t o = idio_vm_get_varuint (bc, pcp);
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "A@%" PRId64 "", pc + o);
 		idio_hash_put (hints, idio_fixnum (pc + o), idio_symbols_C_intern (h, hlen));
-		IDIO_VM_DASM ("ABORT to PC +%" PRIu64 " %" PRId64, o, pc + o);
+		IDIO_VM_DASM ("PUSH-ABORT to PC +%" PRIu64 " %" PRId64, o, pc + o);
+	    }
+	    break;
+	case IDIO_A_POP_ABORT:
+	    {
+		IDIO_VM_DASM ("POP-ABORT");
 	    }
 	    break;
 	case IDIO_A_FINISH:
@@ -6814,7 +6823,8 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 	exit (idio_exit_status);
 	break;
     default:
-	fprintf (stderr, "setjmp: unexpected value\n");
+	fprintf (stderr, "sigsetjmp: unexpected value\n");
+	IDIO_C_ASSERT (0);
 	break;
     }
 
@@ -6823,10 +6833,18 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
      */
     if (!idio_isa_thread (v_thr)) {
 	fprintf (stderr, "\n\n\nrun: v_thr corrupt:\n");
-	idio_debug ("thr     =%s\n", thr);
-	idio_debug ("v_thr   =%s\n", v_thr);
-	idio_debug ("curr thr=%s\n", idio_thread_current_thread ());
+	fprintf (stderr, "thr      = %s\n", idio_type2string (thr));
+	fprintf (stderr, "v_thr    = %s\n", idio_type2string (v_thr));
+	idio_debug ("curr thr = %s\n", idio_thread_current_thread ());
 	abort ();
+
+	/*
+	 * (current-thread) won't be correct but it'll allow us to
+	 * exit "cleanly" -- rather than a core dump
+	 */
+	thr = idio_thread_current_thread ();
+	idio_final ();
+	exit (3);
     }
     thr = v_thr;
 

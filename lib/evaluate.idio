@@ -2797,7 +2797,7 @@ return intermediate code for the code generator
   }
   m := meaning src src #n #n no-flags c* (current-module)
 
-  list I-ABORT m
+  list (list I-PUSH-ABORT m) (list I-POP-ABORT)
 }
 
 ;; done

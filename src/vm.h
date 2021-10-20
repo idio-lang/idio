@@ -124,7 +124,8 @@
 #define IDIO_A_FUNCTION_GOTO			92
 #define IDIO_A_RETURN				93
 #define IDIO_A_FINISH				94
-#define IDIO_A_ABORT				95
+#define IDIO_A_PUSH_ABORT			95
+#define IDIO_A_POP_ABORT			96
 
 #define IDIO_A_ALLOCATE_FRAME1			100
 #define IDIO_A_ALLOCATE_FRAME2			101

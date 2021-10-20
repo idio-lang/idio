@@ -2683,11 +2683,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_FINISH);
 	}
 	break;
-    case IDIO_I_CODE_ABORT:
+    case IDIO_I_CODE_PUSH_ABORT:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("ABORT m1", mt, IDIO_C_FUNC_LOCATION_S ("ABORT"));
+		idio_codegen_error_param_args ("PUSH_ABORT m1", mt, IDIO_C_FUNC_LOCATION_S ("PUSH_ABORT"));
 
 		/* notreached */
 		return;
@@ -2698,12 +2698,15 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_T ia1 = idio_ia (100);
 	    idio_codegen_compile (thr, ia1, cs, m1, depth + 1);
 
-	    IDIO_IA_PUSH1 (IDIO_A_ABORT);
+	    IDIO_IA_PUSH1 (IDIO_A_PUSH_ABORT);
 	    IDIO_IA_PUSH_VARUINT (IDIO_IA_USIZE (ia1));
 
 	    idio_ia_append (ia, ia1);
 	    idio_ia_free (ia1);
 	}
+	break;
+    case IDIO_I_CODE_POP_ABORT:
+	    IDIO_IA_PUSH1 (IDIO_A_POP_ABORT);
 	break;
     case IDIO_I_CODE_NOP:
 	    IDIO_IA_PUSH1 (IDIO_A_NOP);
@@ -2904,7 +2907,8 @@ static idio_codegen_symbol_t idio_codegen_symbols[] = {
 
     { "I-RETURN",				IDIO_I_RETURN },
     { "I-FINISH",				IDIO_I_FINISH },
-    { "I-ABORT",				IDIO_I_ABORT },
+    { "I-PUSH-ABORT",				IDIO_I_PUSH_ABORT },
+    { "I-POP-ABORT",				IDIO_I_POP_ABORT },
     { "I-NOP",					IDIO_I_NOP },
 
     { NULL, NULL }

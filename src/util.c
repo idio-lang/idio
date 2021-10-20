@@ -1497,7 +1497,8 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 
 		    case IDIO_I_CODE_RETURN:				t = "I-RETURN";				break;
 		    case IDIO_I_CODE_FINISH:				t = "I-FINISH";				break;
-		    case IDIO_I_CODE_ABORT:				t = "I-ABORT";				break;
+		    case IDIO_I_CODE_PUSH_ABORT:			t = "I-PUSH-ABORT";			break;
+		    case IDIO_I_CODE_POP_ABORT:				t = "I-POP-ABORT";			break;
 		    case IDIO_I_CODE_NOP:				t = "I-NOP";				break;
 
 		    default:
@@ -3206,7 +3207,8 @@ char const *idio_vm_bytecode2string (int code)
     case IDIO_A_FUNCTION_GOTO:			r = "A-FUNCTION-GOTO";			break;
     case IDIO_A_RETURN:				r = "A-RETURN";				break;
     case IDIO_A_FINISH:				r = "A-FINISH";				break;
-    case IDIO_A_ABORT:				r = "A-ABORT";				break;
+    case IDIO_A_PUSH_ABORT:			r = "A-PUSH-ABORT";			break;
+    case IDIO_A_POP_ABORT:			r = "A-POP-ABORT";			break;
 
     case IDIO_A_ALLOCATE_FRAME1:		r = "A-ALLOCATE-FRAME1";		break;
     case IDIO_A_ALLOCATE_FRAME2:		r = "A-ALLOCATE-FRAME2";		break;

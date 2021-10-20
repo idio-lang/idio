@@ -1051,6 +1051,7 @@ does not return per se						\n\
 	krun_p--;
     }
 
+    idio_exit_status = 1;
     if (idio_isa_pair (krun)) {
 	fprintf (stderr, "restart-condition-handler: restoring krun #%td: ", krun_p);
 	idio_debug ("%s\n", IDIO_PAIR_HT (krun));
