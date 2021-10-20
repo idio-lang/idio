@@ -1,3 +1,5 @@
+.. _`condition types hierarchy`:
+
 Condition Types
 ---------------
 

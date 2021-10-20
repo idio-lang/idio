@@ -82,7 +82,7 @@ Other constants that may appear include:
 	 #<void>
 
    #. a ``cond`` or ``case`` expression where no match exists and
-      there is no ``else`` clause:
+      there is no ``else`` clause
 
    In all cases, *something* must be returned.
 

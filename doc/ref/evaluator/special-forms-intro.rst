@@ -123,7 +123,7 @@ The ``quasiquote`` special form is the basis for expanding
 
    #T{ ... }
 
-.. _`function`:
+.. _`function special form`:
 
 function
 ^^^^^^^^
@@ -160,7 +160,7 @@ rewritten to a normal form.
 
 Users are not expected to use this special form.
 
-.. _`if`:
+.. _`if special form`:
 
 if
 ^^
@@ -227,6 +227,8 @@ Special Form.  It is equivalent to many languages' ``if ... elif
 If no clauses satisfy and there is no ``else`` clause, ``cond``
 returns ``#<void>``.
 
+.. _`set special form`:
+
 set!
 ^^^^
 
@@ -264,7 +266,7 @@ define-postfix-operator
 The ``define-postfix-operator`` special form is used to create reader
 :ref:`operators <operators>`.
 
-.. _`define`:
+.. _`define special form`:
 
 define
 ^^^^^^
@@ -401,6 +403,8 @@ Variables created within a block are not accessible outside the block.
 
 Amongst other things this allows for the creation of privately scoped
 variables.
+
+.. _`trap special form`:
 
 trap
 ^^^^

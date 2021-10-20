@@ -1,7 +1,7 @@
 Add `names` to the list of names export by the current module
 
 :param names: names to be exported
-:type name: list
+:type name: symbol or a list of symbols
 
 .. note::
 
