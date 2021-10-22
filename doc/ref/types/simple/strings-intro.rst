@@ -85,6 +85,8 @@ There are a couple of notes:
 
    The string constructors for ``str1`` and ``str2`` are equivalent.
 
+.. _`pathnames`:
+
 Pathnames
 ^^^^^^^^^
 
@@ -102,6 +104,8 @@ Pathnames, or strings being used as pathnames, with an ASCII NUL
 used.  They are perfectly valid code points for :lname:`Idio` strings
 but it is not possible to have an ASCII NUL in a :lname:`C` string,
 being passed to the operating system's API.
+
+.. _`string interpolation`:
 
 Interpolated Strings
 ^^^^^^^^^^^^^^^^^^^^

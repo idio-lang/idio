@@ -17,6 +17,7 @@
 (document Idio \lt)
 (document Idio \le)
 (document Idio \eq)
+(document Idio \ne)
 (document Idio \ge)
 (document Idio \gt)
 
@@ -28,6 +29,7 @@
 (document Idio binary-lt)
 (document Idio binary-le)
 (document Idio binary-eq)
+(document Idio binary-ne)
 (document Idio binary-ge)
 (document Idio binary-gt)
 
