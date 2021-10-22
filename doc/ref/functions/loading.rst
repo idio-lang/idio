@@ -1,3 +1,5 @@
+.. _`loading`:
+
 Loading
 ^^^^^^^
 

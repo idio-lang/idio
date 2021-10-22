@@ -191,6 +191,7 @@ command-parent-error-load "command-errors/arg-glob-format.idio" "glob contains a
 command-parent-error-load "command-errors/arg-constant-idio.idio" "can't convert a constant to an execve argument: inconvertible constant"
 command-parent-error-load "command-errors/arg-string-format.idio" "argument contains an ASCII NUL"
 command-parent-error-load "command-errors/arg-substring-format.idio" "argument contains an ASCII NUL"
+command-parent-error-load "command-errors/arg-bad-list.idio" "can't convert a pair to an execve argument: inconvertible list"
 command-parent-error-load "command-errors/arg-bad-struct.idio" "can't convert a %idio-job to an execve argument: only ~path structs"
 command-parent-error-load "command-errors/arg-bad-value.idio" "can't convert a struct-type to an execve argument: inconvertible type"
 
@@ -202,4 +203,4 @@ PATH = OPATH
 (wait)
 
 ;; all done?
-Tests? (command-error0 + 23)
+Tests? (command-error0 + 24)

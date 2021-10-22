@@ -1040,8 +1040,58 @@ char **idio_command_argv (IDIO args)
 		    }
 		    break;
 		case IDIO_TYPE_PAIR:
-		case IDIO_TYPE_ARRAY:
-		case IDIO_TYPE_HASH:
+		    {
+			/*
+			 * Pairs can be quite rich data structures but
+			 * what we can accept is a flat list of
+			 * strings (eg. pathnames from glob)
+			 */
+			int len = 0;
+			int valid = 1;
+			IDIO names = arg;
+			while (idio_S_nil != names) {
+			    IDIO name = IDIO_PAIR_H (names);
+			    len++;
+
+			    if (! idio_isa_string (name)) {
+				valid = 0;
+				break;
+			    }
+
+			    names = IDIO_PAIR_T (names);
+			}
+
+			if (0 == valid) {
+			    /*
+			     * Test Case: command-errors/arg-bad-list.idio
+			     *
+			     * env '(#t)
+			     */
+			    idio_command_arg_type_error (arg, "inconvertible list", IDIO_C_FUNC_LOCATION ());
+
+			    /* notreached */
+			    return NULL;
+			}
+
+			/*
+			 * NB "len - 1" as we reserved a slot for the
+			 * original list so the increment is one less
+			 */
+			argc += len - 1;
+
+			argv = idio_realloc (argv, argc * sizeof (char *));
+
+			names = arg;
+			while (idio_S_nil != names) {
+			    IDIO name = IDIO_PAIR_H (names);
+			    int free_me = 0;
+			    size_t namelen;
+			    argv[i] = idio_command_string_C (idio_S_nil, name, &namelen, "argument", &free_me, IDIO_C_FUNC_LOCATION ());
+			    i++;
+			    names = IDIO_PAIR_T (names);
+			}
+		    }
+		    break;
 		case IDIO_TYPE_BIGNUM:
 		case IDIO_TYPE_C_CHAR:
 		case IDIO_TYPE_C_SCHAR:
@@ -1057,7 +1107,6 @@ char **idio_command_argv (IDIO args)
 		case IDIO_TYPE_C_FLOAT:
 		case IDIO_TYPE_C_DOUBLE:
 		case IDIO_TYPE_C_LONGDOUBLE:
-		case IDIO_TYPE_C_POINTER:
 		    {
 			size_t size = 0;
 			argv[i++] = idio_display_string (arg, &size);
@@ -1127,21 +1176,9 @@ char **idio_command_argv (IDIO args)
 		    break;
 
 		    /*
-		     * No useful representation of the following types
-		     * for a command we are about to exec().
+		     * No useful representation of the other types for
+		     * a command we are about to exec().
 		     */
-		case IDIO_TYPE_CLOSURE:
-		case IDIO_TYPE_PRIMITIVE:
-		case IDIO_TYPE_MODULE:
-		case IDIO_TYPE_FRAME:
-		case IDIO_TYPE_HANDLE:
-		case IDIO_TYPE_STRUCT_TYPE:
-		case IDIO_TYPE_THREAD:
-		case IDIO_TYPE_C_TYPEDEF:
-		case IDIO_TYPE_C_STRUCT:
-		case IDIO_TYPE_C_INSTANCE:
-		case IDIO_TYPE_C_FFI:
-		case IDIO_TYPE_OPAQUE:
 		default:
 		    /*
 		     * Test Case: command-errors/arg-bad-value.idio

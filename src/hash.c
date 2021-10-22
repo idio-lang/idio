@@ -1242,8 +1242,7 @@ IDIO idio_hash_exists (IDIO h, void *kv)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("hash-exists?", hash_existsp, (IDIO ht, IDIO key), "ht key", "\
-assert whether index of `key` in hash table `ht` has	\n\
-a value							\n\
+assert whether index of `key` in hash table `ht` exists	\n\
 							\n\
 :param ht: hash table					\n\
 :type ht: hash table					\n\

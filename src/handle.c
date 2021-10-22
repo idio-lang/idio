@@ -1483,7 +1483,8 @@ read a string from `handle` up to a ``#\\{newline}`` character	\n\
 								\n\
 :param handle: handle to read from, defaults to the current input handle	\n\
 :type handle: handle, optional					\n\
-:return: object							\n\
+:return: string excluding the newline				\n\
+:rtype: string							\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -1515,8 +1516,9 @@ IDIO_DEFINE_PRIMITIVE0V_DS ("read-lines", read_lines, (IDIO args), "[handle]", "
 read from `handle` up to the end of file		\n\
 							\n\
 :param handle: handle to read from, defaults to the current input handle	\n\
-:type handle: handle, optional					\n\
-:return: object						\n\
+:type handle: handle, optional				\n\
+:return: string						\n\
+:rtype: string						\n\
 ")
 {
     IDIO_ASSERT (args);

@@ -510,13 +510,20 @@ chdir cwd
 PATH = OPATH
 
 ;; code coverage: glob chars: * ? [
-test (true a*) #t
-test (true a?) #t
-test (true [a]) #t
+
+;; NB we get away with this because the following resolve to symbols
+;; -- an earlier version picked up {a} as an array #[ 1 #f 3 #f] from
+;; somewhere.
+test (true aaa*) #t
+test (true aaa?) #t
+test (true [aaa]) #t
 
 ;; code coverage: arg types
 ; unicode
 test (true #U+61) #t
+; (glob) list
+test (true (glob "*")) #t
+
 
 ; ~path
 {
@@ -557,4 +564,4 @@ if (x? a-e-str) {
 }
 
 ;; all done?
-Tests? (command0 + 132)
+Tests? (command0 + 133)

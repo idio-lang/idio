@@ -1,3 +1,5 @@
+.. _`path manipulation`:
+
 Path Manipulation
 ^^^^^^^^^^^^^^^^^
 

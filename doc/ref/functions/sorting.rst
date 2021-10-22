@@ -1,3 +1,5 @@
+.. _`sorting`:
+
 Sorting
 ^^^^^^^
 
