@@ -192,9 +192,12 @@ IDIO idio_C_primitive_binary_divide (IDIO n1, IDIO n2);
 
 IDIO idio_C_number_cast (IDIO co, idio_type_e type);
 
-int idio_C_float_equal_ULP (float o1, float o2, unsigned int max);
-int idio_C_double_equal_ULP (double o1, double o2, unsigned int max);
-int idio_C_longdouble_equal_ULP (long double o1, long double o2, unsigned int max);
+int idio_C_float_C_eq_ULP (float o1, float o2, unsigned int max);
+int idio_C_float_C_ne_ULP (float o1, float o2, unsigned int max);
+int idio_C_double_C_eq_ULP (double o1, double o2, unsigned int max);
+int idio_C_double_C_ne_ULP (double o1, double o2, unsigned int max);
+int idio_C_longdouble_C_eq_ULP (long double o1, long double o2, unsigned int max);
+int idio_C_longdouble_C_ne_ULP (long double o1, long double o2, unsigned int max);
 
 void idio_init_c_type ();
 

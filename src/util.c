@@ -980,9 +980,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    case IDIO_TYPE_C_ULONGLONG:
 		return (IDIO_C_TYPE_ulonglong (o1) == IDIO_C_TYPE_ulonglong (o2));
 	    case IDIO_TYPE_C_FLOAT:
-		return (idio_C_float_equal_ULP(IDIO_C_TYPE_float (o1), IDIO_C_TYPE_float (o2), 1));
+		return (idio_C_float_C_eq_ULP(IDIO_C_TYPE_float (o1), IDIO_C_TYPE_float (o2), 1));
 	    case IDIO_TYPE_C_DOUBLE:
-		return (idio_C_double_equal_ULP (IDIO_C_TYPE_double (o1), IDIO_C_TYPE_double (o2), 1));
+		return (idio_C_double_C_eq_ULP (IDIO_C_TYPE_double (o1), IDIO_C_TYPE_double (o2), 1));
 	    case IDIO_TYPE_C_LONGDOUBLE:
 		/*
 		 * Test Case: util-errors/equal-c-long-double.idio

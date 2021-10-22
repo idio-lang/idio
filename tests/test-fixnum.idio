@@ -194,6 +194,30 @@ test (*  1 -1)    -1
 ;; list form interim calculation -> bignum promotion code coverage
 test (* FIXNUM-MAX 2 2) (FIXNUM-MAX * 4)
 
+;; comparisons
+define-template (cmp-test op & results) {
+  #T{
+    test ($op 1 1) $(nth results 1)
+    test ($op 1 0) $(nth results 2)
+    test ($op 1 -1) $(nth results 3)
+
+    test ($op 0 1) $(nth results 4)
+    test ($op 0 0) $(nth results 5)
+    test ($op 0 -1) $(nth results 6)
+
+    test ($op -1 1) $(nth results 7)
+    test ($op -1 0) $(nth results 8)
+    test ($op -1 -1) $(nth results 9)
+  }
+}
+
+cmp-test \lt #f #f #f #t #f #f #t #t #f
+cmp-test \le #t #f #f #t #t #f #t #t #t
+cmp-test \eq #t #f #f #f #t #f #f #f #t
+cmp-test \ne #f #t #t #t #f #t #t #t #f
+cmp-test \ge #t #t #t #f #t #t #f #f #t
+cmp-test \gt #f #t #t #f #f #t #f #f #f
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; mathematical functions
 
@@ -262,4 +286,4 @@ test (quotient  2.0 1.0) 2
 integer->char 1.0
 
 ;; all done?
-Tests? (fixnum0 + 154)
+Tests? (fixnum0 + 208)

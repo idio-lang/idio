@@ -100,6 +100,7 @@ bignum-error-load "bignum-errors/remainder-b-non-integer-bignum.idio" "remainder
 bignum-error-load "bignum-errors/lt-non-bignum.idio" "bad parameter type: '#t' a constant is not a bignum"
 bignum-error-load "bignum-errors/le-non-bignum.idio" "bad parameter type: '#t' a constant is not a bignum"
 bignum-error-load "bignum-errors/eq-non-bignum.idio" "bad parameter type: '#t' a constant is not a bignum"
+bignum-error-load "bignum-errors/ne-non-bignum.idio" "bad parameter type: '#t' a constant is not a bignum"
 bignum-error-load "bignum-errors/ge-non-bignum.idio" "bad parameter type: '#t' a constant is not a bignum"
 bignum-error-load "bignum-errors/gt-non-bignum.idio" "bad parameter type: '#t' a constant is not a bignum"
 
@@ -112,4 +113,4 @@ bignum-error-load "bignum-errors/exponent-bad-type.idio" "bad parameter type: '#
 bignum-error-load "bignum-errors/bignum-dump-bad-type.idio" "bad parameter type: '#t' a constant is not a bignum"
 
 ;; all done?
-Tests? (bignum-error0 + 30)
+Tests? (bignum-error0 + 31)

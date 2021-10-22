@@ -3877,6 +3877,39 @@ IDIO idio_bignum_primitive_eq (IDIO args)
     return idio_S_true;
 }
 
+IDIO idio_bignum_primitive_ne (IDIO args)
+{
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (list, args);
+
+    IDIO r = idio_list_head (args);
+    args = idio_list_tail (args);
+
+    while (idio_S_nil != args) {
+	IDIO h = idio_list_head (args);
+
+        if (! idio_isa_bignum (h)) {
+	    /*
+	     * Test Case: bignum-errors/ne-non-bignum.idio
+	     *
+	     * ne 1.0 #t
+	     */
+	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+
+	if (idio_bignum_real_equal_p (r, h)) {
+	    return idio_S_false;
+	}
+
+	r = h;
+        args = idio_list_tail (args);
+    }
+
+    return idio_S_true;
+}
+
 IDIO idio_bignum_primitive_ge (IDIO args)
 {
     IDIO_ASSERT (args);

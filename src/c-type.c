@@ -1148,7 +1148,7 @@ char *idio_C_type_format_string (int type)
  *
  * These often fall back to the Units in Last Place (ULP) comparisons.
  */
-int idio_C_float_equal_ULP (float o1, float o2, unsigned int max)
+int idio_C_float_C_eq_ULP (float o1, float o2, unsigned int max)
 {
     idio_C_float_ULP_t uo1;
     uo1.f = o1;
@@ -1178,7 +1178,12 @@ int idio_C_float_equal_ULP (float o1, float o2, unsigned int max)
     }
 }
 
-int idio_C_double_equal_ULP (double o1, double o2, unsigned int max)
+int idio_C_float_C_ne_ULP (float o1, float o2, unsigned int max)
+{
+    return (idio_C_float_C_eq_ULP (o1, o2, max) == 0);
+}
+
+int idio_C_double_C_eq_ULP (double o1, double o2, unsigned int max)
 {
     idio_C_double_ULP_t uo1;
     uo1.i = 0;
@@ -1208,6 +1213,11 @@ int idio_C_double_equal_ULP (double o1, double o2, unsigned int max)
     } else {
 	return 0;
     }
+}
+
+int idio_C_double_C_ne_ULP (double o1, double o2, unsigned int max)
+{
+    return (idio_C_double_C_eq_ULP (o1, o2, max) == 0);
 }
 
 /*
@@ -1240,7 +1250,7 @@ int idio_C_double_equal_ULP (double o1, double o2, unsigned int max)
  *
  * The call in idio_equal() is guarded by the same message.
  */
-int idio_C_longdouble_equal_ULP (long double o1, long double o2, unsigned int max)
+int idio_C_longdouble_C_eq_ULP (long double o1, long double o2, unsigned int max)
 {
     /*
      * Test Case: ??
@@ -1287,6 +1297,19 @@ int idio_C_longdouble_equal_ULP (long double o1, long double o2, unsigned int ma
     } else {
 	return 0;
     }
+}
+
+int idio_C_longdouble_C_ne_ULP (long double o1, long double o2, unsigned int max)
+{
+    /*
+     * Test Case: ??
+     */
+    idio_error_param_type_msg ("inequality for C long double is not supported", IDIO_C_FUNC_LOCATION ());
+
+    /* notreached */
+    return 0;
+
+    return (idio_C_longdouble_C_eq_ULP (o1, o2, max) == 0);
 }
 
 /*
@@ -1509,8 +1532,8 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
     }
 
 /*
- * For the equality operator we need to be careful with floating point
- * types
+ * For the equality operators we need to be careful with floating
+ * point types
  */
 #define IDIO_DEFINE_C_ARITHMETIC_EQ_PRIMITIVE(name,cname,cmp)		\
     IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
@@ -1560,13 +1583,13 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		result = (IDIO_C_TYPE_ulonglong (n1) cmp IDIO_C_TYPE_ulonglong (n2)); \
 		break;							\
 	    case IDIO_TYPE_C_FLOAT:					\
-		result = idio_C_float_equal_ULP (IDIO_C_TYPE_float (n1), IDIO_C_TYPE_float (n2), 1); \
+		result = idio_C_float_ ## cname ## _ULP (IDIO_C_TYPE_float (n1), IDIO_C_TYPE_float (n2), 1); \
 		break;							\
 	    case IDIO_TYPE_C_DOUBLE:					\
-		result = idio_C_double_equal_ULP (IDIO_C_TYPE_double (n1), IDIO_C_TYPE_double (n2), 1); \
+		result = idio_C_double_ ## cname ## _ULP (IDIO_C_TYPE_double (n1), IDIO_C_TYPE_double (n2), 1); \
 		break;							\
 	    case IDIO_TYPE_C_LONGDOUBLE:				\
-		result = idio_C_longdouble_equal_ULP (IDIO_C_TYPE_longdouble (n1), IDIO_C_TYPE_longdouble (n2), 1); \
+		result = idio_C_longdouble_ ## cname ## _ULP (IDIO_C_TYPE_longdouble (n1), IDIO_C_TYPE_longdouble (n2), 1); \
 		break;							\
 	    case IDIO_TYPE_C_POINTER:					\
 		result = (IDIO_C_TYPE_POINTER_P (n1) cmp IDIO_C_TYPE_POINTER_P (n2)); \
@@ -1643,15 +1666,15 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		break;							\
 	    case IDIO_TYPE_C_FLOAT:					\
 		result = ((IDIO_C_TYPE_float (n1) op1 IDIO_C_TYPE_float (n2)) || \
-			  idio_C_float_equal_ULP (IDIO_C_TYPE_float (n1), IDIO_C_TYPE_float (n2), 1)); \
+			  idio_C_float_C_eq_ULP (IDIO_C_TYPE_float (n1), IDIO_C_TYPE_float (n2), 1)); \
 		break;							\
 	    case IDIO_TYPE_C_DOUBLE:					\
 		result = ((IDIO_C_TYPE_double (n1) op1 IDIO_C_TYPE_double (n2)) || \
-			  idio_C_double_equal_ULP (IDIO_C_TYPE_double (n1), IDIO_C_TYPE_double (n2), 1)); \
+			  idio_C_double_C_eq_ULP (IDIO_C_TYPE_double (n1), IDIO_C_TYPE_double (n2), 1)); \
 		break;							\
 	    case IDIO_TYPE_C_LONGDOUBLE:					\
 		result = ((IDIO_C_TYPE_longdouble (n1) op1 IDIO_C_TYPE_longdouble (n2)) || \
-			  idio_C_longdouble_equal_ULP (IDIO_C_TYPE_longdouble (n1), IDIO_C_TYPE_longdouble (n2), 1)); \
+			  idio_C_longdouble_C_eq_ULP (IDIO_C_TYPE_longdouble (n1), IDIO_C_TYPE_longdouble (n2), 1)); \
 		break;							\
 	    case IDIO_TYPE_C_POINTER:					\
 		result = (IDIO_C_TYPE_POINTER_P (n1) cmp IDIO_C_TYPE_POINTER_P (n2)); \
@@ -1680,6 +1703,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 IDIO_DEFINE_C_ARITHMETIC_CMP_EQ_PRIMITIVE ("<=", C_le, <=, <)
 IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("<", C_lt, <)
 IDIO_DEFINE_C_ARITHMETIC_EQ_PRIMITIVE ("==", C_eq, ==)
+IDIO_DEFINE_C_ARITHMETIC_EQ_PRIMITIVE ("!=", C_ne, !=)
 IDIO_DEFINE_C_ARITHMETIC_CMP_EQ_PRIMITIVE (">=", C_ge, >=, >)
 IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE (">", C_gt, >)
 
@@ -2521,6 +2545,7 @@ void idio_c_type_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_le);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_lt);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_eq);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_ne);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_ge);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_gt);
 

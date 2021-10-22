@@ -108,6 +108,7 @@ define-infix-operator / 1200 \+
 define-infix-operator lt 1200 \+
 define-infix-operator le 1200 \+
 define-infix-operator eq 1200 \+
+define-infix-operator ne 1200 \+
 define-infix-operator ge 1200 \+
 define-infix-operator gt 1200 \+
 
