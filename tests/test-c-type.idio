@@ -21,6 +21,7 @@
 module tests/c-type
 
 c-type0 := Tests
+c-type-skipped := 0
 
 test (C/uint? 0)			#f ; FIXNUM
 test (C/uint? #t)			#f ; CONSTANT
@@ -406,10 +407,27 @@ define-template (C-u-cmp-test op type & results) {
   }
 }
 
+;; A char can be signed or unsigned.  It is a signed type on x86_64
+;; and it is unsigned on ARM.  This creates some awkwardness as the
+;; number of tests overall changes.
+
+define-template (C-c-cmp-test op type & results) {
+  if (C/== libc/CHAR_MIN (C/integer-> 0 'char)) {
+    #T{
+      c-type-skipped = c-type-skipped + 5
+      C-u-cmp-test $op $type $(nth results 1) $(nth results 2) $(nth results 4) $(nth results 5)
+    }
+  } {
+    #T{
+      C-s-cmp-test $op $type $@results
+    }
+  }
+}
+
 ;; within each block of comparator tests the results should be the
 ;; same regardless of C type
 
-C-s-cmp-test C/< 'char #f #f #f #t #f #f #t #t #f
+C-c-cmp-test C/< 'char #f #f #f #t #f #f #t #t #f
 C-s-cmp-test C/< 'schar #f #f #f #t #f #f #t #t #f
 C-u-cmp-test C/< 'uchar #f #f #t #f
 C-s-cmp-test C/< 'short #f #f #f #t #f #f #t #t #f
@@ -424,7 +442,7 @@ C-s-cmp-test C/< 'float #f #f #f #t #f #f #t #t #f
 C-s-cmp-test C/< 'double #f #f #f #t #f #f #t #t #f
 C-s-cmp-test C/< 'longdouble #f #f #f #t #f #f #t #t #f
 
-C-s-cmp-test C/<= 'char #t #f #f #t #t #f #t #t #t
+C-c-cmp-test C/<= 'char #t #f #f #t #t #f #t #t #t
 C-s-cmp-test C/<= 'schar #t #f #f #t #t #f #t #t #t
 C-u-cmp-test C/<= 'uchar #t #f #t #t
 C-s-cmp-test C/<= 'short #t #f #f #t #t #f #t #t #t
@@ -439,7 +457,7 @@ C-s-cmp-test C/<= 'float #t #f #f #t #t #f #t #t #t
 C-s-cmp-test C/<= 'double #t #f #f #t #t #f #t #t #t
 ;C-s-cmp-test C/<= 'longdouble #t #f #f #t #t #f #t #t #t
 
-C-s-cmp-test C/== 'char #t #f #f #f #t #f #f #f #t
+C-c-cmp-test C/== 'char #t #f #f #f #t #f #f #f #t
 C-s-cmp-test C/== 'schar #t #f #f #f #t #f #f #f #t
 C-u-cmp-test C/== 'uchar #t #f #f #t
 C-s-cmp-test C/== 'short #t #f #f #f #t #f #f #f #t
@@ -454,7 +472,7 @@ C-s-cmp-test C/== 'float #t #f #f #f #t #f #f #f #t
 C-s-cmp-test C/== 'double #t #f #f #f #t #f #f #f #t
 ;C-s-cmp-test C/== 'longdouble #t #f #f #f #t #f #f #f #t
 
-C-s-cmp-test C/!= 'char #f #t #t #t #f #t #t #t #f
+C-c-cmp-test C/!= 'char #f #t #t #t #f #t #t #t #f
 C-s-cmp-test C/!= 'schar #f #t #t #t #f #t #t #t #f
 C-u-cmp-test C/!= 'uchar #f #t #t #f
 C-s-cmp-test C/!= 'short #f #t #t #t #f #t #t #t #f
@@ -469,7 +487,7 @@ C-s-cmp-test C/!= 'float #f #t #t #t #f #t #t #t #f
 C-s-cmp-test C/!= 'double #f #t #t #t #f #t #t #t #f
 ;C-s-cmp-test C/!= 'longdouble #f #t #t #t #f #t #t #t #f
 
-C-s-cmp-test C/>= 'char #t #t #t #f #t #t #f #f #t
+C-c-cmp-test C/>= 'char #t #t #t #f #t #t #f #f #t
 C-s-cmp-test C/>= 'schar #t #t #t #f #t #t #f #f #t
 C-u-cmp-test C/>= 'uchar #t #t #f #t
 C-s-cmp-test C/>= 'short #t #t #t #f #t #t #f #f #t
@@ -484,7 +502,7 @@ C-s-cmp-test C/>= 'float #t #t #t #f #t #t #f #f #t
 C-s-cmp-test C/>= 'double #t #t #t #f #t #t #f #f #t
 ;C-s-cmp-test C/>= 'longdouble #t #t #t #f #t #t #f #f #t
 
-C-s-cmp-test C/> 'char #f #t #t #f #f #t #f #f #f
+C-c-cmp-test C/> 'char #f #t #t #f #f #t #f #f #f
 C-s-cmp-test C/> 'schar #f #t #t #f #f #t #f #f #f
 C-u-cmp-test C/> 'uchar #f #t #f #f
 C-s-cmp-test C/> 'short #f #t #t #f #f #t #f #f #f
@@ -570,4 +588,5 @@ c-uintmax-max := C/->number libc/UINTMAX_MAX
 test (C/->number (C/integer->unsigned c-uintmax-max libc/uintmax_t)) c-uintmax-max
 
 ;; all done?
-Tests? (c-type0 + 919)
+Skipped = Skipped + c-type-skipped
+Tests? (c-type0 + 919 - c-type-skipped)

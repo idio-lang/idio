@@ -87,6 +87,7 @@ if (e? testfile) {
 
 Errors := 0
 Tests := 0
+Skipped := 0
 Notify := #f
 
 define (seq) {
@@ -351,7 +352,7 @@ test-load "test-job-control.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? 7128
+Tests? (7128 - Skipped)
 
 if (e? testfile) (delete-file testfile)
 

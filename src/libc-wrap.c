@@ -3555,6 +3555,7 @@ void idio_init_libc_wrap ()
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("F_SETFL"), idio_C_int (F_SETFL), idio_libc_module);
 
     /* limits.h */
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("CHAR_MIN"), idio_C_char (CHAR_MIN), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("CHAR_MAX"), idio_C_char (CHAR_MAX), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("SCHAR_MIN"), idio_C_schar (SCHAR_MIN), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("SCHAR_MAX"), idio_C_schar (SCHAR_MAX), idio_libc_module);
