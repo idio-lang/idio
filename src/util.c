@@ -210,10 +210,6 @@ char const *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_C_POINTER:		return "C/pointer";
     case IDIO_TYPE_C_VOID:		return "C/void";
 
-    case IDIO_TYPE_C_TYPEDEF:		return "TAG";
-    case IDIO_TYPE_C_STRUCT:		return "C/struct";
-    case IDIO_TYPE_C_INSTANCE:		return "C/instance";
-    case IDIO_TYPE_OPAQUE:		return "OPAQUE";
     default:
 	return "NOT KNOWN";
     }
@@ -1076,14 +1072,6 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 #endif
 		return idio_equal_bitsetp (IDIO_LIST2 (o1, o2));
 		break;
-	    case IDIO_TYPE_C_TYPEDEF:
-		return (o1->u.C_typedef == o2->u.C_typedef);
-	    case IDIO_TYPE_C_STRUCT:
-		return (o1->u.C_struct == o2->u.C_struct);
-	    case IDIO_TYPE_C_INSTANCE:
-		return o1->u.C_instance == o2->u.C_instance;
-	    case IDIO_TYPE_OPAQUE:
-		return (o1->u.opaque == o2->u.opaque);
 	    default:
 		/*
 		 * Test Case: ??
@@ -2749,75 +2737,6 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    IDIO_STRCAT (r, sizep, "}");
 		}
 		break;
-	    case IDIO_TYPE_C_TYPEDEF:
-		{
-		    *sizep = idio_asprintf (&r, "#<C/typedef %10p>", IDIO_C_TYPEDEF_SYM (o));
-		    break;
-		}
-	    case IDIO_TYPE_C_STRUCT:
-		{
-#ifdef IDIO_DEBUG
-		    *sizep = idio_asprintf (&r, "#<C/struct %10p ", o);
-#else
-		    *sizep = idio_asprintf (&r, "#<C/struct ");
-#endif
-
-		    IDIO_STRCAT (r, sizep, "\n\tfields: ");
-		    size_t f_size = 0;
-		    char *fs = idio_as_string (IDIO_C_STRUCT_FIELDS (o), &f_size, depth - 1, seen, 0);
-		    IDIO_STRCAT_FREE (r, sizep, fs, f_size);
-
-		    IDIO mh = IDIO_C_STRUCT_METHODS (o);
-
-		    IDIO_STRCAT (r, sizep, "\n\tmethods: ");
-		    if (idio_S_nil != mh) {
-			for (i = 0; i < IDIO_HASH_SIZE (mh); i++) {
-			    idio_hash_entry_t *he = IDIO_HASH_HA (mh, i);
-			    for (; NULL != he ; he = IDIO_HASH_HE_NEXT (he)) {
-				if (idio_S_nil != IDIO_HASH_HE_KEY (he)) {
-				    IDIO_STRCAT (r, sizep, "\n\t");
-				    size_t t_size = 0;
-				    char *t = idio_as_string (IDIO_HASH_HE_KEY (he), &t_size, depth - 1, seen, 0);
-				    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-				    IDIO_STRCAT (r, sizep, ":");
-				    if (IDIO_HASH_HE_VALUE (he)) {
-					t_size = 0;
-					t = idio_as_string (IDIO_HASH_HE_VALUE (he), &t_size, depth - 1, seen, 0);
-				    } else {
-					t_size = idio_asprintf (&t, "-");
-				    }
-				    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-				    IDIO_STRCAT (r, sizep, " ");
-				}
-			    }
-			}
-		    }
-		    IDIO_STRCAT (r, sizep, "\n\tframe: ");
-		    f_size = 0;
-		    fs = idio_as_string (IDIO_C_STRUCT_FRAME (o), &f_size, depth - 1, seen, 0);
-		    IDIO_STRCAT_FREE (r, sizep, fs, f_size);
-		    IDIO_STRCAT (r, sizep, "\n>");
-		    break;
-		}
-	    case IDIO_TYPE_C_INSTANCE:
-		{
-#ifdef IDIO_DEBUG
-		    *sizep = idio_asprintf (&r, "#<C/instance %10p C/*=%10p C/struct=%10p>", o, IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o));
-#else
-		    *sizep = idio_asprintf (&r, "#<C/instance C/*=%10p C/struct=%10p>", IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o));
-#endif
-		    break;
-		}
-	    case IDIO_TYPE_OPAQUE:
-		{
-		    *sizep = idio_asprintf (&r, "#<O %10p ", IDIO_OPAQUE_P (o));
-
-		    size_t t_size = 0;
-		    char *t = idio_as_string (IDIO_OPAQUE_ARGS (o), &t_size, depth - 1, seen, 0);
-		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-		    IDIO_STRCAT (r, sizep, ">");
-		    break;
-		}
 	    default:
 		{
 		    fprintf (stderr, "idio_as_string: unexpected type %d\n", type);
@@ -3493,10 +3412,6 @@ IDIO idio_copy (IDIO o, int depth)
 	    case IDIO_TYPE_C_DOUBLE:
 	    case IDIO_TYPE_C_LONGDOUBLE:
 	    case IDIO_TYPE_C_POINTER:
-	    case IDIO_TYPE_C_TYPEDEF:
-	    case IDIO_TYPE_C_STRUCT:
-	    case IDIO_TYPE_C_INSTANCE:
-	    case IDIO_TYPE_OPAQUE:
 		/*
 		 * Test Case: util-errors/copy-value-bad-type.idio
 		 *
@@ -3744,10 +3659,6 @@ void idio_dump (IDIO o, int detail)
 	    case IDIO_TYPE_C_DOUBLE:
 	    case IDIO_TYPE_C_LONGDOUBLE:
 	    case IDIO_TYPE_C_POINTER:
-	    case IDIO_TYPE_C_TYPEDEF:
-	    case IDIO_TYPE_C_STRUCT:
-	    case IDIO_TYPE_C_INSTANCE:
-	    case IDIO_TYPE_OPAQUE:
 		break;
 	    default:
 		/*

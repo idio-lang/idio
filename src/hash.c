@@ -680,20 +680,6 @@ idio_hi_t idio_idio_hash_default_hash_C_struct_instance (IDIO h)
     return idio_hash_default_hash_C_void (h->u.struct_instance.fields);
 }
 
-idio_hi_t idio_hash_default_hash_C_C_struct (IDIO h)
-{
-    IDIO_ASSERT (h);
-
-    return idio_hash_default_hash_C_void (IDIO_C_STRUCT_METHODS (h));
-}
-
-idio_hi_t idio_hash_default_hash_C_C_instance (IDIO h)
-{
-    IDIO_ASSERT (h);
-
-    return idio_hash_default_hash_C_void (IDIO_C_INSTANCE_P (h));
-}
-
 /*
  * idio_hash_default_hash_C() is the default hashing function and
  * basically calls one of the above.  It will return an index into the
@@ -894,12 +880,6 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void const *kv)
 	break;
     case IDIO_TYPE_C_POINTER:
 	hv = idio_hash_default_hash_C_void (IDIO_C_TYPE_POINTER_P (k));
-	break;
-    case IDIO_TYPE_C_STRUCT:
-	hv = idio_hash_default_hash_C_C_struct (k);
-	break;
-    case IDIO_TYPE_C_INSTANCE:
-	hv = idio_hash_default_hash_C_C_instance (k);
 	break;
     default:
 	/*

@@ -42,7 +42,6 @@
 #include "array.h"
 #include "bignum.h"
 #include "bitset.h"
-#include "c-struct.h"
 #include "c-type.h"
 #include "closure.h"
 #include "continuation.h"
@@ -496,34 +495,6 @@ void idio_gc_gcc_mark (idio_gc_t *gc, IDIO o, unsigned colour)
 	    IDIO_CONTINUATION_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
-	case IDIO_TYPE_C_TYPEDEF:
-	    IDIO_C_ASSERT (IDIO_C_TYPEDEF_GREY (o) != o);
-	    IDIO_C_ASSERT (gc->grey != o);
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
-	    IDIO_C_TYPEDEF_GREY (o) = gc->grey;
-	    gc->grey = o;
-	    break;
-	case IDIO_TYPE_C_STRUCT:
-	    IDIO_C_ASSERT (IDIO_C_STRUCT_GREY (o) != o);
-	    IDIO_C_ASSERT (gc->grey != o);
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
-	    IDIO_C_STRUCT_GREY (o) = gc->grey;
-	    gc->grey = o;
-	    break;
-	case IDIO_TYPE_C_INSTANCE:
-	    IDIO_C_ASSERT (IDIO_C_INSTANCE_GREY (o) != o);
-	    IDIO_C_ASSERT (gc->grey != o);
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
-	    IDIO_C_INSTANCE_GREY (o) = gc->grey;
-	    gc->grey = o;
-	    break;
-	case IDIO_TYPE_OPAQUE:
-	    IDIO_C_ASSERT (IDIO_OPAQUE_GREY (o) != o);
-	    IDIO_C_ASSERT (gc->grey != o);
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
-	    IDIO_OPAQUE_GREY (o) = gc->grey;
-	    gc->grey = o;
-	    break;
 	default:
 	    /*
 	     * All other (non-compound) types just have the colour set
@@ -695,29 +666,6 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	break;
     case IDIO_TYPE_C_POINTER:
 	idio_gc_gcc_mark (gc, IDIO_C_TYPE_POINTER_PTYPE (o), colour);
-	break;
-    case IDIO_TYPE_C_TYPEDEF:
-	IDIO_C_ASSERT (gc->grey != IDIO_C_TYPEDEF_GREY (o));
-	gc->grey = IDIO_C_TYPEDEF_GREY (o);
-	idio_gc_gcc_mark (gc, IDIO_C_TYPEDEF_SYM (o), colour);
-	break;
-    case IDIO_TYPE_C_STRUCT:
-	IDIO_C_ASSERT (gc->grey != IDIO_C_STRUCT_GREY (o));
-	gc->grey = IDIO_C_STRUCT_GREY (o);
-	idio_gc_gcc_mark (gc, IDIO_C_STRUCT_FIELDS (o), colour);
-	idio_gc_gcc_mark (gc, IDIO_C_STRUCT_METHODS (o), colour);
-	idio_gc_gcc_mark (gc, IDIO_C_STRUCT_FRAME (o), colour);
-	break;
-    case IDIO_TYPE_C_INSTANCE:
-	IDIO_C_ASSERT (gc->grey != IDIO_C_INSTANCE_GREY (o));
-	gc->grey = IDIO_C_INSTANCE_GREY (o);
-	idio_gc_gcc_mark (gc, IDIO_C_INSTANCE_C_STRUCT (o), colour);
-	idio_gc_gcc_mark (gc, IDIO_C_INSTANCE_FRAME (o), colour);
-	break;
-    case IDIO_TYPE_OPAQUE:
-	IDIO_C_ASSERT (gc->grey != IDIO_OPAQUE_GREY (o));
-	gc->grey = IDIO_OPAQUE_GREY (o);
-	idio_gc_gcc_mark (gc, IDIO_OPAQUE_ARGS (o), colour);
 	break;
     default:
 	idio_error_C ("unexpected type", o, IDIO_C_FUNC_LOCATION ());
@@ -1521,18 +1469,6 @@ void idio_gc_sweep_free_value (IDIO vo)
 	break;
     case IDIO_TYPE_BITSET:
 	idio_free_bitset (vo);
-	break;
-    case IDIO_TYPE_C_TYPEDEF:
-	idio_free_C_typedef (vo);
-	break;
-    case IDIO_TYPE_C_STRUCT:
-	idio_free_C_struct (vo);
-	break;
-    case IDIO_TYPE_C_INSTANCE:
-	idio_free_C_instance (vo);
-	break;
-    case IDIO_TYPE_OPAQUE:
-	idio_free_opaque (vo);
 	break;
     default:
 	idio_error_C ("unexpected type", vo, IDIO_C_FUNC_LOCATION ());

@@ -188,22 +188,7 @@
 #define IDIO_TYPE_C_POINTER     	43
 #define IDIO_TYPE_C_VOID        	44
 
-/* these should disappear */
-#define IDIO_TYPE_C_INT8_T      	45
-#define IDIO_TYPE_C_UINT8_T     	46
-#define IDIO_TYPE_C_INT16_T     	47
-#define IDIO_TYPE_C_UINT16_T    	48
-#define IDIO_TYPE_C_INT32_T     	49
-#define IDIO_TYPE_C_UINT32_T    	50
-#define IDIO_TYPE_C_INT64_T     	51
-#define IDIO_TYPE_C_UINT64_T    	52
-
-#define IDIO_TYPE_CTD           	53
-#define IDIO_TYPE_C_TYPEDEF     	54
-#define IDIO_TYPE_C_STRUCT      	55
-#define IDIO_TYPE_C_INSTANCE    	56
-#define IDIO_TYPE_OPAQUE        	57
-#define IDIO_TYPE_MAX           	58
+#define IDIO_TYPE_MAX           	45
 
 /**
  * typedef idio_type_e - Idio type discriminator

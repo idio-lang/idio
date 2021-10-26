@@ -5032,10 +5032,6 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 		case IDIO_TYPE_C_DOUBLE:
 		case IDIO_TYPE_C_LONGDOUBLE:
 		case IDIO_TYPE_C_POINTER:
-		case IDIO_TYPE_C_TYPEDEF:
-		case IDIO_TYPE_C_STRUCT:
-		case IDIO_TYPE_C_INSTANCE:
-		case IDIO_TYPE_OPAQUE:
 		    /*
 		     * Test Case: ??
 		     *

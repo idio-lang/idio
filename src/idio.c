@@ -43,7 +43,6 @@
 #include "array.h"
 #include "bignum.h"
 #include "bitset.h"
-#include "c-struct.h"
 #include "c-type.h"
 #include "character.h"
 #include "closure.h"
@@ -247,7 +246,6 @@ void idio_init (void)
     idio_init_string_handle ();
     idio_init_file_handle ();
     idio_init_c_type ();
-    idio_init_C_struct ();
     idio_init_frame ();
     idio_init_util ();
     idio_init_primitive ();
