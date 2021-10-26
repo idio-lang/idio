@@ -27,9 +27,9 @@
 #include <sys/resource.h>
 
 #include <assert.h>
-#include <ffi.h>
 #include <glob.h>
 #include <setjmp.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>

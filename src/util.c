@@ -28,9 +28,9 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <ffi.h>
 #include <inttypes.h>
 #include <setjmp.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -213,7 +213,6 @@ char const *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_C_TYPEDEF:		return "TAG";
     case IDIO_TYPE_C_STRUCT:		return "C/struct";
     case IDIO_TYPE_C_INSTANCE:		return "C/instance";
-    case IDIO_TYPE_C_FFI:		return "C/FFI";
     case IDIO_TYPE_OPAQUE:		return "OPAQUE";
     default:
 	return "NOT KNOWN";
@@ -1083,8 +1082,6 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		return (o1->u.C_struct == o2->u.C_struct);
 	    case IDIO_TYPE_C_INSTANCE:
 		return o1->u.C_instance == o2->u.C_instance;
-	    case IDIO_TYPE_C_FFI:
-		return (o1->u.C_FFI == o2->u.C_FFI);
 	    case IDIO_TYPE_OPAQUE:
 		return (o1->u.opaque == o2->u.opaque);
 	    default:
@@ -2811,35 +2808,6 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 #endif
 		    break;
 		}
-	    case IDIO_TYPE_C_FFI:
-		{
-		    *sizep = idio_asprintf (&r, "#<CFFI ");
-
-		    size_t t_size = 0;
-		    char *t = idio_as_string (IDIO_C_FFI_NAME (o), &t_size, depth - 1, seen, 0);
-		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-
-		    t_size = 0;
-		    t = idio_as_string (IDIO_C_FFI_SYMBOL (o), &t_size, depth - 1, seen, 0);
-		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-		    IDIO_STRCAT (r, sizep, " ");
-
-		    t_size = 0;
-		    t = idio_as_string (IDIO_C_FFI_ARGS (o), &t_size, depth - 1, seen, 0);
-		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-		    IDIO_STRCAT (r, sizep, " ");
-
-		    t_size = 0;
-		    t = idio_as_string (IDIO_C_FFI_RESULT (o), &t_size, depth - 1, seen, 0);
-		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-		    IDIO_STRCAT (r, sizep, " ");
-
-		    t_size = 0;
-		    t = idio_as_string (IDIO_C_FFI_NAME (o), &t_size, depth - 1, seen, 0);
-		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-		    IDIO_STRCAT (r, sizep, " >");
-		    break;
-		}
 	    case IDIO_TYPE_OPAQUE:
 		{
 		    *sizep = idio_asprintf (&r, "#<O %10p ", IDIO_OPAQUE_P (o));
@@ -3528,7 +3496,6 @@ IDIO idio_copy (IDIO o, int depth)
 	    case IDIO_TYPE_C_TYPEDEF:
 	    case IDIO_TYPE_C_STRUCT:
 	    case IDIO_TYPE_C_INSTANCE:
-	    case IDIO_TYPE_C_FFI:
 	    case IDIO_TYPE_OPAQUE:
 		/*
 		 * Test Case: util-errors/copy-value-bad-type.idio
@@ -3780,7 +3747,6 @@ void idio_dump (IDIO o, int detail)
 	    case IDIO_TYPE_C_TYPEDEF:
 	    case IDIO_TYPE_C_STRUCT:
 	    case IDIO_TYPE_C_INSTANCE:
-	    case IDIO_TYPE_C_FFI:
 	    case IDIO_TYPE_OPAQUE:
 		break;
 	    default:

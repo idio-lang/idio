@@ -27,9 +27,9 @@
 #include <sys/resource.h>
 
 #include <assert.h>
-#include <ffi.h>
 #include <inttypes.h>
 #include <setjmp.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -5035,7 +5035,6 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 		case IDIO_TYPE_C_TYPEDEF:
 		case IDIO_TYPE_C_STRUCT:
 		case IDIO_TYPE_C_INSTANCE:
-		case IDIO_TYPE_C_FFI:
 		case IDIO_TYPE_OPAQUE:
 		    /*
 		     * Test Case: ??

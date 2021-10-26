@@ -202,9 +202,8 @@
 #define IDIO_TYPE_C_TYPEDEF     	54
 #define IDIO_TYPE_C_STRUCT      	55
 #define IDIO_TYPE_C_INSTANCE    	56
-#define IDIO_TYPE_C_FFI         	57
-#define IDIO_TYPE_OPAQUE        	58
-#define IDIO_TYPE_MAX           	59
+#define IDIO_TYPE_OPAQUE        	57
+#define IDIO_TYPE_MAX           	58
 
 /**
  * typedef idio_type_e - Idio type discriminator
@@ -1073,28 +1072,6 @@ typedef struct idio_C_instance_s {
 #define IDIO_C_INSTANCE_C_STRUCT(C) ((C)->u.C_instance->C_struct)
 #define IDIO_C_INSTANCE_FRAME(C)    ((C)->u.C_instance->frame)
 
-typedef struct idio_C_FFI_s {
-    struct idio_s *grey;
-    struct idio_s *symbol;
-    struct idio_s *result;
-    struct idio_s *args;
-    struct idio_s *name;
-    ffi_cif *ffi_cifp;
-    ffi_type *ffi_rtype;
-    ffi_type **ffi_arg_types;
-    size_t nargs;
-} idio_C_FFI_t;
-
-#define IDIO_C_FFI_GREY(C)      ((C)->u.C_FFI->grey)
-#define IDIO_C_FFI_SYMBOL(C)    ((C)->u.C_FFI->symbol)
-#define IDIO_C_FFI_RESULT(C)    ((C)->u.C_FFI->result)
-#define IDIO_C_FFI_ARGS(C)      ((C)->u.C_FFI->args)
-#define IDIO_C_FFI_NAME(C)      ((C)->u.C_FFI->name)
-#define IDIO_C_FFI_CIFP(C)      ((C)->u.C_FFI->ffi_cifp)
-#define IDIO_C_FFI_RTYPE(C)     ((C)->u.C_FFI->ffi_rtype)
-#define IDIO_C_FFI_ARG_TYPES(C) ((C)->u.C_FFI->ffi_arg_types)
-#define IDIO_C_FFI_NARGS(C)     ((C)->u.C_FFI->nargs)
-
 typedef struct idio_opaque_s {
     struct idio_s *grey;
     void *p;
@@ -1176,7 +1153,6 @@ struct idio_s {
 	idio_C_typedef_t       *C_typedef;
 	idio_C_struct_t        *C_struct;
 	idio_C_instance_t      *C_instance;
-	idio_C_FFI_t           *C_FFI;
 	idio_opaque_t          *opaque;
 	idio_continuation_t    *continuation;
 	idio_bitset_t	       bitset;

@@ -27,9 +27,9 @@
 #include <sys/resource.h>
 
 #include <assert.h>
-#include <ffi.h>
 #include <inttypes.h>
 #include <setjmp.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,7 +42,6 @@
 #include "array.h"
 #include "bignum.h"
 #include "bitset.h"
-#include "c-ffi.h"
 #include "c-struct.h"
 #include "c-type.h"
 #include "closure.h"
@@ -518,13 +517,6 @@ void idio_gc_gcc_mark (idio_gc_t *gc, IDIO o, unsigned colour)
 	    IDIO_C_INSTANCE_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
-	case IDIO_TYPE_C_FFI:
-	    IDIO_C_ASSERT (IDIO_C_FFI_GREY (o) != o);
-	    IDIO_C_ASSERT (gc->grey != o);
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
-	    IDIO_C_FFI_GREY (o) = gc->grey;
-	    gc->grey = o;
-	    break;
 	case IDIO_TYPE_OPAQUE:
 	    IDIO_C_ASSERT (IDIO_OPAQUE_GREY (o) != o);
 	    IDIO_C_ASSERT (gc->grey != o);
@@ -721,14 +713,6 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	gc->grey = IDIO_C_INSTANCE_GREY (o);
 	idio_gc_gcc_mark (gc, IDIO_C_INSTANCE_C_STRUCT (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_C_INSTANCE_FRAME (o), colour);
-	break;
-    case IDIO_TYPE_C_FFI:
-	IDIO_C_ASSERT (gc->grey != IDIO_C_FFI_GREY (o));
-	gc->grey = IDIO_C_FFI_GREY (o);
-	idio_gc_gcc_mark (gc, IDIO_C_FFI_SYMBOL (o), colour);
-	idio_gc_gcc_mark (gc, IDIO_C_FFI_RESULT (o), colour);
-	idio_gc_gcc_mark (gc, IDIO_C_FFI_ARGS (o), colour);
-	idio_gc_gcc_mark (gc, IDIO_C_FFI_NAME (o), colour);
 	break;
     case IDIO_TYPE_OPAQUE:
 	IDIO_C_ASSERT (gc->grey != IDIO_OPAQUE_GREY (o));
@@ -1546,9 +1530,6 @@ void idio_gc_sweep_free_value (IDIO vo)
 	break;
     case IDIO_TYPE_C_INSTANCE:
 	idio_free_C_instance (vo);
-	break;
-    case IDIO_TYPE_C_FFI:
-	idio_free_C_FFI (vo);
 	break;
     case IDIO_TYPE_OPAQUE:
 	idio_free_opaque (vo);
@@ -2426,7 +2407,6 @@ void idio_init_gc ()
 	IDIO_GC_STRUCT_SIZE (idio_C_typedef_s);
 	IDIO_GC_STRUCT_SIZE (idio_C_struct_s);
 	IDIO_GC_STRUCT_SIZE (idio_C_instance_s);
-	IDIO_GC_STRUCT_SIZE (idio_C_FFI_s);
 	IDIO_GC_STRUCT_SIZE (idio_opaque_s);
 	IDIO_GC_STRUCT_SIZE (idio_continuation_s);
 

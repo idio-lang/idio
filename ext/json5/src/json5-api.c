@@ -27,7 +27,6 @@
 #include <sys/resource.h>
 
 #include <assert.h>
-#include <ffi.h>
 #include <inttypes.h>
 #include <setjmp.h>
 #include <stdarg.h>

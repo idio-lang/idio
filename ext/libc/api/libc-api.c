@@ -1,18 +1,17 @@
 #define _GNU_SOURCE
 
 #include <sys/types.h>
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdarg.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/times.h>
+#include <sys/utsname.h>
+#include <sys/wait.h>
 
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <ffi.h>
 #include <glob.h>
 #include <grp.h>
 #include <inttypes.h>
@@ -21,19 +20,16 @@
 #include <pwd.h>
 #include <regex.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <strings.h>
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
-
-#include <sys/resource.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/times.h>
-#include <sys/utsname.h>
-#include <sys/wait.h>
 
 /*
  * Solaris and CentOS 6  don't typedef suseconds_t

@@ -29,8 +29,8 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
-#include <ffi.h>
 #include <setjmp.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

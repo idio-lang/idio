@@ -32,8 +32,8 @@
 #include <sys/resource.h>
 
 #include <assert.h>
-#include <ffi.h>
 #include <setjmp.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -694,13 +694,6 @@ idio_hi_t idio_hash_default_hash_C_C_instance (IDIO h)
     return idio_hash_default_hash_C_void (IDIO_C_INSTANCE_P (h));
 }
 
-idio_hi_t idio_hash_default_hash_C_C_FFI (IDIO h)
-{
-    IDIO_ASSERT (h);
-
-    return idio_hash_default_hash_C_void (IDIO_C_FFI_CIFP (h));
-}
-
 /*
  * idio_hash_default_hash_C() is the default hashing function and
  * basically calls one of the above.  It will return an index into the
@@ -907,9 +900,6 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void const *kv)
 	break;
     case IDIO_TYPE_C_INSTANCE:
 	hv = idio_hash_default_hash_C_C_instance (k);
-	break;
-    case IDIO_TYPE_C_FFI:
-	hv = idio_hash_default_hash_C_C_FFI (k);
 	break;
     default:
 	/*

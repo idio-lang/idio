@@ -15,7 +15,7 @@ PROFLAGS	:=
 COVFLAGS	:=
 CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -DIDIO_MALLOC $(CFLAGS) $(PROFLAGS) $(COVFLAGS) $(SAN_CFLAGS) $(CDEBUG) $(LIBFFI_INC)
 LDFLAGS		:= $(PROFLAGS) $(COVFLAGS) $(SAN_LDFLAGS) $(LDFLAGS)
-LIBS		:= -lffi $(LIBS)
+LIBS		:= $(LIBS)
 
 ifneq ($(OS),Darwin)
 DLIBS		:= libos.so libposix-regex.so

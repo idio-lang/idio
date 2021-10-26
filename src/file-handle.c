@@ -31,8 +31,8 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <ffi.h>
 #include <setjmp.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
