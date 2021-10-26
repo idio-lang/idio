@@ -367,6 +367,8 @@ in the context of the absence of a dynamically scoped variable.
 
    dynamic-unset var body
 
+.. _`computed value`:
+
 :$
 ^^
 

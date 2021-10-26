@@ -19,3 +19,8 @@ degenerating to ``#{}``.
 Any :samp:`{key}` or :samp:`{value}` will not be evaluated, only
 simple type construction (numbers, strings, symbols etc.) will occur.
 
+This reader form ultimately calls :ref:`alist-\>hash <alist-\>hash>`
+meaning the equivalence function will be the :lname:`C` implementation
+of :ref:`equal? <equal?>` and the hashing function will be the default
+:lname:`C` implementation.
+

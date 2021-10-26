@@ -29,7 +29,8 @@ using the structure member names ``st_dev``, ``st_ino`` etc..
 
 In addition the pseudo-member names ``st_atime``, ``st_mtime`` and
 ``st_ctime`` will access the ``tv_sec`` member of the corresponding
-``struct timespec`` members to maintain the legacy interface.
+:ref:`struct-timespec <libc/struct-timespec>` members to maintain the
+legacy interface.
 
 See also :ref:`stat <libc/stat>`.
 

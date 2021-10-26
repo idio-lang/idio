@@ -14,8 +14,9 @@ rusage``:
      struct timeval       ru_stime;
    };
 
-using the structure member names ``ru_utime`` and ``ru_stime``.  The
-other member names are not accessible due to portability issues.
+using the structure member names ``ru_utime`` and ``ru_stime`` for
+:ref:`struct-timeval <libc/struct-timeval>` structures.  The other
+member names are not accessible due to portability concerns.
 
 See also :ref:`getrusage <libc/getrusage>`.
 

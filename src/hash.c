@@ -1736,6 +1736,9 @@ convert association list `al` into a hash table		\n\
 :type args: list, optional				\n\
 :return: hash table					\n\
 							\n\
+``alist->hash`` will use :ref:`equal? <equal?>` as its	\n\
+equivalence function and the default hashing function	\n\
+							\n\
 .. seealso:: :ref:`make-hash <make-hash>`		\n\
 ")
 {
