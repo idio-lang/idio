@@ -32,6 +32,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <glob.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <stddef.h>
 #include <stdint.h>

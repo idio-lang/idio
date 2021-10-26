@@ -31,6 +31,7 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <stddef.h>
 #include <stdint.h>

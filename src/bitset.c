@@ -27,6 +27,7 @@
 #include <sys/resource.h>
 
 #include <assert.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <stddef.h>
 #include <stdint.h>

@@ -29,6 +29,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <pwd.h>
 #include <setjmp.h>
 #include <stddef.h>

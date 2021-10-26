@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <stddef.h>
 #include <stdint.h>

@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <dlfcn.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stddef.h>
