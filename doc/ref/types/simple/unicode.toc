@@ -9,5 +9,3 @@
 
 (rst "unicode-functions" 0)
 (document Idio unicode=?)
-
-(nodocument Idio integer->char)

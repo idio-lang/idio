@@ -41,7 +41,6 @@
 
 #include "bignum.h"
 #include "c-type.h"
-#include "character.h"
 #include "condition.h"
 #include "error.h"
 #include "evaluate.h"
@@ -1262,56 +1261,6 @@ IDIO_DEFINE_ARITHMETIC_BINARY_CMP_PRIMITIVE ("binary-ne", binary_ne, ne)
 IDIO_DEFINE_ARITHMETIC_BINARY_CMP_PRIMITIVE ("binary-ge", binary_ge, ge)
 IDIO_DEFINE_ARITHMETIC_BINARY_CMP_PRIMITIVE ("binary-gt", binary_gt, gt)
 
-IDIO_DEFINE_PRIMITIVE1_DS ("integer->char", integer2char, (IDIO i), "i", "\
-[deprecated]					\n\
-						\n\
-convert integer `i` to a character		\n\
-						\n\
-:param i: number				\n\
-:type i: integer				\n\
-:return: character				\n\
-:rtype: character				\n\
-"
-)
-{
-    IDIO_ASSERT (i);
-
-    IDIO c = idio_S_unspec;
-
-    if (idio_isa_fixnum (i)) {
-	c = IDIO_CHARACTER (IDIO_FIXNUM_VAL (i));
-    } else if (idio_isa_bignum (i)) {
-	intptr_t iv = idio_bignum_intptr_t_value (i);
-
-	if (iv >= 0 &&
-	    iv <= IDIO_FIXNUM_MAX) {
-	    c = IDIO_CHARACTER (iv);
-	}
-    } else {
-	/*
-	 * Test Case: fixnum-errors/integer2char-bad-type.idio
-	 *
-	 * integer->char #t
-	 */
-	idio_error_param_type ("integer", i, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    if (! idio_isa_character (c)) {
-	/*
-	 * Test Case: fixnum-errors/integer2char-bignum-range.idio
-	 *
-	 * integer->char -1.0
-	 */
-	idio_fixnum_number_error ("invalid integer", i, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    return c;
-}
-
 IDIO_DEFINE_PRIMITIVE1_DS ("integer->unicode", integer2unicode, (IDIO i), "i", "\
 convert integer `i` to a Unicode code point	\n\
 						\n\
@@ -1427,7 +1376,6 @@ void idio_fixnum_add_primitives ()
     IDIO_ADD_PRIMITIVE (binary_ge);
     IDIO_ADD_PRIMITIVE (binary_gt);
 
-    IDIO_ADD_PRIMITIVE (integer2char);
     IDIO_ADD_PRIMITIVE (integer2unicode);
 }
 

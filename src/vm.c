@@ -5167,43 +5167,6 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_THREAD_VAL (thr) = idio_fixnum ((intptr_t) v);
 	}
 	break;
-    case IDIO_A_CHARACTER:
-	{
-	    uint64_t v = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("CHARACTER %" PRId64 "", v);
-	    if (IDIO_FIXNUM_MAX < v) {
-		/*
-		 * Test Case: ??
-		 *
-		 * Coding error.
-		 */
-		idio_error_printf (IDIO_C_FUNC_LOCATION_S ("CHARACTER"), "CHARACTER OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
-
-		/* notreached */
-		return 0;
-	    }
-	    IDIO_THREAD_VAL (thr) = IDIO_CHARACTER ((intptr_t) v);
-	}
-	break;
-    case IDIO_A_NEG_CHARACTER:
-	{
-	    int64_t v = idio_vm_fetch_varuint (thr);
-	    v = -v;
-	    IDIO_VM_RUN_DIS ("NEG-CHARACTER %" PRId64 "", v);
-	    if (IDIO_FIXNUM_MIN > v) {
-		/*
-		 * Test Case: ??
-		 *
-		 * Coding error.
-		 */
-		idio_error_printf (IDIO_C_FUNC_LOCATION_S ("NEG-CHARACTER"), "CHARACTER OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
-
-		/* notreached */
-		return 0;
-	    }
-	    IDIO_THREAD_VAL (thr) = IDIO_CHARACTER ((intptr_t) v);
-	}
-	break;
     case IDIO_A_CONSTANT:
 	{
 	    uint64_t v = idio_vm_fetch_varuint (thr);
@@ -6347,19 +6310,6 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		int64_t v = idio_vm_get_varuint (bc, pcp);
 		v = -v;
 		IDIO_VM_DASM ("NEG-FIXNUM %" PRId64 "", v);
-	    }
-	    break;
-	case IDIO_A_CHARACTER:
-	    {
-		uint64_t v = idio_vm_get_varuint (bc, pcp);
-		IDIO_VM_DASM ("CHARACTER %" PRId64 "", v);
-	    }
-	    break;
-	case IDIO_A_NEG_CHARACTER:
-	    {
-		int64_t v = idio_vm_get_varuint (bc, pcp);
-		v = -v;
-		IDIO_VM_DASM ("NEG-CHARACTER %" PRId64 "", v);
 	    }
 	    break;
 	case IDIO_A_CONSTANT:

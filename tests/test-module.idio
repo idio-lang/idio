@@ -22,7 +22,6 @@ module0 := Tests
 
 test (module? 0)			#f ; FIXNUM
 test (module? #t)			#f ; CONSTANT
-test (module? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (module? #\a)			#f ; UNICODE
 test (module? "a")			#f ; STRING
 test (module? 'a)			#f ; SYMBOL
@@ -48,4 +47,4 @@ test (module? libc/UINTMAX_MAX)		#f ; C_UINT
 (all-modules)
 
 ;; all done?
-Tests? (module0 + 20)
+Tests? (module0 + 19)

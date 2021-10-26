@@ -22,7 +22,6 @@ keyword0 := Tests
 
 test (keyword? 0)			#f ; FIXNUM
 test (keyword? #t)			#f ; CONSTANT
-test (keyword? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (keyword? #\a)			#f ; UNICODE
 test (keyword? "a")			#f ; STRING
 test (keyword? 'a)			#f ; SYMBOL
@@ -74,4 +73,4 @@ test (keyword-ref kw-table :a) "apple"
 kw := (keywords)
 
 ;; all done?
-Tests? (keyword0 + 30)
+Tests? (keyword0 + 29)

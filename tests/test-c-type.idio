@@ -25,7 +25,6 @@ c-type-skipped := 0
 
 test (C/uint? 0)			#f ; FIXNUM
 test (C/uint? #t)			#f ; CONSTANT
-test (C/uint? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (C/uint? #\a)			#f ; UNICODE
 test (C/uint? "a")			#f ; STRING
 test (C/uint? 'a)			#f ; SYMBOL
@@ -589,4 +588,4 @@ test (C/->number (C/integer->unsigned c-uintmax-max libc/uintmax_t)) c-uintmax-m
 
 ;; all done?
 Skipped = Skipped + c-type-skipped
-Tests? (c-type0 + 919 - c-type-skipped)
+Tests? (c-type0 + 918 - c-type-skipped)

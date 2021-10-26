@@ -24,7 +24,6 @@ primitive0 := Tests
 
 test (primitive? 0)				#f ; FIXNUM
 test (primitive? #t)				#f ; CONSTANT
-test (primitive? (integer->char 1))		#f ; CHARACTER (deprecated)
 test (primitive? #\a)				#f ; UNICODE
 test (primitive? "a")				#f ; STRING
 test (primitive? 'a)				#f ; SYMBOL
@@ -53,4 +52,4 @@ test (primitive-varargs? list) #t
 module tests/primitive
 
 ;; all done?
-Tests? (primitive0 + 23)
+Tests? (primitive0 + 22)

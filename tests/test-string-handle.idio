@@ -23,7 +23,6 @@ string-handle0 := Tests
 ; none of these are string handles
 test (string-handle? 0)				#f ; FIXNUM
 test (string-handle? #t)			#f ; CONSTANT
-test (string-handle? (integer->char 1))		#f ; CHARACTER (deprecated)
 test (string-handle? #\a)			#f ; UNICODE
 test (string-handle? "a")			#f ; STRING
 test (string-handle? 'a)			#f ; SYMBOL
@@ -135,4 +134,4 @@ seek-handle ish 0 'cur
 seek-handle ish 20
 
 ;; all done?
-Tests? (string-handle0 + 50)
+Tests? (string-handle0 + 49)

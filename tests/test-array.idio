@@ -22,7 +22,6 @@ array0 := Tests
 
 test (array? 0)				#f ; FIXNUM
 test (array? #t)			#f ; CONSTANT
-test (array? (integer->char 1))		#f ; CHARACTER (deprecated)
 test (array? #\a)			#f ; UNICODE
 test (array? "a")			#f ; STRING
 test (array? 'a)			#f ; SYMBOL
@@ -247,4 +246,4 @@ test c 2
 
 
 ;; all done?
-Tests? (array0 + 93)
+Tests? (array0 + 92)

@@ -24,7 +24,6 @@ bitset0 := Tests
 
 test (bitset? 0)			#f ; FIXNUM
 test (bitset? #t)			#f ; CONSTANT
-test (bitset? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (bitset? #\a)			#f ; UNICODE
 test (bitset? "a")			#f ; STRING
 test (bitset? 'a)			#f ; SYMBOL
@@ -348,4 +347,4 @@ test (fold-bitset     #B{ 64 30-38 } accumulator 0) 16
 test (fold-bitset     #B{ 64 38-38 } accumulator 0) 8
 
 ;; all done?
-Tests? (bitset0 + 223)
+Tests? (bitset0 + 222)

@@ -22,7 +22,6 @@ hash0 := Tests
 
 test (hash? 0)				#f ; FIXNUM
 test (hash? #t)				#f ; CONSTANT
-test (hash? (integer->char 1))		#f ; CHARACTER (deprecated)
 test (hash? #\a)			#f ; UNICODE
 test (hash? "a")			#f ; STRING
 test (hash? 'a)				#f ; SYMBOL
@@ -434,4 +433,4 @@ test (hash-equivalence-function (copy-hash ht 'deep)) 'eqv?
 test (hash-equivalence-function (copy-hash ht 'shallow)) 'eqv?
 
 ;; all done?
-Tests? (hash0 + 97)
+Tests? (hash0 + 96)

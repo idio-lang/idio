@@ -950,7 +950,6 @@ char **idio_command_argv (IDIO args)
 	case IDIO_TYPE_CONSTANT_MARK:
 	    {
 		switch ((intptr_t) arg & IDIO_TYPE_CONSTANT_MASK) {
-		case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
 		case IDIO_TYPE_CONSTANT_UNICODE_MARK:
 		    {
 			size_t size = 0;

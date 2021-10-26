@@ -22,7 +22,6 @@ pair0 := Tests
 
 test (pair? 0)				#f ; FIXNUM
 test (pair? #t)				#f ; CONSTANT
-test (pair? (integer->char 1))		#f ; CHARACTER (deprecated)
 test (pair? #\a)			#f ; UNICODE
 test (pair? "a")			#f ; STRING
 test (pair? 'a)				#f ; SYMBOL
@@ -58,4 +57,4 @@ test (nth '(1 2 3) 1 #t) 1
 test (nth '(1 2 3) 4 #t) #t
 
 ;; all done?
-Tests? (pair0 + 33)
+Tests? (pair0 + 32)

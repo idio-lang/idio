@@ -39,7 +39,6 @@ import unicode
 
 test (unicode? 0)			#f ; FIXNUM
 test (unicode? #t)			#f ; CONSTANT
-test (unicode? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (unicode? #\a)			#t ; UNICODE
 test (unicode? "a")			#f ; STRING
 test (unicode? 'a)			#f ; SYMBOL
@@ -521,4 +520,4 @@ test (unicode-safe "foo") "foo"
 test (unicode-safe "ħ") "ħ"
 
 ;; all done?
-Tests? (unicode-test0 + 230)
+Tests? (unicode-test0 + 229)

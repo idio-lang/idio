@@ -22,7 +22,6 @@ handle0 := Tests
 
 test (handle? 0)			#f ; FIXNUM
 test (handle? #t)			#f ; CONSTANT
-test (handle? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (handle? #\a)			#f ; UNICODE
 test (handle? "a")			#f ; STRING
 test (handle? 'a)			#f ; SYMBOL
@@ -170,4 +169,4 @@ newline ofh
 close-handle ofh
 
 ;; all done?
-Tests? (handle0 + 66)
+Tests? (handle0 + 65)

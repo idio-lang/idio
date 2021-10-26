@@ -22,7 +22,6 @@ symbol0 := Tests
 
 test (symbol? 0)			#f ; FIXNUM
 test (symbol? #t)			#f ; CONSTANT
-test (symbol? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (symbol? #\a)			#f ; UNICODE
 test (symbol? "a")			#f ; STRING
 test (symbol? 'a)			#t ; SYMBOL
@@ -53,4 +52,4 @@ test (%property sym :name #f) #f
 %set-property! sym :name 'bob
 
 ;; all done?
-Tests? (symbol0 + 22)
+Tests? (symbol0 + 21)

@@ -25,7 +25,6 @@ condition0 := Tests
 
 test (condition-type? 0)			#f ; FIXNUM
 test (condition-type? #t)			#f ; CONSTANT
-test (condition-type? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (condition-type? #\a)			#f ; UNICODE
 test (condition-type? "a")			#f ; STRING
 test (condition-type? 'a)			#f ; SYMBOL
@@ -48,7 +47,6 @@ test (condition-type? libc/UINTMAX_MAX)		#f ; C_UINT
 
 test (condition? 0)				#f ; FIXNUM
 test (condition? #t)				#f ; CONSTANT
-test (condition? (integer->char 1))		#f ; CHARACTER (deprecated)
 test (condition? #\a)				#f ; UNICODE
 test (condition? "a")				#f ; STRING
 test (condition? 'a)				#f ; SYMBOL
@@ -260,4 +258,4 @@ trap ^rt-divide-by-zero-error (function (c) {
 }
 
 ;; all done?
-Tests? (condition0 + 99)
+Tests? (condition0 + 97)

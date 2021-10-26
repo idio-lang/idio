@@ -25,7 +25,6 @@ fixnum0 := Tests
 
 test (fixnum? 0)			#t ; FIXNUM
 test (fixnum? #t)			#f ; CONSTANT
-test (fixnum? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (fixnum? #\a)			#f ; UNICODE
 test (fixnum? "a")			#f ; STRING
 test (fixnum? 'a)			#f ; SYMBOL
@@ -282,8 +281,5 @@ test (quotient  1 2.0)   0
 test (quotient  2.0 1)   2
 test (quotient  2.0 1.0) 2
 
-;; code coverage: integer->char is deprecated
-integer->char 1.0
-
 ;; all done?
-Tests? (fixnum0 + 208)
+Tests? (fixnum0 + 207)

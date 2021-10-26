@@ -136,9 +136,6 @@ int idio_type (IDIO o)
 	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
 		/* Code coverage: evaluate.idio */
 		return IDIO_TYPE_CONSTANT_I_CODE;
-	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
-		/* Code coverage: deprecated */
-		return IDIO_TYPE_CONSTANT_CHARACTER;
 	    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
 		return IDIO_TYPE_CONSTANT_UNICODE;
 	    default:
@@ -171,7 +168,6 @@ char const *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_CONSTANT_IDIO:	return "constant";
     case IDIO_TYPE_CONSTANT_TOKEN:	return "constant (token)";
     case IDIO_TYPE_CONSTANT_I_CODE:	return "constant (I_CODE)";
-    case IDIO_TYPE_CONSTANT_CHARACTER:	return "constant (character)";
     case IDIO_TYPE_CONSTANT_UNICODE:	return "unicode";
     case IDIO_TYPE_PLACEHOLDER:		return "PLACEHOLDER";
     case IDIO_TYPE_STRING:		return "string";
@@ -1512,24 +1508,6 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		}
 		break;
 
-	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
-		{
-		    /*
-		     * XXX There is no character reader format -- as
-		     * the type is deprecated.
-		     *
-		     * Printing a character will result in a Unicode
-		     * form.
-		     */
-		    intptr_t c = IDIO_CHARACTER_VAL (o);
-		    if (c <= 0x7f &&
-			isgraph (c)) {
-			*sizep = idio_asprintf (&r, "#\\%c", (char) c);
-		    } else {
-			*sizep = idio_asprintf (&r, "#U+%04X", c);
-		    }
-		    break;
-		}
 	    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
 		{
 		    idio_unicode_t u = IDIO_UNICODE_VAL (o);
@@ -2818,12 +2796,6 @@ char *idio_display_string (IDIO o, size_t *sizep)
 	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
 		r = idio_as_string_safe (o, sizep, 4, 1);
 		break;
-	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
-		{
-		    intptr_t c = IDIO_CHARACTER_VAL (o);
-		    *sizep = idio_asprintf (&r, "%c", (char) c);
-		}
-		break;
 	    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
 		{
 		    idio_unicode_t u = IDIO_UNICODE_VAL (o);
@@ -3134,8 +3106,6 @@ char const *idio_vm_bytecode2string (int code)
     case IDIO_A_CONSTANT_4:			r = "A-CONSTANT-4";			break;
     case IDIO_A_FIXNUM:				r = "A-FIXNUM";				break;
     case IDIO_A_NEG_FIXNUM:			r = "A-NEG-FIXNUM";			break;
-    case IDIO_A_CHARACTER:			r = "A-CHARACTER";			break;
-    case IDIO_A_NEG_CHARACTER:			r = "A-NEG-CHARACTER";			break;
     case IDIO_A_CONSTANT:			r = "A-CONSTANT";			break;
     case IDIO_A_NEG_CONSTANT:			r = "A-NEG-CONSTANT";			break;
     case IDIO_A_UNICODE:			r = "A-UNICODE";			break;

@@ -27,7 +27,6 @@ continuation0 := Tests
 
 test (continuation? 0)				#f ; FIXNUM
 test (continuation? #t)				#f ; CONSTANT
-test (continuation? (integer->char 1))		#f ; CHARACTER (deprecated)
 test (continuation? #\a)			#f ; UNICODE
 test (continuation? "a")			#f ; STRING
 test (continuation? 'a)				#f ; SYMBOL
@@ -53,4 +52,4 @@ test (continuation? libc/UINTMAX_MAX)		#f ; C_UINT
 }))
 
 ;; all done?
-Tests? (continuation0 + 21)
+Tests? (continuation0 + 20)

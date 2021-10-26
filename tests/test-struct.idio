@@ -22,7 +22,6 @@ struct0 := Tests
 
 test (struct-type? 0)				#f ; FIXNUM
 test (struct-type? #t)				#f ; CONSTANT
-test (struct-type? (integer->char 1))		#f ; CHARACTER (deprecated)
 test (struct-type? #\a)				#f ; UNICODE
 test (struct-type? "a")				#f ; STRING
 test (struct-type? 'a)				#f ; SYMBOL
@@ -43,7 +42,6 @@ test (struct-type? libc/UINTMAX_MAX)		#f ; C_UINT
 
 test (struct-instance? 0)			#f ; FIXNUM
 test (struct-instance? #t)			#f ; CONSTANT
-test (struct-instance? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (struct-instance? #\a)			#f ; UNICODE
 test (struct-instance? "a")			#f ; STRING
 test (struct-instance? 'a)			#f ; SYMBOL
@@ -97,4 +95,4 @@ test (fooi.sym) 30
 test (struct-type-isa? ^idio-error ^error) #t
 
 ;; all done?
-Tests? (struct0 + 59)
+Tests? (struct0 + 57)

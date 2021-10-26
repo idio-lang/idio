@@ -25,7 +25,6 @@ closure0 := Tests
 
 test (function? 0)			#f ; FIXNUM
 test (function? #t)			#f ; CONSTANT
-test (function? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (function? #\a)			#f ; UNICODE
 test (function? "a")			#f ; STRING
 test (function? 'a)			#f ; SYMBOL
@@ -57,4 +56,4 @@ test (ph l) 3
 test (ph l) 4
 
 ;; all done?
-Tests? (closure0 + 23)
+Tests? (closure0 + 22)

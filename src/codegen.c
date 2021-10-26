@@ -725,24 +725,6 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 			    }
 			    break;
 			}
-		    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
-			{
-			    intptr_t v = IDIO_CHARACTER_VAL (c);
-
-			    if (v >= 0) {
-				IDIO_IA_PUSH1 (IDIO_A_CHARACTER);
-				IDIO_IA_PUSH_VARUINT (v);
-			    } else {
-				/*
-				 * Can we even have negative characters?  Some
-				 * casual cut'n'paste says yes!
-				 */
-				IDIO_IA_PUSH1 (IDIO_A_NEG_CHARACTER);
-				IDIO_IA_PUSH_VARUINT (-v);
-			    }
-			    return;
-			}
-			break;
 		    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
 			{
 			    intptr_t v = IDIO_UNICODE_VAL (c);
@@ -1102,24 +1084,6 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 			    }
 			    break;
 			}
-		    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
-			{
-			    intptr_t v = IDIO_CHARACTER_VAL (c);
-
-			    if (v >= 0) {
-				IDIO_IA_PUSH1 (IDIO_A_CHARACTER);
-				IDIO_IA_PUSH_VARUINT (v);
-			    } else {
-				/*
-				 * Can we even have negative characters?  Some
-				 * casual cut'n'paste says yes!
-				 */
-				IDIO_IA_PUSH1 (IDIO_A_NEG_CHARACTER);
-				IDIO_IA_PUSH_VARUINT (-v);
-			    }
-			    return;
-			}
-			break;
 		    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
 			{
 			    intptr_t v = IDIO_UNICODE_VAL (c);

@@ -283,8 +283,6 @@ int idio_isa (IDIO o, idio_type_e type)
 		return (IDIO_TYPE_CONSTANT_TOKEN == type);
 	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
 		return (IDIO_TYPE_CONSTANT_I_CODE == type);
-	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
-		return (IDIO_TYPE_CONSTANT_CHARACTER == type);
 	    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
 		return (IDIO_TYPE_CONSTANT_UNICODE == type);
 	    default:

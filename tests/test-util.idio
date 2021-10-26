@@ -39,7 +39,6 @@ format0 := Tests
 
 test (type->string 0)				"fixnum"
 test (type->string #t)				"constant"
-test (type->string (integer->char 1))		"constant (character)"
 test (type->string #\a)				"unicode"
 test (type->string "a")				"string"
 test (type->string 'a)				"symbol"
@@ -60,7 +59,6 @@ test (type->string libc/UINT_MAX)		"C/uint"
 
 test (zero? 0)				#t ; FIXNUM
 test (zero? #t)				#f ; CONSTANT
-test (zero? (integer->char 1))		#f ; CHARACTER (deprecated)
 test (zero? #\a)			#f ; UNICODE
 test (zero? "a")			#f ; STRING
 test (zero? 'a)				#f ; SYMBOL
@@ -91,7 +89,6 @@ test (void? #t)     #f
 
 test (boolean? 0)			#f ; FIXNUM
 test (boolean? #t)			#t ; CONSTANT
-test (boolean? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (boolean? #\a)			#f ; UNICODE
 test (boolean? "a")			#f ; STRING
 test (boolean? 'a)			#f ; SYMBOL
@@ -115,10 +112,6 @@ test (boolean? (void))			#f
 
 ; equality -- we need some values to test with: X1a and X1b are
 ; constructed from the same parts, X2 is different
-ch1a := integer->char 1
-ch1b := integer->char 1
-ch2  := integer->char 2
-
 str1a := make-string 1 #\a
 str1b := make-string 1 #\a
 str2  := make-string 1 #\b
@@ -250,17 +243,6 @@ test (equal? #t #f)	#f
 test (eq?    #t 1)	#f
 test (eqv?   #t 1)	#f
 test (equal? #t 1)	#f
-
-; characters are deprecated
-test (eq?    ch1a ch1a)	#t
-test (eqv?   ch1a ch1a)	#t
-test (equal? ch1a ch1a)	#t
-test (eq?    ch1a ch1b)	#t
-test (eqv?   ch1a ch1b)	#t
-test (equal? ch1a ch1b)	#t
-test (eq?    ch1a ch2)	#f
-test (eqv?   ch1a ch2)	#f
-test (equal? ch1a ch2)	#f
 
 test (eq?    #\a #\a)	#t
 test (eqv?   #\a #\a)	#t
@@ -611,16 +593,6 @@ hprintf osh "void: %s\n" (void)
 ;; functions use the display style -- not so good for characters and
 ;; strings.  {string} returns the printed form...in a string!  Hence
 ;; some of the weird expected results.
-
-;; characters are deprecated but let's tickle the deprecated code --
-;; remember there is no character reader format so characters are
-;; printed in their Unicode form.
-ch := integer->char 32
-test (string ch) "#U+0020"
-test (format "%s" ch) " "
-ch := integer->char #x61
-test (string ch) "#\\a"
-test (format "%s" ch) "a"
 
 ;; unicode
 test (string #\{space}) "#U+0020"
@@ -1288,7 +1260,7 @@ test (%format 'keyed "%4.3f" h)		" 010"
 test (%format 'keyed "%10.2b" h)	"    123.45"
 
 ;; all done?
-Tests? (format0 + 676)
+Tests? (format0 + 660)
 
 ;Local Variables:
 ;mode: Idio

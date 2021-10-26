@@ -23,7 +23,6 @@ string0 := Tests
 
 test (string? 0)			#f ; FIXNUM
 test (string? #t)			#f ; CONSTANT
-test (string? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (string? #\a)			#f ; UNICODE
 test (string? "a")			#t ; STRING
 test (string? 'a)			#f ; SYMBOL
@@ -522,7 +521,7 @@ test (equal? (string->pathname "hello")   "hello")	#f
 test (equal? (string->pathname "hello") %P"hello")	#t
 
 ;; all done?
-Tests? (string0 + 344)
+Tests? (string0 + 343)
 
 ;Local Variables:
 ;mode: Idio

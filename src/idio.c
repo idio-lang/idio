@@ -44,7 +44,6 @@
 #include "bignum.h"
 #include "bitset.h"
 #include "c-type.h"
-#include "character.h"
 #include "closure.h"
 #include "codegen.h"
 #include "command.h"
@@ -249,7 +248,6 @@ void idio_init (void)
     idio_init_frame ();
     idio_init_util ();
     idio_init_primitive ();
-    idio_init_character ();
     idio_init_unicode ();
     idio_init_string ();
     idio_init_array ();

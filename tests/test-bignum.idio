@@ -912,7 +912,6 @@ ein := FIXNUM-MAX + 1
 
 test (bignum? 0)			#f ; FIXNUM
 test (bignum? #t)			#f ; CONSTANT
-test (bignum? (integer->char 1))	#f ; CHARACTER (deprecated)
 test (bignum? #\a)			#f ; UNICODE
 test (bignum? "a")			#f ; STRING
 test (bignum? 'a)			#f ; SYMBOL
@@ -1193,4 +1192,4 @@ test +123456789012345678 123456789012345678
 test +0.0 0
 
 ;; all done?
-Tests? (bignum0 + 820)
+Tests? (bignum0 + 819)

@@ -25,7 +25,6 @@ file-handle0 := Tests
 
 test (file-handle? 0)				#f ; FIXNUM
 test (file-handle? #t)				#f ; CONSTANT
-test (file-handle? (integer->char 1))		#f ; CHARACTER (deprecated)
 test (file-handle? #\a)				#f ; UNICODE
 test (file-handle? "a")				#f ; STRING
 test (file-handle? 'a)				#f ; SYMBOL
@@ -47,7 +46,6 @@ test (file-handle? libc/UINTMAX_MAX)		#f ; C_UINT
 ; fd-handle is a subset of file-handle so identical
 test (fd-handle? 0)				#f ; FIXNUM
 test (fd-handle? #t)				#f ; CONSTANT
-test (fd-handle? (integer->char 1))		#f ; CHARACTER (deprecated)
 test (fd-handle? #\a)				#f ; UNICODE
 test (fd-handle? "a")				#f ; STRING
 test (fd-handle? 'a)				#f ; SYMBOL
@@ -69,7 +67,6 @@ test (fd-handle? libc/UINTMAX_MAX)		#f ; C_UINT
 ; pipe-handle != file-handle so none of the examples
 test (pipe-handle? 0)				#f ; FIXNUM
 test (pipe-handle? #t)				#f ; CONSTANT
-test (pipe-handle? (integer->char 1))		#f ; CHARACTER (deprecated)
 test (pipe-handle? #\a)				#f ; UNICODE
 test (pipe-handle? "a")				#f ; STRING
 test (pipe-handle? 'a)				#f ; SYMBOL
@@ -459,4 +456,4 @@ if parts {
 IDIOLIB = OIDIOLIB
 
 ;; all done?
-Tests? (file-handle0 + 158)
+Tests? (file-handle0 + 155)
