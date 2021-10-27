@@ -159,7 +159,7 @@ void idio_thread_codegen (IDIO code)
     IDIO_ASSERT (code);
     IDIO_TYPE_ASSERT (pair, code);
 
-    idio_error_C ("unimplemented", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+    idio_coding_error_C ("unimplemented", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 }
 
 IDIO idio_thread_current_env ()

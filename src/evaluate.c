@@ -1698,7 +1698,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	 * should have created a reference (otherwise, what's it
 	 * doing?)
 	 */
-	idio_error_C ("unknown variable:", name, IDIO_C_FUNC_LOCATION ());
+	idio_coding_error_C ("unknown variable:", name, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -2452,7 +2452,7 @@ static IDIO idio_meanings_multiple_sequence (IDIO src, IDIO e, IDIO ep, IDIO nam
 	 * Not sure we can get here as it requires developer coding
 	 * error.
 	 */
-	idio_error_C ("unexpected sequence keyword", keyword, IDIO_C_FUNC_LOCATION ());
+	idio_coding_error_C ("unexpected sequence keyword", keyword, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -2498,7 +2498,7 @@ static IDIO idio_meaning_sequence (IDIO src, IDIO ep, IDIO nametree, IDIO escape
 		 * Not sure we can get here as it requires developer
 		 * coding error.
 		 */
-		idio_error_C ("unexpected sequence keyword", keyword, IDIO_C_FUNC_LOCATION ());
+		idio_coding_error_C ("unexpected sequence keyword", keyword, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -3151,7 +3151,7 @@ static IDIO idio_meaning_abstraction (IDIO src, IDIO nns, IDIO docstr, IDIO ep, 
     /*
      * Shouldn't get here...
      */
-    idio_error_C ("meaning-abstraction", IDIO_LIST2 (nns, ep), IDIO_C_FUNC_LOCATION ());
+    idio_coding_error_C ("meaning-abstraction", IDIO_LIST2 (nns, ep), IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }
@@ -3444,7 +3444,7 @@ static IDIO idio_meaning_closed_application (IDIO src, IDIO fe, IDIO aes, IDIO n
      * Can we get here?
      */
 
-    idio_error_C ("meaning-closed-application", IDIO_LIST2 (fe, aes), IDIO_C_FUNC_LOCATION ());
+    idio_coding_error_C ("meaning-closed-application", IDIO_LIST2 (fe, aes), IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }
@@ -3718,7 +3718,7 @@ static IDIO idio_meaning_application (IDIO src, IDIO fe, IDIO aes, IDIO nametree
      * Can we get here?
      */
 
-    idio_error_C ("meaning-application", IDIO_LIST2 (fe, aes), IDIO_C_FUNC_LOCATION ());
+    idio_coding_error_C ("meaning-application", IDIO_LIST2 (fe, aes), IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }
@@ -4181,7 +4181,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 		 * Not sure we can get here as it requires developer
 		 * coding error.
 		 */
-		idio_error_C ("unexpected sequence keyword", eh, IDIO_C_FUNC_LOCATION_S ("begin-and-or"));
+		idio_coding_error_C ("unexpected sequence keyword", eh, IDIO_C_FUNC_LOCATION_S ("begin-and-or"));
 
 		return idio_S_notreached;
 	    }
@@ -4979,7 +4979,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 	    /*
 	     * Can'r get here without a developer coding issue.
 	     */
-	    idio_error_C ("invalid constant type", e, IDIO_C_FUNC_LOCATION_S ("quotation/placeholder"));
+	    idio_coding_error_C ("invalid constant type", e, IDIO_C_FUNC_LOCATION_S ("quotation/placeholder"));
 
 	    return idio_S_notreached;
 	case IDIO_TYPE_POINTER_MARK:
@@ -5064,7 +5064,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
     /*
      * Can I get here?
      */
-    idio_error_C ("meaning", e, IDIO_C_FUNC_LOCATION ());
+    idio_coding_error_C ("meaning", e, IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }

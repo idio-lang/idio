@@ -1037,14 +1037,14 @@ static void idio_vm_restore_state (IDIO thr)
 	 * As we've just ascertained we don't have a condition handler
 	 * this will end in even more tears...
 	 */
-	idio_error_C ("bad TRAP SP: < 3", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_FUNC_LOCATION ());
+	idio_coding_error_C ("bad TRAP SP: < 3", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
     }
 
     if (tsp >= ss) {
-	idio_error_C ("bad TRAP SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_FUNC_LOCATION ());
+	idio_coding_error_C ("bad TRAP SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1055,7 +1055,7 @@ static void idio_vm_restore_state (IDIO thr)
     IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_DYNAMIC_SP (thr));
     idio_ai_t dsp = IDIO_FIXNUM_VAL (IDIO_THREAD_DYNAMIC_SP (thr));
     if (dsp >= ss) {
-	idio_error_C ("bad DYNAMIC SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_FUNC_LOCATION ());
+	idio_coding_error_C ("bad DYNAMIC SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1067,7 +1067,7 @@ static void idio_vm_restore_state (IDIO thr)
     idio_ai_t esp = IDIO_FIXNUM_VAL (IDIO_THREAD_ENVIRON_SP (thr));
     IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_ENVIRON_SP (thr));
     if (esp >= ss) {
-	idio_error_C ("bad ENVIRON SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_FUNC_LOCATION ());
+	idio_coding_error_C ("bad ENVIRON SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1543,7 +1543,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		idio_debug ("*val* %s; ", val);
 		idio_debug ("last %s\n", last);
 		idio_vm_thread_state (thr);
-		idio_error_C ("primitive: using varargs?", last, IDIO_C_FUNC_LOCATION ());
+		idio_coding_error_C ("primitive: using varargs?", last, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return;
@@ -1667,7 +1667,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		 *
 		 * Coding error.
 		 */
-		idio_error_C ("continuation: varargs?", last, IDIO_C_FUNC_LOCATION ());
+		idio_coding_error_C ("continuation: varargs?", last, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return;
@@ -1891,7 +1891,7 @@ static idio_ai_t idio_vm_find_stack_marker (IDIO stack, IDIO mark, idio_ai_t fro
 	    char em[BUFSIZ];
 	    idio_snprintf (em, BUFSIZ, "find-stack-marker: from %td out of range: 0 - %td", from, sp);
 
-	    idio_error_C (em, mark, IDIO_C_FUNC_LOCATION ());
+	    idio_coding_error_C (em, mark, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return -1;
@@ -1919,7 +1919,7 @@ static idio_ai_t idio_vm_find_stack_marker (IDIO stack, IDIO mark, idio_ai_t fro
 		     * Coding error.
 		     */
 		    idio_debug ("iv-find-stack-marker: max %s unexpected\n", mark);
-		    idio_error_C ("unexpected max mark", mark, IDIO_C_FUNC_LOCATION ());
+		    idio_coding_error_C ("unexpected max mark", mark, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
 		    return -1;
@@ -3286,7 +3286,7 @@ The function does not return.					\n\
 	return idio_S_notreached;
     }
 
-    idio_error_C ("failed to invoke contunation", IDIO_LIST2 (n, val), IDIO_C_FUNC_LOCATION ());
+    idio_coding_error_C ("failed to invoke contunation", IDIO_LIST2 (n, val), IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }
@@ -4061,7 +4061,7 @@ int idio_vm_run1 (IDIO thr)
 		 *
 		 * Coding error.
 		 */
-		idio_error_C ("invalid constant type", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT-SYM-REF"));
+		idio_coding_error_C ("invalid constant type", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT-SYM-REF"));
 
 		/* notreached */
 		return 0;
@@ -4104,7 +4104,7 @@ int idio_vm_run1 (IDIO thr)
 			 *
 			 * Coding error.
 			 */
-			idio_error_C ("invalid constant type", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT-SYM-REF"));
+			idio_coding_error_C ("invalid constant type", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT-SYM-REF"));
 
 			/* notreached */
 			return 0;
@@ -4375,7 +4375,7 @@ int idio_vm_run1 (IDIO thr)
 		 *
 		 * Coding error.
 		 */
-		idio_error_C ("invalid constant type", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT-VAL-REF"));
+		idio_coding_error_C ("invalid constant type", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT-VAL-REF"));
 
 		/* notreached */
 		return 0;
@@ -4411,7 +4411,7 @@ int idio_vm_run1 (IDIO thr)
 			 *
 			 * Coding error.
 			 */
-			idio_error_C ("invalid constant type", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT-VAL-REF"));
+			idio_coding_error_C ("invalid constant type", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT-VAL-REF"));
 
 			/* notreached */
 			return 0;
@@ -4717,7 +4717,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_vm_debug (thr, "IDIO_A_RETURN", 0);
 		IDIO_THREAD_STACK_PUSH (ipc);
 		idio_vm_decode_thread (thr);
-		idio_error_C ("RETURN: not a number", ipc, IDIO_C_FUNC_LOCATION_S ("RETURN"));
+		idio_coding_error_C ("RETURN: not a number", ipc, IDIO_C_FUNC_LOCATION_S ("RETURN"));
 
 		/* notreached */
 		return 0;
@@ -6855,7 +6855,7 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 			 * XXX needs revisiting
 			 */
 			fprintf (stderr, "iv-run: signal %d has no condition?\n", signum);
-			idio_error_C ("signal without a condition to raise", idio_fixnum (signum), IDIO_C_FUNC_LOCATION ());
+			idio_coding_error_C ("signal without a condition to raise", idio_fixnum (signum), IDIO_C_FUNC_LOCATION ());
 
 			return idio_S_notreached;
 		    }

@@ -1075,7 +1075,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		 *
 		 * Coding error.
 		 */
-		idio_error_C ("IDIO_TYPE_POINTER_MARK: o1->type unexpected", o1, IDIO_C_FUNC_LOCATION ());
+		idio_coding_error_C ("IDIO_TYPE_POINTER_MARK: o1->type unexpected", o1, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return 0;
@@ -1084,7 +1084,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	break;
     default:
 	/* inconceivable! */
-	idio_error_C ("o1->type unexpected", o1, IDIO_C_FUNC_LOCATION ());
+	idio_coding_error_C ("o1->type unexpected", o1, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return 0;
@@ -3318,7 +3318,7 @@ IDIO idio_copy (IDIO o, int depth)
 	 *
 	 * Coding error.
 	 */
-	idio_error_C ("invalid type", o, IDIO_C_FUNC_LOCATION_S ("placeholder"));
+	idio_coding_error_C ("invalid type", o, IDIO_C_FUNC_LOCATION_S ("placeholder"));
 
 	return idio_S_notreached;
     case IDIO_TYPE_POINTER_MARK:
@@ -3401,7 +3401,7 @@ IDIO idio_copy (IDIO o, int depth)
 		 *
 		 * Coding error.
 		 */
-		idio_error_C ("unimplemented type", o, IDIO_C_FUNC_LOCATION ());
+		idio_coding_error_C ("unimplemented type", o, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 		break;
@@ -3421,7 +3421,7 @@ IDIO idio_copy (IDIO o, int depth)
      *
      * Coding error.  Is this reachable?
      */
-    idio_error_C ("failed to copy", o, IDIO_C_FUNC_LOCATION ());
+    idio_coding_error_C ("failed to copy", o, IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }
@@ -3637,7 +3637,7 @@ void idio_dump (IDIO o, int detail)
 		 *
 		 * Coding error.
 		 */
-		idio_error_C ("unimplemented type", o, IDIO_C_FUNC_LOCATION ());
+		idio_coding_error_C ("unimplemented type", o, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return;
@@ -3906,7 +3906,7 @@ size_t idio_strnlen (char const *s, size_t const maxlen)
 	snprintf (em, 80, "idio_strnlen: truncated to %zd: \"%s\"", maxlen, s);
 	em[80] = '\0';
 
-	idio_error_C (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_string_error_C (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return 0;
@@ -3947,7 +3947,7 @@ int idio_snprintf (char *str, size_t const size, char const *format, ...)
 	snprintf (em, 80, "idio_snprintf: reqd %d in %zd available: \"%s\"", plen, size, str);
 	em[80] = '\0';
 
-	idio_error_C (em, idio_integer (plen), IDIO_C_FUNC_LOCATION ());
+	idio_string_error_C (em, idio_integer (plen), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return 0;

@@ -2833,7 +2833,7 @@ a wrapper to libc :manpage:`strptime(3)`\n\
     if (NULL == strptime_r) {
 	IDIO_GC_FREE (tmp);
 
-        idio_error_C ("strptime", IDIO_LIST2 (s, format), IDIO_C_FUNC_LOCATION ());
+        idio_error_param_value_exp ("strptime", "format", IDIO_LIST2 (s, format), "", IDIO_C_FUNC_LOCATION ());
 
         return idio_S_notreached;
     }

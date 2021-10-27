@@ -1171,7 +1171,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, idio_unicod
 		    /*
 		     * Test case: ??
 		     */
-		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_FUNC_LOCATION ());
+		    idio_coding_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		}
@@ -1187,7 +1187,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, idio_unicod
 		    /*
 		     * Test case: ??
 		     */
-		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_FUNC_LOCATION ());
+		    idio_coding_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		}
@@ -4156,7 +4156,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, idio_unicode_t *ic,
 		case IDIO_CONSTANT_NAN:
 		    break;
 		default:
-		    idio_error_C ("unexpected constant in line", IDIO_LIST2 (handle, expr), IDIO_C_FUNC_LOCATION ());
+		    idio_coding_error_C ("unexpected constant in line", IDIO_LIST2 (handle, expr), IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		}
@@ -4171,7 +4171,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, idio_unicode_t *ic,
 		    break;
 		default:
 		    idio_debug ("expected %s as closing delimiter\n", closedel);
-		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_FUNC_LOCATION ());
+		    idio_coding_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		}

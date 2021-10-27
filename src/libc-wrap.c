@@ -3737,7 +3737,7 @@ void idio_init_libc_wrap ()
 	 *
 	 * Could this ever happen?
 	 */
-	idio_error_C ("getgroups", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_coding_error_C ("getgroups", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;

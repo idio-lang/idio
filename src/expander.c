@@ -1021,7 +1021,7 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
 	 *
 	 * Probably just a developer catch.
 	 */
-	idio_error_C ("operator: invalid code", IDIO_LIST2 (n, e), IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("function", e, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

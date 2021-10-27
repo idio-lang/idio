@@ -59,7 +59,7 @@ static void idio_codegen_error_param_args (char const *m, IDIO mt, IDIO c_locati
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_C (m, mt, c_location);
+    idio_coding_error_C (m, mt, c_location);
 }
 
 static void idio_codegen_error_param_type (char const *m, IDIO t, IDIO c_location)
@@ -401,7 +401,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		idio_codegen_compile (thr, ia, cs, IDIO_PAIR_H (m), depth + 1);
 		m = IDIO_PAIR_T (m);
 		if (! idio_isa_list (m)) {
-		    idio_error_C ("compile: not a sequence", m, IDIO_C_FUNC_LOCATION ());
+		    idio_error_param_type ("list", m, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
 		    return;
@@ -735,12 +735,16 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 			}
 			break;
 		    default:
-			idio_error_C ("unexpected constant/CONSTANT/??", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT/CONSTANT"));
+			idio_coding_error_C ("unexpected constant/CONSTANT/??", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT/CONSTANT"));
+
+			/* notreached */
 			break;
 		    }
 		}
 	    case IDIO_TYPE_PLACEHOLDER_MARK:
-		idio_error_C ("unexpected constant/PLACEHOLDER", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT"));
+		idio_coding_error_C ("unexpected constant/PLACEHOLDER", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT"));
+
+		/* notreached */
 		break;
 	    default:
 		{
@@ -1094,12 +1098,16 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 			}
 			break;
 		    default:
-			idio_error_C ("unexpected constant/CONSTANT/??", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT/CONSTANT"));
+			idio_coding_error_C ("unexpected constant/CONSTANT/??", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT/CONSTANT"));
+
+			/* notreached */
 			break;
 		    }
 		}
 	    case IDIO_TYPE_PLACEHOLDER_MARK:
-		idio_error_C ("unexpected constant/PLACEHOLDER", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT"));
+		idio_coding_error_C ("unexpected constant/PLACEHOLDER", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT"));
+
+		/* notreached */
 		break;
 	    default:
 		{
@@ -2676,7 +2684,9 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_NOP);
 	break;
     default:
-	idio_error_C ("bad instruction", mh, IDIO_C_FUNC_LOCATION ());
+	idio_coding_error_C ("bad instruction", mh, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
 	break;
     }
 }

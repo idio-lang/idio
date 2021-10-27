@@ -1891,7 +1891,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
      *
      * notreached
      */
-    idio_error_C ("post-launch: cannot be here", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+    idio_coding_error_C ("post-launch: cannot be here", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }

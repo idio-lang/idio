@@ -56,7 +56,7 @@ void idio_frame_error_range (IDIO fo, size_t const d, size_t const i, IDIO c_loc
     char em[BUFSIZ];
     idio_snprintf (em, BUFSIZ, "frame #%zd index #%zd is out of range", d, i);
 
-    idio_error_C (em, fo, c_location);
+    idio_coding_error_C (em, fo, c_location);
 
     /* notreached */
 }
@@ -205,7 +205,7 @@ IDIO idio_link_frame (IDIO f1, IDIO f2)
 	 * there's no handlers to do anything with it.
 	 */
 	idio_vm_reset_thread (idio_thread_current_thread (), 1);
-	idio_error_C ("not a frame", IDIO_LIST1 (f2), IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("frame", f2, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

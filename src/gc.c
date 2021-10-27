@@ -410,7 +410,7 @@ void idio_gc_gcc_mark (idio_gc_t *gc, IDIO o, unsigned colour)
 	switch (o->type) {
 	case IDIO_TYPE_NONE:
 	    IDIO_C_ASSERT (0);
-	    idio_error_C ("idio_gc_gcc_mark cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (o), IDIO_C_FUNC_LOCATION ());
+	    idio_coding_error_C ("idio_gc_gcc_mark cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (o), IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
@@ -666,7 +666,7 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	idio_gc_gcc_mark (gc, IDIO_C_TYPE_POINTER_PTYPE (o), colour);
 	break;
     default:
-	idio_error_C ("unexpected type", o, IDIO_C_FUNC_LOCATION ());
+	idio_coding_error_C ("unexpected type", o, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1384,7 +1384,7 @@ void idio_gc_sweep_free_value (IDIO vo)
     switch (vo->type) {
     case IDIO_TYPE_NONE:
 	IDIO_C_ASSERT (0);
-	idio_error_C ("idio_gc_sweep_free_value cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (vo), IDIO_C_FUNC_LOCATION ());
+	idio_coding_error_C ("idio_gc_sweep_free_value cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (vo), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1469,7 +1469,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 	idio_free_bitset (vo);
 	break;
     default:
-	idio_error_C ("unexpected type", vo, IDIO_C_FUNC_LOCATION ());
+	idio_coding_error_C ("unexpected type", vo, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;

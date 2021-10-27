@@ -569,7 +569,7 @@ static IDIO idio_open_file_handle (IDIO filename, char const *pathname, size_t c
 	    char em[BUFSIZ];
 	    idio_snprintf (em, BUFSIZ, "unexpected handle type %#x", h_type);
 
-	    idio_error_C (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	    idio_coding_error_C (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}

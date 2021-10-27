@@ -1247,7 +1247,7 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
 	 *
 	 * I can't remember what I was defending against, here.
 	 */
-	idio_error_C ("last arg != nil", last, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("invoke", "last arg", last, "#n", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

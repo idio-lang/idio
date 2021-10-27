@@ -54,6 +54,7 @@
 #include "util.h"
 #include "vm.h"
 
+static IDIO idio_S_coding;
 static IDIO idio_S_internal;
 static IDIO idio_S_user;
 static IDIO idio_S_user_code;
@@ -560,6 +561,22 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO c_location)
     /* notreached */
 }
 
+/*
+ * Coding as in the C code doesn't cover the case, usually the
+ * default: clause
+ */
+void idio_coding_error_C (char const *msg, IDIO args, IDIO c_location)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (args);
+    IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_error (idio_S_coding, idio_string_C (msg), args, c_location);
+    /* notreached */
+}
+
 void idio_error_C (char const *msg, IDIO args, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
@@ -752,6 +769,8 @@ void idio_init_error ()
 {
     idio_module_table_register (idio_error_add_primitives, NULL, NULL);
 
+    idio_S_coding = IDIO_SYMBOLS_C_INTERN ("coding");
+    idio_gc_protect_auto (idio_S_coding);
     idio_S_internal = IDIO_SYMBOLS_C_INTERN ("internal");
     idio_gc_protect_auto (idio_S_internal);
     idio_S_user = IDIO_SYMBOLS_C_INTERN ("user");

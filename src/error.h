@@ -47,6 +47,7 @@ void idio_error_param_value_msg_only (char const *func, char const *param, char 
 void idio_error_param_undefined (IDIO name, IDIO c_location);
 void idio_error_param_nil (char const *func, char const *name, IDIO c_location);
 void idio_error (IDIO who, IDIO msg, IDIO args, IDIO c_location);
+void idio_coding_error_C (char const *msg, IDIO args, IDIO c_location);
 void idio_error_C (char const *msg, IDIO args, IDIO c_location);
 void idio_error_system (char const *func, char const *msg, IDIO args, int err, IDIO c_location);
 void idio_error_system_errno_msg (char const *func, char const *msg, IDIO args, IDIO c_location);

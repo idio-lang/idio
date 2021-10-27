@@ -550,7 +550,7 @@ int main (int argc, char **argv, char **envp)
     IDIO load = idio_module_symbol_value (idio_S_load, idio_Idio_module_instance (), IDIO_LIST1 (idio_S_false));
     if (idio_S_false == load) {
 	IDIO_GC_FREE (sargv);
-	idio_error_C ("cannot lookup 'load'", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_coding_error_C ("cannot lookup 'load'", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	exit (3);

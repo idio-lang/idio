@@ -87,7 +87,7 @@ static void idio_string_error (IDIO msg, IDIO detail, IDIO c_location)
     /* notreached */
 }
 
-static void idio_string_error_C (char const *msg, IDIO detail, IDIO c_location)
+void idio_string_error_C (char const *msg, IDIO detail, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (detail);
