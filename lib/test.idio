@@ -223,6 +223,13 @@ if (C/> (libc/struct-rlimit-ref rl 'rlim_cur) C_nofiles_lim) {
   libc/setrlimit libc/RLIMIT_NOFILE rl
 }
 
+;; interactive sessions suppress these two whereas the command and
+;; job-control tests are predicated on them not being suppressed
+o-suppress-pipefail! := suppress-pipefail!
+o-suppress-exit-on-error! := suppress-exit-on-error!
+suppress-pipefail! = #f
+suppress-exit-on-error! = #f
+
 test-load := {
   n := 0
 
@@ -317,7 +324,7 @@ test-load "test-trap.idio"
 test-load "test-SRFI-89.idio"
 test-load "test-SRFI-115.idio"
 
-extension-tests := make-struct-instance ~path (append-string topdir "/ext/*/tests/test-*.idio")
+extension-tests := glob (append-string topdir "/ext/*/tests/test-*.idio")
 if (null? extension-tests) {
   eprintf "No extension tests\n"
 } {
@@ -357,7 +364,9 @@ Tests? (7086 - Skipped)
 if (e? testfile) (delete-file testfile)
 
 printf "[%s/%d] %3ds test.idio\n" (getpid) PID SECONDS
-printf "# src-props %d\n" (length (hash-keys %idio-src-properties))
+
+;printf "# src-props %d\n" (length (hash-keys %idio-src-properties))
+
 (if (zero? Errors) (printf "All %d tests passed!\n" Tests)
    {
      printf "%d error%s in %d tests.\n" Errors (if (Errors gt 1) "s" "") Tests
@@ -369,3 +378,5 @@ printf "# src-props %d\n" (length (hash-keys %idio-src-properties))
 IDIOLIB = OIDIOLIB
 PATH = OPATH
 
+suppress-pipefail! = o-suppress-pipefail!
+suppress-exit-on-error! = o-suppress-exit-on-error!

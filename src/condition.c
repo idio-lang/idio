@@ -1044,49 +1044,50 @@ does not return per se						\n\
 		return idio_S_unspec;
 	    }
 	}
+
+	/*
+	 * As the restart-condition-handler we'll go back to #2, the most
+	 * recent ABORT.
+	 *
+	 * It would be better if we tagged these as ABORTs meaning they
+	 * could be nested.
+	 */
+	idio_ai_t krun_p = idio_array_size (idio_vm_krun);
+	IDIO krun = idio_S_nil;
+	while (krun_p > 2) {
+	    krun = idio_array_pop (idio_vm_krun);
+#ifdef IDIO_DEBUG
+	    idio_debug ("restart-condition-handler: krun: popping %s\n", IDIO_PAIR_HT (krun));
+#endif
+	    krun_p--;
+	}
+
+	idio_exit_status = 1;
+	krun = idio_array_top (idio_vm_krun);
+	if (idio_isa_pair (krun)) {
+	    fprintf (stderr, "restart-condition-handler: restoring krun #%td: ", krun_p);
+	    idio_debug ("%s\n", IDIO_PAIR_HT (krun));
+#ifdef IDIO_DEBUG
+	    fprintf (stderr, "restart-condition-handler: thread state before krun restored:\n");
+	    idio_vm_thread_state (idio_thread_current_thread ());
+	    fprintf (stderr, "restart-condition-handler: thread state to be restored:\n");
+	    idio_debug ("thr=%s\n", IDIO_CONTINUATION_THR (IDIO_PAIR_H (krun)));
+	    fprintf (stderr, "PC=%td\n", IDIO_CONTINUATION_PC (IDIO_PAIR_H (krun)));
+	    idio_vm_decode_stack (IDIO_CONTINUATION_STACK (IDIO_PAIR_H (krun)));
+#endif
+	    idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+
+	    return idio_S_notreached;
+	}
+
+	fprintf (stderr, "restart-condition-handler: nothing to restore\n");
+#ifdef IDIO_DEBUG
+	idio_debug ("\nrestart-condition-handler: re-raising %s\n", c);
+	idio_vm_trap_state (idio_thread_current_thread ());
+	idio_vm_frame_tree (idio_S_nil);
+#endif
     }
 
-    /*
-     * As the restart-condition-handler we'll go back to #2, the most
-     * recent ABORT.
-     *
-     * It would be better if we tagged these as ABORTs meaning they
-     * could be nested.
-     */
-    idio_ai_t krun_p = idio_array_size (idio_vm_krun);
-    IDIO krun = idio_S_nil;
-    while (krun_p > 2) {
-	krun = idio_array_pop (idio_vm_krun);
-#ifdef IDIO_DEBUG
-	idio_debug ("restart-condition-handler: krun: popping %s\n", IDIO_PAIR_HT (krun));
-#endif
-	krun_p--;
-    }
-
-    idio_exit_status = 1;
-    krun = idio_array_top (idio_vm_krun);
-    if (idio_isa_pair (krun)) {
-	fprintf (stderr, "restart-condition-handler: restoring krun #%td: ", krun_p);
-	idio_debug ("%s\n", IDIO_PAIR_HT (krun));
-#ifdef IDIO_DEBUG
-	fprintf (stderr, "restart-condition-handler: thread state before krun restored:\n");
-	idio_vm_thread_state (idio_thread_current_thread ());
-	fprintf (stderr, "restart-condition-handler: thread state to be restored:\n");
-	idio_debug ("thr=%s\n", IDIO_CONTINUATION_THR (IDIO_PAIR_H (krun)));
-	fprintf (stderr, "PC=%td\n", IDIO_CONTINUATION_PC (IDIO_PAIR_H (krun)));
-	idio_vm_decode_stack (IDIO_CONTINUATION_STACK (IDIO_PAIR_H (krun)));
-#endif
-	idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
-
-	return idio_S_notreached;
-    }
-
-    fprintf (stderr, "restart-condition-handler: nothing to restore\n");
-#ifdef IDIO_DEBUG
-    idio_debug ("\nrestart-condition-handler: re-raising %s\n", c);
-    idio_vm_trap_state (idio_thread_current_thread ());
-    idio_vm_frame_tree (idio_S_nil);
-#endif
     idio_raise_condition (idio_S_true, c);
 
     /* notreached */
