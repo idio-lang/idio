@@ -7472,7 +7472,7 @@ void idio_vm_thread_state (IDIO thr)
 	    fprintf (stderr, "\n");
 	}
 	IDIO krun = idio_array_ref_index (idio_vm_krun, krun_p);
-	fprintf (stderr, "vm-thread-state: krun: % 3td", krun_p);
+	fprintf (stderr, "vm-thread-state: krun: % 3td", krun_p + 1);
 	idio_debug (" %s\n", IDIO_PAIR_HT (krun));
 	krun_p--;
     }

@@ -926,24 +926,29 @@ does not return per se						\n\
 	idio_condition_report ("default-condition-handler", c);
 
 	if (IDIO_STATE_RUNNING == idio_state) {
-	    IDIO cmd = IDIO_LIST1 (idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("debug"),
-							     idio_debugger_module,
-							     idio_S_nil));
+	    IDIO debugger = idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("debug"),
+						      idio_debugger_module,
+						      idio_S_nil);
 
-	    IDIO r = idio_vm_invoke_C (thr, cmd);
+	    if (idio_S_unspec != debugger) {
+		IDIO cmd = IDIO_LIST1 (debugger);
 
-	    /*
-	     * PC for RETURN
-	     *
-	     * If we were invoked as a condition handler then the stack is
-	     * prepared with a return to idio_vm_CHR_pc (which will
-	     * POP-TRAP, RESTORE-STATE and RETURN).
-	     *
-	     *
-	     */
-	    /* IDIO_THREAD_PC (thr) = idio_vm_CHR_pc + 2; */
+		fprintf (stderr, "invoking debugger\n");
+		IDIO r = idio_vm_invoke_C (thr, cmd);
 
-	    return r;
+		/*
+		 * PC for RETURN
+		 *
+		 * If we were invoked as a condition handler then the stack is
+		 * prepared with a return to idio_vm_CHR_pc (which will
+		 * POP-TRAP, RESTORE-STATE and RETURN).
+		 *
+		 *
+		 */
+		/* IDIO_THREAD_PC (thr) = idio_vm_CHR_pc + 2; */
+
+		return r;
+	    }
 	} else {
 	    fprintf (stderr, "\ndefault-condition-handler: bootstrap incomplete\n");
 	}
@@ -999,59 +1004,67 @@ does not return per se						\n\
      * Not something we expect to see in the tests.
      */
 
-    if (idio_isa_condition (c)) {
-	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
+    if (idio_job_control_interactive) {
+	if (idio_isa_condition (c)) {
+	    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
-	idio_condition_report ("restart-condition-handler", c);
+	    idio_condition_report ("restart-condition-handler", c);
 
-	/*
-	 * Hmm, a timing issue with SIGCHLD?  Should have been caught
-	 * in default-condition-handler.
-	 */
-	if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
-	    IDIO signum_I = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
-	    int signum_C = IDIO_C_TYPE_int (signum_I);
+	    /*
+	     * Hmm, a timing issue with SIGCHLD?  Should have been caught
+	     * in default-condition-handler.
+	     */
+	    if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
+		IDIO signum_I = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
+		int signum_C = IDIO_C_TYPE_int (signum_I);
 
-	    switch (signum_C) {
-	    case SIGCHLD:
-		fprintf (stderr, "restart-c-h: SIGCHLD -> idio_command_SIGCHLD_signal_handler\n");
-		idio_job_control_SIGCHLD_signal_handler ();
+		switch (signum_C) {
+		case SIGCHLD:
+		    fprintf (stderr, "restart-c-h: SIGCHLD -> idio_command_SIGCHLD_signal_handler\n");
+		    idio_job_control_SIGCHLD_signal_handler ();
+		    return idio_S_unspec;
+		case SIGHUP:
+		    fprintf (stderr, "restart-c-h: SIGHUP -> idio_command_SIGHUP_signal_handler\n");
+		    idio_job_control_SIGHUP_signal_handler ();
+		    return idio_S_unspec;
+		default:
+		    break;
+		}
+	    } else if (idio_struct_type_isa (sit, idio_condition_rt_async_command_status_error_type)) {
+		/* return idio_command_rcse_handler (c); */
+		idio_debug ("restart-c-h: racse = %s\n", c);
+		fprintf (stderr, "restart-c-h: racse?? =>> #<unspec>\n");
 		return idio_S_unspec;
-	    case SIGHUP:
-		fprintf (stderr, "restart-c-h: SIGHUP -> idio_command_SIGHUP_signal_handler\n");
-		idio_job_control_SIGHUP_signal_handler ();
+	    } else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
+		/* return idio_command_rcse_handler (c); */
+		idio_debug ("restart-c-h: rcse = %s\n", c);
+		fprintf (stderr, "restart-c-h: rcse?? =>> exit-on-error\n");
+		return idio_condition_exit_on_error (c);
+	    } else if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
 		return idio_S_unspec;
-	    default:
-		break;
 	    }
-	} else if (idio_struct_type_isa (sit, idio_condition_rt_async_command_status_error_type)) {
-	    /* return idio_command_rcse_handler (c); */
-	    idio_debug ("restart-c-h: racse = %s\n", c);
-	    fprintf (stderr, "restart-c-h: racse?? =>> #<unspec>\n");
-	    return idio_S_unspec;
-	} else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
-	    /* return idio_command_rcse_handler (c); */
-	    idio_debug ("restart-c-h: rcse = %s\n", c);
-	    fprintf (stderr, "restart-c-h: rcse?? =>> exit-on-error\n");
-	    return idio_condition_exit_on_error (c);
-	} else if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
-	    return idio_S_unspec;
 	}
     }
 
     /*
-     * As the restart-condition-handler we'll go back to #1, the most
+     * As the restart-condition-handler we'll go back to #2, the most
      * recent ABORT.
+     *
+     * It would be better if we tagged these as ABORTs meaning they
+     * could be nested.
      */
     idio_ai_t krun_p = idio_array_size (idio_vm_krun);
     IDIO krun = idio_S_nil;
-    while (krun_p > 1) {
+    while (krun_p > 2) {
 	krun = idio_array_pop (idio_vm_krun);
+#ifdef IDIO_DEBUG
 	idio_debug ("restart-condition-handler: krun: popping %s\n", IDIO_PAIR_HT (krun));
+#endif
 	krun_p--;
     }
 
     idio_exit_status = 1;
+    krun = idio_array_top (idio_vm_krun);
     if (idio_isa_pair (krun)) {
 	fprintf (stderr, "restart-condition-handler: restoring krun #%td: ", krun_p);
 	idio_debug ("%s\n", IDIO_PAIR_HT (krun));

@@ -327,11 +327,16 @@ left-hand processes are ignored
 		 loop (pt procs)
 	       })
 	       ((WIFEXITED status) {
-		 if (or (C/== (WEXITSTATUS status) C/0i)
-			(and suppress-pipefail!
-			     (not (null? (pt procs))))) {
-			       loop (pt procs)
-			     } #t
+		 (cond
+		  ((and suppress-pipefail!
+			(not (null? (pt procs)))) {
+			  loop (pt procs)
+			})
+		  ((not (C/== (WEXITSTATUS status) C/0i))
+		   #t)
+		  (else {
+		    loop (pt procs)
+		  }))
 	       })
 	       ((WIFSIGNALED status) {
 		 if (and suppress-pipefail!
@@ -371,11 +376,16 @@ left-hand processes are ignored
 		 loop (pt procs)
 	       })
 	       ((WIFEXITED status) {
-		 if (or (C/== (WEXITSTATUS status) C/0i)
-			(and suppress-pipefail!
-			     (not (null? (pt procs))))) {
-			       loop (pt procs)
-			     } #f
+		 (cond
+		  ((and suppress-pipefail!
+			(not (null? (pt procs)))) {
+			  loop (pt procs)
+			})
+		  ((not (C/== (WEXITSTATUS status) C/0i))
+		   #f)
+		  (else {
+		    loop (pt procs)
+		  }))
 	       })
 	       ((WIFSIGNALED status) {
 		 if (and suppress-pipefail!
@@ -420,13 +430,17 @@ left-hand processes are ignored
 		 loop (pt procs)
 	       })
 	       ((WIFEXITED status) {
-		 if (or (C/== (WEXITSTATUS status) C/0i)
-			(and suppress-pipefail!
-			     (not (null? (pt procs))))) {
-			       loop (pt procs)
-			     } {
-			       list 'exit (WEXITSTATUS status)
-			     }
+		 (cond
+		  ((and suppress-pipefail!
+			(not (null? (pt procs)))) {
+			  loop (pt procs)
+			})
+		  ((not (C/== (WEXITSTATUS status) C/0i)) {
+		    list 'exit (WEXITSTATUS status)
+		  })
+		  (else {
+		    loop (pt procs)
+		  }))
 	       })
 	       ((WIFSIGNALED status) {
 		 if (and suppress-pipefail!
@@ -1536,6 +1550,8 @@ define-infix-operator | 700 {
 		    }
 		    $pid := (libc/fork)
 		    if (C/== $pid libc/0pid_t) {
+		      suppress-pipefail! = #f
+		      suppress-exit-on-error! = #f
 		      set-default-handler! ^idio-error default-child-handler
 		      job-control/%idio-jobs = #n
 		      job-control/%%last-job = #n

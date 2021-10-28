@@ -90,7 +90,7 @@ clean : build-clean run-clean edit-clean
 	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
 
 build-clean:
-	rm -f *.o *.d *.so TAGS map
+	rm -f *.o *.d *.so map
 	rm -rf $(EXTDIR)/*/gen
 
 run-clean :

@@ -593,6 +593,12 @@ int main (int argc, char **argv, char **envp)
     thr = v_thr;
 
     /*
+     * This should probably empty the array -- just in case -- so that
+     * there is only the following idio_k_exit on the krun stack
+     */
+    idio_array_pop (idio_vm_krun);
+
+    /*
      * Save a continuation for exit.
      */
     idio_k_exit = idio_continuation (thr, IDIO_CONTINUATION_CALL_CC);
@@ -600,7 +606,7 @@ int main (int argc, char **argv, char **envp)
 
     dosh = idio_open_output_string_handle_C ();
 
-    idio_display_C ("ABORT to main/script => exit (probably badly)", dosh);
+    idio_display_C ("ABORT to main => exit (probably badly)", dosh);
 
     idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
@@ -800,6 +806,9 @@ int main (int argc, char **argv, char **envp)
 	 */
 	if (idio_job_control_tty_isatty) {
 	    idio_job_control_set_interactive (1);
+
+	    idio_module_set_symbol_value (idio_vars_suppress_pipefail_sym, idio_S_true, idio_Idio_module);
+	    idio_module_set_symbol_value (idio_vars_suppress_exit_on_error_sym, idio_S_true, idio_Idio_module);
 
 	    if (import_debugger) {
 		IDIO lsh = idio_open_input_string_handle_C (IDIO_STATIC_STR_LEN ("import debugger"));
