@@ -8,6 +8,9 @@ Numbers in :lname:`Idio` are either "small" integer :ref:`fixnums
 which can be integers, floating point numbers and support a notion of
 exactness.
 
+There is no support for non-finite quantities such as *Nan* or
+infinities.
+
 You can also use the :lname:`C` base types, ``C/char``, ``C/int``,
 etc. and supported ``typedef``\ s thereof, although they are usually
 passed verbatim within :lname:`C`-oriented modules like :ref:`libc

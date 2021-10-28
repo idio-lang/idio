@@ -16,6 +16,7 @@
 .. _UTF-16: https://www.unicode.org/notes/tn12/
 .. _UTF-8: https://en.wikipedia.org/wiki/UTF-8
 .. _Unicode: https://home.unicode.org/
+.. _`literate programming`: https://en.wikipedia.org/wiki/Literate_programming
 
 
 .. role:: raw-html(raw)

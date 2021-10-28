@@ -7,7 +7,11 @@ divide two numbers
 :return: the result of dividing the arguments
 :rtype: number
 
-All arguments are converted to bignums before calculating the result.
+If the arguments are C/ types then the C arithmetic function is
+invoked.
+
+Otherwise, all arguments are converted to bignums before calculating
+the result.
 
 An attempt is made to convert the result to a fixnum if possible.
 

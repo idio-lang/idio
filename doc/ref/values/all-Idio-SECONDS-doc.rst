@@ -2,3 +2,5 @@
 since :program:`idio` started.
 
 There is no `setter` function.
+
+:rtype: integer (irrespective of the type mentioned above)

@@ -4,4 +4,5 @@
 (nodocument Idio read-expr)
 
 (rst "operators" 0)
+(rst "comments" 0)
 
