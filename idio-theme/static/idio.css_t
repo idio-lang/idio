@@ -1,0 +1,319 @@
+/*
+ * idio.css_t
+ * ~~~~~~~~~~
+ */
+
+@import url("alabaster.css");
+
+/* https://stackoverflow.com/questions/14622698/customize-sphinxdoc-theme */
+
+.strike {
+    text-decoration: line-through;
+}
+
+.underline {
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+.underbold {
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+.smaller {
+    font-size: 90%;
+}
+
+body {
+    font-size: unset;
+
+    /*
+     * Hmm.  Different HTML generators generate different output (news
+     * at 11).
+     *
+     * The older code generated <<div class="section">> for which
+     * alabaster had <<div.body > .section>> whereas the newer code
+     * generates <<section id="...">> which isn't picked up by anything.
+     */
+
+    text-align: {{ theme_body_text_align }};
+}
+
+@media screen and (max-width: 875px) {
+    /* cf. .sidebar */
+    aside {
+	float: right;
+	clear: right;
+	margin: 0 0 0.5em 0.5em;
+	width: 40%;
+    }
+}
+
+@media screen and (min-width: 876px) {
+    div.site-rel {
+	width: 1200px;
+    }
+
+    div.document {
+	width: 1200px;
+    }
+
+    div.bodywrapper {
+	width: 720px;
+    }
+
+    aside {
+	position: absolute;
+	margin-left: 690px;
+	width: 260px;
+    }
+}
+
+div.site-rel {
+    margin: 0 auto 0 auto;
+}
+
+div.site-rel ul {
+    margin-left: 250px;
+    padding: 0;
+    list-style-type: none;
+}
+
+div.site-rel ul li {
+    float: left;
+    width: 10em;
+    background: beige;
+    padding: 1em;
+}
+
+div.site-rel ul li.site-l1 > a {
+    font-size: 120%;
+}
+
+div.sidebar {
+    font-size: smaller;
+    margin: 0 0 0.5em 0.5em;
+    padding: 0;
+    border: none;
+}
+
+div.sidebar p {
+    margin: 0;
+    padding: 0.5em;
+    line-height: 1.1em;
+}
+
+aside {
+    background: antiquewhite;
+}
+
+div.body aside p {
+    margin: 0;
+    padding: 0.5em;
+    font-size: smaller;
+    line-height: 1.1em;
+}
+
+div.sidebox {
+    float: right;
+    clear: right;
+    background: #ffe;		/* see sidebar */
+    margin: 0 0 0.5em 0.5em;
+    width: 40%;
+}
+
+div.sidebox p {
+    margin: 0;
+    padding: 0.5em;
+    font-size: smaller;
+    line-height: 1.1em;
+}
+
+div.sidebox pre {
+    font-size: small;
+}
+
+.center {
+    text-align: center;
+}
+
+code {
+    padding-left: 0.3em;
+    padding-right: 0.3em;
+}
+
+.lname {
+    font-family: sans-serif;
+}
+
+.pname {
+    font-family: Courier, monospace;
+    font-style: italic;
+}
+
+.var {
+    font-family: "Source Code Pro", Courier, monospace;
+    font-weight: bolder;
+}
+
+.val {
+    font-family: "Source Code Pro", Courier, monospace;
+    font-weight: bolder;
+}
+
+.socrates {
+    font-style: italic;
+}
+
+.paragraph-header {
+    font-style: italic;
+    font-size: 110%;
+}
+
+.ref-author {
+}
+
+.ref-title {
+    font-style: italic;
+}
+
+.ref-journal {
+}
+
+.ref-pub {
+}
+
+dl.idio {
+    margin-top: 1em;
+    padding-top: 0.5em;
+    border-top: 1px solid lightgrey;
+    padding-left: 1em;
+    border-left: 1px solid lightgrey;
+}
+
+dl.citation a.reference.external {
+    font-size: smaller;
+}
+
+a.reference.external {
+    font-family: serif;
+}
+
+pre {
+    background: #282828;
+    color: #33ff00;
+    padding: 7px 7px;
+    line-height: 1em;
+    font-size: smaller;
+}
+
+table.highlighttable td.linenos {
+    padding-top: 7px;
+}
+
+.rev {
+    background: #282828;
+    color: #fff;
+}
+
+p strong.program {
+    font-family: monospace;
+}
+
+div.footer {
+    text-align: center;
+}
+
+div.gitcommit {
+    text-align: center;
+    font-size: smaller;
+}
+
+/*
+ * Code Highlighting
+ *
+ * The standard pygments highlighting has presumed a light-mode (as
+ * opposed to dark mode).
+ *
+ * These are mostly altered by adding 808080 or 404040
+ */
+
+/* span classes from from pygments.css plus additions noted elsewhere */
+.highlight .hll { background-color: #ffffcc }
+.highlight	{ background: #eeffcc; }
+.highlight .err { border: 1px solid #FF0000 }			/* Error */
+.highlight .c	{ color: #80c0d0; font-style: italic }		/* Comment */
+.highlight .ch	{ color: #80c0d0; font-style: italic }		/* Comment.Hashbang */
+.highlight .cm	{ color: #80b0c0; font-style: italic }		/* Comment.Multiline */
+.highlight .cp	{ color: #80f0a0 }				/* Comment.Preproc */
+.highlight .cpf { color: #80c0d0; font-style: italic }		/* Comment.PreprocFile */
+.highlight .c1	{ color: #80c0d0; font-style: italic }		/* Comment.Single */
+.highlight .cs	{ color: #80c0d0; background-color: #fff0f0 }	/* Comment.Special */
+.highlight .g	{ }						/* Generic */
+.highlight .gd	{ color: #A00000 }				/* Generic.Deleted */
+.highlight .ge	{ font-style: italic }				/* Generic.Emph */
+.highlight .gr	{ color: #FF0000 }				/* Generic.Error */
+.highlight .gh	{ color: #000080; font-weight: bold }		/* Generic.Heading */
+.highlight .gi	{ color: #00A000 }				/* Generic.Inserted */
+.highlight .go	{ color: #bbbbbb }				/* Generic.Output */
+.highlight .gp	{ color: #c65d09; font-weight: bold }		/* Generic.Prompt */
+.highlight .gs	{ font-weight: bold }				/* Generic.Strong */
+.highlight .gu	{ color: #800080; font-weight: bold }		/* Generic.Subheading */
+.highlight .gt	{ color: #0044DD }				/* Generic.Traceback */
+.highlight .k	{ color: #80f0a0; font-weight: bold }		/* Keyword */
+.highlight .kc	{ color: #80f0a0; font-weight: bold }		/* Keyword.Constant */
+.highlight .kd	{ color: #80f0a0; font-weight: bold }		/* Keyword.Declaration */
+.highlight .kn	{ color: #80f0a0; font-weight: bold }		/* Keyword.Namespace */
+.highlight .kp	{ color: #80f0a0 }				/* Keyword.Pseudo */
+.highlight .kr	{ color: #80f0a0; font-weight: bold }		/* Keyword.Reserved */
+.highlight .kt	{ color: #d06000 }				/* Keyword.Type */
+.highlight .n	{ }						/* Name */
+.highlight .na	{ color: #4070a0 }				/* Name.Attribute */
+.highlight .nb	{ color: #80f0a0 }				/* Name.Builtin */
+.highlight .nc	{ color: #0e84b5; font-weight: bold }		/* Name.Class */
+.highlight .no	{ color: #60add5 }				/* Name.Constant */
+.highlight .nd	{ color: #555555; font-weight: bold }		/* Name.Decorator */
+.highlight .ni	{ color: #d55537; font-weight: bold }		/* Name.Entity */
+.highlight .ne	{ color: #80f0a0 }				/* Name.Exception */
+.highlight .nf	{ color: #86a8fe }				/* Name.Function */
+.highlight .nl	{ color: #80a0f0; font-weight: bold }		/* Name.Label */
+.highlight .nn	{ color: #0e84b5; font-weight: bold }		/* Name.Namespace */
+.highlight .nx	{ }						/* Name.Other */
+.highlight .py	{ }						/* Name.Property */
+.highlight .nt	{ color: #062873; font-weight: bold }		/* Name.Tag */
+.highlight .nv	{ color: #bb60d5 }				/* Name.Variable */
+.highlight .o	{ color: #aaaaaa }				/* Operator */
+.highlight .ow	{ color: #80f0a0; font-weight: bold }		/* Operator.Word */
+.highlight .w	{ color: #bbbbbb }				/* Text.Whitespace */
+.highlight .l	{ }						/* Literal */
+.highlight .ld	{ }						/* Literal.Date */
+.highlight .m	{ color: #60c090 }				/* Literal.Number */
+.highlight .mb	{ color: #60c090 }				/* Literal.Number.Bin */
+.highlight .mf	{ color: #60c090 }				/* Literal.Number.Float */
+.highlight .mh	{ color: #60c090 }				/* Literal.Number.Hex */
+.highlight .mi	{ color: #60c090 }				/* Literal.Number.Integer */
+.highlight .mo	{ color: #60c090 }				/* Literal.Number.Oct */
+.highlight .s	{ color: #80b0f0 }				/* Literal.String */
+.highlight .sa	{ color: #4070a0 }				/* Literal.String.Affix */
+.highlight .sb	{ color: #4070a0 }				/* Literal.String.Backtick */
+.highlight .sc	{ color: #6090c0 }				/* Literal.String.Char */
+.highlight .dl	{ color: #4070a0 }				/* Literal.String.Delimiter */
+.highlight .sd	{ color: #4070a0; font-style: italic }		/* Literal.String.Doc */
+.highlight .s2	{ color: #4070a0 }				/* Literal.String.Double */
+.highlight .se	{ color: #4070a0; font-weight: bold }		/* Literal.String.Escape */
+.highlight .sh	{ color: #4070a0 }				/* Literal.String.Heredoc */
+.highlight .si	{ color: #70a0d0; font-style: italic }		/* Literal.String.Interpol */
+.highlight .sx	{ color: #c65d09 }				/* Literal.String.Other */
+.highlight .sr	{ color: #235388 }				/* Literal.String.Regex */
+.highlight .s1	{ color: #4070a0 }				/* Literal.String.Single */
+.highlight .ss	{ color: #517918 }				/* Literal.String.Symbol */
+.highlight .bp	{ color: #80f0a0 }				/* Name.Builtin.Pseudo */
+.highlight .fm	{ color: #86a8fe }				/* Name.Function.Magic */
+.highlight .vc	{ color: #bb60d5 }				/* Name.Variable.Class */
+.highlight .vg	{ color: #bb60d5 }				/* Name.Variable.Global */
+.highlight .vi	{ color: #bb60d5 }				/* Name.Variable.Instance */
+.highlight .vm	{ color: #bb60d5 }				/* Name.Variable.Magic */
+.highlight .il	{ color: #60c090 }				/* Literal.Number.Integer.Long */
+.highlight .x	{ }						/* Other */
+.highlight .p	{ color: #80c0d0 }				/* Punctuation */
