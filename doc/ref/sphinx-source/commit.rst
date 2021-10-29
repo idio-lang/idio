@@ -1,0 +1,4 @@
+.. gitcommit::
+   :branch:
+   :commit:
+   :uncommitted:
