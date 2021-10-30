@@ -86,6 +86,8 @@ html_theme_options = {
         'Home': '/',
         'Guide': '/docs/guide/',
         'Reference': '/docs/ref/',
+        'Getting': '/get.html',
+        'Roadmap': '/roadmap.html',
         'DIPS': '/docs/DIPS/',
     },
 }

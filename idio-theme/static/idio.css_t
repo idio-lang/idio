@@ -82,9 +82,10 @@ div.site-rel ul {
 
 div.site-rel ul li {
     float: left;
-    width: 10em;
+    min-width: 80px;
     background: beige;
-    padding: 1em;
+    padding: 10px;
+    text-align: center;
 }
 
 div.site-rel ul li.site-l1 > a {
