@@ -215,3 +215,56 @@ define (autodoc) {
   module_loop (sort mn string<? key-ms)
 }
 
+define (idio-version & args) "
+Report details of the Idio version.
+
+:param detail: provide more details on IDIOLIB
+:type detail: any
+
+" {
+
+  printf #S{
+IDIO_CMD                       = ${IDIO_CMD} (${IDIO_CMD_PATH})
+IDIO_EXE                       = ${IDIO_EXE}
+
+IDIO_VERSION                   = ${IDIO_VERSION}
+IDIO_SYSTEM_ARCH               = ${IDIO_SYSTEM_ARCH}
+IDIO_BUILD_COMMIT              = ${IDIO_BUILD_COMMIT}
+IDIO_BUILD_DESCRIBE            = ${IDIO_BUILD_DESCRIBE}
+IDIO_BUILD_TIMESTAMP           = ${IDIO_BUILD_TIMESTAMP}
+}
+
+  printf #S{
+IDIO_BUILD_CC                  = ${IDIO_BUILD_CC} (${IDIO_BUILD_CC_PATH})
+${IDIO_BUILD_CC_VERSION}
+}
+
+  printf #S{
+IDIOLIB                        = ${IDIOLIB}}
+
+  if (pair? args) {
+    for-each (function (d) {
+		is-d := d? d
+		printf #S{
+  d? ${is-d} ${d}}
+    }) (split-string IDIOLIB ":")
+  }
+
+  printf "\n\n"
+
+  printf "*idio-features*\n"
+  for-each (function (f) {
+	      ;; NB features are a mix of symbols and strings so
+	      ;; normalize to a string
+	      (pattern-case (->string f)
+			    ("uname/nodename/*" #n)
+			    (else {
+			      printf "  %s\n" f
+			    }))
+  }) *idio-features*
+
+  printf "\n"
+
+  printf "%-30s = %s\n" '*require-features* *require-features*
+
+}

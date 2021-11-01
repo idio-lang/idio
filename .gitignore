@@ -26,6 +26,7 @@ bin/idio
 src/idio-system.h
 src/libc-api.h
 lib/libc-api.idio
+lib/system.idio
 Makefile.system
 main
 scm1-c-structs

@@ -88,6 +88,7 @@ clean-local-install :
 clean : build-clean run-clean edit-clean
 	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
 	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
+	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system $(LIBDIR)/system.idio
 
 build-clean:
 	rm -f *.o *.d *.so map
@@ -105,7 +106,6 @@ edit-clean :
 	rm -f $(BINDIR)/*~ $(SRCDIR)/*~ $(SRCDIR)/build-bootstrap/*~ $(LIBDIR)/*~ $(TESTSDIR)/*~ $(TESTSDIR)/*/*~ $(EXTDIR)/*/src/*~ $(UTILSDIR)/*~ $(UTILSDIR)/*/*~
 
 dist-clean : clean clean-local-install
-	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system
 	rm -f $(SRCDIR)/libc-api.h
 	rm -f $(LIBDIR)/libc-api.idio
 	rm -rf $(LI_TOPDIR)
@@ -131,8 +131,8 @@ depend : $(deps)
 # built and some of them require idio-system.h
 env.c vars.c : idio-system.h
 
-idio-system.h Makefile.system : $(UTILSDIR)/bin/gen-idio-system
-	CC=${CC} $(UTILSDIR)/bin/gen-idio-system
+idio-system.h Makefile.system $(LIBDIR)/system.idio : $(UTILSDIR)/bin/gen-idio-system
+	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(LIBDIR)/system.idio
 
 -include $(deps)
 
