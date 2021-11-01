@@ -82,7 +82,7 @@ div.site-rel ul {
 
 div.site-rel ul li {
     float: left;
-    min-width: 80px;
+    min-width: 70px;
     background: beige;
     padding: 10px;
     text-align: center;
