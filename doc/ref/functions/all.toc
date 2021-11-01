@@ -50,6 +50,7 @@
 ; doc
 (document Idio help)
 (nodocument Idio autodoc)
+(document Idio idio-version)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
