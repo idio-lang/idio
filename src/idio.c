@@ -60,6 +60,7 @@
 #include "handle.h"
 #include "hash.h"
 #include "idio-string.h"
+#include "idio-system.h"
 #include "job-control.h"
 #include "keyword.h"
 #include "libc-wrap.h"
@@ -433,12 +434,13 @@ static void idio_usage (char *argv0)
 {
     fprintf (stderr, "%s: [Idio-args] [script-name [script-args]]\n\n", argv0);
     fprintf (stderr, "Idio options:\n\n");
-    fprintf (stderr, "  --load NAME		load NAME and continue processing\n");
-    fprintf (stderr, "  --debugger		enable the debugger if interactive\n");
-    fprintf (stderr, "  --vm-reports		enable various VM reports\n");
+    fprintf (stderr, "  --load NAME             load NAME and continue processing\n");
+    fprintf (stderr, "  --debugger              enable the debugger if interactive\n");
+    fprintf (stderr, "  --vm-reports            enable various VM reports\n");
 
     fprintf (stderr, "\n");
-    fprintf (stderr, "  --help		print this message and quit\n");
+    fprintf (stderr, "  --version               print the version number and quit\n");
+    fprintf (stderr, "  --help                  print this message and quit\n");
 }
 
 int main (int argc, char **argv, char **envp)
@@ -692,13 +694,16 @@ int main (int argc, char **argv, char **envp)
 
 		option = OPTION_NONE;
 	    } else if (strncmp (argv[i], "--", 2) == 0) {
-		if (strncmp (argv[i], "--vm-reports", 12) == 0) {
+		if (strncmp (argv[i], IDIO_STATIC_STR_LEN ("--vm-reports")) == 0) {
 		    idio_vm_reports = 1;
-		} else if (strncmp (argv[i], "--debugger", 10) == 0) {
+		} else if (strncmp (argv[i], IDIO_STATIC_STR_LEN ("--debugger")) == 0) {
 		    import_debugger = 1;
-		} else if (strncmp (argv[i], "--load", 6) == 0) {
+		} else if (strncmp (argv[i], IDIO_STATIC_STR_LEN ("--load")) == 0) {
 		    option = OPTION_LOAD;
-		} else if (strncmp (argv[i], "--help", 10) == 0) {
+		} else if (strncmp (argv[i], IDIO_STATIC_STR_LEN ("--version")) == 0) {
+		    printf ("Idio %s\n", IDIO_SYSTEM_VERSION);
+		    exit (0);
+		} else if (strncmp (argv[i], IDIO_STATIC_STR_LEN ("--help")) == 0) {
 		    idio_usage (argv[0]);
 		    exit (0);
 		} else if ('\0' == argv[i][2]) {
