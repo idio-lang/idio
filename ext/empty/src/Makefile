@@ -1,8 +1,14 @@
 TOPDIR		:= $(abspath $(PWD)/../../..)
 
+ifneq ($(MAKECMDGOALS),clean)
 include Makefile.system
-
 include $(TOPDIR)/src/Makefile.system
+endif
+
+# dummy versions if Makefile.system doesn't exist yet
+EMPTY_SYSTEM_VERSION_MM		?= a.b
+EMPTY_SYSTEM_VERSION_M		?= a
+
 include $(TOPDIR)/src/Makefile.common
 
 ifdef MAKE_DEBUG
@@ -73,10 +79,13 @@ libempty.so.${EMPTY_SYSTEM_VERSION_MM} : $(LIBOBJS) empty-module.o
 %.o : %.d
 
 # the include $(deps) means that, in effect, *.d are the first things
-# built and some of them require empty-system.h
+# built and some of them require empty-system.h -- and %.d doesn't
+# work
 empty-module.d : empty-system.h
 
-empty-system.h Makefile.system :
+empty-system.h Makefile.system : $(UTILSDIR)/bin/gen-idio-system
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system -M empty
 
+ifneq ($(MAKECMDGOALS),clean)
 -include $(deps)
+endif

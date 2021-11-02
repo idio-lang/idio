@@ -1,7 +1,5 @@
 include Makefile.common
 
-include Makefile.system
-
 ifdef MAKE_LEAN
 CDEBUG		:= -O3 -UIDIO_DEBUG -UIDIO_VM_PROF
 else ifdef MAKE_DEBUG
@@ -24,6 +22,16 @@ endif
 all : local-install
 	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
 	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
+
+ifneq ($(MAKECMDGOALS),clean)
+# XXX put these on the same line otherwise the generator and then the
+# %.d are run twice
+include $(deps) Makefile.system
+endif
+
+# dummy versions if Makefile.system doesn't exist yet
+IDIO_SYSTEM_VERSION_MM		?= a.b
+IDIO_SYSTEM_VERSION_M		?= a
 
 profiled :
 	$(MAKE) PROFLAGS=-pg
@@ -125,16 +133,12 @@ valgrind: local-install
 cppcheck:
 	cppcheck --force --enable=all .
 
-depend : $(deps)
-
 # the include $(deps) means that, in effect, *.d are the first things
-# built and some of them require idio-system.h
-env.c vars.c : idio-system.h
+# built and some of them require idio-system.h -- and %.d doesn't work
+env.d file-handle.d idio.d vars.d : idio-system.h
 
-idio-system.h Makefile.system $(LIBDIR)/system.idio : $(UTILSDIR)/bin/gen-idio-system
+idio-system.h Makefile.system $(LIBDIR)/system.idio : $(UTILSDIR)/bin/gen-idio-system $(sources) $(filter-out $(LIBDIR)/system.idio,$(isources))
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(LIBDIR)/system.idio
-
--include $(deps)
 
 # Bootstrap
 #

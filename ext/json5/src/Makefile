@@ -1,8 +1,14 @@
 TOPDIR		:= $(abspath $(PWD)/../../..)
 
+ifneq ($(MAKECMDGOALS),clean)
 include Makefile.system
-
 include $(TOPDIR)/src/Makefile.system
+endif
+
+# dummy versions if Makefile.system doesn't exist yet
+JSON5_SYSTEM_VERSION_MM		?= a.b
+JSON5_SYSTEM_VERSION_M		?= a
+
 include $(TOPDIR)/src/Makefile.common
 
 ifdef MAKE_DEBUG
@@ -88,10 +94,13 @@ usi.c usi.h :
 	cp $(SRCDIR)/$@ .
 
 # the include $(deps) means that, in effect, *.d are the first things
-# built and some of them require json5-system.h
+# built and some of them require json5-system.h -- and %.d doesn't
+# work
 json5-module.d : json5-system.h
 
-json5-system.h Makefile.system :
+json5-system.h Makefile.system : $(UTILSDIR)/bin/gen-idio-system
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system -M json5
 
+ifneq ($(MAKECMDGOALS),clean)
 -include $(deps)
+endif

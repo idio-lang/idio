@@ -27,6 +27,7 @@ SRCKDOUTDIR	:= $(SRCDOCDIR)/kernel-autodoc-out
 sources		:= $(wildcard *.c)
 objects		:= $(patsubst %.c,%.o,$(sources))
 deps		:= $(patsubst %.c,%.d,$(sources))
+isources	:= $(wildcard $(LIBDIR)/*.idio) $(wildcard $(LIBDIR)/bootstrap/*.idio)
 
 LD_SONAME_FLAGS	:=
 
