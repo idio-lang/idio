@@ -57,6 +57,7 @@
 #include "handle.h"
 #include "hash.h"
 #include "idio-string.h"
+#include "job-control.h"
 #include "keyword.h"
 #include "libc-wrap.h"
 #include "module.h"
@@ -737,7 +738,7 @@ void idio_vm_debug (IDIO thr, char const *prefix, idio_ai_t stack_start)
     IDIO_C_ASSERT (prefix);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    fprintf (stderr, "idio-debug: %s THR %10p\n", prefix, thr);
+    fprintf (stderr, "vm-debug: %s THR %10p\n", prefix, thr);
     idio_debug ("    src=%s\n", idio_vm_source_location ());
     fprintf (stderr, "     pc=%6td\n", IDIO_THREAD_PC (thr));
     idio_debug ("    val=%s\n", IDIO_THREAD_VAL (thr));
@@ -1091,23 +1092,44 @@ static void idio_vm_restore_all_state (IDIO thr)
     IDIO_THREAD_VAL (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_FUNC (thr) = IDIO_THREAD_STACK_POP ();
 
-    /*
-     * This verification of _FUNC() needs to be in sync with what
-     * idio_vm_invoke() allows
-     */
-    if (! (idio_isa_function (IDIO_THREAD_FUNC (thr)) ||
-	   idio_isa_string (IDIO_THREAD_FUNC (thr)) ||
-	   idio_isa_symbol (IDIO_THREAD_FUNC (thr)) ||
-	   idio_isa_continuation (IDIO_THREAD_FUNC (thr)))) {
-	/* idio_debug ("iv-ras: func is not invokable: %s\n", IDIO_THREAD_FUNC (thr)); */
-	IDIO_THREAD_STACK_PUSH (IDIO_THREAD_FUNC (thr));
-	IDIO_THREAD_STACK_PUSH (IDIO_THREAD_VAL (thr));
-	IDIO_THREAD_STACK_PUSH (marker);
-	idio_vm_thread_state (thr);
-	idio_error_param_type ("not an invokable type", IDIO_THREAD_FUNC (thr), IDIO_C_FUNC_LOCATION ());
+    if (0 == idio_job_control_interactive) {
+	/*
+	 * This verification of _FUNC() needs to be in sync with what
+	 * idio_vm_invoke() allows
+	 */
+	if (! (idio_isa_function (IDIO_THREAD_FUNC (thr)) ||
+	       idio_isa_string (IDIO_THREAD_FUNC (thr)) ||
+	       idio_isa_symbol (IDIO_THREAD_FUNC (thr)) ||
+	       idio_isa_continuation (IDIO_THREAD_FUNC (thr)))) {
+	    /*
+	     * XXX what should we do here?
+	     *
+	     * This can be triggered by ``#f 10`` and, if we are
+	     * interactive, should just be a condition-report followed
+	     * by a restore to the top-level.
+	     *
+	     * The underlying problem is that this continuation is
+	     * being restored from within the default/restore/reset
+	     * handler and calling idio_error_param_*() will
+	     * immediately call the outer handler.
+	     *
+	     * The interactive user will already have had a
+	     * condition-report, they don't need any more.
+	     */
 
-	/* notreached */
-	return;
+	    /* idio_debug ("iv-ras: func is not invokable: %s\n", IDIO_THREAD_FUNC (thr)); */
+	    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_FUNC (thr));
+	    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_VAL (thr));
+	    IDIO_THREAD_STACK_PUSH (marker);
+#ifdef IDIO_DEBUG
+	    idio_vm_thread_state (thr);
+#endif
+
+	    idio_error_param_value_msg ("VM/RESTORE", "func", IDIO_THREAD_FUNC (thr), "not an invokable value", IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return;
+	}
     }
 
     IDIO_THREAD_EXPR (thr) = IDIO_THREAD_STACK_POP ();
