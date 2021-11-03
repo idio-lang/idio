@@ -9,8 +9,9 @@ These are combined in the function :ref:`regex-matches
 <regex-matches>`.
 
 Slightly better for use in loops is the template :ref:`regex-case
-<regex-case>` which works like :ref:`case <case>` except the clause
-conditions are regular expressions to be matched.
+<regex-case>` which works like a simplified :ref:`cond <cond special
+form>` except the clause "conditions" are regular expressions to be
+matched.
 
 ``regex-case`` then supplies the consequent block with the result of
 the call to ``regexec`` as the variable :var:`r`.  As such :var:`r.0`

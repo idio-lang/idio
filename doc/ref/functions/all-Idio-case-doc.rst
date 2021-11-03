@@ -1,5 +1,6 @@
-Each clause in `clauses` takes the form :samp:`((v ...) expr ...)`
-except the last clause which can take the form :samp:`(else expr ...)`.
+Each clause in `clauses` takes the form :samp:`(({v} ...) {expr} ...)`
+except the last clause which can take the form :samp:`(else {expr}
+...)`.
 
 `key` is evaluated and then compared with :ref:`memv <memv>` against
 the list in the head of each clause in `clauses`.

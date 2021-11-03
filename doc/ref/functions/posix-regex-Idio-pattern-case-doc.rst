@@ -1,11 +1,13 @@
-``pattern-case`` works like :ref:`case <case>` where `e` is the string
-to be matched against and the conditions in each clause are the
-*pattern matches* to test with.
+``pattern-case`` works like a simplified :ref:`cond <cond special
+form>` where `e` is the string to be matched against and the
+"conditions" in each clause are the *pattern matches* to test with.
 
 :param e: the string to be matched against
 :type e: string
-:param clauses: clauses like ``case``
+:param clauses: clauses like :samp:`("{pattern-match}" {expr})`
 :return: whatever any matched clause's consequent expression returns.
+
+`e` will be evaluated and should return a string.
 
 Here, *pattern matches* have ``*`` and ``?`` replaced with ``.*`` and
 ``.`` and the code continues like :ref:`regex-case <regex-case>`.
