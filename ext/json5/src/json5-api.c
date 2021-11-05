@@ -117,7 +117,15 @@ json5_unicode_string_t *idio_string_to_json5_string_value (IDIO is)
     size_t reqd_bytes = idio_string_len (is);
     so->len = reqd_bytes;
 
-    switch (IDIO_STRING_FLAGS (is)) {
+    IDIO_FLAGS_T flags;
+
+    if (idio_isa (is, IDIO_TYPE_SUBSTRING)) {
+	flags = IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (is));
+    } else {
+	flags = IDIO_STRING_FLAGS (is);
+    }
+
+    switch (flags) {
     case IDIO_STRING_FLAG_1BYTE:
 	so->width = JSON5_UNICODE_STRING_WIDTH_1BYTE;
 	reqd_bytes *= 1;
@@ -132,9 +140,11 @@ json5_unicode_string_t *idio_string_to_json5_string_value (IDIO is)
 	break;
     default:
 	/*
-	 * Test Case: coding error?
+	 * Test Case: json5-errors/parse-string-bad-string-value.idio
+	 *
+	 * json5/parse-string %P"."
 	 */
-	json5_error_printf ("Idio->JSON5-string: unexpected s flags: %#x", IDIO_STRING_FLAGS (is));
+	idio_error_param_value_exp ("json5/parse-string", "is", is, "regular string", IDIO_C_FUNC_LOCATION ());
 
 	return NULL;
     }
