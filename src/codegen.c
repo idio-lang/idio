@@ -1705,8 +1705,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_FIX_CLOSURE:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 4) {
-		idio_codegen_error_param_args ("FIX-CLOSURE m+ arity formals docstr", mt, IDIO_C_FUNC_LOCATION_S ("FIX-CLOSURE"));
+		idio_list_length (mt) != 5) {
+		idio_codegen_error_param_args ("FIX-CLOSURE m+ arity formals docstr srcloc", mt, IDIO_C_FUNC_LOCATION_S ("FIX-CLOSURE"));
 
 		/* notreached */
 		return;
@@ -1716,6 +1716,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO arity = IDIO_PAIR_HT (mt);
 	    IDIO formals = IDIO_PAIR_HTT (mt);
 	    IDIO docstr = IDIO_PAIR_HTTT (mt);
+	    IDIO srcloc = IDIO_PAIR_HT (IDIO_PAIR_TTT (mt));
 
 	    if (! idio_isa_fixnum (arity)) {
 		idio_codegen_error_param_type ("fixnum", arity, IDIO_C_FUNC_LOCATION_S ("FIX-CLOSURE"));
@@ -1726,6 +1727,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    idio_ai_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
 	    idio_ai_t dsci = idio_codegen_constants_lookup_or_extend (cs, docstr);
+	    idio_ai_t slci = idio_codegen_constants_lookup_or_extend (cs, srcloc);
 
 	    /*
 	     * Remember this is the act of creating a closure *value*
@@ -1821,6 +1823,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		IDIO_IA_PUSH_VARUINT (code_len);
 		IDIO_IA_PUSH_VARUINT (fci);
 		IDIO_IA_PUSH_VARUINT (dsci);
+		IDIO_IA_PUSH_VARUINT (slci);
 
 		/* 3: */
 		IDIO_IA_PUSH1 (IDIO_A_SHORT_GOTO);
@@ -1832,6 +1835,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		IDIO_IA_PUSH_VARUINT (code_len);
 		IDIO_IA_PUSH_VARUINT (fci);
 		IDIO_IA_PUSH_VARUINT (dsci);
+		IDIO_IA_PUSH_VARUINT (slci);
 
 		/* 3: */
 		IDIO_IA_PUSH1 (IDIO_A_LONG_GOTO);
@@ -1848,8 +1852,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_NARY_CLOSURE:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 4) {
-		idio_codegen_error_param_args ("NARY-CLOSURE m+ arity formals docstr", mt, IDIO_C_FUNC_LOCATION_S ("NARY-CLOSURE"));
+		idio_list_length (mt) != 5) {
+		idio_codegen_error_param_args ("NARY-CLOSURE m+ arity formals docstr srcloc", mt, IDIO_C_FUNC_LOCATION_S ("NARY-CLOSURE"));
 
 		/* notreached */
 		return;
@@ -1859,6 +1863,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO arity = IDIO_PAIR_HT (mt);
 	    IDIO formals = IDIO_PAIR_HTT (mt);
 	    IDIO docstr = IDIO_PAIR_HTTT (mt);
+	    IDIO srcloc = IDIO_PAIR_HT (IDIO_PAIR_TTT (mt));
 
 	    if (! idio_isa_fixnum (arity)) {
 		idio_codegen_error_param_type ("fixnum", arity, IDIO_C_FUNC_LOCATION_S ("NARY-CLOSURE"));
@@ -1869,6 +1874,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    idio_ai_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
 	    idio_ai_t dsci = idio_codegen_constants_lookup_or_extend (cs, docstr);
+	    idio_ai_t slci = idio_codegen_constants_lookup_or_extend (cs, srcloc);
 
 	    /*
 	     * See IDIO_I_CODE_FIX_CLOSURE for commentary.
@@ -1895,6 +1901,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		IDIO_IA_PUSH_VARUINT (code_len);
 		IDIO_IA_PUSH_VARUINT (fci);
 		IDIO_IA_PUSH_VARUINT (dsci);
+		IDIO_IA_PUSH_VARUINT (slci);
 
 		/* 3: */
 		IDIO_IA_PUSH1 (IDIO_A_SHORT_GOTO);
@@ -1906,6 +1913,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		IDIO_IA_PUSH_VARUINT (code_len);
 		IDIO_IA_PUSH_VARUINT (fci);
 		IDIO_IA_PUSH_VARUINT (dsci);
+		IDIO_IA_PUSH_VARUINT (slci);
 
 		/* 3: */
 		IDIO_IA_PUSH1 (IDIO_A_LONG_GOTO);

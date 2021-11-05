@@ -59,7 +59,7 @@
  * Return:
  * Returns the closure.
  */
-IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr)
+IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr, IDIO srcloc)
 {
     IDIO_C_ASSERT (code_pc);
     IDIO_C_ASSERT (code_len);
@@ -127,8 +127,13 @@ IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO
 	}
 	idio_set_property (c, idio_KW_sigstr, idio_get_output_string (osh));
     }
+
     if (idio_S_nil != docstr) {
 	idio_set_property (c, idio_KW_docstr_raw, docstr);
+    }
+
+    if (idio_S_nil != srcloc) {
+	idio_set_property (c, idio_KW_source, srcloc);
     }
 
     return c;

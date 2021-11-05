@@ -171,6 +171,26 @@ void idio_meaning_dump_src_properties (char const *prefix, char const *name, IDI
     }
 }
 
+IDIO idio_meaning_src_location (IDIO e)
+{
+    IDIO_ASSERT (e);
+
+    if (idio_isa_pair (e)) {
+	IDIO lo = idio_hash_ref (idio_src_properties, e);
+	if (idio_S_unspec == lo){
+	    return idio_S_nil;
+	} else {
+	    IDIO sl = idio_open_output_string_handle_C ();
+	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), sl);
+	    idio_display_C (":line ", sl);
+	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), sl);
+	    return idio_get_output_string (sl);
+	}
+    } else {
+	return idio_S_nil;
+    }
+}
+
 static IDIO idio_meaning_error_location (IDIO src)
 {
     IDIO_ASSERT (src);
@@ -2579,7 +2599,13 @@ static IDIO idio_meaning_fix_abstraction (IDIO src, IDIO ns, IDIO formals, IDIO 
 
     IDIO mp = idio_meaning_sequence (src, ep, ent, escapes, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, cs, cm);
 
-    return IDIO_LIST5 (IDIO_I_FIX_CLOSURE, mp, idio_fixnum (arity), idio_meaning_nametree_to_list (ent), docstr);
+    return idio_pair (IDIO_I_FIX_CLOSURE,
+		      idio_pair (mp,
+		      idio_pair (idio_fixnum (arity),
+		      idio_pair (idio_meaning_nametree_to_list (ent),
+		      idio_pair (docstr,
+		      idio_pair (idio_meaning_src_location (src),
+				 idio_S_nil))))));
 }
 
 static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO ns, IDIO n, IDIO formals, IDIO docstr, IDIO ep, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm)
@@ -2607,7 +2633,13 @@ static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO ns, IDIO n, IDIO for
 
     IDIO mp = idio_meaning_sequence (src, ep, ent, escapes, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, cs, cm);
 
-    return IDIO_LIST5 (IDIO_I_NARY_CLOSURE, mp, idio_fixnum (arity), idio_meaning_nametree_to_list (ent), docstr);
+    return idio_pair (IDIO_I_NARY_CLOSURE,
+		      idio_pair (mp,
+		      idio_pair (idio_fixnum (arity),
+		      idio_pair (idio_meaning_nametree_to_list (ent),
+		      idio_pair (docstr,
+		      idio_pair (idio_meaning_src_location (src),
+				 idio_S_nil))))));
 }
 
 

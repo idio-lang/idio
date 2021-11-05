@@ -24,6 +24,19 @@ export (
 )
 import expander operator codegen threading vm
 
+define (meaning-src-location e) {
+  lo := #f
+  if (not (null? src)) {
+    lo = hash-ref %idio-src-properties src #f
+  }
+
+  if lo {
+    sprintf "%s:line %d" (%idio-lexical-object-name lo) (%idio-lexical-object-line lo)
+  } {
+    #n
+  }
+}
+
 define (meaning-error-location src) {
   lo := #f
   if (not (null? src)) {
@@ -1206,7 +1219,7 @@ define (meaning-fix-abstraction src formal* arg-name* docstr e+ nametree escapes
 
   m+ := meaning-sequence src e+ nt+ escapes (set-tailp flags) 'begin cs cm
 
-  list I-FIX-CLOSURE m+ arity (meaning-nametree->list nt+) docstr
+  list I-FIX-CLOSURE m+ arity (meaning-nametree->list nt+) docstr (meaning-src-location src)
 }
 
 define (meaning-dotted-abstraction src formal* vararg arg-name* docstr e+ nametree escapes flags cs cm) {
@@ -1217,7 +1230,7 @@ define (meaning-dotted-abstraction src formal* vararg arg-name* docstr e+ nametr
 
   m+ := meaning-sequence src e+ nt+ escapes (set-tailp flags) 'begin cs cm
 
-  list I-NARY-CLOSURE m+ arity (meaning-nametree->list nt+) docstr
+  list I-NARY-CLOSURE m+ arity (meaning-nametree->list nt+) docstr (meaning-src-location src)
 }
 
 #*

@@ -130,6 +130,13 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
     if (NULL != desc->docstr) {
 	idio_set_property (o, idio_KW_docstr_raw, idio_string_C_len (desc->docstr, desc->docstr_len));
     }
+    if (NULL != desc->source_file) {
+	char src[81];
+	snprintf (src, 80, "%s:line %d", desc->source_file, desc->source_line);
+	src[80] = '\0';
+
+	idio_set_property (o, idio_KW_source, idio_string_C (src));
+    }
 
     return o;
 }

@@ -4665,8 +4665,11 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t code_len = idio_vm_fetch_varuint (thr);
 	    uint64_t ssci = idio_vm_fetch_varuint (thr);
 	    uint64_t dsci = idio_vm_fetch_varuint (thr);
+	    uint64_t slci = idio_vm_fetch_varuint (thr);
 
 	    IDIO ce = idio_thread_current_env ();
+
+	    /* sigstr lookup */
 	    IDIO fci = idio_fixnum (ssci);
 	    IDIO fgci = idio_module_get_or_set_vci (ce, fci);
 	    IDIO sigstr = idio_S_nil;
@@ -4675,6 +4678,8 @@ int idio_vm_run1 (IDIO thr)
 	    } else {
 		fprintf (stderr, "vm cc sig: failed to find %" PRId64 " (%" PRId64 ")\n", (int64_t) IDIO_FIXNUM_VAL (fci), ssci);
 	    }
+
+	    /* docstr lookup */
 	    fci = idio_fixnum (dsci);
 	    fgci = idio_module_get_or_set_vci (ce, fci);
 	    IDIO docstr = idio_S_nil;
@@ -4684,7 +4689,17 @@ int idio_vm_run1 (IDIO thr)
 		fprintf (stderr, "vm cc doc: failed to find %" PRId64 " (%" PRId64 ")\n", (int64_t) IDIO_FIXNUM_VAL (fci), dsci);
 	    }
 
-	    IDIO_THREAD_VAL (thr) = idio_closure (IDIO_THREAD_PC (thr) + i, code_len, IDIO_THREAD_FRAME (thr), IDIO_THREAD_ENV (thr), sigstr, docstr);
+	    /* srcloc lookup */
+	    fci = idio_fixnum (slci);
+	    fgci = idio_module_get_or_set_vci (ce, fci);
+	    IDIO srcloc = idio_S_nil;
+	    if (idio_S_unspec != fgci) {
+		srcloc = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
+	    } else {
+		fprintf (stderr, "vm cc doc: failed to find %" PRId64 " (%" PRId64 ")\n", (int64_t) IDIO_FIXNUM_VAL (fci), dsci);
+	    }
+
+	    IDIO_THREAD_VAL (thr) = idio_closure (IDIO_THREAD_PC (thr) + i, code_len, IDIO_THREAD_FRAME (thr), IDIO_THREAD_ENV (thr), sigstr, docstr, srcloc);
 	}
 	break;
     case IDIO_A_FUNCTION_INVOKE:
@@ -6088,6 +6103,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		/* uint64_t code_len = */ idio_vm_get_varuint (bc, pcp);
 		uint64_t ssci = idio_vm_get_varuint (bc, pcp);
 		uint64_t dsci = idio_vm_get_varuint (bc, pcp);
+		uint64_t slci = idio_vm_get_varuint (bc, pcp);
 
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "C@%" PRId64 "", pc + i);
@@ -6095,6 +6111,8 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("CREATE-CLOSURE @ +%" PRId64 " %" PRId64 "", i, pc + i);
 
 		IDIO ce = idio_thread_current_env ();
+
+		/* sigstr lookup */
 		IDIO fssci = idio_fixnum (ssci);
 		IDIO fgssci = idio_module_get_or_set_vci (ce, fssci);
 		IDIO ss = idio_S_nil;
@@ -6108,6 +6126,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM (" args=%s", ids);
 		IDIO_GC_FREE (ids);
 
+		/* docstr lookup */
 		IDIO fdsci = idio_fixnum (dsci);
 		IDIO fgdsci = idio_module_get_or_set_vci (ce, fdsci);
 		IDIO ds = idio_S_nil;
@@ -6119,6 +6138,22 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		if (idio_S_nil != ds) {
 		    size = 0;
 		    ids = idio_as_string_safe (ds, &size, 1, 1);
+		    IDIO_VM_DASM ("\n%s", ids);
+		    IDIO_GC_FREE (ids);
+		}
+
+		/* srcloc lookup */
+		IDIO fslci = idio_fixnum (slci);
+		IDIO fgslci = idio_module_get_or_set_vci (ce, fslci);
+		IDIO sl = idio_S_nil;
+		if (idio_S_unspec != fgslci) {
+		    sl = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgslci));
+		} else {
+		    fprintf (stderr, "vm cc doc: failed to find %" PRIu64 "\n", slci);
+		}
+		if (idio_S_nil != sl) {
+		    size = 0;
+		    ids = idio_as_string_safe (sl, &size, 1, 1);
 		    IDIO_VM_DASM ("\n%s", ids);
 		    IDIO_GC_FREE (ids);
 		}

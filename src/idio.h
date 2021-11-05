@@ -233,7 +233,9 @@ extern FILE *idio_vm_perf_FILE;
 	sigstr,								\
 	sizeof (sigstr) - 1,						\
 	docstr,								\
-	sizeof (docstr) - 1						\
+	sizeof (docstr) - 1,						\
+	__FILE__,							\
+	__LINE__							\
     };									\
     IDIO idio_defprimitive_ ## cname params
 

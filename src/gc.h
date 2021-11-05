@@ -557,7 +557,7 @@ typedef struct idio_closure_s {
 #endif
 
 /*
- * idio_prinitimve_desc_t is for the static allocation in C of the
+ * idio_primitive_desc_t is for the static allocation in C of the
  * description of a primitive value.
  *
  * Yes, it contains much of an idio_primitive_t but it is never *used*
@@ -574,6 +574,8 @@ typedef struct idio_primitive_desc_s {
     size_t sigstr_len;
     char *docstr;
     size_t docstr_len;
+    char *source_file;
+    size_t source_line;
 } idio_primitive_desc_t;
 
 /*

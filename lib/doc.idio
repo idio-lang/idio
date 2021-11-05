@@ -37,14 +37,16 @@ define-template (help x) {
 	 display (module-name (phttt details))
        }
        if source {
-	 display* " source:" source
+	 display " ("
+	 display source
+	 display ")"
        }
        display "\n"
        display "SYNOPSIS: "
        if sigstr {
-	 display* '$x
-       } {
 	 display* '$x sigstr
+       } {
+	 display* '$x
        }
        if docstr {
 	 display* "DESCRIPTION:"
@@ -102,8 +104,8 @@ define-template (help x) {
        } {
 	 (cond
 	  ((expander? '$x) {
-	    sigstr := %property $x :sigstr #n
-	    docstr := %property $x :docstr-raw #n
+	    sigstr := %property $x :sigstr #f
+	    docstr := %property $x :docstr-raw #f
 	    details := evaluate/find-symbol '$x
 
 	    display '$x
@@ -114,12 +116,12 @@ define-template (help x) {
 	    }
 	    display "\n"
 	    display "SYNOPSIS: "
-	    if (null? sigstr) {
-	      display* '$x
-	    } {
+	    if sigstr {
 	      display* '$x sigstr
+	    } {
+	      display* '$x
 	    }
-	    if (not (null? docstr)) {
+	    if docstr {
 	      display* "DESCRIPTION:"
 	      display docstr
 	    }
