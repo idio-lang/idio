@@ -610,6 +610,10 @@ test {
   map list '(1 2 3) '(a b c) '(#\x #\y #\z)
 } '((1 a #\x) (2 b #\y) (3 c #\z))
 
+;; we should be able to iterate over arrays
+test (map list #[1 2 3]) '((1) (2) (3))
+test (map list #[1 2 3] #[4 5 6]) '((1 4) (2 5) (3 6))
+
 ; --- quasiquotation ---
 
 define x 'foo
@@ -1412,4 +1416,4 @@ test {
 } '(0 1 2)
 
 ;; all done?
-Tests? (s9-test0 + 628)
+Tests? (s9-test0 + 630)

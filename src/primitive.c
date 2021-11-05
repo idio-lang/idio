@@ -132,7 +132,7 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
     }
     if (NULL != desc->source_file) {
 	char src[81];
-	snprintf (src, 80, "%s:line %d", desc->source_file, desc->source_line);
+	snprintf (src, 80, "%s:line %zu", desc->source_file, desc->source_line);
 	src[80] = '\0';
 
 	idio_set_property (o, idio_KW_source, idio_string_C (src));

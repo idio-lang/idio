@@ -31,28 +31,6 @@
 
 ;; Auxiliary definitions, will be redefined later
 
-define (map-ph f a) "map-ph: %mapph a" {
-  %mapph :+ function (a) {
-	      if (null? a) {
-		'#n
-	      } {
-		pair (f (ph a)) (%mapph (pt a))
-	      }
-  }
-  %mapph a
-}
-
-define (map f a b) {
-  map2 :+ function (a b) {
-	    if (null? a) {
-	      '#n
-	    } {
-	      pair (f (ph a) (ph b)) (map2 (pt a) (pt b))
-	    }
-  }
-  map2 a b
-}
-
 ;; Library procedures
 
 ;; List procedures
@@ -168,29 +146,6 @@ return the element of `x` at position `n`
 :type n: integer
 " {
   ph (list-tail x n)
-}
-
-map := {
-  ph-of := ph-of
-  pt-of := pt-of
-  any-null? := any-null?
-
-  function (f & a*) {
-    map2 :+ function (a* r) {
-	      if (null? (ph a*)) {
-		reverse r
-	      } {
-		map2 (pt-of a*) (pair (apply f (ph-of a*))
-				      r)
-	      }
-    }
-
-    if (null? a*) {
-      error/type ^rt-parameter-error 'map "too few arguments"
-    } {
-      map2 a* '#n
-    }
-  }
 }
 
 ;; Arithmetic procedures

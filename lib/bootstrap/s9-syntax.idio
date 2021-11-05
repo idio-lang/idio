@@ -109,15 +109,14 @@ map := {
 	      }
     }
 
-    (cond
-     ((array? a*) {
-       a* = array->list a*
-     })
-     ((hash? a*) {
-       a* = map (function (k) {
-		   list k (hash-ref a* k)
-       }) (hash-keys a*)
-     }))
+    ;; we can iterate over the elements of arrays -- but not over the
+    ;; keys of hash tables as there's no (reliable) ordering to ensure
+    ;; the function gets called with the same n keys if the hash
+    ;; tables are perturbed
+    if (and (pair? a*)
+	    (array? (ph a*))) {
+	      a* = map-ph array->list a*
+    }
 
     if (null? a*) {
       error/type ^rt-parameter-error 'map "too few arguments"
