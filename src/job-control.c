@@ -126,6 +126,13 @@ static IDIO idio_job_control_default_child_handler_sym;
 #define IDIO_PROCESS_ST_STOPPED		4
 #define IDIO_PROCESS_ST_STATUS		5
 
+/* PSJ is PROCESS_SUBSTITUTION_JOB */
+#define IDIO_PSJ_READ			0
+#define IDIO_PSJ_FD			1
+#define IDIO_PSJ_PATH			2
+#define IDIO_PSJ_DIR			3
+#define IDIO_PSJ_SUPPRESS		4
+
 static void idio_job_control_error_exec (char **argv, char **envp, IDIO c_location)
 {
     IDIO_ASSERT (c_location);
@@ -775,10 +782,12 @@ void idio_job_control_do_job_notification ()
 	    IDIO psj = idio_hash_ref (ps_jobs, job);
 
 	    if (idio_S_unspec != psj) {
-		IDIO psj_path = idio_struct_instance_ref_direct (psj, 1);
+		IDIO psj_path = idio_struct_instance_ref_direct (psj, IDIO_PSJ_PATH);
 		if (idio_S_false != psj_path) {
+#ifdef IDIO_DEBUG
 		    fprintf (stderr, "%6d: SHUTDOWN: ", getpid ());
 		    idio_debug ("unlink/rm %s\n", psj);
+#endif
 		    size_t size = 0;
 		    char *path_C = idio_string_as_C (psj_path, &size);
 
@@ -791,9 +800,13 @@ void idio_job_control_do_job_notification ()
 			fprintf (stderr, "ERROR: named-pipe: path contains an ASCII NUL: %s\n", path_C);
 		    } else {
 			if (unlink (path_C) < 0) {
-			    perror ("unlink");
+			    char em[81];
+			    snprintf (em, 80, "unlink (%s)", path_C);
+			    em[80] = '\0';
+
+			    perror (em);
 			} else {
-			    IDIO psj_dir = idio_struct_instance_ref_direct (psj, 2);
+			    IDIO psj_dir = idio_struct_instance_ref_direct (psj, IDIO_PSJ_DIR);
 			    size = 0;
 			    char *dir_C = idio_string_as_C (psj_dir, &size);
 
@@ -807,7 +820,11 @@ void idio_job_control_do_job_notification ()
 				fprintf (stderr, "ERROR: named-pipe: dir: contains an ASCII NUL: %s\n", dir_C);
 			    } else {
 				if (rmdir (dir_C) < 0) {
-				    perror ("unlink");
+				    char em[81];
+				    snprintf (em, 80, "rmdir (%s)", dir_C);
+				    em[80] = '\0';
+
+				    perror (em);
 				}
 			    }
 
@@ -1202,8 +1219,12 @@ IDIO idio_job_control_SIGTERM_stopped_jobs ()
 		pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PGID));
 
 		if (job_pgid > 0) {
-		    fprintf (stderr, "%6d: ijc SIGTERM -> pgid %d\n", getpid (), job_pgid);
-		    idio_debug ("job %s\n", job);
+#ifdef IDIO_DEBUG
+		    if (idio_job_control_interactive) {
+			fprintf (stderr, "%6d: ijc SIGTERM -> pgid %d\n", getpid (), job_pgid);
+			idio_debug ("job %s\n", job);
+		    }
+#endif
 		    /*
 		     * Following in the style of Bash's
 		     * terminate_stopped_jobs(), issue the SIGTERM before
@@ -1220,8 +1241,12 @@ IDIO idio_job_control_SIGTERM_stopped_jobs ()
 		     * async.  Always completed.  Transient timing
 		     * issue?
 		     */
-		    fprintf (stderr, "%6d: ijc SIGTERM -> pgid %d ??\n", getpid(), job_pgid);
-		    idio_debug ("job %s\n", job);
+#ifdef IDIO_DEBUG
+		    if (idio_job_control_interactive) {
+			fprintf (stderr, "%6d: ijc SIGTERM -> pgid %d ??\n", getpid(), job_pgid);
+			idio_debug ("job %s\n", job);
+		    }
+#endif
 		}
 	    }
 	    jobs = IDIO_PAIR_T (jobs);
