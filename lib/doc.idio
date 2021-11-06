@@ -217,17 +217,34 @@ define (autodoc) {
   module_loop (sort mn string<? key-ms)
 }
 
-define (idio-version & args) "
+;; idio-version shouldn't really be in doc.idio but we want it after
+;; posix-regex.idio for regex-case and SRFI-89 for optional parameters
+define* (idio-version (:raw raw #f) (details #f)) "
 Report details of the Idio version.
 
-:param detail: provide more details on IDIOLIB
-:type detail: any
+:param details: provide more details on IDIOLIB, defaults to ``#f``
+:type details: boolean, optional
+:param raw: do not substitute $HOME, defaults to ``#f``
+:type raw: boolean, optional
 
 " {
+  v := #{}
+  v.idio-cmd      = IDIO_CMD
+  v.idio-cmd-path = IDIO_CMD_PATH
+  v.idio-exe      = IDIO_EXE
+
+  unless raw {
+    for-each (function (sym) {
+		(regex-case v.sym
+			    (#S{^${HOME}/(.*)} {
+			      v.sym = append-string "$HOME/" r.1
+			    }))
+    }) '(idio-cmd idio-cmd-path idio-exe)
+  }
 
   printf #S{
-IDIO_CMD                       = ${IDIO_CMD} (${IDIO_CMD_PATH})
-IDIO_EXE                       = ${IDIO_EXE}
+IDIO_CMD                       = ${v.idio-cmd} (${v.idio-cmd-path})
+IDIO_EXE                       = ${v.idio-exe}
 
 IDIO_VERSION                   = ${IDIO_VERSION}
 IDIO_SYSTEM_ARCH               = ${IDIO_SYSTEM_ARCH}
@@ -241,15 +258,26 @@ IDIO_BUILD_CC                  = ${IDIO_BUILD_CC} (${IDIO_BUILD_CC_PATH})
 ${IDIO_BUILD_CC_VERSION}
 }
 
-  printf #S{
-IDIOLIB                        = ${IDIOLIB}}
+  ;; produce a list of (orig rewritten) directory names
+  il := map (function (d) {
+	       if raw (list d d) {
+		 (regex-case d
+			     (#S{^${HOME}/(.*)} {
+			       list d (append-string "$HOME/" r.1)
+			     })
+			     (else (list d d)))
+	       }
+  }) (split-string-exactly IDIOLIB ":")
 
-  if (pair? args) {
-    for-each (function (d) {
-		is-d := d? d
+  printf #S{
+IDIOLIB                        = ${join-string ":" (map pht il)}}
+
+  if details {
+    for-each (function (dd) {
+		is-d := d? (ph dd)
 		printf #S{
-  d? ${is-d} ${d}}
-    }) (split-string IDIOLIB ":")
+		  d? ${is-d} ${pht dd}}
+    }) il
   }
 
   printf "\n\n"

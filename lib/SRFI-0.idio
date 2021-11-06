@@ -227,7 +227,7 @@ define-template (cond-expand & clause*) {
 					("^#" {
 					  (line-loop)
 					})
-					("([[:alnum:]_]+)=(.*)" {
+					("([[:alnum:]_]+)=\"?([^\"]*)\"?" {
 					  (case r.1
 						(("ID" "VERSION_ID") {
 						  %add-feature (append-string "os-release/" r.1 "/" r.2)

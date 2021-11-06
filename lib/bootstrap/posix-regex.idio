@@ -43,7 +43,7 @@ results live forever.  Not ideal.
 
 *#
 
-*regcomp-array* := make-array 64
+*regcomp-table* := #{}
 
 define-template (regex-case e & clauses) {
   ;; regex-strings want to extract the regex strings
@@ -70,7 +70,7 @@ define-template (regex-case e & clauses) {
   ;; argument
   key := gensym 'key
 
-  gen-clauses :+ function (i c*) {
+  gen-clauses :+ function (c*) {
 		   (cond
 		    ((null? c*) '#n)
 		    ((or (not (pair? c*))
@@ -85,7 +85,7 @@ define-template (regex-case e & clauses) {
 			}
 		      } {
 			#T{
-			  (((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
+			  (((regexec (hash-ref *regcomp-table* $(phh c*)) $key) => (function (r) {
 										$@(pth c*)
 			  })))
 			}
@@ -93,25 +93,27 @@ define-template (regex-case e & clauses) {
 		    })
 		    (else {
 		      #T{
-			(((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
+			(((regexec (hash-ref *regcomp-table* $(phh c*)) $key) => (function (r) {
 									      $@(pth c*)
-			})) $@(gen-clauses (i + 1) (pt c*)))
+			})) $@(gen-clauses (pt c*)))
 		      }
 		    }))
 
   }
 
-  i := array-length *regcomp-array*
-  map (function (s) {
-	 array-push! *regcomp-array* (regcomp s)
-  }) (regex-strings clauses #n)
-
   #T{
+    $@(map (function (s) {
+	      #T{
+		if (not (hash-exists? *regcomp-table* $s)) {
+		  hash-set! *regcomp-table* $s (regcomp $s)
+		}
+	      }
+    }) (regex-strings clauses #n))
     {
       ;; evaluate {e} (once!)
       $key := $e
 
-      cond $@(gen-clauses i clauses)
+      cond $@(gen-clauses clauses)
     }
   }
 }
@@ -141,7 +143,7 @@ define-template (pattern-case e & clauses) {
   ;; argument
   key := (gensym 'key)
 
-  gen-clauses :+ function (i c*) {
+  gen-clauses :+ function (c*) {
 		   (cond
 		    ((null? c*) '#n)
 		    ((or (not (pair? c*))
@@ -156,7 +158,7 @@ define-template (pattern-case e & clauses) {
 			}
 		      } {
 			#T{
-			  (((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
+			  (((regexec (hash-ref *regcomp-table* $(phh c*)) $key) => (function (r) {
 										$@(pth c*)
 			  })))
 			}
@@ -164,37 +166,41 @@ define-template (pattern-case e & clauses) {
 		    })
 		    (else {
 		      #T{
-			(((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
+			(((regexec (hash-ref *regcomp-table* $(phh c*)) $key) => (function (r) {
 									      $@(pth c*)
-			})) $@(gen-clauses (i + 1) (pt c*)))
+			})) $@(gen-clauses (pt c*)))
 		      }
 		    }))
 
   }
 
-  i := array-length *regcomp-array*
-  map (function (s) {
-	 loop :+ function (str) {
-		   (regex-case str
-			       ("(.*)\\*(.*)" {
-				 append-string r.1 ".*" (loop r.2)
-			       })
-			       ("(.*)\\?(.*)" {
-				 append-string r.1 "." (loop r.2)
-			       })
-			       (else r))
-	 }
+  ;; pattern-case rewrite loop
+  pcr-loop :+ function (str) {
+	    (regex-case str
+			("(.*)\\*(.*)" {
+			  append-string r.1 ".*" (pcr-loop r.2)
+			})
+			("(.*)\\?(.*)" {
+			  append-string r.1 "." (pcr-loop r.2)
+			})
+			(else r))
+  }
 
-	 s = sprintf "^%s$" (loop s)
-	 array-push! *regcomp-array* (regcomp s)
-  }) (regex-strings clauses #n)
 
   #T{
+    $@(map (function (s) {
+	      ;s = sprintf "^%s$" (pcr-loop s)
+	      #T{
+		if (not (hash-exists? *regcomp-table* $s)) {
+		  hash-set! *regcomp-table* $s (regcomp (sprintf "^%s$" $(pcr-loop s)))
+		}
+	      }
+    }) (regex-strings clauses #n))
     {
       ;; evaluate {e} (once!)
       $key := $e
 
-      cond $@(gen-clauses i clauses)
+      cond $@(gen-clauses clauses)
     }
   }
 }
