@@ -437,7 +437,9 @@ static json5_token_t *json5_token_number (json5_token_t *ct, json5_unicode_strin
 		leading_0 = 0;
 		json5_unicode_t cp1 = json5_unicode_string_peek (s, s->i);
 
-		if (JSON5_UNICODE_INVALID != cp1) {
+		if (JSON5_UNICODE_INVALID == cp1) {
+		    digits++;
+		} else {
 		    switch (cp1) {
 		    case '.':	/* 0. */
 			integer = 0;
@@ -459,6 +461,12 @@ static json5_token_t *json5_token_number (json5_token_t *ct, json5_unicode_strin
 			/* skip the x/X */
 			s->i++;
 			/* XXX no digits yet */
+			break;
+
+		    case ']':
+		    case '}':
+		    case ',':
+			digits++;
 			break;
 
 		    default:

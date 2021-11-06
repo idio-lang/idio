@@ -359,7 +359,7 @@ test-load "test-job-control.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? (7089 - Skipped)
+Tests? (7093 - Skipped)
 
 if (e? testfile) (delete-file testfile)
 
@@ -367,13 +367,18 @@ printf "[%s/%d] %3ds test.idio\n" (getpid) PID SECONDS
 
 ;printf "# src-props %d\n" (length (hash-keys %idio-src-properties))
 
-(if (zero? Errors) (printf "All %d tests passed!\n" Tests)
-   {
-     printf "%d error%s in %d tests.\n" Errors (if (Errors gt 1) "s" "") Tests
-     if (not %idio-interactive) {
-       Idio/exit 1
-     }
-   })
+if (zero? Errors) {
+  printf "All %d tests passed!" Tests
+  if (Skipped gt 0) {
+    printf " (with %d tests skipped)" Skipped
+  }
+  printf "\n"
+} {
+  printf "%d error%s in %d tests.\n" Errors (if (Errors gt 1) "s" "") Tests
+  if (not %idio-interactive) {
+    Idio/exit 1
+  }
+}
 
 IDIOLIB = OIDIOLIB
 PATH = OPATH

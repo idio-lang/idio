@@ -407,8 +407,7 @@ The default padding character is ``#\\{space}``
 			     })
 			     ((unicode=? k #\@) {
 			       if (null? args) {
-				 eprintf "not enough args for %%%s at .%d in %s\n" k i fmt
-				 error/type ^rt-parameter-error '%format "not enough args for %" k
+				 error/type ^rt-parameter-error '%format (sprintf "not enough args for %%%s at .%d in %s\n" k i fmt)
 			       }
 
 			       v = ph args
@@ -431,8 +430,7 @@ The default padding character is ``#\\{space}``
 			     })
 			     (else {
 			       if (null? args) {
-				 eprintf "not enough args for %%%s at %d/%d in '%s'\n" k i e fmt
-				 error/type ^rt-parameter-error '%format "not enough args for %" k
+				 error/type ^rt-parameter-error '%format (sprintf "not enough args for %%%s at %d/%d in '%s'\n" k i e fmt)
 			       }
 
 			       v = ph args

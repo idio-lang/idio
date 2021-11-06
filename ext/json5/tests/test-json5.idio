@@ -280,8 +280,17 @@ test data."andIn".0	"arrays"
 
 close-handle ex-fh
 
+;; some leading zero parse issues if the 0 is immediately before a
+;; value terminator -- from densely packed strings
+v := json5/parse-string "0"
+test v 0
+d := json5/parse-string "{comma:0,array:[0],object:{key:0}}"
+test d."comma" 0
+test d."array".0 0
+test d."object"."key" 0
+
 ;; all done?
-Tests? (json5-0 + 45)
+Tests? (json5-0 + 49)
 
 ;Local Variables:
 ;mode: Idio
