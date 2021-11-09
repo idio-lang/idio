@@ -60,6 +60,7 @@ os-release/ID/$ID			os-release(5)
 os-release/VERSION_ID/$VERSION_ID	os-release(5)
 
 virtualisation/WSL			if running under Windows Subsystem for Linux
+virtualisation/WSL2			if running under WSL 2 (in addition)
 
 SunOS:
 release/${1st word of /etc/release}	release/OpenIndiana
@@ -264,7 +265,7 @@ define-template (cond-expand & clause*) {
    }
 
    ;; WSL? https://stackoverflow.com/questions/38086185/how-to-check-if-a-program-is-run-in-bash-on-ubuntu-on-windows-and-not-just-plain
-   pv := "/proc/version"
+   pv := "/proc/sys/kernel/osrelease"
    if (f? pv) {
      ;; XXX do not use collect-output (or pipe-from) as under WSL.1
      ;; they will invoke fcntl F_SETFD on the pipe-handle which it
@@ -277,6 +278,10 @@ define-template (cond-expand & clause*) {
      rc := regcomp "Microsoft|WSL" 'REG_ICASE
      if (regexec rc rl) {
        %add-feature 'virtualisation/WSL
+       rc := regcomp "microsoft"
+       if (regexec rc rl) {
+	 %add-feature 'virtualisation/WSL2
+       }
      }
    }
  })
