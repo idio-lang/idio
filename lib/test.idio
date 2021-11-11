@@ -102,7 +102,7 @@ define (seq) {
 
 define (fail expr result expected) {
   set! Errors (1 + Errors)
-  display* "Error #" Errors
+  printf "[%s/%d] Error #%d\n" (getpid) PID Errors
   display* "test #" Tests " failed: " expr
   display* "got result:  " result
   display* "expected:    " expected
@@ -111,7 +111,7 @@ define (fail expr result expected) {
 define (test3 expr result expected) {
   set! Tests (1 + Tests)
   if Notify {
-    edisplay* "test #" Tests ":" expr "=> (equal? " result expected " )"
+    eprintf "[%s/%d] test #%d: %s => (equal? %s %s)\n" (getpid) PID Tests expr result expected
   }
   if (not (equal? result expected)) {
     fail expr result expected
@@ -141,7 +141,7 @@ define (Tests? n) {
       d = Tests - n
       phr = "more"
     }
-    printf "WARNING: #Tests %s != %s: %d %s than expected\n" Tests n d phr
+    printf "[%s/%d] WARNING: #Tests %s != %s: %d %s than expected\n" (getpid) PID Tests n d phr
     Errors = Errors + 1
   }
 }
@@ -352,6 +352,7 @@ test-load "test-issues.idio"
 ; test shell-ish things after all the other tests
 test-load "test-command-error.idio"
 test-load "test-command.idio"
+test-load "test-logical-command.idio"
 
 test-load "test-job-control.idio"
 
@@ -359,7 +360,7 @@ test-load "test-job-control.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? (7093 - Skipped)
+Tests? (7135 - Skipped)
 
 if (e? testfile) (delete-file testfile)
 

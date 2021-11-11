@@ -1,6 +1,6 @@
 (rst "functions-intro" 0)
 
-(document Idio not)
+(document Idio not/function)
 (document Idio when)
 (document Idio unless)
 

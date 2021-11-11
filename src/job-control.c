@@ -108,16 +108,18 @@ static IDIO idio_job_control_default_child_handler_sym;
 #define IDIO_JOB_ST_PIPELINE		0
 #define IDIO_JOB_ST_PROCS		1
 #define IDIO_JOB_ST_PGID		2
-#define IDIO_JOB_ST_NOTIFIED		3
-#define IDIO_JOB_ST_RAISED		4
-#define IDIO_JOB_ST_TCATTRS		5
-#define IDIO_JOB_ST_STDIN		6
-#define IDIO_JOB_ST_STDOUT		7
-#define IDIO_JOB_ST_STDERR		8
-#define IDIO_JOB_ST_REPORT_TIMING	9
-#define IDIO_JOB_ST_TIMING_START	10
-#define IDIO_JOB_ST_TIMING_END		11
-#define IDIO_JOB_ST_ASYNC		12
+#define IDIO_JOB_ST_NOTIFY_STOPPED	3
+#define IDIO_JOB_ST_NOTIFY_COMPLETED	4
+#define IDIO_JOB_ST_RAISEP		5
+#define IDIO_JOB_ST_RAISED		6
+#define IDIO_JOB_ST_TCATTRS		7
+#define IDIO_JOB_ST_STDIN		8
+#define IDIO_JOB_ST_STDOUT		9
+#define IDIO_JOB_ST_STDERR		10
+#define IDIO_JOB_ST_REPORT_TIMING	11
+#define IDIO_JOB_ST_TIMING_START	12
+#define IDIO_JOB_ST_TIMING_END		13
+#define IDIO_JOB_ST_ASYNC		14
 
 #define IDIO_PROCESS_ST_ARGV		0
 #define IDIO_PROCESS_ST_EXEC		1
@@ -757,10 +759,10 @@ void idio_job_control_do_job_notification ()
 	if (idio_job_control_job_is_completed (job)) {
 	    idio_job_control_format_job_info (job, "completed");
 	} else if (idio_job_control_job_is_stopped (job)) {
-	    IDIO ntfy = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_NOTIFIED);
+	    IDIO ntfy = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_NOTIFY_STOPPED);
 	    if (idio_S_false == ntfy) {
 		idio_job_control_format_job_info (job, "stopped");
-		idio_struct_instance_set_direct (job, IDIO_JOB_ST_NOTIFIED, idio_S_true);
+		idio_struct_instance_set_direct (job, IDIO_JOB_ST_NOTIFY_STOPPED, idio_S_true);
 	    }
 	    njobs = idio_pair (job, njobs);
 	} else {
@@ -1297,7 +1299,7 @@ static void idio_job_control_mark_job_as_running (IDIO job)
 	procs = IDIO_PAIR_T (procs);
     }
 
-    idio_struct_instance_set_direct (job, IDIO_JOB_ST_NOTIFIED, idio_S_false);
+    idio_struct_instance_set_direct (job, IDIO_JOB_ST_NOTIFY_STOPPED, idio_S_false);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("mark-job-as-running", mark_job_as_running, (IDIO job), "job", "\
@@ -2017,6 +2019,8 @@ launch a pipeline of `job_controls`			\n\
 				     idio_pair (idio_libc_pid_t (0),
 				     idio_pair (idio_S_false,
 				     idio_pair (idio_S_false,
+				     idio_pair (idio_S_false,
+				     idio_pair (idio_S_false,
 				     idio_pair (idio_S_nil,
 				     idio_pair (job_stdin,
 				     idio_pair (job_stdout,
@@ -2025,7 +2029,7 @@ launch a pipeline of `job_controls`			\n\
 				     idio_pair (timing_start,
 				     idio_pair (idio_S_false,
 				     idio_pair (idio_S_false,
-				     idio_S_nil))))))))))))));
+				     idio_S_nil))))))))))))))));
 
     idio_job_control_launch_job (job, 1);
     return idio_S_unspec;
@@ -2330,7 +2334,9 @@ void idio_init_job_control ()
 						  idio_pair (IDIO_SYMBOLS_C_INTERN ("pipeline"),
 						  idio_pair (IDIO_SYMBOLS_C_INTERN ("procs"),
 						  idio_pair (IDIO_SYMBOLS_C_INTERN ("pgid"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("notified"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("notify-stopped"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("notify-completed"),
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("raise?"),
 						  idio_pair (IDIO_SYMBOLS_C_INTERN ("raised"),
 						  idio_pair (IDIO_SYMBOLS_C_INTERN ("tcattrs"),
 						  idio_pair (IDIO_SYMBOLS_C_INTERN ("stdin"),
@@ -2340,7 +2346,7 @@ void idio_init_job_control ()
 						  idio_pair (IDIO_SYMBOLS_C_INTERN ("timing-start"),
 						  idio_pair (IDIO_SYMBOLS_C_INTERN ("timing-end"),
 						  idio_pair (IDIO_SYMBOLS_C_INTERN ("async"),
-						  idio_S_nil))))))))))))));
+						  idio_S_nil))))))))))))))));
     idio_module_set_symbol_value (sym, idio_job_control_job_type, idio_job_control_module);
 
     idio_job_control_default_child_handler_sym = IDIO_SYMBOLS_C_INTERN ("default-child-handler");

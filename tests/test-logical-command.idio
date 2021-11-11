@@ -1,0 +1,146 @@
+;;
+;; Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-logical-command.idio
+;;
+module tests/logical-command
+import job-control libc
+
+logical-command0 := Tests
+
+;; Testing external commands in logical statements shouldn't generate
+;; any errors except in the case of tail calls.  Er, which we need to
+;; test.
+
+;; Simple external command pipelines, X | Y, will have both X and Y in
+;; tail position in each sub-Idio.
+
+;; Of interest, the command false seems to "exit 1" but that's not a
+;; guarantee across all platforms so we'll force a specific exit
+;; status with auto-exit
+
+define (fail!) {
+  auto-exit -E 3
+}
+
+define (tc-and-1-fail!) {
+  (and (fail!))
+}
+
+define (tc-and-2-fail!) {
+  (and (true)
+       (fail!))
+}
+
+define (tc-or-1-fail!) {
+  (or (fail!))
+}
+
+define (tc-or-2-fail!) {
+  (or (fail!)
+      (fail!))
+}
+
+;; simple external command logic
+test (if (true) 1 2)	1
+test (if (fail!) 1 2)	2
+
+test (not (true))	#f
+test (not (fail!))	#t
+
+test (and (true))	#t
+test (and (fail!))	#f
+
+test (and (true)
+	  (true))	#t
+test (and (true)
+	  (fail!))	#f
+
+test (and (fail!)
+	  (true))	#f
+test (and (fail!)
+	  (fail!))	#f
+
+test (or (true))	#t
+test (or (fail!))	#f
+
+test (or (true)
+	 (true))	#t
+test (or (true)
+	 (fail!))	#t
+
+test (or (fail!)
+	 (true))	#t
+test (or (fail!)
+	 (fail!))	#f
+
+;; pipeline external command logic
+test (if (true | true) 1 2)	1
+test (if (fail! | true) 1 2)	2
+test (if (true | fail!) 1 2)	2
+test (if (fail! | fail!) 1 2)	2
+
+test (not (true | true))	#f
+test (not (fail! | true))	#t
+test (not (true | fail!))	#t
+test (not (fail! | fail!))	#t
+
+test (and (true | true)
+	  (true | true))	#t
+
+test (and (true | fail!)
+	  (true | true))	#f
+
+test (and (true | true)
+	  (true | fail!))	#f
+
+test (and (true | fail!)
+	  (true | fail!))	#f
+
+test (or (true | true)
+	 (true | true))		#t
+
+test (or (true | fail!)
+	 (true | true))		#t
+
+test (or (true | true)
+	 (true | fail!))	#t
+
+test (or (true | fail!)
+	 (true | fail!))	#f
+
+;; tail calls
+trap ^rt-command-status-error (function (c) {
+				 test (job-detail (idio-error-location c)) #T{ (exit $(C/integer-> 3)) }
+
+				 ;; If we are a child Idio (from a |
+				 ;; operator) then we should invoke
+				 ;; the default-rcse handler which
+				 ;; will exit/kill us as it sees fit.
+				 if (not (C/== IDIO_PID (getpid))) {
+				   raise c
+				 }
+}) {
+  test (tc-and-1-fail!) #f
+  test (tc-and-2-fail!) #f
+  test (tc-or-1-fail!) #f
+  test (tc-or-2-fail!) #f
+}
+
+;; all done?
+Tests? (logical-command0 + 40)

@@ -36,6 +36,7 @@
 #include "gc.h"
 #include "idio.h"
 
+#include "command.h"
 #include "error.h"
 #include "evaluate.h"
 #include "fixnum.h"
@@ -72,7 +73,7 @@ static int idio_vars_set_dynamic_default (IDIO name, IDIO val)
 IDIO_DEFINE_PRIMITIVE0_DS ("SECONDS/get", SECONDS_get, (void), "", "\
 Return the VM's elapsed running time in seconds	\n\
 						\n\
-Normally accessed as the variable SECONDS	\n\
+Normally accessed as the variable :ref:`SECONDS`	\n\
 						\n\
 :return: elapsed VM running time		\n\
 :rtype: integer					\n\
@@ -81,11 +82,24 @@ Normally accessed as the variable SECONDS	\n\
     return idio_integer (idio_vm_elapsed ());
 }
 
+IDIO_DEFINE_PRIMITIVE0_DS ("%suppress-rcse/get", suppress_rcse_get, (void), "", "\
+Return the VM's \"suppress rcse\" state		\n\
+						\n\
+:return: VM's \"suppress rcse\" state		\n\
+:rtype: boolean					\n\
+")
+{
+    return idio_command_suppress_rcse;
+}
+
 void idio_vars_add_primitives ()
 {
     IDIO geti;
     geti = IDIO_ADD_PRIMITIVE (SECONDS_get);
     idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("SECONDS"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_Idio_module);
+
+    geti = IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, suppress_rcse_get);
+    idio_module_export_computed_symbol (IDIO_SYMBOLS_C_INTERN ("%suppress-rcse"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_command_module);
 
     idio_vars_set_dynamic_default (idio_vars_IFS_sym, idio_string_C_len (IDIO_STATIC_STR_LEN (IDIO_VARS_IFS_DEFAULT)));
     idio_vars_set_dynamic_default (idio_vars_suppress_exit_on_error_sym, idio_S_false);

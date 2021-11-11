@@ -6,8 +6,17 @@
 
 * `pgid` is the Process Group ID of the pipeline
 
-* `notified` is a flag to say whether any failure on job completion
-  has been reported
+* `notify-stopped` is a flag to say whether the job being stopped has
+  been reported
+
+* `notify-completed` is a flag to say whether any failure on job
+  completion has been reported
+
+* `raise?` is a flag to say whether any failure on job completion
+  should have an ``^rt-command-status-error`` condition raised
+
+  Notably, this is disabled in logical expressions thus allowing
+  external commands that fail to be used.
 
 * `raised` is a flag to say whether any failure on job completion
   has had a condition raised

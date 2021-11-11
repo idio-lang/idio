@@ -91,7 +91,9 @@ define (hole-marked? h) {
 }
 
 define (hole-tagged? h tag) {
-  (and (eq? (phh h) tag)
+  (and (pair? h)
+       (pair? (ph h))
+       (eq? (phh h) tag)
        (hole-marked? h))
 }
 

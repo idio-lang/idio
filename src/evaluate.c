@@ -1226,6 +1226,30 @@ static IDIO idio_meaning_function_reference (IDIO src, IDIO name, IDIO nametree,
     }
 }
 
+static IDIO idio_meaning_not (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm)
+{
+    IDIO_ASSERT (src);
+    IDIO_ASSERT (e);
+    IDIO_ASSERT (nametree);
+    IDIO_ASSERT (escapes);
+    IDIO_ASSERT (cs);
+    IDIO_ASSERT (cm);
+
+    IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (list, escapes);
+    IDIO_TYPE_ASSERT (array, cs);
+    IDIO_TYPE_ASSERT (module, cm);
+
+    IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, escapes, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+
+    IDIO tailp = idio_S_false;
+    if (IDIO_MEANING_IS_TAILP (flags)) {
+	tailp = idio_S_true;
+    }
+
+    return IDIO_LIST3 (IDIO_I_NOT, tailp, m);
+}
+
 static IDIO idio_meaning_escape (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm)
 {
     IDIO_ASSERT (src);
@@ -2497,7 +2521,15 @@ static IDIO idio_meaning_sequence (IDIO src, IDIO ep, IDIO nametree, IDIO escape
 	IDIO eph = IDIO_PAIR_H (ep);
 	IDIO ept = IDIO_PAIR_T (ep);
 
-	if (idio_isa_pair (ept)) {
+	/*
+	 * We're going to deviate here from LiSP which differentiates
+	 * between multiple and single expression sequences.
+	 *
+	 * We choose not to do that because we want AND/OR to
+	 * suppress-rcse thus handling external-command logic.
+	 */
+
+	if (1 || idio_isa_pair (ept)) {
 	    /*
 	     * If we have just loaded a file, a sequence can be
 	     * "really quite long" and blow C's stack up...  So,
@@ -2559,6 +2591,12 @@ static IDIO idio_meaning_sequence (IDIO src, IDIO ep, IDIO nametree, IDIO escape
 		mp = IDIO_PAIR_T (mp);
 	    }
 
+	    IDIO tailp = idio_S_false;
+	    if (IDIO_MEANING_IS_TAILP (flags)) {
+		tailp = idio_S_true;
+	    }
+
+	    r = idio_list_append2 (IDIO_LIST1 (tailp), r);
 	    return idio_pair (c, r);
 	} else {
 	    return idio_meanings_single_sequence (IDIO_MPP (eph, src), eph, nametree, escapes, flags, cs, cm);
@@ -4217,6 +4255,31 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 
 		return idio_S_notreached;
 	    }
+	} else if (idio_S_not == eh) {
+	    /* (not x) */
+	    if (idio_isa_pair (et)) {
+		if (idio_S_nil != IDIO_PAIR_T (et)) {
+		    /*
+		     * Test Case: evaluation-errors/not-multiple-args.idio
+		     *
+		     * (not 1 2)
+		     */
+		    idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("not"), "too many arguments", et);
+
+		    return idio_S_notreached;
+		} else {
+		    return idio_meaning_not (src, IDIO_PAIR_H (et), nametree, escapes, flags, cs, cm);
+		}
+	    } else {
+		/*
+		 * Test Case: evaluation-errors/not-nil.idio
+		 *
+		 * (not)
+		 */
+		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("not"), "no argument", eh);
+
+		return idio_S_notreached;
+	    }
 	} else if (idio_S_escape == eh) {
 	    /* (escape x) */
 	    if (idio_isa_pair (et)) {
@@ -4226,7 +4289,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 		     *
 		     * (escape 1 2)
 		     */
-		    idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("escape"), "too many arguments", eh);
+		    idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("escape"), "too many arguments", et);
 
 		    return idio_S_notreached;
 		} else {
@@ -4251,7 +4314,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 		     *
 		     * (quote 1 2)
 		     */
-		    idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("quote"), "too many arguments", eh);
+		    idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("quote"), "too many arguments", et);
 
 		    return idio_S_notreached;
 		} else {
@@ -4279,7 +4342,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 		     *
 		     * (quasiquote 1 2)
 		     */
-		    idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("quasiquote"), "too many arguments", eh);
+		    idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("quasiquote"), "too many arguments", et);
 
 		    return idio_S_notreached;
 		} else {

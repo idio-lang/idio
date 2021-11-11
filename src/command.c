@@ -72,6 +72,7 @@
 #include "libc-api.h"
 
 IDIO idio_command_module = idio_S_nil;
+IDIO idio_command_suppress_rcse = idio_S_false;
 
 /*
  * Code coverage:
@@ -1373,12 +1374,26 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
 				    idio_C_pointer_type (idio_CSI_libc_struct_rusage, rusage_selfp),
 				    idio_C_pointer_type (idio_CSI_libc_struct_rusage, rusage_childrenp));
 
+    /*
+     * When ^rt-command-status-error is being suppressed we 1) don't
+     * want to raise an rcse (duh) but 2) we don't want the stock
+     * wait-for-job/do-job-notification routines to alert us that the
+     * job has failed.
+     *
+     * For 1) we pass the inverse of suppress_rcse and for 2) we pass
+     * suppress_rcse as notify-completed as that (non-false) value
+     * means the code won't run.
+     */
+    IDIO inverted_suppress_rcse = idio_command_suppress_rcse == idio_S_false ? idio_S_true : idio_S_false;
+
     IDIO job = idio_struct_instance (idio_job_control_job_type,
 				     idio_pair (command,
 				     idio_pair (IDIO_LIST1 (proc),
 				     idio_pair (idio_C_int (0),
 				     idio_pair (idio_S_false,
 				     idio_pair (idio_S_false,
+				     idio_pair (inverted_suppress_rcse,
+				     idio_pair (idio_command_suppress_rcse,
 				     idio_pair (idio_S_nil,
 				     idio_pair (job_stdin_fd,
 				     idio_pair (job_stdout,
@@ -1387,7 +1402,7 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
 				     idio_pair (timing_start,
 				     idio_pair (idio_S_false,
 				     idio_pair (idio_S_false,
-				     idio_S_nil))))))))))))));
+				     idio_S_nil))))))))))))))));
     idio_array_push (protected, job);
 
     IDIO r = idio_job_control_launch_1proc_job (job, 1, pathname, argv, args);

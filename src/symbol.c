@@ -126,6 +126,7 @@ IDIO_SYMBOL_DECL (lt);
 IDIO_SYMBOL_DECL (map);
 IDIO_SYMBOL_DECL (module);
 IDIO_SYMBOL_DECL (none);
+IDIO_SYMBOL_DECL (not);
 IDIO_SYMBOL_DECL (num_eq);
 IDIO_SYMBOL_DECL (op);
 IDIO_SYMBOL_DECL (or);
@@ -1013,6 +1014,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("map", map);
     IDIO_SYMBOL_DEF ("module", module);
     IDIO_SYMBOL_DEF ("none", none);
+    IDIO_SYMBOL_DEF ("not", not);
     IDIO_SYMBOL_DEF ("eq", num_eq);
     IDIO_SYMBOL_DEF ("op", op);
     IDIO_SYMBOL_DEF ("or", or);

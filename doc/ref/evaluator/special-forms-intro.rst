@@ -59,6 +59,16 @@ If all of the expressions return ``#f`` then ``or`` returns ``#f``.
 
 If no expressions are passed, ``or`` returns ``#f``.
 
+.. _`not special form`:
+
+not
+^^^
+
+The ``not`` special form is used to inverted the sense of a boolean.
+
+There is a function variant, :ref:`not/function <not/function>`, for
+where a function is required.
+
 escape
 ^^^^^^
 

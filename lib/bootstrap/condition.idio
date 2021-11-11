@@ -457,7 +457,7 @@ type `ct`
 :return: #<unspec>
 
 `cb` will be invoked as :samp:`{cb} {c} iem cr-printf` where
-:samP:`{c}` is the condition instance, ``iem`` adds the standard
+:samp:`{c}` is the condition instance, ``iem`` adds the standard
 ``^idio-error`` information to the report and ``cr-printf`` is a
 :ref:`printf <printf>`-like function to add more information to the
 report.
@@ -480,7 +480,7 @@ report.
 :type prefix: string
 :param c: the condition
 :type c: condition instance
-:param handle: print to handle, defaults to current output handle
+:param handle: print to handle, defaults to current error handle
 :type handle: handle, optional
 :return: #<unspec>
 
@@ -491,7 +491,7 @@ Most reports are a single line but some, notably for
 multiple lines.
 
   " {
-    oh := (current-output-handle)
+    oh := (current-error-handle)
     if (and (not (null? args))
 	    (pair? args)) {
 	      oh = ph args
@@ -664,7 +664,7 @@ multiple lines.
        job := idio-error-location c
        osh := (open-output-string)
        format-job-detail job osh
-       cr-printf (get-output-string osh)
+       cr-printf "%s\n" (get-output-string osh)
        close-handle osh
        ;cr-printf "job: %s => %s" (%idio-job-pipeline job) (rt-command-status-error-status c)
      })

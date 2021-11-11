@@ -372,25 +372,6 @@ return `e`					\n\
     return e;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("not", not, (IDIO e), "e", "\
-return the boolean inverse of `e`		\n\
-						\n\
-:param e: expression to invert			\n\
-:type e: any					\n\
-:return: ``#t`` if `e` is ``#f``, ``#f`` otherwise		\n\
-")
-{
-    IDIO_ASSERT (e);
-
-    IDIO r = idio_S_false;
-
-    if (idio_S_false == e) {
-	r = idio_S_true;
-    }
-
-    return r;
-}
-
 /*
  * Equality -- what does that mean?  RnRS defines the equivalence
  * predicates -- albeit allowing for implementation dependent
@@ -3966,7 +3947,6 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (definedp);
     IDIO_ADD_PRIMITIVE (booleanp);
     IDIO_ADD_PRIMITIVE (identity);
-    IDIO_ADD_PRIMITIVE (not);
     IDIO_ADD_PRIMITIVE (eqp);
     IDIO_ADD_PRIMITIVE (eqvp);
     IDIO_ADD_PRIMITIVE (equalp);

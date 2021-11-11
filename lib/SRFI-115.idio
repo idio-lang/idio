@@ -524,7 +524,7 @@ define (regexp-match>=? m1 m2) {
 			;; sanity check for incompletely advanced epsilons
 			(and (integer? (regexp-match-ref m1 (i + 1)))
 			     ((regexp-match-ref m1 (i + 1)) lt (regexp-match-ref m1 i)))
-			((if (memq (i + 1) non-greedy-indexes) not values)
+			((if (memq (i + 1) non-greedy-indexes) not/function values)
 			 (and
 			  ((regexp-match-ref m2 i) eq (regexp-match-ref m1 i))
 			  (or (not (integer? (regexp-match-ref m2 (i + 1))))

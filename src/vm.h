@@ -171,14 +171,15 @@
 
 #define IDIO_A_NOP				160
 #define IDIO_A_PRIMCALL0			161
+#define IDIO_A_PRIMCALL1			162
+#define IDIO_A_PRIMCALL2			163
+#define IDIO_A_PRIMCALL3			164 /* not implemented */
+#define IDIO_A_PRIMCALL				165 /* not implemented */
 
-#define IDIO_A_PRIMCALL1			165
+#define IDIO_A_SUPPRESS_RCSE			170
+#define IDIO_A_POP_RCSE				171
 
-#define IDIO_A_PRIMCALL2			180
-
-#define IDIO_A_PRIMCALL3			195 /* not implemented */
-
-#define IDIO_A_PRIMCALL				200 /* not implemented */
+#define IDIO_A_NOT				180
 
 #define IDIO_A_EXPANDER				210
 #define IDIO_A_INFIX_OPERATOR			211

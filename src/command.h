@@ -24,6 +24,7 @@
 #define COMMAND_H
 
 extern IDIO idio_command_module;
+extern IDIO idio_command_suppress_rcse;
 
 void idio_command_not_found_error (char const *msg, IDIO cmd, IDIO c_location);
 

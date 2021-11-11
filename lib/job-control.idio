@@ -42,6 +42,8 @@ regardless.
 *#
 
 import libc
+import command
+
 export (%idio-interactive
 	%idio-jobs
 	%%last-job
@@ -82,7 +84,7 @@ export (%idio-interactive
 
 
 export-struct-accessors-only %idio-process	argv exec pid completed stopped status
-export-struct-accessors-only %idio-job		pipeline procs pgid notified raised tcattrs stdin stdout stderr report-timing timing-start timing-end async
+export-struct-accessors-only %idio-job		pipeline procs pgid notify-stopped notify-completed raise? raised tcattrs stdin stdout stderr report-timing timing-start timing-end async
 
 %%last-job := #n
 
@@ -160,6 +162,8 @@ define (job-as-string job seen) {
     procs-loop (%idio-job-procs job)
 
     hprintf r "in=%s out=%s err=%s " (%idio-job-stdin job) (%idio-job-stdout job) (%idio-job-stderr job)
+
+    hprintf r "ns?%s nc?%s r?%s-%s " (%idio-job-notify-stopped job) (%idio-job-notify-completed job) (%idio-job-raise? job) (%idio-job-raised job)
 
     hprintf r "rt?%s %s %s a?=%s" (%idio-job-report-timing job) (%idio-job-timing-start job) (%idio-job-timing-end job) (%idio-job-async job)
 
@@ -506,7 +510,7 @@ define (mark-process-status pid status) "update the process status of pid `pid` 
 :param pid: process id
 :param status: Unix process status
 
-:return: #t if the update was successfull, #f otherwise
+:return: #t if the update was successful, #f otherwise
 
 Store the `status` of the process `pid` that was returned by
 waitpid(2).  Return #f if all went well, some true value otherwise.
@@ -622,14 +626,16 @@ define (wait-for-job job) "wait for job `job` to be stopped or completed
   }
 
   if (job-failed job) {
-    if (not (%idio-job-raised job)) {
-      ct := ^rt-command-status-error
-      if (%idio-job-async job) {
-	ct = ^rt-async-command-status-error
+    if (%idio-job-raise? job) {
+      if (not (%idio-job-raised job)) {
+	ct := ^rt-command-status-error
+	if (%idio-job-async job) {
+	  ct = ^rt-async-command-status-error
+	}
+	c := make-condition ct "job failed" job (pipeline-detail job) (job-detail job)
+	set-%idio-job-raised! job #t
+	reraise c
       }
-      c := make-condition ct "job failed" job (pipeline-detail job) (job-detail job)
-      set-%idio-job-raised! job #t
-      reraise c
     }
   }
 
@@ -689,6 +695,7 @@ relied on.
 
   hprintf oh "\n"
   hprintf oh "job %6s: a?=%s: %s\n" (%idio-job-pgid job) (%idio-job-async job) (%idio-job-pipeline job)
+
   loop (%idio-job-procs job) (pipeline-detail job)
   if printed {
     hprintf oh "  flags: C - completed; !C - not completed; S - stopped\n"
@@ -735,9 +742,6 @@ relied on.
 	      js := (libc/struct-timeval-ref (ph timing-start) 'tv_sec)
 	      hprintf oh "Started at %s, %ds ago; " (libc/strftime "%c" (libc/localtime js)) ((libc/time) - js)
 	    }
-	    if (not timing-end) {
-	      hprintf oh "timing-end=%s" timing-end
-	    }
 	    hprintf oh "\n"
 	  }
 }
@@ -757,36 +761,39 @@ define (do-job-notification) "notify the user of any job status changes" {
 
 		  tidy-process-substitution-job job
 
-		  format-job-info job "completed"
+		  if (not (%idio-job-notify-completed job)) {
+		    format-job-info job "completed"
 
-		  ;; cf. time/time-command in common.idio
-		  if (%idio-job-report-timing job) {
-		    timing-start := %idio-job-timing-start job
-		    tv-before    := ph timing-start
-		    rus-before   := pht timing-start
-		    ruc-before   := phtt timing-start
-		    timing-end   := %idio-job-timing-end job
-		    tv-end       := ph timing-end
-		    rus-end      := pht timing-end
-		    ruc-end      := phtt timing-end
+		    ;; cf. time/time-command in common.idio
+		    if (%idio-job-report-timing job) {
+		      timing-start := %idio-job-timing-start job
+		      tv-before    := ph timing-start
+		      rus-before   := pht timing-start
+		      ruc-before   := phtt timing-start
+		      timing-end   := %idio-job-timing-end job
+		      tv-end       := ph timing-end
+		      rus-end      := pht timing-end
+		      ruc-end      := phtt timing-end
 
-		    ;; See the commentary for time-command in
-		    ;; common.idio about this algorithm
-		    h := (make-hash)
-		    hash-set! h #\R (libc/subtract-struct-timeval tv-end tv-before)
-		    hash-set! h #\U (libc/add-struct-timeval
-				     (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_utime)
-								   (libc/struct-rusage-ref rus-before 'ru_utime))
-				     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_utime)
-								   (libc/struct-rusage-ref ruc-before 'ru_utime)))
+		      ;; See the commentary for time-command in
+		      ;; common.idio about this algorithm
+		      h := (make-hash)
+		      hash-set! h #\R (libc/subtract-struct-timeval tv-end tv-before)
+		      hash-set! h #\U (libc/add-struct-timeval
+				       (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_utime)
+								     (libc/struct-rusage-ref rus-before 'ru_utime))
+				       (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_utime)
+								     (libc/struct-rusage-ref ruc-before 'ru_utime)))
 
-		    hash-set! h #\S (libc/add-struct-timeval
-				     (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_stime)
-								   (libc/struct-rusage-ref rus-before 'ru_stime))
-				     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_stime)
-								   (libc/struct-rusage-ref ruc-before 'ru_stime)))
+		      hash-set! h #\S (libc/add-struct-timeval
+				       (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_stime)
+								     (libc/struct-rusage-ref rus-before 'ru_stime))
+				       (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_stime)
+								     (libc/struct-rusage-ref ruc-before 'ru_stime)))
 
-		    printf "%s" (%format 'timeformat TIMEFORMAT h)
+		      printf "%s" (%format 'timeformat TIMEFORMAT h)
+		    }
+		    set-%idio-job-notify-completed! job #t
 		  }
 
 		  if (job-failed job) {
@@ -797,9 +804,9 @@ define (do-job-notification) "notify the user of any job status changes" {
 		  loop (pt jobs) njobs
 		})
 		((job-is-stopped job) {
-		  if (not (%idio-job-notified job)) {
+		  if (not (%idio-job-notify-stopped job)) {
 		    format-job-info job "stopped"
-		    set-%idio-job-notified! job #t
+		    set-%idio-job-notify-stopped! job #t
 		  }
 		  loop (pt jobs) (pair job njobs)
 		})
@@ -845,14 +852,16 @@ define (do-job-notification) "notify the user of any job status changes" {
 		 ((null? jobs) #n)
 		 (else {
 		   job := ph jobs
-		   if (not (%idio-job-raised job)) {
-		     ct := ^rt-command-status-error
-		     if (%idio-job-async job) {
-		       ct = ^rt-async-command-status-error
+		   if (%idio-job-raise? job) {
+		     if (not (%idio-job-raised job)) {
+		       ct := ^rt-command-status-error
+		       if (%idio-job-async job) {
+			 ct = ^rt-async-command-status-error
+		       }
+		       c := make-condition ct "job failed" job (pipeline-detail job) (job-detail job)
+		       set-%idio-job-raised! job #t
+		       reraise c
 		     }
-		     c := make-condition ct "job failed" job (pipeline-detail job) (job-detail job)
-		     set-%idio-job-raised! job #t
-		     reraise c
 		   }
 
 		   ;; if someone handled that error and returned (anything)
@@ -1012,7 +1021,7 @@ In particular, mark job `job` as not stopped.
   }
 
   loop (%idio-job-procs job)
-  set-%idio-job-notified! job #f
+  set-%idio-job-notify-stopped! job #f
 }
 
 define (continue-job job foreground) "mark job `job` as running and foreground it if required
@@ -1511,9 +1520,11 @@ define-infix-operator | 700 {
       $job       := (make-%idio-job '$orig-pipeline
 				    #n
 				    $pgid
-				    #f
-				    #f
-				    #n
+				    #f				  ; notify-stopped
+				    #f				  ; notify-completed
+				    (not/function command/%suppress-rcse)  ; raise?
+				    command/%suppress-rcse	  ; raised
+				    #n				  ; tcattrs
 				    $pipeline-r-fdn
 				    $pipeline-w-fdn
 				    $stderr
@@ -1909,9 +1920,11 @@ define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) 
       $job := (make-%idio-job '$cmd
 			      (list $proc)
 			      $pgid
-			      #f
-			      #f
-			      #n
+			      #f			    ; notify-stopped
+			      #f			    ; notify-completed
+			      (not/function command/%suppress-rcse)  ; raise?
+			      command/%suppress-rcse	    ; raised
+			      #n			    ; tcattrs
 			      $cmd-r-fdn
 			      $cmd-w-fdn
 			      $cmd-e-fd
@@ -1923,6 +1936,8 @@ define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) 
       $pid := (libc/fork)
       (cond
        ((C/== $pid libc/0pid_t) {
+	 suppress-pipefail! = #f
+	 suppress-exit-on-error! = #f
 	 set-default-handler! ^idio-error default-child-handler
 	 job-control/%idio-jobs = #n
 	 job-control/%%last-job = #n
@@ -2500,31 +2515,8 @@ define (jobs) "display the state of outstanding jobs" {
 		    #t
 		  })
 		  (else {
-		    job := ph jobs
-		    if first-j {
-		      first-j = #f
-		      printf "%6s %s\n" "pgid" "job-pipeline"
-		    }
-		    printf "%6d %s\n" (%idio-job-pgid job) (%idio-job-pipeline job)
-
-		    first-p := #t
-
-		    procs-loop :+ function (procs) {
-				    if (null? procs) #t {
-				      proc := ph procs
-				      if (null? proc) #t {
-					if first-p {
-					  first-p = #f
-					  printf "  %6s %2s %2s %s\n" "pid" "C?" "S?" "argv"
-					}
-					printf "  %6d %s %s %s\n" (%idio-process-pid proc) (%idio-process-completed proc) (%idio-process-stopped proc) (%idio-process-argv proc)
-					procs-loop (pt procs)
-				      }
-				    }
-		    }
-
-		    (and (procs-loop (%idio-job-procs job))
-			 (jobs-loop (pt jobs)))
+		    format-job-detail (ph jobs)
+		    jobs-loop (pt jobs)
 		  }))
   }
 

@@ -39,6 +39,7 @@
 
 #include "bignum.h"
 #include "c-type.h"
+#include "command.h"
 #include "error.h"
 #include "evaluate.h"
 #include "fixnum.h"
@@ -4525,6 +4526,7 @@ a wrapper to libc :manpage:`fork(2)`				\n\
     if (0 == C_pid) {
 	idio_job_control_cmd_pid = getpid ();
 	idio_job_control_interactive = 0;
+	idio_command_suppress_rcse = idio_S_false;
 	idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("PID"), idio_libc_pid_t (getpid ()), idio_Idio_module);
 	idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("PPID"), idio_libc_pid_t (getppid ()), idio_Idio_module);
     }

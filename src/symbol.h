@@ -96,6 +96,7 @@ extern IDIO_SYMBOL_DECL (lt);
 extern IDIO_SYMBOL_DECL (map);
 extern IDIO_SYMBOL_DECL (module);
 extern IDIO_SYMBOL_DECL (none);
+extern IDIO_SYMBOL_DECL (not);
 extern IDIO_SYMBOL_DECL (num_eq);
 extern IDIO_SYMBOL_DECL (op);
 extern IDIO_SYMBOL_DECL (or);

@@ -19,6 +19,24 @@
 ;; common.idio
 ;;
 
+;; Grr!  With ``not`` a special form (which we require it to be so we
+;; can handle logical expressions using external commands) we can't
+;; use ``not`` as something to be passed around, like a function.
+define (not/function x) "
+invert the boolean sense of `x`
+
+:param x: value to invert
+:type x: any
+:result: boolean inverse of `x`
+:rtype: boolean
+
+This is the function equivalent of the :ref:`not special form <not
+special form>`.
+
+" {
+  not x
+}
+
 define (s9/atom? x) "predicate to test if object is an atom
 
 :param x: object to test

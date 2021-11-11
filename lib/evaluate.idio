@@ -480,6 +480,10 @@ define (meaning-function-reference src name nametree escapes flags cs cm) {
 	}))
 }
 
+define (meaning-not src e nametree escapes flags cs cm) {
+  list I-NOT (eval-flags-tailp flags) (meaning (mpp e src) e nametree escapes (clear-tailp flags) cs cm)
+}
+
 define (meaning-escape src e nametree escapes flags cs cm) {
   meaning (mpp e src) e nametree escapes flags cs cm
 }
@@ -1189,9 +1193,9 @@ define (meaning*-multiple-sequence src e e+ nametree escapes flags keyword cs cm
   m+ := meaning-sequence src e+ nametree escapes flags keyword cs cm
 
   (case keyword
-	((and)		(list I-AND m m+))
-	((or)		(list I-OR m m+))
-	((begin)	(list I-BEGIN m m+))
+	((and)		(list I-AND   (eval-flags-tailp flags) m m+))
+	((or)		(list I-OR    (eval-flags-tailp flags) m m+))
+	((begin)	(list I-BEGIN (eval-flags-tailp flags) m m+))
 	(else
 	  ;; Shouldn't get here unless the clauses above don't cover
 	  ;; everything.  Developer error?
@@ -1201,11 +1205,19 @@ define (meaning*-multiple-sequence src e e+ nametree escapes flags keyword cs cm
 define (meaning-sequence src e+ nametree escapes flags keyword cs cm) {
   if (pair? e+) {
     he+ := ph e+
+    ;; We're going to deviate here from LiSP which differentiates
+    ;; between multiple and single expression sequences.
+    ;;
+    ;; We choose not to do that because we want AND/OR to
+    ;; suppress-rcse thus handling external-command logic.
+    meaning*-multiple-sequence src he+ (pt e+) nametree escapes flags keyword cs cm
+    #*
     if (pair? (pt e+)) {
       meaning*-multiple-sequence src he+ (pt e+) nametree escapes flags keyword cs cm
     } {
       meaning*-single-sequence src he+ nametree escapes flags cs cm
     }
+    *#
   } {
     ;; Shouldn't get here as the args were checked in meaning.
     ;; Developer error?
@@ -2149,13 +2161,31 @@ define (meaning src e nametree escapes flags cs cm) {
 	    }
 	  })
 
+	  ((not) {
+	    if (pair? te) {
+	      if (pair? (pt te)) {
+		;; Test Case: evaluation-errors/not-multiple-args.idio
+
+		;; (not 1 2)
+		meaning-error-param src "too many arguments" te
+	      } {
+		meaning-not src (ph te) nametree escapes flags cs cm
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/not-nil.idio
+
+	      ;; (not)
+	      meaning-error-param src "no argument" he
+	    }
+	  })
+
 	  ((escape) {
 	    if (pair? te) {
 	      if (pair? (pt te)) {
 		;; Test Case: evaluation-errors/escape-multiple-args.idio
 
 		;; (escape 1 2)
-		meaning-error-param src "too many arguments" he
+		meaning-error-param src "too many arguments" te
 	      } {
 		meaning-escape src (ph te) nametree escapes flags cs cm
 	      }
@@ -2173,7 +2203,7 @@ define (meaning src e nametree escapes flags cs cm) {
 		;; Test Case: evaluation-errors/quote-multiple-args.idio
 
 		;; (quote 1 2)
-		meaning-error-param src "too many arguments" he
+		meaning-error-param src "too many arguments" te
 	      } {
 		meaning-quotation src (ph te) nametree escapes flags
 	      }
@@ -2193,7 +2223,7 @@ define (meaning src e nametree escapes flags cs cm) {
 		;; Test Case: evaluation-errors/quasiquote-multiple-args.idio
 
 		;; (quasiquote 1 2)
-		meaning-error-param src "too many arguments" he
+		meaning-error-param src "too many arguments" te
 	      } {
 		meaning-quasiquotation src (ph te) nametree escapes flags cs cm
 	      }

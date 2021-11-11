@@ -382,7 +382,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     /* idio_debug ("compile: %s\n", m); */
 
     if (! idio_isa_pair (m)) {
-	idio_error_param_type ("pair", IDIO_LIST1 (m), IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("pair", m, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1381,7 +1381,9 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     */
 
 	    /* 2: */
+	    IDIO_IA_PUSH1 (IDIO_A_SUPPRESS_RCSE);
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+	    IDIO_IA_PUSH1 (IDIO_A_POP_RCSE);
 
 	    IDIO_IA_T ia2 = idio_ia (100);
 	    idio_codegen_compile (thr, ia2, cs, m2, depth + 1);
@@ -2336,8 +2338,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_AND:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) < 1) {
-		idio_codegen_error_param_args ("AND m+", mt, IDIO_C_FUNC_LOCATION_S ("AND"));
+		idio_list_length (mt) < 2) {
+		idio_codegen_error_param_args ("AND tail? m+", mt, IDIO_C_FUNC_LOCATION_S ("AND"));
 
 		/* notreached */
 		return;
@@ -2349,23 +2351,24 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     * remaining clauses *and* the inter-clause jumps
 	     *
 	     * 1: compile the first clause and append it to ia
-	     * (nothing special here)
+	     *    (nothing special here)
 	     *
 	     * 2: We can compile the meaning of each remaining clause
-	     * into iac[].
+	     *    into iac[].
 	     *
 	     * 3: create a couple of holding buffers: {iat} for the
-	     * per-clause calculations, and {iar} for the accumulated
-	     * result of all the per-clause shuffling
+	     *    per-clause calculations, and {iar} for the
+	     *    accumulated result of all the per-clause shuffling
 	     *
 	     * 3: Working *backwards* from n to 1, on behalf of clause
-	     * m-1 we can:
+	     *    m-1 we can:
 	     *
 	     *   a: calculate the "jump to the end" which is the
-	     *   accumulated "jump to the end" plus the size of iac[m]
+	     *      accumulated "jump to the end" plus the size of
+	     *      iac[m]
 	     *
 	     *   b: generate the JUMP-FALSE "jump to the end" in a
-	     *   temp buffer, iat
+	     *      temp buffer, iat
 	     *
 	     *   c: append iac[m] to iat
 	     *
@@ -2374,16 +2377,25 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     *   e: copy iat back over iar
 	     *
 	     *   f: set the accumulated "jump to the end" to be the
-	     *   size of iar
+	     *      size of iar
 	     *
 	     * 4: append iar to ia
 	     */
-	    IDIO m1 = IDIO_PAIR_H (mt);
-	    mt = IDIO_PAIR_T (mt);
-
-	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+	    IDIO tailp = IDIO_PAIR_H (mt);
+	    IDIO m1 = IDIO_PAIR_HT (mt);
+	    mt = IDIO_PAIR_TT (mt);
 
 	    size_t n = idio_list_length (mt);
+
+	    if (n ||
+		idio_S_false == tailp) {
+		IDIO_IA_PUSH1 (IDIO_A_SUPPRESS_RCSE);
+	    }
+	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+	    if (n ||
+		idio_S_false == tailp) {
+		IDIO_IA_PUSH1 (IDIO_A_POP_RCSE);
+	    }
 
 	    IDIO_IA_T iac[n];
 	    intptr_t i;
@@ -2395,7 +2407,17 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    size_t l = 0;
 	    for (i = 0; i < n ; i++) {
 		iac[i] = idio_ia (100);
+
+		if (i < (n - 1) ||
+		    idio_S_false == tailp) {
+		    idio_ia_push (iac[i], IDIO_A_SUPPRESS_RCSE);
+		}
 		idio_codegen_compile (thr, iac[i], cs, IDIO_PAIR_H (mt), depth + 1);
+		if (i < (n - 1) ||
+		    idio_S_false == tailp) {
+		    idio_ia_push (iac[i], IDIO_A_POP_RCSE);
+		}
+
 		l += IDIO_IA_USIZE (iac[i]);
 		mt = IDIO_PAIR_T (mt);
 	    }
@@ -2435,7 +2457,6 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		l = IDIO_IA_USIZE (iar);
 	    }
 
-
 	    idio_ia_append (ia, iar);
 
 	    idio_ia_free (iar);
@@ -2445,8 +2466,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_OR:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) < 1) {
-		idio_codegen_error_param_args ("OR m+", mt, IDIO_C_FUNC_LOCATION_S ("OR"));
+		idio_list_length (mt) < 2) {
+		idio_codegen_error_param_args ("OR tail? m+", mt, IDIO_C_FUNC_LOCATION_S ("OR"));
 
 		/* notreached */
 		return;
@@ -2459,12 +2480,21 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     *
 	     * See commentary for IDIO_I_CODE_AND, above
 	     */
-	    IDIO m1 = IDIO_PAIR_H (mt);
-	    mt = IDIO_PAIR_T (mt);
-
-	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+	    IDIO tailp = IDIO_PAIR_H (mt);
+	    IDIO m1 = IDIO_PAIR_HT (mt);
+	    mt = IDIO_PAIR_TT (mt);
 
 	    size_t n = idio_list_length (mt);
+
+	    if (n ||
+		idio_S_false == tailp) {
+		IDIO_IA_PUSH1 (IDIO_A_SUPPRESS_RCSE);
+	    }
+	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+	    if (n ||
+		idio_S_false == tailp) {
+		IDIO_IA_PUSH1 (IDIO_A_POP_RCSE);
+	    }
 
 	    IDIO_IA_T iac[n];
 	    intptr_t i;
@@ -2476,7 +2506,17 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    size_t l = 0;
 	    for (i = 0; i < n ; i++) {
 		iac[i] = idio_ia (100);
+
+		if (i < (n - 1) ||
+		    idio_S_false == tailp) {
+		    idio_ia_push (iac[i], IDIO_A_SUPPRESS_RCSE);
+		}
 		idio_codegen_compile (thr, iac[i], cs, IDIO_PAIR_H (mt), depth + 1);
+		if (i < (n - 1) ||
+		    idio_S_false == tailp) {
+		    idio_ia_push (iac[i], IDIO_A_POP_RCSE);
+		}
+
 		l += IDIO_IA_USIZE (iac[i]);
 		mt = IDIO_PAIR_T (mt);
 	    }
@@ -2488,7 +2528,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     * will be n of them.
 	     *
 	     * To grow the result we need (jump+iac[i]) in iat then
-	     * append iar then copy iat backto iar
+	     * append iar then copy iat back to iar
 	     */
 	    IDIO_IA_T iar = idio_ia (l + n * (1 + 9));
 	    IDIO_IA_T iat = idio_ia (l + n * (1 + 9));
@@ -2525,17 +2565,43 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_BEGIN:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) < 1) {
-		idio_codegen_error_param_args ("BEGIN m+", mt, IDIO_C_FUNC_LOCATION_S ("BEGIN"));
+		idio_list_length (mt) < 2) {
+		idio_codegen_error_param_args ("BEGIN tail? m+", mt, IDIO_C_FUNC_LOCATION_S ("BEGIN"));
 
 		/* notreached */
 		return;
 	    }
 
+	    /* IDIO tailp = IDIO_PAIR_H (mt); */
+	    mt = IDIO_PAIR_T (mt);
+
 	    while (idio_S_nil != mt) {
 		idio_codegen_compile (thr, ia, cs, IDIO_PAIR_H (mt), depth + 1);
 		mt = IDIO_PAIR_T (mt);
 	    }
+	}
+	break;
+    case IDIO_I_CODE_NOT:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 2) {
+		idio_codegen_error_param_args ("NOT tail? m", mt, IDIO_C_FUNC_LOCATION_S ("NOT"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO tailp = IDIO_PAIR_H (mt);
+	    mt = IDIO_PAIR_HT (mt);
+
+	    if (idio_S_false == tailp) {
+		IDIO_IA_PUSH1 (IDIO_A_SUPPRESS_RCSE);
+	    }
+	    idio_codegen_compile (thr, ia, cs, mt, depth + 1);
+	    if (idio_S_false == tailp) {
+		IDIO_IA_PUSH1 (IDIO_A_POP_RCSE);
+	    }
+	    IDIO_IA_PUSH1 (IDIO_A_NOT);
 	}
 	break;
     case IDIO_I_CODE_EXPANDER:
@@ -2882,6 +2948,7 @@ static idio_codegen_symbol_t idio_codegen_symbols[] = {
     { "I-AND",					IDIO_I_AND },
     { "I-OR",					IDIO_I_OR },
     { "I-BEGIN",				IDIO_I_BEGIN },
+    { "I-NOT",					IDIO_I_NOT },
 
     { "I-EXPANDER",				IDIO_I_EXPANDER },
     { "I-INFIX-OPERATOR",			IDIO_I_INFIX_OPERATOR },

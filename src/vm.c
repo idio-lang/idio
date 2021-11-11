@@ -4815,6 +4815,7 @@ int idio_vm_run1 (IDIO thr)
 	    idio_display_C (")", dosh);
 
 	    idio_array_push (idio_vm_krun, IDIO_LIST2 (k, idio_get_output_string (dosh)));
+	    idio_command_suppress_rcse = idio_S_false;
 	}
 	break;
     case IDIO_A_POP_ABORT:
@@ -5353,6 +5354,19 @@ int idio_vm_run1 (IDIO thr)
 		idio_vm_primitive_result_trace (thr);
 	    }
 	}
+	break;
+    case IDIO_A_POP_RCSE:
+	IDIO_VM_RUN_DIS ("POP-RCSE");
+	idio_command_suppress_rcse = IDIO_THREAD_STACK_POP ();
+	break;
+    case IDIO_A_SUPPRESS_RCSE:
+	IDIO_VM_RUN_DIS ("SUPPRESS-RCSE");
+	IDIO_THREAD_STACK_PUSH (idio_command_suppress_rcse);
+	idio_command_suppress_rcse = idio_S_true;
+	break;
+    case IDIO_A_NOT:
+	IDIO_VM_RUN_DIS ("NOT");
+	IDIO_THREAD_VAL (thr) = IDIO_THREAD_VAL (thr) == idio_S_false ? idio_S_true : idio_S_false;
 	break;
     case IDIO_A_EXPANDER:
 	{
@@ -6413,6 +6427,15 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		IDIO primdata = idio_vm_values_ref (vi);
 		IDIO_VM_DASM ("PRIMITIVE2 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    }
+	    break;
+	case IDIO_A_SUPPRESS_RCSE:
+	    IDIO_VM_DASM ("SUPPRESS-RCSE");
+	    break;
+	case IDIO_A_POP_RCSE:
+	    IDIO_VM_DASM ("POP-RCSE");
+	    break;
+	case IDIO_A_NOT:
+	    IDIO_VM_DASM ("NOT");
 	    break;
 	case IDIO_A_EXPANDER:
 	    {
