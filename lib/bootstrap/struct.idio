@@ -76,8 +76,8 @@ define-template (define-struct-accessors-only name & fields) {
   arg := gensym 'arg
   val := gensym 'val
   field-index := function (field fields) {
-		   mq := memq field fields
-		   (length fields) - (length mq)
+    mq := memq field fields
+    (length fields) - (length mq)
   }
 
   make-fname := string->symbol (append-string "make-" (symbol->string name))
@@ -105,16 +105,16 @@ define-template (define-struct-accessors-only name & fields) {
     ;;   %struct-instance-ref-direct g/7 bar 1
     ;; }
     $@(map (function (field) {
-	      get-fname := string->symbol (append-string
-					   (symbol->string name)
-					   "-"
-					   (symbol->string field))
+      get-fname := string->symbol (append-string
+				   (symbol->string name)
+				   "-"
+				   (symbol->string field))
 
-	      #T{
-		define ($get-fname $arg) {
-		  %struct-instance-ref-direct $arg $name $(field-index field fields)
-		}
-	      }
+      #T{
+	define ($get-fname $arg) {
+	  %struct-instance-ref-direct $arg $name $(field-index field fields)
+	}
+      }
     })
        fields)
 
@@ -125,18 +125,18 @@ define-template (define-struct-accessors-only name & fields) {
     ;;   %struct-instance-set-direct! g/7 bar 1 g/8
     ;; }
     $@(map (function (field) {
-	      set-fname := string->symbol (append-string
-					   "set-"
-					   (symbol->string name)
-					   "-"
-					   (symbol->string field)
-					   "!")
+      set-fname := string->symbol (append-string
+				   "set-"
+				   (symbol->string name)
+				   "-"
+				   (symbol->string field)
+				   "!")
 
-	      #T{
-		define ($set-fname $arg $val) {
-		  %struct-instance-set-direct! $arg $name $(field-index field fields) $val
-		}
-	      }
+      #T{
+	define ($set-fname $arg $val) {
+	  %struct-instance-set-direct! $arg $name $(field-index field fields) $val
+	}
+      }
     })
        fields)
   }
@@ -147,8 +147,8 @@ define-template (export-struct-accessors-only name & fields) {
   arg := gensym 'arg
   val := gensym 'val
   field-index := function (field fields) {
-		   mq := memq field fields
-		   (length fields) - (length mq)
+    mq := memq field fields
+    (length fields) - (length mq)
   }
 
   make-fname := string->symbol (append-string "make-" (symbol->string name))
@@ -158,20 +158,20 @@ define-template (export-struct-accessors-only name & fields) {
     define-struct-accessors-only $name $@fields
     export $make-fname $pred-fname
     $@(map (function (field) {
-	      get-fname := string->symbol (append-string
-					   (symbol->string name)
-					   "-"
-					   (symbol->string field))
-	      set-fname := string->symbol (append-string
-					   "set-"
-					   (symbol->string name)
-					   "-"
-					   (symbol->string field)
-					   "!")
+      get-fname := string->symbol (append-string
+				   (symbol->string name)
+				   "-"
+				   (symbol->string field))
+      set-fname := string->symbol (append-string
+				   "set-"
+				   (symbol->string name)
+				   "-"
+				   (symbol->string field)
+				   "!")
 
-	      #T{
-		export $get-fname $set-fname
-	      }
+      #T{
+	export $get-fname $set-fname
+      }
     })
        fields)
   }

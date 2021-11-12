@@ -88,26 +88,26 @@ command-parent-error-load := {
 	  ^rt-glob-error
 	  ^system-error
 	  ^rt-parameter-type-error) (function (c) {
-				       ;eprintf "command-parent-error #%s: %s %s\n" n msg (idio-error-location c)
-				       test (idio-error-message c) msg
+	    ;eprintf "command-parent-error #%s: %s %s\n" n msg (idio-error-location c)
+	    test (idio-error-message c) msg
 
-				       if (not (string=? (idio-error-message c) msg)) {
-					 condition-report (append-string "command-parent-error-load: " filename) c (current-error-handle)
-				       }
+	    if (not (string=? (idio-error-message c) msg)) {
+	      condition-report (append-string "command-parent-error-load: " filename) c (current-error-handle)
+	    }
 
-				       if (system-error? c) {
-					 tested := #f
-					 if (pair? args) {
-					   test (system-error-function c) (ph args)
-					   tested = #t
-					 }
+	    if (system-error? c) {
+	      tested := #f
+	      if (pair? args) {
+		test (system-error-function c) (ph args)
+		tested = #t
+	      }
 
-					 if (not tested) {
-					   condition-report (append-string "command-error-load: " filename) c (current-error-handle)
-					 }
-				       }
+	      if (not tested) {
+		condition-report (append-string "command-error-load: " filename) c (current-error-handle)
+	      }
+	    }
 
-				       trap-return 'command-parent-error
+	    trap-return 'command-parent-error
 	  }) {
 	    t0 := Tests
 	    (symbol-value 'load 'Idio) filename
@@ -116,7 +116,7 @@ command-parent-error-load := {
 	      Errors = Errors + 1
 	      Tests = t0 + exp-tests
 	    }
-	  }
+    }
   }
 }
 
@@ -130,16 +130,16 @@ command-env-error-load := {
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-command-error
 	  ^rt-parameter-type-error) (function (c) {
-				       test (idio-error-message c) msg
+	    test (idio-error-message c) msg
 
-				       if (not (string=? (idio-error-message c) msg)) {
-					 condition-report (append-string "command-child-error-load: " filename) c (current-error-handle)
-				       }
+	    if (not (string=? (idio-error-message c) msg)) {
+	      condition-report (append-string "command-child-error-load: " filename) c (current-error-handle)
+	    }
 
-				       trap-return #t
+	    trap-return #t
 	  }) {
 	    (symbol-value 'load 'Idio) filename
-	  }
+    }
 
     ;; we usually generate some stragglers...
     (wait)

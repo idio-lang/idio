@@ -77,10 +77,9 @@ define (Rx-as-string rx seen-rxs) {
 add-as-string Rx Rx-as-string
 
 ;; Syntactic sugar.
-define-syntax rx \
-	      (syntax-rules ()
-			    ((rx sre ...)
-			     (regexp #T{ (: sre ...) })))
+define-syntax rx (syntax-rules ()
+  ((rx sre ...)
+   (regexp #T{ (: sre ...) })))
 
 ;;; A state is a single nfa state with transition rules.
 define-struct state accept? chars match match-rule next1 next2 id
@@ -145,14 +144,14 @@ define (flag-clear a b)		(and-bitset a (not-bitset b))
 define (char-set-ci cset) {
   cased := (char-set)
   char-set-for-each-set cset (function (ch) {
-				uc := integer->unicode ch
-				(cond
-				 ((Lowercase? uc) {
-				   char-set-set! cased (->Uppercase uc)
-				 })
-				 ((Uppercase? uc) {
-				   char-set-set! cased (->Lowercase uc)
-				 }))
+    uc := integer->unicode ch
+    (cond
+     ((Lowercase? uc) {
+       char-set-set! cased (->Uppercase uc)
+     })
+     ((Uppercase? uc) {
+       char-set-set! cased (->Lowercase uc)
+     }))
   })
   ior-char-set cset cased
 }
@@ -227,13 +226,13 @@ match in the count.
 
 define (regexp-match-name-offset md name) {
   loop :+ function (ls first) {
-	    (cond
-	     ((null? ls) (or first (error/type ^rt-parameter-value-error 'regexp-match-name-offset "unknown match name" md name)))
-	     ((eq? name (phh ls))
-	      (if (regexp-match-submatch-start+end md (pth ls))
-		  (pth ls)
-		  (loop (pt ls) (or first (pth ls)))))
-	     (else (loop (pt ls) first)))
+    (cond
+     ((null? ls) (or first (error/type ^rt-parameter-value-error 'regexp-match-name-offset "unknown match name" md name)))
+     ((eq? name (phh ls))
+      (if (regexp-match-submatch-start+end md (pth ls))
+       (pth ls)
+       (loop (pt ls) (or first (pth ls)))))
+     (else (loop (pt ls) first)))
   }
 
   loop (regexp-match-names md) #f
@@ -242,8 +241,8 @@ define (regexp-match-name-offset md name) {
 define (regexp-match-ref md n) {
   (array-ref (regexp-match-matches md)
 	     (if (integer? n)
-		 n
-		 (regexp-match-name-offset md n)))
+	      n
+	      (regexp-match-name-offset md n)))
 }
 
 define (regexp-match-set! md n val) {
@@ -256,10 +255,10 @@ define (copy-regexp-match md) {
   dst := make-array len #f
 
   (do ((i 0 (i + 1)))
-      ((i eq len)
-       (make-regexp-match dst (regexp-match-rx md) (regexp-match-string md))) {
-	 array-set! dst i (array-ref src i)
-       })
+   ((i eq len)
+    (make-regexp-match dst (regexp-match-rx md) (regexp-match-string md))) {
+    array-set! dst i (array-ref src i)
+  })
 }
 
 ;;> Returns the matching result for the given named or indexed
@@ -343,7 +342,7 @@ define (regexp-match-submatch-start+end md n) {
       end := regexp-match-ref md (pt rule)
       str := regexp-match-string md
       and start end (pair start end)
-      } #f
+    } #f
   }
 }
 
@@ -393,26 +392,26 @@ define (regexp-match-convert recurse? md str) {
   (cond
    ((array? md) {
      loop :+ function (i res) {
-	       (cond
-		((i ge (array-length md))
-		 (reverse res))
-		((integer? (array-ref md i))
-		 (loop (i + 2)
-		       (pair (substring str (array-ref md i)
-					    (array-ref md (i + 1)))
-			res)))
-		(else
-		 (loop (i + 1)
-		       (pair (regexp-match-convert recurse? (array-ref md i) str)
-			     res))))
+       (cond
+	((i ge (array-length md))
+	 (reverse res))
+	((integer? (array-ref md i))
+	 (loop (i + 2)
+	       (pair (substring str (array-ref md i)
+				    (array-ref md (i + 1)))
+		res)))
+	(else
+	 (loop (i + 1)
+	       (pair (regexp-match-convert recurse? (array-ref md i) str)
+		     res))))
      }
 
      loop 0 #n
    })
    ((list? md)
     (if recurse?
-	(map (function (x) (regexp-match-convert recurse? x str)) (reverse md))
-	(regexp-match-convert recurse? (ph md) str)))
+     (map (function (x) (regexp-match-convert recurse? x str)) (reverse md))
+     (regexp-match-convert recurse? (ph md) str)))
    ((and (pair? md) (integer? (ph md)) (integer? (pt md)))
     (substring str (ph md) (pt md)))
    ((regexp-match? md)
@@ -474,9 +473,9 @@ define (match-collect md spec) {
   end := pht spec
   vec := regexp-match-matches md
   loop :+ function (i ls) {
-	    (if (i ge end)
-		(reverse ls)
-		(loop (i + 1) (pair (match-extract md i) ls)))
+    (if (i ge end)
+     (reverse ls)
+     (loop (i + 1) (pair (match-extract md i) ls)))
   }
 
   loop (1 + (ph spec)) #n
@@ -508,28 +507,28 @@ define (regexp-match>=? m1 m2) {
   end := (array-length (regexp-match-matches m1)) - 1
 
   loop :+ function (i) {
-	    (cond
-	     ((i ge end)
-	      #t)
-	     ((and (eqv? (regexp-match-ref m1 i)
-			 (regexp-match-ref m2 i))
-	       (eqv? (regexp-match-ref m1 (i + 1))
-		     (regexp-match-ref m2 (i + 1))))
-	       (loop (i + 2)))
-	     (else
-	      (not
-	       (and (integer? (regexp-match-ref m2 i))
-		    (or (not (integer? (regexp-match-ref m1 i)))
-			((regexp-match-ref m2 i) lt (regexp-match-ref m1 i))
-			;; sanity check for incompletely advanced epsilons
-			(and (integer? (regexp-match-ref m1 (i + 1)))
-			     ((regexp-match-ref m1 (i + 1)) lt (regexp-match-ref m1 i)))
-			((if (memq (i + 1) non-greedy-indexes) not/function values)
-			 (and
-			  ((regexp-match-ref m2 i) eq (regexp-match-ref m1 i))
-			  (or (not (integer? (regexp-match-ref m2 (i + 1))))
-			      (and (integer? (regexp-match-ref m1 (i + 1)))
-				   ((regexp-match-ref m2 (i + 1)) gt (regexp-match-ref m1 (i + 1))))))))))))
+    (cond
+     ((i ge end)
+      #t)
+     ((and (eqv? (regexp-match-ref m1 i)
+		 (regexp-match-ref m2 i))
+       (eqv? (regexp-match-ref m1 (i + 1))
+	     (regexp-match-ref m2 (i + 1))))
+       (loop (i + 2)))
+     (else
+      (not
+       (and (integer? (regexp-match-ref m2 i))
+	    (or (not (integer? (regexp-match-ref m1 i)))
+		((regexp-match-ref m2 i) lt (regexp-match-ref m1 i))
+		;; sanity check for incompletely advanced epsilons
+		(and (integer? (regexp-match-ref m1 (i + 1)))
+		     ((regexp-match-ref m1 (i + 1)) lt (regexp-match-ref m1 i)))
+		((if (memq (i + 1) non-greedy-indexes) not/function values)
+		 (and
+		  ((regexp-match-ref m2 i) eq (regexp-match-ref m1 i))
+		  (or (not (integer? (regexp-match-ref m2 (i + 1))))
+		      (and (integer? (regexp-match-ref m1 (i + 1)))
+			   ((regexp-match-ref m2 (i + 1)) gt (regexp-match-ref m1 (i + 1))))))))))))
   }
 
   loop 0
@@ -581,11 +580,11 @@ define (posse-clear! posse) {
 define (posse-for-each proc posse) {
   #*
   skeys := sort (hash-keys posse) (function (a b) {
-				     lt a.id b.id
+    lt a.id b.id
   })
   for-each (function (key) {
-	      val := hash-ref posse key
-	      proc val
+    val := hash-ref posse key
+    proc val
   }) skeys
   *#
   hash-walk posse (function (key val) (proc val))
@@ -613,15 +612,15 @@ define (make-start-searcher rx str) {
 define (psrs srs & o) {
   r := (open-output-string)
   skeys := sort (hash-keys srs) (function (a b) {
-				   lt (state-id a) (state-id b)
+    lt (state-id a) (state-id b)
   })
   for-each (function (k) {
-	      v := hash-ref srs k
-	      if (not (null? o)) {
-		hprintf r (ph o)
-	      }
-	      hprintf r "st=<%s>" (state-as-string k)
-	      hprintf r " v.m=<%s>;" (regexp-match-as-string (regexp-match v))
+    v := hash-ref srs k
+    if (not (null? o)) {
+      hprintf r (ph o)
+    }
+    hprintf r "st=<%s>" (state-as-string k)
+    hprintf r " v.m=<%s>;" (regexp-match-as-string (regexp-match v))
   }) skeys
   get-output-string r
 }
@@ -659,58 +658,58 @@ define (state-matches? st str i ch start end matches) {
 
 define (posse-advance! new seen accept sr str i start end) {
   advance! :+ function (sr) {
-		st := searcher-state sr
-		;; Update match data.
-		(cond
-		 ((state-match st) {
-		   index := state-match st
-		   matches := searcher-matches sr
-		   before := copy-regexp-match matches
-		   (cond
-		    ((pair? index) {
-		      ;; Submatch list, accumulate and push.
-		      prev := regexp-match-ref matches (ph index)
-		      new := (pair (match-collect matches (pt index))
-				   (if (pair? prev) prev #n))
-		      regexp-match-set! matches (ph index) new
-		    })
-		    ((not (and (eq? 'non-greedy-left (state-match-rule st))
-			       (regexp-match-ref matches index)
-			       ((regexp-match-ref matches index) ge (regexp-match-ref matches (index - 1)))))
-		      (regexp-match-set! matches index i)))
-		 }))
-		;; Follow transitions.
-		(cond
-		 ((state-accept? st)
-		  (set-pt! accept (searcher-max sr (pt accept))))
-		 ((posse-ref seen sr)
-		  => (function (sr-prev) (searcher-merge! sr-prev sr)))
-		 ((epsilon-state? st) {
-		   ch := and (i lt end) (string-ref str i)
-		   (cond
-		    ((state-matches? st str i ch start end (searcher-matches sr)) {
-		      posse-add! seen sr
-		      next1 := state-next1 st
-		      next2 := state-next2 st
-		      matches := and next2 (searcher-matches sr)
-		      (cond
-		       (next1 {
-			 set-searcher-state! sr next1
-			 advance! (make-searcher next1 (copy-regexp-match (searcher-matches sr)))
-		       }))
-		      (cond
-		       (next2 {
-			 sr2 := make-searcher next2 (copy-regexp-match matches)
-			 advance! sr2
-		       }))
-		    }))
-		 })
-		 ((posse-ref new sr) ; Non-special, non-epsilon searcher, add to posse.
-		  ;; Merge regexp-match for existing searcher.
-		  => (function (sr-prev) (searcher-merge! sr-prev sr)))
-		 (else
-		  ;; Add new searcher.
-		  (posse-add! new sr)))
+    st := searcher-state sr
+    ;; Update match data.
+    (cond
+     ((state-match st) {
+       index := state-match st
+       matches := searcher-matches sr
+       before := copy-regexp-match matches
+       (cond
+	((pair? index) {
+	  ;; Submatch list, accumulate and push.
+	  prev := regexp-match-ref matches (ph index)
+	  new := (pair (match-collect matches (pt index))
+		       (if (pair? prev) prev #n))
+	  regexp-match-set! matches (ph index) new
+	})
+	((not (and (eq? 'non-greedy-left (state-match-rule st))
+		   (regexp-match-ref matches index)
+		   ((regexp-match-ref matches index) ge (regexp-match-ref matches (index - 1)))))
+	  (regexp-match-set! matches index i)))
+     }))
+    ;; Follow transitions.
+    (cond
+     ((state-accept? st)
+      (set-pt! accept (searcher-max sr (pt accept))))
+     ((posse-ref seen sr)
+      => (function (sr-prev) (searcher-merge! sr-prev sr)))
+     ((epsilon-state? st) {
+       ch := and (i lt end) (string-ref str i)
+       (cond
+	((state-matches? st str i ch start end (searcher-matches sr)) {
+	  posse-add! seen sr
+	  next1 := state-next1 st
+	  next2 := state-next2 st
+	  matches := and next2 (searcher-matches sr)
+	  (cond
+	   (next1 {
+	     set-searcher-state! sr next1
+	     advance! (make-searcher next1 (copy-regexp-match (searcher-matches sr)))
+	   }))
+	  (cond
+	   (next2 {
+	     sr2 := make-searcher next2 (copy-regexp-match matches)
+	     advance! sr2
+	   }))
+	}))
+     })
+     ((posse-ref new sr) ; Non-special, non-epsilon searcher, add to posse.
+      ;; Merge regexp-match for existing searcher.
+      => (function (sr-prev) (searcher-merge! sr-prev sr)))
+     (else
+      ;; Add new searcher.
+      (posse-add! new sr)))
   }
 
   advance! sr
@@ -724,52 +723,52 @@ define (regexp-run-offsets search? rx str start end) {
   accept := list #f
 
   loop :+ function (i searchers1 searchers2) {
-	    ;; Advance initial epsilons once from the first index, or
-	    ;; every time when searching.
-	    (cond
-	     ((or search? (i eq start)) {
-	       posse-advance! searchers1 epsilons accept (make-start-searcher rx str) \
-							 str i start end
-	       posse-clear! epsilons
-	     }))
-	    (cond
-	     ((or (i ge end)
-		  (and search?
-		       (searcher? (pt accept)) {
-			 accept-start := searcher-start-match (pt accept)
-			 posse-every (function (searcher)
-					((searcher-start-match searcher) gt accept-start)) \
-				     searchers1
-		       })
-		  (and (not search?)
-		       (posse-empty? searchers1)))
-	       ;; Terminate when the string is done or there are no
-	       ;; more searchers.  If we terminate prematurely and
-	       ;; are not searching, return false.
-	       (and (searcher? (pt accept)) {
-		 matches := searcher-matches (pt accept)
-		 (and (or search? ((regexp-match-ref matches 1) ge end))
-		      (searcher-matches (pt accept)))
-	       }))
-	     (else {
-	       ;; Otherwise advance normally.
-	       ch := string-ref str i
-	       i2 := i + 1
-	       ;; NOTE: non-deterministic from hash order
-	       posse-for-each (function (sr)
-				 (cond
-				  ((state-matches? (searcher-state sr)
-						   str i ch
-						   start end (searcher-matches sr)) {
-						     set-searcher-state! sr (state-next1 (searcher-state sr))
-						     ;; Epsilons are considered at the next position.
-						     posse-advance! searchers2 epsilons accept sr str i2 start end
-						     posse-clear! epsilons
-						   }))) \
-			      searchers1
-	       posse-clear! searchers1
-	       loop i2 searchers2 searchers1
-	     }))
+    ;; Advance initial epsilons once from the first index, or every
+    ;; time when searching.
+    (cond
+     ((or search? (i eq start)) {
+       posse-advance! searchers1 epsilons accept (make-start-searcher rx str) \
+						 str i start end
+       posse-clear! epsilons
+     }))
+    (cond
+     ((or (i ge end)
+	  (and search?
+	       (searcher? (pt accept)) {
+		 accept-start := searcher-start-match (pt accept)
+		 posse-every (function (searcher)
+		  ((searcher-start-match searcher) gt accept-start)) \
+			     searchers1
+	  })
+	  (and (not search?)
+	       (posse-empty? searchers1)))
+       ;; Terminate when the string is done or there are no more
+       ;; searchers.  If we terminate prematurely and are not
+       ;; searching, return false.
+       (and (searcher? (pt accept)) {
+	 matches := searcher-matches (pt accept)
+	 (and (or search? ((regexp-match-ref matches 1) ge end))
+	      (searcher-matches (pt accept)))
+       }))
+     (else {
+       ;; Otherwise advance normally.
+       ch := string-ref str i
+       i2 := i + 1
+       ;; NOTE: non-deterministic from hash order
+       posse-for-each (function (sr)
+	(cond
+	 ((state-matches? (searcher-state sr)
+			  str i ch
+			  start end (searcher-matches sr)) {
+	   set-searcher-state! sr (state-next1 (searcher-state sr))
+	   ;; Epsilons are considered at the next position.
+	   posse-advance! searchers2 epsilons accept sr str i2 start end
+	   posse-clear! epsilons
+	 }))) \
+		      searchers1
+       posse-clear! searchers1
+       loop i2 searchers2 searchers1
+     }))
   }
 
   loop start (posse) (posse)
@@ -860,9 +859,9 @@ define (parse-flags ls) {
     case s ((i ci case-insensitive) ~ci?) (else ~none)
   }
   loop :+ function (ls res) {
-	    (if (not (pair? ls))
-		res
-		(loop (pt ls) (flag-join res (symbol->flag (ph ls)))))
+    (if (not (pair? ls))
+     res
+     (loop (pt ls) (flag-join res (symbol->flag (ph ls)))))
   }
 
   loop ls ~none
@@ -901,7 +900,7 @@ define (match/bow str i ch start end matches) {
 }
 define (match/eow str i ch start end matches) {
   (and (or (i ge end)
-       (not (char-word-constituent? ch)))
+	   (not (char-word-constituent? ch)))
    (i gt start)
    (char-word-constituent?
     (string-ref str (i - 1))))
@@ -929,65 +928,65 @@ define (lookup-char-set name flags) {
   (cond
    ((flag-set? flags ~ascii?)
     (case name
-	  ((any) char-set:full)
-	  ((nonl) char-set:nonl)
-	  ((lower-case lower)
-	   (if (flag-set? flags ~ci?) %char-set:letter %char-set:lower-case))
-	  ((upper-case upper)
-	   (if (flag-set? flags ~ci?) %char-set:letter %char-set:upper-case))
-	  ((title-case title)
-	   (if (flag-set? flags ~ci?) %char-set:letter (char-set)))
-	  ((alphabetic alpha) %char-set:letter)
-	  ((numeric num digit) %char-set:digit)
-	  ((alphanumeric alphanum alnum) %char-set:letter+digit)
-	  ((punctuation punct) %char-set:punctuation)
-	  ((symbol) %char-set:symbol)
-	  ((graphic graph) %char-set:graphic)
-	  ((word-constituent) %char-set:word-constituent)
-	  ((whitespace white space) %char-set:whitespace)
-	  ((printing print) %char-set:printing)
-	  ((control cntrl) %char-set:iso-control)
-	  ((hex-digit xdigit hex) char-set:hex-digit)
-	  ((ascii) char-set:ascii)
-	  (else #f)))
+     ((any) char-set:full)
+     ((nonl) char-set:nonl)
+     ((lower-case lower)
+      (if (flag-set? flags ~ci?) %char-set:letter %char-set:lower-case))
+     ((upper-case upper)
+      (if (flag-set? flags ~ci?) %char-set:letter %char-set:upper-case))
+     ((title-case title)
+      (if (flag-set? flags ~ci?) %char-set:letter (char-set)))
+     ((alphabetic alpha) %char-set:letter)
+     ((numeric num digit) %char-set:digit)
+     ((alphanumeric alphanum alnum) %char-set:letter+digit)
+     ((punctuation punct) %char-set:punctuation)
+     ((symbol) %char-set:symbol)
+     ((graphic graph) %char-set:graphic)
+     ((word-constituent) %char-set:word-constituent)
+     ((whitespace white space) %char-set:whitespace)
+     ((printing print) %char-set:printing)
+     ((control cntrl) %char-set:iso-control)
+     ((hex-digit xdigit hex) char-set:hex-digit)
+     ((ascii) char-set:ascii)
+     (else #f)))
    (else
     (case name
-	  ((any) char-set:full)
-	  ((nonl) char-set:nonl)
-	  ((lower-case lower)
-	   (if (flag-set? flags ~ci?) char-set:cased char-set:lower-case))
-	  ((upper-case upper)
-	   (if (flag-set? flags ~ci?) char-set:cased char-set:upper-case))
-	  ((title-case title)
-	   (if (flag-set? flags ~ci?) char-set:cased char-set:title-case))
-	  ((alphabetic alpha) char-set:letter)
-	  ((numeric num digit) char-set:digit)
-	  ((alphanumeric alphanum alnum) char-set:letter+digit)
-	  ((punctuation punct) char-set:punctuation)
-	  ((symbol) char-set:symbol)
-	  ((graphic graph) char-set:graphic)
-	  ((word-constituent) char-set:word-constituent)
-	  ((whitespace white space) char-set:whitespace)
-	  ((printing print) char-set:printing)
-	  ((control cntrl) char-set:control)
-	  ((hex-digit xdigit hex) char-set:hex-digit)
-	  ((ascii) char-set:ascii)
-	  (else #f))))
+     ((any) char-set:full)
+     ((nonl) char-set:nonl)
+     ((lower-case lower)
+      (if (flag-set? flags ~ci?) char-set:cased char-set:lower-case))
+     ((upper-case upper)
+      (if (flag-set? flags ~ci?) char-set:cased char-set:upper-case))
+     ((title-case title)
+      (if (flag-set? flags ~ci?) char-set:cased char-set:title-case))
+     ((alphabetic alpha) char-set:letter)
+     ((numeric num digit) char-set:digit)
+     ((alphanumeric alphanum alnum) char-set:letter+digit)
+     ((punctuation punct) char-set:punctuation)
+     ((symbol) char-set:symbol)
+     ((graphic graph) char-set:graphic)
+     ((word-constituent) char-set:word-constituent)
+     ((whitespace white space) char-set:whitespace)
+     ((printing print) char-set:printing)
+     ((control cntrl) char-set:control)
+     ((hex-digit xdigit hex) char-set:hex-digit)
+     ((ascii) char-set:ascii)
+     (else #f))))
 }
 
 define (sre-flatten-ranges orig-ls) {
   loop :+ function (ls res) {
-	    (cond
-	     ((null? ls)
-	      (reverse res))
-	     ((string? (ph ls))
-	      (loop (append (string->list (ph ls)) (pt ls)) res))
-	     ((null? (pt ls))
-	      (error/type ^rt-parameter-value-error 'sre-flatten-ranges "unbalanced cset / range" orig-ls))
-	     ((string? (pht ls))
-	      (loop (pair (ph ls) (append (string->list (pht ls)) (ptt ls))) res))
-	     (else
-	      (loop (ptt ls) (pair (pair (ph ls) (pht ls)) res))))
+    (cond
+     ((null? ls)
+      (reverse res))
+     ((string? (ph ls))
+      (loop (append (string->list (ph ls)) (pt ls)) res))
+     ((null? (pt ls))
+      (error/type ^rt-parameter-value-error 'sre-flatten-ranges "unbalanced cset / range" orig-ls))
+     ((string? (pht ls))
+      (loop (pair (ph ls) (append (string->list (pht ls)) (ptt ls))) res))
+     (else
+      (loop (ptt ls) (pair (pair (ph ls) (pht ls)) res))))
   }
 
   loop orig-ls #n
@@ -1003,14 +1002,14 @@ define (every pred ls) {
 define (any pred ls & lol) {
   define (any1 pred ls) {
     (if (pair? (pt ls))
-        ((function (x) (if x x (any1 pred (pt ls)))) (pred (ph ls)))
-        (pred (ph ls)))
+     ((function (x) (if x x (any1 pred (pt ls)))) (pred (ph ls)))
+     (pred (ph ls)))
   }
   define (anyn pred lol) {
     (if (every pair? lol)
-        ((function (x) (if x x (anyn pred (map pt lol))))
-         (apply pred (map ph lol)))
-        #f)
+     ((function (x) (if x x (anyn pred (map pt lol))))
+      (apply pred (map ph lol)))
+     #f)
   }
   if (null? lol) (if (pair? ls) (any1 pred ls) #f) (anyn pred (pair ls lol))
 }
@@ -1063,41 +1062,41 @@ define (sre->char-set sre & o) {
    ((unicode? sre) (maybe-ci (char-set sre)))
    ((string? sre)
     (if (1 eq (string-length sre))
-	(maybe-ci (string->char-set sre))
-	(error/type ^rt-parameter-value-error 'sre-char-set "only single char strings can be char-sets")))
+     (maybe-ci (string->char-set sre))
+     (error/type ^rt-parameter-value-error 'sre-char-set "only single char strings can be char-sets")))
    ((pair? sre)
     (if (string? (ph sre))
-	(maybe-ci (string->char-set (ph sre)))
-	(case (ph sre)
-	      ((char-set) (if (null? (ptt sre))
-			      (maybe-ci (string->char-set (pht sre)))
-			      (error/type ^rt-parameter-value-error 'sre->char-set "(char-set) takes only one char-set" sre)))
-	      ((/ char-range)
-	       (->cs
-		#T{
-		  or $@(map (function (x) (ucs-range->char-set
-					   (unicode->integer (ph x))
-					   (1 + (unicode->integer (pt x)))))
-			(sre-flatten-ranges (pt sre)))
-		}))
-	      ((\& \and) (apply intersection-char-set (map ->cs (pt sre))))
-	      ((\| \or) (apply union-char-set (map ->cs (pt sre))))
-	      ((~ complement) (complement-char-set (->cs #T{ or $@(pt sre) })))
-	      ((- difference) (difference-char-set (->cs (pht sre))
-						   (->cs #T{ (or $@(ptt sre)) })))
-	      ((w/case) (if (null? (ptt sre))
-			    (sre->char-set (pht sre) (flag-clear flags ~ci?))
-			    (error/type ^rt-parameter-value-error 'sre-char-set "w/case takes only one char-set" sre)))
-	      ((w/nocase) (if (null? (ptt sre))
-			      (sre->char-set (pht sre) (flag-join flags ~ci?))
-			      (error/type ^rt-parameter-value-error 'sre-char-set "w/nocase takes only one char-set" sre)))
-	      ((w/ascii) (if (null? (ptt sre))
-			     (sre->char-set (pht sre) (flag-join flags ~ascii?))
-			     (error/type ^rt-parameter-value-error 'sre-char-set "w/ascii takes only one char-set" sre)))
-	      ((w/unicode) (if (null? (ptt sre))
-			       (sre->char-set (pht sre) (flag-clear flags ~ascii?))
-			       (error/type ^rt-parameter-value-error 'sre-char-set "w/unicode takes only one char-set" sre)))
-	      (else (error/type ^rt-parameter-type-error 'sre-char-set "invalid sre char-set" sre)))))
+     (maybe-ci (string->char-set (ph sre)))
+     (case (ph sre)
+      ((char-set) (if (null? (ptt sre))
+       (maybe-ci (string->char-set (pht sre)))
+       (error/type ^rt-parameter-value-error 'sre->char-set "(char-set) takes only one char-set" sre)))
+      ((/ char-range)
+       (->cs
+	#T{
+	  or $@(map (function (x) (ucs-range->char-set
+				   (unicode->integer (ph x))
+				   (1 + (unicode->integer (pt x)))))
+		(sre-flatten-ranges (pt sre)))
+       }))
+      ((\& \and) (apply intersection-char-set (map ->cs (pt sre))))
+      ((\| \or) (apply union-char-set (map ->cs (pt sre))))
+      ((~ complement) (complement-char-set (->cs #T{ or $@(pt sre) })))
+      ((- difference) (difference-char-set (->cs (pht sre))
+					   (->cs #T{ (or $@(ptt sre)) })))
+      ((w/case) (if (null? (ptt sre))
+       (sre->char-set (pht sre) (flag-clear flags ~ci?))
+       (error/type ^rt-parameter-value-error 'sre-char-set "w/case takes only one char-set" sre)))
+      ((w/nocase) (if (null? (ptt sre))
+       (sre->char-set (pht sre) (flag-join flags ~ci?))
+       (error/type ^rt-parameter-value-error 'sre-char-set "w/nocase takes only one char-set" sre)))
+      ((w/ascii) (if (null? (ptt sre))
+       (sre->char-set (pht sre) (flag-join flags ~ascii?))
+       (error/type ^rt-parameter-value-error 'sre-char-set "w/ascii takes only one char-set" sre)))
+      ((w/unicode) (if (null? (ptt sre))
+       (sre->char-set (pht sre) (flag-clear flags ~ascii?))
+       (error/type ^rt-parameter-value-error 'sre-char-set "w/unicode takes only one char-set" sre)))
+      (else (error/type ^rt-parameter-type-error 'sre-char-set "invalid sre char-set" sre)))))
    (else (error/type ^rt-parameter-type-error 'sre-char-set "invalid sre char-set" sre)))
 }
 
@@ -1117,33 +1116,33 @@ Returns an SRE corresponding to the given SRFI 14 character set
 
 define (strip-submatches sre) {
   (if (pair? sre)
-      (case (ph sre)
-	    (($ submatch) (strip-submatches (pair ': (pt sre))))
-	    ((-> => submatch-named) (strip-submatches (pair ': (ptt sre))))
-	    (else (pair (strip-submatches (ph sre))
-			(strip-submatches (pt sre)))))
-      sre)
+   (case (ph sre)
+    (($ submatch) (strip-submatches (pair ': (pt sre))))
+    ((-> => submatch-named) (strip-submatches (pair ': (ptt sre))))
+    (else (pair (strip-submatches (ph sre))
+		(strip-submatches (pt sre)))))
+   sre)
 }
 
 define (sre-expand-reps from to sre) {
   sre0 := strip-submatches sre
   loop :+ function (i res) {
-	    (if (i eq from)
-		(cond
-		 ((not to)
-		  (reverse (pair #T{ (* $sre) } res)))
-		 ((from eq to)
-		  (reverse (pair sre (pt res))))
-		 (else {
-		   loop :+ function (i res) {
-			     (if (i ge to)
-				 (reverse (pair #T{ (? $sre) } res))
-				 (loop (i + 1) (pair #T{ (? $sre0) } res)))
-		   }
+    (if (i eq from)
+     (cond
+      ((not to)
+       (reverse (pair #T{ (* $sre) } res)))
+      ((from eq to)
+       (reverse (pair sre (pt res))))
+      (else {
+	loop :+ function (i res) {
+	  (if (i ge to)
+	   (reverse (pair #T{ (? $sre) } res))
+	   (loop (i + 1) (pair #T{ (? $sre0) } res)))
+	}
 
-		   loop (i + 1) res
-		 }))
-		(loop (i + 1) (pair sre0 res)))
+	loop (i + 1) res
+      }))
+     (loop (i + 1) (pair sre0 res)))
   }
 
   loop 0 '(:)
@@ -1204,239 +1203,239 @@ Returns `sre` unmodified if it is already a regexp.
       => (function (cset) (make-char-state cset ~none next (next-id))))
      ((symbol? sre)
       (case sre
-	    ((epsilon) next)
-	    ((bos) (make-char-state match/bos flags next (next-id)))
-	    ((eos) (make-char-state match/eos flags next (next-id)))
-	    ((bol) (make-char-state match/bol flags next (next-id)))
-	    ((eol) (make-char-state match/eol flags next (next-id)))
-	    ((bow) (make-char-state match/bow flags next (next-id)))
-	    ((eow) (make-char-state match/eow flags next (next-id)))
-	    ((nwb) (make-char-state match/nwb flags next (next-id)))
-	    ((bog) (make-char-state match/bog flags next (next-id)))
-	    ((eog) (make-char-state match/eog flags next (next-id)))
-	    ((grapheme)
-	     (->rx
-	      #T{
-		(or
-		 (: (* $char-set:hangul-l) (+ $char-set:hangul-v)
-					   (* $char-set:hangul-t))
-		 (: (* $char-set:hangul-l) $char-set:hangul-v
-					   (* $char-set:hangul-v) (* $char-set:hangul-t))
-		 (: (* $char-set:hangul-l) $char-set:hangul-lvt
-					   (* $char-set:hangul-t))
-		 (+ $char-set:hangul-l)
-		 (+ $char-set:hangul-t)
-		 (+ $char-set:regional-indicator)
-		 (: "\r\n")
-		 (: (~ control ("\r\n"))
-		    (* $char-set:extend-or-spacing-mark))
-		 control)
-	      }
-	      flags
-	      next))
-	    ((word) (->rx '(word+ any) flags next))
-	    (else (error/type ^rt-parameter-value-error '->rx "unknown sre symbol" sre))))
+       ((epsilon) next)
+       ((bos) (make-char-state match/bos flags next (next-id)))
+       ((eos) (make-char-state match/eos flags next (next-id)))
+       ((bol) (make-char-state match/bol flags next (next-id)))
+       ((eol) (make-char-state match/eol flags next (next-id)))
+       ((bow) (make-char-state match/bow flags next (next-id)))
+       ((eow) (make-char-state match/eow flags next (next-id)))
+       ((nwb) (make-char-state match/nwb flags next (next-id)))
+       ((bog) (make-char-state match/bog flags next (next-id)))
+       ((eog) (make-char-state match/eog flags next (next-id)))
+       ((grapheme)
+	(->rx
+	 #T{
+	   (or
+	    (: (* $char-set:hangul-l) (+ $char-set:hangul-v)
+				      (* $char-set:hangul-t))
+	    (: (* $char-set:hangul-l) $char-set:hangul-v
+				      (* $char-set:hangul-v) (* $char-set:hangul-t))
+	    (: (* $char-set:hangul-l) $char-set:hangul-lvt
+				      (* $char-set:hangul-t))
+	    (+ $char-set:hangul-l)
+	    (+ $char-set:hangul-t)
+	    (+ $char-set:regional-indicator)
+	    (: "\r\n")
+	    (: (~ control ("\r\n"))
+	       (* $char-set:extend-or-spacing-mark))
+	    control)
+	}
+	 flags
+	 next))
+       ((word) (->rx '(word+ any) flags next))
+       (else (error/type ^rt-parameter-value-error '->rx "unknown sre symbol" sre))))
      ((pair? sre)
       (case (ph sre)
-	    ((seq :)
-	     ;; Sequencing.  An empty sequence jumps directly to next,
-	     ;; otherwise we join the first element to the sequence formed
-	     ;; of the remaining elements followed by next.
-	     (if (null? (pt sre))
-		 next {
-		   ;; Make a dummy intermediate to join the states so that
-		   ;; we can generate n1 first, preserving the submatch order.
-		   n2 := make-epsilon-state #f (next-id)
-		   n1 := ->rx (pht sre) flags n2
-		   n3 := ->rx (pair 'seq (ptt sre)) flags next
+       ((seq :)
+	;; Sequencing.  An empty sequence jumps directly to next,
+	;; otherwise we join the first element to the sequence formed
+	;; of the remaining elements followed by next.
+	(if (null? (pt sre))
+	 next {
+	  ;; Make a dummy intermediate to join the states so that we
+	  ;; can generate n1 first, preserving the submatch order.
+	  n2 := make-epsilon-state #f (next-id)
+	  n1 := ->rx (pht sre) flags n2
+	  n3 := ->rx (pair 'seq (ptt sre)) flags next
 
-		   set-state-next1! n2 n3
-		   n1
-		 }))
-	    ((or \|)
-	     ;; Alternation.  An empty alternation always fails.
-	     ;; Otherwise we fork between any of the alternations, each
-	     ;; continuing to next.
-	     (cond
-	      ((null? (pt sre))
-	       #f)
-	      ((char-set-sre? sre)
-	       (make-char-state (sre->char-set sre) flags next (next-id)))
-	      ((null? (ptt sre))
-	       (->rx (pht sre) flags next))
-	      (else {
-		n1 := ->rx (pht sre) flags next
-		n2 := ->rx (pair 'or (ptt sre)) flags next
+	  set-state-next1! n2 n3
+	  n1
+	}))
+       ((or \|)
+	;; Alternation.  An empty alternation always fails.  Otherwise
+	;; we fork between any of the alternations, each continuing to
+	;; next.
+	(cond
+	 ((null? (pt sre))
+	  #f)
+	 ((char-set-sre? sre)
+	  (make-char-state (sre->char-set sre) flags next (next-id)))
+	 ((null? (ptt sre))
+	  (->rx (pht sre) flags next))
+	 (else {
+	   n1 := ->rx (pht sre) flags next
+	   n2 := ->rx (pair 'or (ptt sre)) flags next
 
 
-		make-fork-state n1 n2 (next-id)
-	      })))
-	    ((? optional ?? non-greedy-optional)
-	     ;; Optionality.  Either match the body or fork to the next
-	     ;; state directly.
-	     (make-fork-state (->rx (pair 'seq (pt sre)) flags next)
-			      next (next-id)))
-	    ((* zero-or-more *? non-greedy-zero-or-more)
-	     ;; Repetition.  Introduce two fork states which can jump from
-	     ;; the end of the loop to the beginning and from the
-	     ;; beginning to the end (to skip the first iteration).
-	     {
-	       n2 := make-fork-state next #f (next-id)
-	       n1 := make-fork-state (->rx (pair 'seq (pt sre)) flags n2) n2 (next-id)
+	   make-fork-state n1 n2 (next-id)
+	 })))
+       ((? optional ?? non-greedy-optional)
+	;; Optionality.  Either match the body or fork to the next
+	;; state directly.
+	(make-fork-state (->rx (pair 'seq (pt sre)) flags next)
+			 next (next-id)))
+       ((* zero-or-more *? non-greedy-zero-or-more)
+	;; Repetition.  Introduce two fork states which can jump from
+	;; the end of the loop to the beginning and from the beginning
+	;; to the end (to skip the first iteration).
+	{
+	  n2 := make-fork-state next #f (next-id)
+	  n1 := make-fork-state (->rx (pair 'seq (pt sre)) flags n2) n2 (next-id)
 
-	       set-state-next2! n2 n1
-	       n1
-	     })
-	    ((+ one-or-more)
-	     ;; One-or-more repetition.  Same as above but the first
-	     ;; transition is required so the rx is simpler - we only
-	     ;; need one fork from the end of the loop to the beginning.
-	     {
-	       n2 := make-fork-state next #f (next-id)
-	       n1 := ->rx (pair 'seq (pt sre)) flags n2
+	  set-state-next2! n2 n1
+	  n1
+       })
+       ((+ one-or-more)
+	;; One-or-more repetition.  Same as above but the first
+	;; transition is required so the rx is simpler - we only need
+	;; one fork from the end of the loop to the beginning.
+	{
+	  n2 := make-fork-state next #f (next-id)
+	  n1 := ->rx (pair 'seq (pt sre)) flags n2
 
-	       set-state-next2! n2 n1
-	       n1
-	     })
-	    ((= exactly)
-	     ;; Exact repetition.
-	     (->rx (sre-expand-reps (pht sre) (pht sre) (pair 'seq (ptt sre)))
-		   flags next))
-	    ((>= at-least)
-	     ;; n-or-more repetition.
-	     (->rx (sre-expand-reps (pht sre) #f (pair 'seq (ptt sre)))
-		   flags next))
-	    ((** repeated **? non-greedy-repeated)
-	     ;; n-to-m repetition.
-	     (->rx (sre-expand-reps (pht sre) (ph (ptt sre))
-					      (pair 'seq (pt (ptt sre))))
+	  set-state-next2! n2 n1
+	  n1
+       })
+       ((= exactly)
+	;; Exact repetition.
+	(->rx (sre-expand-reps (pht sre) (pht sre) (pair 'seq (ptt sre)))
 	      flags next))
-	    ((-> => submatch-named)
-	     ;; Named submatches just record the name for the current
-	     ;; match and rewrite as a non-named submatch.
-	     (cond
-	      ((flag-set? flags ~nocapture?)
-	       (->rx (pair 'seq (ptt sre)) flags next))
-	      (else
-	       (set! match-names
-		     (pair (pair (pht sre) (1 + current-match)) match-names))
-	       (->rx (pair 'submatch (ptt sre)) flags next))))
-	    ((*-> *=> submatch-named-list)
-	     (cond
-	      ((flag-set? flags ~nocapture?)
-	       (->rx (pair 'seq (ptt sre)) flags next))
-	      (else
-	       (set! match-names (pair (pair (pht sre) current-match) match-names))
-	       (->rx (pair 'submatch-list (ptt sre)) flags next))))
-	    (($ submatch)
-	     ;; A submatch wraps next with an epsilon transition before
-	     ;; next, setting the start and end index on the result and
-	     ;; wrapped next respectively.
-	     (cond
-	      ((flag-set? flags ~nocapture?)
-	       (->rx (pair 'seq (pt sre)) flags next))
-	      (else {
-		num := current-match
-		index := current-index
+       ((>= at-least)
+	;; n-or-more repetition.
+	(->rx (sre-expand-reps (pht sre) #f (pair 'seq (ptt sre)))
+	      flags next))
+       ((** repeated **? non-greedy-repeated)
+	;; n-to-m repetition.
+	(->rx (sre-expand-reps (pht sre) (ph (ptt sre))
+					 (pair 'seq (pt (ptt sre))))
+	 flags next))
+       ((-> => submatch-named)
+	;; Named submatches just record the name for the current match
+	;; and rewrite as a non-named submatch.
+	(cond
+	 ((flag-set? flags ~nocapture?)
+	  (->rx (pair 'seq (ptt sre)) flags next))
+	 (else
+	  (set! match-names
+		(pair (pair (pht sre) (1 + current-match)) match-names))
+	  (->rx (pair 'submatch (ptt sre)) flags next))))
+       ((*-> *=> submatch-named-list)
+	(cond
+	 ((flag-set? flags ~nocapture?)
+	  (->rx (pair 'seq (ptt sre)) flags next))
+	 (else
+	  (set! match-names (pair (pair (pht sre) current-match) match-names))
+	  (->rx (pair 'submatch-list (ptt sre)) flags next))))
+       (($ submatch)
+	;; A submatch wraps next with an epsilon transition before
+	;; next, setting the start and end index on the result and
+	;; wrapped next respectively.
+	(cond
+	 ((flag-set? flags ~nocapture?)
+	  (->rx (pair 'seq (pt sre)) flags next))
+	 (else {
+	   num := current-match
+	   index := current-index
 
-		current-match = current-match + 1
-		current-index = current-index + 2
-		match-rules = #T{ (($index & $(index + 1)) $@match-rules) }
-		make-submatch-state (pair 'seq (pt sre)) flags next index
-	      })))
-	    ((*$ submatch-list)
-	     ;; A submatch-list wraps a range of submatch results into a
-	     ;; single match value.
-	     (cond
-	      ((flag-set? flags ~nocapture?)
-	       (->rx (pair 'seq (pt sre)) flags next))
-	      (else {
-		num := current-match
-		index := current-index
+	   current-match = current-match + 1
+	   current-index = current-index + 2
+	   match-rules = #T{ (($index & $(index + 1)) $@match-rules) }
+	   make-submatch-state (pair 'seq (pt sre)) flags next index
+	 })))
+       ((*$ submatch-list)
+	;; A submatch-list wraps a range of submatch results into a
+	;; single match value.
+	(cond
+	 ((flag-set? flags ~nocapture?)
+	  (->rx (pair 'seq (pt sre)) flags next))
+	 (else {
+	   num := current-match
+	   index := current-index
 
-		current-match = current-match + 1
-		current-index = current-index + 1
-		match-rules = #T{ ($index $@match-rules) }
+	   current-match = current-match + 1
+	   current-index = current-index + 1
+	   match-rules = #T{ ($index $@match-rules) }
 
-		n2 := make-epsilon-state next (next-id)
-		n1 := ->rx (pair 'submatch (pt sre)) flags n2
+	   n2 := make-epsilon-state next (next-id)
+	   n1 := ->rx (pair 'submatch (pt sre)) flags n2
 
-		set-state-match! n2 (list index num current-match)
-		set-state-match-rule! n2 'list
-		n1
-	      })))
-	    ((~ \- \& \/ complement difference \and char-range char-set)
-	     (make-char-state (sre->char-set sre flags) ~none next (next-id)))
-	    ((word)
-	     (->rx #T{ (: bow $@(pt sre) eow) } flags next))
-	    ((word+)
-	     (->rx #T{ (word (+ $(if (equal? '(any) (pt sre))
-				     'word-constituent
-				     (intersection-char-set
-				      char-set:word-constituent
-				      (sre->char-set #T{ (or $@(pt sre)) } flags))))) }
-		   flags
-		   next))
-	    ((w/case)
-	     (->rx #T{ (: $@(pt sre)) } (flag-clear flags ~ci?) next))
-	    ((w/nocase)
-	     (->rx #T{ (: $@(pt sre)) } (flag-join flags ~ci?) next))
-	    ((w/unicode)
-	     (->rx #T{ (: $@(pt sre)) } (flag-clear flags ~ascii?) next))
-	    ((w/ascii)
-	     (->rx #T{ (: $@(pt sre)) } (flag-join flags ~ascii?) next))
-	    ((w/nocapture)
-	     (->rx #T{ (: $@(pt sre)) } (flag-join flags ~nocapture?) next))
-	    (else
-	     (if (string? (ph sre))
-		 (make-char-state (sre->char-set sre flags) ~none next (next-id))
-		 (error/type ^rt-parameter-value-error '->rx "unknown sre pair" sre))))))
+	   set-state-match! n2 (list index num current-match)
+	   set-state-match-rule! n2 'list
+	   n1
+	 })))
+       ((~ \- \& \/ complement difference \and char-range char-set)
+	(make-char-state (sre->char-set sre flags) ~none next (next-id)))
+       ((word)
+	(->rx #T{ (: bow $@(pt sre) eow) } flags next))
+       ((word+)
+	(->rx #T{ (word (+ $(if (equal? '(any) (pt sre))
+	 'word-constituent
+	 (intersection-char-set
+	  char-set:word-constituent
+	  (sre->char-set #T{ (or $@(pt sre)) } flags))))) }
+	      flags
+	      next))
+       ((w/case)
+	(->rx #T{ (: $@(pt sre)) } (flag-clear flags ~ci?) next))
+       ((w/nocase)
+	(->rx #T{ (: $@(pt sre)) } (flag-join flags ~ci?) next))
+       ((w/unicode)
+	(->rx #T{ (: $@(pt sre)) } (flag-clear flags ~ascii?) next))
+       ((w/ascii)
+	(->rx #T{ (: $@(pt sre)) } (flag-join flags ~ascii?) next))
+       ((w/nocapture)
+	(->rx #T{ (: $@(pt sre)) } (flag-join flags ~nocapture?) next))
+       (else
+	(if (string? (ph sre))
+	 (make-char-state (sre->char-set sre flags) ~none next (next-id))
+	 (error/type ^rt-parameter-value-error '->rx "unknown sre pair" sre))))))
   }
 
   flags := parse-flags (and (pair? o) (ph o))
 
   (if (regexp? sre)
-      sre
-      {
-	start := make-submatch-state sre flags (make-accept-state (next-id)) 0
-	;; (define (state->list st)
-	;;   (let ((seen (make-hash-table eq?))
-	;;         (count 0))
-	;;     (reverse
-	;;      (let lp ((st st) (res '()))
-	;;        (cond
-	;;         ((not (state? st)) res)
-	;;         ((hash-table-ref/default seen st #f) res)
-	;;         (else
-	;;          (hash-table-set! seen st count)
-	;;          (let ((orig-count count))
-	;;            (set! count (count + 1))
-	;;            (let* ((next1 (lp (state-next1 st) '()))
-	;;                   (next2 (lp (state-next2 st) '()))
-	;;                   (this (append
-	;;                          (list (state-id st) ;;orig-count
-	;;                                (cond
-	;;                                 ((epsilon-state? st)
-	;;                                  (if (state-chars st) '? '-))
-	;;                                 ((and (char-set? (state-chars st))
-	;;                                       (< (char-set-size (state-chars st)) 5))
-	;;                                  (char-set->string (state-chars st)))
-	;;                                 ((unicode? (state-chars st))
-	;;                                  (string (state-chars st)))
-	;;                                 (else '+))
-	;;                                (cond
-	;;                                 ((state-next1 st) => state-id)
-	;;                                 (else #f)))
-	;;                          (if (state-next2 st)
-	;;                              (list (state-id (state-next2 st)))
-	;;                              '())
-	;;                          (if (state-match st)
-	;;                              (list (list 'm (state-match st)))
-	;;                              '()))))
-	;;              (append next2 next1 (cons this res))))))))))
-	;;(for-each (lambda (x) (write x) (newline)) (state->list start))
-	make-Rx start current-match current-index non-greedy-indexes (list->array (reverse match-rules)) match-names sre
-      })
+   sre
+   {
+     start := make-submatch-state sre flags (make-accept-state (next-id)) 0
+     ;; (define (state->list st)
+     ;;   (let ((seen (make-hash-table eq?))
+     ;;         (count 0))
+     ;;     (reverse
+     ;;      (let lp ((st st) (res '()))
+     ;;        (cond
+     ;;         ((not (state? st)) res)
+     ;;         ((hash-table-ref/default seen st #f) res)
+     ;;         (else
+     ;;          (hash-table-set! seen st count)
+     ;;          (let ((orig-count count))
+     ;;            (set! count (count + 1))
+     ;;            (let* ((next1 (lp (state-next1 st) '()))
+     ;;                   (next2 (lp (state-next2 st) '()))
+     ;;                   (this (append
+     ;;                          (list (state-id st) ;;orig-count
+     ;;                                (cond
+     ;;                                 ((epsilon-state? st)
+     ;;                                  (if (state-chars st) '? '-))
+     ;;                                 ((and (char-set? (state-chars st))
+     ;;                                       (< (char-set-size (state-chars st)) 5))
+     ;;                                  (char-set->string (state-chars st)))
+     ;;                                 ((unicode? (state-chars st))
+     ;;                                  (string (state-chars st)))
+     ;;                                 (else '+))
+     ;;                                (cond
+     ;;                                 ((state-next1 st) => state-id)
+     ;;                                 (else #f)))
+     ;;                          (if (state-next2 st)
+     ;;                              (list (state-id (state-next2 st)))
+     ;;                              '())
+     ;;                          (if (state-match st)
+     ;;                              (list (list 'm (state-match st)))
+     ;;                              '()))))
+     ;;              (append next2 next1 (cons this res))))))))))
+     ;;(for-each (lambda (x) (write x) (newline)) (state->list start))
+     make-Rx start current-match current-index non-greedy-indexes (list->array (reverse match-rules)) match-names sre
+  })
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1494,20 +1493,20 @@ By default `finish` just returns `acc`.
   end := string-end-arg str (if (pair? o) (pt o) o)
 
   loop :+ function (i from acc) {
-	    (cond
-	     ((and (i lt end) (regexp-run-offsets #t rx str i end))
-	      => (function (md) {
-		    j := regexp-match-ref md 1
+    (cond
+     ((and (i lt end) (regexp-run-offsets #t rx str i end))
+      => (function (md) {
+	j := regexp-match-ref md 1
 
-		    (loop
-		     (if (and (i eq j) (j lt end))
-			 (string-cursor-next str j)
-			 j)
-		     j
-		     (kons (string-cursor->index str from) md str acc))
-	      }))
-	     (else
-	      (finish (string-cursor->index str from) #f str acc)))
+	(loop
+	 (if (and (i eq j) (j lt end))
+	  (string-cursor-next str j)
+	  j)
+	 j
+	 (kons (string-cursor->index str from) md str acc))
+      }))
+     (else
+      (finish (string-cursor->index str from) #f str acc)))
   }
 
   loop start start knil
@@ -1536,9 +1535,9 @@ Extracts all non-empty substrings of `str` which match `re` between
   (apply regexp-fold
 	 rx
 	 (function (from md str a) {
-	    s := regexp-match-submatch md 0
+	   s := regexp-match-submatch md 0
 
-	    if (equal? s "") a (pair s a)
+	   if (equal? s "") a (pair s a)
 	 })
 	 #n
 	 str
@@ -1572,17 +1571,17 @@ non-empty matches of `re`.
 
   (regexp-fold rx
 	       (function (from md str a) {
-		  i := regexp-match-submatch-start md 0
-		  j := regexp-match-submatch-end md 0
+		 i := regexp-match-submatch-start md 0
+		 j := regexp-match-submatch-end md 0
 
-		  (if (eqv? i j)
-		      a
-		      (pair j (pair (substring str (ph a) i) (pt a))))
+		 (if (eqv? i j)
+		  a
+		  (pair j (pair (substring str (ph a) i) (pt a))))
 	       })
 	       (pair start #n)
 	       str
 	       (function (from md str a)
-		  (reverse (pair (substring str (ph a) end) (pt a))))
+		(reverse (pair (substring str (ph a) end) (pt a))))
 	       start
 	       end)
 }
@@ -1634,19 +1633,19 @@ former.
     j := regexp-match-submatch-end md 0
 
     (if (eqv? i j)
-	a
-	{
-	  left := substring str (ph a) i
-
-	  pair j (pair (regexp-match-submatch md 0)
-		       (pair left (pt a)))
-	})
+     a
+     {
+       left := substring str (ph a) i
+       
+       pair j (pair (regexp-match-submatch md 0)
+		    (pair left (pt a)))
+    })
   }
 
   define (final from md str a) {
     (if (or (from lt end) (null? (pt a)))
-	(pair (substring str (ph a) end) (pt a))
-	(pt a))
+     (pair (substring str (ph a) end) (pt a))
+     (pt a))
   }
 
   reverse (regexp-fold rx kons (pair start #n) str final start end)
@@ -1710,19 +1709,19 @@ equivalent to omitting these parameters and replacing on
   count := if (pair? o) (ph o) 0
 
   loop :+ function (i count) {
-	    m := regexp-search rx str i end
+    m := regexp-search rx str i end
 
-	    (cond
-	     ((not m) str)
-	     ((positive? count)
-	      (loop (regexp-match-submatch-end m 0) (count - 1)))
-	     (else
-	      (concatenate-string
-	       (pair
-		(substring str start (regexp-match-submatch-start m 0))
-		(append
-		 (reverse (regexp-apply-match m str subst start end))
-		 (list (substring str (regexp-match-submatch-end m 0) end)))))))
+    (cond
+     ((not m) str)
+     ((positive? count)
+      (loop (regexp-match-submatch-end m 0) (count - 1)))
+     (else
+      (concatenate-string
+       (pair
+	(substring str start (regexp-match-submatch-start m 0))
+	(append
+	 (reverse (regexp-apply-match m str subst start end))
+	 (list (substring str (regexp-match-submatch-end m 0) end)))))))
   }
 
   loop start count
@@ -1756,54 +1755,54 @@ replaces all occurrences of `re` in `str`
 
   (regexp-fold rx
 	       (function (i m str acc) {
-		  m-start := regexp-match-submatch-start m 0
+		 m-start := regexp-match-submatch-start m 0
 
-		  (append (regexp-apply-match m str subst start end)
-			  (if (i ge m-start)
-			      acc
-			      (pair (substring str i m-start) acc)))
+		 (append (regexp-apply-match m str subst start end)
+			 (if (i ge m-start)
+			  acc
+			  (pair (substring str i m-start) acc)))
 	       })
 	       #n
 	       str
 	       (function (i m str acc) {
-		  end := string-length str
+		 end := string-length str
 
-		  concatenate-string (reverse (if (i ge end)
-						  acc
-						  (pair (substring str i end) acc)))
+		 concatenate-string (reverse (if (i ge end)
+		  acc
+		  (pair (substring str i end) acc)))
 	       })
 	       start end)
 }
 
 define (regexp-apply-match m str ls start end) {
   loop :+ function (ls res) {
-	    (cond
-	     ((null? ls)
-	      res)
-	     ((not (pair? ls))
-	      (loop (list ls) res))
-	     ((integer? (ph ls))
-	      (loop (pt ls) (pair (or (regexp-match-submatch m (ph ls)) "") res)))
-	     ((function? (ph ls))
-	      (loop (pt ls) (pair ((ph ls) m) res)))
-	     ((symbol? (ph ls))
-	      (case (ph ls)
-		    ((pre)
-		     (loop (pt ls)
-			   (pair (substring str start (regexp-match-submatch-start m 0))
-				 res)))
-		    ((post)
-		     (loop (pt ls)
-			   (pair (substring str (regexp-match-submatch-end m 0) end)
-				 res)))
-		    (else
-		     (cond
-		      ((assq (ph ls) (regexp-match-names m))
-		       => (function (x) (loop (pair (pt x) (pt ls)) res)))
-		      (else
-		       (error/type ^rt-parameter-value-error 'regexp-apply-match "unknown match replacement" (ph ls)))))))
-	     (else
-	      (loop (pt ls) (pair (ph ls) res))))
+    (cond
+     ((null? ls)
+      res)
+     ((not (pair? ls))
+      (loop (list ls) res))
+     ((integer? (ph ls))
+      (loop (pt ls) (pair (or (regexp-match-submatch m (ph ls)) "") res)))
+     ((function? (ph ls))
+      (loop (pt ls) (pair ((ph ls) m) res)))
+     ((symbol? (ph ls))
+      (case (ph ls)
+       ((pre)
+	(loop (pt ls)
+	      (pair (substring str start (regexp-match-submatch-start m 0))
+		    res)))
+       ((post)
+	(loop (pt ls)
+	      (pair (substring str (regexp-match-submatch-end m 0) end)
+		    res)))
+       (else
+	(cond
+	 ((assq (ph ls) (regexp-match-names m))
+	  => (function (x) (loop (pair (pt x) (pt ls)) res)))
+	 (else
+	  (error/type ^rt-parameter-value-error 'regexp-apply-match "unknown match replacement" (ph ls)))))))
+     (else
+      (loop (pt ls) (pair (ph ls) res))))
   }
 
   loop ls #n

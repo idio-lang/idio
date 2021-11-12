@@ -45,7 +45,7 @@ the original source code of the expander function
 The C code for expander? is the equivalent of
 
 define (expander? o) {
-  assq o *expander-list*
+assq o *expander-list*
 }
 
 *#
@@ -87,7 +87,7 @@ wouldn't be EPS!
 expand-once function with a do-nothing {e}:
 
 define (expand-once x) {
-  initial-expander x (function (x e) x)
+initial-expander x (function (x e) x)
 }
 
 thus preventing the recursive descent.
@@ -118,12 +118,12 @@ define (a-e-map fn & l) {
    ((pair? (ph l)) {
      if (eq? 'function (phh l)) {
        if (string? (phtth l)) {
-	   (append (list 'function (phth l))
-		   (list (apply a-e-map fn	(pttth l))))
-	 } {
-	   (append (list 'function (phth l))
-		   (list (apply a-e-map fn	(ptth l))))
-	 }
+	 (append (list 'function (phth l))
+		 (list (apply a-e-map fn	(pttth l))))
+       } {
+	 (append (list 'function (phth l))
+		 (list (apply a-e-map fn	(ptth l))))
+       }
      } {
        (pair (apply fn		(map ph l))
 	     (apply a-e-map fn	(map pt l)))
@@ -137,27 +137,27 @@ define (a-e-map fn & l) {
 ;; application-expander is only called with a list
 define (application-expander x e) {
   a-e-map (function (x) {
-	     e x e
+    e x e
   }) x
 }
 
 define (initial-expander x e) {
   (cond ((not (pair? x)) x)
-	((not (symbol? (ph x))) {
-	  application-expander x e
-	})
-	(else {
-	  hx := ph x
-	  expander := expander? hx
-	  if expander {
-	    ;; apply the template
+   ((not (symbol? (ph x))) {
+     application-expander x e
+   })
+   (else {
+     hx := ph x
+     expander := expander? hx
+     if expander {
+       ;; apply the template
 
-	    ;; ((pt (assq f *expander-list*)) x e)
-	    (pt expander) x e
-	  } {
-	    application-expander x e
-	  }
-	}))
+       ;; ((pt (assq f *expander-list*)) x e)
+       (pt expander) x e
+     } {
+       application-expander x e
+     }
+   }))
 }
 
 define (install-expander! id proc) {
@@ -207,7 +207,7 @@ define (evaluate-expander m cs) {
 
 define (evaluate-expander-source x e) {
   run-in-thread *expander-thread* (function () {
-				     initial-expander x e
+    initial-expander x e
   })
 }
 
@@ -217,14 +217,14 @@ define (template-expand e) {
 
 define (template-expand* e) {
   loop :+ function (e) {
-	    ;; qualify this call so the C evaluator doesn't get in the
-	    ;; way and see {template-expand} as a special form
-	    new := expander/template-expand e
-	    if (equal? new e) {
-	      new
-	    } {
-	      loop new
-	    }
+    ;; qualify this call so the C evaluator doesn't get in the way and
+    ;; see {template-expand} as a special form
+    new := expander/template-expand e
+    if (equal? new e) {
+      new
+    } {
+      loop new
+    }
   }
 
   loop e

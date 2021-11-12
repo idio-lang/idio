@@ -35,14 +35,14 @@
   %module-stack := #n
 
   %module-push = function (name) {
-		   %module-stack = pair (current-module) %module-stack
-		   %find-or-create-module name
+    %module-stack = pair (current-module) %module-stack
+    %find-or-create-module name
   }
 
   %module-pop = function () {
-		  prev := ph %module-stack
-		  %module-stack = pt %module-stack
-		  prev
+    prev := ph %module-stack
+    %module-stack = pt %module-stack
+    prev
   }
 }
 
@@ -222,33 +222,33 @@ define-template (provide feature) {
 
 define (%module-import importer module*) {
   loop :+ function (m* r) {
-	    (cond
-	     ((null? m*) {
-	       %set-module-imports! importer (append (reverse r) (module-imports importer))
-	     })
-	     (else {
-	       mod-name := ph m*
-	       subfeatures := #n
-	       if (pair? mod-name) {
-		 subfeatures = pt mod-name
-		 mod-name = ph mod-name
-	       }
-	       mod := find-module mod-name #f
-	       if mod {
-		 loop (pt m*) (if (or (eq? mod importer)
-				      (assq mod r))
-			       r {
-				 apply require (module-name mod) subfeatures
-				 pair (list mod) r
-			       })
-	       } {
-		 apply require mod-name subfeatures
-		 mod := find-module mod-name #f
-		 if mod {
-		   loop (pt m*) (pair (list mod) r)
-		 } (error/type ^rt-module-error '%module-import "failed to instantiate module" mod-name)
-	       }
-	     }))
+    (cond
+     ((null? m*) {
+       %set-module-imports! importer (append (reverse r) (module-imports importer))
+     })
+     (else {
+       mod-name := ph m*
+       subfeatures := #n
+       if (pair? mod-name) {
+	 subfeatures = pt mod-name
+	 mod-name = ph mod-name
+       }
+       mod := find-module mod-name #f
+       if mod {
+	 loop (pt m*) (if (or (eq? mod importer)
+			      (assq mod r))
+	  r {
+	   apply require (module-name mod) subfeatures
+	   pair (list mod) r
+	 })
+       } {
+	 apply require mod-name subfeatures
+	 mod := find-module mod-name #f
+	 if mod {
+	   loop (pt m*) (pair (list mod) r)
+	 } (error/type ^rt-module-error '%module-import "failed to instantiate module" mod-name)
+       }
+     }))
   }
 
   if (null? module*) #n {
@@ -265,16 +265,16 @@ define-template (import & module*) {
 ;; %module-export
 define (%module-export exporter symbols) {
   loop :+ function (syms result) {
-	    if (null? syms) {
-	      %set-module-exports! exporter result
-	    } {
-	      sym := ph syms
-	      if (symbol? sym) {
-		loop (pt syms) (if (memq sym result) result (pair sym result))
-	      } {
-		error/type ^rt-parameter-type-error 'export "not a symbol" sym
-	      }
-	    }
+    if (null? syms) {
+      %set-module-exports! exporter result
+    } {
+      sym := ph syms
+      if (symbol? sym) {
+	loop (pt syms) (if (memq sym result) result (pair sym result))
+      } {
+	error/type ^rt-parameter-type-error 'export "not a symbol" sym
+      }
+    }
   }
 
   loop symbols (module-exports exporter)

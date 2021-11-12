@@ -111,8 +111,8 @@ call-with-values := #f
   magic := pair 'multiple 'values
 
   magic? := function (x) {
-	      (and (pair? x)
-		   (eq? (ph x) magic))
+    (and (pair? x)
+	 (eq? (ph x) magic))
   }
 
   ;; Ordinarily orig-call/cc could live inside the block defining
@@ -127,27 +127,25 @@ This is the call-with-values call/cc variant which calls:
     " {
       orig-call/cc (function (k) {
 
-		      #*
+	#*
 
-		      Dirty trick time!  k-proc should be a 1-ary
-		      function -- but what if it was passed more than
-		      one arg?  Being given more than one arg isn't a
-		      problem except that the continuation we're about
-		      to call only accepts 1 argument.
+	Dirty trick time!  k-proc should be a 1-ary function -- but
+	what if it was passed more than one arg?  Being given more
+	than one arg isn't a problem except that the continuation
+	we're about to call only accepts 1 argument.
 
-		      Here we solve that problem by transforming the n
-		      args into a single value where for 2 or more
-		      args the 1-ary arg becomes '(magic args) through
-		      applying the function {values} to {args}.
+	Here we solve that problem by transforming the n args into a
+	single value where for 2 or more args the 1-ary arg becomes
+	'(magic args) through applying the function {values} to
+	{args}.
 
-		      We can now call the continuation with our faked
-		      single value.
+	We can now call the continuation with our faked single value.
 
-		      *#
+	*#
 
-		      k-proc (function args {
-				k (apply values args)
-		      })
+	k-proc (function args {
+	  k (apply values args)
+	})
       })
     }
   }
@@ -157,26 +155,25 @@ This is the call-with-values call/cc variant which calls:
   ;; Remember, with this form, {args} will be #n or a list
 
   values = function args {
-	     if (and (not (null? args))
-		     (null? (pt args))) {
-	       ph args
-	     } {
-	       pair magic args
-	     }
+    if (and (not (null? args))
+	    (null? (pt args))) {
+      ph args
+    } {
+      pair magic args
+    }
   }
 
   call-with-values = function (producer consumer) {
-		       x := (producer)
-		       if (magic? x) {
+    x := (producer)
+    if (magic? x) {
 
-			 ;; multiple args so use {apply} to flatten
-			 ;; the list -- removing {magic} from the
-			 ;; front
+      ;; multiple args so use {apply} to flatten the list -- removing
+      ;; {magic} from the front
 
-			 apply consumer (pt x)
-		       } {
-			 consumer x
-		       }
+      apply consumer (pt x)
+    } {
+      consumer x
+    }
   }
 }
 
@@ -284,22 +281,22 @@ This is the dynamic-wind call/cc variant which calls:
   " {
     here := *here*
     orig-call/cc (function (k) {
-			k-proc (function results {
-				  reroot! here
-				  apply k results
-			})
+      k-proc (function results {
+	reroot! here
+	apply k results
+      })
     })
   }
 
   %set-property! call/cc :docstr-raw (append-string (%property call/cc :docstr-raw) (%property orig-call/cc :docstr-raw))
 
   dynamic-wind = function (before during after) {
-		   here := *here*
-		   reroot! (pair (pair before after) here)
-		   call-with-values during (function results {
-					      reroot! here
-					      apply values results
-		   })
+    here := *here*
+    reroot! (pair (pair before after) here)
+    call-with-values during (function results {
+      reroot! here
+      apply values results
+    })
   }
 }
 

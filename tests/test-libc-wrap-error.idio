@@ -50,29 +50,29 @@ libc-wrap-error-load := {
     trap (^rt-libc-error
 	  ^system-error
 	  ^rt-parameter-error) (function (c) {
-				  ;eprintf "libc-wrap-error #%s: %s %s\n" n msg (idio-error-location c)
-				  test (idio-error-message c) msg
+	    ;eprintf "libc-wrap-error #%s: %s %s\n" n msg (idio-error-location c)
+	    test (idio-error-message c) msg
 
-				  if (not (string=? (idio-error-message c) msg)) {
-				    condition-report (append-string "libc-wrap-error-load: " filename) c (current-error-handle)
-				  }
+	    if (not (string=? (idio-error-message c) msg)) {
+	      condition-report (append-string "libc-wrap-error-load: " filename) c (current-error-handle)
+	    }
 
-				  if (system-error? c) {
-				    tested := #f
-				    if (pair? args) {
-				      test (system-error-errno c) (ph args)
-				      if (pair? (pt args)) {
-					test (system-error-function c) (pht args)
-					tested = #t
-				      }
-				    } 
+	    if (system-error? c) {
+	      tested := #f
+	      if (pair? args) {
+		test (system-error-errno c) (ph args)
+		if (pair? (pt args)) {
+		  test (system-error-function c) (pht args)
+		  tested = #t
+		}
+	      } 
 
-				    if (not tested) {
-				      condition-report (append-string "libc-wrap-error-load: " filename) c (current-error-handle)
-				    }
-				  }
+	      if (not tested) {
+		condition-report (append-string "libc-wrap-error-load: " filename) c (current-error-handle)
+	      }
+	    }
 
-				  trap-return 'libc-wrap-error
+	    trap-return 'libc-wrap-error
 	  }) {
 	    t0 := Tests
 	    (symbol-value 'load 'Idio) filename
@@ -81,7 +81,7 @@ libc-wrap-error-load := {
 	      Errors = Errors + 1
 	      Tests = t0 + exp-tests
 	    }
-	  }
+    }
   }
 }
 

@@ -48,21 +48,21 @@ results live forever.  Not ideal.
 define-template (regex-case e & clauses) {
   ;; regex-strings want to extract the regex strings
   regex-strings :+ function (c* r) {
-		     (cond
-		      ((null? c*) (reverse r))
-		      ((or (not (pair? c*))
-			   (not (pair? (ph c*)))
-			   (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'regex-case "invalid syntax" c*))
-		      ((null? (pt c*)) {
-			if (eq? 'else (phh c*)) {
-			  reverse r
-			} {
-			  reverse (pair (phh c*) r)
-			}
-		      })
-		      (else {
-			regex-strings (pt c*) (pair (phh c*) r)
-		      }))
+    (cond
+     ((null? c*) (reverse r))
+     ((or (not (pair? c*))
+	  (not (pair? (ph c*)))
+	  (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'regex-case "invalid syntax" c*))
+     ((null? (pt c*)) {
+       if (eq? 'else (phh c*)) {
+	 reverse r
+       } {
+	 reverse (pair (phh c*) r)
+       }
+     })
+     (else {
+       regex-strings (pt c*) (pair (phh c*) r)
+     }))
 
   }
 
@@ -71,43 +71,43 @@ define-template (regex-case e & clauses) {
   key := gensym 'key
 
   gen-clauses :+ function (c*) {
-		   (cond
-		    ((null? c*) '#n)
-		    ((or (not (pair? c*))
-			 (not (pair? (ph c*)))
-			 (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'regex-case "invalid syntax" c*))
-		    ((null? (pt c*)) {
-		      if (eq? 'else (phh c*)) {
-			#T{
-			  ((else ((function (r) {
-				     $@(pth c*)
-			  }) $key)))
-			}
-		      } {
-			#T{
-			  (((regexec (hash-ref *regcomp-table* $(phh c*)) $key) => (function (r) {
-										$@(pth c*)
-			  })))
-			}
-		      }
-		    })
-		    (else {
-		      #T{
-			(((regexec (hash-ref *regcomp-table* $(phh c*)) $key) => (function (r) {
-									      $@(pth c*)
-			})) $@(gen-clauses (pt c*)))
-		      }
-		    }))
+    (cond
+     ((null? c*) '#n)
+     ((or (not (pair? c*))
+	  (not (pair? (ph c*)))
+	  (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'regex-case "invalid syntax" c*))
+     ((null? (pt c*)) {
+       if (eq? 'else (phh c*)) {
+	 #T{
+	   ((else ((function (r) {
+	     $@(pth c*)
+	   }) $key)))
+	 }
+       } {
+	 #T{
+	   (((regexec (hash-ref *regcomp-table* $(phh c*)) $key) => (function (r) {
+	     $@(pth c*)
+	   })))
+	 }
+       }
+     })
+     (else {
+       #T{
+	 (((regexec (hash-ref *regcomp-table* $(phh c*)) $key) => (function (r) {
+	   $@(pth c*)
+	 })) $@(gen-clauses (pt c*)))
+       }
+     }))
 
   }
 
   #T{
     $@(map (function (s) {
-	      #T{
-		if (not (hash-exists? *regcomp-table* $s)) {
-		  hash-set! *regcomp-table* $s (regcomp $s)
-		}
-	      }
+      #T{
+	if (not (hash-exists? *regcomp-table* $s)) {
+	  hash-set! *regcomp-table* $s (regcomp $s)
+	}
+      }
     }) (regex-strings clauses #n))
     {
       ;; evaluate {e} (once!)
@@ -121,21 +121,21 @@ define-template (regex-case e & clauses) {
 define-template (pattern-case e & clauses) {
   ;; regex-strings want to extract the regex strings
   regex-strings :+ function (c* r) {
-		     (cond
-		      ((null? c*) (reverse r))
-		      ((or (not (pair? c*))
-			   (not (pair? (ph c*)))
-			   (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'pattern-case "invalid syntax" c*))
-		      ((null? (pt c*)) {
-			if (eq? 'else (phh c*)) {
-			  reverse r
-			} {
-			  reverse (pair (phh c*) r)
-			}
-		      })
-		      (else {
-			regex-strings (pt c*) (pair (phh c*) r)
-		      }))
+    (cond
+     ((null? c*) (reverse r))
+     ((or (not (pair? c*))
+	  (not (pair? (ph c*)))
+	  (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'pattern-case "invalid syntax" c*))
+     ((null? (pt c*)) {
+       if (eq? 'else (phh c*)) {
+	 reverse r
+       } {
+	 reverse (pair (phh c*) r)
+       }
+     })
+     (else {
+       regex-strings (pt c*) (pair (phh c*) r)
+     }))
 
   }
 
@@ -144,57 +144,57 @@ define-template (pattern-case e & clauses) {
   key := (gensym 'key)
 
   gen-clauses :+ function (c*) {
-		   (cond
-		    ((null? c*) '#n)
-		    ((or (not (pair? c*))
-			 (not (pair? (ph c*)))
-			 (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'pattern-case "invalid syntax" c*))
-		    ((null? (pt c*)) {
-		      if (eq? 'else (phh c*)) {
-			#T{
-			  ((else ((function (r) {
-				     $@(pth c*)
-			  }) $key)))
-			}
-		      } {
-			#T{
-			  (((regexec (hash-ref *regcomp-table* $(phh c*)) $key) => (function (r) {
-										$@(pth c*)
-			  })))
-			}
-		      }
-		    })
-		    (else {
-		      #T{
-			(((regexec (hash-ref *regcomp-table* $(phh c*)) $key) => (function (r) {
-									      $@(pth c*)
-			})) $@(gen-clauses (pt c*)))
-		      }
-		    }))
+    (cond
+     ((null? c*) '#n)
+     ((or (not (pair? c*))
+	  (not (pair? (ph c*)))
+	  (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'pattern-case "invalid syntax" c*))
+     ((null? (pt c*)) {
+       if (eq? 'else (phh c*)) {
+	 #T{
+	   ((else ((function (r) {
+	     $@(pth c*)
+	   }) $key)))
+	 }
+       } {
+	 #T{
+	   (((regexec (hash-ref *regcomp-table* $(phh c*)) $key) => (function (r) {
+	     $@(pth c*)
+	   })))
+	 }
+       }
+     })
+     (else {
+       #T{
+	 (((regexec (hash-ref *regcomp-table* $(phh c*)) $key) => (function (r) {
+	   $@(pth c*)
+	 })) $@(gen-clauses (pt c*)))
+       }
+     }))
 
   }
 
   ;; pattern-case rewrite loop
   pcr-loop :+ function (str) {
-	    (regex-case str
-			("(.*)\\*(.*)" {
-			  append-string r.1 ".*" (pcr-loop r.2)
-			})
-			("(.*)\\?(.*)" {
-			  append-string r.1 "." (pcr-loop r.2)
-			})
-			(else r))
+    (regex-case str
+		("(.*)\\*(.*)" {
+		  append-string r.1 ".*" (pcr-loop r.2)
+		})
+		("(.*)\\?(.*)" {
+		  append-string r.1 "." (pcr-loop r.2)
+		})
+		(else r))
   }
 
 
   #T{
     $@(map (function (s) {
-	      ;s = sprintf "^%s$" (pcr-loop s)
-	      #T{
-		if (not (hash-exists? *regcomp-table* $s)) {
-		  hash-set! *regcomp-table* $s (regcomp (sprintf "^%s$" $(pcr-loop s)))
-		}
-	      }
+      ;s = sprintf "^%s$" (pcr-loop s)
+      #T{
+	if (not (hash-exists? *regcomp-table* $s)) {
+	  hash-set! *regcomp-table* $s (regcomp (sprintf "^%s$" $(pcr-loop s)))
+	}
+      }
     }) (regex-strings clauses #n))
     {
       ;; evaluate {e} (once!)

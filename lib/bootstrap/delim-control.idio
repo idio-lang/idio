@@ -145,8 +145,8 @@ define (unwind-till-marked!) {
 
 define (prompt-at* tag thunk) {
   r := call/cc (function (prompt-k) {
-		  vm/hole-push! (vm/make-hole tag #t prompt-k) ; it's prompt's hole
-		  abort-top! (thunk)
+    vm/hole-push! (vm/make-hole tag #t prompt-k) ; it's prompt's hole
+    abort-top! (thunk)
   })
   r
 }
@@ -161,15 +161,15 @@ define (reset* thunk) {
 
 define (control-shift-at* shift? tag f) {
   call/cc (function (control-k) {
-	     holes-prefix := reverse (unwind-till-marked!)
-	     invoke-subcont := function (v) {
-				 call/cc (function (return-k) {
-					    vm/hole-push! (vm/make-hole tag shift? return-k)
-					    for-each vm/hole-push! holes-prefix
-					    control-k v
-				 })
-	     }
-	     abort-top! (f invoke-subcont)
+    holes-prefix := reverse (unwind-till-marked!)
+    invoke-subcont := function (v) {
+      call/cc (function (return-k) {
+	vm/hole-push! (vm/make-hole tag shift? return-k)
+	for-each vm/hole-push! holes-prefix
+	control-k v
+      })
+    }
+    abort-top! (f invoke-subcont)
   })
 }
 
@@ -202,15 +202,15 @@ define (unwind-to* tag v) {
   holes-prefix := unwind-till-tagged! tag
 
   loop :+ function (h*) {
-	    if (null? h*) #n {
-	      if (and (hole-tagged? (ph h*) unwind-protect-tag)
-		      (pair? (pt h*))) {
-			vm/hole-push! (pht h*)
-			loop (ptt h*)
-	      } {
-		loop (pt h*)
-	      }
-	    }
+    if (null? h*) #n {
+      if (and (hole-tagged? (ph h*) unwind-protect-tag)
+	      (pair? (pt h*))) {
+	vm/hole-push! (pht h*)
+	loop (ptt h*)
+      } {
+	loop (pt h*)
+      }
+    }
   }
 
   loop (reverse holes-prefix)
@@ -240,38 +240,38 @@ define (abort v) {
 
 ; Some syntactic sugar
 (define-syntax prompt
-  (syntax-rules ()
-    ((prompt e) (prompt* (function () e)))))
+ (syntax-rules ()
+  ((prompt e) (prompt* (function () e)))))
 
 (define-syntax prompt-at
-  (syntax-rules ()
-    ((prompt-at tag e) (prompt-at* tag (function () e)))))
+ (syntax-rules ()
+  ((prompt-at tag e) (prompt-at* tag (function () e)))))
 
 (define-syntax control
-  (syntax-rules ()
-    ((control f e) (control* (function (f) e)))))
+ (syntax-rules ()
+  ((control f e) (control* (function (f) e)))))
 
 (define-syntax control-at
-  (syntax-rules ()
-    ((control-at tag f e) (control-at* tag (function (f) e)))))
+ (syntax-rules ()
+  ((control-at tag f e) (control-at* tag (function (f) e)))))
 
 ; introduce convenient synonyms
 
 (define-syntax reset
-  (syntax-rules ()
-    ((reset e) (reset* (function () e)))))
+ (syntax-rules ()
+  ((reset e) (reset* (function () e)))))
 
 (define-syntax reset-at
-  (syntax-rules ()
-    ((reset-at tag e) (prompt-at* tag (function () e)))))
+ (syntax-rules ()
+  ((reset-at tag e) (prompt-at* tag (function () e)))))
 
 (define-syntax shift
-  (syntax-rules ()
-    ((shift f e) (shift* (function (f) e)))))
+ (syntax-rules ()
+  ((shift f e) (shift* (function (f) e)))))
 
 (define-syntax shift-at
-  (syntax-rules ()
-    ((shift-at tag f e) (shift-at* tag (function (f) e)))))
+ (syntax-rules ()
+  ((shift-at tag f e) (shift-at* tag (function (f) e)))))
 
 #*
 
@@ -298,19 +298,19 @@ define (make-yield-record v k) {
 }
 
 (define-syntax try-yield
-  (syntax-rules ()
-    ((try-yield exp (r on-r) (v k on-y)) {
-      exp-r := exp
-      if (and (pair? exp-r)
-	      (eq? (ph exp-r) yield-record-tag)) {
-		v := pht exp-r
-		k := phtt exp-r
-		on-y
-	      } {
-		r := exp-r
-		on-r
-	      }
-    })))
+ (syntax-rules ()
+  ((try-yield exp (r on-r) (v k on-y)) {
+    exp-r := exp
+    if (and (pair? exp-r)
+	    (eq? (ph exp-r) yield-record-tag)) {
+      v := pht exp-r
+      k := phtt exp-r
+      on-y
+    } {
+      r := exp-r
+      on-r
+    }
+  })))
 
 define (yield/shift v) {
   shift k (make-yield-record v k)
@@ -326,55 +326,55 @@ yield := yield/control-at
 
 define (dyn-wind-yield/reset before-thunk thunk after-thunk) {
   dwy-loop :+ function (th) {
-		prompt-at unwind-protect-tag {
-		  (function (res) {
-		     (after-thunk)
-		     res
-		  }) (control-at unwind-protect-tag dwy-k {
-		    (before-thunk)
-		    res := (th)
-		    dwy-k res
-		    (try-yield res
-			       (r r)				; return the result
-			       (v k {
-				 reenter := yield v
-				 dwy-loop (function () {
-					     k reenter
-				 })
-			       }))
-		  })
-		}
+    prompt-at unwind-protect-tag {
+      (function (res) {
+	(after-thunk)
+	res
+      }) (control-at unwind-protect-tag dwy-k {
+	(before-thunk)
+	res := (th)
+	dwy-k res
+	(try-yield res
+		   (r r)				; return the result
+		   (v k {
+		     reenter := yield v
+		     dwy-loop (function () {
+		       k reenter
+		     })
+		   }))
+      })
+    }
   }
 
   dwy-loop (function () {
-	      reset (thunk)
+    reset (thunk)
   })
 }
 
 define (dyn-wind-yield/prompt-at before-thunk thunk after-thunk) {
   dwy-loop :+ function (th) {
-		prompt-at unwind-protect-tag {
-		  (function (res) {
-		     (after-thunk)
-		     res
-		  }) (control-at unwind-protect-tag dwy-k {
-		    (before-thunk)
-		    res := (th)
-		    dwy-k res
-		    (try-yield res
-			       (r r)				; return the result
-			       (v k {
-				 reenter := yield v
-				 dwy-loop (function () {
-					     k reenter
-				 })
-			       }))
-		  })
-		}
+    prompt-at unwind-protect-tag {
+      (function (res) {
+	(after-thunk)
+	res
+      }) (control-at unwind-protect-tag dwy-k {
+	(before-thunk)
+	res := (th)
+	dwy-k res
+	(try-yield res
+		   (r r)				; return the result
+		   (v k {
+		     reenter := yield v
+		     dwy-loop (function () {
+		       k reenter
+		     })
+		   }))
+      })
+    }
   }
 
   dwy-loop (function () {
-	      prompt-at yield-tag (thunk)
+    prompt-at yield-tag (thunk)
   })
 }
 
@@ -383,11 +383,11 @@ dynamic-wind := dyn-wind-yield/prompt-at
 ;; Now we have a dynamic-wind, unwind-protect is a specialisation
 
 define-syntax unwind-protect (syntax-rules ()
-    ((_ body cleanup ...)
-     (dynamic-wind
-       (function () #f)
-       (function () body)
-       (function () cleanup ...))))
+  ((_ body cleanup ...)
+   (dynamic-wind
+    (function () #f)
+    (function () body)
+    (function () cleanup ...))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -402,36 +402,36 @@ define-syntax unwind-protect (syntax-rules ()
 function-return-tag := make-prompt-tag 'function-return
 function-return-hole := vm/make-hole function-return-tag #t #n
 (define-syntax return
-  (syntax-rules ()
-    ((return)   (return (void)))
-    ((return v) (unwind-to* function-return-tag v))))
+ (syntax-rules ()
+  ((return)   (return (void)))
+  ((return v) (unwind-to* function-return-tag v))))
 
 (define-syntax function/return
-  (syntax-rules ()
-    ((function/return fp ds body)
-     (function fp ds {
-       prompt-at function-return-tag {
-	 body
-       }
-     }))
-   ((function/return fp body)
-    (function fp {
-       display* "function/return" fp
-       prompt-at function-return-tag {
-	 body
-       }
-    }))))
+ (syntax-rules ()
+  ((function/return fp ds body)
+   (function fp ds {
+     prompt-at function-return-tag {
+       body
+     }
+   }))
+  ((function/return fp body)
+   (function fp {
+     display* "function/return" fp
+     prompt-at function-return-tag {
+       body
+     }
+   }))))
 
 (define-syntax define/return
-  (syntax-rules ()
-   ((define/return (name fp ...) body)
-    (define name (function/return (fp ...) body)))
-   ((define/return (name) body)
-    (define name (function/return #n body)))
-   ((define/return (name fp ...) ds body)
-    (define name (function/return (fp ...) ds body)))
-   ((define/return (name) ds body)
-    (define name (function/return #n ds body)))))
+ (syntax-rules ()
+  ((define/return (name fp ...) body)
+   (define name (function/return (fp ...) body)))
+  ((define/return (name) body)
+   (define name (function/return #n body)))
+  ((define/return (name fp ...) ds body)
+   (define name (function/return (fp ...) ds body)))
+  ((define/return (name) ds body)
+   (define name (function/return #n ds body)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -440,19 +440,19 @@ function-return-hole := vm/make-hole function-return-tag #t #n
 
 trap-return-tag := make-prompt-tag 'trap-return
 (define-syntax trap-return
-  (syntax-rules ()
-    ((trap-return)   (trap-return (void)))
-    ((trap-return v) (unwind-to* trap-return-tag v))))
+ (syntax-rules ()
+  ((trap-return)   (trap-return (void)))
+  ((trap-return v) (unwind-to* trap-return-tag v))))
 
 (define-syntax trap
-  (syntax-rules ()
-   ((trap conds handler body ...)  {
-     prompt-at trap-return-tag {
-       %trap conds handler {
-	 (begin body ...)
-       }
-     }
-   })))
+ (syntax-rules ()
+  ((trap conds handler body ...)  {
+    prompt-at trap-return-tag {
+      %trap conds handler {
+	(begin body ...)
+      }
+    }
+  })))
 
 ;; {with-condition-handler} will invoke {handler} and then
 ;; automatically invoke the continuation of {with-condition-handler}
@@ -460,7 +460,7 @@ trap-return-tag := make-prompt-tag 'trap-return
 define-template (with-condition-handler condition handler & body) {
   #T{
     trap $condition (function (c) {
-		       $handler c
+      $handler c
     }) {
       $@body
     }
@@ -486,30 +486,30 @@ define-template (trap* condition handler & body) {
 
 for-loop-break-tag := make-prompt-tag 'for-loop-break
 (define-syntax break
-  (syntax-rules ()
-    ((break)   (break (void)))
-    ((break v) (unwind-to* for-loop-break-tag v))))
+ (syntax-rules ()
+  ((break)   (break (void)))
+  ((break v) (unwind-to* for-loop-break-tag v))))
 
 for-loop-continue-tag := make-prompt-tag 'for-loop-continue
 (define-syntax continue
-  (syntax-rules ()
-    ((continue)   (continue (void)))
-    ((continue v) (unwind-to* for-loop-continue-tag v))))
+ (syntax-rules ()
+  ((continue)   (continue (void)))
+  ((continue v) (unwind-to* for-loop-continue-tag v))))
 
 define-template (for var-clauses test & body) {
   split :+ function (clauses vars inits steps) {
-	     (cond
-	      ((null? clauses) (list vars inits steps))
-	      ((or (not (pair? clauses))
-		   (not (pair? (ph clauses)))
-		   (not (symbol? (phh clauses)))
-		   (not (pair? (pth clauses)))) (error/type ^rt-syntax-error 'for "invalid syntax" clauses))
-	      (else (split (pt clauses)
-			   (pair (phh clauses) vars)
-			   (pair (phth clauses) inits)
-			   (if (null? (ptth clauses))
-			       (pair (phh clauses) steps)
-			       (pair (phtth clauses) steps)))))
+    (cond
+     ((null? clauses) (list vars inits steps))
+     ((or (not (pair? clauses))
+	  (not (pair? (ph clauses)))
+	  (not (symbol? (phh clauses)))
+	  (not (pair? (pth clauses)))) (error/type ^rt-syntax-error 'for "invalid syntax" clauses))
+     (else (split (pt clauses)
+		  (pair (phh clauses) vars)
+		  (pair (phth clauses) inits)
+		  (if (null? (ptth clauses))
+		   (pair (phh clauses) steps)
+		   (pair (phtth clauses) steps)))))
   }
 
   for-loop := gensym 'for-loop
@@ -521,14 +521,14 @@ define-template (for var-clauses test & body) {
   #T{
     {
       $for-loop :+ function $v {
-		     prompt-at for-loop-break-tag {
-		       (if $test {
-			 prompt-at for-loop-continue-tag {
-			   $@body
-			 }
-			 $for-loop $@s
-		       })
-		     }
+	prompt-at for-loop-break-tag {
+	  (if $test {
+	    prompt-at for-loop-continue-tag {
+	      $@body
+	    }
+	    $for-loop $@s
+	  })
+	}
       }
       $for-loop $@i
     }

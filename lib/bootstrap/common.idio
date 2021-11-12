@@ -52,10 +52,10 @@ define-template (defined? s) {
 
 ;; http://stackoverflow.com/questions/15552057/is-it-possible-to-implement-define-template-in-mit-scheme
 define-syntax define-syntax-rule (syntax-rules ()
-    ((define-syntax-rule (name & pattern) template)
-     (define-syntax name
-       (syntax-rules ()
-         ((name & pattern) template)))))
+  ((define-syntax-rule (name & pattern) template)
+   (define-syntax name
+    (syntax-rules ()
+     ((name & pattern) template)))))
 
 define-syntax-rule (when test body ...) (
   if test (begin body ...)
@@ -68,9 +68,9 @@ define-syntax-rule (unless test body ...) (
 define-template (suppress-errors! conds & cmd) {
   #T{
     trap $conds (function (c) {
-		   ;; What should we return?  Something hard to mistake for a
-		   ;; possible normal value.  Probably.
-		   (void)
+      ;; What should we return?  Something hard to mistake for a
+      ;; possible normal value.  Probably.
+      (void)
     }) {
       if (pair? (ph '$cmd)) {
 	$@cmd
@@ -86,10 +86,9 @@ define-template (suppress-errors! conds & cmd) {
 ;;      (call-with-values (lambda () expression)
 ;;                        (lambda formals body ...)))))
 
-define-syntax with-values-from \
-  (syntax-rules ()
-    ((with-values-from formals expression body ...)
-     (call-with-values (function () expression) (function formals body ...))))
+define-syntax with-values-from (syntax-rules ()
+  ((with-values-from formals expression body ...)
+   (call-with-values (function () expression) (function formals body ...))))
 
 define (display* & x*) "
 display ``#\\{space}`` -separated `x*` to the current output handle
@@ -298,237 +297,235 @@ The default padding character is ``#\\{space}``
      (else (error/type ^rt-parameter-type-error '%format "unexpected format type" type)))
 
     cp-loop :+ (function (i e) {
-		  if (i ge e) #n {
-		    c := string-ref fmt i
+      if (i ge e) #n {
+	c := string-ref fmt i
 
-		    (cond
-		     ((unicode=? c #\%) {
+	(cond
+	 ((unicode=? c #\%) {
 
-		       ;; flags
-		       i+1 := i + 1
-		       left-aligned := #f
-		       left-pad := #U+20
-		       if (i+1 lt e) {
-			 c = string-ref fmt i+1
-			 (cond
-			  ((unicode=? c #\-) {
-			    left-aligned = #t
-			    i = i+1
-			  })
-			  ((unicode=? c #U+20) {
-			    left-pad = c
-			    i = i+1
-			  })
-			  ((unicode=? c #\0) {
-			    left-pad = c
-			    i = i+1
-			  }))
-		       }
+	   ;; flags
+	   i+1 := i + 1
+	   left-aligned := #f
+	   left-pad := #U+20
+	   if (i+1 lt e) {
+	     c = string-ref fmt i+1
+	     (cond
+	      ((unicode=? c #\-) {
+		left-aligned = #t
+		i = i+1
+	      })
+	      ((unicode=? c #U+20) {
+		left-pad = c
+		i = i+1
+	      })
+	      ((unicode=? c #\0) {
+		left-pad = c
+		i = i+1
+	      }))
+	   }
 
-		       ;; width
-		       ws := i + 1
-		       we := ws
-		       w-loop :+ (function (i) {
-				    i+1 := i + 1
-				    c = string-ref fmt i+1
-				    if (ASCII-Decimal_Number? c) {
-				      we = we + 1
-				      w-loop i+1
-				    } i
-		       })
+	   ;; width
+	   ws := i + 1
+	   we := ws
+	   w-loop :+ (function (i) {
+	     i+1 := i + 1
+	     c = string-ref fmt i+1
+	     if (ASCII-Decimal_Number? c) {
+	       we = we + 1
+	       w-loop i+1
+	     } i
+	   })
 
-		       i = w-loop i
+	   i = w-loop i
 
-		       spec-width := 0
-		       if ((we - ws) gt 0) {
-			 wstr := substring fmt ws we
-			 spec-width = read-number wstr 10
-		       }
+	   spec-width := 0
+	   if ((we - ws) gt 0) {
+	     wstr := substring fmt ws we
+	     spec-width = read-number wstr 10
+	   }
 
-		       ;; precision (preceded by a dot)
-		       ps := i + 1
-		       pe := ps
-		       if (unicode=? (string-ref fmt (i + 1)) #\.) {
-			 i = i + 1
-			 ps = i + 1
-			 pe = ps
-			 p-loop :+ (function (i) {
-				      i+1 := i + 1
-				      c = string-ref fmt i+1
-				      if (ASCII-Decimal_Number? c) {
-					pe = pe + 1
-					p-loop i+1
-				      } i
-			 })
+	   ;; precision (preceded by a dot)
+	   ps := i + 1
+	   pe := ps
+	   if (unicode=? (string-ref fmt (i + 1)) #\.) {
+	     i = i + 1
+	     ps = i + 1
+	     pe = ps
+	     p-loop :+ (function (i) {
+	       i+1 := i + 1
+	       c = string-ref fmt i+1
+	       if (ASCII-Decimal_Number? c) {
+		 pe = pe + 1
+		 p-loop i+1
+	       } i
+	     })
 
-			 i = p-loop i
-		       }
+	     i = p-loop i
+	   }
 
-		       spec-prec := 0
-		       if ((pe - ps) gt 0) {
-			 pstr := substring fmt ps pe
-			 spec-prec = read-number pstr 10
-			 idio-print-conversion-precision = spec-prec
-		       }
+	   spec-prec := 0
+	   if ((pe - ps) gt 0) {
+	     pstr := substring fmt ps pe
+	     spec-prec = read-number pstr 10
+	     idio-print-conversion-precision = spec-prec
+	   }
 
-		       if (i lt e) {
-			 i = i + 1
-			 k := string-ref fmt i
-			 v := #n
-			 vs := #n
-			 vs-len := #n
+	   if (i lt e) {
+	     i = i + 1
+	     k := string-ref fmt i
+	     v := #n
+	     vs := #n
+	     vs-len := #n
 
-			 (cond
-			  ((eq? type 'keyed) {
-			    (cond
-			     ((unicode=? k #\%) {
-			       v = k
-			       vs = "%"
-			       vs-len = 1
-			     })
-			     ((unicode/Alphabetic? k) {
-			       v = hash-ref data k #f
-			       if (not v) {
-				 eprintf "%format: %s is not a key in data\n" k
-			       }
+	     (cond
+	      ((eq? type 'keyed) {
+		(cond
+		 ((unicode=? k #\%) {
+		   v = k
+		   vs = "%"
+		   vs-len = 1
+		 })
+		 ((unicode/Alphabetic? k) {
+		   v = hash-ref data k #f
+		   if (not v) {
+		     eprintf "%format: %s is not a key in data\n" k
+		   }
 
-			       if (and (unicode=? left-pad #\0)
-				       (not (number? v))) {
-					 left-pad = #U+20
-				       }
+		   if (and (unicode=? left-pad #\0)
+			   (not (number? v))) {
+		     left-pad = #U+20
+		   }
 
-			       (cond
-				((fixnum? v) {
-				  idio-print-conversion-format = #\d
-				})
-				((bignum? v) {
-				  ; %f format!
-				  idio-print-conversion-format = #\f
-				})
-				(else {
-				  idio-print-conversion-format = #\s
-				}))
-			     })
-			     (else {
-			       eprintf "%format: '%s' is not a Unicode graphic code point\n" k
-			     }))
+		   (cond
+		    ((fixnum? v) {
+		      idio-print-conversion-format = #\d
+		    })
+		    ((bignum? v) {
+		      ; %f format!
+		      idio-print-conversion-format = #\f
+		    })
+		    (else {
+		      idio-print-conversion-format = #\s
+		    }))
+		 })
+		 (else {
+		   eprintf "%format: '%s' is not a Unicode graphic code point\n" k
+		 }))
 
-			    vs = display-string v
-			    vs-len = string-length vs
-			  })
-			  ((eq? type 'args) {
-			    (cond
-			     ((unicode=? k #\%) {
-			       v = k
-			       vs = "%"
-			       vs-len = 1
-			     })
-			     ((unicode=? k #\@) {
-			       if (null? args) {
-				 error/type ^rt-parameter-error '%format (sprintf "not enough args for %%%s at .%d in %s\n" k i fmt)
-			       }
+		vs = display-string v
+		vs-len = string-length vs
+	      })
+	      ((eq? type 'args) {
+		(cond
+		 ((unicode=? k #\%) {
+		   v = k
+		   vs = "%"
+		   vs-len = 1
+		 })
+		 ((unicode=? k #\@) {
+		   if (null? args) {
+		     error/type ^rt-parameter-error '%format (sprintf "not enough args for %%%s at .%d in %s\n" k i fmt)
+		   }
 
-			       v = ph args
-			       args = pt args
+		   v = ph args
+		   args = pt args
 
-			       vs = ""
-			       c := 0
-			       for-each (function (e) {
-					   if (c gt 0) {
-					     vs = append-string vs " "
-					   }
-					   if (fixnum? e) {
-					     vs = append-string vs (sprintf "%d" e)
-					   } {
-					     vs = append-string vs (sprintf "%s" e)
-					   }
-					   c = c + 1
-			       }) v
-			       vs-len = string-length vs
-			     })
-			     (else {
-			       if (null? args) {
-				 error/type ^rt-parameter-error '%format (sprintf "not enough args for %%%s at %d/%d in '%s'\n" k i e fmt)
-			       }
+		   vs = ""
+		   c := 0
+		   for-each (function (e) {
+		     if (c gt 0) {
+		       vs = append-string vs " "
+		     }
+		     if (fixnum? e) {
+		       vs = append-string vs (sprintf "%d" e)
+		     } {
+		       vs = append-string vs (sprintf "%s" e)
+		     }
+		     c = c + 1
+		   }) v
+		   vs-len = string-length vs
+		 })
+		 (else {
+		   if (null? args) {
+		     error/type ^rt-parameter-error '%format (sprintf "not enough args for %%%s at %d/%d in '%s'\n" k i e fmt)
+		   }
 
-			       v = ph args
-			       args = pt args
+		   v = ph args
+		   args = pt args
 
-			       idio-print-conversion-format = k
+		   idio-print-conversion-format = k
 
-			       vs = display-string v
-			       vs-len = string-length vs
-			     }))
-			  }))
+		   vs = display-string v
+		   vs-len = string-length vs
+		 }))
+	      }))
 
-			 ;; avoid re-application of precision in puts
-			 idio-print-conversion-format = orig-ipcf
-			 idio-print-conversion-precision = orig-ipcp
+	     ;; avoid re-application of precision in puts
+	     idio-print-conversion-format = orig-ipcf
+	     idio-print-conversion-precision = orig-ipcp
 
-			 vs-prec-width := vs-len
-			 vs-prec := vs
+	     vs-prec-width := vs-len
+	     vs-prec := vs
 
-			 ; precision means different things to different
-			 ; types
-			 if (spec-prec gt 0) {
-			   (cond
-			    ((and (number? v)
-				  (spec-prec gt vs-len)) {
-				    ; for a number, a precision is
-				    ; the minimum number of digits
-				    ; which potentially means
-				    ; left-padding with 0s
-				    vs-prec-width = spec-prec
-				  })
-			    ((and (not (number? v))
-				  (spec-prec lt vs-len)
-				  (not timeformat)) {
-				    ; for a string, a precision is
-				    ; the maximum number of code
-				    ; points to print
-				    ;
-				    ; but don't re-apply precision
-				    ; for timeformat
-				    vs-prec-width = spec-prec
-				    vs-prec = substring vs 0 spec-prec
-				  }))
-			 }
+	     ; precision means different things to different
+	     ; types
+	     if (spec-prec gt 0) {
+	       (cond
+		((and (number? v)
+		      (spec-prec gt vs-len)) {
+		  ; for a number, a precision is the
+		  ; minimum number of digits which
+		  ; potentially means left-padding with 0s
+		  vs-prec-width = spec-prec
+		})
+		((and (not (number? v))
+		      (spec-prec lt vs-len)
+		      (not timeformat)) {
+		  ; for a string, a precision is the
+		  ; maximum number of code points to print
+		  ;
+		  ; but don't re-apply precision for
+		  ; timeformat
+		  vs-prec-width = spec-prec
+		  vs-prec = substring vs 0 spec-prec
+		}))
+	     }
 
-			 pad-loop :+ (function (c n) {
-					if (n le 0) #n {
-					  write-char c osh
-					  pad-loop c (n - 1)
-					}
-			 })
+	     pad-loop :+ (function (c n) {
+	       if (n le 0) #n {
+		 write-char c osh
+		 pad-loop c (n - 1)
+	       }
+	     })
 
-			 ; left padding has two parts, a bit like the
-			 ; HTML box model: a margin, padding and then the
-			 ; object.
-			 if (not left-aligned) {
-			   if (vs-prec-width lt spec-width) {
-			     ; might print nothing!
-			     pad-loop left-pad (spec-width - vs-prec-width)
-			   }
-			 }
-			 if (and (number? v)
-				 (vs-len lt spec-prec)) {
-				   pad-loop #\0 (spec-prec - vs-len)
-				 }
+	     ; left padding has two parts, a bit like the
+	     ; HTML box model: a margin, padding and then the
+	     ; object.
+	     if (not left-aligned) {
+	       if (vs-prec-width lt spec-width) {
+		 ; might print nothing!
+		 pad-loop left-pad (spec-width - vs-prec-width)
+	       }
+	     }
+	     if (and (number? v)
+		     (vs-len lt spec-prec)) {
+	       pad-loop #\0 (spec-prec - vs-len)
+	     }
 
-			 puts vs-prec osh
+	     puts vs-prec osh
 
-			 if (and left-aligned
-				 (vs-prec-width lt spec-width)) {
-				   ; might print nothing!
-				   pad-loop #U+20 (spec-width - vs-prec-width)
-				 }
-		       }
-		     })
-		     (else {
-		       write-char c osh
-		     }))
-		    cp-loop (i + 1) e
-		  }
+	     if (and left-aligned
+		     (vs-prec-width lt spec-width)) {
+	       ; might print nothing!
+	       pad-loop #U+20 (spec-width - vs-prec-width)
+	     }
+	   }
+	 })
+	 (else {
+	   write-char c osh
+	 }))
+	cp-loop (i + 1) e
+      }
     })
 
     cp-loop 0 (string-length fmt)

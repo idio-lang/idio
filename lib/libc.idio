@@ -102,13 +102,13 @@ define (%get-sys-tmpdir) "
 Discover a writeable *system* directory for temporary files.
 " {
   loop :+ function (dirs) {
-	    if (null? dirs) (error/type ^rt-runtime-error '%get-sys-tmpdir "no remaining %sys-tmpdirs" %sys-tmpdirs) {
-	      dir := ph dirs
-	      if (and (d? dir)
-		      (w? dir)) dir {
-		loop (pt dirs)
-	      }
-	    }
+    if (null? dirs) (error/type ^rt-runtime-error '%get-sys-tmpdir "no remaining %sys-tmpdirs" %sys-tmpdirs) {
+      dir := ph dirs
+      if (and (d? dir)
+	      (w? dir)) dir {
+	loop (pt dirs)
+      }
+    }
   }
 
   if (not %sys-tmpdir) {
@@ -131,10 +131,10 @@ back to the results from :ref:`libc/%get-sys-tmpdir
   if (and (environ? 'TMPDIR)
 	  (d? TMPDIR)
 	  (w? TMPDIR)) {
-	tmpdir = TMPDIR
-      } {
-	tmpdir = (%get-sys-tmpdir)
-      }
+    tmpdir = TMPDIR
+  } {
+    tmpdir = (%get-sys-tmpdir)
+  }
 }
 
 define (%make-tmp-fd & args) "

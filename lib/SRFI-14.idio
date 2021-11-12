@@ -126,10 +126,10 @@ sparse-char-set otherwise an empty array of 17 elements will be used.
     if (and (pair? o)
 	    (array? (ph o))
 	    (17 eq (array-length (ph o)))) {
-	      planes = ph o
-	    } {
-	      planes = make-array 17
-	    }
+      planes = ph o
+    } {
+      planes = make-array 17
+    }
 
     orig-make size planes
   }
@@ -205,14 +205,14 @@ Invoke `f` on each code point in char-set `cs`
    ((sparse-char-set? cs) {
      nplanes := count-sparse-char-set-planes cs
      (do ((i 0 (i + 1)))
-	 ((i gt nplanes)
-	  #n)
-	 {
-	   bs := array-ref (sparse-char-set-planes cs) i
-	   if bs {
-	     bitset-for-each-set bs f
-	   }
-	 })
+      ((i gt nplanes)
+       #n)
+      {
+	bs := array-ref (sparse-char-set-planes cs) i
+	if bs {
+	  bitset-for-each-set bs f
+	}
+     })
    })
    (else (error/type ^rt-parameter-type-error 'char-set-for-each-set "not a char-set" cs)))
 }
@@ -224,10 +224,10 @@ The character set will be the same size as :ref:`char-set:empty <SRFI-14/char-se
 " {
   cs := make-sparse-char-set (sparse-char-set-size char-set:empty)
   loop :+ function (cps) {
-	    if (null? cps) cs {
-	      char-set-set! cs (ph cps)
-	      loop (pt cps)
-	    }
+    if (null? cps) cs {
+      char-set-set! cs (ph cps)
+      loop (pt cps)
+    }
   }
   loop cps
 }
@@ -240,14 +240,14 @@ Return a copy of char-set `cs`
      new := make-sparse-char-set (sparse-char-set-size cs)
      nplanes := count-sparse-char-set-planes cs
      (do ((i 0 (i + 1)))
-	 ((i gt nplanes)
-	  new)
-	 {
-	   bs := array-ref (sparse-char-set-planes cs) i
-	   if bs {
-	     array-set! (sparse-char-set-planes new) i (copy-bitset bs)
-	   }
-	 })
+      ((i gt nplanes)
+       new)
+      {
+	bs := array-ref (sparse-char-set-planes cs) i
+	if bs {
+	  array-set! (sparse-char-set-planes new) i (copy-bitset bs)
+	}
+     })
    })
    (else (error/type ^rt-parameter-type-error 'copy-char-set "not a char-set" cs)))
 }
@@ -276,11 +276,11 @@ unless `base?` is supplied.
 
   slen := string-length str
   (do ((i 0 (i + 1)))
-      ((i ge slen)
-       cs)
-      {
-	char-set-set! cs (string-ref str i)
-      })
+   ((i ge slen)
+    cs)
+   {
+     char-set-set! cs (string-ref str i)
+  })
 }
 
 define (char-set->string cs) "
@@ -290,13 +290,13 @@ Return a string derived from the code points in `cs`.
 " {
   n := fold-char-set cs (function (cp i) (+ i 1)) 0
   m := fold-char-set cs (function (cp max) {
-			       if (cp gt max) cp max
+    if (cp gt max) cp max
   }) 0
   s := make-string n (integer->unicode m)
   i := 0
   char-set-for-each-set cs (function (cp) {
-			      string-set! s i (integer->unicode cp)
-			      i = i + 1
+    string-set! s i (integer->unicode cp)
+    i = i + 1
   })
   s
 }
@@ -505,27 +505,27 @@ Logical AND the code points from the character sets.
 If no arguments are passed the return value is :ref:`char-set:empty <SRFI-14/char-set:empty>`.
 " {
   loop :+ function (css res) {
-	    if (null? css) res {
-	      cs := ph css
-	      (cond
-	       ((sparse-char-set? res) {
-		 nplanes := count-sparse-char-set-planes res
-		 (do ((i 0 (i + 1)))
-		     ((i gt nplanes)
-		      res)
-		     {
-		       bs1 := array-ref (sparse-char-set-planes res) i
-		       bs2 := array-ref (sparse-char-set-planes cs) i
-		       array-set! (sparse-char-set-planes res) i (cond ((not bs1) bs1)
-								       ((not bs2) bs2)
-								       (else (and-bitset bs1 bs2)))
-		     })
+    if (null? css) res {
+      cs := ph css
+      (cond
+       ((sparse-char-set? res) {
+	 nplanes := count-sparse-char-set-planes res
+	 (do ((i 0 (i + 1)))
+	  ((i gt nplanes)
+	   res)
+	  {
+	    bs1 := array-ref (sparse-char-set-planes res) i
+	    bs2 := array-ref (sparse-char-set-planes cs) i
+	    array-set! (sparse-char-set-planes res) i (cond ((not bs1) bs1)
+	     ((not bs2) bs2)
+	     (else (and-bitset bs1 bs2)))
+	 })
 
-	       })
-	       (else (error/type ^rt-parameter-type-error 'and-char-set "not a char-set" cs)))
+       })
+       (else (error/type ^rt-parameter-type-error 'and-char-set "not a char-set" cs)))
 
-	      loop (pt css) res
-	    }
+      loop (pt css) res
+    }
   }
 
   if (null? css) (copy-char-set char-set:empty) {
@@ -539,29 +539,29 @@ Logical Inclusive OR the code points from the character sets.
 If no arguments are passed the return value is :ref:`char-set:full <SRFI-14/char-set:full>`.
 " {
   loop :+ function (css res) {
-	    if (null? css) res {
-	      cs := ph css
-	      (cond
-	       ((sparse-char-set? res) {
-		 nplanes := count-sparse-char-set-planes res
-		 (do ((i 0 (i + 1)))
-		     ((i gt nplanes)
-		      res)
-		     {
-		       bs1 := array-ref (sparse-char-set-planes res) i
-		       bs2 := array-ref (sparse-char-set-planes cs) i
-		       array-set! (sparse-char-set-planes res) i (cond ((not bs1) bs2)
-								       ((not bs2) bs1)
-								       (else (ior-bitset bs1 bs2)))
-		     })
+    if (null? css) res {
+      cs := ph css
+      (cond
+       ((sparse-char-set? res) {
+	 nplanes := count-sparse-char-set-planes res
+	 (do ((i 0 (i + 1)))
+	  ((i gt nplanes)
+	   res)
+	  {
+	    bs1 := array-ref (sparse-char-set-planes res) i
+	    bs2 := array-ref (sparse-char-set-planes cs) i
+	    array-set! (sparse-char-set-planes res) i (cond ((not bs1) bs2)
+	     ((not bs2) bs1)
+	     (else (ior-bitset bs1 bs2)))
+	 })
 
-	       })
-	       (else {
-		 (error/type ^rt-parameter-type-error 'ior-char-set "not a char-set" cs)
-	       }))
+       })
+       (else {
+	 (error/type ^rt-parameter-type-error 'ior-char-set "not a char-set" cs)
+       }))
 
-	      loop (pt css) res
-	    }
+      loop (pt css) res
+    }
   }
 
   if (null? css) (copy-char-set char-set:full) {
@@ -577,27 +577,27 @@ Logical eXclusive OR the code points from the character sets.
 If no arguments are passed the return value is :ref:`char-set:empty <SRFI-14/char-set:empty>`.
 " {
   loop :+ function (css res) {
-	    if (null? css) res {
-	      cs := ph css
-	      (cond
-	       ((sparse-char-set? res) {
-		 nplanes := count-sparse-char-set-planes res
-		 (do ((i 0 (i + 1)))
-		     ((i gt nplanes)
-		      res)
-		     {
-		       bs1 := array-ref (sparse-char-set-planes res) i
-		       bs2 := array-ref (sparse-char-set-planes cs) i
-		       array-set! (sparse-char-set-planes res) i (cond ((not bs1) bs2)
-								       ((not bs2) bs1)
-								       (else (xor-bitset bs1 bs2)))
-		     })
+    if (null? css) res {
+      cs := ph css
+      (cond
+       ((sparse-char-set? res) {
+	 nplanes := count-sparse-char-set-planes res
+	 (do ((i 0 (i + 1)))
+	  ((i gt nplanes)
+	   res)
+	  {
+	    bs1 := array-ref (sparse-char-set-planes res) i
+	    bs2 := array-ref (sparse-char-set-planes cs) i
+	    array-set! (sparse-char-set-planes res) i (cond ((not bs1) bs2)
+	     ((not bs2) bs1)
+	     (else (xor-bitset bs1 bs2)))
+	 })
 
-	       })
-	       (else (error/type ^rt-parameter-type-error 'xor-char-set "not a char-set" cs)))
+       })
+       (else (error/type ^rt-parameter-type-error 'xor-char-set "not a char-set" cs)))
 
-	      loop (pt css) res
-	    }
+      loop (pt css) res
+    }
   }
 
   if (null? css) (copy-char-set char-set:empty) {
@@ -613,22 +613,22 @@ Logical complement the code points from the character set.
      new := make-sparse-char-set (sparse-char-set-size cs)
      nplanes := count-sparse-char-set-planes cs
      (do ((i 0 (i + 1)))
-	 ((i gt nplanes)
-	  new)
-	 {
-	   bs := array-ref (sparse-char-set-planes cs) i
-	   if bs {
-	     array-set! (sparse-char-set-planes new) i (not-bitset bs)
-	   } {
-	     m := modulo (sparse-char-set-size cs) #x10000
-	     if (m gt 0) {
-	       bs = make-bitset m
-	     } {
-	       bs = make-bitset #x10000
-	     }
-	     array-set! (sparse-char-set-planes new) i (not-bitset bs)
-	   }
-	 })
+      ((i gt nplanes)
+       new)
+      {
+	bs := array-ref (sparse-char-set-planes cs) i
+	if bs {
+	  array-set! (sparse-char-set-planes new) i (not-bitset bs)
+	} {
+	  m := modulo (sparse-char-set-size cs) #x10000
+	  if (m gt 0) {
+	    bs = make-bitset m
+	  } {
+	    bs = make-bitset #x10000
+	  }
+	  array-set! (sparse-char-set-planes new) i (not-bitset bs)
+	}
+     })
 
    })
    (else (error/type ^rt-parameter-type-error 'not-char-set "not a char-set" cs)))
@@ -646,27 +646,27 @@ define (subtract-char-set cs & css) "
 Subtract the code points of the character sets css from cs.
 " {
   loop :+ function (css res) {
-	    if (null? css) res {
-	      cs := ph css
-	      (cond
-	       ((sparse-char-set? res) {
-		 nplanes := count-sparse-char-set-planes res
-		 (do ((i 0 (i + 1)))
-		     ((i gt nplanes)
-		      res)
-		     {
-		       bs1 := array-ref (sparse-char-set-planes res) i
-		       bs2 := array-ref (sparse-char-set-planes cs) i
-		       array-set! (sparse-char-set-planes res) i (cond ((not bs1) bs2)
-								       ((not bs2) bs1)
-								       (else (subtract-bitset bs1 bs2)))
-		     })
+    if (null? css) res {
+      cs := ph css
+      (cond
+       ((sparse-char-set? res) {
+	 nplanes := count-sparse-char-set-planes res
+	 (do ((i 0 (i + 1)))
+	  ((i gt nplanes)
+	   res)
+	  {
+	    bs1 := array-ref (sparse-char-set-planes res) i
+	    bs2 := array-ref (sparse-char-set-planes cs) i
+	    array-set! (sparse-char-set-planes res) i (cond ((not bs1) bs2)
+	     ((not bs2) bs1)
+	     (else (subtract-bitset bs1 bs2)))
+	 })
 
-	       })
-	       (else (error/type ^rt-parameter-type-error 'subtract-char-set "not a char-set" cs)))
+       })
+       (else (error/type ^rt-parameter-type-error 'subtract-char-set "not a char-set" cs)))
 
-	      loop (pt css) res
-	    }
+      loop (pt css) res
+    }
   }
 
   if (null? css) (copy-char-set cs) {
@@ -730,14 +730,14 @@ Invoke `f` on each code point in char-set `cs` and `v` returning the accumulated
    ((sparse-char-set? cs) {
      nplanes := count-sparse-char-set-planes cs
      (do ((i 0 (i + 1)))
-	 ((eq i nplanes)
-	  v)
-	 {
-	   bs := array-ref (sparse-char-set-planes cs) i
-	   if bs {
-	     v = fold-bitset bs f v
-	   }
-	 })
+      ((eq i nplanes)
+       v)
+      {
+	bs := array-ref (sparse-char-set-planes cs) i
+	if bs {
+	  v = fold-bitset bs f v
+	}
+     })
    })
    ((bitset? cs) {
      fold-bitset cs f v

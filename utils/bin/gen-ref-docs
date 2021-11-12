@@ -47,19 +47,19 @@ define* (separate-pathname val (:sep sep "/") (:ext-sep ext-sep ".")) {
   }
 
   for-each (function (e) {
-	      (case e
-		    (("")
-		     ;; "///foo" -> ("" "" "" "foo" )
-		      #n)
-		    ((".") #n)
-		    (("..") {
-		      if (pair? r) {
-			r = pt r
-		      }
-		    })
-		    (else {
-		      r = pair e r
-		    }))
+    (case e
+     (("")
+      ;; "///foo" -> ("" "" "" "foo" )
+      #n)
+     ((".") #n)
+     (("..") {
+       if (pair? r) {
+	 r = pt r
+       }
+     })
+     (else {
+       r = pair e r
+     }))
   }) (split-string-exactly val sep)
 
   base := ph r
@@ -108,10 +108,10 @@ define (insert-file out-fh level fn) {
     leader := make-string (level * 3)
 
     loop :+ function (fh) {
-	      if (not (eof? fh)) {
-		hprintf out-fh "%s%s\n" leader (read-line fh)
-		loop fh
-	      }
+      if (not (eof? fh)) {
+	hprintf out-fh "%s%s\n" leader (read-line fh)
+	loop fh
+      }
     }
 
     loop fh
@@ -137,327 +137,318 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
   }
 
   loop :+ function (fh) {
-	    p := Idio/read fh
+    p := Idio/read fh
 
-	    if (pair? p) {
-	      (case (ph p)
-		    ((nodocument) {
-		      mod := pht p
-		      sym := phtt p
+    if (pair? p) {
+      (case (ph p)
+       ((nodocument) {
+	 mod := pht p
+	 sym := phtt p
 
-		      mod-ht := hash-ref seen mod #f
-		      if (not mod-ht) {
-			mod-ht = make-hash #n #n 256
-			hash-set! seen mod mod-ht
-		      }
+	 mod-ht := hash-ref seen mod #f
+	 if (not mod-ht) {
+	   mod-ht = make-hash #n #n 256
+	   hash-set! seen mod mod-ht
+	 }
 
-		      hash-set! mod-ht sym #t
-		    })
-		    ((document) {
-		      mod := pht p
-		      sym := phtt p
+	 hash-set! mod-ht sym #t
+       })
+       ((document) {
+	 mod := pht p
+	 sym := phtt p
 
-		      ; For operators the reader will get in the way
-		      ; and try to run the operator.  We can escape
-		      ; the name:
-		      ;
-		      ;   (document Idio \ge)
-		      ;
-		      ; or quote the symbol and we'll unpick it here:
-		      ; (document Idio 'ge)
-		      ;
-		      ; The exception is \& which becomes the
-		      ; pair-separator token
-		      (cond
-		       ((pair? sym) {
-			 sym = pht sym
-		       })
-		       (else {
+	 ; For operators the reader will get in the way and try to run
+	 ; the operator.  We can escape the name:
+	 ;
+	 ;   (document Idio \ge)
+	 ;
+	 ; or quote the symbol and we'll unpick it here: (document
+	 ; Idio 'ge)
+	 ;
+	 ; The exception is \& which becomes the pair-separator token
+	 (cond
+	  ((pair? sym) {
+	    sym = pht sym
+	  })
+	  (else {
 
-			 ;; yuk!  We really shouldn't need to know
-			 ;; this...
-			 (case (type->string sym)
-			       (("constant (token)") {
-				 ;; & -> "&", other tokens becomes
-				 ;; "T/..."
-				 sym = string->symbol (sprintf "%s" sym)
-			       }))
-		       }))
+	    ;; yuk!  We really shouldn't need to know this...
+	    (case (type->string sym)
+	     (("constant (token)") {
+	       ;; & -> "&", other tokens becomes "T/..."
+	       sym = string->symbol (sprintf "%s" sym)
+	     }))
+	  }))
 
-		      ;; Some symbols are hard to use in the
-		      ;; filesystem, /, for a start so we allow for a
-		      ;; filesystem-friendly name in the next element.
-		      ;;
-		      ;; Note that some file-system friendly names are
-		      ;; also operators!
-		      ;;
-		      ;; (document C \> \gt)
-		      sym-fn := sym
-		      if (gt (length p) 3) {
-			sym-fn = nth p 4
-		      }
+	 ;; Some symbols are hard to use in the filesystem, /, for a
+	 ;; start so we allow for a filesystem-friendly name in the
+	 ;; next element.
+	 ;;
+	 ;; Note that some file-system friendly names are also
+	 ;; operators!
+	 ;;
+	 ;; (document C \> \gt)
+	 sym-fn := sym
+	 if (gt (length p) 3) {
+	   sym-fn = nth p 4
+	 }
 
-		      mod-sym := mod-name mod sym
+	 mod-sym := mod-name mod sym
 
-		      ;eprintf "documenting %s/%s\n" mod sym
+	 ;eprintf "documenting %s/%s\n" mod sym
 
-		      ;; use (void) here as no symbol's value should
-		      ;; be void -- the point being that some symbols
-		      ;; are initialized to #f and we couldn't tell
-		      ;; the difference otherwise
-		      val := symbol-value sym mod (void)
+	 ;; use (void) here as no symbol's value should be void -- the
+	 ;; point being that some symbols are initialized to #f and we
+	 ;; couldn't tell the difference otherwise
+	 val := symbol-value sym mod (void)
 
-		      if (and (void? val)
-			      (not (eq? 'libc mod))) {
-			hprintf out-fh ".. %s/%s - XXX not found\n\n" mod sym
+	 if (and (void? val)
+		 (not (eq? 'libc mod))) {
+	   hprintf out-fh ".. %s/%s - XXX not found\n\n" mod sym
 
-			eprintf "generate-toc-file %s: %s %s: failed lookup\n" fbn mod sym
-			#f
-			
-		      } {
-			mod-ht := hash-ref seen mod #f
-			if (not mod-ht) {
-			  mod-ht = make-hash #n #n 256
-			  hash-set! seen mod mod-ht
-			}
+	   eprintf "generate-toc-file %s: %s %s: failed lookup\n" fbn mod sym
+	   #f
+	   
+	 } {
+	   mod-ht := hash-ref seen mod #f
+	   if (not mod-ht) {
+	     mod-ht = make-hash #n #n 256
+	     hash-set! seen mod mod-ht
+	   }
 
-			;; many types will have a -doc file
-			dfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-doc.rst"
+	   ;; many types will have a -doc file
+	   dfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-doc.rst"
 
-			(cond
-			 ((void? val) {
-			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
+	   (cond
+	    ((void? val) {
+	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-			   insert-file out-fh 1 dfn
+	      insert-file out-fh 1 dfn
 
-			   hprintf out-fh "\n"
+	      hprintf out-fh "\n"
 
-			   hash-set! mod-ht sym #t
-			 })
-			 ((function? val) {
-			   sigstr := %property val :sigstr #f
+	      hash-set! mod-ht sym #t
+	    })
+	    ((function? val) {
+	      sigstr := %property val :sigstr #f
 
-			   ;; try ".../{fixnum}-{mod}-{sym}-sig.rst"
-			   sfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-sig.rst"
-			   if (r? sfn) {
-			     sigstr = strip-string (cat-file sfn) "\n"
-			   }
+	      ;; try ".../{fixnum}-{mod}-{sym}-sig.rst"
+	      sfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-sig.rst"
+	      if (r? sfn) {
+		sigstr = strip-string (cat-file sfn) "\n"
+	      }
 
-			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
+	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-			   if (expander? (string->symbol mod-sym)) {
-			     ;; with a template the thing we have in
-			     ;; our hands is the expander function,
-			     ;; not the underlying template so all our
-			     ;; facts are wrong.
+	      if (expander? (string->symbol mod-sym)) {
+		;; with a template the thing we have in our hands is
+		;; the expander function, not the underlying template
+		;; so all our facts are wrong.
 
-			     ;; we need to use the manually crafted
-			     ;; data until someone figures out a way
-			     ;; to retrieve any live data
-			     sfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-sig.rst"
-			     if (r? sfn) {
-			       sigstr = strip-string (cat-file sfn) "\n"
-			     }
+		;; we need to use the manually crafted data until
+		;; someone figures out a way to retrieve any live data
+		sfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-sig.rst"
+		if (r? sfn) {
+		  sigstr = strip-string (cat-file sfn) "\n"
+		}
 
-			     hprintf out-fh ".. idio:template:: %s %s\n\n" mod-sym sigstr
-			     hprintf out-fh "\n"
-			   } {
-			     hprintf out-fh ".. idio:function:: %s %s\n\n" mod-sym sigstr
-			     hprintf out-fh "\n"
+		hprintf out-fh ".. idio:template:: %s %s\n\n" mod-sym sigstr
+		hprintf out-fh "\n"
+	      } {
+		hprintf out-fh ".. idio:function:: %s %s\n\n" mod-sym sigstr
+		hprintf out-fh "\n"
 
-			     leader := "   "
+		leader := "   "
 
-			     docstr := %property val :docstr-raw #f
-			     if docstr {
-			       hprintf out-fh "%s\n" (indent-text leader docstr)
-			       hprintf out-fh "\n"
-			     }
+		docstr := %property val :docstr-raw #f
+		if docstr {
+		  hprintf out-fh "%s\n" (indent-text leader docstr)
+		  hprintf out-fh "\n"
+		}
 
-			   }
+	      }
 
-			   insert-file out-fh 1 dfn
+	      insert-file out-fh 1 dfn
 
-			   hprintf out-fh "\n"
+	      hprintf out-fh "\n"
 
-			   hash-set! mod-ht sym #t
-			 })
-			 ((struct-type? val) {
-			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
+	      hash-set! mod-ht sym #t
+	    })
+	    ((struct-type? val) {
+	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-			   if (struct-type-isa? val ^condition) {
-			     hprintf out-fh ".. idio:condition:: %s\n\n" sym
-			     hprintf out-fh "\n"
+	      if (struct-type-isa? val ^condition) {
+		hprintf out-fh ".. idio:condition:: %s\n\n" sym
+		hprintf out-fh "\n"
 
-			     parent := struct-type-parent val
-			     if (not (null? parent)) {
-			       hprintf out-fh "   :parent: %s\n" (struct-type-name parent)
-			     }
+		parent := struct-type-parent val
+		if (not (null? parent)) {
+		  hprintf out-fh "   :parent: %s\n" (struct-type-name parent)
+		}
 
-			     loop :+ function (f*) {
-				       if (null? f*) #n {
-					 hprintf out-fh "   :field: %s\n" (ph f*)
-					 loop (pt f*)
-				       }
-			     }
-			     loop (struct-type-fields val)
-			   } {
-			     hprintf out-fh ".. idio:struct:: %s\n\n" sym
+		loop :+ function (f*) {
+		  if (null? f*) #n {
+		    hprintf out-fh "   :field: %s\n" (ph f*)
+		    loop (pt f*)
+		  }
+		}
+		loop (struct-type-fields val)
+	      } {
+		hprintf out-fh ".. idio:struct:: %s\n\n" sym
 
-			     stp := struct-type-parent val
-			     if (not (null? stp)) {
-			       hprintf out-fh "   :parent: %s\n" (struct-type-name stp)
-			     }
+		stp := struct-type-parent val
+		if (not (null? stp)) {
+		  hprintf out-fh "   :parent: %s\n" (struct-type-name stp)
+		}
 
-			     loop :+ function (f*) {
-				       if (null? f*) #n {
-					 hprintf out-fh "   :field: %s\n" (ph f*)
-					 loop (pt f*)
-				       }
-			     }
-			     loop (struct-type-fields val)
+		loop :+ function (f*) {
+		  if (null? f*) #n {
+		    hprintf out-fh "   :field: %s\n" (ph f*)
+		    loop (pt f*)
+		  }
+		}
+		loop (struct-type-fields val)
 
-			     hprintf out-fh "   :canonical: %s\n" mod-sym
-			   }
-			   hprintf out-fh "\n"
+		hprintf out-fh "   :canonical: %s\n" mod-sym
+	      }
+	      hprintf out-fh "\n"
 
-			   insert-file out-fh 1 dfn
+	      insert-file out-fh 1 dfn
 
-			   hprintf out-fh "\n"
+	      hprintf out-fh "\n"
 
-			   hash-set! mod-ht sym #t
-			 })
-			 ((struct-instance? val) {
-			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
+	      hash-set! mod-ht sym #t
+	    })
+	    ((struct-instance? val) {
+	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-			   hprintf out-fh ".. idio:value:: %s\n\n" sym
-			   hprintf out-fh "   :type: %s\n" (type->string val)
-			   hprintf out-fh "   :canonical: %s\n" mod-sym
-			   hprintf out-fh "\n"
+	      hprintf out-fh ".. idio:value:: %s\n\n" sym
+	      hprintf out-fh "   :type: %s\n" (type->string val)
+	      hprintf out-fh "   :canonical: %s\n" mod-sym
+	      hprintf out-fh "\n"
 
-			   insert-file out-fh 1 dfn
+	      insert-file out-fh 1 dfn
 
-			   hprintf out-fh "\n"
+	      hprintf out-fh "\n"
 
-			   hash-set! mod-ht sym #t
-			 })
-			 ((or (array? val)
-			      (hash? val)) {
-				hprintf out-fh ".. _`%s`:\n\n" mod-sym
+	      hash-set! mod-ht sym #t
+	    })
+	    ((or (array? val)
+		 (hash? val)) {
+	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-				hprintf out-fh ".. idio:value:: %s\n\n" sym
-				hprintf out-fh "   :type: %s\n" (type->string val)
-				hprintf out-fh "   :canonical: %s\n" mod-sym
-				hprintf out-fh "\n"
+	      hprintf out-fh ".. idio:value:: %s\n\n" sym
+	      hprintf out-fh "   :type: %s\n" (type->string val)
+	      hprintf out-fh "   :canonical: %s\n" mod-sym
+	      hprintf out-fh "\n"
 
-				insert-file out-fh 1 dfn
+	      insert-file out-fh 1 dfn
 
-				hprintf out-fh "\n"
+	      hprintf out-fh "\n"
 
-				hash-set! mod-ht sym #t
-			      })
-			 ((or (fixnum? val)
-			      (bignum? val)
-			      (string? val)
-			      (pair? val)
-			      (null? val)
+	      hash-set! mod-ht sym #t
+	    })
+	    ((or (fixnum? val)
+		 (bignum? val)
+		 (string? val)
+		 (pair? val)
+		 (null? val)
 
-			      (C/char? val)
-			      (C/schar? val)
-			      (C/uchar? val)
-			      (C/short? val)
-			      (C/ushort? val)
-			      (C/int? val)
-			      (C/uint? val)
-			      (C/long? val)
-			      (C/ulong? val)
-			      (C/longlong? val)
-			      (C/ulonglong? val)
-			      (C/double? val)
-			      (C/float? val)
-			      (C/pointer? val)
+		 (C/char? val)
+		 (C/schar? val)
+		 (C/uchar? val)
+		 (C/short? val)
+		 (C/ushort? val)
+		 (C/int? val)
+		 (C/uint? val)
+		 (C/long? val)
+		 (C/ulong? val)
+		 (C/longlong? val)
+		 (C/ulonglong? val)
+		 (C/double? val)
+		 (C/float? val)
+		 (C/pointer? val)
 
-			      (dynamic? (string->symbol mod-sym))
-			      (computed? (string->symbol mod-sym))) {
-				hprintf out-fh ".. _`%s`:\n\n" mod-sym
+		 (dynamic? (string->symbol mod-sym))
+		 (computed? (string->symbol mod-sym))) {
+	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-				hprintf out-fh ".. idio:value:: %s\n\n" sym
+	      hprintf out-fh ".. idio:value:: %s\n\n" sym
 
-				;; the type for C/type? is invariably
-				;; wrong as we want the typedef'd
-				;; variant
-				if (not (C/type? val)) {
-				  (cond
-				   ((pathname? val) {
-				     hprintf out-fh "   :type: pathname\n"
-				   })
-				   ((or (null? val)
-					(boolean? val)) {
-					  #t
-				   })
-				   (else {
-				     hprintf out-fh "   :type: %s\n" (type->string val)
-				   }))
-				}
-				if (not (eq? mod 'Idio)) {
-				  hprintf out-fh "   :canonical: %s\n" mod-sym
-				}
+	      ;; the type for C/type? is invariably wrong as we want
+	      ;; the typedef'd variant
+	      if (not (C/type? val)) {
+		(cond
+		 ((pathname? val) {
+		   hprintf out-fh "   :type: pathname\n"
+		 })
+		 ((or (null? val)
+		      (boolean? val)) {
+		   #t
+		 })
+		 (else {
+		   hprintf out-fh "   :type: %s\n" (type->string val)
+		 }))
+	      }
+	      if (not (eq? mod 'Idio)) {
+		hprintf out-fh "   :canonical: %s\n" mod-sym
+	      }
 
-				(cond
-				 ((dynamic? (string->symbol mod-sym)) {
-				   hprintf out-fh "   :scope: dynamic\n"
-				 })
-				 ((computed? (string->symbol mod-sym)) {
-				   hprintf out-fh "   :computed:\n"
-				 }))
-				hprintf out-fh "\n"
+	      (cond
+	       ((dynamic? (string->symbol mod-sym)) {
+		 hprintf out-fh "   :scope: dynamic\n"
+	       })
+	       ((computed? (string->symbol mod-sym)) {
+		 hprintf out-fh "   :computed:\n"
+	       }))
+	      hprintf out-fh "\n"
 
-				insert-file out-fh 1 dfn
+	      insert-file out-fh 1 dfn
 
-				hprintf out-fh "\n"
+	      hprintf out-fh "\n"
 
-				hash-set! mod-ht sym #t
-			      })
-			 ((symbol? val) {
-			   hprintf out-fh ".. _`%s`:\n\n" mod-sym
+	      hash-set! mod-ht sym #t
+	    })
+	    ((symbol? val) {
+	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
 
-			   ; Hmm, there are symbols floating around but
-			   ; we'll also get symbols from the act of
-			   ; running this program which are "less
-			   ; interesting"
-			   module := find-module val #f
-			   if module {
-			     hprintf out-fh "module: %s\n" sym
-			   } {
-			     hprintf out-fh ".. idio:value:: %s\n\n" sym
-			     hprintf out-fh "   :type: symbol\n"
-			     hprintf out-fh "   :value: '%s\n" val
-			     hprintf out-fh "   :canonical: %s\n" mod-sym
-			     hprintf out-fh "\n"
-			   }
+	      ; Hmm, there are symbols floating around but we'll also
+	      ; get symbols from the act of running this program which
+	      ; are "less interesting"
+	      module := find-module val #f
+	      if module {
+		hprintf out-fh "module: %s\n" sym
+	      } {
+		hprintf out-fh ".. idio:value:: %s\n\n" sym
+		hprintf out-fh "   :type: symbol\n"
+		hprintf out-fh "   :value: '%s\n" val
+		hprintf out-fh "   :canonical: %s\n" mod-sym
+		hprintf out-fh "\n"
+	      }
 
-			   insert-file out-fh 1 dfn
+	      insert-file out-fh 1 dfn
 
-			   hprintf out-fh "\n"
+	      hprintf out-fh "\n"
 
-			   hash-set! mod-ht sym #t
-			 })
-			 (else {
-			   eprintf "generate-toc-file %s: %s %s=%s: %s is not a handled type\n" fbn mod sym val (type->string val)
-			   #f
-			 }))
-		      }
-		    })
-		    ((rst) {
-		      rfn := append-string dirname "/" (pht p) ".rst"
-		      if (r? rfn) {
-			insert-file out-fh (phtt p) rfn
-		      } {
-			eprintf "ERROR: %s: not readable\n" rfn
-		      }
-		    }))
+	      hash-set! mod-ht sym #t
+	    })
+	    (else {
+	      eprintf "generate-toc-file %s: %s %s=%s: %s is not a handled type\n" fbn mod sym val (type->string val)
+	      #f
+	    }))
+	 }
+       })
+       ((rst) {
+	 rfn := append-string dirname "/" (pht p) ".rst"
+	 if (r? rfn) {
+	   insert-file out-fh (phtt p) rfn
+	 } {
+	   eprintf "ERROR: %s: not readable\n" rfn
+	 }
+       }))
 
-	      loop fh
-	    }
+      loop fh
+    }
   }
 
   loop fh
@@ -484,59 +475,59 @@ define (generate-tree rel-dir tree-fn outdir) {
   tree-fh := open-input-file tree-fn
 
   loop :+ function (tree-fh) {
-	    p := Idio/read tree-fh
+    p := Idio/read tree-fh
 
-	    if (pair? p) {
-	      (case (ph p)
-		    ((tree) {
-		      subtree := symbol->string (pht p)
-		      tree-fn := append-string dirname "/" subtree "/index.tree"
-		      if (r? tree-fn) {
+    if (pair? p) {
+      (case (ph p)
+       ((tree) {
+	 subtree := symbol->string (pht p)
+	 tree-fn := append-string dirname "/" subtree "/index.tree"
+	 if (r? tree-fn) {
 
-			; TOC entries indented one level
-			hprintf out-fh "   %s/index\n" subtree
+	   ; TOC entries indented one level
+	   hprintf out-fh "   %s/index\n" subtree
 
-			sub-bd := append-string outdir "/" subtree
-			if (not (d? sub-bd)) {
-			  mkdir -p sub-bd
-			}
-			generate-tree (if rel-dir (append-string "../" rel-dir) "..") tree-fn sub-bd
-		      } {
-			eprintf "ERROR: %s: not readable\n" tree-fn
-		      }
-		    })
-		    ((rst) {
-		      rfn := append-string dirname "/" (pht p) ".rst"
-		      if (r? rfn) {
-			insert-file out-fh (phtt p) rfn
-		      } {
-			eprintf "ERROR: %s: not readable\n" rfn
-		      }
-		    })
-		    ((toc-file) {
-		      toc-name := symbol->string (pht p)
+	   sub-bd := append-string outdir "/" subtree
+	   if (not (d? sub-bd)) {
+	     mkdir -p sub-bd
+	   }
+	   generate-tree (if rel-dir (append-string "../" rel-dir) "..") tree-fn sub-bd
+	 } {
+	   eprintf "ERROR: %s: not readable\n" tree-fn
+	 }
+       })
+       ((rst) {
+	 rfn := append-string dirname "/" (pht p) ".rst"
+	 if (r? rfn) {
+	   insert-file out-fh (phtt p) rfn
+	 } {
+	   eprintf "ERROR: %s: not readable\n" rfn
+	 }
+       })
+       ((toc-file) {
+	 toc-name := symbol->string (pht p)
 
-		      toc-fn := append-string dirname "/" toc-name ".toc"
-		      if (r? toc-fn) {
-			hprintf out-fh "   %s\n" toc-name
+	 toc-fn := append-string dirname "/" toc-name ".toc"
+	 if (r? toc-fn) {
+	   hprintf out-fh "   %s\n" toc-name
 
-			generate-toc-file out-fh rel-dir toc-fn dirname toc-name outdir
-		      } {
-			eprintf "ERROR: %s: not readable\n" toc-fn
-		      }
-		    })
-		    ((import) {
-		      mod := pht p
-		      osh := (open-output-string)
-		      hprintf osh "import %s\n" mod
-		      close-handle osh
-		      ish := open-input-string (get-output-string osh)
-		      load-handle ish
-		      close-handle ish
-		    }))
+	   generate-toc-file out-fh rel-dir toc-fn dirname toc-name outdir
+	 } {
+	   eprintf "ERROR: %s: not readable\n" toc-fn
+	 }
+       })
+       ((import) {
+	 mod := pht p
+	 osh := (open-output-string)
+	 hprintf osh "import %s\n" mod
+	 close-handle osh
+	 ish := open-input-string (get-output-string osh)
+	 load-handle ish
+	 close-handle ish
+       }))
 
-	      loop tree-fh
-	    }
+      loop tree-fh
+    }
   }
 
   loop tree-fh
@@ -552,162 +543,159 @@ define (generate-tree rel-dir tree-fn outdir) {
 ;
 
 for-each (function (tree-fn) {
-	    if (r? tree-fn) {
-	      p := separate-pathname tree-fn
-	      dirname := ph p
+  if (r? tree-fn) {
+    p := separate-pathname tree-fn
+    dirname := ph p
 
-	      outdir := append-string dirname "/source"
-	      if (not (d? outdir)) {
-		mkdir -p outdir
-	      }
+    outdir := append-string dirname "/source"
+    if (not (d? outdir)) {
+      mkdir -p outdir
+    }
 
-	      generate-tree #f tree-fn outdir
-	    } {
-	      eprintf "ERROR: %s: not readable\n" tree-fn
-	    }
+    generate-tree #f tree-fn outdir
+  } {
+    eprintf "ERROR: %s: not readable\n" tree-fn
+  }
 }) (array->list ARGV)
 
 ; summarize what we've missed
 
 for-each (function (mod) {
-	    printf "module %s\n" mod
-	    mod-ht := hash-ref seen mod
+  printf "module %s\n" mod
+  mod-ht := hash-ref seen mod
 
-	    ;; libc is full of system-specific auto-generated names
+  ;; libc is full of system-specific auto-generated names
 
-	    ;; errno	- E*
-	    ;; rlimits	- RLIMIT_*
-	    ;; signals	- SIG*
+  ;; errno	- E*
+  ;; rlimits	- RLIMIT_*
+  ;; signals	- SIG*
 
-	    ;; and the ^system-error-E* and ^rt-signal-SIG*
-	    ;; struct-types in Idio (the ^rt-signal-SIG* are used by
-	    ;; the VM)
+  ;; and the ^system-error-E* and ^rt-signal-SIG* struct-types in Idio
+  ;; (the ^rt-signal-SIG* are used by the VM)
 
-	    ;; many open(2) flags are not portable - O_*
+  ;; many open(2) flags are not portable - O_*
 
-	    ;; This creates a documentation-generating mess so we can
-	    ;; avoid the lot and trust that a judicious
-	    ;; document-maintenance guy does the right thing.
+  ;; This creates a documentation-generating mess so we can avoid the
+  ;; lot and trust that a judicious document-maintenance guy does the
+  ;; right thing.
 
-	    ;; One useful thing to note is that they are all C/int.
+  ;; One useful thing to note is that they are all C/int.
 
-	    ;; Fedora likes an __pid_t amongst a dozen others which
-	    ;; isn't a portable C API typedef name.  We *should* have
-	    ;; the portable name pid_t explicitly mentioned (otherwise
-	    ;; we won't have a portable name) so we can ditch any __*
-	    ;; symbols.
+  ;; Fedora likes an __pid_t amongst a dozen others which isn't a
+  ;; portable C API typedef name.  We *should* have the portable name
+  ;; pid_t explicitly mentioned (otherwise we won't have a portable
+  ;; name) so we can ditch any __* symbols.
 
-	    sorted-symbols := sort-symbol (fold-left (function (r s) {
-							val := symbol-value s mod #f
-							(cond
+  sorted-symbols := sort-symbol (fold-left (function (r s) {
+    val := symbol-value s mod #f
+    (cond
 
-							 ;; no environ variables
-							 ((environ? s) r)
+     ;; no environ variables
+     ((environ? s) r)
 
-							 ;; libc needs some symbol stripping
-							 ((eq? 'libc mod) {
-							   (cond
-							    ((C/int? val) {
-							      ss := symbol->string s
-							      sl := string-length ss
-							      (cond
-							       ((and (gt sl 1)
-								     (equal? (substring ss 0 1) "E")) r)
-							       ((and (gt sl 7)
-								     (equal? (substring ss 0 7) "RLIMIT_")) r)
-							       ((and (gt sl 3)
-								     (equal? (substring ss 0 3) "SIG")) r)
-							       ((and (gt sl 2)
-								     (equal? (substring ss 0 2) "O_")) r)
-							       (else (pair s r)))
-							    })
-							    ((or (symbol? val)
-								 (primitive? val)) {
-								   ss := symbol->string s
-								   sl := string-length ss
-								   (cond
-								    ((and (gt sl 2)
-									  (equal? (substring ss 0 2) "__"))
-								      r)
-								    (else {
-								      ;; is this actually a sym in this module
-								      ;; and not something we've created as a
-								      ;; by-product of using the symbol?
-								      si := evaluate/find-symbol s mod
-								      if (pair? si) {
-									orig-mod := module-name (phttt si)
-									if (eq? orig-mod mod) {
-									  pair s r
-									} {
-									  eprintf "  %s/%s is actually %s/%s\n" mod s orig-mod s
-									  r
-									}
-								      } {
-									eprintf "  %s/%s not found\n" mod s
-									r
-								      }
-								    }))
-								 })
-							    (else {
-							      pair s r
-							    }))
-							 })
+     ;; libc needs some symbol stripping
+     ((eq? 'libc mod) {
+       (cond
+	((C/int? val) {
+	  ss := symbol->string s
+	  sl := string-length ss
+	  (cond
+	   ((and (gt sl 1)
+		 (equal? (substring ss 0 1) "E")) r)
+	   ((and (gt sl 7)
+		 (equal? (substring ss 0 7) "RLIMIT_")) r)
+	   ((and (gt sl 3)
+		 (equal? (substring ss 0 3) "SIG")) r)
+	   ((and (gt sl 2)
+		 (equal? (substring ss 0 2) "O_")) r)
+	   (else (pair s r)))
+	})
+	((or (symbol? val)
+	     (primitive? val)) {
+	  ss := symbol->string s
+	  sl := string-length ss
+	  (cond
+	   ((and (gt sl 2)
+		 (equal? (substring ss 0 2) "__"))
+	     r)
+	   (else {
+	     ;; is this actually a sym in this module and not
+	     ;; something we've created as a by-product of using the
+	     ;; symbol?
+	     si := evaluate/find-symbol s mod
+	     if (pair? si) {
+	       orig-mod := module-name (phttt si)
+	       if (eq? orig-mod mod) {
+		 pair s r
+	       } {
+		 eprintf "  %s/%s is actually %s/%s\n" mod s orig-mod s
+		 r
+	       }
+	     } {
+	       eprintf "  %s/%s not found\n" mod s
+	       r
+	     }
+	   }))
+	})
+	(else {
+	  pair s r
+	}))
+     })
 
-							 ((struct-type? val) {
-							   (cond
-							    ((struct-type-isa? val ^rt-signal) r)
-							    ((struct-type-isa? val ^system-error) r)
-							    (else (pair s r)))
-							 })
+     ((struct-type? val) {
+       (cond
+	((struct-type-isa? val ^rt-signal) r)
+	((struct-type-isa? val ^system-error) r)
+	(else (pair s r)))
+     })
 
-							 (else {
-							   ;; is this actually a sym in this module
-							   ;; and not something we've created as a
-							   ;; by-product of using the symbol?
-							   si := evaluate/find-symbol s mod
-							   if (pair? si) {
-							     orig-mod := module-name (phttt si)
-							     if (eq? orig-mod mod) {
-							       pair s r
-							     } {
-							       if (not (eq? mod 'Idio)) {
-								 eprintf "  %s/%s is actually %s/%s\n" mod s orig-mod s
-							       }
-							       r
-							     }
-							   } {
-							     eprintf "  %s/%s not found\n" mod s
-							     r
-							   }
-							 }))
-	    }) #n (module-exports mod))
+     (else {
+       ;; is this actually a sym in this module and not something
+       ;; we've created as a by-product of using the symbol?
+       si := evaluate/find-symbol s mod
+       if (pair? si) {
+	 orig-mod := module-name (phttt si)
+	 if (eq? orig-mod mod) {
+	   pair s r
+	 } {
+	   if (not (eq? mod 'Idio)) {
+	     eprintf "  %s/%s is actually %s/%s\n" mod s orig-mod s
+	   }
+	   r
+	 }
+       } {
+	 eprintf "  %s/%s not found\n" mod s
+	 r
+       }
+     }))
+  }) #n (module-exports mod))
 
-	    for-each (function (sym) {
-			if (not (hash-ref mod-ht sym #f)) {
-			  val := symbol-value sym mod #f
-			  type := #t
-			  (cond
-			   ((environ? sym) {
-			     type = #f
-			   })
-			   ((dynamic? sym) {
-			     type = "dynamic"
-			   })
-			   ((computed? sym) {
-			     type = "computed"
-			   })
-			   (else {
-			     type = type->string val
-			   }))
+  for-each (function (sym) {
+    if (not (hash-ref mod-ht sym #f)) {
+      val := symbol-value sym mod #f
+      type := #t
+      (cond
+       ((environ? sym) {
+	 type = #f
+       })
+       ((dynamic? sym) {
+	 type = "dynamic"
+       })
+       ((computed? sym) {
+	 type = "computed"
+       })
+       (else {
+	 type = type->string val
+       }))
 
-			  if type {
-			    printf "  %-30s %s\n" sym type
-			  }
-			  #t
-			}
-	    }) sorted-symbols
+      if type {
+	printf "  %-30s %s\n" sym type
+      }
+      #t
+    }
+  }) sorted-symbols
 
-	    printf "  %d/%d syms\n" (length (hash-keys mod-ht)) (length sorted-symbols)
+  printf "  %d/%d syms\n" (length (hash-keys mod-ht)) (length sorted-symbols)
 }) (hash-keys seen)
 
 ;Local Variables:

@@ -42,14 +42,14 @@ condition-error-load := {
 
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-parameter-type-error) (function (c) {
-				       ;eprintf "condition-error #%s: %s %s\n" n msg (idio-error-location c)
-				       test (idio-error-message c) msg
+      ;eprintf "condition-error #%s: %s %s\n" n msg (idio-error-location c)
+      test (idio-error-message c) msg
 
-				       if (not (string=? (idio-error-message c) msg)) {
-					 condition-report (append-string "condition-error-load: " filename) c (current-error-handle)
-				       }
-				       
-				       trap-return 'condition-error
+      if (not (string=? (idio-error-message c) msg)) {
+	condition-report (append-string "condition-error-load: " filename) c (current-error-handle)
+      }
+      
+      trap-return 'condition-error
     }) {
       t0 := Tests
       (symbol-value 'load 'Idio) filename

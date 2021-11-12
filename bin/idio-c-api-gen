@@ -299,32 +299,32 @@ define pid_t?                         __pid_t?
 
 ext-dirs := #n
 for-each (function (d) {
-	    (regex-case
-	     d
-	     (".*/ext$" {
-	       if (d? r.0) {
-		 ext-dirs = pair r.0 ext-dirs
-	       }
-	     })
-	     ("(.*)/lib/idio" {
-	       ed := sprintf "%s/ext" r.1
-	       if (d? ed) {
-		 ext-dirs = pair ed ext-dirs
-	       }
-	     }))
+  (regex-case
+   d
+   (".*/ext$" {
+     if (d? r.0) {
+       ext-dirs = pair r.0 ext-dirs
+     }
+   })
+   ("(.*)/lib/idio" {
+     ed := sprintf "%s/ext" r.1
+     if (d? ed) {
+       ext-dirs = pair ed ext-dirs
+     }
+   }))
 }) (split-string IDIOLIB ":")
 
 define (find-ext-dir lib-n) {
   loop :+ function (ed*) {
-	    if (null? ed*) #n {
-	      ed := ph ed*
-	      d := append-string ed "/" lib-n
-	      if (d? d) {
-		d
-	      } {
-		loop (pt ed*)
-	      }
-	    }
+    if (null? ed*) #n {
+      ed := ph ed*
+      d := append-string ed "/" lib-n
+      if (d? d) {
+	d
+      } {
+	loop (pt ed*)
+      }
+    }
   }
 
   loop ext-dirs
@@ -339,506 +339,503 @@ define (Idio-identifier word) {
 }
 
 for-each (function (lib-n) {
-	    lib-dn := find-ext-dir lib-n
-	    if (d? lib-dn) {
-	      api-dn := sprintf "%s/api" lib-dn
+  lib-dn := find-ext-dir lib-n
+  if (d? lib-dn) {
+    api-dn := sprintf "%s/api" lib-dn
 
-	      api-bn := sprintf "%s-api" lib-n
-	      api-c-fn := sprintf "%s/%s.c" api-dn api-bn
-	      if (r? api-c-fn) {
-		printf "working on %s\n" lib-n
-		api-o-fn := sprintf "%s/%s.o" api-dn api-bn
-		if (e? api-o-fn) {
-		  delete-file api-o-fn
-		}
+    api-bn := sprintf "%s-api" lib-n
+    api-c-fn := sprintf "%s/%s.c" api-dn api-bn
+    if (r? api-c-fn) {
+      printf "working on %s\n" lib-n
+      api-o-fn := sprintf "%s/%s.o" api-dn api-bn
+      if (e? api-o-fn) {
+	delete-file api-o-fn
+      }
 
-		pointer-size := 0
-		base-id := #f
-		all-ids := (make-hash)
-		lnt := #f		; line number table
-		dir-a := make-array 1
-		file-a := make-array 1
-		filenames := make-array 1
+      pointer-size := 0
+      base-id := #f
+      all-ids := (make-hash)
+      lnt := #f		; line number table
+      dir-a := make-array 1
+      file-a := make-array 1
+      filenames := make-array 1
 
-		define (filename df) {
-		  (cond
-		   ((string? df) df)
-		   ((integer? df) {
-		     if (df lt (array-length filenames)) {
-		       array-ref filenames df
-		     } {
-		       sprintf "!!! filename #%s !!!" df
-		     }
-		   })
-		   (else {
-		     eprintf "df is not expected: %s\n" df
-		     sprintf "!!! unexpected filename %s !!!" df
-		   }))
-		}
+      define (filename df) {
+	(cond
+	 ((string? df) df)
+	 ((integer? df) {
+	   if (df lt (array-length filenames)) {
+	     array-ref filenames df
+	   } {
+	     sprintf "!!! filename #%s !!!" df
+	   }
+	 })
+	 (else {
+	   eprintf "df is not expected: %s\n" df
+	   sprintf "!!! unexpected filename %s !!!" df
+	 }))
+      }
 
-		;; We want the .debug_info and .debug_line sections
-		;; from the DWARF in the object file (ELF or Mach-O) .
+      ;; We want the .debug_info and .debug_line sections from the
+      ;; DWARF in the object file (ELF or Mach-O) .
 
-		;; Most systems have objdump doing something useful
-		;; (albeit sometimes without the finesse of -Wil).
-		;; Mac OS X+ does have an objdump (but it will only print
-		;; out the .debug_frame section (with the slightly
-		;; confusing --dwarf=frames flag) .
+      ;; Most systems have objdump doing something useful (albeit
+      ;; sometimes without the finesse of -Wil).  Mac OS X+ does have
+      ;; an objdump (but it will only print out the .debug_frame
+      ;; section (with the slightly confusing --dwarf=frames flag) .
 
-		;; Mac OS X+ does have dwarfdump (and --debug-info and
-		;; --debug-line options, yay!, although in 10.5 it
-		;; uses TAG_ rather than DW_TAG_ and in 10.15 it
-		;; expands out decl_file anyway so --debug-line is
-		;; possibly redundant) but the output is similarly
-		;; different to objdump.  Hence these two variations
-		;; on a theme of reading object files.
+      ;; Mac OS X+ does have dwarfdump (and --debug-info and
+      ;; --debug-line options, yay!, although in 10.5 it uses TAG_
+      ;; rather than DW_TAG_ and in 10.15 it expands out decl_file
+      ;; anyway so --debug-line is possibly redundant) but the output
+      ;; is similarly different to objdump.  Hence these two
+      ;; variations on a theme of reading object files.
 
-		(cond-expand
-		 ("uname/sysname/Darwin" {
-		   cwd := PWD
-		   (unwind-protect {
-		     libc/chdir lib-dn
-		     make -C api-dn api-o-fn
-		   } {
-		     libc/chdir cwd
-		   })
+      (cond-expand
+       ("uname/sysname/Darwin" {
+	 cwd := PWD
+	 (unwind-protect {
+	   libc/chdir lib-dn
+	   make -C api-dn api-o-fn
+	 } {
+	   libc/chdir cwd
+	 })
 
-		   if (not (f? api-o-fn)) {
-		     eprintf "failed to compile %s\n" api-o-fn
-		     exit 1
-		   }
+	 if (not (f? api-o-fn)) {
+	   eprintf "failed to compile %s\n" api-o-fn
+	   exit 1
+	 }
 
-		   oph := pipe-from dwarfdump --debug-info --debug-line api-o-fn
-		   p-depth := 0
+	 oph := pipe-from dwarfdump --debug-info --debug-line api-o-fn
+	 p-depth := 0
 
-		   define (dwarfdump-loop depth DIE) {
-		     if (eof? oph) DIE {
-		       (regex-case (read-line oph)
-				   ("(0x[[:xdigit:]]+):([[:space:]]+)(DW_)?TAG_([[:alnum:]_]+)" {
-				     id := r.1
-				     ;; there's no formal declaration
-				     ;; of nesting depth other than
-				     ;; the relative indent of the
-				     ;; elements!
-				     c-depth := string-length r.2
-				     tag := string->symbol r.4
+	 define (dwarfdump-loop depth DIE) {
+	   if (eof? oph) DIE {
+	     (regex-case (read-line oph)
+			 ("(0x[[:xdigit:]]+):([[:space:]]+)(DW_)?TAG_([[:alnum:]_]+)" {
+			   id := r.1
+			   ;; there's no formal declaration of nesting
+			   ;; depth other than the relative indent of
+			   ;; the elements!
+			   c-depth := string-length r.2
+			   tag := string->symbol r.4
 
-				     ;; new DIE
-				     new-DIE := (make-hash)
-				     hash-set! new-DIE 'tag tag
-				     hash-set! new-DIE 'id id
-				     hash-set! all-ids id new-DIE
+			   ;; new DIE
+			   new-DIE := (make-hash)
+			   hash-set! new-DIE 'tag tag
+			   hash-set! new-DIE 'id id
+			   hash-set! all-ids id new-DIE
 
-				     if (and (not base-id)
-					     (eq? tag 'compile_unit)) {
-					       base-id = id
-					       hash-set! new-DIE '__parent new-DIE
-					       p-depth = c-depth
-					       dwarfdump-loop c-depth new-DIE
-					     } {
+			   if (and (not base-id)
+				   (eq? tag 'compile_unit)) {
+			     base-id = id
+			     hash-set! new-DIE '__parent new-DIE
+			     p-depth = c-depth
+			     dwarfdump-loop c-depth new-DIE
+			   } {
 
-					       parent := hash-ref DIE '__parent
-					       ; new-DIE is a sibling of DIE unless...
-					       if (c-depth gt depth) {
-						 ; new-DIE is a child of DIE
-						 parent = DIE
-					       }
-					       ; or dwarfdump hasn't dropped out the Abbrev 0
-					       if (c-depth lt depth) {
-						 if (eqv? c-depth p-depth) {
-						   parent = hash-ref all-ids base-id
-						 }
-					       }
+			     parent := hash-ref DIE '__parent
+			     ; new-DIE is a sibling of DIE unless...
+			     if (c-depth gt depth) {
+			       ; new-DIE is a child of DIE
+			       parent = DIE
+			     }
+			     ; or dwarfdump hasn't dropped out the Abbrev 0
+			     if (c-depth lt depth) {
+			       if (eqv? c-depth p-depth) {
+				 parent = hash-ref all-ids base-id
+			       }
+			     }
 
-					       ; parent should have an array of tag'd entries
-					       a := hash-ref parent tag #f
-					       if (not a) {
-						 a = #[]
-						 hash-set! parent tag a
-					       }
+			     ; parent should have an array of tag'd entries
+			     a := hash-ref parent tag #f
+			     if (not a) {
+			       a = #[]
+			       hash-set! parent tag a
+			     }
 
-					       array-push! a new-DIE
+			     array-push! a new-DIE
 
-					       hash-set! new-DIE '__parent parent
-					       dwarfdump-loop c-depth new-DIE
-					     }
-				   })
-				   ("(0x[[:xdigit:]]+):([[:space:]]+)NULL" {
-				     dwarfdump-loop (depth - 1) (hash-ref DIE '__parent)
-				   })
-				   (
-				     ;;                DW_AT_type      (0x00000037 "int")
-				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+\\((0x[[:xdigit:]]+)\\ \"[^\"]+\")" {
-				       hash-set! DIE (string->symbol r.1) r.2
-				       dwarfdump-loop depth DIE
-				     })
-				   (
-				     ;; Darwin 9.8.0
-				     ;;                AT_type( {0x00000413} ( const char ) )
-				     "[[:space:]]+AT_([^[:space:]]+)\\( {(0x[[:xdigit:]]+)} \\( ([^\\)]+) \\) \\)" {
-				       hash-set! DIE (string->symbol r.1) r.2
-				       dwarfdump-loop depth DIE
-				     })
-				   (
-				     ;;                DW_AT_name      ("int")
-				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+\\(\"([^\"]+)\"\\)" {
-				       hash-set! DIE (string->symbol r.1) r.2
-				       dwarfdump-loop depth DIE
-				     })
-				   (
-				     ;; Darwin 9.8.0
-				     ;;                AT_name( "int" )
-				     "[[:space:]]+AT_([^[:space:]]+)\\( \"([^\"]+)\" \\)" {
-				       hash-set! DIE (string->symbol r.1) r.2
-				       dwarfdump-loop depth DIE
-				     })
-				   (
-				     ;;                DW_AT_byte_size (0x04)
-				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+\\(0x([[:xdigit:]]+)\\)" {
-				       hash-set! DIE (string->symbol r.1) (read-number r.2 16)
-				       dwarfdump-loop depth DIE
-				     })
-				   (
-				     ;; Darwin 9.8.0
-				     ;;                AT_byte_size( 0x04 )
-				     "[[:space:]]+AT_([^[:space:]]+)\\( 0x([[:xdigit:]]+) \\)" {
-				       hash-set! DIE (string->symbol r.1) (read-number r.2 16)
-				       dwarfdump-loop depth DIE
-				     })
-				   (
-				     ;;                DW_AT_frame_base        (DW_OP_reg6 RBP)
-				     ;;                DW_AT_decl_line (53)
-				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+\\(([^)]+)\\)" {
-				       hash-set! DIE (string->symbol r.1) r.2
-				       dwarfdump-loop depth DIE
-				     })
-				   (
-				     ;; darwin 9.8.0
-				     ;;                AT_decl_file( "/usr/include/i386/_types.h" )
-				     ;;                AT_decl_line( 53 )
-				     "[[:space:]]+AT_([^[:space:]]+)\\( ([^)]+) \\)" {
-				       hash-set! DIE (string->symbol r.1) r.2
-				       dwarfdump-loop depth DIE
-				     })
-				   ("The Directory Table" {
-				     lnt = 'dir
-				     dwarfdump-loop depth DIE
-				   })
-				   ("The File Name Table" {
-				     lnt = 'file
-				     dwarfdump-loop depth DIE
-				   })
-				   ("Line Number Statements" {
-				     lnt = #f
-				     dwarfdump-loop depth DIE
-				   })
-				   (
-				     ;;   3     3       0       0       types.h
-				     ;;   5     4       0       0       types.h
-				     "[[:digit:]]+[[:space:]]+([[:digit:]]+)[[:space:]]+[[:digit:]]+[[:space:]]+[[:digit:]]+[[:space:]]+(.+)$" {
-				       if (eq? lnt 'file) {
-					 dir-n :=
-					 array-push! file-a r.2
-					 array-push! filenames (append-string (array-ref dir-a (read-number r.1))
-									      "/"
-									      r.2)
-				       }
-				       dwarfdump-loop depth DIE
-				     })
-				   (
-				     ;; Darwin 9.8.0
-				     ;;   file_names[  8]    4 0x00000000 0x00000000 resource.h
-				     "file_names\\[[[:space:]]*[[:digit:]]+\\][[:space:]]+([[:digit:]]+)[[:space:]]+[[:xdigit:]]+[[:space:]]+[[:xdigit:]]+[[:space:]]+(.+)$" {
-				       if (eq? lnt 'file) {
-					 dir-n :=
-					 array-push! file-a r.2
-					 array-push! filenames (append-string (array-ref dir-a (read-number r.1))
-									      "/"
-									      r.2)
-				       }
-				       dwarfdump-loop depth DIE
-				     })
-				   (
-				     ; Darwin 9.8.0
-				     ;;   include_directories[  4] = '/usr/include/sys'
-				     "(/.+)'$" {
-				       if (eq? lnt 'dir) {
-					 array-push! dir-a r.1
-				       }
-				       dwarfdump-loop depth DIE
-				     })
-				   ("Pointer Size:[[:space:]]+([[:digit:]]+)" {
-				     pointer-size = read-number r.1
-				     dwarfdump-loop depth DIE
-				   })
-				   (else {
-				     dwarfdump-loop depth DIE
-				   }))
-		     }
-		   }
+			     hash-set! new-DIE '__parent parent
+			     dwarfdump-loop c-depth new-DIE
+			   }
+			 })
+			 ("(0x[[:xdigit:]]+):([[:space:]]+)NULL" {
+			   dwarfdump-loop (depth - 1) (hash-ref DIE '__parent)
+			 })
+			 (
+			   ;;                DW_AT_type      (0x00000037 "int")
+			   "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+\\((0x[[:xdigit:]]+)\\ \"[^\"]+\")" {
+			     hash-set! DIE (string->symbol r.1) r.2
+			     dwarfdump-loop depth DIE
+			   })
+			 (
+			   ;; Darwin 9.8.0
+			   ;;                AT_type( {0x00000413} ( const char ) )
+			   "[[:space:]]+AT_([^[:space:]]+)\\( {(0x[[:xdigit:]]+)} \\( ([^\\)]+) \\) \\)" {
+			     hash-set! DIE (string->symbol r.1) r.2
+			     dwarfdump-loop depth DIE
+			   })
+			 (
+			   ;;                DW_AT_name      ("int")
+			   "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+\\(\"([^\"]+)\"\\)" {
+			     hash-set! DIE (string->symbol r.1) r.2
+			     dwarfdump-loop depth DIE
+			   })
+			 (
+			   ;; Darwin 9.8.0
+			   ;;                AT_name( "int" )
+			   "[[:space:]]+AT_([^[:space:]]+)\\( \"([^\"]+)\" \\)" {
+			     hash-set! DIE (string->symbol r.1) r.2
+			     dwarfdump-loop depth DIE
+			   })
+			 (
+			   ;;                DW_AT_byte_size (0x04)
+			   "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+\\(0x([[:xdigit:]]+)\\)" {
+			     hash-set! DIE (string->symbol r.1) (read-number r.2 16)
+			     dwarfdump-loop depth DIE
+			   })
+			 (
+			   ;; Darwin 9.8.0
+			   ;;                AT_byte_size( 0x04 )
+			   "[[:space:]]+AT_([^[:space:]]+)\\( 0x([[:xdigit:]]+) \\)" {
+			     hash-set! DIE (string->symbol r.1) (read-number r.2 16)
+			     dwarfdump-loop depth DIE
+			   })
+			 (
+			   ;;                DW_AT_frame_base        (DW_OP_reg6 RBP)
+			   ;;                DW_AT_decl_line (53)
+			   "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+\\(([^)]+)\\)" {
+			     hash-set! DIE (string->symbol r.1) r.2
+			     dwarfdump-loop depth DIE
+			   })
+			 (
+			   ;; darwin 9.8.0
+			   ;;                AT_decl_file( "/usr/include/i386/_types.h" )
+			   ;;                AT_decl_line( 53 )
+			   "[[:space:]]+AT_([^[:space:]]+)\\( ([^)]+) \\)" {
+			     hash-set! DIE (string->symbol r.1) r.2
+			     dwarfdump-loop depth DIE
+			   })
+			 ("The Directory Table" {
+			   lnt = 'dir
+			   dwarfdump-loop depth DIE
+			 })
+			 ("The File Name Table" {
+			   lnt = 'file
+			   dwarfdump-loop depth DIE
+			 })
+			 ("Line Number Statements" {
+			   lnt = #f
+			   dwarfdump-loop depth DIE
+			 })
+			 (
+			   ;;   3     3       0       0       types.h
+			   ;;   5     4       0       0       types.h
+			   "[[:digit:]]+[[:space:]]+([[:digit:]]+)[[:space:]]+[[:digit:]]+[[:space:]]+[[:digit:]]+[[:space:]]+(.+)$" {
+			     if (eq? lnt 'file) {
+			       dir-n :=
+			       array-push! file-a r.2
+			       array-push! filenames (append-string (array-ref dir-a (read-number r.1))
+								    "/"
+								    r.2)
+			     }
+			     dwarfdump-loop depth DIE
+			   })
+			 (
+			   ;; Darwin 9.8.0
+			   ;;   file_names[  8]    4 0x00000000 0x00000000 resource.h
+			   "file_names\\[[[:space:]]*[[:digit:]]+\\][[:space:]]+([[:digit:]]+)[[:space:]]+[[:xdigit:]]+[[:space:]]+[[:xdigit:]]+[[:space:]]+(.+)$" {
+			     if (eq? lnt 'file) {
+			       dir-n :=
+			       array-push! file-a r.2
+			       array-push! filenames (append-string (array-ref dir-a (read-number r.1))
+								    "/"
+								    r.2)
+			     }
+			     dwarfdump-loop depth DIE
+			   })
+			 (
+			   ; Darwin 9.8.0
+			   ;;   include_directories[  4] = '/usr/include/sys'
+			   "(/.+)'$" {
+			     if (eq? lnt 'dir) {
+			       array-push! dir-a r.1
+			     }
+			     dwarfdump-loop depth DIE
+			   })
+			 ("Pointer Size:[[:space:]]+([[:digit:]]+)" {
+			   pointer-size = read-number r.1
+			   dwarfdump-loop depth DIE
+			 })
+			 (else {
+			   dwarfdump-loop depth DIE
+			 }))
+	   }
+	 }
 
-		   dummy-DIE := (make-hash)
-		   hash-set! dummy-DIE '__parent dummy-DIE
-		   dwarfdump-loop -1 dummy-DIE
-		   })
-		 (else {
-		   objdump-flags := "-Wil"
-		   cwd := PWD
-		   (unwind-protect {
-		     libc/chdir lib-dn
-		     (cond-expand
-		      ((or "uname/sysname/FreeBSD"
-			   "uname/sysname/OpenBSD") {
-			gmake -C api-dn api-o-fn
-			objdump-flags = "-W"
-		      })
-		      ("uname/sysname/SunOS" {
-			make -C api-dn api-o-fn
-			objdump-flags = "-W"
-		      })
-		      (else {
-			make -C api-dn api-o-fn
-		      }))
-		   } {
-		     libc/chdir cwd
-		   })
+	 dummy-DIE := (make-hash)
+	 hash-set! dummy-DIE '__parent dummy-DIE
+	 dwarfdump-loop -1 dummy-DIE
+       })
+       (else {
+	 objdump-flags := "-Wil"
+	 cwd := PWD
+	 (unwind-protect {
+	   libc/chdir lib-dn
+	   (cond-expand
+	    ((or "uname/sysname/FreeBSD"
+		 "uname/sysname/OpenBSD") {
+	      gmake -C api-dn api-o-fn
+	      objdump-flags = "-W"
+	    })
+	    ("uname/sysname/SunOS" {
+	      make -C api-dn api-o-fn
+	      objdump-flags = "-W"
+	    })
+	    (else {
+	      make -C api-dn api-o-fn
+	    }))
+	 } {
+	   libc/chdir cwd
+	 })
 
-		   if (not (f? api-o-fn)) {
-		     eprintf "failed to compile %s\n" api-o-fn
-		     exit 1
-		   }
+	 if (not (f? api-o-fn)) {
+	   eprintf "failed to compile %s\n" api-o-fn
+	   exit 1
+	 }
 
-		   oph := pipe-from objdump objdump-flags api-o-fn
+	 oph := pipe-from objdump objdump-flags api-o-fn
 
-		   define (objdump-loop depth DIE) {
-		     if (eof? oph) DIE {
-		       (regex-case (read-line oph)
-				   ("<([[:xdigit:]]+)><([[:xdigit:]]+)>: Abbrev Number: ([[:digit:]]+) \\(DW_TAG_([^)]+)\\)" {
-				     c-depth := read-number r.1
-				     id := r.2
-				     tag := string->symbol r.4
+	 define (objdump-loop depth DIE) {
+	   if (eof? oph) DIE {
+	     (regex-case (read-line oph)
+			 ("<([[:xdigit:]]+)><([[:xdigit:]]+)>: Abbrev Number: ([[:digit:]]+) \\(DW_TAG_([^)]+)\\)" {
+			   c-depth := read-number r.1
+			   id := r.2
+			   tag := string->symbol r.4
 
-				     ;; new DIE
-				     new-DIE := (make-hash)
-				     hash-set! new-DIE 'tag tag
-				     hash-set! new-DIE 'id id
-				     hash-set! all-ids id new-DIE
+			   ;; new DIE
+			   new-DIE := (make-hash)
+			   hash-set! new-DIE 'tag tag
+			   hash-set! new-DIE 'id id
+			   hash-set! all-ids id new-DIE
 
-				     (case c-depth
-					   ((0) {
-					     ; bootstrap - self-referential
-					     base-id = id
-					     hash-set! new-DIE '__parent new-DIE
-					     objdump-loop c-depth new-DIE
-					   })
-					   (else {
-					     parent := hash-ref DIE '__parent
-					     if (equal? r.3 "0") {
-					       ; end of siblings - continue with parent
-					       objdump-loop (depth - 1) parent
-					     } {
-					       ; new-DIE is a sibling of DIE unless...
-					       if (c-depth gt depth) {
-						 ; new-DIE is a child of DIE
-						 parent = DIE
-					       }
-					       ; or objdump hasn't dropped out the Abbrev 0
-					       if (c-depth lt depth) {
-						 if (eqv? c-depth 1) {
-						   parent = hash-ref all-ids base-id
-						 } {
-						   printf "NOTICE: %d -> %d from 0x%s %s\n" depth c-depth (hash-ref DIE 'id) (hash-ref DIE 'tag)
-						 }
-					       }
+			   (case c-depth
+			    ((0) {
+			      ; bootstrap - self-referential
+			      base-id = id
+			      hash-set! new-DIE '__parent new-DIE
+			      objdump-loop c-depth new-DIE
+			    })
+			    (else {
+			      parent := hash-ref DIE '__parent
+			      if (equal? r.3 "0") {
+				; end of siblings - continue with parent
+				objdump-loop (depth - 1) parent
+			      } {
+				; new-DIE is a sibling of DIE unless...
+				if (c-depth gt depth) {
+				  ; new-DIE is a child of DIE
+				  parent = DIE
+				}
+				; or objdump hasn't dropped out the Abbrev 0
+				if (c-depth lt depth) {
+				  if (eqv? c-depth 1) {
+				    parent = hash-ref all-ids base-id
+				  } {
+				    printf "NOTICE: %d -> %d from 0x%s %s\n" depth c-depth (hash-ref DIE 'id) (hash-ref DIE 'tag)
+				  }
+				}
 
-					       ; parent should have an array of tag'd entries
-					       a := hash-ref parent tag #f
-					       if (not a) {
-						 a = #[]
-						 hash-set! parent tag a
-					       }
+				; parent should have an array of tag'd entries
+				a := hash-ref parent tag #f
+				if (not a) {
+				  a = #[]
+				  hash-set! parent tag a
+				}
 
-					       array-push! a new-DIE
+				array-push! a new-DIE
 
-					       hash-set! new-DIE '__parent parent
-					       objdump-loop c-depth new-DIE
-					     }
-					   }))
-				   })
-				   ;; XXX FreeBSD-10 is prone to trailing TABs
-				   ;; OpenBSD-6 doesn't have the leading <id>
+				hash-set! new-DIE '__parent parent
+				objdump-loop c-depth new-DIE
+			      }
+			    }))
+			 })
+			 ;; XXX FreeBSD-10 is prone to trailing TABs
+			 ;; OpenBSD-6 doesn't have the leading <id>
 
-				   (
-				     ;;     <3c>   DW_AT_byte_size   : 4
-				     ;;     <3d>   DW_AT_encoding    : 7        (unsigned)
-				     "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]*: ([[:digit:]]+)" {
-				       hash-set! DIE (string->symbol r.1) (read-number r.2)
-				       objdump-loop depth DIE
-				     })
-				   (
-				     ;; OpenBSD-6
-				     ;;     DW_AT_byte_size   : 4
-				     ;;     DW_AT_encoding    : 7        (unsigned)
-				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]*: ([[:digit:]]+)" {
-				       hash-set! DIE (string->symbol r.1) (read-number r.2)
-				       objdump-loop depth DIE
-				     })
-				   (
-				     ;;     <3e>   DW_AT_name        : (indirect string, offset: 0x187): unsigned int
-				     "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: \\(indirect string, offset: 0x[[:xdigit:]]+\\): ([^\t]+)" {
-				       hash-set! DIE (string->symbol r.1) r.2
-				       objdump-loop depth DIE
-				     })
-				   (
-				     ;; OpenBSD-6
-				     ;;     DW_AT_name        : (indirect string, offset: 0x187): unsigned int
-				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: \\(indirect string, offset: 0x[[:xdigit:]]+\\): ([^\t]+)" {
-				       hash-set! DIE (string->symbol r.1) r.2
-				       objdump-loop depth DIE
-				     })
-				   (
-				     ;;     <6c>   DW_AT_type        : <0x65>
-				     "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: <0x([[:xdigit:]]+)>" {
-				       hash-set! DIE (string->symbol r.1) r.2
-				       objdump-loop depth DIE
-				     })
-				   (
-				     ;; FreeBSD-10 -- no 0x
-				     ;;     <6c>   DW_AT_type        : <65>
-				     "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: <([[:xdigit:]]+)>" {
-				       hash-set! DIE (string->symbol r.1) r.2
-				       objdump-loop depth DIE
-				     })
-				   (
-				     ;; OpenBSD-6
-				     ;;     DW_AT_type        : <65>
-				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: <([[:xdigit:]]+)>" {
-				       hash-set! DIE (string->symbol r.1) r.2
-				       objdump-loop depth DIE
-				     })
-				   (
-				     ;;    <5a>   DW_AT_name        : int
-				     "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: ([^\t]+)" {
-				       hash-set! DIE (string->symbol r.1) r.2
-				       objdump-loop depth DIE
-				     })
-				   (
-				     ;; OpenBSD-6
-				     ;;    DW_AT_name        : int
-				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: ([^\t]+)" {
-				       hash-set! DIE (string->symbol r.1) r.2
-				       objdump-loop depth DIE
-				     })
-				   ("Abbrev Number: 0" {
-				     objdump-loop (depth - 1) (hash-ref DIE '__parent)
-				   })
-				   ("The Directory Table" {
-				     lnt = 'dir
-				     objdump-loop depth DIE
-				   })
-				   ("The File Name Table" {
-				     lnt = 'file
-				     objdump-loop depth DIE
-				   })
-				   ("Line Number Statements" {
-				     lnt = #f
-				     objdump-loop depth DIE
-				   })
-				   (
-				     ;; objdump 2.35.1 fc34?
-				     ;;  Entry Dir     Name
-				     ;;  2     2       (indirect line string, offset: 0x15d): types.h
-				     ;;  3     3       (indirect line string, offset: 0x165): types.h
+			 (
+			   ;;     <3c>   DW_AT_byte_size   : 4
+			   ;;     <3d>   DW_AT_encoding    : 7        (unsigned)
+			   "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]*: ([[:digit:]]+)" {
+			     hash-set! DIE (string->symbol r.1) (read-number r.2)
+			     objdump-loop depth DIE
+			   })
+			 (
+			   ;; OpenBSD-6
+			   ;;     DW_AT_byte_size   : 4
+			   ;;     DW_AT_encoding    : 7        (unsigned)
+			   "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]*: ([[:digit:]]+)" {
+			     hash-set! DIE (string->symbol r.1) (read-number r.2)
+			     objdump-loop depth DIE
+			   })
+			 (
+			   ;;     <3e>   DW_AT_name        : (indirect string, offset: 0x187): unsigned int
+			   "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: \\(indirect string, offset: 0x[[:xdigit:]]+\\): ([^\t]+)" {
+			     hash-set! DIE (string->symbol r.1) r.2
+			     objdump-loop depth DIE
+			   })
+			 (
+			   ;; OpenBSD-6
+			   ;;     DW_AT_name        : (indirect string, offset: 0x187): unsigned int
+			   "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: \\(indirect string, offset: 0x[[:xdigit:]]+\\): ([^\t]+)" {
+			     hash-set! DIE (string->symbol r.1) r.2
+			     objdump-loop depth DIE
+			   })
+			 (
+			   ;;     <6c>   DW_AT_type        : <0x65>
+			   "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: <0x([[:xdigit:]]+)>" {
+			     hash-set! DIE (string->symbol r.1) r.2
+			     objdump-loop depth DIE
+			   })
+			 (
+			   ;; FreeBSD-10 -- no 0x
+			   ;;     <6c>   DW_AT_type        : <65>
+			   "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: <([[:xdigit:]]+)>" {
+			     hash-set! DIE (string->symbol r.1) r.2
+			     objdump-loop depth DIE
+			   })
+			 (
+			   ;; OpenBSD-6
+			   ;;     DW_AT_type        : <65>
+			   "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: <([[:xdigit:]]+)>" {
+			     hash-set! DIE (string->symbol r.1) r.2
+			     objdump-loop depth DIE
+			   })
+			 (
+			   ;;    <5a>   DW_AT_name        : int
+			   "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: ([^\t]+)" {
+			     hash-set! DIE (string->symbol r.1) r.2
+			     objdump-loop depth DIE
+			   })
+			 (
+			   ;; OpenBSD-6
+			   ;;    DW_AT_name        : int
+			   "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: ([^\t]+)" {
+			     hash-set! DIE (string->symbol r.1) r.2
+			     objdump-loop depth DIE
+			   })
+			 ("Abbrev Number: 0" {
+			   objdump-loop (depth - 1) (hash-ref DIE '__parent)
+			 })
+			 ("The Directory Table" {
+			   lnt = 'dir
+			   objdump-loop depth DIE
+			 })
+			 ("The File Name Table" {
+			   lnt = 'file
+			   objdump-loop depth DIE
+			 })
+			 ("Line Number Statements" {
+			   lnt = #f
+			   objdump-loop depth DIE
+			 })
+			 (
+			   ;; objdump 2.35.1 fc34?
+			   ;;  Entry Dir     Name
+			   ;;  2     2       (indirect line string, offset: 0x15d): types.h
+			   ;;  3     3       (indirect line string, offset: 0x165): types.h
 
-				     "([[:digit:]]+)[[:space:]]+([[:digit:]]+)[[:space:]]+\\([^\\)]+\\):[[:space:]]+(.+)$" {
-				       if (eq? lnt 'file) {
-					 file-n := read-number r.1
-					 dir-n := read-number r.2
-					 array-set! file-a file-n r.3
-					 array-set! filenames file-n (append-string (array-ref dir-a dir-n)
-										    "/"
-										    r.3)
-				       }
-				       objdump-loop depth DIE
-				     })
-				   (
-				     ;; objdump 2.35.1 fc34?
-				     ;;  3     (indirect line string, offset: 0xbd): /usr/include/sys
+			   "([[:digit:]]+)[[:space:]]+([[:digit:]]+)[[:space:]]+\\([^\\)]+\\):[[:space:]]+(.+)$" {
+			     if (eq? lnt 'file) {
+			       file-n := read-number r.1
+			       dir-n := read-number r.2
+			       array-set! file-a file-n r.3
+			       array-set! filenames file-n (append-string (array-ref dir-a dir-n)
+									  "/"
+									  r.3)
+			     }
+			     objdump-loop depth DIE
+			   })
+			 (
+			   ;; objdump 2.35.1 fc34?
+			   ;;  3     (indirect line string, offset: 0xbd): /usr/include/sys
 
-				     "([[:digit:]]+)[[:space:]]+\\([^\\)]+\\):[[:space:]]+(/.+)$" {
-				       if (eq? lnt 'dir) {
-					 array-set! dir-a (read-number r.1) r.2
-				       }
-				       objdump-loop depth DIE
-				     })
-				   (
-				     ;;   Entry Dir     Time    Size    Name
-				     ;;   3     3       0       0       types.h
-				     ;;   5     4       0       0       types.h
-				     "[[:digit:]]+[[:space:]]+([[:digit:]]+)[[:space:]]+[[:digit:]]+[[:space:]]+[[:digit:]]+[[:space:]]+(.+)$" {
-				       if (eq? lnt 'file) {
-					 array-push! file-a r.2
+			   "([[:digit:]]+)[[:space:]]+\\([^\\)]+\\):[[:space:]]+(/.+)$" {
+			     if (eq? lnt 'dir) {
+			       array-set! dir-a (read-number r.1) r.2
+			     }
+			     objdump-loop depth DIE
+			   })
+			 (
+			   ;;   Entry Dir     Time    Size    Name
+			   ;;   3     3       0       0       types.h
+			   ;;   5     4       0       0       types.h
+			   "[[:digit:]]+[[:space:]]+([[:digit:]]+)[[:space:]]+[[:digit:]]+[[:space:]]+[[:digit:]]+[[:space:]]+(.+)$" {
+			     if (eq? lnt 'file) {
+			       array-push! file-a r.2
 
-					 ; FreeBSD clang version 11
-					 ; generates a directory table
-                                         ; entry of 0 (which
-                                         ; obviously(?) doesn't
-                                         ; exist).
-					 dir-n := "."
-					 dir-i := read-number r.1
-					 if (dir-i gt 0) {
-					   dir-n = array-ref dir-a dir-i
-					 }
-					 array-push! filenames (append-string dir-n
-									      "/"
-									      r.2)
-				       }
-				       objdump-loop depth DIE
-				     })
-				   (
-				     ;;   3     /usr/include/sys
-				     ;;   /usr/include/sys
-				     "(/.+)$" {
-				       if (eq? lnt 'dir) {
-					 array-push! dir-a r.1
-				       }
-				       objdump-loop depth DIE
-				     })
-				   ("Pointer Size:[[:space:]]+([[:digit:]]+)" {
-				     pointer-size = read-number r.1
-				     objdump-loop depth DIE
-				   })
-				   (else {
-				     ;printf "? %s\n" r
-				     objdump-loop depth DIE
-				   }))
-		     }
-		   }
+			       ; FreeBSD clang version 11
+			       ; generates a directory table
+			       ; entry of 0 (which
+			       ; obviously(?) doesn't
+			       ; exist).
+			       dir-n := "."
+			       dir-i := read-number r.1
+			       if (dir-i gt 0) {
+				 dir-n = array-ref dir-a dir-i
+			       }
+			       array-push! filenames (append-string dir-n
+								    "/"
+								    r.2)
+			     }
+			     objdump-loop depth DIE
+			   })
+			 (
+			   ;;   3     /usr/include/sys
+			   ;;   /usr/include/sys
+			   "(/.+)$" {
+			     if (eq? lnt 'dir) {
+			       array-push! dir-a r.1
+			     }
+			     objdump-loop depth DIE
+			   })
+			 ("Pointer Size:[[:space:]]+([[:digit:]]+)" {
+			   pointer-size = read-number r.1
+			   objdump-loop depth DIE
+			 })
+			 (else {
+			   ;printf "? %s\n" r
+			   objdump-loop depth DIE
+			 }))
+	   }
+	 }
 
-		   objdump-loop -1 #n
-		   }))
+	 objdump-loop -1 #n
+       }))
 
-		if (not base-id) {
-		  eprintf "ERROR: %s: no DW_TAG_compile_unit in %s?\n" ARGV0 api-o-fn
-		  exit 1
-		}
+      if (not base-id) {
+	eprintf "ERROR: %s: no DW_TAG_compile_unit in %s?\n" ARGV0 api-o-fn
+	exit 1
+      }
 
-		gen-dn := sprintf "%s/gen" lib-dn
-		rm -rf gen-dn
-		mkdir gen-dn
+      gen-dn := sprintf "%s/gen" lib-dn
+      rm -rf gen-dn
+      mkdir gen-dn
 
-		i-module-name := lib-n
-		c-module-name := C-identifier lib-n
+      i-module-name := lib-n
+      c-module-name := C-identifier lib-n
 
-		errors-dn := sprintf "%s/%s-errors" gen-dn i-module-name
-		if (not (d? errors-dn)) {
-		  mkdir errors-dn
-		}
+      errors-dn := sprintf "%s/%s-errors" gen-dn i-module-name
+      if (not (d? errors-dn)) {
+	mkdir errors-dn
+      }
 
-		tc-count := 0
-		errors-fn := sprintf "%s/test-%s-error.idio" gen-dn i-module-name
-		errors-fh := open-output-file errors-fn
-		hprintf errors-fh #S{
+      tc-count := 0
+      errors-fn := sprintf "%s/test-%s-error.idio" gen-dn i-module-name
+      errors-fh := open-output-file errors-fn
+      hprintf errors-fh #S{
 ;;
 ;; test-${i-module-name}-error.idio
 ;;
@@ -859,10 +856,10 @@ message strings.
 
 *#
 
-${i-module-name}-error-load := {
+${i-module-name}-error-load := \{
   n := 0
 
-  function (filename msg & args) {
+  function (filename msg & args) \{
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "not a string" filename)
 
     load-k := #n
@@ -870,557 +867,558 @@ ${i-module-name}-error-load := {
     n = n + 1
 
     exp-tests := 1
-    if (pair? args) {
+    if (pair? args) \{
       exp-tests = 3
     \}
 
     ;eprintf "loading #%%s %%s looking for %%s\\n" n filename msg
     trap (^rt-${i-module-name}-error
 	  ^system-error
-	  ^rt-parameter-error) (function (c) {
-				  ;eprintf "${i-module-name}-error #%%s: %%s %%s\\n" n msg c.location
-				  test c.message msg
+	  ^rt-parameter-error) (function (c) \{
+	    ;eprintf "${i-module-name}-error #%%s: %%s %%s\\n" n msg c.location
+	    test c.message msg
 
-				  if (not (string=? c.message msg)) {
-				    condition-report (append-string "${i-module-name}-error-load: " filename) c (current-error-handle)
-				  \}
+	    if (not (string=? c.message msg)) \{
+	      condition-report (append-string "${i-module-name}-error-load: " filename) c (current-error-handle)
+	    \}
 
-				  if (system-error? c) {
-				    tested := #f
-				    if (pair? args) {
-				      test (system-error-errno c) (ph args)
-				      if (pair? (pt args)) {
-					test (system-error-function c) (pht args)
-					tested = #t
-				      \}
-				    \}
+	    if (system-error? c) \{
+	      tested := #f
+	      if (pair? args) \{
+		test (system-error-errno c) (ph args)
+		if (pair? (pt args)) \{
+		  test (system-error-function c) (pht args)
+		  tested = #t
+		\}
+	    \}
 
-				    if (not tested) {
-				      condition-report (append-string "${i-module-name}-error-load: " filename) c (current-error-handle)
-				    \}
-				  \}
-
-				  load-k '${i-module-name}-error
-	  \}) {
-	    call/cc (function (k) {
-		       load-k = k
-		       t0 := Tests
-		       (symbol-value 'load 'Idio) filename
-		       if (not (equal? Tests (t0 + exp-tests))) {
-			 eprintf "${i-module-name}-error #%%s: %%s did not generate \\"%%s\\"\\n" n filename msg
-			 Errors = Errors + 1
-			 Tests = t0 + exp-tests
-		       \}
-	    \})
+	    if (not tested) \{
+	      condition-report (append-string "${i-module-name}-error-load: " filename) c (current-error-handle)
+	    \}
 	  \}
+
+	  load-k '${i-module-name}-error
+    \}) \{
+      call/cc (function (k) \{
+	load-k = k
+	t0 := Tests
+	(symbol-value 'load 'Idio) filename
+	if (not (equal? Tests (t0 + exp-tests))) \{
+	  eprintf "${i-module-name}-error #%%s: %%s did not generate \\"%%s\\"\\n" n filename msg
+	  Errors = Errors + 1
+	  Tests = t0 + exp-tests
+	\}
+      \})
+    \}
   \}
 \}
 
 }
 
-		define (base-type? id) {
-		  if id {
-		    DIE := hash-ref all-ids id #f
-		    if DIE {
-		      (case (hash-ref DIE 'tag #f)
-			    ((base_type enumeration_type) {
-			      #t
-			    })
-			    ((restrict_type const_type) {
-			      base-type? (hash-ref DIE 'type #f)
-			    })
-			    (else {
-			      #f
-			    }))
-		    } {
-		      eprintf "base-type? %s\n" id
-		      #f
-		    }
-		    } #f
-		}
+      define (base-type? id) {
+	if id {
+	  DIE := hash-ref all-ids id #f
+	  if DIE {
+	    (case (hash-ref DIE 'tag #f)
+	     ((base_type enumeration_type) {
+	       #t
+	     })
+	     ((restrict_type const_type) {
+	       base-type? (hash-ref DIE 'type #f)
+	     })
+	     (else {
+	       #f
+	     }))
+	  } {
+	    eprintf "base-type? %s\n" id
+	    #f
+	  }
+	} #f
+      }
 
-		define (pointer-type? id) {
-		  if id {
-		    name := 'void		; implied default?
-		    DIE := hash-ref all-ids id #f
-		    if DIE {
-		      (case (hash-ref DIE 'tag #f)
-			    ((restrict_type const_type) {
-			      pointer-type? (hash-ref DIE 'type #f)
-			    })
-			    ((pointer_type) {
-			      #t
-			    })
-			    (else #f))
-		    } {
-		      sprintf "pointer-DIE-0x%s" id
-		    }
-		    } #f
-		}
+      define (pointer-type? id) {
+	if id {
+	  name := 'void		; implied default?
+	  DIE := hash-ref all-ids id #f
+	  if DIE {
+	    (case (hash-ref DIE 'tag #f)
+	     ((restrict_type const_type) {
+	       pointer-type? (hash-ref DIE 'type #f)
+	     })
+	     ((pointer_type) {
+	       #t
+	     })
+	     (else #f))
+	  } {
+	    sprintf "pointer-DIE-0x%s" id
+	  }
+	} #f
+      }
 
-		define (structure-type? id) {
-		  if id {
-		    name := 'void		; implied default?
-		    DIE := hash-ref all-ids id #f
-		    if DIE {
-		      (case (hash-ref DIE 'tag #f)
-			    ((restrict_type const_type) {
-			      structure-type? (hash-ref DIE 'type #f)
-			    })
-			    ((structure_type) {
-			      #t
-			    })
-			    (else #f))
-		    } {
-		      sprintf "structure-DIE-0x%s" id
-		    }
-		    } #f
-		}
+      define (structure-type? id) {
+	if id {
+	  name := 'void		; implied default?
+	  DIE := hash-ref all-ids id #f
+	  if DIE {
+	    (case (hash-ref DIE 'tag #f)
+	     ((restrict_type const_type) {
+	       structure-type? (hash-ref DIE 'type #f)
+	     })
+	     ((structure_type) {
+	       #t
+	     })
+	     (else #f))
+	  } {
+	    sprintf "structure-DIE-0x%s" id
+	  }
+	} #f
+      }
 
-		define (alloc-required? id) {
-		  if id {
-		    name := 'void		; implied default?
-		    DIE := hash-ref all-ids id #f
-		    if DIE {
-		      (case (hash-ref DIE 'tag #f)
-			    ((restrict_type const_type) {
-			      alloc-required? (hash-ref DIE 'type #f)
-			    })
-			    ((pointer_type array_type structure_type union_type) {
-			      #t
-			    })
-			    (else #f))
-		    } {
-		      sprintf "pointer-DIE-0x%s" id
-		    }
-		    } #f
-		}
+      define (alloc-required? id) {
+	if id {
+	  name := 'void		; implied default?
+	  DIE := hash-ref all-ids id #f
+	  if DIE {
+	    (case (hash-ref DIE 'tag #f)
+	     ((restrict_type const_type) {
+	       alloc-required? (hash-ref DIE 'type #f)
+	     })
+	     ((pointer_type array_type structure_type union_type) {
+	       #t
+	     })
+	     (else #f))
+	  } {
+	    sprintf "pointer-DIE-0x%s" id
+	  }
+	} #f
+      }
 
-		;; what kind of C thing do we allocate
-		define (alloc-type id) {
-		  if id {
-		    DIE := hash-ref all-ids id #f
-		    if DIE {
-		      (case (hash-ref DIE 'tag #f)
-			    ((restrict_type const_type enumeration_type) {
-			      alloc-type (hash-ref DIE 'type #f)
-			    })
-			    ((pointer_type) {
-			      t := alloc-type (hash-ref DIE 'type #f)
-			      if t {
-				append-string t "*"
-			      } {
-				t
-			      }
-			    })
-			    ((array_type) {
-			      t := alloc-type (hash-ref DIE 'type #f)
-			      if t {
-				append-string t "[]"
-			      } {
-				t
-			      }
-			    })
-			    ((structure_type) {
-			      struct-name := hash-ref DIE 'name #f
-			      if (not struct-name) {
-				#f
-			      } {
-				append-string "struct " struct-name
-			      }
-			    })
-			    ((union_type) {
-			      union-name := hash-ref DIE 'name #f
-			      if (not union-name) {
-				#f
-			      } {
-				append-string "union " union-name
-			      }
-			    })
-			    ((typedef base_type) {
-			      hash-ref DIE 'name #f
-			    })
-			    (else {
-			      ;eprintf "no alloc-type for %s %s\n" id (hash-ref DIE 'type #f)
-			      #f
-			    }))
-		    } {
-		      eprintf "alloc-type no DIE 0x%s!" id
-		      exit 1
-		    }
+      ;; what kind of C thing do we allocate
+      define (alloc-type id) {
+	if id {
+	  DIE := hash-ref all-ids id #f
+	  if DIE {
+	    (case (hash-ref DIE 'tag #f)
+	     ((restrict_type const_type enumeration_type) {
+	       alloc-type (hash-ref DIE 'type #f)
+	     })
+	     ((pointer_type) {
+	       t := alloc-type (hash-ref DIE 'type #f)
+	       if t {
+		 append-string t "*"
+	       } {
+		 t
+	       }
+	     })
+	     ((array_type) {
+	       t := alloc-type (hash-ref DIE 'type #f)
+	       if t {
+		 append-string t "[]"
+	       } {
+		 t
+	       }
+	     })
+	     ((structure_type) {
+	       struct-name := hash-ref DIE 'name #f
+	       if (not struct-name) {
+		 #f
+	       } {
+		 append-string "struct " struct-name
+	       }
+	     })
+	     ((union_type) {
+	       union-name := hash-ref DIE 'name #f
+	       if (not union-name) {
+		 #f
+	       } {
+		 append-string "union " union-name
+	       }
+	     })
+	     ((typedef base_type) {
+	       hash-ref DIE 'name #f
+	     })
+	     (else {
+	       ;eprintf "no alloc-type for %s %s\n" id (hash-ref DIE 'type #f)
+	       #f
+	     }))
+	  } {
+	    eprintf "alloc-type no DIE 0x%s!" id
+	    exit 1
+	  }
+	} {
+	  "void"
+	}
+      }
+
+      define (c-type id) {
+	if id {
+	  name := "void"		; implied default?
+	  DIE := hash-ref all-ids id #f
+	  if DIE {
+	    (case (hash-ref DIE 'tag #f)
+	     ((restrict_type const_type) {
+	       c-type (hash-ref DIE 'type #f)
+	     })
+	     ((pointer_type) {
+	       append-string (c-type (hash-ref DIE 'type #f)) "*"
+	     })
+	     ((subroutine_type) {
+	       "(*)"
+	     })
+	     ((array_type) {
+	       append-string (c-type (hash-ref DIE 'type #f)) "[]"
+	     })
+	     ((structure_type) {
+	       struct-name := hash-ref DIE 'name #f
+	       if struct-name {
+		 append-string "struct " struct-name
+	       } {
+		 ;eprintf "c-type anonymous struct 0x%s\n" id
+		 "struct {}"
+	       }
+	     })
+	     ((union_type) {
+	       union-name := hash-ref DIE 'name #f
+	       if union-name {
+		 append-string "union " union-name
+	       } {
+		 ;eprintf "c-type anonymous union 0x%s\n" id
+		 "union {}"
+	       }
+	     })
+	     ((enumeration_type) {
+	       c-type (hash-ref DIE 'type #f)
+	     })
+	     ((typedef) {
+	       hash-ref DIE 'name #f
+	     })
+	     ((base_type) {
+	       hash-ref DIE 'name #f
+	     })
+	     (else {
+	       eprintf "c-type 0x%s!\n" id
+	       exit 1
+	     }))
+	  } {
+	    eprintf "c-type no DIE 0x%s!\n" id
+	    exit 1
+	  }
+	} {
+	  "void"
+	}
+      }
+
+      ;; differs from c-type in that we want just the (compressed)
+      ;; Idio C API name
+      define (idio-c-type-name id) {
+	if id {
+	  name := "void"		; implied default?
+	  DIE := hash-ref all-ids id #f
+	  if DIE {
+	    (case (hash-ref DIE 'tag #f)
+	     ((restrict_type const_type) {
+	       idio-c-type-name (hash-ref DIE 'type #f)
+	     })
+	     ((pointer_type) {
+	       append-string (idio-c-type-name (hash-ref DIE 'type #f)) "*"
+	     })
+	     ((subroutine_type) {
+	       "(*)"
+	     })
+	     ((array_type) {
+	       append-string (idio-c-type-name (hash-ref DIE 'type #f)) "[]"
+	     })
+	     ((structure_type) {
+	       "pointer"
+	     })
+	     ((union_type) {
+	       "pointer"
+	     })
+	     ((enumeration_type) {
+	       idio-c-type-name (hash-ref DIE 'type #f)
+	     })
+	     ((typedef) {
+	       hash-ref DIE 'name #f
+	     })
+	     ((base_type) {
+	       (case (hash-ref DIE 'name "base_type-name")
+		(("char")			 "char")
+		(("signed char")		 "schar")
+		(("unsigned char")		 "uchar")
+		(("short int" "short")	 "short")
+		(("short unsigned int"
+		  "unsigned short")		 "ushort")
+		(("int")			 "int")
+		(("unsigned int")		 "uint")
+		(("long int")		 "long")
+		(("long unsigned int")	 "ulong")
+		(("long long int")		 "longlong")
+		(("long long unsigned int")	 "ulonglong")
+		(("float")			 "float")
+		(("double")			 "double")
+		(("long double")		 "longdouble")
+		(else {
+		  eprintf "idio-c-type-name: unexpected base type: '%s'\n" (hash-ref DIE 'name "base_type-name")
+		  exit 1
+		}))
+	     })
+	     (else {
+	       eprintf "idio-c-type-name 0x%s!\n" id
+	       exit 1
+	     }))
+	  } {
+	    eprintf "idio-c-type-name no DIE 0x%s!\n" id
+	    exit 1
+	  }
+	} {
+	  "void"
+	}
+      }
+
+      ;; we're looking to generate the likes of IDIO_TYPE_C_INT from
+      ;; gc.h
+      define (idio-c-type-MACRO-NAME id) {
+	if id {
+	  name := "VOID"	; might cause a crash...
+	  DIE := hash-ref all-ids id #f
+	  if DIE {
+	    (case (hash-ref DIE 'tag #f)
+	     ((restrict_type const_type) {
+	       idio-c-type-name (hash-ref DIE 'type #f)
+	     })
+	     ((pointer_type) {
+	       append-string (idio-c-type-name (hash-ref DIE 'type #f)) "*"
+	     })
+	     ((subroutine_type) {
+	       "(*)"
+	     })
+	     ((array_type) {
+	       append-string (idio-c-type-name (hash-ref DIE 'type #f)) "[]"
+	     })
+	     ((structure_type) {
+	       "pointer"
+	     })
+	     ((union_type) {
+	       "pointer"
+	     })
+	     ((enumeration_type) {
+	       idio-c-type-name (hash-ref DIE 'type #f)
+	     })
+	     ((typedef) {
+	       hash-ref DIE 'name #f
+	     })
+	     ((base_type) {
+	       (case (hash-ref DIE 'name "base_type-name")
+		(("char")			 "CHAR")
+		(("signed char")		 "SCHAR")
+		(("unsigned char")		 "UCHAR")
+		(("short int" "short")	 "SHORT")
+		(("short unsigned int"
+		  "unsigned short")		 "USHORT")
+		(("int")			 "INT")
+		(("unsigned int")		 "UINT")
+		(("long int")		 "LONG")
+		(("long unsigned int")	 "ULONG")
+		(("long long int")		 "LONGLONG")
+		(("long long unsigned int")	 "ULONGLONG")
+		(("float")			 "FLOAT")
+		(("double")			 "DOUBLE")
+		(("long double")		 "LONGDOUBLE")
+		(else {
+		  eprintf "idio-c-type-MACRO-NAME: unexpected base type: '%s'\n" (hash-ref DIE 'name "base_type-name")
+		  exit 1
+		}))
+	     })
+	     (else {
+	       eprintf "idio-c-type-MACRO-NAME 0x%s: base_types only!\n" id
+	       exit 1
+	     }))
+	  } {
+	    eprintf "idio-c-type-MACRO_NAME no DIE 0x%s!\n" id
+	    exit 1
+	  }
+	} {
+	  "void"
+	}
+      }
+
+      define (get/create DIE elem & alt) {
+	if DIE {
+	  v := hash-ref DIE elem #f
+	  if v v {
+	    id := hash-ref DIE 'id #f
+	    name := hash-ref DIE 'name #f
+	    (case elem
+	     ((i-type-alias) {
+	       ;; pid_t
+	       ;; uint
+	       (cond
+		((alloc-required? id) {
+		  v = "C/pointer"
+		})
+		((base-type? id) {
+		  v = append-string "'" (idio-c-type-name id)
+		})
+		(else {
+		  if name {
+		    v = name
 		  } {
-		    "void"
+		    v = "void"
 		  }
-		}
-
-		define (c-type id) {
-		  if id {
-		    name := "void"		; implied default?
-		    DIE := hash-ref all-ids id #f
-		    if DIE {
-		      (case (hash-ref DIE 'tag #f)
-			    ((restrict_type const_type) {
-			      c-type (hash-ref DIE 'type #f)
-			    })
-			    ((pointer_type) {
-			      append-string (c-type (hash-ref DIE 'type #f)) "*"
-			    })
-			    ((subroutine_type) {
-			      "(*)"
-			    })
-			    ((array_type) {
-			      append-string (c-type (hash-ref DIE 'type #f)) "[]"
-			    })
-			    ((structure_type) {
-			      struct-name := hash-ref DIE 'name #f
-			      if struct-name {
-				append-string "struct " struct-name
-			      } {
-				;eprintf "c-type anonymous struct 0x%s\n" id
-				"struct {}"
-			      }
-			    })
-			    ((union_type) {
-			      union-name := hash-ref DIE 'name #f
-			      if union-name {
-				append-string "union " union-name
-			      } {
-				;eprintf "c-type anonymous union 0x%s\n" id
-				"union {}"
-			      }
-			    })
-			    ((enumeration_type) {
-			      c-type (hash-ref DIE 'type #f)
-			    })
-			    ((typedef) {
-			      hash-ref DIE 'name #f
-			    })
-			    ((base_type) {
-			      hash-ref DIE 'name #f
-			    })
-			    (else {
-			      eprintf "c-type 0x%s!\n" id
-			      exit 1
-			    }))
-		    } {
-		      eprintf "c-type no DIE 0x%s!\n" id
-		      exit 1
-		    }
-		  } {
-		    "void"
+		}))
+	     })
+	     ((i-direct-type-name) {
+	       ;; libc/pid_t
+	       ;; C/uint
+	       (cond
+		((alloc-required? id) {
+		  v = "C/pointer"
+		})
+		((base-type? id) {
+		  v = append-string "C/" (idio-c-type-name id)
+		})
+		(else {
+		  if name {
+		    v = append-string i-module-name "/" name
 		  }
-		}
-
-		;; differs from c-type in that we want just the
-		;; (compressed) Idio C API name
-		define (idio-c-type-name id) {
-		  if id {
-		    name := "void"		; implied default?
-		    DIE := hash-ref all-ids id #f
-		    if DIE {
-		      (case (hash-ref DIE 'tag #f)
-			    ((restrict_type const_type) {
-			      idio-c-type-name (hash-ref DIE 'type #f)
-			    })
-			    ((pointer_type) {
-			      append-string (idio-c-type-name (hash-ref DIE 'type #f)) "*"
-			    })
-			    ((subroutine_type) {
-			      "(*)"
-			    })
-			    ((array_type) {
-			      append-string (idio-c-type-name (hash-ref DIE 'type #f)) "[]"
-			    })
-			    ((structure_type) {
-			      "pointer"
-			    })
-			    ((union_type) {
-			      "pointer"
-			    })
-			    ((enumeration_type) {
-			      idio-c-type-name (hash-ref DIE 'type #f)
-			    })
-			    ((typedef) {
-			      hash-ref DIE 'name #f
-			    })
-			    ((base_type) {
-			      (case (hash-ref DIE 'name "base_type-name")
-				    (("char")			 "char")
-				    (("signed char")		 "schar")
-				    (("unsigned char")		 "uchar")
-				    (("short int" "short")	 "short")
-				    (("short unsigned int"
-				      "unsigned short")		 "ushort")
-				    (("int")			 "int")
-				    (("unsigned int")		 "uint")
-				    (("long int")		 "long")
-				    (("long unsigned int")	 "ulong")
-				    (("long long int")		 "longlong")
-				    (("long long unsigned int")	 "ulonglong")
-				    (("float")			 "float")
-				    (("double")			 "double")
-				    (("long double")		 "longdouble")
-				    (else {
-				      eprintf "idio-c-type-name: unexpected base type: '%s'\n" (hash-ref DIE 'name "base_type-name")
-				      exit 1
-				    }))
-			    })
-			    (else {
-			      eprintf "idio-c-type-name 0x%s!\n" id
-			      exit 1
-			    }))
-		    } {
-		      eprintf "idio-c-type-name no DIE 0x%s!\n" id
-		      exit 1
-		    }
-		  } {
-		    "void"
+		}))
+	     })
+	     ((i-pred-name) {
+	       ;; pid_t?
+	       ;; uint?
+	       if name {
+		 v = append-string name "?"
+	       }
+	     })
+	     ((i-direct-pred-name) {
+	       ;; libc/pid_t?
+	       ;; C/uint?
+	       (cond
+		((alloc-required? id) {
+		  v = "C/pointer?"
+		})
+		((base-type? id) {
+		  v = append-string "C/" (idio-c-type-name id) "?"
+		})
+		(else {
+		  if name {
+		    v = append-string i-module-name "/" name "?"
 		  }
-		}
-
-		;; we're looking to generate the likes of
-		;; IDIO_TYPE_C_INT from gc.h
-		define (idio-c-type-MACRO-NAME id) {
-		  if id {
-		    name := "VOID"	; might cause a crash...
-		    DIE := hash-ref all-ids id #f
-		    if DIE {
-		      (case (hash-ref DIE 'tag #f)
-			    ((restrict_type const_type) {
-			      idio-c-type-name (hash-ref DIE 'type #f)
-			    })
-			    ((pointer_type) {
-			      append-string (idio-c-type-name (hash-ref DIE 'type #f)) "*"
-			    })
-			    ((subroutine_type) {
-			      "(*)"
-			    })
-			    ((array_type) {
-			      append-string (idio-c-type-name (hash-ref DIE 'type #f)) "[]"
-			    })
-			    ((structure_type) {
-			      "pointer"
-			    })
-			    ((union_type) {
-			      "pointer"
-			    })
-			    ((enumeration_type) {
-			      idio-c-type-name (hash-ref DIE 'type #f)
-			    })
-			    ((typedef) {
-			      hash-ref DIE 'name #f
-			    })
-			    ((base_type) {
-			      (case (hash-ref DIE 'name "base_type-name")
-				    (("char")			 "CHAR")
-				    (("signed char")		 "SCHAR")
-				    (("unsigned char")		 "UCHAR")
-				    (("short int" "short")	 "SHORT")
-				    (("short unsigned int"
-				      "unsigned short")		 "USHORT")
-				    (("int")			 "INT")
-				    (("unsigned int")		 "UINT")
-				    (("long int")		 "LONG")
-				    (("long unsigned int")	 "ULONG")
-				    (("long long int")		 "LONGLONG")
-				    (("long long unsigned int")	 "ULONGLONG")
-				    (("float")			 "FLOAT")
-				    (("double")			 "DOUBLE")
-				    (("long double")		 "LONGDOUBLE")
-				    (else {
-				      eprintf "idio-c-type-MACRO-NAME: unexpected base type: '%s'\n" (hash-ref DIE 'name "base_type-name")
-				      exit 1
-				    }))
-			    })
-			    (else {
-			      eprintf "idio-c-type-MACRO-NAME 0x%s: base_types only!\n" id
-			      exit 1
-			    }))
-		    } {
-		      eprintf "idio-c-type-MACRO_NAME no DIE 0x%s!\n" id
-		      exit 1
-		    }
-		  } {
-		    "void"
+		}))
+	     })
+	     ((c-type-name) {
+	       v = c-type id
+	     })
+	     ((i-c-type-name) {
+	       v = idio-c-type-name id
+	     })
+	     ((c-alloc-type-name) {
+	       v = alloc-type id
+	       if (not v) {
+		 v = "void" ; __sigaction_handler
+	       }
+	     })
+	     ((idio-c-macro-type) {
+	       ;; IDIO_TYPE_C_libc_pid_t
+	       ;; IDIO_TYPE_C_uint
+	       (cond
+		((alloc-required? id) {
+		  v = "IDIO_TYPE_C_POINTER"
+		})
+		((base-type? id) {
+		  v = append-string "IDIO_TYPE_C_" (idio-c-type-MACRO-NAME id)
+		})
+		(else {
+		  if name {
+		    v = append-string "IDIO_TYPE_C_" c-module-name "_" name
 		  }
-		}
-
-		define (get/create DIE elem & alt) {
-		  if DIE {
-		    v := hash-ref DIE elem #f
-		    if v v {
-		      id := hash-ref DIE 'id #f
-		      name := hash-ref DIE 'name #f
-		      (case elem
-			    ((i-type-alias) {
-			      ;; pid_t
-			      ;; uint
-			      (cond
-			       ((alloc-required? id) {
-				 v = "C/pointer"
-			       })
-			       ((base-type? id) {
-				 v = append-string "'" (idio-c-type-name id)
-			       })
-			       (else {
-				 if name {
-				   v = name
-				 } {
-				   v = "void"
-				 }
-			       }))
-			    })
-			    ((i-direct-type-name) {
-			      ;; libc/pid_t
-			      ;; C/uint
-			      (cond
-			       ((alloc-required? id) {
-				 v = "C/pointer"
-			       })
-			       ((base-type? id) {
-				 v = append-string "C/" (idio-c-type-name id)
-			       })
-			       (else {
-				 if name {
-				   v = append-string i-module-name "/" name
-				 }
-			       }))
-			    })
-			    ((i-pred-name) {
-			      ;; pid_t?
-			      ;; uint?
-			      if name {
-				v = append-string name "?"
-			      }
-			    })
-			    ((i-direct-pred-name) {
-			      ;; libc/pid_t?
-			      ;; C/uint?
-			      (cond
-			       ((alloc-required? id) {
-				 v = "C/pointer?"
-			       })
-			       ((base-type? id) {
-				 v = append-string "C/" (idio-c-type-name id) "?"
-			       })
-			       (else {
-				 if name {
-				   v = append-string i-module-name "/" name "?"
-				 }
-			       }))
-			    })
-			    ((c-type-name) {
-			      v = c-type id
-			    })
-			    ((i-c-type-name) {
-			      v = idio-c-type-name id
-			    })
-			    ((c-alloc-type-name) {
-			      v = alloc-type id
-			      if (not v) {
-				v = "void" ; __sigaction_handler
-			      }
-			    })
-			    ((idio-c-macro-type) {
-			      ;; IDIO_TYPE_C_libc_pid_t
-			      ;; IDIO_TYPE_C_uint
-			      (cond
-			       ((alloc-required? id) {
-				 v = "IDIO_TYPE_C_POINTER"
-			       })
-			       ((base-type? id) {
-				 v = append-string "IDIO_TYPE_C_" (idio-c-type-MACRO-NAME id)
-			       })
-			       (else {
-				 if name {
-				   v = append-string "IDIO_TYPE_C_" c-module-name "_" name
-				 }
-			       }))
-			    })
-			    ((c-type-constructor) {
-			      ;; idio_libc_pid_t
-			      ;; idio_C_uint
-			      (cond
-			       ((alloc-required? id) {
-				 v = "idio_C_pointer_free_me"
-			       })
-			       ((base-type? id) {
-				 v = append-string "idio_C_" (idio-c-type-name id)
-			       })
-			       (else {
-				 if name {
-				   v = append-string "idio_" c-module-name "_" name
-				 }
-			       }))
-			    })
-			    ((c-type-accessor) {
-			      ;; IDIO_C_TYPE_libc_pid_t
-			      ;; IDIO_C_TYPE_uint
-			      (cond
-			       ((alloc-required? id) {
-				 v = "IDIO_C_POINTER_P"
-			       })
-			       ((base-type? id) {
-				 v = append-string "IDIO_C_TYPE_" (idio-c-type-name id)
-			       })
-			       (else {
-				 if name {
-				   v = append-string "IDIO_C_TYPE_" c-module-name "_" name
-				 }
-			       }))
-			    })
-			    ((c-type-predicate) {
-			      ;; idio_isa_libc_pid_t
-			      ;; idio_isa_C_uint
-			      (cond
-			       ((alloc-required? id) {
-				 v = "idio_isa_C_pointer"
-			       })
-			       ((base-type? id) {
-				 v = append-string "idio_isa_C_" (idio-c-type-name id)
-			       })
-			       (else {
-				 if name {
-				   v = append-string "idio_isa_" c-module-name "_" name
-				 }
-			       }))
-			    })
-			    (else {
-			      eprintf "unexpected elem %s\n" elem
-			      exit 1
-			    }))
-
-		      if v {
-			hash-set! DIE elem v
-			v
-		      } {
-			eprintf "get/create no value for %s 0x%s\n" elem id
-			exit 1
-		      }
-
-		    }
-		  } {
-		    eprintf "get/create no DIE for %s\n" elem
-		    exit 1
+		}))
+	     })
+	     ((c-type-constructor) {
+	       ;; idio_libc_pid_t
+	       ;; idio_C_uint
+	       (cond
+		((alloc-required? id) {
+		  v = "idio_C_pointer_free_me"
+		})
+		((base-type? id) {
+		  v = append-string "idio_C_" (idio-c-type-name id)
+		})
+		(else {
+		  if name {
+		    v = append-string "idio_" c-module-name "_" name
 		  }
-		}
+		}))
+	     })
+	     ((c-type-accessor) {
+	       ;; IDIO_C_TYPE_libc_pid_t
+	       ;; IDIO_C_TYPE_uint
+	       (cond
+		((alloc-required? id) {
+		  v = "IDIO_C_POINTER_P"
+		})
+		((base-type? id) {
+		  v = append-string "IDIO_C_TYPE_" (idio-c-type-name id)
+		})
+		(else {
+		  if name {
+		    v = append-string "IDIO_C_TYPE_" c-module-name "_" name
+		  }
+		}))
+	     })
+	     ((c-type-predicate) {
+	       ;; idio_isa_libc_pid_t
+	       ;; idio_isa_C_uint
+	       (cond
+		((alloc-required? id) {
+		  v = "idio_isa_C_pointer"
+		})
+		((base-type? id) {
+		  v = append-string "idio_isa_C_" (idio-c-type-name id)
+		})
+		(else {
+		  if name {
+		    v = append-string "idio_isa_" c-module-name "_" name
+		  }
+		}))
+	     })
+	     (else {
+	       eprintf "unexpected elem %s\n" elem
+	       exit 1
+	     }))
 
-		PROGNAME := ARGV0
-		(regex-case PROGNAME
-			    ("([^/]+)$" {
-			      PROGNAME = r.1
-			    }))
-		;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-		;;
-		;; file headers
+	    if v {
+	      hash-set! DIE elem v
+	      v
+	    } {
+	      eprintf "get/create no value for %s 0x%s\n" elem id
+	      exit 1
+	    }
 
-		api-h-bn := sprintf "%s.h" api-bn
-		api-h-fn := sprintf "%s/%s" gen-dn api-h-bn
-		api-h-fh := open-output-file api-h-fn
+	  }
+	} {
+	  eprintf "get/create no DIE for %s\n" elem
+	  exit 1
+	}
+      }
 
-		api-h-define := collect-output echo api-h-bn | sed -e "s/[^[:alnum:]]/_/g" | tr "[[:lower:]]" "[[:upper:]]"
+      PROGNAME := ARGV0
+      (regex-case PROGNAME
+		  ("([^/]+)$" {
+		    PROGNAME = r.1
+		  }))
 
-		hprintf api-h-fh #S{
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;;
+      ;; file headers
+
+      api-h-bn := sprintf "%s.h" api-bn
+      api-h-fn := sprintf "%s/%s" gen-dn api-h-bn
+      api-h-fh := open-output-file api-h-fn
+      
+      api-h-define := collect-output echo api-h-bn | sed -e "s/[^[:alnum:]]/_/g" | tr "[[:lower:]]" "[[:upper:]]"
+
+      hprintf api-h-fh #S{
 /*
  * ${api-h-bn}
  *
@@ -1433,11 +1431,11 @@ ${i-module-name}-error-load := {
 
 }
 
-		api-c-bn := sprintf "%s.c" api-bn
-		api-c-fn := sprintf "%s/%s" gen-dn api-c-bn
-		api-c-fh := open-output-file api-c-fn
+      api-c-bn := sprintf "%s.c" api-bn
+      api-c-fn := sprintf "%s/%s" gen-dn api-c-bn
+      api-c-fh := open-output-file api-c-fn
 
-		hprintf api-c-fh #S{
+      hprintf api-c-fh #S{
 /*
  * ${api-c-bn}
  *
@@ -1493,11 +1491,11 @@ ${i-module-name}-error-load := {
 
 }
 
-		api-i-bn := sprintf "%s.idio" api-bn
-		api-i-fn := sprintf "%s/%s" gen-dn api-i-bn
-		api-i-fh := open-output-file api-i-fn
+      api-i-bn := sprintf "%s.idio" api-bn
+      api-i-fn := sprintf "%s/%s" gen-dn api-i-bn
+      api-i-fh := open-output-file api-i-fn
 
-		hprintf api-i-fh #S{
+      hprintf api-i-fh #S{
 
 ;;
 ;; ${api-i-bn}
@@ -1507,246 +1505,244 @@ ${i-module-name}-error-load := {
 
 }
 
-		base-DIE := hash-ref all-ids base-id #f
-		used-ids := (make-hash)
-		used-types-a := #[]
-		used-enumeration-types-a := #[]
-		used-structure-types := #[]
-		used-union-types := #[]
+      base-DIE := hash-ref all-ids base-id #f
+      used-ids := (make-hash)
+      used-types-a := #[]
+      used-enumeration-types-a := #[]
+      used-structure-types := #[]
+      used-union-types := #[]
 
-		used-symbols := (make-hash)
+      used-symbols := (make-hash)
 
-		define (add-DIE id) {
-		  if (and id
-			  (not (hash-exists? used-ids id))) {
-			    DIE := hash-ref all-ids id #f
-			    if DIE {
-			      (case (hash-ref DIE 'tag #f)
-				    ((restrict_type const_type) {
-				      add-DIE (hash-ref DIE 'type #f)
-				    })
-				    ((pointer_type) {
-				      add-DIE (hash-ref DIE 'type #f)
-				    })
-				    ((typedef) {
-				      add-DIE (hash-ref DIE 'type #f)
-				      hash-set! used-ids id DIE
-				      array-push! used-types-a DIE
-				    })
-				    ((structure_type) {
-				      hash-set! used-ids id DIE
-				      array-push! used-structure-types DIE
+      define (add-DIE id) {
+	if (and id
+		(not (hash-exists? used-ids id))) {
+	  DIE := hash-ref all-ids id #f
+	  if DIE {
+	    (case (hash-ref DIE 'tag #f)
+	     ((restrict_type const_type) {
+	       add-DIE (hash-ref DIE 'type #f)
+	     })
+	     ((pointer_type) {
+	       add-DIE (hash-ref DIE 'type #f)
+	     })
+	     ((typedef) {
+	       add-DIE (hash-ref DIE 'type #f)
+	       hash-set! used-ids id DIE
+	       array-push! used-types-a DIE
+	     })
+	     ((structure_type) {
+	       hash-set! used-ids id DIE
+	       array-push! used-structure-types DIE
 
-				      members := hash-ref DIE 'member #f
-				      if members {
-					m* := array->list members
-					for-each (function (member) {
-						    add-DIE (hash-ref member 'type #f)
-					}) m*
-					hash-set! DIE 'members m*
-				      } {
-					hash-set! DIE 'members #n
-				      }
-				    })
-				    ((union_type) {
-				      hash-set! used-ids id DIE
-				      array-push! used-union-types DIE
+	       members := hash-ref DIE 'member #f
+	       if members {
+		 m* := array->list members
+		 for-each (function (member) {
+		   add-DIE (hash-ref member 'type #f)
+		 }) m*
+		 hash-set! DIE 'members m*
+	       } {
+		 hash-set! DIE 'members #n
+	       }
+	     })
+	     ((union_type) {
+	       hash-set! used-ids id DIE
+	       array-push! used-union-types DIE
 
-				      members := hash-ref DIE 'member #f
-				      if members {
-					m* := array->list members
-					for-each (function (member) {
-						    add-DIE (hash-ref member 'type #f)
-					}) m*
-					hash-set! DIE 'members m*
-				      } else {
-					hash-set! DIE 'members #n
-				      }
-				    })
-				    ((array_type) {
-				      add-DIE (hash-ref DIE 'type #f)
-				    })
-				    ((enumeration_type) {
-				      hash-set! used-ids id DIE
-				      array-push! used-enumeration-types-a DIE
+	       members := hash-ref DIE 'member #f
+	       if members {
+		 m* := array->list members
+		 for-each (function (member) {
+		   add-DIE (hash-ref member 'type #f)
+		 }) m*
+		 hash-set! DIE 'members m*
+	       } else {
+		 hash-set! DIE 'members #n
+	       }
+	     })
+	     ((array_type) {
+	       add-DIE (hash-ref DIE 'type #f)
+	     })
+	     ((enumeration_type) {
+	       hash-set! used-ids id DIE
+	       array-push! used-enumeration-types-a DIE
 
-				      enumerators := hash-ref DIE 'enumerator #f
-				      if enumerators {
-					e* := array->list enumerators
-					hash-set! DIE 'enumerators e*
-				      } {
-					hash-set! DIE 'enumerators #n
-				      }
-				    }))
-			    }
-			  }
-		}
+	       enumerators := hash-ref DIE 'enumerator #f
+	       if enumerators {
+		 e* := array->list enumerators
+		 hash-set! DIE 'enumerators e*
+	       } {
+		 hash-set! DIE 'enumerators #n
+	       }
+	     }))
+	  }
+	}
+      }
 
-		;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-		;;
-		;; discover all used types
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;;
+      ;; discover all used types
 
-		subprograms := hash-ref base-DIE 'subprogram #f
-		if subprograms {
+      subprograms := hash-ref base-DIE 'subprogram #f
+      if subprograms {
 
-		  define (variables DIE) {
-		    variables := hash-ref DIE 'variable #f
-		    if variables {
-		      v* := array->list variables
-		      for-each (function (DIE) {
-				  add-DIE (hash-ref DIE 'type #f)
-		      }) v*
-		      hash-set! DIE 'variables v*
-		    } else {
-		      hash-set! DIE 'variables #n
-		    }
-		  }
+	define (variables DIE) {
+	  variables := hash-ref DIE 'variable #f
+	  if variables {
+	    v* := array->list variables
+	    for-each (function (DIE) {
+	      add-DIE (hash-ref DIE 'type #f)
+	    }) v*
+	    hash-set! DIE 'variables v*
+	  } else {
+	    hash-set! DIE 'variables #n
+	  }
+	}
 
-		  define (lexical-blocks DIE) {
-		    lexical_blocks := hash-ref DIE 'lexical_block #f
-		    if lexical_blocks {
-		      lb* := array->list lexical_blocks
-		      for-each (function (DIE) {
-				  variables DIE
-				  lexical-blocks DIE
-		      }) lb*
-		      hash-set! DIE 'lexical_blocks lb*
-		    } else {
-		      hash-set! DIE 'lexical_blocks #n
-		    }
-		  }
+	define (lexical-blocks DIE) {
+	  lexical_blocks := hash-ref DIE 'lexical_block #f
+	  if lexical_blocks {
+	    lb* := array->list lexical_blocks
+	    for-each (function (DIE) {
+	      variables DIE
+	      lexical-blocks DIE
+	    }) lb*
+	    hash-set! DIE 'lexical_blocks lb*
+	  } else {
+	    hash-set! DIE 'lexical_blocks #n
+	  }
+	}
 
-		  for-each (function (DIE) {
-			      DIE-name := hash-ref DIE 'name #f
-			      if (not (equal? DIE-name "main")) {
-				add-DIE (hash-ref DIE 'type #f)
+	for-each (function (DIE) {
+	  DIE-name := hash-ref DIE 'name #f
+	  if (not (equal? DIE-name "main")) {
+	    add-DIE (hash-ref DIE 'type #f)
 
-				formal_parameters := hash-ref DIE 'formal_parameter #f
-				if formal_parameters {
-				  fp* := array->list formal_parameters
-				  for-each (function (DIE) {
-					      add-DIE (hash-ref DIE 'type #f)
-				  }) fp*
-				  hash-set! DIE 'formal_parameters fp*
-				} {
-				  hash-set! DIE 'formal_parameters #n
-				}
-			      }
+	    formal_parameters := hash-ref DIE 'formal_parameter #f
+	    if formal_parameters {
+	      fp* := array->list formal_parameters
+	      for-each (function (DIE) {
+		add-DIE (hash-ref DIE 'type #f)
+	      }) fp*
+	      hash-set! DIE 'formal_parameters fp*
+	    } {
+	      hash-set! DIE 'formal_parameters #n
+	    }
+	  }
 
-			      ;; immediate variables -- distinguishing
-			      ;; main from any other subprograms
-			      variables DIE
+	  ;; immediate variables -- distinguishing main from any other
+	  ;; subprograms
+	  variables DIE
 
-			      ;; lexical blocks
-			      lexical-blocks DIE
-		  }) (array->list subprograms)
-		} {
-		  printf "no subprograms\n"
-		}
+	  ;; lexical blocks
+	  lexical-blocks DIE
+	}) (array->list subprograms)
+      } {
+	printf "no subprograms\n"
+      }
 
-		;; we walk over arrays several times to convert to a
-		;; list once
-		used-types := array->list used-types-a
-		used-enumeration-types := array->list used-enumeration-types-a
+      ;; we walk over arrays several times to convert to a list once
+      used-types := array->list used-types-a
+      used-enumeration-types := array->list used-enumeration-types-a
 
-		;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-		;;
-		;; base_types information in C header
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;;
+      ;; base_types information in C header
 
-		base-types := hash-ref base-DIE 'base_type #f
-		if base-types {
-		  hprintf api-h-fh #S{
+      base-types := hash-ref base-DIE 'base_type #f
+      if base-types {
+	hprintf api-h-fh #S{
 /*
  * For reference, this system/API uses these base_types:
  *
 }
-		  for-each (function (DIE) {
-			      DIE-name := hash-ref DIE 'name #f
-			      DIE-bytes := hash-ref DIE 'byte_size #f
-			      hprintf api-h-fh " * %-30s %2s bytes\n" DIE-name DIE-bytes
-		  }) (array->list base-types)
-		  hprintf api-h-fh #S{
+
+	for-each (function (DIE) {
+	  DIE-name := hash-ref DIE 'name #f
+	  DIE-bytes := hash-ref DIE 'byte_size #f
+	  hprintf api-h-fh " * %-30s %2s bytes\n" DIE-name DIE-bytes
+	}) (array->list base-types)
+
+	hprintf api-h-fh #S{
  *
  * Pointer size                    ${pointer-size} bytes
 */
 
 }
-		} {
-		  printf "no base types\n"
-		}
+      } {
+	printf "no base types\n"
+      }
 
-		exporting := #t
+      exporting := #t
 
-		if (or (pair? used-types)
-		       (pair? used-enumeration-types)) {
+      if (or (pair? used-types)
+	     (pair? used-enumeration-types)) {
 
-			 ;; Idio exports
-			 hprintf api-i-fh #S{
+	;; Idio exports
+	hprintf api-i-fh #S{
 export \(
 }
-			 exporting = #t
-		       }
+	exporting = #t
+      }
 
-		if (pair? used-types) {
+      if (pair? used-types) {
 
-		  prev-file := #f
-		  for-each (function (DIE) {
-			      DIE-type-id := hash-ref DIE 'type #f
-			      if (not (alloc-required? DIE-type-id)) {
-				decl-file := hash-ref DIE 'decl_file #f
-				if (and decl-file
-					(not (equal? decl-file prev-file))) {
-					  hprintf api-i-fh "\n\t;; %s\n" (filename decl-file)
-					  prev-file = decl-file
-				}
-				;; Idio C type constructor alias
-				hprintf api-i-fh "\t%s\n" (get/create DIE 'i-type-alias)
-				;; Idio predicate
-				hprintf api-i-fh "\t%s\n" (get/create DIE 'i-pred-name)
-			      }
-		  }) used-types
+	prev-file := #f
+	for-each (function (DIE) {
+	  DIE-type-id := hash-ref DIE 'type #f
+	  if (not (alloc-required? DIE-type-id)) {
+	    decl-file := hash-ref DIE 'decl_file #f
+	    if (and decl-file
+		    (not (equal? decl-file prev-file))) {
+	      hprintf api-i-fh "\n\t;; %s\n" (filename decl-file)
+	      prev-file = decl-file
+	    }
+	    ;; Idio C type constructor alias
+	    hprintf api-i-fh "\t%s\n" (get/create DIE 'i-type-alias)
+	    ;; Idio predicate
+	    hprintf api-i-fh "\t%s\n" (get/create DIE 'i-pred-name)
+	  }
+	}) used-types
 
-		}
+      }
 
-		if (pair? used-enumeration-types) {
+      if (pair? used-enumeration-types) {
 
-		    for-each (function (DIE) {
-				decl-file := hash-ref DIE 'decl_file #f
-				if decl-file {
-				  hprintf api-i-fh "\n\t;; %s\n" (filename decl-file)
-				}
-				DIE-name := hash-ref DIE 'name #f
-				if DIE-name {
-				  hprintf api-i-fh "\t;; enum %s\n" DIE-name
-				}
-				for-each (function (DIE) {
-					    DIE-name := hash-ref DIE 'name #f
-					    ;; Idio name
-					    ;;
-					    ;; NB commented out
-					    ;; (problems with
-					    ;; bootstrap)
-					    hprintf api-i-fh "\t;%s\n" DIE-name
-				}) (hash-ref DIE 'enumerators #n)
-		    }) used-enumeration-types
+	for-each (function (DIE) {
+	  decl-file := hash-ref DIE 'decl_file #f
+	  if decl-file {
+	    hprintf api-i-fh "\n\t;; %s\n" (filename decl-file)
+	  }
+	  DIE-name := hash-ref DIE 'name #f
+	  if DIE-name {
+	    hprintf api-i-fh "\t;; enum %s\n" DIE-name
+	  }
+	  for-each (function (DIE) {
+	    DIE-name := hash-ref DIE 'name #f
+	    ;; Idio name
+	    ;;
+	    ;; NB commented out (problems with bootstrap)
+	    hprintf api-i-fh "\t;%s\n" DIE-name
+	  }) (hash-ref DIE 'enumerators #n)
+	}) used-enumeration-types
 
-		} {
-		  printf "no enumeration_types\n"
-		}
+      } {
+	printf "no enumeration_types\n"
+      }
 
-		if exporting {
-		  hprintf api-i-fh #S{
+      if exporting {
+	hprintf api-i-fh #S{
 \)
 }
-		}
+      }
 
-		if (pair? used-types) {
+      if (pair? used-types) {
 
-		  ;; handy USER-supplied argument type assertion --
-		  ;; we'll #define the cascade of idio_isa_libx_y
-		  ;; names in a moment which should eventually resolve
-		  ;; into an idio_isa_C_z name.
-		  hprintf api-h-fh #S{
+	;; handy USER-supplied argument type assertion -- we'll
+	;; #define the cascade of idio_isa_libx_y names in a moment
+	;; which should eventually resolve into an idio_isa_C_z name.
+	hprintf api-h-fh #S{
 #define IDIO_USER_${c-module-name}_TYPE_ASSERT(t,x)	\{						\\
 	if (! idio_isa_${c-module-name}_ ## t (x)) \{						\\
 	    idio_error_param_type_C ("${i-module-name}/" #t, x, __FILE__, __func__, __LINE__);	\\
@@ -1755,72 +1751,72 @@ export \(
 
 }
 
-		  ;; We want to generate a mapping from us to the next
-		  ;; type down the chain, commonly:
-		  ;;
-		  ;; pid_t --> __pid_t --> int/long
-		  ;;
-		  ;; We don't want to do that for anything we need to
-		  ;; allocate (pointers, structures, unions etc.).
-		  ;;
-		  ;; Careful, though.  Some of these have no 'type
-		  ;; (ie. are void) and we can skip those.
+	;; We want to generate a mapping from us to the next type down
+	;; the chain, commonly:
+	;;
+	;; pid_t --> __pid_t --> int/long
+	;;
+	;; We don't want to do that for anything we need to allocate
+	;; (pointers, structures, unions etc.).
+	;;
+	;; Careful, though.  Some of these have no 'type (ie. are
+	;; void) and we can skip those.
 
-		  prev-file := #f
-		  for-each (function (DIE) {
-			      DIE-type-id := hash-ref DIE 'type #f
-			      DIE-type-DIE := #f
-			      if DIE-type-id {
-				DIE-type-DIE = hash-ref all-ids DIE-type-id #f
-			      }
-			      if DIE-type-DIE {
-				if (alloc-required? DIE-type-id) {
-				  DIE-name := hash-ref DIE 'name #f
-				  DIE-type-name := c-type DIE-type-id
-				  printf "%-30s -> %s*\n" DIE-name DIE-type-name
-				} {
-				  printing := #f
-				  decl-file := hash-ref DIE 'decl_file #f
-				  if (and decl-file
-					  (not (equal? decl-file prev-file))) {
-					    hprintf api-i-fh "\n;; %s\n" (filename decl-file)
-					    prev-file = decl-file
-					    printing = #t
-					  }
-				  ;; Idio alias for C type construction
-				  hprintf api-i-fh "%-34s := %s\n" (get/create DIE 'i-type-alias) (get/create DIE-type-DIE 'i-type-alias)
+	prev-file := #f
+	for-each (function (DIE) {
+	  DIE-type-id := hash-ref DIE 'type #f
+	  DIE-type-DIE := #f
+	  if DIE-type-id {
+	    DIE-type-DIE = hash-ref all-ids DIE-type-id #f
+	  }
+	  if DIE-type-DIE {
+	    if (alloc-required? DIE-type-id) {
+	      DIE-name := hash-ref DIE 'name #f
+	      DIE-type-name := c-type DIE-type-id
+	      printf "%-30s -> %s*\n" DIE-name DIE-type-name
+	    } {
+	      printing := #f
+	      decl-file := hash-ref DIE 'decl_file #f
+	      if (and decl-file
+		      (not (equal? decl-file prev-file))) {
+		hprintf api-i-fh "\n;; %s\n" (filename decl-file)
+		prev-file = decl-file
+		printing = #t
+	      }
+	      ;; Idio alias for C type construction
+	      hprintf api-i-fh "%-34s := %s\n" (get/create DIE 'i-type-alias) (get/create DIE-type-DIE 'i-type-alias)
 
-				  ;; Idio predicate
-				  hprintf api-i-fh "define %-30s %s\n" (get/create DIE 'i-pred-name) (get/create DIE-type-DIE 'i-direct-pred-name)
-				  ;; blank line!
-				  hprintf api-i-fh "\n"
+	      ;; Idio predicate
+	      hprintf api-i-fh "define %-30s %s\n" (get/create DIE 'i-pred-name) (get/create DIE-type-DIE 'i-direct-pred-name)
+	      ;; blank line!
+	      hprintf api-i-fh "\n"
 
-				  ;; C header
-				  if printing {
-				    hprintf api-h-fh "/* %s */\n" (filename decl-file)
-				  }
-				  ; Idio C MACRO TYPE
-				  hprintf api-h-fh "#define %-35s %s\n" (get/create DIE 'idio-c-macro-type) (get/create DIE-type-DIE 'idio-c-macro-type)
-				  ; constructor
-				  hprintf api-h-fh "#define %-35s %s\n" (get/create DIE 'c-type-constructor) (get/create DIE-type-DIE 'c-type-constructor)
-				  ; accessor
-				  hprintf api-h-fh "#define %-35s %s\n" (get/create DIE 'c-type-accessor) (get/create DIE-type-DIE 'c-type-accessor)
-				  ; predicate
-				  hprintf api-h-fh "#define %-35s %s\n" (get/create DIE 'c-type-predicate) (get/create DIE-type-DIE 'c-type-predicate)
-				  ;; blank line!
-				  hprintf api-h-fh "\n"
-				}
-			      }
-		  }) used-types
+	      ;; C header
+	      if printing {
+		hprintf api-h-fh "/* %s */\n" (filename decl-file)
+	      }
+	      ; Idio C MACRO TYPE
+	      hprintf api-h-fh "#define %-35s %s\n" (get/create DIE 'idio-c-macro-type) (get/create DIE-type-DIE 'idio-c-macro-type)
+	      ; constructor
+	      hprintf api-h-fh "#define %-35s %s\n" (get/create DIE 'c-type-constructor) (get/create DIE-type-DIE 'c-type-constructor)
+	      ; accessor
+	      hprintf api-h-fh "#define %-35s %s\n" (get/create DIE 'c-type-accessor) (get/create DIE-type-DIE 'c-type-accessor)
+	      ; predicate
+	      hprintf api-h-fh "#define %-35s %s\n" (get/create DIE 'c-type-predicate) (get/create DIE-type-DIE 'c-type-predicate)
+	      ;; blank line!
+	      hprintf api-h-fh "\n"
+	    }
+	  }
+	}) used-types
 
-		} {
-		  printf "no typedefs\n"
-		}
+      } {
+	printf "no typedefs\n"
+      }
 
-		if used-structure-types {
+      if used-structure-types {
 
-		  ;; setter commentary
-		  hprintf api-i-fh #S{
+	;; setter commentary
+	hprintf api-i-fh #S{
 
 ;; These function? tests are primarily for the libc API where the C
 ;; file is fixed and edited from the generated code.  ${PROGNAME}
@@ -1831,77 +1827,77 @@ export \(
 
 }
 
-		  for-each (function (struct) {
-			      struct-name := "struct"
+	for-each (function (struct) {
+	  struct-name := "struct"
 
-			      struct-name := hash-ref struct 'name #f
-			      member* := hash-ref struct 'members #n
+	  struct-name := hash-ref struct 'name #f
+	  member* := hash-ref struct 'members #n
 
-			      ;; informational comment
-			      hprintf api-c-fh "\n/*\n"
-			      decl-file := hash-ref struct 'decl_file #f
-			      if decl-file {
-				hprintf api-c-fh "\t%s\n\n" (filename decl-file)
-			      }
-			      hprintf api-c-fh "\tstruct"
+	  ;; informational comment
+	  hprintf api-c-fh "\n/*\n"
+	  decl-file := hash-ref struct 'decl_file #f
+	  if decl-file {
+	    hprintf api-c-fh "\t%s\n\n" (filename decl-file)
+	  }
+	  hprintf api-c-fh "\tstruct"
 
-			      if struct-name {
-				hprintf api-c-fh " %s\n" struct-name
-			      }
-			      hprintf api-c-fh "\t{\n"
+	  if struct-name {
+	    hprintf api-c-fh " %s\n" struct-name
+	  }
+	  hprintf api-c-fh "\t{\n"
 
-			      for-each (function (member) {
-					  member-type-id := hash-ref member 'type #f
-					  member-type-name := c-type member-type-id
-					  if member-type-name {
-					    member-name := hash-ref member 'name #f
-					    if member-name {
-					      hprintf api-c-fh "\t  %-20s %s;\n" member-type-name member-name
-					    } {
-					      hprintf api-c-fh "\t  %-20s -anon-;\n" member-type-name
-					    }
-					  }
-			      }) member*
+	  for-each (function (member) {
+	    member-type-id := hash-ref member 'type #f
+	    member-type-name := c-type member-type-id
+	    if member-type-name {
+	      member-name := hash-ref member 'name #f
+	      if member-name {
+		hprintf api-c-fh "\t  %-20s %s;\n" member-type-name member-name
+	      } {
+		hprintf api-c-fh "\t  %-20s -anon-;\n" member-type-name
+	      }
+	    }
+	  }) member*
 
-			      hprintf api-c-fh "\t};\n*/\n\n"
+	  hprintf api-c-fh "\t};\n*/\n\n"
 
 
-			      if struct-name {
-				struct-idio-id := Idio-identifier struct-name
-				struct-c-id := sprintf "%s_struct_%s" c-module-name struct-name
+	  if struct-name {
+	    struct-idio-id := Idio-identifier struct-name
+	    struct-c-id := sprintf "%s_struct_%s" c-module-name struct-name
 
-				;; symbols for accessors
+	    ;; symbols for accessors
 
-				if (pair? member*) {
-				  if decl-file {
-				    hprintf api-h-fh "\n/* %s */\n" (filename decl-file)
-				  }
-				  hprintf api-h-fh "extern IDIO_C_STRUCT_IDENT_DECL (%s);\n" struct-c-id
-				  hprintf api-c-fh "IDIO_C_STRUCT_IDENT_DECL (%s);\n" struct-c-id
-				  for-each (function (member) {
-					      member-type-id := hash-ref member 'type #f
-					      member-type-name := idio-c-type-name member-type-id
-					      if member-type-name {
-						member-name := hash-ref member 'name #f
-						if member-name {
-						  if (not (hash-exists? used-symbols member-name)) {
-						    ;; use #f here and upgrade to #t later
-						    hash-set! used-symbols member-name #f
-						    hprintf api-h-fh "extern IDIO_SYMBOL_DECL (%s);\n" member-name
-						    hprintf api-c-fh "IDIO_SYMBOL_DECL (%s);\n" member-name
-						  } {
-						    hprintf api-h-fh "/* %s already declared */\n" member-name
-						    hprintf api-c-fh "/* %s already declared */\n" member-name
-						  }
-						}
-					      }
-				  }) member*
+	    if (pair? member*) {
+	      if decl-file {
+		hprintf api-h-fh "\n/* %s */\n" (filename decl-file)
+	      }
+	      hprintf api-h-fh "extern IDIO_C_STRUCT_IDENT_DECL (%s);\n" struct-c-id
+	      hprintf api-c-fh "IDIO_C_STRUCT_IDENT_DECL (%s);\n" struct-c-id
+	      for-each (function (member) {
+		member-type-id := hash-ref member 'type #f
+		member-type-name := idio-c-type-name member-type-id
+		if member-type-name {
+		  member-name := hash-ref member 'name #f
+		  if member-name {
+		    if (not (hash-exists? used-symbols member-name)) {
+		      ;; use #f here and upgrade to #t later
+		      hash-set! used-symbols member-name #f
+		      hprintf api-h-fh "extern IDIO_SYMBOL_DECL (%s);\n" member-name
+		      hprintf api-c-fh "IDIO_SYMBOL_DECL (%s);\n" member-name
+		    } {
+		      hprintf api-h-fh "/* %s already declared */\n" member-name
+		      hprintf api-c-fh "/* %s already declared */\n" member-name
+		    }
+		  }
+		}
+	      }) member*
 
-				  var := sprintf "%s" struct-name
-				  varp := sprintf "%sp" var
+	      var := sprintf "%s" struct-name
+	      varp := sprintf "%sp" var
 
-				  ;; -ref
-				  hprintf api-c-fh #S{
+	      ;; -ref
+	      hprintf api-c-fh #S{
 IDIO_DEFINE_PRIMITIVE2_DS ("struct-${struct-idio-id}-ref", ${c-module-name}_struct_${struct-name}_ref, (IDIO ${var}, IDIO member), "${var} member", "\\
 in C, :samp:`\{${var}\}->\{member\}`			\\n\\
 					\\n\\
@@ -1917,20 +1913,20 @@ in C, :samp:`\{${var}\}->\{member\}`			\\n\\
     IDIO_ASSERT (member);
 }
 
-				  tc-count = tc-count + 1
-				  tc-bn := sprintf "%s-errors/struct-%s-ref-bad-pointer-type.idio" i-module-name struct-idio-id
-				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
-				  tc-fh := open-output-file tc-fn
-				  tc-test := #S{struct-${struct-idio-id}-ref #t #t}
-				  hprintf tc-fh #S{
+	      tc-count = tc-count + 1
+	      tc-bn := sprintf "%s-errors/struct-%s-ref-bad-pointer-type.idio" i-module-name struct-idio-id
+	      tc-fn := sprintf "%s/%s" gen-dn tc-bn
+	      tc-fh := open-output-file tc-fn
+	      tc-test := #S{struct-${struct-idio-id}-ref #t #t}
+	      hprintf tc-fh #S{
 ${tc-test}
 }
-				  close-handle tc-fh
+	      close-handle tc-fh
 
-				  hprintf errors-fh #S{
+	      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
     /*
      * Test Case: ${tc-bn}
      *
@@ -1939,20 +1935,20 @@ ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is n
     IDIO_USER_C_TYPE_ASSERT (pointer, ${var});
     if (idio_CSI_${struct-c-id} != IDIO_C_TYPE_POINTER_PTYPE (${struct-name})) \{}
 
-				  tc-count = tc-count + 1
-				  tc-bn := sprintf "%s-errors/struct-%s-ref-invalid-pointer-type.idio" i-module-name struct-idio-id
-				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
-				  tc-fh := open-output-file tc-fn
-				  tc-test := #S{struct-${struct-idio-id}-ref libc/NULL #t}
-				  hprintf tc-fh #S{
+	      tc-count = tc-count + 1
+	      tc-bn := sprintf "%s-errors/struct-%s-ref-invalid-pointer-type.idio" i-module-name struct-idio-id
+	      tc-fn := sprintf "%s/%s" gen-dn tc-bn
+	      tc-fh := open-output-file tc-fn
+	      tc-test := #S{struct-${struct-idio-id}-ref libc/NULL #t}
+	      hprintf tc-fh #S{
 ${tc-test}
 }
-				  close-handle tc-fh
+	      close-handle tc-fh
 
-				  hprintf errors-fh #S{
+	      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-ref ${struct-name}='#<C/*>' a C/pointer is not a C struct ${struct-name}"}
 
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
 	/*
 	 * Test Case: ${tc-bn}
 	 *
@@ -1963,20 +1959,20 @@ ${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-ref ${struct-na
 	return idio_S_notreached;
     \}}
 
-				  tc-count = tc-count + 1
-				  tc-bn := sprintf "%s-errors/struct-%s-ref-bad-member-type.idio" i-module-name struct-idio-id
-				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
-				  tc-fh := open-output-file tc-fn
-				  tc-test := #S{struct-${struct-idio-id}-ref v #t}
-				  hprintf tc-fh #S{
+	      tc-count = tc-count + 1
+	      tc-bn := sprintf "%s-errors/struct-%s-ref-bad-member-type.idio" i-module-name struct-idio-id
+	      tc-fn := sprintf "%s/%s" gen-dn tc-bn
+	      tc-fh := open-output-file tc-fn
+	      tc-test := #S{struct-${struct-idio-id}-ref v #t}
+	      hprintf tc-fh #S{
 ${tc-test}
 }
-				  close-handle tc-fh
+	      close-handle tc-fh
 
-				  hprintf errors-fh #S{
+	      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "member should be a symbol"}
 
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
 
     /*
      * Test Case: ${tc-bn}
@@ -1988,28 +1984,27 @@ ${i-module-name}-error-load "${tc-bn}" "member should be a symbol"}
     struct ${struct-name} *${varp} = IDIO_C_TYPE_POINTER_P (${var});
 }
 
+	      first := #t
+	      for-each (function (member) {
+		member-type-id := hash-ref member 'type #f
+		member-type-DIE := hash-ref all-ids member-type-id #f
+		member-c-type-name := get/create member-type-DIE 'c-type-name
+		if member-c-type-name {
+		  member-name := hash-ref member 'name #f
+		  if member-name {
+		    if first {
+		      first = #f
+		      hprintf api-c-fh "    "
+		    } {
+		      hprintf api-c-fh " else "
+		    }
 
-				  first := #t
-				  for-each (function (member) {
-					      member-type-id := hash-ref member 'type #f
-					      member-type-DIE := hash-ref all-ids member-type-id #f
-					      member-c-type-name := get/create member-type-DIE 'c-type-name
-					      if member-c-type-name {
-						member-name := hash-ref member 'name #f
-						if member-name {
-						  if first {
-						    first = #f
-						    hprintf api-c-fh "    "
-						  } {
-						    hprintf api-c-fh " else "
-						  }
-
-						  if (alloc-required? member-type-id) {
-						    member-alloc-name := get/create member-type-DIE 'c-alloc-type-name
-						    if member-alloc-name {
-						      (regex-case member-alloc-name
-								  ("(.*)\\[]" {
-								    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
+		    if (alloc-required? member-type-id) {
+		      member-alloc-name := get/create member-type-DIE 'c-alloc-type-name
+		      if member-alloc-name {
+			(regex-case member-alloc-name
+				    ("(.*)\\[]" {
+				      hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
         /*
          * WARNING:
          * ${member-c-type-name} ${member-name}
@@ -2022,9 +2017,9 @@ ${i-module-name}-error-load "${tc-bn}" "member should be a symbol"}
         ${r.1} *rp = (${r.1} *) idio_alloc (alen);
         memcpy ((void *) rp, (void *) &${varp}->${member-name}, alen);
     \}}
-								  })
-								  (".*\\*" {
-								    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
+				    })
+				    (".*\\*" {
+				      hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
         /*
          * WARNING:
          * ${member-c-type-name} ${member-name}
@@ -2037,53 +2032,54 @@ ${i-module-name}-error-load "${tc-bn}" "member should be a symbol"}
         ${member-alloc-name} rp = (${member-alloc-name}) idio_alloc (slen);
         memcpy ((void *) rp, (void *) &${varp}->${member-name}, slen);
     \}}
-								  })
-								  (else {
-								    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
+				    })
+				    (else {
+				      hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
         ${member-c-type-name} *rp = (${member-c-type-name} *) idio_alloc (sizeof (${member-c-type-name}));
         memcpy ((void *) rp, (void *) &${varp}->${member-name}, sizeof (${member-c-type-name}));
 }
-								    if (structure-type? member-type-id) {
-								      hprintf api-c-fh #S{
+				      if (structure-type? member-type-id) {
+					hprintf api-c-fh #S{
         return idio_C_pointer_type (idio_CSI_${c-module-name}_${C-identifier member-c-type-name}, rp);
 }
-								    } {
-								      hprintf api-c-fh #S{
+				      } {
+					hprintf api-c-fh #S{
         return idio_C_pointer_free_me (rp);
 }
-								    }
-								    hprintf api-c-fh #S{
+				      }
+
+				      hprintf api-c-fh #S{
     \}}
-								  }))
-						    } {
-						      hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
+				    }))
+		      } {
+			hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
 #error ${member-c-type-name} ${member-name} is not handled
     \}}
-						    }
-						  } {
-						    constructor := get/create member-type-DIE 'c-type-constructor
-						    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
+		      }
+		    } {
+		      constructor := get/create member-type-DIE 'c-type-constructor
+		      hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
         return ${constructor} (${varp}->${member-name});
     \}}
-						  }
-						}
-					      }
-				  }) member*
+		    }
+		  }
+		}
+	      }) member*
 
-				  tc-count = tc-count + 1
-				  tc-bn := sprintf "%s-errors/struct-%s-ref-invalid-member.idio" i-module-name struct-idio-id
-				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
-				  tc-fh := open-output-file tc-fn
-				  tc-test := #S{struct-${struct-idio-id}-ref v 'not-likely}
-				  hprintf tc-fh #S{
+	      tc-count = tc-count + 1
+	      tc-bn := sprintf "%s-errors/struct-%s-ref-invalid-member.idio" i-module-name struct-idio-id
+	      tc-fn := sprintf "%s/%s" gen-dn tc-bn
+	      tc-fh := open-output-file tc-fn
+	      tc-test := #S{struct-${struct-idio-id}-ref v 'not-likely}
+	      hprintf tc-fh #S{
 ${tc-test}
 }
-				  close-handle tc-fh
+	      close-handle tc-fh
 
-				  hprintf errors-fh #S{
+	      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-ref member='notlikely': should be a C struct ${struct-name} member"}
 
-				  hprintf api-c-fh #S{ else \{
+	      hprintf api-c-fh #S{ else \{
 	/*
 	 * Test Case: ${tc-bn}
 	 *
@@ -2094,15 +2090,14 @@ ${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-ref member='not
         return idio_S_notreached;
     \}}
 
-
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
 
     return idio_S_notreached;
 \}
 }
 
-				  ;; -set!
-				  hprintf api-c-fh #S{
+	      ;; -set!
+	      hprintf api-c-fh #S{
 IDIO_DEFINE_PRIMITIVE3_DS ("struct-${struct-idio-id}-set!", ${c-module-name}_struct_${struct-name}_set, (IDIO ${var}, IDIO member, IDIO val), "${var} member val", "\\
 in C, :samp:`\{${var}\}->\{member\} = \{val\}`		\\n\\
 					\\n\\
@@ -2121,20 +2116,20 @@ in C, :samp:`\{${var}\}->\{member\} = \{val\}`		\\n\\
 
 }
 
-				  tc-count = tc-count + 1
-				  tc-bn := sprintf "%s-errors/struct-%s-set-bad-pointer-type.idio" i-module-name struct-idio-id
-				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
-				  tc-fh := open-output-file tc-fn
-				  tc-test := #S{struct-${struct-idio-id}-set! #t #t #t}
-				  hprintf tc-fh #S{
+	      tc-count = tc-count + 1
+	      tc-bn := sprintf "%s-errors/struct-%s-set-bad-pointer-type.idio" i-module-name struct-idio-id
+	      tc-fn := sprintf "%s/%s" gen-dn tc-bn
+	      tc-fh := open-output-file tc-fn
+	      tc-test := #S{struct-${struct-idio-id}-set! #t #t #t}
+	      hprintf tc-fh #S{
 ${tc-test}
 }
-				  close-handle tc-fh
+	      close-handle tc-fh
 
-				  hprintf errors-fh #S{
+	      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
     /*
      * Test Case: ${tc-bn}
      *
@@ -2143,20 +2138,20 @@ ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is n
     IDIO_USER_C_TYPE_ASSERT (pointer, ${var});
     if (idio_CSI_${struct-c-id} != IDIO_C_TYPE_POINTER_PTYPE (${struct-name})) \{}
 
-				  tc-count = tc-count + 1
-				  tc-bn := sprintf "%s-errors/struct-%s-set-invalid-pointer-type.idio" i-module-name struct-idio-id
-				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
-				  tc-fh := open-output-file tc-fn
-				  tc-test := #S{struct-${struct-idio-id}-set! libc/NULL #t #t}
-				  hprintf tc-fh #S{
+	      tc-count = tc-count + 1
+	      tc-bn := sprintf "%s-errors/struct-%s-set-invalid-pointer-type.idio" i-module-name struct-idio-id
+	      tc-fn := sprintf "%s/%s" gen-dn tc-bn
+	      tc-fh := open-output-file tc-fn
+	      tc-test := #S{struct-${struct-idio-id}-set! libc/NULL #t #t}
+	      hprintf tc-fh #S{
 ${tc-test}
 }
-				  close-handle tc-fh
+	      close-handle tc-fh
 
-				  hprintf errors-fh #S{
+	      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-set! ${struct-name}='#<C/*>' a C/pointer is not a C struct ${struct-name}"}
 
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
 	/*
 	 * Test Case: ${tc-bn}
 	 *
@@ -2168,20 +2163,20 @@ ${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-set! ${struct-n
     \}
 }
 
-				  tc-count = tc-count + 1
-				  tc-bn := sprintf "%s-errors/struct-%s-set-bad-member-type.idio" i-module-name struct-idio-id
-				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
-				  tc-fh := open-output-file tc-fn
-				  tc-test := #S{struct-${struct-idio-id}-set! v #t #t}
-				  hprintf tc-fh #S{
+	      tc-count = tc-count + 1
+	      tc-bn := sprintf "%s-errors/struct-%s-set-bad-member-type.idio" i-module-name struct-idio-id
+	      tc-fn := sprintf "%s/%s" gen-dn tc-bn
+	      tc-fh := open-output-file tc-fn
+	      tc-test := #S{struct-${struct-idio-id}-set! v #t #t}
+	      hprintf tc-fh #S{
 ${tc-test}
 }
-				  close-handle tc-fh
+	      close-handle tc-fh
 
-				  hprintf errors-fh #S{
+	      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "member should be a symbol"}
 
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
     /*
      * Test Case: ${tc-bn}
      *
@@ -2192,56 +2187,56 @@ ${i-module-name}-error-load "${tc-bn}" "member should be a symbol"}
     struct ${struct-name} *${varp} = IDIO_C_TYPE_POINTER_P (${var});
 }
 
-				  hprintf errors-fh "\n"
+	      hprintf errors-fh "\n"
 
-				  first := #t
-				  for-each (function (member) {
-					      member-type-id := hash-ref member 'type #f
-					      member-type-DIE := hash-ref all-ids member-type-id #f
-					      member-c-type-name := get/create member-type-DIE 'c-type-name
-					      member-i-c-type-name := get/create member-type-DIE 'i-c-type-name
-					      if member-c-type-name {
-						member-name := hash-ref member 'name #f
-						if member-name {
-						  if first {
-						    first = #f
-						    hprintf api-c-fh "    "
-						  } {
-						    hprintf api-c-fh " else "
-						  }
+	      first := #t
+	      for-each (function (member) {
+		member-type-id := hash-ref member 'type #f
+		member-type-DIE := hash-ref all-ids member-type-id #f
+		member-c-type-name := get/create member-type-DIE 'c-type-name
+		member-i-c-type-name := get/create member-type-DIE 'i-c-type-name
+		if member-c-type-name {
+		  member-name := hash-ref member 'name #f
+		  if member-name {
+		    if first {
+		      first = #f
+		      hprintf api-c-fh "    "
+		    } {
+		      hprintf api-c-fh " else "
+		    }
 
-						  mod-name := c-module-name
-						  if (base-type? member-type-id) {
-						    mod-name = "C"
-						  }
+		    mod-name := c-module-name
+		    if (base-type? member-type-id) {
+		      mod-name = "C"
+		    }
 
-						  tc-count = tc-count + 1
-						  tc-bn := sprintf "%s-errors/struct-%s-set-%s-bad-value-type.idio" i-module-name struct-idio-id member-name
-						  tc-fn := sprintf "%s/%s" gen-dn tc-bn
-						  tc-fh := open-output-file tc-fn
-						  tc-test := #S{struct-${struct-idio-id}-set! v '${member-name} #t}
-						  hprintf tc-fh #S{
+		    tc-count = tc-count + 1
+		    tc-bn := sprintf "%s-errors/struct-%s-set-%s-bad-value-type.idio" i-module-name struct-idio-id member-name
+		    tc-fn := sprintf "%s/%s" gen-dn tc-bn
+		    tc-fh := open-output-file tc-fn
+		    tc-test := #S{struct-${struct-idio-id}-set! v '${member-name} #t}
+		    hprintf tc-fh #S{
 ${tc-test}
 }
-						  close-handle tc-fh
+		    close-handle tc-fh
 
-						  hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
+		    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
        /*
 	* Test Case: ${tc-bn}
 	*
 	* ${tc-test}
 	*/}
 
-						  if (alloc-required? member-type-id) {
-						    member-alloc-name := get/create member-type-DIE 'c-alloc-type-name
-						    if member-alloc-name {
+		    if (alloc-required? member-type-id) {
+		      member-alloc-name := get/create member-type-DIE 'c-alloc-type-name
+		      if member-alloc-name {
 
-						      (regex-case member-alloc-name
-								  ("(.*)\\[]" {
-								    hprintf errors-fh #S{
+			(regex-case member-alloc-name
+				    ("(.*)\\[]" {
+				      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
-								    hprintf api-c-fh #S{
+				      hprintf api-c-fh #S{
 	IDIO_USER_C_TYPE_ASSERT (pointer, val);
 
         /*
@@ -2257,12 +2252,12 @@ ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is n
         memcpy ((void *) &${varp}->${member-name}, (void *) valp, alen);
         return idio_S_unspec;
     \}}
-								  })
-								  ("(.*)\\*" {
-								    hprintf errors-fh #S{
+				    })
+				    ("(.*)\\*" {
+				      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
-								    hprintf api-c-fh #S{
+				      hprintf api-c-fh #S{
 	IDIO_USER_C_TYPE_ASSERT (pointer, val);
 
         /*
@@ -2278,54 +2273,54 @@ ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is n
         memcpy ((void *) &${varp}->${member-name}, (void *) valp, slen);
         return idio_S_unspec;
     \}}
-								  })
-								  (else {
-								    hprintf errors-fh #S{
+				    })
+				    (else {
+				      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
-								    hprintf api-c-fh #S{
+				      hprintf api-c-fh #S{
 	IDIO_USER_C_TYPE_ASSERT (pointer, val);
 
         ${member-c-type-name} *valp = IDIO_C_TYPE_POINTER_P (${val});
         memcpy ((void *) &${varp}->${member-name}, (void *) valp, sizeof (${member-c-type-name}));
         return idio_S_unspec;
     \}}
-								  }))
-						    } {
-						      hprintf api-c-fh #S{
+				    }))
+		      } {
+			hprintf api-c-fh #S{
 #error ${member-c-type-name} ${member-name} is not handled
     \}}
-						    }
-						  } {
-						    accessor := get/create member-type-DIE 'c-type-accessor
-								    hprintf errors-fh #S{
+		      }
+		    } {
+		      accessor := get/create member-type-DIE 'c-type-accessor
+		      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a ${mod-name}/${member-i-c-type-name}"}
 
-						    hprintf api-c-fh #S{
+		      hprintf api-c-fh #S{
 	IDIO_USER_${mod-name}_TYPE_ASSERT (${member-i-c-type-name}, val);
 
         ${varp}->${member-name} = ${accessor} (val);
         return idio_S_unspec;
     \}}
-						  }
-						}
-					      }
-				  }) member*
+		    }
+		  }
+		}
+	      }) member*
 
-				  tc-count = tc-count + 1
-				  tc-bn := sprintf "%s-errors/struct-%s-set-invalid-member.idio" i-module-name struct-idio-id
-				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
-				  tc-fh := open-output-file tc-fn
-				  tc-test := #S{struct-${struct-idio-id}-set! v 'not-likely #t}
-				  hprintf tc-fh #S{
+	      tc-count = tc-count + 1
+	      tc-bn := sprintf "%s-errors/struct-%s-set-invalid-member.idio" i-module-name struct-idio-id
+	      tc-fn := sprintf "%s/%s" gen-dn tc-bn
+	      tc-fh := open-output-file tc-fn
+	      tc-test := #S{struct-${struct-idio-id}-set! v 'not-likely #t}
+	      hprintf tc-fh #S{
 ${tc-test}
 }
-				  close-handle tc-fh
+	      close-handle tc-fh
 
-				    hprintf errors-fh #S{
+	      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-set! member='notlikely': should be a C struct ${struct-name} member"}
 
-				  hprintf api-c-fh #S{ else \{
+	      hprintf api-c-fh #S{ else \{
 	/*
 	 * Test Case: ${tc-bn}
 	 *
@@ -2336,135 +2331,134 @@ ${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-set! member='no
         return idio_S_notreached;
     \}}
 
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
 
     return idio_S_notreached;
 \}
 }
 
-				  ;; C _as_string
-				  hprintf api-h-fh #S{
+	      ;; C _as_string
+	      hprintf api-h-fh #S{
 IDIO idio_${struct-c-id}_as_string (struct ${struct-name} *${varp});
 }
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
 IDIO idio_${struct-c-id}_as_string (struct ${struct-name} *${varp})
 \{
     IDIO_C_ASSERT (${varp});
 }
 
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
     IDIO CSI_sh = idio_open_output_string_handle_C ();
     idio_display_C ("#<CSI ${c-module-name}/struct-${struct-idio-id}", CSI_sh);
 }
 
-
-				  first := #t
-				  for-each (function (member) {
-					      member-type-id := hash-ref member 'type #f
-					      member-type-DIE := hash-ref all-ids member-type-id #f
-					      member-c-type-name := get/create member-type-DIE 'c-type-name
-					      if member-c-type-name {
-						member-name := hash-ref member 'name #f
-						if member-name {
-						  if first {
-						    first = #f
-						  hprintf api-c-fh #S{
+	      first := #t
+	      for-each (function (member) {
+		member-type-id := hash-ref member 'type #f
+		member-type-DIE := hash-ref all-ids member-type-id #f
+		member-c-type-name := get/create member-type-DIE 'c-type-name
+		if member-c-type-name {
+		  member-name := hash-ref member 'name #f
+		  if member-name {
+		    if first {
+		      first = #f
+		      hprintf api-c-fh #S{
     char buf[BUFSIZ];
     char *fmt;
 }
-						  }
+		    }
 
-						  hprintf api-c-fh #S{
+		    hprintf api-c-fh #S{
     idio_display_C (" ${member-name}:", CSI_sh);
 }
 
-						  if (alloc-required? member-type-id) {
-						    member-type-id := hash-ref member 'type #f
-						    member-alloc-name := get/create member-type-DIE 'c-alloc-type-name
-						    if member-alloc-name {
-						      (regex-case member-alloc-name
-								  ("(.*)\\[]" {
-								    (case member-alloc-name
-									  (("char[]") {
-									    hprintf api-c-fh #S{
+		    if (alloc-required? member-type-id) {
+		      member-type-id := hash-ref member 'type #f
+		      member-alloc-name := get/create member-type-DIE 'c-alloc-type-name
+		      if member-alloc-name {
+			(regex-case member-alloc-name
+				    ("(.*)\\[]" {
+				      (case member-alloc-name
+				       (("char[]") {
+					 hprintf api-c-fh #S{
     idio_display_C (${varp}->${member-name}, CSI_sh);
 }
-									  })
-									  (else {
-									    hprintf api-c-fh #S{
+				       })
+				       (else {
+					 hprintf api-c-fh #S{
     idio_display_C ("<<1${member-c-type-name}>>", CSI_sh);
 }
-									  }))
-								  })
-								  (".*\\*" {
-								    (case member-alloc-name
-									  (("char*") {
-									    hprintf api-c-fh #S{
+				       }))
+				    })
+				    (".*\\*" {
+				      (case member-alloc-name
+				       (("char*") {
+					 hprintf api-c-fh #S{
     idio_display_C (${varp}->${member-name}, CSI_sh);
 }
-									  })
-									  (else {
-									    hprintf api-c-fh #S{
+				       })
+				       (else {
+					 hprintf api-c-fh #S{
     idio_display_C ("<<2${member-c-type-name}>>", CSI_sh);
 }
-									  }))
-								  })
-								  (else {
-								    (case member-alloc-name
-									  (("XXX") {
-									    hprintf api-c-fh #S{
+				       }))
+				    })
+				    (else {
+				      (case member-alloc-name
+				       (("XXX") {
+					 hprintf api-c-fh #S{
     idio_display_C (${varp}->${member-name}, CSI_sh);
 }
-									  })
-									  (else {
-									    (cond
-									     ((structure-type? member-type-id) {
-									       hprintf api-c-fh #S{
+				       })
+				       (else {
+					 (cond
+					  ((structure-type? member-type-id) {
+					    hprintf api-c-fh #S{
     idio_display (idio_${c-module-name}_${C-identifier member-c-type-name}_as_string (&(${varp}->${member-name})), CSI_sh);
 }
-									     })
-									     (else {
-									       hprintf api-c-fh #S{
+					  })
+					  (else {
+					    hprintf api-c-fh #S{
     idio_display (idio_${c-module-name}_${C-identifier member-c-type-name}_as_string (${varp}->${member-name}), CSI_sh);
 }
-									     }))
-									  }))
-								  }))
-						    } {
-						      hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
+					  }))
+				       }))
+				    }))
+		      } {
+			hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
 #error ${member-c-type-name} ${member-name} is not handled
     \}}
-						    }
-						  } {
-						    (case member-alloc-name
-							  (("XXX") {
-							    hprintf api-c-fh #S{
+		      }
+		    } {
+		      (case member-alloc-name
+		       (("XXX") {
+			 hprintf api-c-fh #S{
     idio_display_C (${varp}->${member-name}, CSI_sh);
 }
-							  })
-							  (else {
-							    member-idio-c-macro-type := get/create member-type-DIE 'idio-c-macro-type
-							    hprintf api-c-fh #S{
+		       })
+		       (else {
+			 member-idio-c-macro-type := get/create member-type-DIE 'idio-c-macro-type
+			 hprintf api-c-fh #S{
     fmt = idio_C_type_format_string (${member-idio-c-macro-type});
     idio_snprintf (buf, BUFSIZ, fmt, ${varp}->${member-name});
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 }
-							  }))
-						  }
-						}
-					      }
-				  }) member*
+		       }))
+		    }
+		  }
+		}
+	      }) member*
 
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
     idio_display_C (">", CSI_sh);
 
     return idio_get_output_string (CSI_sh);
 \}
 }
 
-				  ;; Idio -as-string
-				  hprintf api-c-fh #S{
+	      ;; Idio -as-string
+	      hprintf api-c-fh #S{
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-${struct-idio-id}-as-string", ${c-module-name}_struct_${struct-name}_as_string, (IDIO ${var}), "${var}", "\\
 :param ${var}: :ref:`struct-${struct-name} <${c-module-name}/struct-${struct-name}>`	\\n\\
 :type ${var}: C/pointer			\\n\\
@@ -2475,20 +2469,20 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-${struct-idio-id}-as-string", ${c-module-name
     IDIO_ASSERT (${var});
 }
 
-				  tc-count = tc-count + 1
-				  tc-bn := sprintf "%s-errors/struct-%s-as-string-bad-pointer-type.idio" i-module-name struct-idio-id
-				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
-				  tc-fh := open-output-file tc-fn
-				  tc-test := #S{struct-${struct-idio-id}-as-string #t}
-				  hprintf tc-fh #S{
+	      tc-count = tc-count + 1
+	      tc-bn := sprintf "%s-errors/struct-%s-as-string-bad-pointer-type.idio" i-module-name struct-idio-id
+	      tc-fn := sprintf "%s/%s" gen-dn tc-bn
+	      tc-fh := open-output-file tc-fn
+	      tc-test := #S{struct-${struct-idio-id}-as-string #t}
+	      hprintf tc-fh #S{
 ${tc-test}
 }
-				  close-handle tc-fh
+	      close-handle tc-fh
 
-				  hprintf errors-fh #S{
+	      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
     /*
      * Test Case: ${tc-bn}
      *
@@ -2497,20 +2491,20 @@ ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is n
     IDIO_USER_C_TYPE_ASSERT (pointer, ${var});
     if (idio_CSI_${struct-c-id} != IDIO_C_TYPE_POINTER_PTYPE (${struct-name})) \{}
 
-				  tc-count = tc-count + 1
-				  tc-bn := sprintf "%s-errors/struct-%s-as-string-invalid-pointer-type.idio" i-module-name struct-idio-id
-				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
-				  tc-fh := open-output-file tc-fn
-				  tc-test := #S{struct-${struct-idio-id}-as-string libc/NULL}
-				  hprintf tc-fh #S{
+	      tc-count = tc-count + 1
+	      tc-bn := sprintf "%s-errors/struct-%s-as-string-invalid-pointer-type.idio" i-module-name struct-idio-id
+	      tc-fn := sprintf "%s/%s" gen-dn tc-bn
+	      tc-fh := open-output-file tc-fn
+	      tc-test := #S{struct-${struct-idio-id}-as-string libc/NULL}
+	      hprintf tc-fh #S{
 ${tc-test}
 }
-				  close-handle tc-fh
+	      close-handle tc-fh
 
-				  hprintf errors-fh #S{
+	      hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-as-string ${struct-name}='#<C/*>' a C/pointer is not a C struct ${struct-name}"}
 
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
 	/*
 	 * Test Case: ${tc-bn}
 	 *
@@ -2522,195 +2516,191 @@ ${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-as-string ${str
     \}
 }
 
-				  hprintf api-c-fh #S{
+	      hprintf api-c-fh #S{
     return idio_${c-module-name}_struct_${struct-name}_as_string (IDIO_C_TYPE_POINTER_P (${var}));
 \}
 }
 
-				  ;; setter
-				  hprintf api-i-fh #S{
+	      ;; setter
+	      hprintf api-i-fh #S{
 if (and (function? struct-${struct-idio-id}-ref)
-        (function? struct-${struct-idio-id}-set!)) {
+        (function? struct-${struct-idio-id}-set!)) \{
   set! (setter struct-${struct-idio-id}-ref)	struct-${struct-idio-id}-set!
 \}
 }
-				}
-			      }
+	    }
+	  }
 
+	  hprintf errors-fh "\n"
+	}) (array->list used-structure-types)
 
-				    hprintf errors-fh "\n"
+      } {
+	printf "no structure_types\n"
+      }
 
-		  }
-
-
-					    ) (array->list used-structure-types)
-		} {
-		  printf "no structure_types\n"
+      if used-union-types {
+	for-each (function (union) {
+	  union-name := hash-ref union 'name #f
+	  if union-name {
+	    printf "union"
+	    printf " %s" union-name
+	    printf " {\n"
+	    members := hash-ref union 'member #f
+	    if members {
+	      for-each (function (union) {
+		union-type-id := hash-ref union 'type #f
+		union-type-name := idio-c-type-name union-type-id
+		if union-type-name {
+		  union-name := hash-ref union 'name #f
+		  printf "  %-20s %s\n" union-type-name union-name
 		}
+	      }) (array->list members)
+	    }
+	    printf "};\n"
+	  }
+	}) (array->list used-union-types)
 
-		if used-union-types {
-		    for-each (function (union) {
-				union-name := hash-ref union 'name #f
-				if union-name {
-				  printf "union"
-				  printf " %s" union-name
-				  printf " {\n"
-				  members := hash-ref union 'member #f
-				  if members {
-				    for-each (function (union) {
-						union-type-id := hash-ref union 'type #f
-						union-type-name := idio-c-type-name union-type-id
-						if union-type-name {
-						  union-name := hash-ref union 'name #f
-						  printf "  %-20s %s\n" union-type-name union-name
-						}
-				    }) (array->list members)
-				  }
-				  printf "};\n"
-				}
-		    }) (array->list used-union-types)
+      } {
+	printf "no union_types\n"
+      }
 
-		} {
-		  printf "no union_types\n"
-		}
+      if subprograms {
 
-		if subprograms {
+	for-each (function (sp) {
+	  sp-name := hash-ref sp 'name #f
+	  sp-type-id := hash-ref sp 'type #f
+	  sp-type-DIE := hash-ref all-ids sp-type-id #f
+	  sp-c-type-name := "void"
+	  sp-c-type-constructor := #f
+	  sp-i-direct-type-name := "void"
+	  if sp-type-DIE {
+	    sp-c-type-name = get/create sp-type-DIE 'c-type-name
+	    sp-c-type-constructor = get/create sp-type-DIE 'c-type-constructor
+	    sp-i-direct-type-name = get/create sp-type-DIE 'i-direct-type-name
+	  }
 
-		  for-each (function (sp) {
-			      sp-name := hash-ref sp 'name #f
-			      sp-type-id := hash-ref sp 'type #f
-			      sp-type-DIE := hash-ref all-ids sp-type-id #f
-			      sp-c-type-name := "void"
-			      sp-c-type-constructor := #f
-			      sp-i-direct-type-name := "void"
-			      if sp-type-DIE {
-				sp-c-type-name = get/create sp-type-DIE 'c-type-name
-				sp-c-type-constructor = get/create sp-type-DIE 'c-type-constructor
-				sp-i-direct-type-name = get/create sp-type-DIE 'i-direct-type-name
-			      }
+	  if (not (equal? sp-name "main")) {
+	    formal_parameters := hash-ref sp 'formal_parameter #f
+	    fpc := 0
+	    fp* := #n
+	    i-arg-name* := #n
+	    if formal_parameters {
+	      fpc = array-length formal_parameters
+	      fp* = array->list formal_parameters
+	      hash-set! sp 'formal_parameters fp*
 
-			      if (not (equal? sp-name "main")) {
-				formal_parameters := hash-ref sp 'formal_parameter #f
-				fpc := 0
-				fp* := #n
-				i-arg-name* := #n
-				if formal_parameters {
-				  fpc = array-length formal_parameters
-				  fp* = array->list formal_parameters
-				  hash-set! sp 'formal_parameters fp*
+	      pc := 0
+	      i-arg-name* = map (function (fp) {
+		pc = pc + 1
+		hash-ref fp 'name (sprintf "arg%d" pc)
+	      }) fp*
+	    }
 
-				  pc := 0
-				  i-arg-name* = map (function (fp) {
-						       pc = pc + 1
-						       hash-ref fp 'name (sprintf "arg%d" pc)
-				  }) fp*
-				}
+	    c-arg-name* := map (function (arg) #S{C_${arg}}) i-arg-name*
+	    comma-sep-fp* := join-string ", " (map (function (arg) #S{IDIO ${arg}}) i-arg-name*)
+	    comma-sep-arg* := join-string ", " i-arg-name*
+	    comma-sep-c-arg* := join-string ", " c-arg-name*
+	    space-sep-arg* := join-string " " i-arg-name*
 
-				c-arg-name* := map (function (arg) #S{C_${arg}}) i-arg-name*
-				comma-sep-fp* := join-string ", " (map (function (arg) #S{IDIO ${arg}}) i-arg-name*)
-				comma-sep-arg* := join-string ", " i-arg-name*
-				comma-sep-c-arg* := join-string ", " c-arg-name*
-				space-sep-arg* := join-string " " i-arg-name*
-
-				hprintf api-c-fh #S{
+	    hprintf api-c-fh #S{
 IDIO_DEFINE_PRIMITIVE${fpc}_DS ("${sp-name}", ${lib-n}_${sp-name}, (${comma-sep-fp*}), \"${space-sep-arg*}\", \"\\
 in C: ${sp-name} \(${comma-sep-arg*})		\\n\\
 }
 
-				hprintf api-c-fh #S{a wrapper to libc ${sp-name}()		\\n\\
+	    hprintf api-c-fh #S{a wrapper to libc ${sp-name}()		\\n\\
 					\\n\\}
 
-				pc := 1
-				for-each (function (fp) {
-					    fp-type-id := hash-ref fp 'type #f
-					    fp-type-DIE := hash-ref all-ids fp-type-id
-					    fp-type-name := get/create fp-type-DIE 'i-direct-type-name
-					    if fp-type-name {
-					      fp-name := hash-ref fp 'name (sprintf "arg%d" pc)
-					      hprintf api-c-fh #S{
+	    pc := 1
+	    for-each (function (fp) {
+	      fp-type-id := hash-ref fp 'type #f
+	      fp-type-DIE := hash-ref all-ids fp-type-id
+	      fp-type-name := get/create fp-type-DIE 'i-direct-type-name
+	      if fp-type-name {
+		fp-name := hash-ref fp 'name (sprintf "arg%d" pc)
+		hprintf api-c-fh #S{
 :param ${fp-name}: 				\\n\\
 :type ${fp-name}: ${fp-type-name}			\\n\\}
-					    }
-					    pc = pc + 1
-				}) fp*
+	      }
+	      pc = pc + 1
+	    }) fp*
 
-				hprintf api-c-fh #S{
+	    hprintf api-c-fh #S{
 :return:				\\n\\
 :rtype: ${sp-i-direct-type-name}	\\n\\
 \"\)
 \{
 }
 
-				for-each (function (i-arg-name) {
-					    hprintf api-c-fh #S{    IDIO_ASSERT (${i-arg-name});
+	    for-each (function (i-arg-name) {
+	      hprintf api-c-fh #S{    IDIO_ASSERT (${i-arg-name});
 }
-				}) i-arg-name*
+	    }) i-arg-name*
 
-				dummy-args := ""
-				for-each (function (i-arg-name) {
-					    dummy-args = append-string dummy-args "#t "
-				}) i-arg-name*
-				dummy-args = strip-string dummy-args " " 'right
+	    dummy-args := ""
+	    for-each (function (i-arg-name) {
+	      dummy-args = append-string dummy-args "#t "
+	    }) i-arg-name*
+	    dummy-args = strip-string dummy-args " " 'right
 
-				pc := 1
-				for-each (function (fp) {
-					    fp-type-id := hash-ref fp 'type #f
-					    fp-type-DIE := hash-ref all-ids fp-type-id #f
-					    fp-c-type-name := get/create fp-type-DIE 'c-type-name
-					    fp-c-type-accessor := get/create fp-type-DIE 'c-type-accessor
-					    fp-i-c-type-name := get/create fp-type-DIE 'i-c-type-name
-					    if fp-i-c-type-name {
-					      fp-name := hash-ref fp 'name (sprintf "arg%d" pc)
-					      mod-name := c-module-name
-					      if (base-type? fp-type-id) {
-						mod-name = "C"
-					      }
+	    pc := 1
+	    for-each (function (fp) {
+	      fp-type-id := hash-ref fp 'type #f
+	      fp-type-DIE := hash-ref all-ids fp-type-id #f
+	      fp-c-type-name := get/create fp-type-DIE 'c-type-name
+	      fp-c-type-accessor := get/create fp-type-DIE 'c-type-accessor
+	      fp-i-c-type-name := get/create fp-type-DIE 'i-c-type-name
+	      if fp-i-c-type-name {
+		fp-name := hash-ref fp 'name (sprintf "arg%d" pc)
+		mod-name := c-module-name
+		if (base-type? fp-type-id) {
+		  mod-name = "C"
+		}
 
-					      tc-count = tc-count + 1
-					      tc-bn := sprintf "%s-errors/%s-bad-%s-type.idio" i-module-name sp-name fp-name
-					      tc-fn := sprintf "%s/%s" gen-dn tc-bn
-					      tc-fh := open-output-file tc-fn
-					      tc-test := #S{${sp-name} ${dummy-args}}
-					      hprintf tc-fh #S{
+		tc-count = tc-count + 1
+		tc-bn := sprintf "%s-errors/%s-bad-%s-type.idio" i-module-name sp-name fp-name
+		tc-fn := sprintf "%s/%s" gen-dn tc-bn
+		tc-fh := open-output-file tc-fn
+		tc-test := #S{${sp-name} ${dummy-args}}
+		hprintf tc-fh #S{
 ${tc-test}
 }
-					      close-handle tc-fh
+		close-handle tc-fh
 
-					      hprintf api-c-fh #S{
+		hprintf api-c-fh #S{
    /*
     * Test Case: ${tc-bn}
     *
     * ${tc-test}
     */}
 
-					      if (alloc-required? fp-type-id) {
-						hprintf errors-fh #S{
+		if (alloc-required? fp-type-id) {
+		  hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a C/pointer"}
 
-						hprintf api-c-fh #S{
+		  hprintf api-c-fh #S{
     IDIO_USER_C_TYPE_ASSERT (pointer, ${fp-name});
     ${fp-c-type-name} C_${fp-name} = IDIO_C_TYPE_POINTER_P (${fp-name});
 }
-					      } {
-						hprintf errors-fh #S{
+		} {
+		  hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a ${mod-name}/${fp-i-c-type-name}"}
 
-						hprintf api-c-fh #S{
+		  hprintf api-c-fh #S{
     IDIO_USER_${mod-name}_TYPE_ASSERT (${fp-i-c-type-name}, ${fp-name});
     ${fp-c-type-name} C_${fp-name} = ${fp-c-type-accessor} (${fp-name});
 }
-					      }
-					    }
-					    pc = pc + 1
-				}) fp*
+		}
+	      }
+	      pc = pc + 1
+	    }) fp*
 
-				;; make the API call!
-				if (equal? sp-c-type-name "void") {
-				  hprintf api-c-fh #S{
+	    ;; make the API call!
+	    if (equal? sp-c-type-name "void") {
+	      hprintf api-c-fh #S{
     ${sp-name} \(${comma-sep-c-arg*}\);
 }
-				} {
-				  hprintf api-c-fh #S{
+	    } {
+	      hprintf api-c-fh #S{
     ${sp-c-type-name} ${sp-name}_r = ${sp-name} \(${comma-sep-c-arg*}\);
 
     /* check for errors */
@@ -2721,61 +2711,61 @@ ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is n
     \}
 
 }
-				}
+	    }
 
-				hprintf api-c-fh #S{
+	    hprintf api-c-fh #S{
     /*
      * WARNING: this is probably an incorrect return
      */}
 
-				(cond
-				 ((equal? sp-c-type-name "void") {
-				   hprintf api-c-fh #S{
+	    (cond
+	     ((equal? sp-c-type-name "void") {
+	       hprintf api-c-fh #S{
     return idio_S_unspec;
 }
-				 })
-				 ((pointer-type? sp-type-id) {
-				   hprintf api-c-fh #S{
+	     })
+	     ((pointer-type? sp-type-id) {
+	       hprintf api-c-fh #S{
     return idio_C_pointer_free_me (${sp-name}_r);
 }
-				 })
-				 (else {
-				   hprintf api-c-fh #S{
+	     })
+	     (else {
+	       hprintf api-c-fh #S{
     return ${sp-c-type-constructor} (${sp-name}_r);
 }
-				 }))
+	     }))
 
-				hprintf api-c-fh #S{
+	    hprintf api-c-fh #S{
 \}
 }
-			      }
+	  }
 
-			      hprintf errors-fh "\n"
+	  hprintf errors-fh "\n"
 
-		  }) (array->list subprograms)
+	}) (array->list subprograms)
 
-		  ;; C add_primitives
-		  hprintf api-h-fh #S{
+	;; C add_primitives
+	hprintf api-h-fh #S{
 void idio_${c-module-name}_api_add_primitives ();
 }
 
-	      hprintf api-c-fh #S{
+	hprintf api-c-fh #S{
 void idio_${c-module-name}_api_add_primitives ()
 \{
 }
 
-		  if used-structure-types {
-		    hprintf api-c-fh #S{    IDIO iuvas = idio_module_symbol_value (idio_util_value_as_string,
+	if used-structure-types {
+	  hprintf api-c-fh #S{    IDIO iuvas = idio_module_symbol_value (idio_util_value_as_string,
 					   idio_Idio_module,
 					   idio_S_nil);
 }
 
-		    for-each (function (struct) {
-				struct-name := "struct"
+	  for-each (function (struct) {
+	    struct-name := "struct"
 
-				struct-name := hash-ref struct 'name #f
-				if struct-name {
-				  hprintf api-c-fh #S{
+	    struct-name := hash-ref struct 'name #f
+	    if struct-name {
+	      hprintf api-c-fh #S{
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_as_string);
     idio_hash_put (iuvas,
 		   idio_CSI_${c-module-name}_struct_${struct-name},
@@ -2783,128 +2773,127 @@ void idio_${c-module-name}_api_add_primitives ()
 								   idio_${c-module-name}_module,
 								   idio_S_nil));
 }
-				}
-		    }) (array->list used-structure-types)
-		  }
+	    }
+	  }) (array->list used-structure-types)
+	}
 
-		  for-each (function (sp) {
-			      sp-name := hash-ref sp 'name #f
-			      if (not (equal? sp-name "main")) {
-				hprintf api-c-fh #S{    IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${lib-n}_${sp-name});
+	for-each (function (sp) {
+	  sp-name := hash-ref sp 'name #f
+	  if (not (equal? sp-name "main")) {
+	    hprintf api-c-fh #S{    IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${lib-n}_${sp-name});
 }
-			      }
-		  }) (array->list subprograms)
+	  }
+	}) (array->list subprograms)
 		  
-		  hprintf api-c-fh #S{
+	hprintf api-c-fh #S{
 \}
 }
 
-		}
+      }
 
-		;;; C idio_init
-		hprintf api-h-fh #S{
+      ;;; C idio_init
+      hprintf api-h-fh #S{
 void idio_init_${c-module-name}_api ();
 }
-		hprintf api-c-fh #S{
+      hprintf api-c-fh #S{
 void idio_init_${c-module-name}_api ()
 \{
 }
 
-		if (pair? used-enumeration-types) {
+      if (pair? used-enumeration-types) {
 
-		  for-each (function (enum) {
-			      decl-file := hash-ref enum 'decl_file #f
- 			      if decl-file {
-				hprintf api-c-fh "\n    /* %s */\n" (filename decl-file)
-			      }
-			      enum-name := hash-ref enum 'name #f
-			      if enum-name {
-				hprintf api-c-fh #S{    /* enum ${enum-name} */
+	for-each (function (enum) {
+	  decl-file := hash-ref enum 'decl_file #f
+	  if decl-file {
+	    hprintf api-c-fh "\n    /* %s */\n" (filename decl-file)
+	  }
+	  enum-name := hash-ref enum 'name #f
+	  if enum-name {
+	    hprintf api-c-fh #S{    /* enum ${enum-name} */
 #ifdef ${enum-name}
 }
-			      }
-			      enum-type-id := hash-ref enum 'type #f
-			      enum-type-name := idio-c-type-name enum-type-id
-			      if enum-type-name {
-				for-each (function (etor) {
-					    etor-name := hash-ref etor 'name #f
-					    ;; C name export
-					    hprintf api-c-fh #S{    idio_module_export_symbol_value (idio_symbols_C_intern ("${etor-name}"), idio_C_${enum-type-name} (${etor-name}), idio_${c-module-name}_module);
+	  }
+	  enum-type-id := hash-ref enum 'type #f
+	  enum-type-name := idio-c-type-name enum-type-id
+	  if enum-type-name {
+	    for-each (function (etor) {
+	      etor-name := hash-ref etor 'name #f
+	      ;; C name export
+	      hprintf api-c-fh #S{    idio_module_export_symbol_value (idio_symbols_C_intern ("${etor-name}"), idio_C_${enum-type-name} (${etor-name}), idio_${c-module-name}_module);
 }
-				}) (hash-ref enum 'enumerators #n)
+	    }) (hash-ref enum 'enumerators #n)
 
-				if enum-name {
-				hprintf api-c-fh #S{#endif	/* ${enum-name} */
+	    if enum-name {
+	      hprintf api-c-fh #S{#endif	/* ${enum-name} */
 }
-				}
-			      }
-		  }) used-enumeration-types
+	    }
+	  }
+	}) used-enumeration-types
 
-		} {
-		  printf "no enumeration_types\n"
+      } {
+	printf "no enumeration_types\n"
+      }
+
+      if used-structure-types {
+	hprintf api-c-fh "\n    IDIO fgvi;\n" struct-c-id
+	for-each (function (struct) {
+	  struct-name := hash-ref struct 'name #f
+
+	  if struct-name {
+	    struct-c-id := sprintf "%s_struct_%s" c-module-name struct-name
+	    members := hash-ref struct 'member #f
+	    if members {
+	      decl-file := hash-ref struct 'decl_file #f
+	      if decl-file {
+		hprintf api-c-fh "\n    /* %s */\n" (filename decl-file)
+	      }
+	      for-each (function (member) {
+		member-name := hash-ref member 'name #f
+		if member-name {
+		  if (not (hash-ref used-symbols member-name #t)) {
+		    hash-set! used-symbols member-name #t
+		    hprintf api-c-fh "    IDIO_SYMBOL_DEF (\"%s\", %s);\n" member-name member-name
+		  } {
+		    hprintf api-c-fh "    /* %s already declared */\n" member-name
+		  }
 		}
-
-		if used-structure-types {
-		  hprintf api-c-fh "\n    IDIO fgvi;\n" struct-c-id
-		  for-each (function (struct) {
-			      struct-name := hash-ref struct 'name #f
-
-			      if struct-name {
-				struct-c-id := sprintf "%s_struct_%s" c-module-name struct-name
-				members := hash-ref struct 'member #f
-				if members {
-				  decl-file := hash-ref struct 'decl_file #f
- 				  if decl-file {
-				    hprintf api-c-fh "\n    /* %s */\n" (filename decl-file)
-				  }
-				  for-each (function (member) {
-					      member-name := hash-ref member 'name #f
-					      if member-name {
-						if (not (hash-ref used-symbols member-name #t)) {
-						  hash-set! used-symbols member-name #t
-						  hprintf api-c-fh "    IDIO_SYMBOL_DEF (\"%s\", %s);\n" member-name member-name
-						} {
-						  hprintf api-c-fh "    /* %s already declared */\n" member-name
-						}
-					      }
-				  }) (array->list members)
-				}
-				hprintf api-c-fh #S{
+	      }) (array->list members)
+	    }
+	    hprintf api-c-fh #S{
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_ref);
     IDIO_C_STRUCT_IDENT_DEF ("struct ${struct-name}", ${c-module-name}_struct_${struct-name}, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_set);
 }
-			      }
-		  }) (array->list used-structure-types)
-		} {
-		  printf "no structure_types\n"
-		}
+	  }
+	}) (array->list used-structure-types)
+      } {
+	printf "no structure_types\n"
+      }
 
-
-		hprintf api-c-fh #S{
+      hprintf api-c-fh #S{
 \}
 }
 
-		;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-		;;
-		;; end of file statements
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;;
+      ;; end of file statements
 
-		hprintf api-h-fh #S{
+      hprintf api-h-fh #S{
 #endif /* ${api-h-define} */
 }
 
-		hprintf errors-fh #S{
+      hprintf errors-fh #S{
 
 ;; all done?
 Tests? (${i-module-name}-error0 + ${tc-count})
 }
 
-		close-handle api-c-fh
-		close-handle api-h-fh
-		close-handle api-i-fh
+      close-handle api-c-fh
+      close-handle api-h-fh
+      close-handle api-i-fh
 
-	      }
-	    }
+    }
+  }
 }) (array->list ARGV)
 
 ;Local Variables:

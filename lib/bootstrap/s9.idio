@@ -42,13 +42,13 @@ is `x` a list?
 :return: boolean
 " {
   l? :+ function (x y) {
-	  (cond
-	   ((eq? x y) #f)
-	   ((null? x) #t)
-	   ((pair? x) (or (null? (pt x))
-			  (and (pair? (pt x))
-			       (l? (ptt x) (pt y)))))
-	   (else #f))
+    (cond
+     ((eq? x y) #f)
+     ((null? x) #t)
+     ((pair? x) (or (null? (pt x))
+		    (and (pair? (pt x))
+			 (l? (ptt x) (pt y)))))
+     (else #f))
   }
 
   (or (null? x)
@@ -63,9 +63,9 @@ fold-left := {
 
   function (f b & a*) {
     fold :+ function (a* r) {
-	      if (any-null? a*) r {
-		fold (pt-of a*) (apply f r (ph-of a*))
-	      }
+      if (any-null? a*) r {
+	fold (pt-of a*) (apply f r (ph-of a*))
+      }
     }
 
     if (null? a*) {
@@ -84,10 +84,10 @@ fold-right := {
 
   function (f b & a*) {
     foldr :+ function (a* r) {
-	       if (any-null? a*) r {
-		 foldr (pt-of a*) (apply f (append (ph-of a*)
-						   (list r)))
-	       }
+      if (any-null? a*) r {
+	foldr (pt-of a*) (apply f (append (ph-of a*)
+					  (list r)))
+      }
     }
 
     if (null? a*) {
@@ -109,14 +109,14 @@ append the lists of `a`
 :retype: list
   " {
     append2 :+ function (a b) {
-		 if (null? a) b {
-		   append2 (pt a) (pair (ph a) b)
-		 }
+      if (null? a) b {
+	append2 (pt a) (pair (ph a) b)
+      }
     }
     append-wrapper :+ function (a b) {
-			if (null? b) a {
-			  append2 (reverse a) b
-			}
+      if (null? b) a {
+	append2 (reverse a) b
+      }
     }
 
     fold-left append-wrapper '#n a
@@ -182,10 +182,10 @@ raise `x` to the power of `y`
 " {
   square :+ function (x) (* x x)
   expt2 :+ function (x y) {
-	     (cond
-	      ((zero? y) 1)
-	      ((even? y) (square (expt2 x (quotient y 2))))
-	      (else      (x * (square (expt2 x (quotient y 2))))))
+    (cond
+     ((zero? y) 1)
+     ((even? y) (square (expt2 x (quotient y 2))))
+     (else      (x * (square (expt2 x (quotient y 2))))))
   }
 
   (cond
@@ -208,11 +208,11 @@ return the greatest common divisor of the numbers in `a`
 If no numbers are provided the result is 0.
 " {
     gcd2 :+ function (a b) {
-	      (cond
-	       ((zero? b) a)
-	       ((zero? a) b)
-	       ((a lt b) (gcd2 a (remainder b a)))
-	       (else (gcd2 b (remainder a b))))
+      (cond
+       ((zero? b) a)
+       ((zero? a) b)
+       ((a lt b) (gcd2 a (remainder b a)))
+       (else (gcd2 b (remainder a b))))
     }
 
     fold-left gcd2 0 (map abs a)
@@ -233,10 +233,10 @@ return the least common multiple of the numbers in `a`
 If no numbers are provided the result is 1.
 " {
     lcm2 :+ function (a b) {
-	      cd := (gcd a b)
+      cd := (gcd a b)
 
-	      * cd (* (quotient a cd)
-		      (quotient b cd))
+      * cd (* (quotient a cd)
+	      (quotient b cd))
     }
 
     fold-left lcm2 1 (map abs a)
@@ -259,11 +259,11 @@ return the largest of the numbers in `a` and the numbers in the list `b`
 If any number is inexact the result is inexact.
 " {
     fold-left (function (a b) {
-		 if (or (inexact? a) (inexact? b)) {
-		   exact->inexact (if (a gt b) a b)
-		 } {
-		   if (a gt b) a b
-		 }
+      if (or (inexact? a) (inexact? b)) {
+	exact->inexact (if (a gt b) a b)
+      } {
+	if (a gt b) a b
+      }
     }) a b
   }
 }
@@ -284,11 +284,11 @@ return the smallest of the numbers in `a` and the numbers in the list `b`
 If any number is inexact the result is inexact.
 " {
     fold-left (function (a b) {
-		 if (or (inexact? a) (inexact? b)) {
-		   exact->inexact (if (a lt b) a b)
-		 } {
-		   if (a lt b) a b
-		 }
+      if (or (inexact? a) (inexact? b)) {
+	exact->inexact (if (a lt b) a b)
+      } {
+	if (a lt b) a b
+      }
     }) a b
   }
 }
@@ -360,8 +360,8 @@ return the `integer` closest to `x`
 
   if (and (odd? (inexact->exact rx))
 	  (x+ eq rx)) {
-	    rx - 1
-	  } rx
+    rx - 1
+  } rx
 }
 
 define (truncate x) "
@@ -396,13 +396,13 @@ raise Euler's number, `e`, to the power of `x`
 .. seealso:: :ref:`expt <expt>` and  :ref:`log <log>`
 " {
     e-series :+ function (x y r last) {
-		  if (r eq last) r {
-		    (e-series x
-			      (1 + y)
-			      (r + ((expt x y) /
-					       (fact2 y 1)))
-			      r)
-		  }
+      if (r eq last) r {
+	(e-series x
+		  (1 + y)
+		  (r + ((expt x y) /
+				   (fact2 y 1)))
+		  r)
+      }
     }
 
     if (x ge 2.0) {
@@ -432,17 +432,17 @@ return the natural logarithm of `x`
 .. seealso:: :ref:`exp <exp>`
 " {
   l-series :+ function (x y r last lim) {
-		(cond
-		 ((and lim (zero? lim)) r)
-		 ((r eq last) (2 * r))
-		 (else (l-series x
-				 (2 + y)
-				 (r + ((expt ((x - 1) / (x + 1))
-					     y)
-					/
-					y))
-				 r
-				 (if lim (lim - 1) lim))))
+    (cond
+     ((and lim (zero? lim)) r)
+     ((r eq last) (2 * r))
+     (else (l-series x
+		     (2 + y)
+		     (r + ((expt ((x - 1) / (x + 1))
+				 y)
+			    /
+			    y))
+		     r
+		     (if lim (lim - 1) lim))))
   }
 
   (cond
@@ -595,15 +595,15 @@ return the tangent of `x`
 atan := {
   pi/2 := pi/2
   at-series :+ function (x y r last) {
-		 if (r eq last) r {
-		   (at-series x
-			      (1 + y)
-			      (r + ((((expt 2 (y + y)) * (expt (fact2 y 1) 2)) /
-									       (fact2 (y + y + 1) 1)) *
-				     ((expt x (y + y + 1)) /
-							   (expt (1 + (x * x)) (1 + y)))))
-			      r)
-		 }
+    if (r eq last) r {
+      (at-series x
+		 (1 + y)
+		 (r + ((((expt 2 (y + y)) * (expt (fact2 y 1) 2)) /
+								  (fact2 (y + y + 1) 1)) *
+			((expt x (y + y + 1)) /
+					      (expt (1 + (x * x)) (1 + y)))))
+		 r)
+    }
   }
 
   function (x) "
@@ -663,9 +663,9 @@ return the square root of `square`
 :rtype: number
 " {
   sqrt2 :+ function (x last) {
-	     if (last eq x) x {
-	       sqrt2 ((x + (square / x)) / 2) x
-	     }
+    if (last eq x) x {
+      sqrt2 ((x + (square / x)) / 2) x
+    }
   }
 
   if (negative? square) {
@@ -695,81 +695,81 @@ define number->string {
   function (n & radix) {
     digits :+ list->array (string->list "0123456789abcdefghijklmnopqrstuvwxyz")
     conv :+ function (n rdx res) {
-	      if (zero? n) {
-		if (null? res) '(#\0) res
-	      } {
-		(conv (quotient n rdx)
-		      rdx
-		      (pair (array-ref digits (remainder n rdx))
-			    res))
-	      }
+      if (zero? n) {
+	if (null? res) '(#\0) res
+      } {
+	(conv (quotient n rdx)
+	      rdx
+	      (pair (array-ref digits (remainder n rdx))
+		    res))
+      }
     }
     conv-int :+ function (n rdx) {
-		  if (negative? n) {
-		    list->string (pair #\- (conv (abs n) rdx '#n))
-		  } {
-		    list->string (conv n rdx '#n)
-		  }
+      if (negative? n) {
+	list->string (pair #\- (conv (abs n) rdx '#n))
+      } {
+	list->string (conv n rdx '#n)
+      }
     }
     conv-sci-real :+ function (m e) {
-		       ms := conv-int m 10
-		       es := conv-int e 10
-		       i := if (negative? m) 2 1
-		       k := string-length ms
-		       (append-string (substring ms 0 i)
-				      "."
-				      (if (k eq i) "0" (substring ms i k))
-				      "e"
-				      (if (0 le e) "+" "")
-				      es)
+      ms := conv-int m 10
+      es := conv-int e 10
+      i := if (negative? m) 2 1
+      k := string-length ms
+      (append-string (substring ms 0 i)
+		     "."
+		     (if (k eq i) "0" (substring ms i k))
+		     "e"
+		     (if (0 le e) "+" "")
+		     es)
     }
     zeroes :+ function (n) {
-		loop :+ function (n z) {
-			  if (positive? n) {
-			    loop (- n 1) (pair #\0 z)
-			  } {
-			    list->string z
-			  }
-		}
-		loop n '#n
+      loop :+ function (n z) {
+	if (positive? n) {
+	  loop (- n 1) (pair #\0 z)
+	} {
+	  list->string z
+	}
+      }
+      loop n '#n
     }
     conv-expanded-real :+ function (n offset) {
-			    m := abs n
-			    (append-string (if (negative? n) "-" "")
-					   (cond
-					    ((negative? offset) "0.")
-					    ((zero? offset)     "0")
-					    (else               ""))
-					   (zeroes (- offset))
-					   {
-					     ms := conv-int m 10
-					     k := string-length ms
-					     if (le 0 offset k){
-					       (append-string (substring ms 0 offset)
-							      "."
-							      (substring ms offset k))
-					     } {
-					       ms
-					     }
-					   })
+      m := abs n
+      (append-string (if (negative? n) "-" "")
+		     (cond
+		      ((negative? offset) "0.")
+		      ((zero? offset)     "0")
+		      (else               ""))
+		     (zeroes (- offset))
+		     {
+		       ms := conv-int m 10
+		       k := string-length ms
+		       if (le 0 offset k){
+			 (append-string (substring ms 0 offset)
+					"."
+					(substring ms offset k))
+		       } {
+			 ms
+		       }
+      })
     }
     conv-real :+ function (n) {
-		   m := mantissa n
-		   e := exponent n
-		   d := number-of-digits m 0
+      m := mantissa n
+      e := exponent n
+      d := number-of-digits m 0
 
-		   if (lt -4 (+ e d) 10) {
-		     conv-expanded-real m (e + d)
-		   } {
-		     conv-sci-real m (e + d + -1)
-		   }
+      if (lt -4 (+ e d) 10) {
+	conv-expanded-real m (e + d)
+      } {
+	conv-sci-real m (e + d + -1)
+      }
     }
     get-radix :+ function () {
-		   (cond
-		    ((null? radix) 10)
-		    ((le 2 (ph radix) 36) (ph radix))
-		    (else (error/type ^rt-parameter-value-error 'number->string "invalid radix"
-										(ph radix))))
+      (cond
+       ((null? radix) 10)
+       ((le 2 (ph radix) 36) (ph radix))
+       (else (error/type ^rt-parameter-value-error 'number->string "invalid radix"
+								   (ph radix))))
     }
 
     r := (get-radix)
@@ -788,16 +788,16 @@ string->number := {
   function (str & radix) {
     digits :+ string->list "0123456789abcdefghijklmnopqrstuvwxyz"
     value-of-digit :+ function (x) {
-			v :+ function (x d n) {
-			       (cond
-				((null? d) 36)
-				((unicode=? (ph d) x) n)
-				(else (v x (pt d) (n + 1))))
-			}
-			v (unicode/->Lowercase x) digits 0
+      v :+ function (x d n) {
+	(cond
+	 ((null? d) 36)
+	 ((unicode=? (ph d) x) n)
+	 (else (v x (pt d) (n + 1))))
+      }
+      v (unicode/->Lowercase x) digits 0
     }
     find-exponent-mark :+ function (c) {
-			    memv c '(#\d #\D #\e #\E #\f #\F #\l #\L #\s #\S)
+      memv c '(#\d #\D #\e #\E #\f #\F #\l #\L #\s #\S)
     }
     result :+ pair
     value :+ ph
@@ -806,113 +806,113 @@ string->number := {
     failed? :+ function (res) (eq? #f (pt res))
     ok? :+ function (res) (not (eq? #f (pt res)))
     conv3 :+ function (lst val rdx) {
-	       if (null? lst) {
-		 result val '#n
-	       } {
-		 dval := value-of-digit (ph lst)
-		 if (dval lt rdx) {
-		   (conv3 (pt lst)
-			  ((value-of-digit (ph lst)) + (val * rdx))
-			  rdx)
-		 } {
-		   result val lst
-		 }
-	       }
+      if (null? lst) {
+	result val '#n
+      } {
+	dval := value-of-digit (ph lst)
+	if (dval lt rdx) {
+	  (conv3 (pt lst)
+		 ((value-of-digit (ph lst)) + (val * rdx))
+		 rdx)
+	} {
+	  result val lst
+	}
+      }
     }
     conv :+ function (lst rdx) {
-	      if (null? lst) FAIL {
-		conv3 lst 0 rdx
-	      }
+      if (null? lst) FAIL {
+	conv3 lst 0 rdx
+      }
     }
     conv-int :+ function (lst rdx) {
-		  (cond
-		   ((null? lst) FAIL)
-		   ((unicode=? (ph lst) #\+) (conv (pt lst) rdx))
-		   ((unicode=? (ph lst) #\-) {
-		     r := conv (pt lst) rdx
-		     if (ok? r) {
-		       result (- (value r)) (rest r)
-		     } FAIL
-		   })
-		   (else (conv lst rdx)))
+      (cond
+       ((null? lst) FAIL)
+       ((unicode=? (ph lst) #\+) (conv (pt lst) rdx))
+       ((unicode=? (ph lst) #\-) {
+	 r := conv (pt lst) rdx
+	 if (ok? r) {
+	   result (- (value r)) (rest r)
+	 } FAIL
+       })
+       (else (conv lst rdx)))
     }
     make-frag :+ function (x) {
-		   d := number-of-digits x -1
-		   (x / (expt 10.0 d)) - 1.0
+      d := number-of-digits x -1
+      (x / (expt 10.0 d)) - 1.0
     }
     make-real :+ function (int frag expn) {
-		   v := (0.0 + (abs int) + (make-frag frag)) * (expt 10.0 expn)
-		   if (negative? int) (- v) v
+      v := (0.0 + (abs int) + (make-frag frag)) * (expt 10.0 expn)
+      if (negative? int) (- v) v
     }
     conv-exponent :+ function (int frag lst) {
-		       if (null? lst) FAIL {
-			 exp-part := conv-int lst 10
-			 if (failed? exp-part) FAIL {
-			   result (make-real int frag (value exp-part)) (rest exp-part)
-			 }
-		       }
+      if (null? lst) FAIL {
+	exp-part := conv-int lst 10
+	if (failed? exp-part) FAIL {
+	  result (make-real int frag (value exp-part)) (rest exp-part)
+	}
+      }
     }
     conv-decimals :+ function (int lst) {
-		       (cond
-			((null? lst) (result (0.0 + int) '#n))
-			((find-exponent-mark (ph lst)) (conv-exponent int 10 (pt lst)))
-			(else {
-			  frag-part := conv3 lst 1 10
-			  if (null? (rest frag-part)) {
-			    result (make-real int (value frag-part) 0) '#n
-			  } {
-			    conv-exponent int (value frag-part) (pt (rest frag-part))
-			  }
-			}))
+      (cond
+       ((null? lst) (result (0.0 + int) '#n))
+       ((find-exponent-mark (ph lst)) (conv-exponent int 10 (pt lst)))
+       (else {
+	 frag-part := conv3 lst 1 10
+	 if (null? (rest frag-part)) {
+	   result (make-real int (value frag-part) 0) '#n
+	 } {
+	   conv-exponent int (value frag-part) (pt (rest frag-part))
+	 }
+       }))
     }
     radix-ten? :+ function (rdx) {
-		    if (not (10 eq rdx)) {
-		      if (null? radix) #f (error/type ^rt-parameter-value-error 'string->number "real number needs a radix of 10")
-		    } #t
+      if (not (10 eq rdx)) {
+	if (null? radix) #f (error/type ^rt-parameter-value-error 'string->number "real number needs a radix of 10")
+      } #t
     }
     mantissa-digits? :+ function (x) {
-			  (cond
-			   ((null? x)                    #f)
-			   ((unicode/Number? (ph x))     #t)
-			   ((find-exponent-mark (ph x))  #f)
-			   (else (mantissa-digits? (pt x))))
+      (cond
+       ((null? x)                    #f)
+       ((unicode/Number? (ph x))     #t)
+       ((find-exponent-mark (ph x))  #f)
+       (else (mantissa-digits? (pt x))))
     }
     conv-real :+ function (lst rdx) {
-		   int-part := conv-int lst rdx
-		   (cond
-		    ((failed? int-part) FAIL)
-		    ((and (zero? (value int-part))
-			  (not (mantissa-digits? lst))) FAIL)
-		    ((null? (rest int-part)) int-part)
-		    ((find-exponent-mark (ph (rest int-part))) {
-		      if (radix-ten? rdx) {
-			(conv-exponent (value int-part)
-				       10
-				       (pt (rest int-part)))
-		      } FAIL
-		    })
-		    ((unicode=? #\. (ph (rest int-part))) {
-		      if (radix-ten? rdx) {
-			conv-decimals (value int-part) (pt (rest int-part))
-		      } FAIL
-		    })
-		    (else int-part))
+      int-part := conv-int lst rdx
+      (cond
+       ((failed? int-part) FAIL)
+       ((and (zero? (value int-part))
+	     (not (mantissa-digits? lst))) FAIL)
+       ((null? (rest int-part)) int-part)
+       ((find-exponent-mark (ph (rest int-part))) {
+	 if (radix-ten? rdx) {
+	   (conv-exponent (value int-part)
+			  10
+			  (pt (rest int-part)))
+	 } FAIL
+       })
+       ((unicode=? #\. (ph (rest int-part))) {
+	 if (radix-ten? rdx) {
+	   conv-decimals (value int-part) (pt (rest int-part))
+	 } FAIL
+       })
+       (else int-part))
     }
     replace-inexact-digits! :+ function (a) {
-				 (cond
-				  ((null? a) #f)
-				  ((unicode=? #\# (ph a)) {
-				    set-ph! a #\5
-				    set! inexact #t
-				    replace-inexact-digits! (pt a)
-				  })
-				  (else (replace-inexact-digits! (pt a))))
+      (cond
+       ((null? a) #f)
+       ((unicode=? #\# (ph a)) {
+	 set-ph! a #\5
+	 set! inexact #t
+	 replace-inexact-digits! (pt a)
+       })
+       (else (replace-inexact-digits! (pt a))))
     }
     get-radix :+ function () {
-		   (cond
-		    ((null? radix) 10)
-		    ((le 2 (ph radix) 36) (ph radix))
-		    (else (error/type ^rt-parameter-value-error 'string->number "invalid radix" (ph radix))))
+      (cond
+       ((null? radix) 10)
+       ((le 2 (ph radix) 36) (ph radix))
+       (else (error/type ^rt-parameter-value-error 'string->number "invalid radix" (ph radix))))
     }
 
     set! inexact #f
@@ -921,22 +921,22 @@ string->number := {
 
     if (and ((string-length str) gt 1)
 	    (unicode=? #\# (ph lst))) {
-	      mod := pht lst
-	      set! lst (ptt lst)
-	      (cond
-	       ((unicode=? mod #\e) (void))
-	       ((unicode=? mod #\d) (void))
-	       ((unicode=? mod #\i) (set! inexact #t))
-	       ((unicode=? mod #\b) (set! radix 2))
-	       ((unicode=? mod #\o) (set! radix 8))
-	       ((unicode=? mod #\x) (set! radix 16))
-	       (else             (set! lst '#n)))
-	    }
+      mod := pht lst
+      set! lst (ptt lst)
+      (cond
+       ((unicode=? mod #\e) (void))
+       ((unicode=? mod #\d) (void))
+       ((unicode=? mod #\i) (set! inexact #t))
+       ((unicode=? mod #\b) (set! radix 2))
+       ((unicode=? mod #\o) (set! radix 8))
+       ((unicode=? mod #\x) (set! radix 16))
+       (else             (set! lst '#n)))
+    }
     if (or (null? lst)
 	   (memv (ph lst) '(#\+ #\- #\.))
 	   (unicode/Number? (ph lst))) {
-	     replace-inexact-digits! lst
-	   }
+      replace-inexact-digits! lst
+    }
 
     r := (cond
 	  ((null? lst) FAIL)
@@ -1070,13 +1070,13 @@ define-template %ext-let {
 
   function (a1 a2 & a3) {
     split :+ function (bind* vars args) {
-	       if (null? bind*) {
-		 pair vars args
-	       } {
-		 (split (pt bind*)
-			(pair (phh bind*) vars)
-			(pair (phth bind*) args))
-	       }
+      if (null? bind*) {
+	pair vars args
+      } {
+	(split (pt bind*)
+	       (pair (phh bind*) vars)
+	       (pair (phth bind*) args))
+      }
     }
 
     if (symbol? a1) {
@@ -1106,21 +1106,21 @@ define-template %ext-let {
 
 define-template (case key & clauses) {
   gen-clauses :+ function (k c*) {
-		   (cond
-		    ((null? c*) '#n)
-		    ((or (not (pair? c*))
-			 (not (pair? (ph c*)))
-			 (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'case "invalid syntax" c*))
-		    ((null? (pt c*)) {
-		      if (eq? 'else (phh c*)) {
-			#T{ ((else $@(pth c*))) }
-		      } {
-			#T{ (((memv $k '$(phh c*)) $@(pth c*))) }
-		      }
-		    })
-		    (else {
-		      #T{ (((memv $k '$(phh c*)) $@(pth c*)) $@(gen-clauses k (pt c*))) }
-		    }))
+    (cond
+     ((null? c*) '#n)
+     ((or (not (pair? c*))
+	  (not (pair? (ph c*)))
+	  (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'case "invalid syntax" c*))
+     ((null? (pt c*)) {
+       if (eq? 'else (phh c*)) {
+	 #T{ ((else $@(pth c*))) }
+       } {
+	 #T{ (((memv $k '$(phh c*)) $@(pth c*))) }
+       }
+     })
+     (else {
+       #T{ (((memv $k '$(phh c*)) $@(pth c*)) $@(gen-clauses k (pt c*))) }
+     }))
 
   }
 
@@ -1135,44 +1135,44 @@ define-template (case key & clauses) {
 
 define-template (do var-clauses test & body) {
   split :+ function (clauses vars inits steps) {
-	     (cond
-	      ((null? clauses) (list vars inits steps))
-	      ((or (not (pair? clauses))
-		   (not (pair? (ph clauses)))
-		   (not (symbol? (phh clauses)))
-		   (not (pair? (pth clauses)))) (error/type ^rt-syntax-error 'do "invalid syntax" clauses))
-	      (else (split (pt clauses)
-			   (pair (phh clauses) vars)
-			   (pair (phth clauses) inits)
-			   (if (null? (ptth clauses))
-			       (pair (phh clauses) steps)
-			       (pair (phtth clauses) steps)))))
+    (cond
+     ((null? clauses) (list vars inits steps))
+     ((or (not (pair? clauses))
+	  (not (pair? (ph clauses)))
+	  (not (symbol? (phh clauses)))
+	  (not (pair? (pth clauses)))) (error/type ^rt-syntax-error 'do "invalid syntax" clauses))
+     (else (split (pt clauses)
+		  (pair (phh clauses) vars)
+		  (pair (phth clauses) inits)
+		  (if (null? (ptth clauses))
+		   (pair (phh clauses) steps)
+		   (pair (phtth clauses) steps)))))
   }
 
   if (or (not (pair? test))
 	 (not (list? (pt test)))) {
-	   error/type ^rt-syntax-error 'do "invalid syntax" test
-	 } {
-	   loop := (gensym)
-	   var+init+step := split var-clauses '#n '#n '#n
-	   v := ph var+init+step
-	   i := pht var+init+step
-	   s := phtt var+init+step
+    error/type ^rt-syntax-error 'do "invalid syntax" test
+  } {
+    loop := (gensym)
+    var+init+step := split var-clauses '#n '#n '#n
+    v := ph var+init+step
+    i := pht var+init+step
+    s := phtt var+init+step
 
-	   #T{
-	     {
-	       $loop :+ function $v {
-			  if $(ph test) {
-			    $@(pt test)
-			  } {
-			    $@body
-			    ($loop $@s)
-			  }
-	       }
-	       $loop $@i
-	     }
-	   }
-	 }
+    #T{
+      {
+	$loop :+ function $v {
+	  if $(ph test) {
+	    $@(pt test)
+	  } {
+	    $@body
+	    ($loop $@s)
+	  }
+	}
+	$loop $@i
+      }
+    }
+  }
 }
 
 define-template (delay expr) {

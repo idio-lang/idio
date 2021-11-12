@@ -190,41 +190,41 @@ define-template (declare-base-char-sets pn & cs) {
   #T{
     $@(map
        (function (csn) {
-	  cs-str := append-string ps-str "-char-set:" (symbol->string csn)
-	  cs-sym := string->symbol cs-str
+	 cs-str := append-string ps-str "-char-set:" (symbol->string csn)
+	 cs-sym := string->symbol cs-str
 
-	  setter-str := append-string "set-" cs-str
-	  setter-sym := string->symbol setter-str
+	 setter-str := append-string "set-" cs-str
+	 setter-sym := string->symbol setter-str
 
-	  range-setter-str := append-string "range-" setter-str
-	  range-setter-sym := string->symbol range-setter-str
+	 range-setter-str := append-string "range-" setter-str
+	 range-setter-sym := string->symbol range-setter-str
 
-	  #T{
-	    
-	    $cs-sym := make-sparse-char-set $cs-size
-	    do ((i 0 (i + 1))) \
-	       ((eq i $nplanes)
-		#n) {
-		  array-ref $cs-sym.planes i
-		}
+	 #T{
+	   
+	   $cs-sym := make-sparse-char-set $cs-size
+	   (do ((i 0 (i + 1)))
+	    ((eq i $nplanes)
+	     #n) {
+	     array-ref $cs-sym.planes i
+	   })
 
-	    define ($setter-sym cp) {
-	      if (lt cp $cs-size) {
-		if (integer? cp) {
-		  cp = integer->unicode cp
-		}
-		char-set-set! $cs-sym cp
-	      }
-	    }
-	    
-	    define ($range-setter-sym cp last) {
-	      if (gt cp last) #n {
-		$setter-sym cp
-		$range-setter-sym (cp + 1) last
-	      }
-	    }
-	    
-	  }
+	   define ($setter-sym cp) {
+	     if (lt cp $cs-size) {
+	       if (integer? cp) {
+		 cp = integer->unicode cp
+	       }
+	       char-set-set! $cs-sym cp
+	     }
+	   }
+	   
+	   define ($range-setter-sym cp last) {
+	     if (gt cp last) #n {
+	       $setter-sym cp
+	       $range-setter-sym (cp + 1) last
+	     }
+	   }
+	   
+	 }
        })
        cs)
 
@@ -236,37 +236,39 @@ define-template (declare-base-char-sets pn & cs) {
     
     char-set-clear! $nonl-sym #\{newline}
   
-    $sucm-sym := make-hash #n #n 64
+  $sucm-sym := make-hash #n #n 64
 
-    define ($sucm-setter-sym cp cased-cp) {
-      cond ((integer? cp) {
-	if (lt cp $cs-size) {
-	  hash-set! $sucm-sym cp cased-cp
-	}
-      }) \
-	   ((unicode? cp) {
-	     if (lt (unicode->integer cp) $cs-size) {
-	       hash-set! $sucm-sym cp cased-cp
-	     }
-	   })
-    }
-  
-    $slcm-sym := make-hash #n #n 64
-
-    define ($slcm-setter-sym cp cased-cp) {
-      cond ((integer? cp) {
-	if (lt cp $cs-size) {
-	  hash-set! $slcm-sym cp cased-cp
-	}
-      }) \
-	   ((unicode? cp) {
-	     if (lt (unicode->integer cp) $cs-size) {
-	       hash-set! $slcm-sym cp cased-cp
-	     }
-	   })
-    }
-  
+  define ($sucm-setter-sym cp cased-cp) {
+    (cond
+     ((integer? cp) {
+       if (lt cp $cs-size) {
+	 hash-set! $sucm-sym cp cased-cp
+       }
+     })
+     ((unicode? cp) {
+       if (lt (unicode->integer cp) $cs-size) {
+	 hash-set! $sucm-sym cp cased-cp
+       }
+     }))
   }
+  
+  $slcm-sym := make-hash #n #n 64
+
+  define ($slcm-setter-sym cp cased-cp) {
+    (cond
+     ((integer? cp) {
+       if (lt cp $cs-size) {
+	 hash-set! $slcm-sym cp cased-cp
+       }
+     })
+     ((unicode? cp) {
+       if (lt (unicode->integer cp) $cs-size) {
+	 hash-set! $slcm-sym cp cased-cp
+       }
+     }))
+  }
+  
+}
 }
 
 declare-base-char-sets ASCII lower-case upper-case title-case letter digit graphic whitespace iso-control punctuation symbol hex-digit blank ascii control regional-indicator extend-or-spacing-mark hangul-l hangul-v hangul-t hangul-lv hangul-lvt
@@ -277,83 +279,84 @@ eprintf "Parsing %s\n" UD
 
 define (ud-parser) {
   loop :+ function () {
-	    if (eof? (current-input-handle)) #n {
-	      line := (read-line)
-	      ;display* line
-	      parts := split-string-exactly line ";"
-	      if (gt (string-length (ph parts)) 0) {
-		cp-i := read-number (ph parts) 16
-		cp-u := integer->unicode cp-i
+    if (eof? (current-input-handle)) #n {
+      line := (read-line)
+      ;display* line
+      parts := split-string-exactly line ";"
+      if (gt (string-length (ph parts)) 0) {
+	cp-i := read-number (ph parts) 16
+	cp-u := integer->unicode cp-i
 
-		cat := phtt parts
+	cat := phtt parts
 
-		cond ((string=? cat "Lt") {
-		  set-ASCII-char-set:title-case cp-i
-		  set-BMP0-char-set:title-case cp-i
-		  set-full-char-set:title-case cp-i
-		}) \
-		     ((string=? cat "Nd") {
-		       set-ASCII-char-set:digit cp-i
-		       set-BMP0-char-set:digit cp-i
-		       set-full-char-set:digit cp-i
-		     }) \
-		     ((string=? cat "Zs") {
-		       set-ASCII-char-set:blank cp-i
-		       set-BMP0-char-set:blank cp-i
-		       set-full-char-set:blank cp-i
-		     })
+	(cond
+	 ((string=? cat "Lt") {
+	   set-ASCII-char-set:title-case cp-i
+	   set-BMP0-char-set:title-case cp-i
+	   set-full-char-set:title-case cp-i
+	 })
+	 ((string=? cat "Nd") {
+	   set-ASCII-char-set:digit cp-i
+	   set-BMP0-char-set:digit cp-i
+	   set-full-char-set:digit cp-i
+	 })
+	 ((string=? cat "Zs") {
+	   set-ASCII-char-set:blank cp-i
+	   set-BMP0-char-set:blank cp-i
+	   set-full-char-set:blank cp-i
+	 }))
 
-		cat1 := string-ref cat 0
+	cat1 := string-ref cat 0
 
-		case cat1 \
-		     ((#\L #\N #\M #\S #\P) {
-		       set-ASCII-char-set:graphic cp-i
-		       set-BMP0-char-set:graphic cp-i
-		       set-full-char-set:graphic cp-i
-		     })
+	(case cat1
+	 ((#\L #\N #\M #\S #\P) {
+	   set-ASCII-char-set:graphic cp-i
+	   set-BMP0-char-set:graphic cp-i
+	   set-full-char-set:graphic cp-i
+	 }))
 
-		case cat1 \
-		     ((#\P) {
-		       set-ASCII-char-set:punctuation cp-i
-		       set-BMP0-char-set:punctuation cp-i
-		       set-full-char-set:punctuation cp-i
-		     }) \
-		     ((#\S) {
-		       set-ASCII-char-set:symbol cp-i
-		       set-BMP0-char-set:symbol cp-i
-		       set-full-char-set:symbol cp-i
-		     })
+	(case cat1
+	 ((#\P) {
+	   set-ASCII-char-set:punctuation cp-i
+	   set-BMP0-char-set:punctuation cp-i
+	   set-full-char-set:punctuation cp-i
+	 })
+	 ((#\S) {
+	   set-ASCII-char-set:symbol cp-i
+	   set-BMP0-char-set:symbol cp-i
+	   set-full-char-set:symbol cp-i
+	 }))
 
-		; upper & lower case mappings
-		if (ge (length parts) 13) {
-		  uc-cp-str := nth parts 13
-		  if (gt (string-length uc-cp-str) 0) {
-		    uc-cp-i := read-number uc-cp-str 16
-		    uc-cp-u := integer->unicode uc-cp-i
-		    set-ASCII-char-set:simple-upper-case-map cp-i uc-cp-i
-		    set-BMP0-char-set:simple-upper-case-map cp-i uc-cp-i
-		    set-full-char-set:simple-upper-case-map cp-i uc-cp-i
-		    set-ASCII-char-set:simple-upper-case-map cp-u uc-cp-u
-		    set-BMP0-char-set:simple-upper-case-map cp-u uc-cp-u
-		    set-full-char-set:simple-upper-case-map cp-u uc-cp-u
-		  }
-		}
-		if (ge (length parts) 14) {
-		  lc-cp-str := nth parts 14
-		  if (gt (string-length lc-cp-str) 0) {
-		    lc-cp-i := read-number lc-cp-str 16
-		    lc-cp-u := integer->unicode lc-cp-i
-		    set-ASCII-char-set:simple-lower-case-map cp-i lc-cp-i
-		    set-BMP0-char-set:simple-lower-case-map cp-i lc-cp-i
-		    set-full-char-set:simple-lower-case-map cp-i lc-cp-i
-		    set-ASCII-char-set:simple-lower-case-map cp-u lc-cp-u
-		    set-BMP0-char-set:simple-lower-case-map cp-u lc-cp-u
-		    set-full-char-set:simple-lower-case-map cp-u lc-cp-u
-		  }
-		}
-	      }
-	      (loop)
-	    }
+	; upper & lower case mappings
+	if (ge (length parts) 13) {
+	  uc-cp-str := nth parts 13
+	  if (gt (string-length uc-cp-str) 0) {
+	    uc-cp-i := read-number uc-cp-str 16
+	    uc-cp-u := integer->unicode uc-cp-i
+	    set-ASCII-char-set:simple-upper-case-map cp-i uc-cp-i
+	    set-BMP0-char-set:simple-upper-case-map cp-i uc-cp-i
+	    set-full-char-set:simple-upper-case-map cp-i uc-cp-i
+	    set-ASCII-char-set:simple-upper-case-map cp-u uc-cp-u
+	    set-BMP0-char-set:simple-upper-case-map cp-u uc-cp-u
+	    set-full-char-set:simple-upper-case-map cp-u uc-cp-u
+	  }
+	}
+	if (ge (length parts) 14) {
+	  lc-cp-str := nth parts 14
+	  if (gt (string-length lc-cp-str) 0) {
+	    lc-cp-i := read-number lc-cp-str 16
+	    lc-cp-u := integer->unicode lc-cp-i
+	    set-ASCII-char-set:simple-lower-case-map cp-i lc-cp-i
+	    set-BMP0-char-set:simple-lower-case-map cp-i lc-cp-i
+	    set-full-char-set:simple-lower-case-map cp-i lc-cp-i
+	    set-ASCII-char-set:simple-lower-case-map cp-u lc-cp-u
+	    set-BMP0-char-set:simple-lower-case-map cp-u lc-cp-u
+	    set-full-char-set:simple-lower-case-map cp-u lc-cp-u
+	  }
+	}
+      }
+      (loop)
+    }
   }
   (loop)
 }
@@ -362,39 +365,42 @@ with-input-from-file UD ud-parser
 
 define (pl-parser) {
   loop :+ function () {
-	    if (eof? (current-input-handle)) #n {
-	      line := (read-line)
-	      if (gt (string-length line) 0) {
-		case (string-ref line 0) ((#\#) #n) \
-					 (else {
-					   parts := split-string line "#"
-					   if (gt (string-length (ph parts)) 0) {
-					     dcp_parts := split-string (ph parts) ";"
-					     range := map (function (cp-str) {
-							     read-number cp-str 16
-					     }) (split-string (ph dcp_parts) "..")
-					     case (length range) ((1) (range = (list (ph range) (ph range)))) \
-								 ((2) #n) \
-								 (else {
-								   eprintf "%s: %s elements in code point range: %s\n" (handle-location (current-input-handle)) (length range) line
-								   error/type ^runtime-error 'pl-parser "unexpected number of elements" line
-								 })
+    if (eof? (current-input-handle)) #n {
+      line := (read-line)
+      if (gt (string-length line) 0) {
+	(case (string-ref line 0)
+	 ((#\#) #n)
+	 (else {
+	   parts := split-string line "#"
+	   if (gt (string-length (ph parts)) 0) {
+	     dcp_parts := split-string (ph parts) ";"
+	     range := map (function (cp-str) {
+	       read-number cp-str 16
+	     }) (split-string (ph dcp_parts) "..")
+	     (case (length range)
+	      ((1) (range = (list (ph range) (ph range))))
+	      ((2) #n)
+	      (else {
+		eprintf "%s: %s elements in code point range: %s\n" (handle-location (current-input-handle)) (length range) line
+		error/type ^runtime-error 'pl-parser "unexpected number of elements" line
+	      }))
 
-					     cond ((string=? (pht dcp_parts) " White_Space ") {
-					       range-set-ASCII-char-set:whitespace (ph range) (pht range)
-					       range-set-BMP0-char-set:whitespace (ph range) (pht range)
-					       range-set-full-char-set:whitespace (ph range) (pht range)
-					     }) \
-						  ((string=? (pht dcp_parts) " Regional_Indicator ") {
-						    range-set-ASCII-char-set:regional-indicator (ph range) (pht range)
-						    range-set-BMP0-char-set:regional-indicator (ph range) (pht range)
-						    range-set-full-char-set:regional-indicator (ph range) (pht range)
-						  })
-					   }
-					 })
-	      }
-	      (loop)
-	    }
+	     (cond
+	      ((string=? (pht dcp_parts) " White_Space ") {
+		range-set-ASCII-char-set:whitespace (ph range) (pht range)
+		range-set-BMP0-char-set:whitespace (ph range) (pht range)
+		range-set-full-char-set:whitespace (ph range) (pht range)
+	      })
+	      ((string=? (pht dcp_parts) " Regional_Indicator ") {
+		range-set-ASCII-char-set:regional-indicator (ph range) (pht range)
+		range-set-BMP0-char-set:regional-indicator (ph range) (pht range)
+		range-set-full-char-set:regional-indicator (ph range) (pht range)
+	      }))
+	   }
+	 }))
+      }
+      (loop)
+    }
   }
   (loop)
 }
@@ -405,44 +411,47 @@ eprintf "Parsing %s\n" DCP
 
 define (dcp-parser) {
   loop :+ function () {
-	    if (eof? (current-input-handle)) #n {
-	      line := (read-line)
-	      if (gt (string-length line) 0) {
-		case (string-ref line 0) ((#\#) #n) \
-					 (else {
-					   parts := split-string line "#"
-					   if (gt (string-length (ph parts)) 0) {
-					     dcp_parts := split-string (ph parts) ";"
-					     range := map (function (cp-str) {
-							     read-number cp-str 16
-					     }) (split-string (ph dcp_parts) "..")
-					     case (length range) ((1) (range = (list (ph range) (ph range)))) \
-								 ((2) #n) \
-								 (else {
-								   eprintf "%s: %s elements in code point range: %s\n" (handle-location (current-input-handle)) (length range) line
-								   error/type ^runtime-error 'dcp-parser "unexpected number of elements" line
-								 })
+    if (eof? (current-input-handle)) #n {
+      line := (read-line)
+      if (gt (string-length line) 0) {
+	(case (string-ref line 0)
+	 ((#\#) #n)
+	 (else {
+	   parts := split-string line "#"
+	   if (gt (string-length (ph parts)) 0) {
+	     dcp_parts := split-string (ph parts) ";"
+	     range := map (function (cp-str) {
+	       read-number cp-str 16
+	     }) (split-string (ph dcp_parts) "..")
+	     (case (length range)
+	      ((1) (range = (list (ph range) (ph range))))
+	      ((2) #n)
+	      (else {
+		eprintf "%s: %s elements in code point range: %s\n" (handle-location (current-input-handle)) (length range) line
+		error/type ^runtime-error 'dcp-parser "unexpected number of elements" line
+	      }))
 
-					     cond ((string=? (pht dcp_parts) " Lowercase ") {
-					       range-set-ASCII-char-set:lower-case (ph range) (pht range)
-					       range-set-BMP0-char-set:lower-case (ph range) (pht range)
-					       range-set-full-char-set:lower-case (ph range) (pht range)
-					     }) \
-						  ((string=? (pht dcp_parts) " Uppercase ") {
-						    range-set-ASCII-char-set:upper-case (ph range) (pht range)
-						    range-set-BMP0-char-set:upper-case (ph range) (pht range)
-						    range-set-full-char-set:upper-case (ph range) (pht range)
-						  }) \
-						  ((string=? (pht dcp_parts) " Alphabetic ") {
-						    range-set-ASCII-char-set:letter (ph range) (pht range)
-						    range-set-BMP0-char-set:letter (ph range) (pht range)
-						    range-set-full-char-set:letter (ph range) (pht range)
-						  })
-					   }
-					 })
-	      }
-	      (loop)
-	    }
+	     (cond
+	      ((string=? (pht dcp_parts) " Lowercase ") {
+		range-set-ASCII-char-set:lower-case (ph range) (pht range)
+		range-set-BMP0-char-set:lower-case (ph range) (pht range)
+		range-set-full-char-set:lower-case (ph range) (pht range)
+	      })
+	      ((string=? (pht dcp_parts) " Uppercase ") {
+		range-set-ASCII-char-set:upper-case (ph range) (pht range)
+		range-set-BMP0-char-set:upper-case (ph range) (pht range)
+		range-set-full-char-set:upper-case (ph range) (pht range)
+	      })
+	      ((string=? (pht dcp_parts) " Alphabetic ") {
+		range-set-ASCII-char-set:letter (ph range) (pht range)
+		range-set-BMP0-char-set:letter (ph range) (pht range)
+		range-set-full-char-set:letter (ph range) (pht range)
+	      }))
+	   }
+	 }))
+      }
+      (loop)
+    }
   }
   (loop)
 }
@@ -453,70 +462,73 @@ eprintf "Parsing %s\n" GBP
 
 define (gbp-parser) {
   loop :+ function () {
-	    if (eof? (current-input-handle)) #n {
-	      line := (read-line)
-	      if (gt (string-length line) 0) {
-		case (string-ref line 0) ((#\#) #n) \
-					 (else {
-					   parts := split-string line "#"
-					   if (gt (string-length (ph parts)) 0) {
-					     dcp_parts := split-string (ph parts) ";"
-					     range := map (function (cp-str) {
-							     read-number cp-str 16
-					     }) (split-string (ph dcp_parts) "..")
-					     case (length range) ((1) (range = (list (ph range) (ph range)))) \
-								 ((2) #n) \
-								 (else {
-								   eprintf "%s: %s elements in code point range: %s\n" (handle-location (current-input-handle)) (length range) line
-								   error/type ^runtime-error 'gbp-parser "unexpected number of elements" line
-								 })
+    if (eof? (current-input-handle)) #n {
+      line := (read-line)
+      if (gt (string-length line) 0) {
+	(case (string-ref line 0)
+	 ((#\#) #n)
+	 (else {
+	   parts := split-string line "#"
+	   if (gt (string-length (ph parts)) 0) {
+	     dcp_parts := split-string (ph parts) ";"
+	     range := map (function (cp-str) {
+	       read-number cp-str 16
+	     }) (split-string (ph dcp_parts) "..")
+	     (case (length range)
+	      ((1) (range = (list (ph range) (ph range))))
+	      ((2) #n)
+	      (else {
+		eprintf "%s: %s elements in code point range: %s\n" (handle-location (current-input-handle)) (length range) line
+		error/type ^runtime-error 'gbp-parser "unexpected number of elements" line
+	      }))
 
 
-					     cond ((string=? (pht dcp_parts) " Control ") {
-					       range-set-ASCII-char-set:control (ph range) (pht range)
-					       range-set-BMP0-char-set:control (ph range) (pht range)
-					       range-set-full-char-set:control (ph range) (pht range)
-					     }) \
-						  ((string=? (pht dcp_parts) " Extend ") {
-						    range-set-ASCII-char-set:extend-or-spacing-mark (ph range) (pht range)
-						    range-set-BMP0-char-set:extend-or-spacing-mark (ph range) (pht range)
-						    range-set-full-char-set:extend-or-spacing-mark (ph range) (pht range)
-						  }) \
-						  ((string=? (pht dcp_parts) " SpacingMark ") {
-						    range-set-ASCII-char-set:extend-or-spacing-mark (ph range) (pht range)
-						    range-set-BMP0-char-set:extend-or-spacing-mark (ph range) (pht range)
-						    range-set-full-char-set:extend-or-spacing-mark (ph range) (pht range)
-						  }) \
-						  ((string=? (pht dcp_parts) " L ") {
-						    range-set-ASCII-char-set:hangul-l (ph range) (pht range)
-						    range-set-BMP0-char-set:hangul-l (ph range) (pht range)
-						    range-set-full-char-set:hangul-l (ph range) (pht range)
-						  }) \
-						  ((string=? (pht dcp_parts) " V ") {
-						    range-set-ASCII-char-set:hangul-v (ph range) (pht range)
-						    range-set-BMP0-char-set:hangul-v (ph range) (pht range)
-						    range-set-full-char-set:hangul-v (ph range) (pht range)
-						  }) \
-						  ((string=? (pht dcp_parts) " T ") {
-						    range-set-ASCII-char-set:hangul-t (ph range) (pht range)
-						    range-set-BMP0-char-set:hangul-t (ph range) (pht range)
-						    range-set-full-char-set:hangul-t (ph range) (pht range)
-						  }) \
-						  ((string=? (pht dcp_parts) " LV ") {
-						    range-set-ASCII-char-set:hangul-lv (ph range) (pht range)
-						    range-set-BMP0-char-set:hangul-lv (ph range) (pht range)
-						    range-set-full-char-set:hangul-lv (ph range) (pht range)
-						  }) \
-						  ((string=? (pht dcp_parts) " LVT ") {
-						    range-set-ASCII-char-set:hangul-lvt (ph range) (pht range)
-						    range-set-BMP0-char-set:hangul-lvt (ph range) (pht range)
-						    range-set-full-char-set:hangul-lvt (ph range) (pht range)
-						  })
-					   }
-					 })
-	      }
-	      (loop)
-	    }
+	     (cond
+	      ((string=? (pht dcp_parts) " Control ") {
+		range-set-ASCII-char-set:control (ph range) (pht range)
+		range-set-BMP0-char-set:control (ph range) (pht range)
+		range-set-full-char-set:control (ph range) (pht range)
+	      })
+	      ((string=? (pht dcp_parts) " Extend ") {
+		range-set-ASCII-char-set:extend-or-spacing-mark (ph range) (pht range)
+		range-set-BMP0-char-set:extend-or-spacing-mark (ph range) (pht range)
+		range-set-full-char-set:extend-or-spacing-mark (ph range) (pht range)
+	      })
+	      ((string=? (pht dcp_parts) " SpacingMark ") {
+		range-set-ASCII-char-set:extend-or-spacing-mark (ph range) (pht range)
+		range-set-BMP0-char-set:extend-or-spacing-mark (ph range) (pht range)
+		range-set-full-char-set:extend-or-spacing-mark (ph range) (pht range)
+	      })
+	      ((string=? (pht dcp_parts) " L ") {
+		range-set-ASCII-char-set:hangul-l (ph range) (pht range)
+		range-set-BMP0-char-set:hangul-l (ph range) (pht range)
+		range-set-full-char-set:hangul-l (ph range) (pht range)
+	      })
+	      ((string=? (pht dcp_parts) " V ") {
+		range-set-ASCII-char-set:hangul-v (ph range) (pht range)
+		range-set-BMP0-char-set:hangul-v (ph range) (pht range)
+		range-set-full-char-set:hangul-v (ph range) (pht range)
+	      })
+	      ((string=? (pht dcp_parts) " T ") {
+		range-set-ASCII-char-set:hangul-t (ph range) (pht range)
+		range-set-BMP0-char-set:hangul-t (ph range) (pht range)
+		range-set-full-char-set:hangul-t (ph range) (pht range)
+	      })
+	      ((string=? (pht dcp_parts) " LV ") {
+		range-set-ASCII-char-set:hangul-lv (ph range) (pht range)
+		range-set-BMP0-char-set:hangul-lv (ph range) (pht range)
+		range-set-full-char-set:hangul-lv (ph range) (pht range)
+	      })
+	      ((string=? (pht dcp_parts) " LVT ") {
+		range-set-ASCII-char-set:hangul-lvt (ph range) (pht range)
+		range-set-BMP0-char-set:hangul-lvt (ph range) (pht range)
+		range-set-full-char-set:hangul-lvt (ph range) (pht range)
+	      }))
+	   }
+	 }))
+      }
+      (loop)
+    }
   }
   (loop)
 }
@@ -601,36 +613,36 @@ define-template (print-char-sets pn & cs) {
   #T{
     $@(map
        (function (csn) {
-	  csn-str := symbol->string csn
-	  ascii-range := #f
-	  if (eq? (string-ref csn-str 0) #\%) {
-	    ascii-range = #t
-	    csn-str = substring csn-str 1 (string-length csn-str)
-	  }
-	  
-	  ; char-set:lower-case
-	  cs-str := append-string (if ascii-range "%" "") "char-set:" csn-str
-	  cs-sym := string->symbol cs-str
+	 csn-str := symbol->string csn
+	 ascii-range := #f
+	 if (eq? (string-ref csn-str 0) #\%) {
+	   ascii-range = #t
+	   csn-str = substring csn-str 1 (string-length csn-str)
+	 }
+	 
+	 ; char-set:lower-case
+	 cs-str := append-string (if ascii-range "%" "") "char-set:" csn-str
+	 cs-sym := string->symbol cs-str
 
-	  cs-def := assq cs-sym char-sets
+	 cs-def := assq cs-sym char-sets
 
-	  ; ASCII-char-set:lower-case
-	  qual-cs-str := append-string pn-str "-char-set:" csn-str
-	  qual-cs-sym := string->symbol qual-cs-str
+	 ; ASCII-char-set:lower-case
+	 qual-cs-str := append-string pn-str "-char-set:" csn-str
+	 qual-cs-sym := string->symbol qual-cs-str
 
-	  val := qual-cs-sym
+	 val := qual-cs-sym
 
-	  if ascii-range {
-	    val = list 'intersection-char-set ascii-cs-sym val
-	  }
+	 if ascii-range {
+	   val = list 'intersection-char-set ascii-cs-sym val
+	 }
 
-	  if cs-def {
-	    #T{
-	    
-	      printf "\n; %s is %s\n%-20s = make-sparse-char-set %d %s\n" '$cs-sym $(pht cs-def) '$cs-sym $val.size $val.planes
+	 if cs-def {
+	   #T{
+	     
+	     printf "\n; %s is %s\n%-20s = make-sparse-char-set %d %s\n" '$cs-sym $(pht cs-def) '$cs-sym $val.size $val.planes
 
-	    }
-	  }
+	   }
+	 }
        })
        cs)
 
@@ -644,43 +656,41 @@ define-template (print-char-sets pn & cs) {
 filename := "unicode.ASCII.idio"
 eprintf "Creating %s\n" filename
 with-output-to filename (function () {
-			   printf "%s\n" \
-"#*
+  printf "%s\n" \
+	 "#*
 
 These char-sets are automatically generated from Unicode source files.
 
 *#"
 
-			   print-char-sets ASCII lower-case upper-case title-case letter digit letter+digit graphic printing whitespace iso-control punctuation symbol hex-digit blank ascii empty full nonl control word-constituent cased %letter %lower-case %upper-case %digit %letter+digit %punctuation %symbol %graphic %whitespace %printing %iso-control %word-constituent regional-indicator extend-or-spacing-mark hangul-l hangul-v hangul-t hangul-lv hangul-lvt
+  print-char-sets ASCII lower-case upper-case title-case letter digit letter+digit graphic printing whitespace iso-control punctuation symbol hex-digit blank ascii empty full nonl control word-constituent cased %letter %lower-case %upper-case %digit %letter+digit %punctuation %symbol %graphic %whitespace %printing %iso-control %word-constituent regional-indicator extend-or-spacing-mark hangul-l hangul-v hangul-t hangul-lv hangul-lvt
 
 })
 
 filename := "unicode.BMP0.idio"
 eprintf "Creating %s\n" filename
 with-output-to filename (function () {
-			   printf "%s\n" \
-"#*
+  printf "%s\n" \
+	 "#*
 
 These char-sets are automatically generated from Unicode source files.
 
 *#"
 
-			   print-char-sets BMP0 lower-case upper-case title-case letter digit letter+digit graphic printing whitespace iso-control punctuation symbol hex-digit blank ascii empty full nonl control word-constituent cased %letter %lower-case %upper-case %digit %letter+digit %punctuation %symbol %graphic %whitespace %printing %iso-control %word-constituent regional-indicator extend-or-spacing-mark hangul-l hangul-v hangul-t hangul-lv hangul-lvt
+  print-char-sets BMP0 lower-case upper-case title-case letter digit letter+digit graphic printing whitespace iso-control punctuation symbol hex-digit blank ascii empty full nonl control word-constituent cased %letter %lower-case %upper-case %digit %letter+digit %punctuation %symbol %graphic %whitespace %printing %iso-control %word-constituent regional-indicator extend-or-spacing-mark hangul-l hangul-v hangul-t hangul-lv hangul-lvt
 
 })
 
 filename := "unicode.full.idio"
 eprintf "Creating %s\n" filename
 with-output-to filename (function () {
-			   printf "%s\n" \
-"#*
+  printf "%s\n" \
+	 "#*
 
 These char-sets are automatically generated from Unicode source files.
 
 *#"
 
-			   print-char-sets full lower-case upper-case title-case letter digit letter+digit graphic printing whitespace iso-control punctuation symbol hex-digit blank ascii empty full nonl control word-constituent cased %letter %lower-case %upper-case %digit %letter+digit %punctuation %symbol %graphic %whitespace %printing %iso-control %word-constituent regional-indicator extend-or-spacing-mark hangul-l hangul-v hangul-t hangul-lv hangul-lvt
+  print-char-sets full lower-case upper-case title-case letter digit letter+digit graphic printing whitespace iso-control punctuation symbol hex-digit blank ascii empty full nonl control word-constituent cased %letter %lower-case %upper-case %digit %letter+digit %punctuation %symbol %graphic %whitespace %printing %iso-control %word-constituent regional-indicator extend-or-spacing-mark hangul-l hangul-v hangul-t hangul-lv hangul-lvt
 
 })
-
-

@@ -47,18 +47,18 @@ define-infix-operator + 1100 {
   if (not (null? (pt before))) {
     prefix = before
     loop :+ function (before) {
-	      (cond
-	       ((null? (pt before)) {
-		 before
-	       })
-	       ((null? (pt (pt before))) {
-		 r := pt before
-		 set-pt! before #n
-		 r
-	       })
-	       (else {
-		 loop (pt before)
-	       }))
+      (cond
+       ((null? (pt before)) {
+	 before
+       })
+       ((null? (pt (pt before))) {
+	 r := pt before
+	 set-pt! before #n
+	 r
+       })
+       (else {
+	 loop (pt before)
+       }))
     }
 
     ;; before must be a list of at least one (as an operator cannot be
@@ -70,9 +70,9 @@ define-infix-operator + 1100 {
 
   if (and (pair? after)
 	  (pair? (pt after))) {
-	    suffix = pt after
-	    after = (list (ph after))
-	  }
+    suffix = pt after
+    after = (list (ph after))
+  }
 
   result := #n
 
@@ -126,18 +126,18 @@ define-infix-operator and 1000 {
   if (not (null? (pt before))) {
     prefix = before
     loop :+ function (before) {
-	      (cond
-	       ((null? (pt before)) {
-		 before
-	       })
-	       ((null? (pt (pt before))) {
-		 r := pt before
-		 set-pt! before #n
-		 r
-	       })
-	       (else {
-		 loop (pt before)
-	       }))
+      (cond
+       ((null? (pt before)) {
+	 before
+       })
+       ((null? (pt (pt before))) {
+	 r := pt before
+	 set-pt! before #n
+	 r
+       })
+       (else {
+	 loop (pt before)
+       }))
     }
 
     ;; before must be a list of at least one (as an operator cannot be
@@ -148,14 +148,14 @@ define-infix-operator and 1000 {
   ;; split - we want to consume (into op-args) the set of expressions
   ;; that successive {op}s are operating on
   split :+ function (op op-args after) {
-	     (cond
-	      ((null? after) (error/type ^rt-parameter-value-error 'operator-and "not enough args after" op (reverse op-args)))
-	      ((not (pair? after)) (error/type ^rt-syntax-error 'operator-and "bad syntax" op (reverse op-args) after))
-	      ((null? (pt after)) (list (reverse (pair (ph after) op-args)) #n))
-	      ((and (pair? after)
-		    (pair? (pt after))
-		    (eq? op (ph (pt after)))) (split op (pair (ph after) op-args) (pt (pt after))))
-	      (else (list (reverse op-args) after)))
+    (cond
+     ((null? after) (error/type ^rt-parameter-value-error 'operator-and "not enough args after" op (reverse op-args)))
+     ((not (pair? after)) (error/type ^rt-syntax-error 'operator-and "bad syntax" op (reverse op-args) after))
+     ((null? (pt after)) (list (reverse (pair (ph after) op-args)) #n))
+     ((and (pair? after)
+	   (pair? (pt after))
+	   (eq? op (ph (pt after)))) (split op (pair (ph after) op-args) (pt (pt after))))
+     (else (list (reverse op-args) after)))
   }
 
   dis := split op before after
@@ -166,9 +166,9 @@ define-infix-operator and 1000 {
 
   if (and (pair? after)
 	  (pair? (pt after))) {
-	    suffix = pt after
-	    after = (list (ph after))
-	  }
+    suffix = pt after
+    after = (list (ph after))
+  }
 
   result := #n
 
@@ -213,18 +213,18 @@ define-infix-operator =+ 1300 {
   if (not (null? (pt before))) {
     prefix = before
     loop :+ function (before) {
-	      (cond
-	       ((null? (pt before)) {
-		 before
-	       })
-	       ((null? (pt (pt before))) {
-		 r := pt before
-		 set-pt! before #n
-		 r
-	       })
-	       (else {
-		 loop (pt before)
-	       }))
+      (cond
+       ((null? (pt before)) {
+	 before
+       })
+       ((null? (pt (pt before))) {
+	 r := pt before
+	 set-pt! before #n
+	 r
+       })
+       (else {
+	 loop (pt before)
+       }))
     }
 
     ;; before must be a list of at least one (as an operator cannot be
@@ -236,9 +236,9 @@ define-infix-operator =+ 1300 {
 
   if (and (pair? after)
 	  (pair? (pt after))) {
-	    suffix = pt after
-	    after = (list (ph after))
-	  }
+    suffix = pt after
+    after = (list (ph after))
+  }
 
   result := #n
 
@@ -281,18 +281,18 @@ define-postfix-operator =- 1300 {
   if (not (null? (pt before))) {
     prefix = before
     loop :+ function (before) {
-	      (cond
-	       ((null? (pt before)) {
-		 before
-	       })
-	       ((null? (pt (pt before))) {
-		 r := pt before
-		 set-pt! before #n
-		 r
-	       })
-	       (else {
-		 loop (pt before)
-	       }))
+      (cond
+       ((null? (pt before)) {
+	 before
+       })
+       ((null? (pt (pt before))) {
+	 r := pt before
+	 set-pt! before #n
+	 r
+       })
+       (else {
+	 loop (pt before)
+       }))
     }
 
     ;; before must be a list of at least one (as an operator cannot be
@@ -340,18 +340,18 @@ define-infix-operator . 1200 {
   if (not (null? (pt before))) {
     prefix = before
     loop :+ function (before) {
-	      (cond
-	       ((null? (pt before)) {
-		 before
-	       })
-	       ((null? (pt (pt before))) {
-		 r := pt before
-		 set-pt! before #n
-		 r
-	       })
-	       (else {
-		 loop (pt before)
-	       }))
+      (cond
+       ((null? (pt before)) {
+	 before
+       })
+       ((null? (pt (pt before))) {
+	 r := pt before
+	 set-pt! before #n
+	 r
+       })
+       (else {
+	 loop (pt before)
+       }))
     }
 
     ;; before must be a list of at least one (as an operator cannot be
@@ -362,14 +362,14 @@ define-infix-operator . 1200 {
   ;; split - we want to consume (into indices) the set of expressions
   ;; that successive {op}s are operating on
   split :+ function (op indices after) {
-	     (cond
-	      ((null? after) (error/type ^rt-parameter-type-error 'operator-dot "not enough args after" op (reverse indices)))
-	      ((not (pair? after)) (error/type ^rt-syntax-error 'operator-dot "bad syntax" op (reverse indices) after))
-	      ((null? (pt after)) (list (reverse (pair (ph after) indices)) #n))
-	      ((and (pair? after)
-		    (pair? (pt after))
-		    (eq? op (ph (pt after)))) (split op (pair (ph after) indices) (pt (pt after))))
-	      (else (list (reverse (pair (ph after) indices)) (pt after))))
+    (cond
+     ((null? after) (error/type ^rt-parameter-type-error 'operator-dot "not enough args after" op (reverse indices)))
+     ((not (pair? after)) (error/type ^rt-syntax-error 'operator-dot "bad syntax" op (reverse indices) after))
+     ((null? (pt after)) (list (reverse (pair (ph after) indices)) #n))
+     ((and (pair? after)
+	   (pair? (pt after))
+	   (eq? op (ph (pt after)))) (split op (pair (ph after) indices) (pt (pt after))))
+     (else (list (reverse (pair (ph after) indices)) (pt after))))
   }
 
   dis := split op #n after
@@ -386,7 +386,7 @@ define-infix-operator . 1200 {
   ;; "previous" result in (value-index <prev> <index>)
   op+args := ph before
   for-each (function (index) {
-	      op+args = list 'value-index op+args index
+    op+args = list 'value-index op+args index
   }) indices
 
   if (null? result) {

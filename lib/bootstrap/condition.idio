@@ -51,17 +51,17 @@ define-template (define-condition-type-accessors-only name parent pred-fname & f
     }
 
     $@(map (function (field) {
-	      #T{
-		define ($(pht field) $arg) {
-                  if ($pred-fname $arg) {
-                    condition-ref $arg '$(ph field)
-		  } {
-		    error/type ^rt-parameter-type-error '$(pht field) '$pred-fname "not a condition:" $arg
-		  }
-                }
-	     }
-	   })
-	   fields)
+      #T{
+	define ($(pht field) $arg) {
+	  if ($pred-fname $arg) {
+	    condition-ref $arg '$(ph field)
+	  } {
+	    error/type ^rt-parameter-type-error '$(pht field) '$pred-fname "not a condition:" $arg
+	  }
+	}
+      }
+    })
+       fields)
   }
 }
 
@@ -72,10 +72,10 @@ define-template (define-condition-type-accessors-only name parent pred-fname & f
 define-template (define-condition-type name parent & fields) {
   pred-fname := string->symbol (append-string (symbol->string name) "?")
   fa := map (function (field) {
-	       list field (string->symbol (append-string
-					   (symbol->string name)
-					   "-"
-					   (symbol->string field)))
+    list field (string->symbol (append-string
+				(symbol->string name)
+				"-"
+				(symbol->string field)))
   }) fields
 
   #T{
@@ -94,9 +94,9 @@ define-template (condition type & field-bindings) {
     $c := allocate-condition $type
 
     $@(map (function (field-binding) {
-              #T{
-	        condition-set! $c '$(ph field-binding) $(pht field-binding)
-	      }
+      #T{
+	condition-set! $c '$(ph field-binding) $(pht field-binding)
+      }
     })
        field-bindings)
 
@@ -463,15 +463,15 @@ type `ct`
 report.
 
   " {
-			      if (struct-type? ct) {
-				if (function? cb) {
-				  hash-set! extension-callbacks ct cb
-				} {
-				  error/type ^rt-parameter-type-error 'condition-report-extend "not a function" cb
-				}
-			      } {
-				error/type ^rt-parameter-type-error 'condition-report-extend "not a struct-type" ct
-			      }
+    if (struct-type? ct) {
+      if (function? cb) {
+	hash-set! extension-callbacks ct cb
+      } {
+	error/type ^rt-parameter-type-error 'condition-report-extend "not a function" cb
+      }
+    } {
+      error/type ^rt-parameter-type-error 'condition-report-extend "not a struct-type" ct
+    }
   }
 
   condition-report = function (prefix c & args) "print a report on condition `c`
@@ -494,8 +494,8 @@ multiple lines.
     oh := (current-error-handle)
     if (and (not (null? args))
 	    (pair? args)) {
-	      oh = ph args
-	    }
+      oh = ph args
+    }
 
     msgs := #n
 

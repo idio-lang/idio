@@ -128,35 +128,35 @@ define (job-as-string job seen) {
 
     procs-first := #t
     procs-loop :+ function (procs) {
-		    if (null? procs) #n {
-		      proc := ph procs
-		      if (null? proc) #t {
-			if procs-first {
-			  procs-first = #f
-			} {
-			  hprintf r "| "
-			}
-			hprintf r "[PID=%s C?=%s S?%s: " (%idio-process-pid proc) (%idio-process-completed proc) (%idio-process-stopped proc)
-			if (%idio-process-completed proc) {
-			  status := %idio-process-status proc
-			  (cond
-			   ((null? status) {
-			     hprintf r " running: "
-			   })
-			   ((WIFEXITED status) {
-			     hprintf r " exit %d: " (WEXITSTATUS status)
-			   })
-			   ((WIFSIGNALED status) {
-			     hprintf r " kill -%d: " (WTERMSIG status)
-			   })
-			   (else {
-			     hprintf r " unknown: "
-			   }))
-			}
-			hprintf r "%s] " (%idio-process-argv proc)
-			procs-loop (pt procs)
-		      }
-		    }
+      if (null? procs) #n {
+	proc := ph procs
+	if (null? proc) #t {
+	  if procs-first {
+	    procs-first = #f
+	  } {
+	    hprintf r "| "
+	  }
+	  hprintf r "[PID=%s C?=%s S?%s: " (%idio-process-pid proc) (%idio-process-completed proc) (%idio-process-stopped proc)
+	  if (%idio-process-completed proc) {
+	    status := %idio-process-status proc
+	    (cond
+	     ((null? status) {
+	       hprintf r " running: "
+	     })
+	     ((WIFEXITED status) {
+	       hprintf r " exit %d: " (WEXITSTATUS status)
+	     })
+	     ((WIFSIGNALED status) {
+	       hprintf r " kill -%d: " (WTERMSIG status)
+	     })
+	     (else {
+	       hprintf r " unknown: "
+	     }))
+	  }
+	  hprintf r "%s] " (%idio-process-argv proc)
+	  procs-loop (pt procs)
+	}
+      }
     }
 
     procs-loop (%idio-job-procs job)
@@ -233,16 +233,14 @@ entries in the file system.
       if (not (and (%process-substitution-job-read psj)
 		   (eq? (ph jd) 'exit)
 		   (C/== (pht jd) C/0i))) {
-		     ;; We're not using suppress-errors! and
-		     ;; libc/close as we expect the fd to already have
-		     ;; been closed (in
-		     ;; idio_job_control_launch_1proc_job() or by the
-		     ;; user directly) and so the suppress-errors!
-		     ;; templated trap is far far (far) more code than
-		     ;; up to two system calls require
+	;; We're not using suppress-errors! and libc/close as we
+	;; expect the fd to already have been closed (in
+	;; idio_job_control_launch_1proc_job() or by the user
+	;; directly) and so the suppress-errors! templated trap is far
+	;; far (far) more code than up to two system calls require
 
-		     libc/close-if-open fd
-		   }
+	libc/close-if-open fd
+      }
     }
     if (%process-substitution-job-path psj) {
       libc/unlink (%process-substitution-job-path psj)
@@ -280,11 +278,11 @@ define (job-is-stopped job) "test if job `job` is stopped
   if (null? job) (error/type ^rt-parameter-nil-error 'job-is-stopped "null job" job)
 
   loop :+ function (procs) {
-	    (cond
-	     ((null? procs) #t)
-	     ((and (not (%idio-process-completed (ph procs)))
-		   (not (%idio-process-stopped (ph procs)))) #f)
-	     (else (loop (pt procs))))
+    (cond
+     ((null? procs) #t)
+     ((and (not (%idio-process-completed (ph procs)))
+	   (not (%idio-process-stopped (ph procs)))) #f)
+     (else (loop (pt procs))))
   }
 
   loop (%idio-job-procs job)
@@ -299,15 +297,15 @@ define (job-is-completed job) "test if job `job` has completed
   if (null? job) (error/type ^rt-parameter-nil-error 'job-is-completed "null job" job)
 
   loop :+ function (procs) {
-	    (cond
-	     ((null? procs) {
-	       set-%idio-job-timing-end! job (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN))
-	       #t
-	     })
-	     ((not (%idio-process-completed (ph procs))) #f)
-	     (else {
-	       loop (pt procs)
-	     }))
+    (cond
+     ((null? procs) {
+       set-%idio-job-timing-end! job (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN))
+       #t
+     })
+     ((not (%idio-process-completed (ph procs))) #f)
+     (else {
+       loop (pt procs)
+     }))
   }
 
   loop (%idio-job-procs job)
@@ -324,34 +322,34 @@ left-hand processes are ignored
   if (null? job) (error/type ^rt-parameter-nil-error 'job-failed "null job" job)
 
   loop :+ function (procs) {
-	    if (null? procs) #f {
-	      status := %idio-process-status (ph procs)
-	      (cond
-	       ((null? status) {
-		 loop (pt procs)
-	       })
-	       ((WIFEXITED status) {
-		 (cond
-		  ((and suppress-pipefail!
-			(not (null? (pt procs)))) {
-			  loop (pt procs)
-			})
-		  ((not (C/== (WEXITSTATUS status) C/0i))
-		   #t)
-		  (else {
-		    loop (pt procs)
-		  }))
-	       })
-	       ((WIFSIGNALED status) {
-		 if (and suppress-pipefail!
-			 (not (null? (pt procs)))) {
-			   loop (pt procs)
-			 } #t
-	       })
-	       (else {
-		 loop (pt procs)
-	       }))
-	    }
+    if (null? procs) #f {
+      status := %idio-process-status (ph procs)
+      (cond
+       ((null? status) {
+	 loop (pt procs)
+       })
+       ((WIFEXITED status) {
+	 (cond
+	  ((and suppress-pipefail!
+		(not (null? (pt procs)))) {
+	    loop (pt procs)
+	  })
+	  ((not (C/== (WEXITSTATUS status) C/0i))
+	   #t)
+	  (else {
+	    loop (pt procs)
+	  }))
+       })
+       ((WIFSIGNALED status) {
+	 if (and suppress-pipefail!
+		 (not (null? (pt procs)))) {
+	   loop (pt procs)
+	 } #t
+       })
+       (else {
+	 loop (pt procs)
+       }))
+    }
   }
 
   if (job-is-completed job) {
@@ -373,34 +371,34 @@ left-hand processes are ignored
   if (null? job) (error/type ^rt-parameter-nil-error 'job-status "null job" job)
 
   loop :+ function (procs) {
-	    if (null? procs) #t {
-	      status := %idio-process-status (ph procs)
-	      (cond
-	       ((null? status) {
-		 loop (pt procs)
-	       })
-	       ((WIFEXITED status) {
-		 (cond
-		  ((and suppress-pipefail!
-			(not (null? (pt procs)))) {
-			  loop (pt procs)
-			})
-		  ((not (C/== (WEXITSTATUS status) C/0i))
-		   #f)
-		  (else {
-		    loop (pt procs)
-		  }))
-	       })
-	       ((WIFSIGNALED status) {
-		 if (and suppress-pipefail!
-			 (not (null? (pt procs)))) {
-			   loop (pt procs)
-			 } #f
-	       })
-	       (else {
-		 loop (pt procs)
-	       }))
-	    }
+    if (null? procs) #t {
+      status := %idio-process-status (ph procs)
+      (cond
+       ((null? status) {
+	 loop (pt procs)
+       })
+       ((WIFEXITED status) {
+	 (cond
+	  ((and suppress-pipefail!
+		(not (null? (pt procs)))) {
+	    loop (pt procs)
+	  })
+	  ((not (C/== (WEXITSTATUS status) C/0i))
+	   #f)
+	  (else {
+	    loop (pt procs)
+	  }))
+       })
+       ((WIFSIGNALED status) {
+	 if (and suppress-pipefail!
+		 (not (null? (pt procs)))) {
+	   loop (pt procs)
+	 } #f
+       })
+       (else {
+	 loop (pt procs)
+       }))
+    }
   }
 
   ;; return rightmost non-zero exit status or the status from the last
@@ -426,38 +424,38 @@ left-hand processes are ignored
   last-proc := #f
 
   loop :+ function (procs) {
-	    if (null? procs) #f {
-	      last-proc = ph procs
-	      status := %idio-process-status last-proc
-	      (cond
-	       ((null? status) {
-		 loop (pt procs)
-	       })
-	       ((WIFEXITED status) {
-		 (cond
-		  ((and suppress-pipefail!
-			(not (null? (pt procs)))) {
-			  loop (pt procs)
-			})
-		  ((not (C/== (WEXITSTATUS status) C/0i)) {
-		    list 'exit (WEXITSTATUS status)
-		  })
-		  (else {
-		    loop (pt procs)
-		  }))
-	       })
-	       ((WIFSIGNALED status) {
-		 if (and suppress-pipefail!
-			 (not (null? (pt procs)))) {
-			   loop (pt procs)
-			   } {
-			     list 'killed (WTERMSIG status)
-			   }
-	       })
-	       (else {
-		 loop (pt procs)
-	       }))
-	    }
+    if (null? procs) #f {
+      last-proc = ph procs
+      status := %idio-process-status last-proc
+      (cond
+       ((null? status) {
+	 loop (pt procs)
+       })
+       ((WIFEXITED status) {
+	 (cond
+	  ((and suppress-pipefail!
+		(not (null? (pt procs)))) {
+	    loop (pt procs)
+	  })
+	  ((not (C/== (WEXITSTATUS status) C/0i)) {
+	    list 'exit (WEXITSTATUS status)
+	  })
+	  (else {
+	    loop (pt procs)
+	  }))
+       })
+       ((WIFSIGNALED status) {
+	 if (and suppress-pipefail!
+		 (not (null? (pt procs)))) {
+	   loop (pt procs)
+	 } {
+	   list 'killed (WTERMSIG status)
+	 }
+       })
+       (else {
+	 loop (pt procs)
+       }))
+    }
   }
 
   ;; return rightmost non-zero exit status or the status from the last
@@ -469,7 +467,7 @@ left-hand processes are ignored
 	 ((null? status) (list 'running))
 	 ((WIFEXITED status) (list 'exit C/0i))
 	 (else (list 'unknown)))
-      })
+  })
 }
 
 define (pipeline-detail job) "return the process status of each process in the pipeline `job`
@@ -484,22 +482,22 @@ value can be: exit status for 'exit or signal number for 'killed
   if (null? job) (error/type ^rt-parameter-nil-error 'pipeline-detail "null job" job)
 
   loop :+ function (procs st) {
-	    if (null? procs) (reverse st) {
-	      status := %idio-process-status (ph procs)
-	      (cond
-	       ((null? status) {
-		 loop (pt procs) (pair (list 'running) st)
-	       })
-	       ((WIFEXITED status) {
-		 loop (pt procs) (pair (list 'exit (WEXITSTATUS status)) st)
-	       })
-	       ((WIFSIGNALED status) {
-		 loop (pt procs) (pair (list 'killed (WTERMSIG status)) st)
-	       })
-	       (else {
-		 loop (pt procs) (pair (list 'unknown) st)
-	       }))
-	    }
+    if (null? procs) (reverse st) {
+      status := %idio-process-status (ph procs)
+      (cond
+       ((null? status) {
+	 loop (pt procs) (pair (list 'running) st)
+       })
+       ((WIFEXITED status) {
+	 loop (pt procs) (pair (list 'exit (WEXITSTATUS status)) st)
+       })
+       ((WIFSIGNALED status) {
+	 loop (pt procs) (pair (list 'killed (WTERMSIG status)) st)
+       })
+       (else {
+	 loop (pt procs) (pair (list 'unknown) st)
+       }))
+    }
   }
 
   loop (%idio-job-procs job) #n
@@ -521,42 +519,42 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
   (cond
    ((C/> pid libc/0pid_t) {
      jobs-loop :+ function (jobs) {
-		    (cond
-		     ((null? jobs) {
-		       if %idio-interactive {
-			 eprintf "no child process %d\n" pid
-		       }
-		       hash-set! %idio-stray-pids pid status
-		       #t
-		     })
-		     (else {
-		       ;; procs-loop follows the same convention as the outer
-		       ;; jobs-loop as returning success (#f!) will be the return
-		       ;; value of jobs-loop
-		       procs-loop :+ function (procs) {
-				       (cond
-					((null? procs) #t)
-					((C/== pid (%idio-process-pid (ph procs))) {
-					  set-%idio-process-status! (ph procs) status
-					  if (WIFSTOPPED status) {
-					    set-%idio-process-stopped! (ph procs) #t
-					  } {
-					    set-%idio-process-completed! (ph procs) #t
-					    if (and %idio-interactive
-						    (WIFSIGNALED status)) {
-						      eprintf "Job Terminated: kill -%s %d\n" (signal-name (WTERMSIG status)) pid
-						    }
-					  }
-					  #f
-					})
-					(else {
-					  procs-loop (pt procs)
-					}))
-		       }
+       (cond
+	((null? jobs) {
+	  if %idio-interactive {
+	    eprintf "no child process %d\n" pid
+	  }
+	  hash-set! %idio-stray-pids pid status
+	  #t
+	})
+	(else {
+	  ;; procs-loop follows the same convention as the outer
+	  ;; jobs-loop as returning success (#f!) will be the return
+	  ;; value of jobs-loop
+	  procs-loop :+ function (procs) {
+	    (cond
+	     ((null? procs) #t)
+	     ((C/== pid (%idio-process-pid (ph procs))) {
+	       set-%idio-process-status! (ph procs) status
+	       if (WIFSTOPPED status) {
+		 set-%idio-process-stopped! (ph procs) #t
+	       } {
+		 set-%idio-process-completed! (ph procs) #t
+		 if (and %idio-interactive
+			 (WIFSIGNALED status)) {
+		   eprintf "Job Terminated: kill -%s %d\n" (signal-name (WTERMSIG status)) pid
+		 }
+	       }
+	       #f
+	     })
+	     (else {
+	       procs-loop (pt procs)
+	     }))
+	  }
 
-		       (and (procs-loop (%idio-job-procs (ph jobs)))
-			    (jobs-loop (pt jobs)))
-		     }))
+	  (and (procs-loop (%idio-job-procs (ph jobs)))
+	       (jobs-loop (pt jobs)))
+	}))
      }
 
      jobs-loop %idio-jobs
@@ -579,14 +577,14 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
 	;; this should have been picked up by ECHILD, above...
 	eprintf "mark-process-status: pid=%s status=%s errno=%s !=ECHILD??\n" pid status libc/errno
 	for-each (function (job) {
-		    eprintf "mark-process-status: %s\n" job
+	  eprintf "mark-process-status: %s\n" job
 	}) %idio-jobs
 	#t
       })
       (else {
 	error/type ^runtime-error 'mark-process-status "inconceivable errno!" pid status (libc/errno-name libc/errno)
       }))
-     })
+   })
    (else {
      ;; an error in waitpid would have been signalled there
      error/type ^runtime-error 'mark-process-status "inconceivable!" pid status
@@ -617,7 +615,7 @@ define (wait-for-job job) "wait for job `job` to be stopped or completed
   do () ((not (and (not (call-with-values waitany mark-process-status))
 	           (not (job-is-stopped job))
 	           (not (job-is-completed job))))
-         #n) #n
+	  #n) #n
 
   ;eprintf "wfj: %5s C=%s S=%s %s %s\n" (%idio-job-pgid job) (job-is-completed job) (job-is-stopped job) (if (job-failed job) "failed" "succeeded") (pipeline-detail job)
 
@@ -679,18 +677,18 @@ relied on.
   header := #t
   printed := #f
   loop :+ function (procs details) {
-	    (cond
-	     ((null? procs) #t)
-	     (else {
-	       if header {
-		 header = #f
-		 hprintf oh "        %6s %-3s %-12s %s\n" "PID" "fl" "status" "cmd"
-	       }
-	       proc := ph procs
-	       hprintf oh "  proc: %6s %2s%s %-12s %s\n" (%idio-process-pid proc) (if (%idio-process-completed proc) " C" "!C") (if (%idio-process-stopped proc) "S" " ") (ph details) (%idio-process-argv proc)
-	       printed = #t
-	       loop (pt procs) (pt details)
-	     }))
+    (cond
+     ((null? procs) #t)
+     (else {
+       if header {
+	 header = #f
+	 hprintf oh "        %6s %-3s %-12s %s\n" "PID" "fl" "status" "cmd"
+       }
+       proc := ph procs
+       hprintf oh "  proc: %6s %2s%s %-12s %s\n" (%idio-process-pid proc) (if (%idio-process-completed proc) " C" "!C") (if (%idio-process-stopped proc) "S" " ") (ph details) (%idio-process-argv proc)
+       printed = #t
+       loop (pt procs) (pt details)
+     }))
   }
 
   hprintf oh "\n"
@@ -707,43 +705,43 @@ relied on.
 
   if (and timing-start
 	  timing-end) {
-	    tv-before    := ph timing-start
-	    rus-before   := pht timing-start
-	    ruc-before   := phtt timing-start
-	    tv-end       := ph timing-end
-	    rus-end      := pht timing-end
-	    ruc-end      := phtt timing-end
+    tv-before    := ph timing-start
+    rus-before   := pht timing-start
+    ruc-before   := phtt timing-start
+    tv-end       := ph timing-end
+    rus-end      := pht timing-end
+    ruc-end      := phtt timing-end
 
-	    ;; See the commentary for time-command in
-	    ;; common.idio about this algorithm
-	    h := (make-hash)
-	    hash-set! h #\R (libc/subtract-struct-timeval tv-end tv-before)
-	    hash-set! h #\U (libc/add-struct-timeval
-			     (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_utime)
-							   (libc/struct-rusage-ref rus-before 'ru_utime))
-			     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_utime)
-							   (libc/struct-rusage-ref ruc-before 'ru_utime)))
+    ;; See the commentary for time-command in
+    ;; common.idio about this algorithm
+    h := (make-hash)
+    hash-set! h #\R (libc/subtract-struct-timeval tv-end tv-before)
+    hash-set! h #\U (libc/add-struct-timeval
+		     (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_utime)
+						   (libc/struct-rusage-ref rus-before 'ru_utime))
+		     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_utime)
+						   (libc/struct-rusage-ref ruc-before 'ru_utime)))
 
-	    hash-set! h #\S (libc/add-struct-timeval
-			     (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_stime)
-							   (libc/struct-rusage-ref rus-before 'ru_stime))
-			     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_stime)
-							   (libc/struct-rusage-ref ruc-before 'ru_stime)))
+    hash-set! h #\S (libc/add-struct-timeval
+		     (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_stime)
+						   (libc/struct-rusage-ref rus-before 'ru_stime))
+		     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_stime)
+						   (libc/struct-rusage-ref ruc-before 'ru_stime)))
 
-	    js := (libc/struct-timeval-ref (ph timing-start) 'tv_sec)
-	    je := (libc/struct-timeval-ref (ph timing-end) 'tv_sec)
-	    hprintf oh " Started at %s, ran for %ss\n" (libc/strftime "%c" (libc/localtime js)) (je - js)
-	    hprintf oh " %s" (%format 'timeformat "R %5.3R; U %5.3U; S %5.3S" h)
-	    hprintf oh "\n"
-	  } {
-	    if (not timing-start) {
-	      hprintf oh "timing-start is unset? "
-	    } {
-	      js := (libc/struct-timeval-ref (ph timing-start) 'tv_sec)
-	      hprintf oh "Started at %s, %ds ago; " (libc/strftime "%c" (libc/localtime js)) ((libc/time) - js)
-	    }
-	    hprintf oh "\n"
-	  }
+    js := (libc/struct-timeval-ref (ph timing-start) 'tv_sec)
+    je := (libc/struct-timeval-ref (ph timing-end) 'tv_sec)
+    hprintf oh " Started at %s, ran for %ss\n" (libc/strftime "%c" (libc/localtime js)) (je - js)
+    hprintf oh " %s" (%format 'timeformat "R %5.3R; U %5.3U; S %5.3S" h)
+    hprintf oh "\n"
+  } {
+    if (not timing-start) {
+      hprintf oh "timing-start is unset? "
+    } {
+      js := (libc/struct-timeval-ref (ph timing-start) 'tv_sec)
+      hprintf oh "Started at %s, %ds ago; " (libc/strftime "%c" (libc/localtime js)) ((libc/time) - js)
+    }
+    hprintf oh "\n"
+  }
 }
 
 define (do-job-notification) "notify the user of any job status changes" {
@@ -752,68 +750,68 @@ define (do-job-notification) "notify the user of any job status changes" {
   failed-jobs := #n
 
   loop :+ function (jobs njobs) {
-	    (cond
-	     ((null? jobs) (reverse njobs))
-	     (else {
-	       job := ph jobs
-	       (cond
-		((job-is-completed job) {
+    (cond
+     ((null? jobs) (reverse njobs))
+     (else {
+       job := ph jobs
+       (cond
+	((job-is-completed job) {
 
-		  tidy-process-substitution-job job
+	  tidy-process-substitution-job job
 
-		  if (not (%idio-job-notify-completed job)) {
-		    format-job-info job "completed"
+	  if (not (%idio-job-notify-completed job)) {
+	    format-job-info job "completed"
 
-		    ;; cf. time/time-command in common.idio
-		    if (%idio-job-report-timing job) {
-		      timing-start := %idio-job-timing-start job
-		      tv-before    := ph timing-start
-		      rus-before   := pht timing-start
-		      ruc-before   := phtt timing-start
-		      timing-end   := %idio-job-timing-end job
-		      tv-end       := ph timing-end
-		      rus-end      := pht timing-end
-		      ruc-end      := phtt timing-end
+	    ;; cf. time/time-command in common.idio
+	    if (%idio-job-report-timing job) {
+	      timing-start := %idio-job-timing-start job
+	      tv-before    := ph timing-start
+	      rus-before   := pht timing-start
+	      ruc-before   := phtt timing-start
+	      timing-end   := %idio-job-timing-end job
+	      tv-end       := ph timing-end
+	      rus-end      := pht timing-end
+	      ruc-end      := phtt timing-end
 
-		      ;; See the commentary for time-command in
-		      ;; common.idio about this algorithm
-		      h := (make-hash)
-		      hash-set! h #\R (libc/subtract-struct-timeval tv-end tv-before)
-		      hash-set! h #\U (libc/add-struct-timeval
-				       (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_utime)
-								     (libc/struct-rusage-ref rus-before 'ru_utime))
-				       (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_utime)
-								     (libc/struct-rusage-ref ruc-before 'ru_utime)))
+	      ;; See the commentary for time-command in
+	      ;; common.idio about this algorithm
+	      h := (make-hash)
+	      hash-set! h #\R (libc/subtract-struct-timeval tv-end tv-before)
+	      hash-set! h #\U (libc/add-struct-timeval
+			       (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_utime)
+							     (libc/struct-rusage-ref rus-before 'ru_utime))
+			       (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_utime)
+							     (libc/struct-rusage-ref ruc-before 'ru_utime)))
 
-		      hash-set! h #\S (libc/add-struct-timeval
-				       (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_stime)
-								     (libc/struct-rusage-ref rus-before 'ru_stime))
-				       (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_stime)
-								     (libc/struct-rusage-ref ruc-before 'ru_stime)))
+	      hash-set! h #\S (libc/add-struct-timeval
+			       (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_stime)
+							     (libc/struct-rusage-ref rus-before 'ru_stime))
+			       (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_stime)
+							     (libc/struct-rusage-ref ruc-before 'ru_stime)))
 
-		      printf "%s" (%format 'timeformat TIMEFORMAT h)
-		    }
-		    set-%idio-job-notify-completed! job #t
-		  }
+	      printf "%s" (%format 'timeformat TIMEFORMAT h)
+	    }
+	    set-%idio-job-notify-completed! job #t
+	  }
 
-		  if (job-failed job) {
-		    failed-jobs = pair job failed-jobs
-		  }
+	  if (job-failed job) {
+	    failed-jobs = pair job failed-jobs
+	  }
 
-		  ;; remove job from list (by not including it!)
-		  loop (pt jobs) njobs
-		})
-		((job-is-stopped job) {
-		  if (not (%idio-job-notify-stopped job)) {
-		    format-job-info job "stopped"
-		    set-%idio-job-notify-stopped! job #t
-		  }
-		  loop (pt jobs) (pair job njobs)
-		})
-		(else {
-		  loop (pt jobs) (pair job njobs)
-		}))
-	     }))
+	  ;; remove job from list (by not including it!)
+	  loop (pt jobs) njobs
+	})
+	((job-is-stopped job) {
+	  if (not (%idio-job-notify-stopped job)) {
+	    format-job-info job "stopped"
+	    set-%idio-job-notify-stopped! job #t
+	  }
+	  loop (pt jobs) (pair job njobs)
+	})
+	(else {
+	  loop (pt jobs) (pair job njobs)
+	}))
+     }))
   }
 
   %idio-jobs = loop %idio-jobs #n
@@ -848,26 +846,26 @@ define (do-job-notification) "notify the user of any job status changes" {
 
   if (not (null? failed-jobs)) {
     report :+ function (jobs) {
-		(cond
-		 ((null? jobs) #n)
-		 (else {
-		   job := ph jobs
-		   if (%idio-job-raise? job) {
-		     if (not (%idio-job-raised job)) {
-		       ct := ^rt-command-status-error
-		       if (%idio-job-async job) {
-			 ct = ^rt-async-command-status-error
-		       }
-		       c := make-condition ct "job failed" job (pipeline-detail job) (job-detail job)
-		       set-%idio-job-raised! job #t
-		       reraise c
-		     }
-		   }
+      (cond
+       ((null? jobs) #n)
+       (else {
+	 job := ph jobs
+	 if (%idio-job-raise? job) {
+	   if (not (%idio-job-raised job)) {
+	     ct := ^rt-command-status-error
+	     if (%idio-job-async job) {
+	       ct = ^rt-async-command-status-error
+	     }
+	     c := make-condition ct "job failed" job (pipeline-detail job) (job-detail job)
+	     set-%idio-job-raised! job #t
+	     reraise c
+	   }
+	 }
 
-		   ;; if someone handled that error and returned (anything)
-		   ;; then we can loop onto the next
-		   report (pt jobs)
-		 }))
+	 ;; if someone handled that error and returned (anything)
+	 ;; then we can loop onto the next
+	 report (pt jobs)
+       }))
     }
 
     report failed-jobs
@@ -954,32 +952,32 @@ Send the process group of `job` a SIGCONT then a SIGHUP
 
 define (SIGTERM-stopped-jobs) {
   loop :+ function (jobs) {
-	    if (null? jobs) #t {
-	      job := ph jobs
-	      pgid := %idio-job-pgid job
+    if (null? jobs) #t {
+      job := ph jobs
+      pgid := %idio-job-pgid job
 
-	      if (C/> pgid libc/0pid_t) {
-		if %idio-interactive {
-		  eprintf "%6d: SIGTERM -> pgid %d\n" PID pgid
-		}
+      if (C/> pgid libc/0pid_t) {
+	if %idio-interactive {
+	  eprintf "%6d: SIGTERM -> pgid %d\n" PID pgid
+	}
 
-		;; Following in the style of Bash's
-		;; terminate_stopped_jobs() issue the SIGTERM before
-		;; the SIGCONT
+	;; Following in the style of Bash's
+	;; terminate_stopped_jobs() issue the SIGTERM before
+	;; the SIGCONT
 
-		;; ignore errors, we're shutting down
-		;suppress-errors! ^system-error killpg pgid SIGTERM
-		;suppress-errors! ^system-error killpg pgid SIGCONT
-		killpg pgid SIGTERM
-		killpg pgid SIGCONT
-	      } {
-		if %idio-interactive {
-		  eprintf "%6d: SIGTERM -> pgid %d ??\n" PID pgid
-		  eprintf "job %s\n" job
-		}
-	      }
-	      loop (pt jobs)
-	    }
+	;; ignore errors, we're shutting down
+	;suppress-errors! ^system-error killpg pgid SIGTERM
+	;suppress-errors! ^system-error killpg pgid SIGCONT
+	killpg pgid SIGTERM
+	killpg pgid SIGCONT
+      } {
+	if %idio-interactive {
+	  eprintf "%6d: SIGTERM -> pgid %d ??\n" PID pgid
+	  eprintf "job %s\n" job
+	}
+      }
+      loop (pt jobs)
+    }
   }
 
   if (not (null? %idio-jobs)) {
@@ -1012,12 +1010,12 @@ define (mark-job-as-running job) "mark job `job` as running
 In particular, mark job `job` as not stopped.
 " {
   loop :+ function (procs) {
-	    (cond
-	     ((null? procs) #n)
-	     (else {
-	       set-%idio-process-stopped! (ph procs) #f
-	       loop (pt procs)
-	     }))
+    (cond
+     ((null? procs) #n)
+     (else {
+       set-%idio-process-stopped! (ph procs) #f
+       loop (pt procs)
+     }))
   }
 
   loop (%idio-job-procs job)
@@ -1065,18 +1063,18 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
 
   The nominal libc texinfo algorithm is:
 
-    Switch stdin/stdout/stderr to the supplied file descriptor if it
-    isn't already stdin/stdout/stderr.  (Here, the supplied file
-    descriptor would commonly be one end or other of a pipe(2).)
+  Switch stdin/stdout/stderr to the supplied file descriptor if it
+  isn't already stdin/stdout/stderr.  (Here, the supplied file
+  descriptor would commonly be one end or other of a pipe(2).)
 
-    We can then close the supplied file descriptor if it is >
-    STDERR_FILENO (ie. > 2) and isn't one of the later ones.
+  We can then close the supplied file descriptor if it is >
+  STDERR_FILENO (ie. > 2) and isn't one of the later ones.
 
-    That latter case is for: ls > "foo" 2>& 1
+  That latter case is for: ls > "foo" 2>& 1
 
-    Here, "stdout" will be fd N, say, having opened "foo" which we
-    would close because N > 2, before we reached the "2>& 1" which
-    tries to dup2(N, 2)
+  Here, "stdout" will be fd N, say, having opened "foo" which we would
+  close because N > 2, before we reached the "2>& 1" which tries to
+  dup2(N, 2)
 
   However, we *must* set the Idio thread-specific input/output/error
   handles.  The problem lies in that this code, prep-io, is most
@@ -1125,8 +1123,8 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
        if (and (C/> infile STDERR_FILENO)
 	       (not (C/== infile outfile))
 	       (not (C/== infile errfile))) {
-		 close infile
-	       }
+	 close infile
+       }
 
        set-input-handle! (open-input-file-from-fd STDIN_FILENO)
      }
@@ -1147,8 +1145,8 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
 
        if (and (C/> outfile STDERR_FILENO)
 	       (not (C/== outfile errfile))) {
-		 close outfile
-	       }
+	 close outfile
+       }
 
        set-output-handle! (open-output-file-from-fd STDOUT_FILENO)
      }
@@ -1188,15 +1186,15 @@ define (%prep-process pgid infile outfile errfile foreground async-job) "prepare
 " {
   if (or %idio-interactive
 	 async-job) {
-	   pid := (libc/getpid)
-	   if (C/== pgid libc/0pid_t) {
-	     pgid = pid
-	   }
+    pid := (libc/getpid)
+    if (C/== pgid libc/0pid_t) {
+      pgid = pid
+    }
 
-	   ;; put the process in the process group -- dupe of parent to avoid
-	   ;; race conditions
-	   suppress-errors! ^system-error setpgid pid pgid
-	 }
+    ;; put the process in the process group -- dupe of parent to avoid
+    ;; race conditions
+    suppress-errors! ^system-error setpgid pid pgid
+  }
 
   if %idio-interactive {
     if foreground {
@@ -1230,57 +1228,57 @@ define-infix-operator | 700 {
   ;; them.
 
   meta-loop :+ function () {
-		 (case (ph before)
-		       ((collect-output) {
-			 before      = pt before
-			 collect     = #t
-			 foreground  = #t
-			 async-job   = #t
-			 (meta-loop)
-		       })
-		       ((fg-job) {
-			 before      = pt before
-			 foreground  = #t
-			 (meta-loop)
-		       })
-		       ((bg-job) {
-			 before      = pt before
-			 foreground  = #f
-			 (meta-loop)
-		       })
-		       ((named-pipe-into) {
-			 before      = pt before
-			 use-w-pipe  = 'named
-			 foreground  = #f
-			 async-job   = #t
-			 (meta-loop)
-		       })
-		       ((pipe-into) {
-			 before      = pt before
-			 use-w-pipe  = #t
-			 foreground  = #f
-			 async-job   = #t
-			 (meta-loop)
-		       })
-		       ((named-pipe-from) {
-			 before      = pt before
-			 use-r-pipe  = 'named
-			 foreground  = #f
-			 async-job   = #t
-			 (meta-loop)
-		       })
-		       ((pipe-from) {
-			 before      = pt before
-			 use-r-pipe  = #t
-			 foreground  = #f
-			 async-job   = #t
-			 (meta-loop)
-		       })
-		       ((time) {
-			 before      = pt before
-			 report-time = #t
-			 (meta-loop)
-		       }))
+    (case (ph before)
+     ((collect-output) {
+       before      = pt before
+       collect     = #t
+       foreground  = #t
+       async-job   = #t
+       (meta-loop)
+     })
+     ((fg-job) {
+       before      = pt before
+       foreground  = #t
+       (meta-loop)
+     })
+     ((bg-job) {
+       before      = pt before
+       foreground  = #f
+       (meta-loop)
+     })
+     ((named-pipe-into) {
+       before      = pt before
+       use-w-pipe  = 'named
+       foreground  = #f
+       async-job   = #t
+       (meta-loop)
+     })
+     ((pipe-into) {
+       before      = pt before
+       use-w-pipe  = #t
+       foreground  = #f
+       async-job   = #t
+       (meta-loop)
+     })
+     ((named-pipe-from) {
+       before      = pt before
+       use-r-pipe  = 'named
+       foreground  = #f
+       async-job   = #t
+       (meta-loop)
+     })
+     ((pipe-from) {
+       before      = pt before
+       use-r-pipe  = #t
+       foreground  = #f
+       async-job   = #t
+       (meta-loop)
+     })
+     ((time) {
+       before      = pt before
+       report-time = #t
+       (meta-loop)
+     }))
   }
 
   (meta-loop)
@@ -1289,11 +1287,11 @@ define-infix-operator | 700 {
 
   ;; we want a list of lists -- a list of the |-separated commands
   split :+ function (op op-args expr after) {
-	     (cond
-	      ((null? after)		(reverse (pair (reverse expr) op-args)))
-	      ((not (pair? after))	(error/type ^rt-syntax-error '| "bad syntax" op (reverse op-args) after))
-	      ((eq? op (ph after))	(split op (pair (reverse expr) op-args) #n (pt after)))
-	      (else			(split op op-args (pair (ph after) expr) (pt after))))
+    (cond
+     ((null? after)		(reverse (pair (reverse expr) op-args)))
+     ((not (pair? after))	(error/type ^rt-syntax-error '| "bad syntax" op (reverse op-args) after))
+     ((eq? op (ph after))	(split op (pair (reverse expr) op-args) #n (pt after)))
+     (else			(split op op-args (pair (ph after) expr) (pt after))))
   }
 
   op-args := split op (list before) #n after
@@ -1538,174 +1536,166 @@ define-infix-operator | 700 {
       $pgrp-pipe := (libc/pipe)
 
       $@(map (function (cmd) {
-	        #T{
-		  {
-		    $proc := make-%idio-process '$cmd #n -1 #f #f #n
+	#T{
+	  {
+	    $proc := make-%idio-process '$cmd #n -1 #f #f #n
 
-		    ;; NB. Update the procs list asap as we can get a
-		    ;; signal about processes in the pipeline at any
-		    ;; time including, annoyingly, before we've
-		    ;; finished creating the pipeline.
-		    ;; do-job-notification/update-status will want to
-		    ;; have a proc entry to update.
-		    ;;
-		    ;; NB this is a reversed order list -- we'll patch
-		    ;; that up at the end
-		    set-%idio-job-procs! $job (pair $proc (%idio-job-procs $job))
+	    ;; NB. Update the procs list asap as we can get a signal
+	    ;; about processes in the pipeline at any time including,
+	    ;; annoyingly, before we've finished creating the
+	    ;; pipeline.  do-job-notification/update-status will want
+	    ;; to have a proc entry to update.
+	    ;;
+	    ;; NB this is a reversed order list -- we'll patch that up
+	    ;; at the end
+	    set-%idio-job-procs! $job (pair $proc (%idio-job-procs $job))
 
-		    if ($proc-id lt $nprocs) {
-		      $cmd-pipe = (libc/pipe)
-		      $cmd-w-fdn = (libc/pipe-writer $cmd-pipe)
-		    } {
-		      $cmd-w-fdn = $pipeline-w-fdn
-		    }
-		    $pid := (libc/fork)
-		    if (C/== $pid libc/0pid_t) {
-		      suppress-pipefail! = #f
-		      suppress-exit-on-error! = #f
-		      set-default-handler! ^idio-error default-child-handler
-		      job-control/%idio-jobs = #n
-		      job-control/%%last-job = #n
-		      job-control/%%process-substitution-jobs = #{}
-		      %prep-process $pgid $cmd-r-fdn $cmd-w-fdn $stderr $foreground $async-job
+	    if ($proc-id lt $nprocs) {
+	      $cmd-pipe = (libc/pipe)
+	      $cmd-w-fdn = (libc/pipe-writer $cmd-pipe)
+	    } {
+	      $cmd-w-fdn = $pipeline-w-fdn
+	    }
+	    $pid := (libc/fork)
+	    if (C/== $pid libc/0pid_t) {
+	      suppress-pipefail! = #f
+	      suppress-exit-on-error! = #f
+	      set-default-handler! ^idio-error default-child-handler
+	      job-control/%idio-jobs = #n
+	      job-control/%%last-job = #n
+	      job-control/%%process-substitution-jobs = #{}
+	      %prep-process $pgid $cmd-r-fdn $cmd-w-fdn $stderr $foreground $async-job
 
-		      (cond
-		       ($use-w-pipe {
-			 ;; sub-Idio should not hold the write end of
-			 ;; the (named-)pipe-into pipe open (if a file
-			 ;; descriptor) -- it will have been dup'ed in
-			 ;; prep-io
-			 if (eq? $use-w-pipe 'named) {
-			   fd := %process-substitution-job-fd $proc-subst-job
-			   if fd {
-			     libc/close fd
-			   }
-			 } {
-			   libc/close (libc/pipe-writer $w-pipe)
-			 }
-		       })
-		       ($use-r-pipe {
-			 ;; sub-Idio should not hold the read end of
-			 ;; the (named-)pipe-from pipe open (if a file
-			 ;; descriptor) -- it will have been dup'ed in
-			 ;; prep-io
-			 if (eq? $use-r-pipe 'named) {
-			   fd := %process-substitution-job-fd $proc-subst-job
-			   if fd {
-			     libc/close fd
-			   }
-			 } {
-			   libc/close (libc/pipe-reader $r-pipe)
-			 }
-		       }))
+	      (cond
+	       ($use-w-pipe {
+		 ;; sub-Idio should not hold the write end of the
+		 ;; (named-)pipe-into pipe open (if a file descriptor)
+		 ;; -- it will have been dup'ed in prep-io
+		 if (eq? $use-w-pipe 'named) {
+		   fd := %process-substitution-job-fd $proc-subst-job
+		   if fd {
+		     libc/close fd
+		   }
+		 } {
+		   libc/close (libc/pipe-writer $w-pipe)
+		 }
+	       })
+	       ($use-r-pipe {
+		 ;; sub-Idio should not hold the read end of the
+		 ;; (named-)pipe-from pipe open (if a file descriptor)
+		 ;; -- it will have been dup'ed in prep-io
+		 if (eq? $use-r-pipe 'named) {
+		   fd := %process-substitution-job-fd $proc-subst-job
+		   if fd {
+		     libc/close fd
+		   }
+		 } {
+		   libc/close (libc/pipe-reader $r-pipe)
+		 }
+	       }))
 
-		      ;; The Libc texinfo page seems to have missed
-		      ;; this.  On the basis that a $cmd-pipe is owned
-		      ;; (created?) by the left hand process of the
-		      ;; two being connected, then $cmd-r-fdn is the
-		      ;; (pipe-reader $cmd-pipe) of the left-hand
-		      ;; process and will have been closed in
-		      ;; %prep-process, above (unless it was
-		      ;; $pipeline-r-fdn).
+	      ;; The Libc texinfo page seems to have missed this.  On
+	      ;; the basis that a $cmd-pipe is owned (created?) by the
+	      ;; left hand process of the two being connected, then
+	      ;; $cmd-r-fdn is the (pipe-reader $cmd-pipe) of the
+	      ;; left-hand process and will have been closed in
+	      ;; %prep-process, above (unless it was $pipeline-r-fdn).
 
-		      ;; In turn, the current (pipe-reader $cmd-pipe)
-		      ;; will become the $cmd-r-fdn of the right-hand
-		      ;; process (as the parent Idio also has it open
-		      ;; and will pass it on).  But what of us?  Who
-		      ;; closes (pipe-reader $cmd-pipe) in us?
+	      ;; In turn, the current (pipe-reader $cmd-pipe) will
+	      ;; become the $cmd-r-fdn of the right-hand process (as
+	      ;; the parent Idio also has it open and will pass it
+	      ;; on).  But what of us?  Who closes (pipe-reader
+	      ;; $cmd-pipe) in us?
 
-		      ;; Ah, OK.  We do.
-		      if ($proc-id lt $nprocs) {
-			libc/close (libc/pipe-reader $cmd-pipe)
-		      }
+	      ;; Ah, OK.  We do.
+	      if ($proc-id lt $nprocs) {
+		libc/close (libc/pipe-reader $cmd-pipe)
+	      }
 
-		      ;; We don't have the same problem with
-		      ;; (pipe-writer $cmd-pipe) because we only
-		      ;; create the $cmd-pipe when we know there is
-		      ;; another process in the pipeline and
-		      ;; $cmd-w-fdn immediately becomes (pipe-writer
-		      ;; $cmd-pipe).
+	      ;; We don't have the same problem with (pipe-writer
+	      ;; $cmd-pipe) because we only create the $cmd-pipe when
+	      ;; we know there is another process in the pipeline and
+	      ;; $cmd-w-fdn immediately becomes (pipe-writer
+	      ;; $cmd-pipe).
 
-		      ;; $cmd-r-fdn is a left-over from the pipe of
-		      ;; the left hand process and we are suffering an
-		      ;; off-by-one error and the left-over one is the
-		      ;; current (pipe-reader $cmd-pipe) we have in
-		      ;; our hands.
+	      ;; $cmd-r-fdn is a left-over from the pipe of the left
+	      ;; hand process and we are suffering an off-by-one error
+	      ;; and the left-over one is the current (pipe-reader
+	      ;; $cmd-pipe) we have in our hands.
 
-		      if (C/== $pgid libc/0pid_t) {
-			libc/close (libc/pipe-writer $pgrp-pipe)
+	      if (C/== $pgid libc/0pid_t) {
+		libc/close (libc/pipe-writer $pgrp-pipe)
 
-			;; $pgid is 0 so we must be the first in the
-			;; pipeline -- block reading a single byte
-			;; from the $pgrp-pipe
-			libc/read (libc/pipe-reader $pgrp-pipe) 1
-			libc/close (libc/pipe-reader $pgrp-pipe)
-                      } {
-			libc/close (libc/pipe-reader $pgrp-pipe)
-			libc/close (libc/pipe-writer $pgrp-pipe)
-		      }
+		;; $pgid is 0 so we must be the first in the pipeline
+		;; -- block reading a single byte from the $pgrp-pipe
+		libc/read (libc/pipe-reader $pgrp-pipe) 1
+		libc/close (libc/pipe-reader $pgrp-pipe)
+	      } {
+		libc/close (libc/pipe-reader $pgrp-pipe)
+		libc/close (libc/pipe-writer $pgrp-pipe)
+	      }
 
-		      ;; tidy up any trailing $pipeline-*-fdn ends
-		      if (and (C/int? $pipeline-r-fdn)
-			      (not (C/== $cmd-r-fdn $pipeline-r-fdn))
-			      (not (C/== $pipeline-r-fdn libc/STDIN_FILENO))) {
-				libc/close $pipeline-r-fdn
-		      }
-		      if (and (C/int? $pipeline-w-fdn)
-			      (not (C/== $cmd-w-fdn $pipeline-w-fdn))
-			      (not (C/== $pipeline-w-fdn libc/STDOUT_FILENO))) {
-				libc/close $pipeline-w-fdn
-		      }
+	      ;; tidy up any trailing $pipeline-*-fdn ends
+	      if (and (C/int? $pipeline-r-fdn)
+		      (not (C/== $cmd-r-fdn $pipeline-r-fdn))
+		      (not (C/== $pipeline-r-fdn libc/STDIN_FILENO))) {
+		libc/close $pipeline-r-fdn
+	      }
+	      if (and (C/int? $pipeline-w-fdn)
+		      (not (C/== $cmd-w-fdn $pipeline-w-fdn))
+		      (not (C/== $pipeline-w-fdn libc/STDOUT_FILENO))) {
+		libc/close $pipeline-w-fdn
+	      }
 
-		      (cond
-		       ((pair? (ph '$cmd)) {
-			 $@cmd
-		       })
-		       (else {
-			 $cmd
-		       }))
+	      (cond
+	       ((pair? (ph '$cmd)) {
+		 $@cmd
+	       })
+	       (else {
+		 $cmd
+	       }))
 
-		      ;; We ought to definitively stop before this
-		      ;; child continues back into the main Idio
-		      ;; engine.
+	      ;; We ought to definitively stop before this child
+	      ;; continues back into the main Idio engine.
 
-		      exit 0
-		    } {
-		      set-%idio-process-pid! $proc $pid
-		      if (or job-control/%idio-interactive
-			     $async-job) {
-			if (C/== $pgid libc/0pid_t) {
-			  $pgid = $pid
-			  set-%idio-job-pgid! $job $pgid
-			}
-			suppress-errors! ^system-error libc/setpgid $pid $pgid
-		      }
-		    }
+	      exit 0
+	    } {
+	      set-%idio-process-pid! $proc $pid
+	      if (or job-control/%idio-interactive
+		     $async-job) {
+		if (C/== $pgid libc/0pid_t) {
+		  $pgid = $pid
+		  set-%idio-job-pgid! $job $pgid
+		}
+		suppress-errors! ^system-error libc/setpgid $pid $pgid
+	      }
+	    }
 
-		    ;; tidy up any trailing $cmd-pipe ends
-		    if (C/int? $cmd-r-fdn) {
-		      if (not (and (C/int? $pipeline-r-fdn)
-				   (C/== $cmd-r-fdn $pipeline-r-fdn))) {
-				     libc/close $cmd-r-fdn
-				   }
-		    }
-		    if (C/int? $cmd-w-fdn) {
-		      if (not (and (C/int? $pipeline-w-fdn)
-				   (C/== $cmd-w-fdn $pipeline-w-fdn))) {
-				     libc/close $cmd-w-fdn
-				   }
-		    }
+	    ;; tidy up any trailing $cmd-pipe ends
+	    if (C/int? $cmd-r-fdn) {
+	      if (not (and (C/int? $pipeline-r-fdn)
+			   (C/== $cmd-r-fdn $pipeline-r-fdn))) {
+		libc/close $cmd-r-fdn
+	      }
+	    }
+	    if (C/int? $cmd-w-fdn) {
+	      if (not (and (C/int? $pipeline-w-fdn)
+			   (C/== $cmd-w-fdn $pipeline-w-fdn))) {
+		libc/close $cmd-w-fdn
+	      }
+	    }
 
-		    $cmd-r-fdn = (libc/pipe-reader $cmd-pipe)
-		    $proc-id = $proc-id + 1
-		  }
-	        }
+	    $cmd-r-fdn = (libc/pipe-reader $cmd-pipe)
+	    $proc-id = $proc-id + 1
+	  }
+	}
       })
 	 op-args)
 
       (cond
        ($use-w-pipe {
-	 ;; parent should not hold the read end of the pipe-into pipe open
+	 ;; parent should not hold the read end of the pipe-into pipe
+	 ;; open
 	 if (eq? $use-w-pipe 'named) {
 	   job-control/add-process-substitution-job $job $proc-subst-job
 	   if (C/int? $pipeline-r-fdn) {
@@ -1716,7 +1706,8 @@ define-infix-operator | 700 {
 	 }
        })
        ($use-r-pipe {
-	 ;; parent should not hold the write end of the pipe-from pipe open
+	 ;; parent should not hold the write end of the pipe-from pipe
+	 ;; open
 	 if (eq? $use-r-pipe 'named) {
 	   job-control/add-process-substitution-job $job $proc-subst-job
 	   if (C/int? $pipeline-w-fdn) {
@@ -2111,11 +2102,11 @@ have changed state.
   notify := #f
 
   loop :+ function (jobs) {
-	    if (null? jobs) #t {
-	      notify = #t
-	      wait-for-job (ph jobs)
-	      loop (pt jobs)
-	    }
+    if (null? jobs) #t {
+      notify = #t
+      wait-for-job (ph jobs)
+      loop (pt jobs)
+    }
   }
 
   if (null? jobs) {
@@ -2281,7 +2272,7 @@ define-template (collect-output & cmd) {
   #T{
     $osh := (open-output-string)
     with-output-to $osh (function #n {
-			   fork-command #t #f #f #t $@cmd
+      fork-command #t #f #f #t $@cmd
     })
     strip-string (get-output-string $osh) "\n"
   }
@@ -2373,18 +2364,18 @@ with-handle-dup := {
      ((string-handle? new) (error/type ^rt-parameter-type-error 'with-handle-dup (append-string "not an " msg-h "-string-handle") new))
      ((or (C/int? new)
 	  (fixnum? new)) {
-	    if (C/int? new) (new = C/->integer new)
-	    (cond
-	     ((eq? new 0) {
-	       new-h = (current-input-handle)
-	     })
-	     ((eq? new 1) {
-	       new-h = (current-output-handle)
-	     })
-	     ((eq? new 2) {
-	       new-h = (current-error-handle)
-	     }))
-	  })
+       if (C/int? new) (new = C/->integer new)
+       (cond
+	((eq? new 0) {
+	  new-h = (current-input-handle)
+	})
+	((eq? new 1) {
+	  new-h = (current-output-handle)
+	})
+	((eq? new 2) {
+	  new-h = (current-error-handle)
+	}))
+     })
      (else (error/type ^rt-parameter-type-error 'with-handle-dup (append-string "unexpected " msg-h) new)))
 
     (cond
@@ -2443,13 +2434,13 @@ define-infix-operator > 600 {
 
   if (null? suffix) {
     result = #T{ with-handle-redir '$type $(ph after) (function () {
-        $before
-      })
+      $before
+    })
     }
   } {
     result = #T{ with-handle-redir '$type $(ph after) (function () {
-        $(operator-expand (append before suffix))
-      })
+      $(operator-expand (append before suffix))
+    })
     }
   }
 
@@ -2491,13 +2482,13 @@ define-infix-operator >& 600 {
 
   if (null? suffix) {
     result = #T{ with-handle-dup '$type $(ph after) (function () {
-        $before
-      })
+      $before
+    })
     }
   } {
     result = #T{ with-handle-dup '$type $(ph after) (function () {
-        $(operator-expand (append before suffix))
-      })
+      $(operator-expand (append before suffix))
+    })
     }
   }
 
@@ -2510,14 +2501,14 @@ define-infix-operator 2>& 600 \>&
 define (jobs) "display the state of outstanding jobs" {
   first-j := #t
   jobs-loop :+ function (jobs) {
-		 (cond
-		  ((null? jobs) {
-		    #t
-		  })
-		  (else {
-		    format-job-detail (ph jobs)
-		    jobs-loop (pt jobs)
-		  }))
+    (cond
+     ((null? jobs) {
+       #t
+     })
+     (else {
+       format-job-detail (ph jobs)
+       jobs-loop (pt jobs)
+     }))
   }
 
   jobs-loop %idio-jobs

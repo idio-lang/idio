@@ -81,9 +81,9 @@ testfile := "__testfile__"
 if (e? testfile) {
   delete-file testfile
 }
-    ;; (error (append-string "Please delete the file \""
-    ;;                       testfile
-    ;;                       "\" before running this test.")))
+;; (error (append-string "Please delete the file \""
+;;                       testfile
+;;                       "\" before running this test.")))
 
 Errors := 0
 Tests := 0
@@ -125,8 +125,8 @@ define-template (test form result) {
 define-template (test/error form result c-msg) {
   #T{
     with-condition-handler ^idio-error (function (c) {
-					  test (idio-error-message c) $c-msg
-					  trap-return #f
+      test (idio-error-message c) $c-msg
+      trap-return #f
     }) {
       test3 '$form $form $result
     }
@@ -154,28 +154,28 @@ testdir := #f
 IDIO-UTILS-BIN := #f
 
 map (function (d) {
-       if (not testdir) {
-	 (regex-case
-	  d
-	  ("^(.*)/.local/lib/idio/" {
-	    td := append-string r.1 "/tests"
-	    tf := append-string td "/test-operator.idio"
-	    if (e? tf) {
-	      topdir = r.1
-	      testdir = td
-	    }
-	  })
-	  (else {
-	    tf := append-string d "/test-operator.idio"
-	    if (e? tf) {
-	      testdir = d
-	      (regex-case d
-			  ("^(.*)/tests" {
-			    topdir = r.1
-			  }))
-	    }
-	  }))
+  if (not testdir) {
+    (regex-case
+     d
+     ("^(.*)/.local/lib/idio/" {
+       td := append-string r.1 "/tests"
+       tf := append-string td "/test-operator.idio"
+       if (e? tf) {
+	 topdir = r.1
+	 testdir = td
        }
+     })
+     (else {
+       tf := append-string d "/test-operator.idio"
+       if (e? tf) {
+	 testdir = d
+	 (regex-case d
+		     ("^(.*)/tests" {
+		       topdir = r.1
+		     }))
+       }
+     }))
+  }
 }) (split-string IDIOLIB ":")
 
 if (not testdir) {
@@ -330,20 +330,20 @@ if (null? extension-tests) {
 } {
 
   for-each (function (etf) {
-	      IDIOLIB = OIDIOLIB
-	      PATH = OPATH
+    IDIOLIB = OIDIOLIB
+    PATH = OPATH
 
-	      td := #f
-	      (regex-case
-	       etf
-	       ("(.*/tests)/([^/]+)$" {
-		 eprintf "extension-tests: %s\n" r.1
-		 path-prepend 'IDIOLIB r.1
-		 test-load r.2
-	       })
-	       (else {
-		 eprintf "extension-tests: unexpected test-file: \"%s\"\n" etf
-	       }))
+    td := #f
+    (regex-case
+     etf
+     ("(.*/tests)/([^/]+)$" {
+       eprintf "extension-tests: %s\n" r.1
+       path-prepend 'IDIOLIB r.1
+       test-load r.2
+     })
+     (else {
+       eprintf "extension-tests: unexpected test-file: \"%s\"\n" etf
+     }))
   }) extension-tests
 }
 

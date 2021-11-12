@@ -49,16 +49,16 @@ vm-error-load := {
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^runtime-error
 	  ^rt-command-error) (function (c) {
-				;eprintf "vm-error #%s: %s %s\n" n msg (idio-error-location c)
-				test (idio-error-message c) msg
+	    ;eprintf "vm-error #%s: %s %s\n" n msg (idio-error-location c)
+	    test (idio-error-message c) msg
 
-				if (or (not (string=? (idio-error-message c) msg))
-				       (and (pair? args)
-					    (not (equal? (ph args) (struct-instance-type c))))) {
-					      condition-report (append-string "vm-error-load: " filename) c (current-error-handle)
-					    }
-				
-				trap-return 'vm-error
+	    if (or (not (string=? (idio-error-message c) msg))
+		   (and (pair? args)
+			(not (equal? (ph args) (struct-instance-type c))))) {
+	      condition-report (append-string "vm-error-load: " filename) c (current-error-handle)
+	    }
+	    
+	    trap-return 'vm-error
 	  }) {
 	    t0 := Tests
 	    (symbol-value 'load 'Idio) filename
@@ -67,7 +67,7 @@ vm-error-load := {
 	      Errors = Errors + 1
 	      Tests = t0 + exp-tests
 	    }
-	  }
+    }
   }
 }
 

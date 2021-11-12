@@ -30,19 +30,19 @@ sort-ctime := #n
   sort-stats := #n
 
   key-stat-size := function (p) {
-		     libc/struct-stat-ref (hash-ref sort-stats p) 'st_size
+    libc/struct-stat-ref (hash-ref sort-stats p) 'st_size
   }
 
   key-stat-atime := function (p) {
-		      libc/struct-stat-ref (hash-ref sort-stats p) 'st_atime
+    libc/struct-stat-ref (hash-ref sort-stats p) 'st_atime
   }
 
   key-stat-mtime := function (p) {
-		      libc/struct-stat-ref (hash-ref sort-stats p) 'st_mtime
+    libc/struct-stat-ref (hash-ref sort-stats p) 'st_mtime
   }
 
   key-stat-ctime := function (p) {
-		      libc/struct-stat-ref (hash-ref sort-stats p) 'st_ctime
+    libc/struct-stat-ref (hash-ref sort-stats p) 'st_ctime
   }
 
   sort-size = function (l) "
@@ -54,7 +54,7 @@ sort the filenames in `l` by file size
     sort-stats = make-hash #n #n ((length l) + 10)
 
     for-each (function (p) {
-		hash-set! sort-stats p (libc/stat p)
+      hash-set! sort-stats p (libc/stat p)
     }) l
 
     sort l C/< key-stat-size
@@ -69,7 +69,7 @@ sort the filenames in `l` by file access time
     sort-stats = make-hash #n #n ((length l) + 10)
 
     for-each (function (p) {
-		hash-set! sort-stats p (libc/stat p)
+      hash-set! sort-stats p (libc/stat p)
     }) l
 
     sort l C/< key-stat-atime
@@ -84,7 +84,7 @@ sort the filenames in `l` by file modification time
     sort-stats = make-hash #n #n ((length l) + 10)
 
     for-each (function (p) {
-		hash-set! sort-stats p (libc/stat p)
+      hash-set! sort-stats p (libc/stat p)
     }) l
 
     sort l C/< key-stat-mtime
@@ -99,7 +99,7 @@ sort sort filenames in `l` by file creation time
     sort-stats = make-hash #n #n ((length l) + 10)
 
     for-each (function (p) {
-		hash-set! sort-stats p (libc/stat p)
+      hash-set! sort-stats p (libc/stat p)
     }) l
 
     sort l C/< key-stat-ctime

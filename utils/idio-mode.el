@@ -280,6 +280,8 @@ indentation."
 	 (current-indent (current-indentation))
 	 (target-indent current-indent))
     (let (backslash-indent
+	  formatted-indent
+	  comment-indent
 	  brace-dedent
 	  brace-indent
 	  paren-dedent
@@ -320,59 +322,107 @@ indentation."
 	(if point-limit
 	    (save-excursion
 	      (goto-char point-limit)
-	      (cond ((looking-at "{")
-		     (progn
-		       ;; nominal indent is current-indentation +
-		       ;; default-indent
-		       (setq brace-indent (+ (current-indentation) idio-mode-indent))
-		       ;; however, if this is an embedded function
-		       ;; then the indent should be the default indent
-		       ;; forward from the start of "function"
-		       (condition-case nil
-			   (progn
-			     (backward-sexp 2)
-			     (if (looking-at "function")
-				 (setq brace-indent (+ (current-column) idio-mode-indent))))
-			 ((scan-error)
-			  nil))
-		       ))
-		    ((looking-at "(")
-		     (progn
-		       ;; nominal indent 1 forward from ?\( -- the
-		       ;; forward-char is important otherwise the
-		       ;; upcoming forward-sexp will (try to) jump
-		       ;; over the entire sexp rather than step over
-		       ;; sexps inside the (s
-		       ;;
-		       ;; We can indent if the next word is "function"
-		       ;; where (it looks like) the function isn't
-		       ;; using a block
-		       (forward-char)
-		       (setq paren-indent (+ (current-column) 1))
-		       (let (func)
-			 (if (looking-at "function")
-			     (setq func t
-				   paren-indent (+ (current-column) idio-mode-indent)))
-			 (if (not func)
-			     ;; what if there are more args on the ?\( line?
-			     ;; we would want to line up with the last of
-			     ;; them that is on the same line at the ?\(
-			     (let ((paren-line (line-number-at-pos))
-				   (not-done t))
-			       (condition-case nil
-				   (while not-done
-				     (progn
-				       (forward-sexp)
-				       (if (eq paren-line (line-number-at-pos))
-					   (setq paren-indent (save-excursion
-								(backward-sexp)
-								(current-column)))
-					 (setq not-done nil))))
-				 ((scan-error)
-				  ;; this should be
-				  ;; forward-sexp hitting the
-				  ;; ?\) or eof or ...
-				  nil))))))))))
+	      (cond
+	       ((elt ppss 3)
+		(setq formatted-indent t))
+	       ((elt ppss 4)
+		(setq comment-indent (save-excursion
+				       (goto-char (elt ppss 8))
+				       (current-indentation))))	       
+	       ((looking-at "{")
+		(progn
+		  ;; nominal indent is current-indentation +
+		  ;; default-indent
+		  ;(setq brace-indent (+ (current-indentation) idio-mode-indent))
+		  ;; however, if this is an embedded function
+		  ;; then the indent should be the default indent
+		  ;; forward from the start of "function"
+		  (or
+		   ;; #S{ formatted string }
+		   (condition-case nil
+		       (progn
+			 (save-excursion
+			   (backward-sexp 1)
+			   (if (looking-at "#S")
+			       (setq formatted-indent t))))
+		     ((scan-error)
+		      nil))
+		   ;; ^[[:space:]]*{
+		   (condition-case nil
+		       (progn
+			 (save-excursion
+			   (beginning-of-line)
+			   (if (looking-at "[[:space:]]*{")
+			       (setq brace-indent (+ (current-indentation) idio-mode-indent)))))
+		     ((scan-error)
+		      nil))
+		   ;; define/function (with docstr)/if alternative/do
+		   (condition-case nil
+		       (progn
+			 (save-excursion
+			   (backward-sexp 3)
+			   (if (looking-at "\\(define\\|function\\|if\\|do\\)")
+			       (setq brace-indent (+ (current-indentation) idio-mode-indent)))))
+		     ((scan-error)
+		      nil))
+		   ;; define/function/if consequent
+		   (condition-case nil
+		       (progn
+			 (save-excursion
+			   (backward-sexp 2)
+			   (if (looking-at "\\(define\\|function\\|if\\)")			       
+			       (setq brace-indent (+ (current-indentation) idio-mode-indent)))))
+		     ((scan-error)
+		      nil))
+		   ;; cond clause
+		   (condition-case nil
+		       (progn
+			 (save-excursion
+			   (backward-sexp 1)
+			   (setq brace-indent (+ (current-indentation) idio-mode-indent))))
+		     ((scan-error)
+		      nil)))
+		  ))
+	       ((looking-at "(")
+		(progn
+		  ;; nominal indent 1 forward from ?\( -- the
+		  ;; forward-char is important otherwise the
+		  ;; upcoming forward-sexp will (try to) jump
+		  ;; over the entire sexp rather than step over
+		  ;; sexps inside the (s
+		  ;;
+		  ;; We can indent if the next word is "function"
+		  ;; where (it looks like) the function isn't
+		  ;; using a block
+		  (forward-char)
+		  (setq paren-indent (+ (current-column) 1))
+		  (cond
+		   ((save-excursion
+		      (progn
+			(beginning-of-line)
+			(if (looking-at "define-syntax")
+			    (setq paren-indent idio-mode-indent)))))
+		   ((looking-at "\\(cond[[:space:]]*$\\)")
+		    (setq paren-indent (current-column)))
+		   ((looking-at "\\(define\\|function\\|if\\|do\\|case\\|cond\\|syntax-rules\\)")
+		    (setq paren-indent (+ (current-indentation) idio-mode-indent -1)))
+		   (t
+		    (let ((paren-line (line-number-at-pos))
+			  (not-done t))
+		      (condition-case nil
+			  (while not-done
+			    (progn
+			      (forward-sexp)
+			      (if (eq paren-line (line-number-at-pos))
+				  (setq paren-indent (save-excursion
+						       (backward-sexp)
+						       (current-column)))
+				(setq not-done nil))))
+			((scan-error)
+			 ;; this should be
+			 ;; forward-sexp hitting the
+			 ;; ?\) or eof or ...
+			 nil))))))))))
 	(setq brace-dedent (save-excursion
 			     (progn
 			       (beginning-of-line)
@@ -384,7 +434,20 @@ indentation."
 					 ;; indentation
 					 (skip-chars-forward "[:space:]}")
 					 (backward-sexp)
-					 (current-indentation))
+					 (or (condition-case nil
+						 (progn
+						   (backward-sexp 2)
+						   (if (looking-at "\\(define\\|function\\|if\\|do\\|case\\|cond\\)")
+						       (current-indentation)))
+					       ((scan-error)
+						nil))
+					     (condition-case nil
+						 (progn
+						   (backward-sexp 1)
+						   (current-indentation))
+					       ((scan-error)
+						nil))
+					     (current-indentation)))
 				     ((scan-error)
 				      nil))))))
 	(setq paren-dedent (save-excursion
@@ -402,43 +465,54 @@ indentation."
 				     ((scan-error)
 				      nil))))))
 	
-	(cond (backslash-indent
-	       (progn
-		 (setq target-indent backslash-indent)
-		 (message "\\: %s %s" current-indent target-indent)))
-	      (brace-dedent
-	       (progn
-		 (setq target-indent brace-dedent)
-		 (message "}: %s %s" current-indent target-indent)))
-	      (brace-indent
-	       (progn
-		 (setq target-indent brace-indent)
-		 (message "{: %s %s" current-indent target-indent)))
-	      (paren-dedent
-	       (progn
-		 (setq target-indent (if (eq 0 sexp-count)
-					 sexp-count
-				       (* idio-mode-indent (- sexp-count 1))))
-		 (message "): %s %s" current-indent target-indent)))
-	      (paren-indent
-	       (progn
-		 (setq target-indent paren-indent)
-		 (message "(: %s %s" current-indent target-indent)))
-	      (t
-	       (progn
-		 (setq target-indent (* idio-mode-indent sexp-count))
-		 (message "-: %s %s" current-indent target-indent))))))
-    (if (> current-indent target-indent)
-	(save-excursion
-	  (beginning-of-line)
-	  (delete-horizontal-space)
-	  (indent-to target-indent))
-	(if (not (eq current-indent target-indent))
-	    (progn
-	      (save-excursion
-		(beginning-of-line)
-		(delete-horizontal-space)
-		(indent-to target-indent)))))
+	(cond
+	 (comment-indent
+	  (progn
+	    (setq target-indent comment-indent)
+	    (message "#*")))
+	 (formatted-indent
+	  (progn
+	    (setq target-indent nil)
+	    (message "#S")))
+	 (backslash-indent
+	  (progn
+	    (setq target-indent backslash-indent)
+	    (message "\\: %s %s" current-indent target-indent)))
+	 (brace-dedent
+	  (progn
+	    (setq target-indent brace-dedent)
+	    (message "}: %s %s" current-indent target-indent)))
+	 (brace-indent
+	  (progn
+	    (setq target-indent brace-indent)
+	    (message "{: %s %s" current-indent target-indent)))
+	 (paren-dedent
+	  (progn
+	    (setq target-indent (if (eq 0 sexp-count)
+				    sexp-count
+				  (* idio-mode-indent (- sexp-count 1))))
+	    (setq target-indent paren-dedent)
+	    (message "): %s %s %s" current-indent target-indent sexp-count)))
+	 (paren-indent
+	  (progn
+	    (setq target-indent paren-indent)
+	    (message "(: %s %s" current-indent target-indent)))
+	 (t
+	  (progn
+	    (setq target-indent (* idio-mode-indent sexp-count))
+	    (message "-: %s %s" current-indent target-indent))))))
+    (if target-indent
+	(if (> current-indent target-indent)
+	    (save-excursion
+	      (beginning-of-line)
+	      (delete-horizontal-space)
+	      (indent-to target-indent))
+	  (if (not (eq current-indent target-indent))
+	      (progn
+		(save-excursion
+		  (beginning-of-line)
+		  (delete-horizontal-space)
+		  (indent-to target-indent))))))
     (skip-chars-forward "[:space:]")))
 
 (defvar idio-mode-default-indent 2)

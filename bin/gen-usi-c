@@ -384,8 +384,8 @@ gc-list := '(
 gc-map := #{}
 gc-map-index := 0
 for-each (function (cat) {
-	   hash-set! gc-map cat gc-map-index
-	   gc-map-index = gc-map-index + 1
+  hash-set! gc-map cat gc-map-index
+  gc-map-index = gc-map-index + 1
 }) gc-list
 
 ; gc-flag-list are those Categories that we want as C-testable flags
@@ -425,8 +425,8 @@ all-flags := append gc-flag-list p-flag-list '(Fractional_Number)
 flag-map-index := 0
 flag-map := #{}
 for-each (function (k) {
-	    hash-set! flag-map k (expt 2 flag-map-index)
-	    flag-map-index = flag-map-index + 1
+  hash-set! flag-map k (expt 2 flag-map-index)
+  flag-map-index = flag-map-index + 1
 }) all-flags
 
 ; Having defined unique values for the flags we need those values as
@@ -473,52 +473,52 @@ define (prop-list-reader file) {
   fh := open-input-file file
 
   loop :+ function (fh) {
-	    if (not (eof? fh)) {
-	      line := read-line fh
-	      if ((string-length line) gt 0) {
-		(regex-case
-		 line
-		 ("^([[:xdigit:]]{4,6})\\.\\.([[:xdigit:]]{4,6})[[:space:]]+;[[:space:]]([[:alnum:]_]+)" {
-		   fcp := read-number r.1 16
-		   lcp := read-number r.2 16
-		   prop := r.3
+    if (not (eof? fh)) {
+      line := read-line fh
+      if ((string-length line) gt 0) {
+	(regex-case
+	 line
+	 ("^([[:xdigit:]]{4,6})\\.\\.([[:xdigit:]]{4,6})[[:space:]]+;[[:space:]]([[:alnum:]_]+)" {
+	   fcp := read-number r.1 16
+	   lcp := read-number r.2 16
+	   prop := r.3
 
-		   ; Property "char-set"
-		   cs := #f
-		   if (not (hash-exists? prop-char-set-map prop)) {
-		     cs = make-sparse-char-set unicode-char-set-size
-		     hash-set! prop-char-set-map prop cs
-		   } {
-		     cs = hash-ref prop-char-set-map prop
-		   }
-		   loop :+ (function (cp) {
-			      if (cp gt lcp) #n {
-				char-set-set! cs cp
-				loop (cp + 1)
-			      }
-		   })
-		   loop fcp
-		 })
-		 ("^([[:xdigit:]]{4,6})[[:space:]]+;[[:space:]]([[:alnum:]_]+)" {
-		   cp := read-number r.1 16
-		   prop := r.2
-		   cs := #f
-		   if (not (hash-exists? prop-char-set-map prop)) {
-		     cs = make-sparse-char-set unicode-char-set-size
-		     hash-set! prop-char-set-map prop cs
-		   } {
-		     cs = hash-ref prop-char-set-map prop
-		   }
-		   char-set-set! cs cp
-		 })
-		 ("# [^-]+-(.+)\\.txt" {
-		   if (not unicode-version) {
-		     unicode-version = r.1
-		   }
-		 }))
-	      }
-	      loop fh
-	    }
+	   ; Property "char-set"
+	   cs := #f
+	   if (not (hash-exists? prop-char-set-map prop)) {
+	     cs = make-sparse-char-set unicode-char-set-size
+	     hash-set! prop-char-set-map prop cs
+	   } {
+	     cs = hash-ref prop-char-set-map prop
+	   }
+	   loop :+ (function (cp) {
+	     if (cp gt lcp) #n {
+	       char-set-set! cs cp
+	       loop (cp + 1)
+	     }
+	   })
+	   loop fcp
+	 })
+	 ("^([[:xdigit:]]{4,6})[[:space:]]+;[[:space:]]([[:alnum:]_]+)" {
+	   cp := read-number r.1 16
+	   prop := r.2
+	   cs := #f
+	   if (not (hash-exists? prop-char-set-map prop)) {
+	     cs = make-sparse-char-set unicode-char-set-size
+	     hash-set! prop-char-set-map prop cs
+	   } {
+	     cs = hash-ref prop-char-set-map prop
+	   }
+	   char-set-set! cs cp
+	 })
+	 ("# [^-]+-(.+)\\.txt" {
+	   if (not unicode-version) {
+	     unicode-version = r.1
+	   }
+	 }))
+      }
+      loop fh
+    }
   }
   loop fh
 
@@ -640,111 +640,111 @@ define (UD-reader file) {
   fh := open-input-file UD-file
 
   loop :+ function (fh) {
-	    if (not (eof? fh)) {
-	      line := read-line fh
-	      if ((string-length line) gt 0) {
+    if (not (eof? fh)) {
+      line := read-line fh
+      if ((string-length line) gt 0) {
+	(regex-case
+	 line
+	 ("([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)" {
+
+	   ;; we're about to run another regex-case so save r
+	   line-r := r
+	   gc := line-r.3
+
+	   cp := read-number line-r.1 16
+
+	   name := line-r.2
+
+	   ; Category "char-set"
+	   cs := #f
+	   if (not (hash-exists? cat-char-set-map gc)) {
+	     cs = make-sparse-char-set unicode-char-set-size
+	     hash-set! cat-char-set-map gc cs
+	   } {
+	     cs = hash-ref cat-char-set-map gc
+	   }
+
+	   (regex-case
+	    name
+	    ("First>$" {
+	      line = read-line fh
+	      parts := split-string-exactly line ";"
+	      lcp := read-number (ph parts) 16
+
+	      gci :=  hash-ref gc-map gc
+	      gc-flags := cat-flags gc
+
+	      loop :+ function (cp) {
+		if (cp gt lcp) #n {
+		  ;; mark a page as having been used, we'll replace
+		  ;; #t with the summary page index after we've
+		  ;; seen all the pages
+		  array-set! used-pages-table (quotient cp page-size) #t
+
+		  char-set-set! cs cp
+
+		  flags := gc-flags + (prop-flags cp)
+
+		  ;; can we guarantee these will have no
+		  ;; uc/lc/tc or numeric value?
+
+		  array-set! cp-table cp (get-scp-index (list flags gci 0 0 0 0))
+		  loop (cp + 1)
+		}
+	      }
+
+	      loop cp
+	    })
+	    (else {
+	      ;; mark a page as having been used, we'll replace
+	      ;; #t with the summary page index after we've
+	      ;; seen all the pages
+	      array-set! used-pages-table (quotient cp page-size) #t
+
+	      char-set-set! cs cp
+
+	      flags := (cat-flags gc) + (prop-flags cp)
+
+	      nvs := line-r.9
+	      nv := 0
+	      if ((string-length nvs) gt 0) {
 		(regex-case
-		 line
-		 ("([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)" {
-
-		   ;; we're about to run another regex-case so save r
-		   line-r := r
-		   gc := line-r.3
-
-		   cp := read-number line-r.1 16
-
-		   name := line-r.2
-
-		   ; Category "char-set"
-		   cs := #f
-		   if (not (hash-exists? cat-char-set-map gc)) {
-		     cs = make-sparse-char-set unicode-char-set-size
-		     hash-set! cat-char-set-map gc cs
-		   } {
-		     cs = hash-ref cat-char-set-map gc
-		   }
-
-		   (regex-case
-		    name
-		    ("First>$" {
-		      line = read-line fh
-		      parts := split-string-exactly line ";"
-		      lcp := read-number (ph parts) 16
-
-		      gci :=  hash-ref gc-map gc
-		      gc-flags := cat-flags gc
-
-		      loop :+ function (cp) {
-				if (cp gt lcp) #n {
-				  ;; mark a page as having been used, we'll replace
-				  ;; #t with the summary page index after we've
-				  ;; seen all the pages
-				  array-set! used-pages-table (quotient cp page-size) #t
-
-				  char-set-set! cs cp
-
-				  flags := gc-flags + (prop-flags cp)
-
-				  ;; can we guarantee these will have no
-				  ;; uc/lc/tc or numeric value?
-
-				  array-set! cp-table cp (get-scp-index (list flags gci 0 0 0 0))
-				  loop (cp + 1)
-				}
-		      }
-
-		      loop cp
-		    })
-		    (else {
-		      ;; mark a page as having been used, we'll replace
-		      ;; #t with the summary page index after we've
-		      ;; seen all the pages
-		      array-set! used-pages-table (quotient cp page-size) #t
-
-		      char-set-set! cs cp
-
-		      flags := (cat-flags gc) + (prop-flags cp)
-
-		      nvs := line-r.9
-		      nv := 0
-		      if ((string-length nvs) gt 0) {
-			(regex-case
-			 nvs
-			 ("/" {
-			   nv = append-string ".frac=\"" nvs "\""
-			   flags = flags + Fractional_Number-flag
-			 })
-			 (else {
-			   nv = read-number nvs 10
-			 }))
-		      }
-
-		      ucs := line-r.13
-		      ucd := 0
-		      if ((string-length ucs) gt 0) {
-			ucd = (read-number ucs 16) - cp
-		      }
-
-		      lcs := line-r.14
-		      lcd := 0
-		      if ((string-length lcs) gt 0) {
-			lcd = (read-number lcs 16) - cp
-		      }
-
-		      tcs := line-r.15
-		      tcd := 0
-		      if ((string-length tcs) eq 0) {
-			tcd = ucd
-		      } {
-			tcd = (read-number tcs 16) - cp
-		      }
-
-		      array-set! cp-table cp (get-scp-index (list flags (hash-ref gc-map gc) ucd lcd tcd nv))
-		    }))
+		 nvs
+		 ("/" {
+		   nv = append-string ".frac=\"" nvs "\""
+		   flags = flags + Fractional_Number-flag
+		 })
+		 (else {
+		   nv = read-number nvs 10
 		 }))
 	      }
-	      loop fh
-	    }
+
+	      ucs := line-r.13
+	      ucd := 0
+	      if ((string-length ucs) gt 0) {
+		ucd = (read-number ucs 16) - cp
+	      }
+
+	      lcs := line-r.14
+	      lcd := 0
+	      if ((string-length lcs) gt 0) {
+		lcd = (read-number lcs 16) - cp
+	      }
+
+	      tcs := line-r.15
+	      tcd := 0
+	      if ((string-length tcs) eq 0) {
+		tcd = ucd
+	      } {
+		tcd = (read-number tcs 16) - cp
+	      }
+
+	      array-set! cp-table cp (get-scp-index (list flags (hash-ref gc-map gc) ucd lcd tcd nv))
+	    }))
+	 }))
+      }
+      loop fh
+    }
   }
   loop fh
 
@@ -771,9 +771,9 @@ define (get-sp-index page) {
 
 define (range s e) {
   loop :+ function (c r) {
-	    if (c lt s) r {
-	      loop (c - 1) (pair c r)
-	    }
+    if (c lt s) r {
+      loop (c - 1) (pair c r)
+    }
   }
 
   loop e #n
@@ -784,26 +784,26 @@ padl := string-length pads
 
 used-page-count := 0
 array-for-each-set used-pages-table (function (i v) {
-				       used-page-count = used-page-count + 1
-				       page := concatenate-string (map (function (cp) {
-									  scpi := array-ref cp-table cp
-									  if (not scpi) {
-									    scpi = 0
-									  }
+  used-page-count = used-page-count + 1
+  page := concatenate-string (map (function (cp) {
+    scpi := array-ref cp-table cp
+    if (not scpi) {
+      scpi = 0
+    }
 
-									  scpis := ->string scpi
-									  scpil := string-length scpis
+    scpis := ->string scpi
+    scpil := string-length scpis
 
-									  (append-string
-									   (if ((remainder cp 16) eq 0) "\n    " "")
-									   (substring pads 0 (padl - scpil))
-									   scpis
-									   ",")
-				       }) (range (i * page-size) (((i + 1) * page-size) - 1)))
+    (append-string
+     (if ((remainder cp 16) eq 0) "\n    " "")
+     (substring pads 0 (padl - scpil))
+     scpis
+     ",")
+  }) (range (i * page-size) (((i + 1) * page-size) - 1)))
 
-				       page = append-string "{" page "\n  }"
-				       spi := get-sp-index page
-				       array-set! used-pages-table i spi
+  page = append-string "{" page "\n  }"
+  spi := get-sp-index page
+  array-set! used-pages-table i spi
 })
 
 page-count := quotient unicode-char-set-size page-size
@@ -849,23 +849,23 @@ typedef enum \{
 }
 
 for-each (function (fl) {
-	    c-flag := append-string "IDIO_USI_FLAG_" (if (string? fl) fl (symbol->string fl))
-	    c-comment := (cond
-			  ((memq fl gc-flag-list) {
-			    append-string "Category " (symbol->string fl)
-			  })
-			  ((memq fl p-flag-list) {
-			    append-string "Property " (symbol->string fl)
-			  })
-			  ((eq? fl 'Fractional_Number) {
-			    symbol->string fl
-			  })
-			  (else {
-			    eprintf "flag %s is unexpected\n" fl
-			    sprintf "Unexpected flag: %s" fl
-			  }))
+  c-flag := append-string "IDIO_USI_FLAG_" (if (string? fl) fl (symbol->string fl))
+  c-comment := (cond
+		((memq fl gc-flag-list) {
+		  append-string "Category " (symbol->string fl)
+		})
+		((memq fl p-flag-list) {
+		  append-string "Property " (symbol->string fl)
+		})
+		((eq? fl 'Fractional_Number) {
+		  symbol->string fl
+		})
+		(else {
+		  eprintf "flag %s is unexpected\n" fl
+		  sprintf "Unexpected flag: %s" fl
+		}))
 
-	    hprintf s-h-fh "  %-35s = %8dUL,	/* %s */\n" c-flag (hash-ref flag-map fl) c-comment
+  hprintf s-h-fh "  %-35s = %8dUL,	/* %s */\n" c-flag (hash-ref flag-map fl) c-comment
 }) all-flags
 
 hprintf s-h-fh #S{
@@ -880,7 +880,7 @@ typedef enum \{
 }
 
 for-each (function (cat) {
-	    hprintf s-h-fh "  %s,\n" (append-string "IDIO_USI_CATEGORY_" cat)
+  hprintf s-h-fh "  %s,\n" (append-string "IDIO_USI_CATEGORY_" cat)
 }) gc-list
 
 hprintf s-h-fh #S{
@@ -958,7 +958,7 @@ hprintf s-c-fh #S{
 hprintf s-c-fh "const char *idio_USI_flag_names[] = {\n"
 
 for-each (function (fl) {
-	    hprintf s-c-fh "  \"%s\",\n" (symbol->string fl)
+  hprintf s-c-fh "  \"%s\",\n" (symbol->string fl)
 }) all-flags
 
 hprintf s-c-fh "};\n\n"
@@ -966,8 +966,8 @@ hprintf s-c-fh "};\n\n"
 hprintf s-c-fh "const char *idio_USI_Category_names[] = {\n"
 
 for-each (function (cat) {
-	    designator := append-string "[IDIO_USI_CATEGORY_" cat "]"
-	    hprintf s-c-fh "  %-22s = \"%s\",\n" designator cat
+  designator := append-string "[IDIO_USI_CATEGORY_" cat "]"
+  hprintf s-c-fh "  %-22s = \"%s\",\n" designator cat
 }) gc-list
 
 hprintf s-c-fh "};\n\n"
@@ -975,8 +975,8 @@ hprintf s-c-fh "};\n\n"
 hprintf s-c-fh "const idio_USI_t idio_USI_variants[] = {\n"
 
 for-each (function (var) {
-	    vars := apply sprintf scp-C-fmt var
-	    hprintf s-c-fh "  %-64s,	/* %d */\n" vars (get-scp-index var)
+  vars := apply sprintf scp-C-fmt var
+  hprintf s-c-fh "  %-64s,	/* %d */\n" vars (get-scp-index var)
 }) (sort (hash-keys scp-map) \lt (function (var) (get-scp-index var)))
 
 hprintf s-c-fh "};\n\n"
@@ -984,16 +984,16 @@ hprintf s-c-fh "};\n\n"
 hprintf s-c-fh "const uint8_t idio_USI_page_index[] = {\n"
 
 fold-array used-pages-table (function (i v val) {
-			 ;; line break every 16
-			 if ((remainder i 16) eq 0) {
-			   hprintf s-c-fh "\n  "
-			 }
-			 spi := 0
-			 if v {
-			   spi = v
-			 }
-			 hprintf s-c-fh "%4d," spi
-			 val
+  ;; line break every 16
+  if ((remainder i 16) eq 0) {
+    hprintf s-c-fh "\n  "
+  }
+  spi := 0
+  if v {
+    spi = v
+  }
+  hprintf s-c-fh "%4d," spi
+  val
 }) 0
 
 hprintf s-c-fh "\n};\n\n"
@@ -1005,18 +1005,18 @@ hprintf s-c-fh "  /* invalid code points */\n"
 hprintf s-c-fh "  {\n"
 
 for-each (function (i) {
-	    ;; line break every 16
-	    if ((remainder i 16) eq 0) {
-	      hprintf s-c-fh "\n    "
-	    }
-	    hprintf s-c-fh "%3d," 0
+  ;; line break every 16
+  if ((remainder i 16) eq 0) {
+    hprintf s-c-fh "\n    "
+  }
+  hprintf s-c-fh "%3d," 0
 }) (range 0 (page-size - 1))
 
 hprintf s-c-fh "\n  },\n"
 
 for-each (function (page) {
-	    hprintf s-c-fh "  /* %d */\n" (get-sp-index page)
-	    hprintf s-c-fh "  %s,\n" page
+  hprintf s-c-fh "  /* %d */\n" (get-sp-index page)
+  hprintf s-c-fh "  %s,\n" page
 }) (sort (hash-keys sp-map) \lt (function (page) (get-sp-index page)))
 
 hprintf s-c-fh "\n};\n\n"

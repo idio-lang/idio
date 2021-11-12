@@ -42,7 +42,7 @@ list of (id & proc) pairs.
 The C code for infix-operator? is the equivalent of
 
 define (infix-operator? o) {
-  assq o *infix-operator-list*
+assq o *infix-operator-list*
 }
 
 Ditto for postfix operators.
@@ -60,13 +60,13 @@ define (operator-error msg loc name) {
 
 define (operator-precedence-table og) {
   loop :+ function (groups r) {
-	    (cond
-	     ((null? groups) (reverse r))
-	     (else {
-	       prec-group := ph groups
-	       ops := map ph (pt prec-group)
-	       loop (pt groups) (pair (pair (ph prec-group) ops) r)
-	     }))
+    (cond
+     ((null? groups) (reverse r))
+     (else {
+       prec-group := ph groups
+       ops := map ph (pt prec-group)
+       loop (pt groups) (pair (pair (ph prec-group) ops) r)
+     }))
   }
 
   loop og #n
@@ -105,23 +105,23 @@ define (copy-operator! new-id new-pri old-id ol og) {
       grp := (list (pair new-id (pt old)))
 
       og-loop :+ function (og p) {
-		   if (null? og) {
-		     og = (append og
-				  (list (pair new-pri grp)))
-		   } {
-		     og-pri := phh og
-		     if (og-pri lt new-pri) {
-		       if (null? p) {
-			 og = (pair (pair new-pri grp)
-				    og)
-		       } {
-			 set-pt! p (pair (pair new-pri grp)
-					 og)
-		       }
-		     } {
-		       og-loop (pt og) (ph og)
-		     }
-		   }
+	if (null? og) {
+	  og = (append og
+		       (list (pair new-pri grp)))
+	} {
+	  og-pri := phh og
+	  if (og-pri lt new-pri) {
+	    if (null? p) {
+	      og = (pair (pair new-pri grp)
+			 og)
+	    } {
+	      set-pt! p (pair (pair new-pri grp)
+			      og)
+	    }
+	  } {
+	    og-loop (pt og) (ph og)
+	  }
+	}
       }
 
       og-loop og #n

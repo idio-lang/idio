@@ -46,16 +46,16 @@ define-template (expander-trap type) {
 	if (not (string? filename)) (error/type ^rt-parameter-type-error '$loader-sym "not a string" filename)
 
 	thunk := function () {
-		   trap $condition-name (function (c) {
-					   ;eprintf "caught %s at %s\n" msg (idio-error-location c)
-					   test (idio-error-message c) msg
-					   if (not (string=? (idio-error-message c) msg)) {
-					     condition-report (append-string $loader-name " " filename) c (current-error-handle)
-					   }
-					   trap-return c
-		   }) {
-		     (symbol-value 'load 'Idio) filename
-		   }
+	  trap $condition-name (function (c) {
+	    ;eprintf "caught %s at %s\n" msg (idio-error-location c)
+	    test (idio-error-message c) msg
+	    if (not (string=? (idio-error-message c) msg)) {
+	      condition-report (append-string $loader-name " " filename) c (current-error-handle)
+	    }
+	    trap-return c
+	  }) {
+	    (symbol-value 'load 'Idio) filename
+	  }
 	}
 
 	run-in-thread *expander-thread* thunk

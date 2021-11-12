@@ -62,12 +62,12 @@ define* (path-modify var val act wrt (:sep sep ":") (:once once? #f) (:test test
 
   if once? {
     (case act
-	  ((first start last end after before) {
-	    if (member val orig-dirs) {
-	      path-modify var #n 'remove val
-	      orig-dirs = split-string-exactly (symbol-value var (current-module)) sep
-	    }
-	  }))
+     ((first start last end after before) {
+       if (member val orig-dirs) {
+	 path-modify var #n 'remove val
+	 orig-dirs = split-string-exactly (symbol-value var (current-module)) sep
+       }
+     }))
   }
 
   new-dirs := #n
@@ -78,9 +78,9 @@ define* (path-modify var val act wrt (:sep sep ":") (:once once? #f) (:test test
   if test? {
     nval := #n
     for-each (function (e) {
-		if (test? e) {
-		  nval = pair e nval
-		}
+      if (test? e) {
+	nval = pair e nval
+      }
     }) new-dirs
     new-dirs = reverse nval
   }
@@ -89,57 +89,57 @@ define* (path-modify var val act wrt (:sep sep ":") (:once once? #f) (:test test
 
   if (null? new-dirs) {
     (case act
-	  ((verify replace remove) {
-	    ok = #t
-	  })
-	  (else {
-	    ok = #f
-	  }))
+     ((verify replace remove) {
+       ok = #t
+     })
+     (else {
+       ok = #f
+     }))
   }
 
   if ok {
     r := (case act
-	       ((first start) {
-		 append new-dirs orig-dirs
-	       })
-	       ((last end) {
-		 append orig-dirs new-dirs
-	       })
-	       ((verify) {
-		 new-dirs
-	       })
-	       ((after before replace remove) {
-		 todo := #t
-		 r := #n
-		 for-each (function (e) {
-			     if (and todo
-				     (string=? e wrt)) {
-				       (case act
-					     ((after) {
-					       r = append new-dirs (append (list e) r)
-					     })
-					     ((before) {
-					       r = append (list e) (append new-dirs r)
-					     })
-					     ((replace) {
-					       r = append new-dirs r
-					     })
-					     ((remove) {
-					       r
-					     }))
+     ((first start) {
+       append new-dirs orig-dirs
+     })
+     ((last end) {
+       append orig-dirs new-dirs
+     })
+     ((verify) {
+       new-dirs
+     })
+     ((after before replace remove) {
+       todo := #t
+       r := #n
+       for-each (function (e) {
+	 if (and todo
+		 (string=? e wrt)) {
+	   (case act
+	    ((after) {
+	      r = append new-dirs (append (list e) r)
+	    })
+	    ((before) {
+	      r = append (list e) (append new-dirs r)
+	    })
+	    ((replace) {
+	      r = append new-dirs r
+	    })
+	    ((remove) {
+	      r
+	    }))
 
-				       if once? {
-					 todo = #f
-				       }
-				     } {
-				       r = pair e r
-				     }
-		 }) orig-dirs
-		 reverse r
-	       })
-	       (else {
-		 orig-dirs
-	       }))
+	   if once? {
+	     todo = #f
+	   }
+	 } {
+	   r = pair e r
+	 }
+       }) orig-dirs
+       reverse r
+     })
+     (else {
+       orig-dirs
+     }))
 
     evaluate/set-symbol-value! var (join-string sep r) (current-module)
   }
@@ -325,9 +325,9 @@ define* (trim-path val (:sep sep ":")) {
   seen := #n
 
   for-each (function (e) {
-	      if (not (member e seen)) {
-		seen = pair e seen
-	      }
+    if (not (member e seen)) {
+      seen = pair e seen
+    }
   }) (split-string-exactly val sep)
 
   join-string sep (reverse seen)
@@ -367,25 +367,25 @@ VAL - the top of the distribution tree, eg. /usr/local to add
 define* (std-paths act val (:sep sep ":") (:once once? #f) (:test test? #f)) {
   path-act := symbol-value (string->symbol (append-string "path-" (symbol->string act))) (current-module)
   for-each (function (e) {
-	      (case act
-		    ((remove) {
-		      path-act 'PATH (append-string e "/bin") :sep sep :once once?
-		    })
-		    (else {
-		      path-act 'PATH (append-string e "/bin") :sep sep :once once? :test test?
-		    }))
-	      for-each (function (m) {
-			  md := append-string e m
-			  if (d? md) {
-			    (case act
-				  ((remove) {
-				    path-act 'MANPATH md :sep sep :once once?
-				  })
-				  (else {
-				    path-act 'MANPATH md :sep sep :once once? :test test?
-				  }))
-			  }
-	      }) '("share/man" "man")
+    (case act
+     ((remove) {
+       path-act 'PATH (append-string e "/bin") :sep sep :once once?
+     })
+     (else {
+       path-act 'PATH (append-string e "/bin") :sep sep :once once? :test test?
+     }))
+    for-each (function (m) {
+      md := append-string e m
+      if (d? md) {
+	(case act
+	 ((remove) {
+	   path-act 'MANPATH md :sep sep :once once?
+	 })
+	 (else {
+	   path-act 'MANPATH md :sep sep :once once? :test test?
+	 }))
+      }
+    }) '("share/man" "man")
   }) (split-string-exactly val sep)
 }
 
@@ -429,35 +429,35 @@ either exists.
 define* (all-paths act val (:sep sep ":") (:once once? #f) (:test test? #f)) {
   path-act := symbol-value (string->symbol (append-string "path-" (symbol->string act))) (current-module)
   for-each (function (e) {
-	      (case act
-		    ((remove) {
-		      path-act 'PATH (append-string e "/bin") :sep sep :once once?
-		    })
-		    (else {
-		      path-act 'PATH (append-string e "/bin") :sep sep :once once? :test test?
-		    }))
-	      for-each (function (m) {
-			  md := append-string e m
-			  if (d? md) {
-			    (case act
-				  ((remove) {
-				    path-act 'MANPATH md :sep sep :once once?
-				  })
-				  (else {
-				    path-act 'MANPATH md :sep sep :once once? :test test?
-				  }))
-			  }
-	      }) '("share/man" "man")
-	      ld := append-string e "/lib"
-	      if (d? ld) {
-		(case act
-		      ((remove) {
-			path-act 'LD_LIBRARY_PATH ld :sep sep :once once?
-		      })
-		      (else {
-			path-act 'LD_LIBRARY_PATH ld :sep sep :once once? :test test?
-		      }))
-	      }
+    (case act
+     ((remove) {
+       path-act 'PATH (append-string e "/bin") :sep sep :once once?
+     })
+     (else {
+       path-act 'PATH (append-string e "/bin") :sep sep :once once? :test test?
+     }))
+    for-each (function (m) {
+      md := append-string e m
+      if (d? md) {
+	(case act
+	 ((remove) {
+	   path-act 'MANPATH md :sep sep :once once?
+	 })
+	 (else {
+	   path-act 'MANPATH md :sep sep :once once? :test test?
+	 }))
+      }
+    }) '("share/man" "man")
+    ld := append-string e "/lib"
+    if (d? ld) {
+      (case act
+       ((remove) {
+	 path-act 'LD_LIBRARY_PATH ld :sep sep :once once?
+       })
+       (else {
+	 path-act 'LD_LIBRARY_PATH ld :sep sep :once once? :test test?
+       }))
+    }
   }) (split-string-exactly val sep)
 }
 
@@ -492,19 +492,19 @@ define* (normalize-pathname val (:sep sep "/")) {
   }
 
   for-each (function (e) {
-	      (case e
-		    (("")
-		     ;; "///foo" -> ("" "" "" "foo" )
-		      #n)
-		    ((".") #n)
-		    (("..") {
-		      if (pair? r) {
-			r = pt r
-		      }
-		    })
-		    (else {
-		      r = pair e r
-		    }))
+    (case e
+     (("")
+      ;; "///foo" -> ("" "" "" "foo" )
+      #n)
+     ((".") #n)
+     (("..") {
+       if (pair? r) {
+	 r = pt r
+       }
+     })
+     (else {
+       r = pair e r
+     }))
   }) (split-string-exactly val sep)
 
   r = reverse r

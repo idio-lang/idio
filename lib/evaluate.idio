@@ -151,10 +151,10 @@ define (meaning-toplevel-extend src name flags cs cm) {
   } {
     if (and (eq? flag-scope 'toplevel)
 	    (not (eval-flags-define flags))) {
-	      eprintf "toplevel-extend: forward reference: %s at %s\n" name (meaning-error-location src)
-	      if (not (hash-ref %idio-src-properties src #f)) {
-		eprintf "src=%s\n" src
-	      }
+      eprintf "toplevel-extend: forward reference: %s at %s\n" name (meaning-error-location src)
+      if (not (hash-ref %idio-src-properties src #f)) {
+	eprintf "src=%s\n" src
+      }
     }
     ci := codegen-constants-lookup-or-extend cs name
 
@@ -225,29 +225,29 @@ associated with the dynamic/environ variable.
 *#
 define (meaning-lexical-lookup src nametree name) {
   loop :+ function (nt i) {
-	    if (null? nt) #f {
-	      name* := ph nt
+    if (null? nt) #f {
+      name* := ph nt
 
-	      if (pair? name*) {
-		l := assq name name*
-		if l {
-		  scope := pht l	; ({name} 'param {j})
-		  (case scope
-			((param local) (list scope i (phtt l)))
-			((dynamic environ) (pt l))
-			(else (meaning-error-static-variable src "unexpected local variant" name)))
-		} {
-		  ;; only bump i if these were formal parameters
-		  if (eq? 'param (phth name*)) {
-		    loop (pt nt) (i + 1)
-		  } {
-		    loop (pt nt) i
-		  }
-		}
-	      } {
-		loop (pt nt) (i + 1)
-	      }
-	    }
+      if (pair? name*) {
+	l := assq name name*
+	if l {
+	  scope := pht l	; ({name} 'param {j})
+	  (case scope
+	   ((param local) (list scope i (phtt l)))
+	   ((dynamic environ) (pt l))
+	   (else (meaning-error-static-variable src "unexpected local variant" name)))
+	} {
+	  ;; only bump i if these were formal parameters
+	  if (eq? 'param (phth name*)) {
+	    loop (pt nt) (i + 1)
+	  } {
+	    loop (pt nt) i
+	  }
+	}
+      } {
+	loop (pt nt) (i + 1)
+      }
+    }
   }
 
   loop nametree 0
@@ -256,24 +256,24 @@ define (meaning-lexical-lookup src nametree name) {
 define (meaning-nametree->list nametree) {
   r := #n
   loop-nametree :+ function (nt done) {
-		     if done #n {
-		       loop-names :+ function (names) {
-				       if (null? names) #n {
-					 name-info := ph names
-					 if (and (not done)
-						 (pair? name-info)
-						 (pair? (pt name-info))
-						 (eq? 'param (pht name-info))) {
-						   done = #t
-						 }
-					 r = pair (ph name-info) r
-					 loop-names (pt names)
-				       }
-		       }
-		       loop-names (ph nt)
+    if done #n {
+      loop-names :+ function (names) {
+	if (null? names) #n {
+	  name-info := ph names
+	  if (and (not done)
+		  (pair? name-info)
+		  (pair? (pt name-info))
+		  (eq? 'param (pht name-info))) {
+	    done = #t
+	  }
+	  r = pair (ph name-info) r
+	  loop-names (pt names)
+	}
+      }
+      loop-names (ph nt)
 
-		       loop-nametree (pt nt) done
-		     }
+      loop-nametree (pt nt) done
+    }
   }
 
   loop-nametree nametree #f
@@ -283,11 +283,11 @@ define (meaning-nametree->list nametree) {
 define (meaning-nametree-extend-vparams nametree name*) {
   i := 0
   loop :+ function (ns r) {
-	    if (null? ns) r {
-	      tuple := list (ph ns) 'param i
-	      i = i + 1
-	      loop (pt ns) (pair tuple r)
-	    }
+    if (null? ns) r {
+      tuple := list (ph ns) 'param i
+      i = i + 1
+      loop (pt ns) (pair tuple r)
+    }
   }
 
   pair (loop name* #n) nametree
@@ -309,30 +309,30 @@ define (meaning-nametree-extend-locals nametree name*) {
   alist := #n
   i := 0
   i-loop :+ function (nt) {
-	    if (null? nt) #n {
-	      name* := ph nt
-	      if (null? name*) {
-		;; a thunk
-		alist = list #f 'param 0
-	      } {
-		(case (phth name*)
-		      ((local) {
-			i = i + 1
-			i-loop (pt nt)
-		      })
-		      ((param) {
-			i = i + (length name*)
-		      }))
-	      }
-	    }
+    if (null? nt) #n {
+      name* := ph nt
+      if (null? name*) {
+	;; a thunk
+	alist = list #f 'param 0
+      } {
+	(case (phth name*)
+	 ((local) {
+	   i = i + 1
+	   i-loop (pt nt)
+	 })
+	 ((param) {
+	   i = i + (length name*)
+	 }))
+      }
+    }
   }
   i-loop nametree
 
   loop :+ function (ns r) {
-	    if (null? ns) (reverse r) {
-	      i = i + 1
-	      loop (pt ns) (pair (list (ph ns) 'local i) r)
-	    }
+    if (null? ns) (reverse r) {
+      i = i + 1
+      loop (pt ns) (pair (list (ph ns) 'local i) r)
+    }
   }
 
   ;; we don't have the i++ feature from C so we need to decrement i
@@ -412,32 +412,32 @@ define (meaning-reference src name nametree escapes flags cs cm) {
   i := pht si
 
   (case scope
-	((param local) {
-	  ; ('param {i} {j})
-	  j := phtt si
-	  (if (i gt 0)
-	      (list I-DEEP-ARGUMENT-REF i j)
-	      (list I-SHALLOW-ARGUMENT-REF j))
-	})
-	((toplevel) {
-	  ; ('toplevel ci vi)
-	  vi := phtt si
-	  (if (vi gt 0)
-	      (list I-CHECKED-GLOBAL-VAL-REF vi)
-	      (list I-GLOBAL-SYM-REF i))
-	})
-	((dynamic) (list I-DYNAMIC-SYM-REF i))
-	((environ) (list I-ENVIRON-SYM-REF i))
-	((computed) (list I-COMPUTED-SYM-REF i))
-	((predef) {
-	  vi := phtt si
-	  list I-PREDEFINED vi
-	})
-	(else {
-	  ;; Shouldn't get here unless the if clauses above don't
-	  ;; cover everything.  Developer error?
-	  meaning-error-static-unbound src name
-	}))
+   ((param local) {
+     ; ('param {i} {j})
+     j := phtt si
+     (if (i gt 0)
+      (list I-DEEP-ARGUMENT-REF i j)
+      (list I-SHALLOW-ARGUMENT-REF j))
+   })
+   ((toplevel) {
+     ; ('toplevel ci vi)
+     vi := phtt si
+     (if (vi gt 0)
+      (list I-CHECKED-GLOBAL-VAL-REF vi)
+      (list I-GLOBAL-SYM-REF i))
+   })
+   ((dynamic) (list I-DYNAMIC-SYM-REF i))
+   ((environ) (list I-ENVIRON-SYM-REF i))
+   ((computed) (list I-COMPUTED-SYM-REF i))
+   ((predef) {
+     vi := phtt si
+     list I-PREDEFINED vi
+   })
+   (else {
+     ;; Shouldn't get here unless the if clauses above don't
+     ;; cover everything.  Developer error?
+     meaning-error-static-unbound src name
+   }))
 }
 
 define (meaning-function-reference src name nametree escapes flags cs cm) {
@@ -452,32 +452,32 @@ define (meaning-function-reference src name nametree escapes flags cs cm) {
   i := pht si
 
   (case scope
-	((param local) {
-	  ; ('param {i} {j})
-	  j := phtt si
-	  (if (i gt 0)
-	      (list I-DEEP-ARGUMENT-REF i j)
-	      (list I-SHALLOW-ARGUMENT-REF j))
-	})
-	((toplevel) {
-	  ; ('toplevel ci vi)
-	  vi := phtt si
-	  (if (vi gt 0)
-	      (list I-CHECKED-GLOBAL-FUNCTION-VAL-REF vi)
-	      (list I-GLOBAL-FUNCTION-SYM-REF i))
-	})
-	((dynamic) (list I-DYNAMIC-FUNCTION-SYM-REF i))
-	((environ) (list I-ENVIRON-SYM-REF i))
-	((computed) (list I-COMPUTED-SYM-REF i))
-	((predef) {
-	  vi := phtt si
-	  list I-PREDEFINED vi
-	})
-	(else {
-	  ;; Shouldn't get here unless the if clauses above don't
-	  ;; cover everything.  Developer error?
-	  meaning-error-static-unbound src name
-	}))
+   ((param local) {
+     ; ('param {i} {j})
+     j := phtt si
+     (if (i gt 0)
+      (list I-DEEP-ARGUMENT-REF i j)
+      (list I-SHALLOW-ARGUMENT-REF j))
+   })
+   ((toplevel) {
+     ; ('toplevel ci vi)
+     vi := phtt si
+     (if (vi gt 0)
+      (list I-CHECKED-GLOBAL-FUNCTION-VAL-REF vi)
+      (list I-GLOBAL-FUNCTION-SYM-REF i))
+   })
+   ((dynamic) (list I-DYNAMIC-FUNCTION-SYM-REF i))
+   ((environ) (list I-ENVIRON-SYM-REF i))
+   ((computed) (list I-COMPUTED-SYM-REF i))
+   ((predef) {
+     vi := phtt si
+     list I-PREDEFINED vi
+   })
+   (else {
+     ;; Shouldn't get here unless the if clauses above don't
+     ;; cover everything.  Developer error?
+     meaning-error-static-unbound src name
+   }))
 }
 
 define (meaning-not src e nametree escapes flags cs cm) {
@@ -499,10 +499,10 @@ define (eps-qq-expand-list e) {
   if (pair? e) {
     sym := ph e
     (cond ((eq? 'unquote sym)		#T{ (list $(pht e)) })
-	  ((eq? 'unquotesplicing sym)	(pht e))
-	  ((eq? 'quasiquote sym)	(eps-qq-expand-list
-					 (eps-qq-expand (pht e))))
-	  (else				#T{ (list (append
+     ((eq? 'unquotesplicing sym)	(pht e))
+     ((eq? 'quasiquote sym)	(eps-qq-expand-list
+				 (eps-qq-expand (pht e))))
+     (else				#T{ (list (append
 						   $(eps-qq-expand-list (ph e))
 						   $(eps-qq-expand (pt e)))) }))
   } {
@@ -514,10 +514,10 @@ define (eps-qq-expand e) {
   if (pair? e) {
     sym := ph e
     (cond ((eq? 'unquote sym)		(pht e))
-	  ((eq? 'unquotesplicing sym)	(error/type ^rt-parameter-value-error 'eps-qq-expand "illegal use of $@ at head" e))
-	  ((eq? 'quasiquote sym)	(eps-qq-expand
-					 (eps-qq-expand (pht e))))
-	  (else				#T{ (append $(eps-qq-expand-list (ph e))
+     ((eq? 'unquotesplicing sym)	(error/type ^rt-parameter-value-error 'eps-qq-expand "illegal use of $@ at head" e))
+     ((eq? 'quasiquote sym)	(eps-qq-expand
+				 (eps-qq-expand (pht e))))
+     (else				#T{ (append $(eps-qq-expand-list (ph e))
 						    $(eps-qq-expand (pt e))) }))
   } {
     #T{ '$e }
@@ -538,21 +538,21 @@ define (STklos-backquotify e level) {
 		  (STklos-backquotify (pht e) (+ level 1))))
      ((eq? (ph e) 'unquote)
       (if (level le 0)
-	  (pht e)
-	  (list 'list ''unquote
-		      (STklos-backquotify (pht e) (- level 1)))))
+       (pht e)
+       (list 'list ''unquote
+		   (STklos-backquotify (pht e) (- level 1)))))
      ((eq? (ph e) 'unquotesplicing)
       (if (level le 0)
-	  (list 'pair
-		(STklos-backquotify (ph e) level)
-		(STklos-backquotify (pt e) level))
-	  (list 'list ''unquotesplicing
-		      (STklos-backquotify (pht e) (- level 1)))))
+       (list 'pair
+	     (STklos-backquotify (ph e) level)
+	     (STklos-backquotify (pt e) level))
+       (list 'list ''unquotesplicing
+		   (STklos-backquotify (pht e) (- level 1)))))
      ((and (level le 0) (pair? (ph e)) (eq? (phh e) 'unquotesplicing))
       (if (null? (pt e))
-	  (phth e)
-	  (list 'append (phth e)
-                        (STklos-backquotify (pt e) level))))
+       (phth e)
+       (list 'append (phth e)
+		     (STklos-backquotify (pt e) level))))
      (else
       (list 'pair
 	    (STklos-backquotify (ph e) level)
@@ -592,143 +592,136 @@ cases of {=>}, {else}
 define (meaning-rewrite-cond prev src clause*) {
   (cond ((null? clause*) (void))
 
-	((not (pair? clause*))
-	 ;; Shouldn't get here, eg. "(cond)", as we test that the cond
-	 ;; clause* are a pair in the main idio_meaning loop.
-	 (meaning-evaluation-error src "cond: no clauses" clause*))
+   ((not (pair? clause*))
+    ;; Shouldn't get here, eg. "(cond)", as we test that the cond
+    ;; clause* are a pair in the main idio_meaning loop.
+    (meaning-evaluation-error src "cond: no clauses" clause*))
 
-	((not (pair? (ph clause*))) {
-	  if (and (pair? (pt clause*))
-		  (pair? (pht clause*))) {
-		    ;; Test Cases:
-		    ;; evaluation-errors/rewrite-cond-isa-pair-only.idio
-		    ;; evaluation-errors/rewrite-cond-isa-pair-before.idio
-		    ;; evaluation-errors/rewrite-cond-isa-pair-after.idio
+   ((not (pair? (ph clause*))) {
+     if (and (pair? (pt clause*))
+	     (pair? (pht clause*))) {
+       ;; Test Cases:
+       ;; evaluation-errors/rewrite-cond-isa-pair-only.idio
+       ;; evaluation-errors/rewrite-cond-isa-pair-before.idio
+       ;; evaluation-errors/rewrite-cond-isa-pair-after.idio
 
-		    ;; cond #t
-		    ;; cond #t (#f 1)
-		    ;; cond (#f 1) #t
-		    meaning-error-param-type (pht clause*) "cond: clause is not a pair (before)" clause*
-		  } {
-		    ;; Test Case: ??
-		    meaning-error-param-type prev "cond: clause is not a pair (in/after)" clause*
-		  }
-	})
+       ;; cond #t
+       ;; cond #t (#f 1)
+       ;; cond (#f 1) #t
+       meaning-error-param-type (pht clause*) "cond: clause is not a pair (before)" clause*
+     } {
+       ;; Test Case: ??
+       meaning-error-param-type prev "cond: clause is not a pair (in/after)" clause*
+     }
+   })
 
-	((eq? 'else (phh clause*)) {
-	  if (null? (pt clause*)) {
-	    c* := append (list 'begin) (pth clause*)
-	    meaning-copy-src-properties (mpp (pth clause*) src) c*
-	    c*
-	  } {
-	    ;; Test Case: evaluation-errors/rewrite-cond-else-not-last.idio
+   ((eq? 'else (phh clause*)) {
+     if (null? (pt clause*)) {
+       c* := append (list 'begin) (pth clause*)
+       meaning-copy-src-properties (mpp (pth clause*) src) c*
+       c*
+     } {
+       ;; Test Case: evaluation-errors/rewrite-cond-else-not-last.idio
 
-	    ;; cond (else 1) (#t 2)
-	    meaning-evaluation-error (ph clause*) "cond: else not in last clause" clause*
-	  }
-	})
+       ;; cond (else 1) (#t 2)
+       meaning-evaluation-error (ph clause*) "cond: else not in last clause" clause*
+     }
+   })
 
-	((and (pair? (pth clause*))
-	      (eq? '=> (phth clause*))) {
-		;; XXX We've just accessed the {phth clause*} so *of
-		;; course* it's a list...the only useful thing we're
-		;; doing here is checking there's explicitly three
-		;; elements.
+   ((and (pair? (pth clause*))
+	 (eq? '=> (phth clause*))) {
+     ;; XXX We've just accessed the {phth clause*} so *of course* it's
+     ;; a list...the only useful thing we're doing here is checking
+     ;; there's explicitly three elements.
 
-		ph-clause* := ph clause*
+     ph-clause* := ph clause*
 
-		if (and (list? ph-clause*)
-			(3 eq (length ph-clause*))) {
-			  ;; The {=>} operator is a bit of a
-			  ;; Scheme-ism in that the clause says {(c =>
-			  ;; f)} and means that if {c} is true then
-			  ;; apply {f} to {c} and return the result of
-			  ;; that.  Of course we need to stage the
-			  ;; (result of the) evaluation of {c} in a
-			  ;; temporary variable because we don't want
-			  ;; it evaluated twice.
+     if (and (list? ph-clause*)
+	     (3 eq (length ph-clause*))) {
+       ;; The {=>} operator is a bit of a Scheme-ism in that the
+       ;; clause says {(c => f)} and means that if {c} is true then
+       ;; apply {f} to {c} and return the result of that.  Of course
+       ;; we need to stage the (result of the) evaluation of {c} in a
+       ;; temporary variable because we don't want it evaluated twice.
 
-			  ;; There is an unhelpful indirection
-			  ;; complication in that we are looking at
-			  ;; {clause*} so this clause is {ph clause*}
-			  ;; and then {c} and {f} are the {ph clause}
-			  ;; (therefore {phh clause*}) and {phtt
-			  ;; clause} (and therefore {phtth clause*})
-			  ;; respectively.
+       ;; There is an unhelpful indirection complication in that we
+       ;; are looking at {clause*} so this clause is {ph clause*} and
+       ;; then {c} and {f} are the {ph clause} (therefore {phh
+       ;; clause*}) and {phtt clause} (and therefore {phtth clause*})
+       ;; respectively.
 
-			  ;; Finally, this clause is just one of many,
-			  ;; so we need to keep rewriting all the
-			  ;; remaining clause* ({pt clause*}).
+       ;; Finally, this clause is just one of many, so we need to keep
+       ;; rewriting all the remaining clause* ({pt clause*}).
 
-			  gs := (gensym)
+       gs := (gensym)
 
-			  ;; `(let ((gs ,(phh clause*)))
-			  ;;	(if gs
-			  ;;	    (,(phtth clause*) gs)
-			  ;;	    ,(rewrite-cond-clause* (pt clause*))))
-			  pt-clause* := pt clause*
+       ;; `(let ((gs ,(phh clause*)))
+       ;;	(if gs
+       ;;	    (,(phtth clause*) gs)
+       ;;	    ,(rewrite-cond-clause* (pt clause*))))
+       pt-clause* := pt clause*
 
-			  appl := list (phtth clause*) gs
+       appl := list (phtth clause*) gs
 
-			  c := (list 'let
-				     (list (list gs (phh clause*)))
-				     (list 'if
-					   gs
-					   appl
-					   (meaning-rewrite-cond ph-clause*
-								 (mpp pt-clause* src)
-								 pt-clause*)))
-			  meaning-copy-src-properties (mpp ph-clause* src) c
-			  c
-			} {
-			  if (pair? src) {
-			    ;; Test Cases:
-			    ;; evaluation-errors/rewrite-cond-apply-two-args.idio
-			    ;; evaluation-errors/rewrite-cond-apply-four-args.idio
+       c := (list 'let
+		  (list (list gs (phh clause*)))
+		  (list 'if
+			gs
+			appl
+			(meaning-rewrite-cond ph-clause*
+					      (mpp pt-clause* src)
+					      pt-clause*)))
+       meaning-copy-src-properties (mpp ph-clause* src) c
+       c
+     } {
+       if (pair? src) {
+	 ;; Test Cases:
+	 ;; evaluation-errors/rewrite-cond-apply-two-args.idio
+	 ;; evaluation-errors/rewrite-cond-apply-four-args.idio
 
-			    ;; cond (1 =>)
-			    ;; cond (1 => a b)
-			    meaning-evaluation-error (ph src) "cond: invalid => clause" clause*
-			  } {
-			    ;; Test Case: ??
-			    meaning-evaluation-error src "cond: invalid => clause" clause*
-			  }
-			}
-	      })
+	 ;; cond (1 =>)
+	 ;; cond (1 => a b)
+	 meaning-evaluation-error (ph src) "cond: invalid => clause" clause*
+       } {
+	 ;; Test Case: ??
+	 meaning-evaluation-error src "cond: invalid => clause" clause*
+       }
+     }
+   })
 
-	((null? (pth clause*)) {
-	  gs := (gensym)
-	  ;; `(let ((gs ,(phh clause*)))
-	  ;;	   (or gs
-	  ;;	       ,(rewrite-cond-clause* (pt clause*))))
+   ((null? (pth clause*)) {
+     gs := (gensym)
+     ;; `(let ((gs ,(phh clause*)))
+     ;;	   (or gs
+     ;;	       ,(rewrite-cond-clause* (pt clause*))))
 
-	  ph-clause* := ph clause*
-	  pt-clause* := pt clause*
+     ph-clause* := ph clause*
+     pt-clause* := pt clause*
 
-	  c* := (list 'let
-		      (list (list gs (phh clause*)))
-		      (list 'or
-			    gs
-			    (meaning-rewrite-cond ph-clause*
-						  (mpp pt-clause* src)
-						  pt-clause*)))
-	  meaning-copy-src-properties (mpp ph-clause* src) c*
-	  c*
-	})
+     c* := (list 'let
+		 (list (list gs (phh clause*)))
+		 (list 'or
+		       gs
+		       (meaning-rewrite-cond ph-clause*
+					     (mpp pt-clause* src)
+					     pt-clause*)))
+     meaning-copy-src-properties (mpp ph-clause* src) c*
+     c*
+   })
 
-	(else {
-	  ph-clause* := ph clause*
-	  pt-clause* := pt clause*
+   (else {
+     ph-clause* := ph clause*
+     pt-clause* := pt clause*
 
-	  c := (list 'if
-		     (phh clause* )
-		     (append (list 'begin) (pth clause*))
-		     (meaning-rewrite-cond ph-clause*
-					   (mpp pt-clause* src)
-					   pt-clause*))
-	  meaning-copy-src-properties (mpp ph-clause* src) c
-	  c
-	}))
+     c := (list 'if
+		(phh clause* )
+		(append (list 'begin) (pth clause*))
+		(meaning-rewrite-cond ph-clause*
+				      (mpp pt-clause* src)
+				      pt-clause*))
+     meaning-copy-src-properties (mpp ph-clause* src) c
+     c
+   }))
 }
 
 define (meaning-assignment src name e nametree escapes flags cs cm) {
@@ -751,22 +744,22 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
 
      if (and (pair? e)
 	     (eq? (ph e) 'function)) {
-	       docstr := #f
-	       body := phtt e
-	       if (and (string? body)
-		       (pair? (pttt e))) {
-			 body = phttt e
-			 docstr = #t
-		       }
-	       body = append (list 'escape-block 'return) (list body)
-	       body = append (list 'escape-block name) (list body)
+       docstr := #f
+       body := phtt e
+       if (and (string? body)
+	       (pair? (pttt e))) {
+	 body = phttt e
+	 docstr = #t
+       }
+       body = append (list 'escape-block 'return) (list body)
+       body = append (list 'escape-block name) (list body)
 
-	       if docstr {
-		 set-ph! (pttt e) body
-	       } {
-		 set-ph! (ptt e) body
-	       }
-	     }
+       if docstr {
+	 set-ph! (pttt e) body
+       } {
+	 set-ph! (ptt e) body
+       }
+     }
 
      m := meaning (mpp e src) e nametree escapes mflags cs cm
 
@@ -791,53 +784,53 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
      assign := #n
 
      (case scope
-	   ((param local) {
-	     vi := phtt si
-	     if (0 eq ci) {
-	       i-code = list I-SHALLOW-ARGUMENT-SET vi m
-	     } {
-	       i-code = list I-DEEP-ARGUMENT-SET ci vi m
-	     }
-	   })
-	   ((toplevel) {
-	     vi := phtt si
-	     if (0 eq vi) {
-	       assign = list I-GLOBAL-SYM-SET ci m
-	     } {
-	       assign = list I-GLOBAL-VAL-SET vi m
-	     }
-	   })
-	   ((dynamic environ) {
-	     assign = list I-GLOBAL-SYM-SET ci m
-	   })
-	   ((computed) {
-	     if (eval-flags-define flags) {
-	       i-code = (list (list I-GLOBAL-SYM-DEF name scope ci)
-			      (list I-COMPUTED-SYM-DEF ci m))
-	     } {
-	       i-code = list I-COMPUTED-SYM-SET ci m
-	     }
-	   })
-	   ((predef) {
-	     new-ci := meaning-toplevel-extend src name (define-scope 'toplevel flags) cs cm
+      ((param local) {
+	vi := phtt si
+	if (0 eq ci) {
+	  i-code = list I-SHALLOW-ARGUMENT-SET vi m
+	} {
+	  i-code = list I-DEEP-ARGUMENT-SET ci vi m
+	}
+      })
+      ((toplevel) {
+	vi := phtt si
+	if (0 eq vi) {
+	  assign = list I-GLOBAL-SYM-SET ci m
+	} {
+	  assign = list I-GLOBAL-VAL-SET vi m
+	}
+      })
+      ((dynamic environ) {
+	assign = list I-GLOBAL-SYM-SET ci m
+      })
+      ((computed) {
+	if (eval-flags-define flags) {
+	  i-code = (list (list I-GLOBAL-SYM-DEF name scope ci)
+			 (list I-COMPUTED-SYM-DEF ci m))
+	} {
+	  i-code = list I-COMPUTED-SYM-SET ci m
+	}
+      })
+      ((predef) {
+	new-ci := meaning-toplevel-extend src name (define-scope 'toplevel flags) cs cm
 
-	     vi := phtt si
-	     set-symbol-value! name (vm-values-ref vi) cm
-	     assign = list I-GLOBAL-SYM-SET new-ci m
-	     ci = new-ci
-	   })
-	   (else {
-	     ;; Shouldn't get here unless the if clauses above don't
-	     ;; cover everything.  Developer error?
-	     meaning-error-static-unbound src name
-	   }))
+	vi := phtt si
+	set-symbol-value! name (vm-values-ref vi) cm
+	assign = list I-GLOBAL-SYM-SET new-ci m
+	ci = new-ci
+      })
+      (else {
+	;; Shouldn't get here unless the if clauses above don't
+	;; cover everything.  Developer error?
+	meaning-error-static-unbound src name
+      }))
 
      (cond (i-code i-code)
-	   ((eval-flags-define flags) {
-	     (list (list I-GLOBAL-SYM-DEF name scope ci)
-		   assign)
-	   })
-	   (else assign))
+      ((eval-flags-define flags) {
+	(list (list I-GLOBAL-SYM-DEF name scope ci)
+	      assign)
+      })
+      (else assign))
    })
    (else
     ;; Test Case: evaluation-errors/assign-non-symbol.idio
@@ -870,10 +863,10 @@ define (meaning-define src name e nametree escapes flags cs cm) {
   vi := phtt si
   if (and (eq? 'toplevel scope)
 	  (0 eq vi)) {
-	    vi = (vm-extend-values)
-	    si = list scope (pht si) vi cm "meaning-define/gvi=0"
-	    set-symbol! name si cm
-	  }
+    vi = (vm-extend-values)
+    si = list scope (pht si) vi cm "meaning-define/gvi=0"
+    set-symbol! name si cm
+  }
 
   meaning-assignment src name e nametree escapes define-flags cs cm
 }
@@ -882,123 +875,115 @@ define (meaning-define-template src name e nametree escapes flags cs cm) {
 
   if (and (symbol? e)
 	  (expander? e)) {
-	    ;; In general (define-template a ...) means that "a" is
-	    ;; associated with an expander and that expander takes the
-	    ;; pt of the expression it is passed, "(a ...)" (ie. it
-	    ;; skips over its own name).
+    ;; In general (define-template a ...) means that "a" is associated
+    ;; with an expander and that expander takes the pt of the
+    ;; expression it is passed, "(a ...)" (ie. it skips over its own
+    ;; name).
 
-	    ;; It happens that people (S9fES) say
+    ;; It happens that people (S9fES) say
 
-	    ;; (define-template %b ...)
-	    ;; (define-template b %b)
+    ;; (define-template %b ...)
+    ;; (define-template b %b)
 
-	    ;; (in particular where they are creating an enhanced
-	    ;; version of b which may require using the existing b to
-	    ;; define itself hence defining some other name, "%b",
-	    ;; which can use "b" freely then redefine b to this new
-	    ;; version)
+    ;; (in particular where they are creating an enhanced version of b
+    ;; which may require using the existing b to define itself hence
+    ;; defining some other name, "%b", which can use "b" freely then
+    ;; redefine b to this new version)
 
-	    ;; However, we can't just use the current value of "%b" in
-	    ;; (define-template b %b) as this template-expander
-	    ;; association means we are replacing the nominal
-	    ;; definition of a template with an expander which takes
-	    ;; two arguments and the body of which will take the pt of
-	    ;; its first argument.  Left alone, expander "b" will take
-	    ;; the pt then expander "%b" will take the pt....  "A
-	    ;; Pair-Tail Too Far", one would say, in hindsight and
-	    ;; thinking of the big budget movie potential.
+    ;; However, we can't just use the current value of "%b" in
+    ;; (define-template b %b) as this template-expander association
+    ;; means we are replacing the nominal definition of a template
+    ;; with an expander which takes two arguments and the body of
+    ;; which will take the pt of its first argument.  Left alone,
+    ;; expander "b" will take the pt then expander "%b" will take the
+    ;; pt....  "A Pair-Tail Too Far", one would say, in hindsight and
+    ;; thinking of the big budget movie potential.
 
-	    ;; So catch the case where the value is already an
-	    ;; expander and replace it with the (obvious?) assignment
-	    ;; with some *expander-list* copying.
+    ;; So catch the case where the value is already an expander and
+    ;; replace it with the (obvious?) assignment with some
+    ;; *expander-list* copying.
 
-	    copy-expander! name e
-	    meaning-assignment src name e nametree escapes (define-scope 'toplevel flags) cs cm
-	  } {
-	    ;; (define-template (name formal*) ...) => (define-template name (function (formal*) ...))
-	    if (pair? name) {
-	      e = (list 'function
-			(pt name)
-			e)
-	      name = ph name
+    copy-expander! name e
+    meaning-assignment src name e nametree escapes (define-scope 'toplevel flags) cs cm
+  } {
+    ;; (define-template (name formal*) ...) => (define-template name (function (formal*) ...))
+    if (pair? name) {
+      e = (list 'function
+		(pt name)
+		e)
+      name = ph name
 
-	      meaning-copy-src-properties src e
-	    }
+      meaning-copy-src-properties src e
+    }
 
-	    ;; create an expander: (function (x e) (apply proc (pt x)))
+    ;; create an expander: (function (x e) (apply proc (pt x)))
 
-	    ;; where proc is (function (formal*) ...) from above,
-	    ;; ie. e
+    ;; where proc is (function (formal*) ...) from above,
+    ;; ie. e
 
-	    docstr := sprintf "define-template: %s (x e)" name
-	    expander := (list 'function
-			      '(x e)
-			      docstr
-			      (list 'apply e '(pt x)))
+    docstr := sprintf "define-template: %s (x e)" name
+    expander := (list 'function
+		      '(x e)
+		      docstr
+		      (list 'apply e '(pt x)))
 
-	    meaning-copy-src-properties src expander
+    meaning-copy-src-properties src expander
 
-	    ;; XXX define-template bootstrap
+    ;; XXX define-template bootstrap
 
-	    ;; Option 1 (when I was dealing with file contents "all in
-	    ;; one"):
+    ;; Option 1 (when I was dealing with file contents "all in one"):
 
-	    ;; We really want the entry in *expander-list* to be some
-	    ;; compiled code but we don't know what that code is yet
-	    ;; because we have't processed the source code of the
-	    ;; expander -- we only invented it a couple of lines above
-	    ;; -- let alone compiled it!
+    ;; We really want the entry in *expander-list* to be some compiled
+    ;; code but we don't know what that code is yet because we have't
+    ;; processed the source code of the expander -- we only invented
+    ;; it a couple of lines above -- let alone compiled it!
 
-	    ;; So, we'll drop the "source" code of the expander into
-	    ;; *expander-list* and later, when someone calls expander?
-	    ;; for this name we'll notice the value is a pair and do a
-	    ;; symbol lookup for the closure that was created via
-	    ;; meaning-assignment.
+    ;; So, we'll drop the "source" code of the expander into
+    ;; *expander-list* and later, when someone calls expander?  for
+    ;; this name we'll notice the value is a pair and do a symbol
+    ;; lookup for the closure that was created via meaning-assignment.
 
-	    ;; Option 2 (noted at the time but not implemented):
+    ;; Option 2 (noted at the time but not implemented):
 
-	    ;; As an alternative we could evaluate the source to the expander
-	    ;; now and install that code in *expander-list* directly -- but
-	    ;; watch out for embedded calls to regular functions defined in
-	    ;; the code (see comment above).
+    ;; As an alternative we could evaluate the source to the expander
+    ;; now and install that code in *expander-list* directly -- but
+    ;; watch out for embedded calls to regular functions defined in
+    ;; the code (see comment above).
 
-	    ;; In fact, because the evaluator changed to
-	    ;; expression-by-expression we effectively implement
-	    ;; Option 2 (which handles the regular function calls as
-	    ;; well).
+    ;; In fact, because the evaluator changed to
+    ;; expression-by-expression we effectively implement Option 2
+    ;; (which handles the regular function calls as well).
 
-	    ;; Requirement either way:
+    ;; Requirement either way:
 
-	    ;; As a further twist, we really need to embed a call to
-	    ;; install-expander in the *object* code too!  When
-	    ;; someone in the future loads the object file containing
-	    ;; this define-template who will have called
-	    ;; install-expander?
+    ;; As a further twist, we really need to embed a call to
+    ;; install-expander in the *object* code too!  When someone in the
+    ;; future loads the object file containing this define-template
+    ;; who will have called install-expander?
 
-	    ;; In summary: we need the expander in the here and now as
-	    ;; someone might use it in the next line of source and we
-	    ;; need to embed a call to install-expander in the object
-	    ;; code for future users.
+    ;; In summary: we need the expander in the here and now as someone
+    ;; might use it in the next line of source and we need to embed a
+    ;; call to install-expander in the object code for future users.
 
-	    ;; this is a define at the toplevel and not tailp
-	    ma := meaning-assignment expander name expander nametree escapes (make-eval-flags #f 'toplevel #t) cs cm
+    ;; this is a define at the toplevel and not tailp
+    ma := meaning-assignment expander name expander nametree escapes (make-eval-flags #f 'toplevel #t) cs cm
 
-	    install-expander/source! name expander expander
+    install-expander/source! name expander expander
 
-	    ;; Generate a ci/vi for name
+    ;; Generate a ci/vi for name
 
-	    ;; The ci is required so that the EXPANDER opcode can call
-	    ;; install-expander to overwrite the proc from the
-	    ;; install-expander/source! call we just made
+    ;; The ci is required so that the EXPANDER opcode can call
+    ;; install-expander to overwrite the proc from the
+    ;; install-expander/source! call we just made
 
-	    ;; The vi is because this is definitely a define
-	    ci := codegen-constants-lookup-or-extend cs name
-	    vi := (vm-extend-values)
+    ;; The vi is because this is definitely a define
+    ci := codegen-constants-lookup-or-extend cs name
+    vi := (vm-extend-values)
 
-	    set-symbol! name (list 'toplevel ci vi cm docstr) cm
+    set-symbol! name (list 'toplevel ci vi cm docstr) cm
 
-	    list I-EXPANDER ci ma
-	  }
+    list I-EXPANDER ci ma
+  }
 }
 
 define (meaning-define-infix-operator src name pri e nametree escapes flags cs cm) {
@@ -1162,11 +1147,11 @@ define (meaning-define-computed src name e nametree escapes flags cs cm) {
 
   if (and (null? getter)
 	  (null? setter)) {
-	    ;; Test Case: evaluation-errors/define-computed-no-args.idio
+    ;; Test Case: evaluation-errors/define-computed-no-args.idio
 
-	    ;; C :$ #n
-	    meaning-evaluation-error src "define-computed: no getter/setter" name
-	  }
+    ;; C :$ #n
+    meaning-evaluation-error src "define-computed: no getter/setter" name
+  }
 
   #*
 
@@ -1193,13 +1178,13 @@ define (meaning*-multiple-sequence src e e+ nametree escapes flags keyword cs cm
   m+ := meaning-sequence src e+ nametree escapes flags keyword cs cm
 
   (case keyword
-	((and)		(list I-AND   (eval-flags-tailp flags) m m+))
-	((or)		(list I-OR    (eval-flags-tailp flags) m m+))
-	((begin)	(list I-BEGIN (eval-flags-tailp flags) m m+))
-	(else
-	  ;; Shouldn't get here unless the clauses above don't cover
-	  ;; everything.  Developer error?
-	 (meaning-evaluation-error src "unexpected sequence keyword" keyword)))
+   ((and)		(list I-AND   (eval-flags-tailp flags) m m+))
+   ((or)		(list I-OR    (eval-flags-tailp flags) m m+))
+   ((begin)		(list I-BEGIN (eval-flags-tailp flags) m m+))
+   (else
+    ;; Shouldn't get here unless the clauses above don't cover
+    ;; everything.  Developer error?
+    (meaning-evaluation-error src "unexpected sequence keyword" keyword)))
 }
 
 define (meaning-sequence src e+ nametree escapes flags keyword cs cm) {
@@ -1213,9 +1198,9 @@ define (meaning-sequence src e+ nametree escapes flags keyword cs cm) {
     meaning*-multiple-sequence src he+ (pt e+) nametree escapes flags keyword cs cm
     #*
     if (pair? (pt e+)) {
-      meaning*-multiple-sequence src he+ (pt e+) nametree escapes flags keyword cs cm
+    meaning*-multiple-sequence src he+ (pt e+) nametree escapes flags keyword cs cm
     } {
-      meaning*-single-sequence src he+ nametree escapes flags cs cm
+    meaning*-single-sequence src he+ nametree escapes flags cs cm
     }
     *#
   } {
@@ -1309,139 +1294,139 @@ meaning-rewrite-body-letrec is called if we see an internal define/:+
 
 define (meaning-rewrite-body src e nametree) {
   loop :+ function (l r) {
-	    cur := (cond
-		    ((null? l) {
-		      reverse r
-		    })
+    cur := (cond
+	    ((null? l) {
+	      reverse r
+	    })
 
-		    ((and (pair? l)
-			  (pair? (ph l))
-			  (expander? (phh l))) {
-			    template-expand* (ph l)
-			  })
+	    ((and (pair? l)
+		  (pair? (ph l))
+		  (expander? (phh l))) {
+	      template-expand* (ph l)
+	    })
 
-		    (else {
-		      ph l
-		    }))
+	    (else {
+	      ph l
+	    }))
 
-	    if (pair? l) {
-	      meaning-copy-src-properties (mpp (ph l) src) cur
-	    }
+    if (pair? l) {
+      meaning-copy-src-properties (mpp (ph l) src) cur
+    }
 
-	    (cond
-	     ((null? l) {
-	       cur
-	     })
+    (cond
+     ((null? l) {
+       cur
+     })
 
-	     ((and (pair? cur)
-		   (eq? 'begin (ph cur))) {
-		     ;; redundant begin
-		     loop (append (pt cur) (pt l)) r
-		   })
+     ((and (pair? cur)
+	   (eq? 'begin (ph cur))) {
+       ;; redundant begin
+       loop (append (pt cur) (pt l)) r
+     })
 
-	     ((and (pair? cur)
-		   (or (eq? 'define (ph cur))
-		       (eq? ':+ (ph cur)))) {
-			 ;; :+ or define ==> letrec
-			 reverse (pair (meaning-rewrite-body-letrec (mpp l src) l nametree) r)
-		       })
+     ((and (pair? cur)
+	   (or (eq? 'define (ph cur))
+	       (eq? ':+ (ph cur)))) {
+       ;; :+ or define ==> letrec
+       reverse (pair (meaning-rewrite-body-letrec (mpp l src) l nametree) r)
+     })
 
-	     ((and (pair? cur)
-		   (eq? ':= (ph cur))) {
-		     ;; := ==> let*
+     ((and (pair? cur)
+	   (eq? ':= (ph cur))) {
+       ;; := ==> let*
 
-		     ;; we have ((:= name value-expr) ...)
+       ;; we have ((:= name value-expr) ...)
 
-		     ;; which we can rewrite as
+       ;; which we can rewrite as
 
-		     ;; (let ((name value-expr))
-		     ;;      (begin
-		     ;;       ...
-		     ;;       ))
+       ;; (let ((name value-expr))
+       ;;      (begin
+       ;;       ...
+       ;;       ))
 
-		     ;; and recurse on ..., which is now the body of
-		     ;; our (let)
+       ;; and recurse on ..., which is now the body of
+       ;; our (let)
 
-		     binding := pt cur
+       binding := pt cur
 
-		     assign := 'let
-		     if (not (null? nametree)) {
-		       assign = 'function+
-		     }
+       assign := 'let
+       if (not (null? nametree)) {
+	 assign = 'function+
+       }
 
-		     body := meaning-rewrite-body (mpp cur src) (pt l) nametree
+       body := meaning-rewrite-body (mpp cur src) (pt l) nametree
 
-		     if (null? body) {
-		       ;; what if value-expr has side-effects?
-		       eprintf "mrb :=	OPT: empty body for let* => no eval of value-expr\n"
-		       eprintf "src=%s\n" src
-		       reverse r
-		     } {
+       if (null? body) {
+	 ;; what if value-expr has side-effects?
+	 eprintf "mrb :=	OPT: empty body for let* => no eval of value-expr\n"
+	 eprintf "src=%s\n" src
+	 reverse r
+       } {
 
-		       body-seq := append (list 'begin) body
+	 body-seq := append (list 'begin) body
 
-		       r-cur := false
+	 r-cur := false
 
-		       if (eq? 'let assign) {
-			 r-cur = (list 'let
-				       (list binding)
-				       body-seq)
-		       } {
-			 r-cur = list assign (ph binding) (pht binding) body-seq
-		       }
+	 if (eq? 'let assign) {
+	   r-cur = (list 'let
+			 (list binding)
+			 body-seq)
+	 } {
+	   r-cur = list assign (ph binding) (pht binding) body-seq
+	 }
 
-		       meaning-copy-src-properties (mpp cur src) r-cur
+	 meaning-copy-src-properties (mpp cur src) r-cur
 
-		       r = append (list r-cur) r
-		       reverse r
-		     }
-		   })
+	 r = append (list r-cur) r
+	 reverse r
+       }
+     })
 
-	     ((and (pair? cur)
-		   (or (eq? ':* (ph cur))
-		       (eq? '!* (ph cur))
-		       (eq? ':~ (ph cur))
-		       (eq? '!~ (ph cur)))) {
+     ((and (pair? cur)
+	   (or (eq? ':* (ph cur))
+	       (eq? '!* (ph cur))
+	       (eq? ':~ (ph cur))
+	       (eq? '!~ (ph cur)))) {
 
-			 op := (case ((':*) 'environ-let)
-				     (('!*) 'environ-unset)
-				     ((':~) 'dynamic-let)
-				     (('!~) 'dynamic-unset)
-				     (else (meaning-error-param src "bad operator" cur)))
+       op := (case ((':*) 'environ-let)
+	(('!*) 'environ-unset)
+	((':~) 'dynamic-let)
+	(('!~) 'dynamic-unset)
+	(else (meaning-error-param src "bad operator" cur)))
 
-			 body := meaning-rewrite-body (mpp cur src) (pt l) nametree
+       body := meaning-rewrite-body (mpp cur src) (pt l) nametree
 
-			 if (null? body) {
-			   ;; what if value-expr has side-effects?
-			   eprintf "mrb :=	OPT: empty body for %s => no eval of value-expr\n" op
-			   eprintf "src=%s\n" src
-			   reverse r
-			 } {
+       if (null? body) {
+	 ;; what if value-expr has side-effects?
+	 eprintf "mrb :=	OPT: empty body for %s => no eval of value-expr\n" op
+	 eprintf "src=%s\n" src
+	 reverse r
+       } {
 
-			   body-seq := append (list 'begin) body
+	 body-seq := append (list 'begin) body
 
-			   binding := pt cur
-			   value-expr := pht binding
+	 binding := pt cur
+	 value-expr := pht binding
 
-			   r-cur := (list op
-					  binding
-					  body-seq)
+	 r-cur := (list op
+			binding
+			body-seq)
 
-			   meaning-copy-src-properties (mpp cur src) r-cur
+	 meaning-copy-src-properties (mpp cur src) r-cur
 
-			   append (reverse r) (list r-cur)
-			 }
-		       })
+	 append (reverse r) (list r-cur)
+       }
+     })
 
-	     ((and (pair? cur)
-		   (eq? 'define-template (ph cur))) {
+     ((and (pair? cur)
+	   (eq? 'define-template (ph cur))) {
 
-		     meaning-error-param src "internal define-template" cur
-		   })
+       meaning-error-param src "internal define-template" cur
+     })
 
-	     (else {
-	       loop (pt l) (pair cur r)
-	     }))
+     (else {
+       loop (pt l) (pair cur r)
+     }))
   }
 
   loop e #n
@@ -1460,180 +1445,176 @@ The algorithm was inspired by rewrite-body in STklos
 
 define (meaning-rewrite-body-letrec src e nametree) {
   loop :+ function (l defs r) {
-	    cur := (cond
-		    ((null? l) {
-		      #*
+    cur := (cond
+	    ((null? l) {
+	      #*
 
-		      Test Case: evaluation-errors/letrec-empty-body.idio
+	      Test Case: evaluation-errors/letrec-empty-body.idio
 
-		      {
-		        bar :+ "foo"
+	      {
+	        bar :+ "foo"
 
-		      }
+	      }
 
-		      NB The point is that there is nothing else in
-		      the block after the creation of {bar}, so there
-		      is no "body" for the (generated) letrec of
-		      {bar}.
+	      NB The point is that there is nothing else in the block
+	      after the creation of {bar}, so there is no "body" for
+	      the (generated) letrec of {bar}.
 
-		      Regardless of whether {bar} is a (faintly)
-		      pointless sort of letrec, notably not involving
-		      a function.
+	      Regardless of whether {bar} is a (faintly) pointless
+	      sort of letrec, notably not involving a function.
 
-		      There's an argument that it could be optimised
-		      away (if the value-expression has no
-		      side-effects, etc.).
+	      There's an argument that it could be optimised away (if
+	      the value-expression has no side-effects, etc.).
 
-		      *#
-		      meaning-evaluation-error src "letrec: empty body" l
-		    })
+	      *#
+	      meaning-evaluation-error src "letrec: empty body" l
+	    })
 
-		    ((and (pair? l)
-			  (pair? (ph l))
-			  (expander? (phh l))) {
-			    te := template-expand* (ph l)
-			    te
-			  })
+	    ((and (pair? l)
+		  (pair? (ph l))
+		  (expander? (phh l))) {
+	      te := template-expand* (ph l)
+	      te
+	    })
 
-		    (else {
-		      ph l
-		    }))
+	    (else {
+	      ph l
+	    }))
 
-	    if (pair? l) {
-	      meaning-copy-src-properties (mpp (ph l) src) cur
-	    }
+    if (pair? l) {
+      meaning-copy-src-properties (mpp (ph l) src) cur
+    }
 
-	    (cond
-	     ((null? l) {
-	       reverse r
-	     })
+    (cond
+     ((null? l) {
+       reverse r
+     })
 
-	     ((and (pair? cur)
-		   (eq? 'begin (ph cur))) {
-		     ;; redundant begin
-		     loop (append (pt cur) (pt l)) defs r
-		   })
+     ((and (pair? cur)
+	   (eq? 'begin (ph cur))) {
+       ;; redundant begin
+       loop (append (pt cur) (pt l)) defs r
+     })
 
-	     ((and (pair? cur)
-		   (or (eq? 'define (ph cur))
-		       (eq? ':+ (ph cur)))) {
-			 ;; cur	~ (define (name formal*) ...)
-			 ;; cur	~ (:+ name value-expr)
+     ((and (pair? cur)
+	   (or (eq? 'define (ph cur))
+	       (eq? ':+ (ph cur)))) {
+       ;; cur	~ (define (name formal*) ...)
+       ;; cur	~ (:+ name value-expr)
 
-			 bindings := pht cur
-			 form := #f
+       bindings := pht cur
+       form := #f
 
-			 if (pair? bindings) {
-			   ;; cur	~ (define (name formal*) ...)
+       if (pair? bindings) {
+	 ;; cur	~ (define (name formal*) ...)
 
-			   ;; form	~ (name (function (formal*)) ...)
+	 ;; form	~ (name (function (formal*)) ...)
 
-			   fn := (append (list 'function
-					       (pt bindings)
-					       (sprintf "rewrite body letrec: %s" bindings))
-				  (ptt cur))
+	 fn := (append (list 'function
+			     (pt bindings)
+			     (sprintf "rewrite body letrec: %s" bindings))
+		(ptt cur))
 
-			   form = list (ph bindings) fn
-			 } {
-			   ;; cur	~ (:+ name value-expr)
+	 form = list (ph bindings) fn
+       } {
+	 ;; cur	~ (:+ name value-expr)
 
-			   ;; form	~ (name value-expr)
-			   form = pt cur
-			 }
-			 meaning-copy-src-properties (mpp cur src) form
+	 ;; form	~ (name value-expr)
+	 form = pt cur
+       }
+       meaning-copy-src-properties (mpp cur src) form
 
-			 loop (pt l) (pair form defs) r
-		       })
+       loop (pt l) (pair form defs) r
+     })
 
-	     ((and (pair? cur)
-		   (eq? 'define-template (ph cur))) {
+     ((and (pair? cur)
+	   (eq? 'define-template (ph cur))) {
 
-		     ;; Test Case: (nominally) evaluation-errors/letrec-internal-define-template.idio
+       ;; Test Case: (nominally) evaluation-errors/letrec-internal-define-template.idio
 
-		     ;; bar :+ define-template (baz) { #T{ 1 } }
+       ;; bar :+ define-template (baz) { #T{ 1 } }
 
-		     ;; XXX I can't get this to trigger the error
-		     meaning-error-param src "internal define-template" cur
-		   })
+       ;; XXX I can't get this to trigger the error
+       meaning-error-param src "internal define-template" cur
+     })
 
-	     (else {
-	       ;; body proper
+     (else {
+       ;; body proper
 
-	       cur-props := mpp cur src
-	       l = meaning-rewrite-body cur-props l nametree
+       cur-props := mpp cur src
+       l = meaning-rewrite-body cur-props l nametree
 
-	       ;; if no defs just return l
-	       if (null? defs) l {
-		 #*
+       ;; if no defs just return l
+       if (null? defs) l {
+	 #*
 
-		 poor man's letrec*
+	 poor man's letrec*
 
-		 We are aiming for:
+	 We are aiming for:
 
-		 {
-		   v1 :+ a1
-		   v2 :+ a2
-		   body
-		 }
+	 {
+	   v1 :+ a1
+	   v2 :+ a2
+	   body
+	 }
 
-		 to become
+	 to become
 
-		 (let ((v1 #f)
-		       (v2 #f))
-		   (set! v1 a1)
-		   (set1 v2 a2)
-		   body)
+	 (let ((v1 #f)
+	       (v2 #f))
+	   (set! v1 a1)
+	   (set1 v2 a2)
+	   body)
 
-		 but we return it as a list of one, ((let ... body)),
-		 so that idio_meaning_sequence will re-read the first
-		 element in the list and interpret it as the
-		 expander "let"
+	 but we return it as a list of one, ((let ... body)), so that
+	 idio_meaning_sequence will re-read the first element in the
+	 list and interpret it as the expander "let"
 
-		 NB Leave defs reversed as creating the
-		 bindings/assignments will implicitly re-order them
+	 NB Leave defs reversed as creating the bindings/assignments
+	 will implicitly re-order them
 
-		 *#
+	 *#
 
-		 bindings := #n
-		 for-each (function (formal) {
-			     bindings = pair (list formal #f) bindings
-		 }) (map ph defs)
+	 bindings := #n
+	 for-each (function (formal) {
+	   bindings = pair (list formal #f) bindings
+	 }) (map ph defs)
 
-		 #*
+	 #*
 
-		 Remember {defs} is the list of tuples
+	 Remember {defs} is the list of tuples
 
-		 ((v1 a1) (v2 a2))
+	 ((v1 a1) (v2 a2))
 
-		 so that (ph vs) is (v1 a1) and therefore
+	 so that (ph vs) is (v1 a1) and therefore
 
-		 (append (set!) (v1 a1))
+	 (append (set!) (v1 a1))
 
-		 gives us the desired
+	 gives us the desired
 
-		 (set! v1 a1)
+	 (set! v1 a1)
 
-		 and that as we walk down {vs} we'll get a (reversed)
-		 list of assignments in {body}
+	 and that as we walk down {vs} we'll get a (reversed) list of
+	 assignments in {body}
 
-		 ((set! v2 a2)
-		  (set! v1 a1))
+	 ((set! v2 a2)
+	  (set! v1 a1))
 
-		 *#
+	 *#
 
-		 body := #n
-		 for-each (function (def) {
-			     assign := append (list 'set!) def
-			     body = append (list assign) body
-		 }) defs
-		 body = append body l
+	 body := #n
+	 for-each (function (def) {
+	   assign := append (list 'set!) def
+	   body = append (list assign) body
+	 }) defs
+	 body = append body l
 
-		 stmt := append (list 'let bindings) body
-		 meaning-copy-src-properties cur-props stmt
+	 stmt := append (list 'let bindings) body
+	 meaning-copy-src-properties cur-props stmt
 
-		 stmt
-	       }
-	     }))
+	 stmt
+       }
+     }))
   }
 
   loop e #n #n
@@ -1646,10 +1627,10 @@ define (meaning-abstraction src formal* docstr e+ nametree escapes flags cs cm) 
   ;; neat trick: walk down the list of formal* and if it is an
   ;; improper list then it must be a dotted abstraction
   formals-loop :+ function (f* regular) {
-		    (cond
-		     ((pair? f*) (formals-loop (pt f*) (pair (ph f*) regular)))
-		     ((null? f*) (meaning-fix-abstraction src formal* formal* docstr e+ nametree escapes flags cs cm))
-		     (else (meaning-dotted-abstraction src (reverse regular) f* formal* docstr e+ nametree escapes flags cs cm)))
+    (cond
+     ((pair? f*) (formals-loop (pt f*) (pair (ph f*) regular)))
+     ((null? f*) (meaning-fix-abstraction src formal* formal* docstr e+ nametree escapes flags cs cm))
+     (else (meaning-dotted-abstraction src (reverse regular) f* formal* docstr e+ nametree escapes flags cs cm)))
   }
 
   formals-loop formal* #n
@@ -1759,42 +1740,40 @@ define (meaning-closed-application src fe ae* nametree escapes flags cs cm) {
   formal* := pht fe
 
   formals-loop :+ function (f* a* fixed-args) {
-		    (cond
-		     ((pair? f*) {
-		       if (pair? a*) {
-			 formals-loop (pt f*) (pt a*) (pair (ph f*) fixed-args)
-		       } {
-			 ;; Test Cases:
-			 ;; evaluation-errors/closed-function-not-enough-args-{0,1}.idio
+    (cond
+     ((pair? f*) {
+       if (pair? a*) {
+	 formals-loop (pt f*) (pt a*) (pair (ph f*) fixed-args)
+       } {
+	 ;; Test Cases:
+	 ;; evaluation-errors/closed-function-not-enough-args-{0,1}.idio
 
-			 ;; ((function (x) x) )
-			 ;; (function (x y) x) 1
+	 ;; ((function (x) x) )
+	 ;; (function (x y) x) 1
 
-			 ;; XXX Note that in the first case we must
-			 ;; wrap the putative ``func-defn args`` in
-			 ;; parens otherwise we're simply writing
-			 ;; ``func-defn`` which defines and
-			 ;; immediately throws away the function.
+	 ;; XXX Note that in the first case we must wrap the putative
+	 ;; ``func-defn args`` in parens otherwise we're simply
+	 ;; writing ``func-defn`` which defines and immediately throws
+	 ;; away the function.
 
-			 ;; In the second case the system can see
-			 ;; there's an arg!
-			 meaning-evaluation-error src "closed application: not enough arguments" (list formal* ae*)
-		       }
-		     })
-		     ((null? f*) {
-		       if (null? a*) {
-			 meaning-nametree-extend-locals nametree formal*
-			 meaning-fix-closed-application fe formal* (ptt fe) ae* nametree escapes flags cs cm
-		       } {
-			 ;; Test Cases:
-			 ;; evaluation-errors/closed-function-too-many-args-{0,1}.idio
+	 ;; In the second case the system can see there's an arg!
+	 meaning-evaluation-error src "closed application: not enough arguments" (list formal* ae*)
+       }
+     })
+     ((null? f*) {
+       if (null? a*) {
+	 meaning-nametree-extend-locals nametree formal*
+	 meaning-fix-closed-application fe formal* (ptt fe) ae* nametree escapes flags cs cm
+       } {
+	 ;; Test Cases:
+	 ;; evaluation-errors/closed-function-too-many-args-{0,1}.idio
 
-			 ;; (function () 1) 2
-			 ;; (function (x) x) 1 2
-			 meaning-evaluation-error src "closed application: too many arguments" (list formal* ae*)
-		       }
-		     })
-		     (else (meaning-dotted-closed-application fe (reverse fixed-args) f* (ptt fe) ae* nametree escapes flags cs cm)))
+	 ;; (function () 1) 2
+	 ;; (function (x) x) 1 2
+	 meaning-evaluation-error src "closed application: too many arguments" (list formal* ae*)
+       }
+     })
+     (else (meaning-dotted-closed-application fe (reverse fixed-args) f* (ptt fe) ae* nametree escapes flags cs cm)))
   }
 
   formals-loop formal* ae* #n
@@ -1857,21 +1836,21 @@ define (meaning-primitive-application src fe ae* nametree escapes flags arity vi
     i-code := #f
 
     (case arity
-	  ((0) {
-	    i-code = list I-PRIMCALL0 A-PRIMCALL0 vi
-	  })
-	  ((1) {
-	    m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree escapes (clear-tailp flags) cs cm
+     ((0) {
+       i-code = list I-PRIMCALL0 A-PRIMCALL0 vi
+     })
+     ((1) {
+       m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree escapes (clear-tailp flags) cs cm
 
-	    i-code = list I-PRIMCALL1 A-PRIMCALL1 m1 vi
-	  })
-	  ((2) {
-	    m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree escapes (clear-tailp flags) cs cm
-	    m2 := meaning (mpp (pht ae*) src) (pht ae*) nametree escapes (clear-tailp flags) cs cm
+       i-code = list I-PRIMCALL1 A-PRIMCALL1 m1 vi
+     })
+     ((2) {
+       m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree escapes (clear-tailp flags) cs cm
+       m2 := meaning (mpp (pht ae*) src) (pht ae*) nametree escapes (clear-tailp flags) cs cm
 
-	    ;; XXX run-in-thread?
-	    i-code = list I-PRIMCALL2 A-PRIMCALL2 m1 m2 vi
-	  }))
+       ;; XXX run-in-thread?
+       i-code = list I-PRIMCALL2 A-PRIMCALL2 m1 m2 vi
+     }))
 
     if i-code i-code {
       meaning-regular-application src fe ae* nametree escapes flags cs cm
@@ -1916,13 +1895,13 @@ define (meaning-application src fe ae* nametree escapes flags cs cm) {
 	  if (or (and (primitive-varargs? primdata)
 		      (n-args ge arity))
 	      (n-args eq arity)) {
-		i-code = meaning-primitive-application src fe ae* nametree escapes flags arity (phtt si) cs cm
-	      } {
-		;; Test Case: evaluation-errors/primitive-arity.idio
+	    i-code = meaning-primitive-application src fe ae* nametree escapes flags arity (phtt si) cs cm
+	  } {
+	    ;; Test Case: evaluation-errors/primitive-arity.idio
 
-		;; pair 1
-		meaning-evaluation-error src "wrong arity for primitive" (list fe ae*)
-	      }
+	    ;; pair 1
+	    meaning-evaluation-error src "wrong arity for primitive" (list fe ae*)
+	  }
 	} {
 	  ;; Can we get here?  We'd need to be a predef but those are
 	  ;; all, uh, primitives.  Developer error?
@@ -1936,17 +1915,17 @@ define (meaning-application src fe ae* nametree escapes flags cs cm) {
     ;; check for a closed application
     if (and (pair? fe)
 	    (eq? 'function (ph fe))) {
-	      ;; check for a documentation string and forge one to
-	      ;; help debugging
-	      if (not (string? (phtt fe))) {
-		fe = append (list (ph fe) (pht fe) (sprintf "closed application: %s" (pht fe))) (ptt fe)
-	      }
-	      meaning-copy-src-properties src fe
+      ;; check for a documentation string and forge one to
+      ;; help debugging
+      if (not (string? (phtt fe))) {
+	fe = append (list (ph fe) (pht fe) (sprintf "closed application: %s" (pht fe))) (ptt fe)
+      }
+      meaning-copy-src-properties src fe
 
-	      meaning-closed-application src fe ae* nametree escapes flags cs cm
-	    } {
-	      meaning-regular-application src fe ae* nametree escapes flags cs cm
-	    }
+      meaning-closed-application src fe ae* nametree escapes flags cs cm
+    } {
+      meaning-regular-application src fe ae* nametree escapes flags cs cm
+    }
   }
 }
 
@@ -2040,24 +2019,24 @@ define (meaning-trap src ce he be nametree escapes flags cs cm) {
   pops := #n
 
   c-loop :+ function (c*) {
-	      if (null? c*) #n {
-		c-sym := ph c*
+    if (null? c*) #n {
+      c-sym := ph c*
 
-		ci := #f
+      ci := #f
 
-		si := find-symbol c-sym cm
-		if (pair? si) {
-		  ci = pht si
-		} {
-		  eprintf "meaning-trap: condition name unknown: '%s'\n" c-sym
-		  ci = meaning-toplevel-extend src c-sym (set-scope 'toplevel flags) cs cm
-		}
+      si := find-symbol c-sym cm
+      if (pair? si) {
+	ci = pht si
+      } {
+	eprintf "meaning-trap: condition name unknown: '%s'\n" c-sym
+	ci = meaning-toplevel-extend src c-sym (set-scope 'toplevel flags) cs cm
+      }
 
-		pushs = pair (list I-PUSH-TRAP ci) pushs
-		pops = pair (list I-POP-TRAP) pops
+      pushs = pair (list I-PUSH-TRAP ci) pushs
+      pops = pair (list I-POP-TRAP) pops
 
-		c-loop (pt c*)
-	      }
+      c-loop (pt c*)
+    }
   }
 
   c-loop ce
@@ -2147,645 +2126,645 @@ define (meaning src e nametree escapes flags cs cm) {
     te := pt e
 
     (case he
-	  ((begin \and \or) {
-	    if (pair? te) {
-	      meaning-sequence src te nametree escapes flags he cs cm
-	    } {
-	      (case he
-		    ((begin) (meaning src (void) nametree escapes flags cs cm))
-		    ((and) (meaning src #t nametree escapes flags cs cm))
-		    ((or) (meaning src #f nametree escapes flags cs cm))
-		    (else
-		     ;; can we even get here?
-		     (meaning-evaluation-error src "unexpected sequence keyword" he)))
-	    }
-	  })
-
-	  ((not) {
-	    if (pair? te) {
-	      if (pair? (pt te)) {
-		;; Test Case: evaluation-errors/not-multiple-args.idio
-
-		;; (not 1 2)
-		meaning-error-param src "too many arguments" te
-	      } {
-		meaning-not src (ph te) nametree escapes flags cs cm
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/not-nil.idio
-
-	      ;; (not)
-	      meaning-error-param src "no argument" he
-	    }
-	  })
-
-	  ((escape) {
-	    if (pair? te) {
-	      if (pair? (pt te)) {
-		;; Test Case: evaluation-errors/escape-multiple-args.idio
-
-		;; (escape 1 2)
-		meaning-error-param src "too many arguments" te
-	      } {
-		meaning-escape src (ph te) nametree escapes flags cs cm
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/escape-nil.idio
-
-	      ;; (escape)
-	      meaning-error-param src "no argument" he
-	    }
-	  })
-
-	  ((quote) {
-	    if (pair? te) {
-	      if (pair? (pt te)) {
-		;; Test Case: evaluation-errors/quote-multiple-args.idio
-
-		;; (quote 1 2)
-		meaning-error-param src "too many arguments" te
-	      } {
-		meaning-quotation src (ph te) nametree escapes flags
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/quote-nil.idio
-
-	      ;; (quote)
-
-	      ;; XXX is (quote) actually '#n ??
-	      meaning-error-param src "no argument" he
-	    }
-	  })
-
-	  ((quasiquote) {
-	    if (pair? te) {
-	      if (pair? (pt te)) {
-		;; Test Case: evaluation-errors/quasiquote-multiple-args.idio
-
-		;; (quasiquote 1 2)
-		meaning-error-param src "too many arguments" te
-	      } {
-		meaning-quasiquotation src (ph te) nametree escapes flags cs cm
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/quasiquote-nil.idio
-
-	      ;; (quasiquote)
-	      meaning-error-param src "no argument" he
-	    }
-	  })
-
-	  ((function) {
-	    ;; (function bindings [docstr] body ...)
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		htte := ph tte
-		ttte := pt tte
-		if (and (string? htte)
-			(not (null? ttte))) {
-			  ;; (function bindings "docstr" body ...)
-			  meaning-abstraction src (ph te) htte ttte nametree escapes flags cs cm
-			} {
-			  ;; (function bindings body ...)
-			  ;; (function bindings "...")
-
-			  ;; The second is a function whose body is a
-			  ;; string
-
-			  meaning-abstraction src (ph te) #n tte nametree escapes flags cs cm
-			}
-	      } {
-		;; (function bindings body ...)
-		meaning-abstraction src (ph te) #n tte nametree escapes flags cs cm
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/function-nil.idio
-
-	      ;; (function)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((function+) {
-	    ;; (function+ var val body ...)
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		ttte := pt tte
-		if (pair? ttte) {
-		  ;; (function+ var val body ...)
-		  meaning-local-application src (ph te) (ph tte) ttte nametree escapes flags cs cm
-		} {
-		  ;; Test Case: evaluation-errors/function+-no-body.idio
-		  
-		  ;; (function+ var val)
-		  meaning-error-param src "no body" he
-		}
-	      } {
-		  ;; Test Case: evaluation-errors/function+-no-val.idio
-		  
-		;; (function+ var)
-		meaning-error-param src "no value" he
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/function+-nil.idio
-
-	      ;; (function+)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((if) {
-	    ;; (if condition consequent alternative)
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		ttte := pt tte
-		httte := (void)		; default: (if #f e) -> #void
-		if (pair? ttte) {
-		  httte = ph ttte
-		}
-		meaning-alternative src (ph te) (ph tte) httte nametree escapes flags cs cm
-	      } {
-		;; Test Case: evaluation-errors/if-cond-nil.idio
-
-		;; (if 1)
-		meaning-error-param src "no consequent/alternative" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/if-nil.idio
-
-	      ;; (if)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((cond) {
-	    ;; (cond clause ...)
-	    if (pair? te) {
-	      ;; What was I thinking here...
-	      if (null? (pt te)) {
-		hte := ph te
-		if (and (pair? hte)
-			(eq? 'block (ph hte))) {
-			  ;; (cond )
-			  te = pt hte
-			}
-	      }
-
-	      ce := meaning-rewrite-cond e (mpp te src) te nametree
-	      meaning-copy-src-properties src ce
-
-	      meaning ce ce nametree escapes flags cs cm
-	    } {
-	      ;; Test Case: evaluation-errors/cond-nil.idio
-
-	      ;; (cond)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((set! \=) {
-	    ;; (set! var expr)
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		meaning-assignment src (ph te) (ph tte) nametree escapes (set-scope 'toplevel flags) cs cm
-	      } {
-		;; Test Case: evaluation-errors/set-symbol-nil.idio
-
-		;; (set! x )
-		meaning-error-param src "no value" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/set-nil.idio
-
-	      ;; (set!)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((define-template) {
-	    ;; (define-template bindings body ...)
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		meaning-define-template src (ph te) (ph tte) nametree escapes flags cs cm
-	      } {
-		;; Test Case: evaluation-errors/define-template-bindings-nil.idio
-
-		;; define-template (m)
-		meaning-error-param src "no body" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/define-template-nil.idio
-
-	      ;; (define-template)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((define-infix-operator) {
-	    ;; (define-infix-operator sym pri body ...)
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		ttte := pt tte
-		if (pair? ttte) {
-		  meaning-define-infix-operator src (ph te) (ph tte) (ph ttte) nametree escapes flags cs cm
-		} {
-		  ;; Test Case: evaluation-errors/define-infix-op-symbol-pri-nil.idio
-
-		  ;; define-infix-operator sym pri
-		  meaning-error-param src "no body" e
-		}
-	      } {
-		;; Test Case: evaluation-errors/define-infix-op-symbol-nil.idio
-
-		;; define-infix-operator sym
-		meaning-error-param src "no pri body" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/define-infix-op-nil.idio
-
-	      ;; (define-infix-operator)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((define-postfix-operator) {
-	    ;; (define-postfix-operator sym pri body ...)
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		ttte := pt tte
-		if (pair? ttte) {
-		  meaning-define-postfix-operator src (ph te) (ph tte) (ph ttte) nametree escapes flags cs cm
-		} {
-		  ;; Test Case: evaluation-errors/define-postfix-op-symbol-pri-nil.idio
-
-		  ;; define-postfix-operator sym pri
-		  meaning-error-param src "no body" e
-		}
-	      } {
-		;; Test Case: evaluation-errors/define-postfix-op-symbol-nil.idio
-
-		;; define-postfix-operator sym
-		meaning-error-param src "no pri body" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/define-postfix-op-nil.idio
-
-	      ;; (define-postfix-operator)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((define) {
-	    ;; (define var expr)
-	    ;; (define bindings body ...)
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		meaning-define src (ph te) tte nametree escapes flags cs cm
-	      } {
-		;; Test Case: evaluation-errors/define-sym-nil.idio
-
-		;; define sym
-		meaning-error-param src "no value" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/define-nil.idio
-
-	      ;; (define)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((:=) {
-	    ;; (:= var expr)
-	    ;; (:= bindings body ...)
-
-	    ;; (:= vars expr)	;; ?? cf. let-values (call-with-values producer consumer)
-
-	    ;; in the short term => define
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		meaning-define src (ph te) tte nametree escapes flags cs cm
-	      } {
-		;; Test Case: evaluation-errors/toplevel-define-sym-nil.idio
-
-		;; := sym
-
-		;; XXX can't do ``sym :=`` as you'll get the EOF in
-		;; list error from the reader
-		meaning-error-param src "no value" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/toplevel-define-nil.idio
-
-	      ;; (:=)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((:*) {
-	    ;; (:* var expr)
-
-	    ;; in the short term => define-environ
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		meaning-define-environ src (ph te) tte nametree escapes flags cs cm
-	      } {
-		;; Test Case: evaluation-errors/environ-define-sym-nil.idio
-
-		;; :* sym
-
-		;; XXX can't do ``sym :*`` as you'll get the EOF in
-		;; list error from the reader
-		meaning-error-param src "no value" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/environ-define-nil.idio
-
-	      ;; (:*)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((:~) {
-	    ;; (:~ var expr)
-
-	    ;; in the short term => define-dynamic
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		meaning-define-dynamic src (ph te) tte nametree escapes flags cs cm
-	      } {
-		;; Test Case: evaluation-errors/dynamic-define-sym-nil.idio
-
-		;; :~ sym
-
-		;; XXX can't do ``sym :~`` as you'll get the EOF in
-		;; list error from the reader
-		meaning-error-param src "no value" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/dynamic-define-nil.idio
-
-	      ;; (:~)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((:$) {
-	    ;; (:$ var getter setter)
-	    ;; (:$ var getter)
-
-	    ;; in the short term => define-computed
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		meaning-define-computed src (ph te) tte nametree escapes flags cs cm
-	      } {
-		;; Test Case: evaluation-errors/computed-define-sym-nil.idio
-
-		;; :$ sym
-
-		;; XXX can't do ``sym :$`` as you'll get the EOF in
-		;; list error from the reader
-		meaning-error-param src "no getter [setter]" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/computed-define-nil.idio
-
-	      ;; (:$)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((block) {
-	    ;; { ... }
-	    if (pair? te) {
-	      meaning-block src te nametree escapes flags cs cm
-	    } {
-	      eprintf "empty body for block => void\n"
-	      meaning src (void) nametree escapes flags cs cm
-	    }
-	  })
-
-	  ((dynamic) {
-	    ;; (dynamic var)
-	    if (pair? te) {
-	      meaning-dynamic-reference src (ph te) nametree escapes flags cs cm
-	    } {
-	      ;; Test Case: evaluation-errors/dynamic-nil.idio
-
-	      ;; (dynamic)
-	      meaning-error-param src "no argument" he
-	    }
-	  })
-
-	  ((dynamic-let) {
-	    ;; (dynamic-let (var expr) body)
-	    if (pair? te) {
-	      hte := ph te
-	      if (pair? hte) {
-		thte := pt hte
-		if (pair? thte) {
-		  meaning-dynamic-let src (ph hte) (ph thte) (pt te) nametree escapes flags cs cm
-		} {
-		  ;; Test Case: evaluation-errors/dynamic-let-bindings-not-tuple.idio
-
-		  ;; dynamic-let (d)
-		  meaning-error-param src "bindings not a tuple" e
-		}
-	      } {
-		;; Test Case: evaluation-errors/dynamic-let-bindings-not-pair.idio
-
-		;; dynamic-let #n
-		meaning-error-param src "bindings not a pair" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/dynamic-let-nil.idio
-
-	      ;; (dynamic-let)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((dynamic-unset) {
-	    ;; (dynamic-unset var body)
-	    if (pair? te) {
-	      hte := ph te
-	      if (symbol? hte) {
-		meaning-dynamic-unset src hte (pt te) nametree escapes flags cs cm
-	      } {
-		;; Test Case: evaluation-errors/dynamic-unset-non-sym.idio
-
-		;; dynamic-unset 1
-		meaning-error-param src "not a symbol" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/dynamic-unset-nil.idio
-
-	      ;; (dynamic-unset)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((environ-let) {
-	    ;; (environ-let (var expr) body)
-	    if (pair? te) {
-	      hte := ph te
-	      if (pair? hte) {
-		thte := pt hte
-		if (pair? thte) {
-		  meaning-environ-let src (ph hte) (ph thte) (pt te) nametree escapes flags cs cm
-		} {
-		  ;; Test Case: evaluation-errors/environ-let-bindings-not-tuple.idio
-
-		  ;; environ-let (d)
-		  meaning-error-param src "bindings not a tuple" e
-		}
-	      } {
-		;; Test Case: evaluation-errors/environ-let-bindings-not-pair.idio
-
-		;; environ-let #n
-		meaning-error-param src "bindings not a pair" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/environ-let-nil.idio
-
-	      ;; (environ-let)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((environ-unset) {
-	    ;; (environ-unset var body)
-	    if (pair? te) {
-	      hte := ph te
-	      if (symbol? hte) {
-		meaning-environ-unset src hte (pt te) nametree escapes flags cs cm
-	      } {
-		;; Test Case: evaluation-errors/environ-unset-non-sym.idio
-
-		;; environ-unset 1
-		meaning-error-param src "not a symbol" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/environ-unset-nil.idio
-
-	      ;; (environ-unset)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((trap) {
-	    ;; (trap condition		handler body ...)
-	    ;; (trap (condition ...)	handler body ...)
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		ttte := pt tte
-		if (pair? ttte) {
-		  meaning-trap src (ph te) (ph tte) ttte nametree escapes flags cs cm
-		} {
-		  ;; Test Case: evaluation-errors/trap-condition-handler-nil.idio
-
-		  ;; trap condition handler
-		  meaning-error-param src "no body" e
-		}
-	      } {
-		;; Test Case: evaluation-errors/trap-condition-nil.idio
-
-		;; trap condition
-		meaning-error-param src "no handler" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/trap-nil.idio
-
-	      ;; (trap)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((escape-block) {
-	    ;; (escape-block label body ...)
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		meaning-escape-block src (ph te) tte nametree escapes flags cs cm
-	      } {
-		;; Test Case: evaluation-errors/escape-block-condition-nil.idio
-
-		;; escape-block label
-		meaning-error-param src "no body" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/escape-block-nil.idio
-
-	      ;; (escape-block)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((escape-from) {
-	    ;; (escape-from label val)
-	    if (pair? te) {
-	      tte := pt te
-	      if (pair? tte) {
-		meaning-escape-from src (ph te) (ph tte) nametree escapes flags cs cm
-	      } {
-		;; Test Case: evaluation-errors/escape-from-condition-nil.idio
-
-		;; escape-from condition
-		meaning-error-param src "no value" e
-	      }
-	    } {
-	      ;; Test Case: evaluation-errors/escape-from-nil.idio
-
-	      ;; (escape-from)
-	      meaning-error-param src "no arguments" he
-	    }
-	  })
-
-	  ((include) {
-	    ;; (include filename)
-	    if (pair? te) {
-	      meaning-include src (ph te) nametree escapes flags cs cm
-	    } {
-	      ;; Test Case: evaluation-errors/include-nil.idio
-
-	      ;; (include)
-	      meaning-error-param src "no argument" he
-	    }
-	  })
-
-	  (else {
-	    ;; not a special form
-
-	    ;; check if {he} is a symbol and if so, if it has been
-	    ;; flagged as an expander
-
-	    ;; otherwise it is a derived form, ie. an application
-	    if (symbol? he) {
-	      si := meaning-variable-info src nametree he (set-scope 'toplevel flags) cs cm
-
-	      if (and si
-		      (expander? he)) {
-			meaning-expander src e nametree escapes flags cs cm
-		      } {
-			meaning-application src he te nametree escapes flags cs cm
-		      }
-	    } {
-	      meaning-application src he te nametree escapes flags cs cm
-	    }
-	  }))
+     ((begin \and \or) {
+       if (pair? te) {
+	 meaning-sequence src te nametree escapes flags he cs cm
+       } {
+	 (case he
+	  ((begin) (meaning src (void) nametree escapes flags cs cm))
+	  ((and) (meaning src #t nametree escapes flags cs cm))
+	  ((or) (meaning src #f nametree escapes flags cs cm))
+	  (else
+	   ;; can we even get here?
+	   (meaning-evaluation-error src "unexpected sequence keyword" he)))
+       }
+     })
+
+     ((not) {
+       if (pair? te) {
+	 if (pair? (pt te)) {
+	   ;; Test Case: evaluation-errors/not-multiple-args.idio
+
+	   ;; (not 1 2)
+	   meaning-error-param src "too many arguments" te
+	 } {
+	   meaning-not src (ph te) nametree escapes flags cs cm
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/not-nil.idio
+
+	 ;; (not)
+	 meaning-error-param src "no argument" he
+       }
+     })
+
+     ((escape) {
+       if (pair? te) {
+	 if (pair? (pt te)) {
+	   ;; Test Case: evaluation-errors/escape-multiple-args.idio
+
+	   ;; (escape 1 2)
+	   meaning-error-param src "too many arguments" te
+	 } {
+	   meaning-escape src (ph te) nametree escapes flags cs cm
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/escape-nil.idio
+
+	 ;; (escape)
+	 meaning-error-param src "no argument" he
+       }
+     })
+
+     ((quote) {
+       if (pair? te) {
+	 if (pair? (pt te)) {
+	   ;; Test Case: evaluation-errors/quote-multiple-args.idio
+
+	   ;; (quote 1 2)
+	   meaning-error-param src "too many arguments" te
+	 } {
+	   meaning-quotation src (ph te) nametree escapes flags
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/quote-nil.idio
+
+	 ;; (quote)
+
+	 ;; XXX is (quote) actually '#n ??
+	 meaning-error-param src "no argument" he
+       }
+     })
+
+     ((quasiquote) {
+       if (pair? te) {
+	 if (pair? (pt te)) {
+	   ;; Test Case: evaluation-errors/quasiquote-multiple-args.idio
+
+	   ;; (quasiquote 1 2)
+	   meaning-error-param src "too many arguments" te
+	 } {
+	   meaning-quasiquotation src (ph te) nametree escapes flags cs cm
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/quasiquote-nil.idio
+
+	 ;; (quasiquote)
+	 meaning-error-param src "no argument" he
+       }
+     })
+
+     ((function) {
+       ;; (function bindings [docstr] body ...)
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   htte := ph tte
+	   ttte := pt tte
+	   if (and (string? htte)
+		   (not (null? ttte))) {
+	     ;; (function bindings "docstr" body ...)
+	     meaning-abstraction src (ph te) htte ttte nametree escapes flags cs cm
+	   } {
+	     ;; (function bindings body ...)
+	     ;; (function bindings "...")
+
+	     ;; The second is a function whose body is a
+	     ;; string
+
+	     meaning-abstraction src (ph te) #n tte nametree escapes flags cs cm
+	   }
+	 } {
+	   ;; (function bindings body ...)
+	   meaning-abstraction src (ph te) #n tte nametree escapes flags cs cm
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/function-nil.idio
+
+	 ;; (function)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((function+) {
+       ;; (function+ var val body ...)
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   ttte := pt tte
+	   if (pair? ttte) {
+	     ;; (function+ var val body ...)
+	     meaning-local-application src (ph te) (ph tte) ttte nametree escapes flags cs cm
+	   } {
+	     ;; Test Case: evaluation-errors/function+-no-body.idio
+	     
+	     ;; (function+ var val)
+	     meaning-error-param src "no body" he
+	   }
+	 } {
+	   ;; Test Case: evaluation-errors/function+-no-val.idio
+	   
+	   ;; (function+ var)
+	   meaning-error-param src "no value" he
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/function+-nil.idio
+
+	 ;; (function+)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((if) {
+       ;; (if condition consequent alternative)
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   ttte := pt tte
+	   httte := (void)		; default: (if #f e) -> #void
+	   if (pair? ttte) {
+	     httte = ph ttte
+	   }
+	   meaning-alternative src (ph te) (ph tte) httte nametree escapes flags cs cm
+	 } {
+	   ;; Test Case: evaluation-errors/if-cond-nil.idio
+
+	   ;; (if 1)
+	   meaning-error-param src "no consequent/alternative" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/if-nil.idio
+
+	 ;; (if)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((cond) {
+       ;; (cond clause ...)
+       if (pair? te) {
+	 ;; What was I thinking here...
+	 if (null? (pt te)) {
+	   hte := ph te
+	   if (and (pair? hte)
+		   (eq? 'block (ph hte))) {
+	     ;; (cond )
+	     te = pt hte
+	   }
+	 }
+
+	 ce := meaning-rewrite-cond e (mpp te src) te nametree
+	 meaning-copy-src-properties src ce
+
+	 meaning ce ce nametree escapes flags cs cm
+       } {
+	 ;; Test Case: evaluation-errors/cond-nil.idio
+
+	 ;; (cond)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((set! \=) {
+       ;; (set! var expr)
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   meaning-assignment src (ph te) (ph tte) nametree escapes (set-scope 'toplevel flags) cs cm
+	 } {
+	   ;; Test Case: evaluation-errors/set-symbol-nil.idio
+
+	   ;; (set! x )
+	   meaning-error-param src "no value" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/set-nil.idio
+
+	 ;; (set!)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((define-template) {
+       ;; (define-template bindings body ...)
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   meaning-define-template src (ph te) (ph tte) nametree escapes flags cs cm
+	 } {
+	   ;; Test Case: evaluation-errors/define-template-bindings-nil.idio
+
+	   ;; define-template (m)
+	   meaning-error-param src "no body" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/define-template-nil.idio
+
+	 ;; (define-template)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((define-infix-operator) {
+       ;; (define-infix-operator sym pri body ...)
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   ttte := pt tte
+	   if (pair? ttte) {
+	     meaning-define-infix-operator src (ph te) (ph tte) (ph ttte) nametree escapes flags cs cm
+	   } {
+	     ;; Test Case: evaluation-errors/define-infix-op-symbol-pri-nil.idio
+
+	     ;; define-infix-operator sym pri
+	     meaning-error-param src "no body" e
+	   }
+	 } {
+	   ;; Test Case: evaluation-errors/define-infix-op-symbol-nil.idio
+
+	   ;; define-infix-operator sym
+	   meaning-error-param src "no pri body" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/define-infix-op-nil.idio
+
+	 ;; (define-infix-operator)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((define-postfix-operator) {
+       ;; (define-postfix-operator sym pri body ...)
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   ttte := pt tte
+	   if (pair? ttte) {
+	     meaning-define-postfix-operator src (ph te) (ph tte) (ph ttte) nametree escapes flags cs cm
+	   } {
+	     ;; Test Case: evaluation-errors/define-postfix-op-symbol-pri-nil.idio
+
+	     ;; define-postfix-operator sym pri
+	     meaning-error-param src "no body" e
+	   }
+	 } {
+	   ;; Test Case: evaluation-errors/define-postfix-op-symbol-nil.idio
+
+	   ;; define-postfix-operator sym
+	   meaning-error-param src "no pri body" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/define-postfix-op-nil.idio
+
+	 ;; (define-postfix-operator)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((define) {
+       ;; (define var expr)
+       ;; (define bindings body ...)
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   meaning-define src (ph te) tte nametree escapes flags cs cm
+	 } {
+	   ;; Test Case: evaluation-errors/define-sym-nil.idio
+
+	   ;; define sym
+	   meaning-error-param src "no value" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/define-nil.idio
+
+	 ;; (define)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((:=) {
+       ;; (:= var expr)
+       ;; (:= bindings body ...)
+
+       ;; (:= vars expr)	;; ?? cf. let-values (call-with-values producer consumer)
+
+       ;; in the short term => define
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   meaning-define src (ph te) tte nametree escapes flags cs cm
+	 } {
+	   ;; Test Case: evaluation-errors/toplevel-define-sym-nil.idio
+
+	   ;; := sym
+
+	   ;; XXX can't do ``sym :=`` as you'll get the EOF in
+	   ;; list error from the reader
+	   meaning-error-param src "no value" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/toplevel-define-nil.idio
+
+	 ;; (:=)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((:*) {
+       ;; (:* var expr)
+
+       ;; in the short term => define-environ
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   meaning-define-environ src (ph te) tte nametree escapes flags cs cm
+	 } {
+	   ;; Test Case: evaluation-errors/environ-define-sym-nil.idio
+
+	   ;; :* sym
+
+	   ;; XXX can't do ``sym :*`` as you'll get the EOF in
+	   ;; list error from the reader
+	   meaning-error-param src "no value" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/environ-define-nil.idio
+
+	 ;; (:*)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((:~) {
+       ;; (:~ var expr)
+
+       ;; in the short term => define-dynamic
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   meaning-define-dynamic src (ph te) tte nametree escapes flags cs cm
+	 } {
+	   ;; Test Case: evaluation-errors/dynamic-define-sym-nil.idio
+
+	   ;; :~ sym
+
+	   ;; XXX can't do ``sym :~`` as you'll get the EOF in
+	   ;; list error from the reader
+	   meaning-error-param src "no value" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/dynamic-define-nil.idio
+
+	 ;; (:~)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((:$) {
+       ;; (:$ var getter setter)
+       ;; (:$ var getter)
+
+       ;; in the short term => define-computed
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   meaning-define-computed src (ph te) tte nametree escapes flags cs cm
+	 } {
+	   ;; Test Case: evaluation-errors/computed-define-sym-nil.idio
+
+	   ;; :$ sym
+
+	   ;; XXX can't do ``sym :$`` as you'll get the EOF in
+	   ;; list error from the reader
+	   meaning-error-param src "no getter [setter]" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/computed-define-nil.idio
+
+	 ;; (:$)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((block) {
+       ;; { ... }
+       if (pair? te) {
+	 meaning-block src te nametree escapes flags cs cm
+       } {
+	 eprintf "empty body for block => void\n"
+	 meaning src (void) nametree escapes flags cs cm
+       }
+     })
+
+     ((dynamic) {
+       ;; (dynamic var)
+       if (pair? te) {
+	 meaning-dynamic-reference src (ph te) nametree escapes flags cs cm
+       } {
+	 ;; Test Case: evaluation-errors/dynamic-nil.idio
+
+	 ;; (dynamic)
+	 meaning-error-param src "no argument" he
+       }
+     })
+
+     ((dynamic-let) {
+       ;; (dynamic-let (var expr) body)
+       if (pair? te) {
+	 hte := ph te
+	 if (pair? hte) {
+	   thte := pt hte
+	   if (pair? thte) {
+	     meaning-dynamic-let src (ph hte) (ph thte) (pt te) nametree escapes flags cs cm
+	   } {
+	     ;; Test Case: evaluation-errors/dynamic-let-bindings-not-tuple.idio
+
+	     ;; dynamic-let (d)
+	     meaning-error-param src "bindings not a tuple" e
+	   }
+	 } {
+	   ;; Test Case: evaluation-errors/dynamic-let-bindings-not-pair.idio
+
+	   ;; dynamic-let #n
+	   meaning-error-param src "bindings not a pair" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/dynamic-let-nil.idio
+
+	 ;; (dynamic-let)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((dynamic-unset) {
+       ;; (dynamic-unset var body)
+       if (pair? te) {
+	 hte := ph te
+	 if (symbol? hte) {
+	   meaning-dynamic-unset src hte (pt te) nametree escapes flags cs cm
+	 } {
+	   ;; Test Case: evaluation-errors/dynamic-unset-non-sym.idio
+
+	   ;; dynamic-unset 1
+	   meaning-error-param src "not a symbol" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/dynamic-unset-nil.idio
+
+	 ;; (dynamic-unset)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((environ-let) {
+       ;; (environ-let (var expr) body)
+       if (pair? te) {
+	 hte := ph te
+	 if (pair? hte) {
+	   thte := pt hte
+	   if (pair? thte) {
+	     meaning-environ-let src (ph hte) (ph thte) (pt te) nametree escapes flags cs cm
+	   } {
+	     ;; Test Case: evaluation-errors/environ-let-bindings-not-tuple.idio
+
+	     ;; environ-let (d)
+	     meaning-error-param src "bindings not a tuple" e
+	   }
+	 } {
+	   ;; Test Case: evaluation-errors/environ-let-bindings-not-pair.idio
+
+	   ;; environ-let #n
+	   meaning-error-param src "bindings not a pair" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/environ-let-nil.idio
+
+	 ;; (environ-let)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((environ-unset) {
+       ;; (environ-unset var body)
+       if (pair? te) {
+	 hte := ph te
+	 if (symbol? hte) {
+	   meaning-environ-unset src hte (pt te) nametree escapes flags cs cm
+	 } {
+	   ;; Test Case: evaluation-errors/environ-unset-non-sym.idio
+
+	   ;; environ-unset 1
+	   meaning-error-param src "not a symbol" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/environ-unset-nil.idio
+
+	 ;; (environ-unset)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((trap) {
+       ;; (trap condition		handler body ...)
+       ;; (trap (condition ...)	handler body ...)
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   ttte := pt tte
+	   if (pair? ttte) {
+	     meaning-trap src (ph te) (ph tte) ttte nametree escapes flags cs cm
+	   } {
+	     ;; Test Case: evaluation-errors/trap-condition-handler-nil.idio
+
+	     ;; trap condition handler
+	     meaning-error-param src "no body" e
+	   }
+	 } {
+	   ;; Test Case: evaluation-errors/trap-condition-nil.idio
+
+	   ;; trap condition
+	   meaning-error-param src "no handler" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/trap-nil.idio
+
+	 ;; (trap)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((escape-block) {
+       ;; (escape-block label body ...)
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   meaning-escape-block src (ph te) tte nametree escapes flags cs cm
+	 } {
+	   ;; Test Case: evaluation-errors/escape-block-condition-nil.idio
+
+	   ;; escape-block label
+	   meaning-error-param src "no body" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/escape-block-nil.idio
+
+	 ;; (escape-block)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((escape-from) {
+       ;; (escape-from label val)
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   meaning-escape-from src (ph te) (ph tte) nametree escapes flags cs cm
+	 } {
+	   ;; Test Case: evaluation-errors/escape-from-condition-nil.idio
+
+	   ;; escape-from condition
+	   meaning-error-param src "no value" e
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/escape-from-nil.idio
+
+	 ;; (escape-from)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((include) {
+       ;; (include filename)
+       if (pair? te) {
+	 meaning-include src (ph te) nametree escapes flags cs cm
+       } {
+	 ;; Test Case: evaluation-errors/include-nil.idio
+
+	 ;; (include)
+	 meaning-error-param src "no argument" he
+       }
+     })
+
+     (else {
+       ;; not a special form
+
+       ;; check if {he} is a symbol and if so, if it has been
+       ;; flagged as an expander
+
+       ;; otherwise it is a derived form, ie. an application
+       if (symbol? he) {
+	 si := meaning-variable-info src nametree he (set-scope 'toplevel flags) cs cm
+
+	 if (and si
+		 (expander? he)) {
+	   meaning-expander src e nametree escapes flags cs cm
+	 } {
+	   meaning-application src he te nametree escapes flags cs cm
+	 }
+       } {
+	 meaning-application src he te nametree escapes flags cs cm
+       }
+     }))
   } {
     ;; {e} is not a pair so is mostly a constant unless it is a symbol
     ;; in which case (de-)reference it
@@ -2804,12 +2783,12 @@ define (meaning src e nametree escapes flags cs cm) {
 	    (meaning-quotation src e nametree escapes flags))
      ((symbol? e) {
        (case e
-	     ((return break continue) {
-	       meaning-escape-from src e (void) nametree escapes flags cs cm
-	     })
-	     (else {
-	       meaning-reference src e nametree escapes (set-scope 'toplevel flags) cs cm
-	     }))
+	((return break continue) {
+	  meaning-escape-from src e (void) nametree escapes flags cs cm
+	})
+	(else {
+	  meaning-reference src e nametree escapes (set-scope 'toplevel flags) cs cm
+	}))
      })
      (else
       ;; anything else is something the user shouldn't be dealing

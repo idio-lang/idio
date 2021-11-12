@@ -69,20 +69,20 @@ release/${1st word of /etc/release}	release/OpenIndiana
 
 define (%idio-feature? f) {
   loop :+ function (l) {
-	    (cond
-	     ((null? l) #f)
-	     ((symbol? (ph l)) {
-	       ; (x)
-	       (or
-		(eq? (ph l) f)
-		(loop (pt l)))
-	     })
-    	     ((string? (ph l)) {
-	       ; (x)
-	       (or
-		(equal? (ph l) f)
-		(loop (pt l)))
-	     }))
+    (cond
+     ((null? l) #f)
+     ((symbol? (ph l)) {
+       ; (x)
+       (or
+	(eq? (ph l) f)
+	(loop (pt l)))
+     })
+     ((string? (ph l)) {
+       ; (x)
+       (or
+	(equal? (ph l) f)
+	(loop (pt l)))
+     }))
   }
 
   loop *idio-features*
@@ -172,21 +172,21 @@ define (cond-expand-expander clause*) {
 	 ((eq? 'not (ph req)) {
 	   if (or (null? (pt req))
 		  (not (null? (ptt req)))) {
-		    ;; (cond-expand ((not) body) c*)
-		    ;; (cond-expand ((not req1 ...) body) c*)
+	     ;; (cond-expand ((not) body) c*)
+	     ;; (cond-expand ((not req1 ...) body) c*)
 
-		    error/type ^rt-syntax-error 'cond-expand "not: bad clause" clause
-		  } {
-		    ;; (cond-expand ((not req1) body) c*)
+	     error/type ^rt-syntax-error 'cond-expand "not: bad clause" clause
+	   } {
+	     ;; (cond-expand ((not req1) body) c*)
 
-		    ;; (cond-expand (req1 (cond-expand c*)) (else body))
-		    #T{
-		      (cond-expand
-		       ($(pht req)
-			(cond-expand $@(pt clause*)))
-		       (else $@(pt clause)))
-		    }
-		  }
+	     ;; (cond-expand (req1 (cond-expand c*)) (else body))
+	     #T{
+	       (cond-expand
+		($(pht req)
+		 (cond-expand $@(pt clause*)))
+		(else $@(pt clause)))
+	     }
+	   }
 	 })
 
 	 (else
@@ -217,33 +217,33 @@ define-template (cond-expand & clause*) {
    found := #f
 
    file-loop :+ function (fn*) {
-		  if (null? fn*) #n {
-		    fn := ph fn*
-		    if (e? fn) {
-		      fh := open-input-file fn
-		      line-loop :+ function () {
-				     if (eof? fh) #n {
-				       (regex-case
-					(read-line fh)
-					("^#" {
-					  (line-loop)
-					})
-					("([[:alnum:]_]+)=\"?([^\"]*)\"?" {
-					  (case r.1
-						(("ID" "VERSION_ID") {
-						  %add-feature (append-string "os-release/" r.1 "/" r.2)
-						  found = #t
-						}))
-					  (line-loop)
-					}))
-				       (line-loop)
-				     }
-		      }
-		      (line-loop)
-		    } {
-		      file-loop (pt fn*)
-		    }
-		  }
+     if (null? fn*) #n {
+       fn := ph fn*
+       if (e? fn) {
+	 fh := open-input-file fn
+	 line-loop :+ function () {
+	   if (eof? fh) #n {
+	     (regex-case
+	      (read-line fh)
+	      ("^#" {
+		(line-loop)
+	      })
+	      ("([[:alnum:]_]+)=\"?([^\"]*)\"?" {
+		(case r.1
+		 (("ID" "VERSION_ID") {
+		   %add-feature (append-string "os-release/" r.1 "/" r.2)
+		   found = #t
+		 }))
+		(line-loop)
+	      }))
+	     (line-loop)
+	   }
+	 }
+	 (line-loop)
+       } {
+	 file-loop (pt fn*)
+       }
+     }
    }
 
    file-loop '("/etc/os-release" "/usr/lib/os-release")
@@ -287,36 +287,36 @@ define-template (cond-expand & clause*) {
  })
  ("uname/sysname/SunOS" {
    file-loop :+ function (fn*) {
-		  if (null? fn*) #n {
-		    fn := ph fn*
-		    if (e? fn) {
-		      fh := open-input-file fn
-		      line-loop :+ function () {
-				     if (eof? fh) #n {
-				       (regex-case
-					(read-line fh)
-					; OpenIndiana Development oi_151.1.8 X86 (powered by illumos)
-					; OpenIndiana Hipster 2020.04 (powered by illumos)
-					; ...and from the Intertubes...
-					; Solaris 9 9/04 s9s_u7wos_09 SPARC
-					; Solaris 10 5/08 s10x_u5wos_10 X86
-					; Oracle Solaris 11.4 X86
-					; OpenSolaris 2009.06 snv_111b X86
-					; annoyingly different is:
-					; Oracle Solaris 11 Express snv_151a X86
-					("(Solaris|OpenSolaris|OpenIndiana|Oracle) " {
-					  %add-feature (append-string "release/" (array-ref r 1))
-					  ; skip the remaining lines
-					})
-					(else
-					 (line-loop)))
-				     }
-		      }
-		      (line-loop)
-		    } {
-		      file-loop (pt fn*)
-		    }
-		  }
+     if (null? fn*) #n {
+       fn := ph fn*
+       if (e? fn) {
+	 fh := open-input-file fn
+	 line-loop :+ function () {
+	   if (eof? fh) #n {
+	     (regex-case
+	      (read-line fh)
+	      ; OpenIndiana Development oi_151.1.8 X86 (powered by illumos)
+	      ; OpenIndiana Hipster 2020.04 (powered by illumos)
+	      ; ...and from the Intertubes...
+	      ; Solaris 9 9/04 s9s_u7wos_09 SPARC
+	      ; Solaris 10 5/08 s10x_u5wos_10 X86
+	      ; Oracle Solaris 11.4 X86
+	      ; OpenSolaris 2009.06 snv_111b X86
+	      ; annoyingly different is:
+	      ; Oracle Solaris 11 Express snv_151a X86
+	      ("(Solaris|OpenSolaris|OpenIndiana|Oracle) " {
+		%add-feature (append-string "release/" (array-ref r 1))
+		; skip the remaining lines
+	      })
+	      (else
+	       (line-loop)))
+	   }
+	 }
+	 (line-loop)
+       } {
+	 file-loop (pt fn*)
+       }
+     }
    }
 
    file-loop '("/etc/release")

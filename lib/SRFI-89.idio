@@ -98,33 +98,33 @@ define-template (function* formals & body) {
 
     define (parse-positional-section lst cont) {
       loop1 :+ function (lst rev-reqs) {
-		  if (and (pair? lst)
-			  (required-positional? (ph lst))) {
-			    loop1 (pt lst) (pair (ph lst) rev-reqs)
-			  } {
-			    loop2 :+ function (lst rev-opts) {
-					if (and (pair? lst)
-						(optional-positional? (ph lst))) {
-						  loop2 (pt lst) (pair (ph lst) rev-opts)
-						} {
-						  cont lst (pair (reverse rev-reqs) (reverse rev-opts))
-						}
-			    }
-			    loop2 lst #n
-			  }
+	if (and (pair? lst)
+		(required-positional? (ph lst))) {
+	  loop1 (pt lst) (pair (ph lst) rev-reqs)
+	} {
+	  loop2 :+ function (lst rev-opts) {
+	    if (and (pair? lst)
+		    (optional-positional? (ph lst))) {
+	      loop2 (pt lst) (pair (ph lst) rev-opts)
+	    } {
+	      cont lst (pair (reverse rev-reqs) (reverse rev-opts))
+	    }
+	  }
+	  loop2 lst #n
+	}
       }
       loop1 lst #n
     }
 
     define (parse-named-section lst cont) {
       loop :+ function (lst rev-named) {
-		 if (and (pair? lst)
-			 (named? (ph lst))) {
-			   loop (pt lst) (pair (ph lst) rev-named)
-			 } {
-			   cont lst (reverse rev-named)
-			 }
-	       }
+	if (and (pair? lst)
+		(named? (ph lst))) {
+	  loop (pt lst) (pair (ph lst) rev-named)
+	} {
+	  cont lst (reverse rev-named)
+	}
+      }
       loop lst #n
     }
 
@@ -160,18 +160,18 @@ define-template (function* formals & body) {
     define (parse lst) {
       if (and (pair? lst)
 	      (named? (ph lst))) {
-		parse-named-section lst (function (lst named) {
-					   parse-positional-section lst (function (lst positional-reqs/opts) {
-									   parse-rest lst #f positional-reqs/opts named
-					   })
-		})
-	      } {
-		parse-positional-section lst (function (lst positional-reqs/opts) {
-						parse-named-section lst (function (lst named) {
-									   parse-rest lst #t positional-reqs/opts named
-						})
-		})
-	      }
+	parse-named-section lst (function (lst named) {
+	  parse-positional-section lst (function (lst positional-reqs/opts) {
+	    parse-rest lst #f positional-reqs/opts named
+	  })
+	})
+      } {
+	parse-positional-section lst (function (lst positional-reqs/opts) {
+	  parse-named-section lst (function (lst named) {
+	    parse-rest lst #t positional-reqs/opts named
+	  })
+	})
+      }
     }
 
     parse formals
@@ -188,124 +188,124 @@ define-template (function* formals & body) {
     define (expand positional-before-named? positional-reqs positional-opts named rest) {
       if (and (null? positional-opts)
 	      (null? named)) {
-		; direct R5RS equivalent
-		#T{
-		  function $(append positional-reqs (or rest #n)) $@body
+	; direct R5RS equivalent
+	#T{
+	  function $(append positional-reqs (or rest #n)) $@body
+	}
+      } {
+	utility-fns := #T{
+	  ( $@(if (or positional-before-named?
+		      (null? positional-reqs)) {
+	    '#n
+	  } {
+	    #T{
+	      ((&req (function () {
+		if (pair? &args) {
+		  arg := ph &args
+		  set! &args (pt &args)
+		  arg
+		} {
+		  error/type ^rt-parameter-error 'expand "utility-fns: too few actual parameters" &args
 		}
-	      } {
-		utility-fns := #T{
-		  ( $@(if (or positional-before-named?
-			      (null? positional-reqs)) {
-				'#n
-			      } {
-				#T{
-				  ((&req (function () {
-					    if (pair? &args) {
-					      arg := ph &args
-					      set! &args (pt &args)
-					      arg
-					    } {
-					      error/type ^rt-parameter-error 'expand "utility-fns: too few actual parameters" &args
-					    }
-				  })))
-				}
-			      })
+	      })))
+	    }
+	  })
 
-		    $@(if (null? positional-opts) {
-		      '#n
+	    $@(if (null? positional-opts) {
+	      '#n
+	    } {
+	      #T{
+		( (&opt (function (default) {
+		  if (pair? &args) {
+		    arg := ph &args
+		    set! &args (pt &args)
+		    arg
+		  } (default) ; this is an application of default
+		})) )
+	      }
+	    }) )
+	}
+
+
+	positional-bindings := #T{
+	  ($@(if positional-before-named? {
+	    '#n
+	  } {
+	    map (function (x) {
+	      #T{
+		( $x (&req) )
+	      }
+	    }) positional-reqs
+	  })
+	    $@(map (function (x) {
+	      #T{
+		( $(ph x) (&opt (function () $(pht x))) )
+	      }
+	    }) positional-opts))
+	}
+
+	define named-bindings {
+	  if (null? named) {
+	    '#n
+	  } {
+	    #T{
+	      ( ( &key-values
+		  (array $@(map (function (x) #T{ &undefined })
+				named)) )
+		( &args
+		  ( &process-keys
+		    &args
+		    '$(make-perfect-hash-table (map (function (x i) (pair (ph x) i))
+						    named
+						    (range 0 (length named))))
+		    &key-values) )
+
+		$@(map (function (x i)
+		 #T{
+		  ( $(pht x)
+		    $(if (null? (ptt x)) {
+		      #T{
+			( &req-key &key-values $i )
+		      }
 		    } {
 		      #T{
-			( (&opt (function (default) {
-				   if (pair? &args) {
-				     arg := ph &args
-				     set! &args (pt &args)
-				     arg
-				   } (default) ; this is an application of default
-			})) )
+			( &opt-key &key-values $i (function ()
+			 $(phtt x)) )
 		      }
 		    }) )
-		}
-
-
-		positional-bindings := #T{
-		  ($@(if positional-before-named? {
-		    '#n
-		  } {
-		    map (function (x) {
-			   #T{
-			     ( $x (&req) )
-			   }
-		    }) positional-reqs
-		  })
-		    $@(map (function (x) {
-			      #T{
-				( $(ph x) (&opt (function () $(pht x))) )
-			      }
-		    }) positional-opts))
-		}
-
-		define named-bindings {
-		  if (null? named) {
-		    '#n
-		  } {
-		    #T{
-		      ( ( &key-values
-			  (array $@(map (function (x) #T{ &undefined })
-					named)) )
-			( &args
-			  ( &process-keys
-			    &args
-			    '$(make-perfect-hash-table (map (function (x i) (pair (ph x) i))
-							  named
-							  (range 0 (length named))))
-			    &key-values) )
-
-			$@(map (function (x i)
-				  #T{
-				    ( $(pht x)
-				      $(if (null? (ptt x)) {
-					#T{
-					  ( &req-key &key-values $i )
-					}
-				      } {
-					#T{
-					  ( &opt-key &key-values $i (function ()
-								       $(phtt x)) )
-					}
-				      }) )
-				  })
-			   named
-			   (range 0 (length named))))
-		    }
-		  }
-		}
-
-		define rest-binding {
-		  if (not rest) {
-		    #T{
-		      ( ( &args (or (null? &args)
-				    (error/type ^rt-parameter-error 'expand "rest-binding: too many actual parameters" &args)) ) )
-		    }
-		  } {
-		    #T{
-		      ( ( $rest &args ) )
-		    }
-		  }
-		}
-
-		bindings := (append (if positional-before-named? {
-		  append utility-fns positional-bindings named-bindings
-		} {
-		  append named-bindings utility-fns positional-bindings
 		})
-			     rest-binding)
+		   named
+		   (range 0 (length named))))
+	    }
+	  }
+	}
 
-		#T{
-		  function $(append (if positional-before-named? positional-reqs #n) '&args) {
-		    let* $bindings $@body
-		  }
-		}
-	      }
+	define rest-binding {
+	  if (not rest) {
+	    #T{
+	      ( ( &args (or (null? &args)
+			    (error/type ^rt-parameter-error 'expand "rest-binding: too many actual parameters" &args)) ) )
+	    }
+	  } {
+	    #T{
+	      ( ( $rest &args ) )
+	    }
+	  }
+	}
+
+	bindings := (append (if positional-before-named? {
+	  append utility-fns positional-bindings named-bindings
+	} {
+	  append named-bindings utility-fns positional-bindings
+	})
+		     rest-binding)
+
+	#T{
+	  function $(append (if positional-before-named? positional-reqs #n) '&args) {
+	    let* $bindings $@body
+	  }
+	}
+      }
     }
 
     apply expand (parse-formals formals)
@@ -324,22 +324,22 @@ define-template (function* formals & body) {
     ; and the associated value is at index X+1.
 
     loop1 :+ function (n) {
-	       v := make-array (2 * n) #f
-	       loop2 :+ function (lst) {
-			  if (pair? lst) {
-			    key-val := ph lst
-			    key := ph key-val
-			    x := 2 * (&hash-keyword key n)
-			    if (array-ref v x) {
-			      loop1 (n + 1)
-			    } {
-			      array-set! v x key
-			      array-set! v (x + 1) (pt key-val)
-			      loop2 (pt lst)
-			    }
-			  } v
-	       }
-	       loop2 alist
+      v := make-array (2 * n) #f
+      loop2 :+ function (lst) {
+	if (pair? lst) {
+	  key-val := ph lst
+	  key := ph key-val
+	  x := 2 * (&hash-keyword key n)
+	  if (array-ref v x) {
+	    loop1 (n + 1)
+	  } {
+	    array-set! v x key
+	    array-set! v (x + 1) (pt key-val)
+	    loop2 (pt lst)
+	  }
+	} v
+      }
+      loop2 alist
     }
     loop1 (length alist)
   }
@@ -374,7 +374,7 @@ define (&hash-keyword key n) {
        (modulo ((h * 65536) + (unicode/unicode->integer (string-ref str i)))
 	       n)
        (i + 1))
-      } h
+    } h
   }
   loop 0 0
 }
@@ -394,7 +394,7 @@ define (&req-key key-values i) {
   val := array-ref key-values i
   if (eq? val &undefined) {
     error/type ^rt-parameter-error '&req-key "a required named parameter was not provided" val
-    } val
+  } val
 }
 
 define (&opt-key key-values i default) {
@@ -410,26 +410,26 @@ define (&process-keys args key-hash-table key-values) {
       args
     } {
       k := ph args
-        if (not (keyword? k)) {
-	  args
+      if (not (keyword? k)) {
+	args
+      } {
+	i := &perfect-hash-table-lookup key-hash-table k
+	if (not i) {
+	  error/type ^rt-parameter-error '&process-keys "unknown parameter keyword" k
 	} {
-	  i := &perfect-hash-table-lookup key-hash-table k
-	  if (not i) {
-	    error/type ^rt-parameter-error '&process-keys "unknown parameter keyword" k
+	  if (null? (pt args)) {
+	    error/type ^rt-syntax-error '&process-keys "a value was expected after keyword" k
+	  } {
+	    if (eq? (array-ref key-values i) &undefined) {
+	      array-set! key-values i (pht args)
 	    } {
-	      if (null? (pt args)) {
-		error/type ^rt-syntax-error '&process-keys "a value was expected after keyword" k
-		} {
-		  if (eq? (array-ref key-values i) &undefined) {
-		    array-set! key-values i (pht args)
-		  } {
-		    error/type ^rt-parameter-error '&process-keys "duplicate parameter" k
-		  }
-		  loop (ptt args)
-		}
-	      }
+	      error/type ^rt-parameter-error '&process-keys "duplicate parameter" k
 	    }
+	    loop (ptt args)
 	  }
+	}
+      }
+    }
   }
   loop args
 }

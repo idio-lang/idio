@@ -31,83 +31,83 @@ debug := #n
   continuations := #n
 
   debug-c := function (n v) {
-	       if (n le ((array-length continuations) - 1)) {
-		 printf "invoking continuation %d: %s\n" n (pht continuations.n)
-		 %%vm-apply-continuation n v
-	       } {
-		 printf "%d: invalid choice\n" n
-	       }
+    if (n le ((array-length continuations) - 1)) {
+      printf "invoking continuation %d: %s\n" n (pht continuations.n)
+      %%vm-apply-continuation n v
+    } {
+      printf "%d: invalid choice\n" n
+    }
   }
 
   debug-v := function (val) {
-	       debug-k val
+    debug-k val
 
-	       edisplay* "debug-v: not seen here with" val
+    edisplay* "debug-v: not seen here with" val
   }
 
   debug = function args {
-	    display* "This is the Idio debugger\n"
-	    display* "debugger input is from" (current-input-handle)
+    display* "This is the Idio debugger\n"
+    display* "debugger input is from" (current-input-handle)
 
-	    if (not (null? args)) {
-	      display* debug-k \= ph args
-	    }
+    if (not (null? args)) {
+      display* debug-k \= ph args
+    }
 
-	    continuations = (%%vm-continuations)
-	    ;idio-debug "continuations = %s\n" continuations
+    continuations = (%%vm-continuations)
+    ;idio-debug "continuations = %s\n" continuations
 
-	    debug-loop :+ function () {
-			    al := array-length continuations
-			    if (al gt 0) {
-			      printf "Choose between the following continuations:\n"
-			      dloop :+ function (n) {
-					 if (n ge 0) {
-					   printf "  %d%s: %s\n" n (if (eq? (ph continuations.n) debug-k) "*" " ") (pht continuations.n)
-					   dloop (n - 1)
-					 }
-			      }
+    debug-loop :+ function () {
+      al := array-length continuations
+      if (al gt 0) {
+	printf "Choose between the following continuations:\n"
+	dloop :+ function (n) {
+	  if (n ge 0) {
+	    printf "  %d%s: %s\n" n (if (eq? (ph continuations.n) debug-k) "*" " ") (pht continuations.n)
+	    dloop (n - 1)
+	  }
+	}
 
-			      dloop (al - 1)
-			      printf "c <num> [<val>]	Invoke continuation <num>\n"
-			    }
-			    printf "v <val>		return a value to continuation of failed expression\n"
-			    printf "ft		show the tree of frames\n"
-			    printf "t		show the thread state\n"
-			    printf "debug> "
+	dloop (al - 1)
+	printf "c <num> [<val>]	Invoke continuation <num>\n"
+      }
+      printf "v <val>		return a value to continuation of failed expression\n"
+      printf "ft		show the tree of frames\n"
+      printf "t		show the thread state\n"
+      printf "debug> "
 
-			    line := (read-line)
-			    lsh := open-input-string line
-			    cmd := read-expr lsh
+      line := (read-line)
+      lsh := open-input-string line
+      cmd := read-expr lsh
 
-			    (cond
-			     ((and (eqv? "" line)
-				   (eof? (current-input-handle))) {
-				     debug-k 'debugger-eof
-				   })
-			     ((eq? 'c cmd) {
-			       n := read-expr lsh
-			       v := read-expr lsh
-			       debug-c n v
-			     })
-			     ((eqv? 'v cmd) {
-			       v := read-expr lsh
-			       debug-k v
-			     })
-			     ((eqv? 'ft cmd) {
-			       (%vm-frame-tree)
-			     })
-			     ((eqv? 't cmd) {
-			       (idio-thread-state)
-			     })
-			     (else (printf "unrecognised line %s\n" line)))
+      (cond
+       ((and (eqv? "" line)
+	     (eof? (current-input-handle))) {
+	 debug-k 'debugger-eof
+       })
+       ((eq? 'c cmd) {
+	 n := read-expr lsh
+	 v := read-expr lsh
+	 debug-c n v
+       })
+       ((eqv? 'v cmd) {
+	 v := read-expr lsh
+	 debug-k v
+       })
+       ((eqv? 'ft cmd) {
+	 (%vm-frame-tree)
+       })
+       ((eqv? 't cmd) {
+	 (idio-thread-state)
+       })
+       (else (printf "unrecognised line %s\n" line)))
 
-			    (debug-loop)
-	    }
+      (debug-loop)
+    }
 
-	    call/cc (function (k) {
-		       debug-k = k
-		       (debug-loop)
-	    })
+    call/cc (function (k) {
+      debug-k = k
+      (debug-loop)
+    })
   }
 }
 

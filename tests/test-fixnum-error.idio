@@ -35,14 +35,14 @@ fixnum-error-load := {
     trap (^rt-fixnum-error
 	  ^rt-divide-by-zero-error
 	  ^rt-parameter-error) (function (c) {
-				  ;eprintf "fixnum-error #%s: %s %s\n" n msg (idio-error-location c)
-				  test (idio-error-message c) msg
+	    ;eprintf "fixnum-error #%s: %s %s\n" n msg (idio-error-location c)
+	    test (idio-error-message c) msg
 
-				  if (not (string=? (idio-error-message c) msg)) {
-				    condition-report (append-string "fixnum-error-load: " filename) c (current-error-handle)
-				  }
+	    if (not (string=? (idio-error-message c) msg)) {
+	      condition-report (append-string "fixnum-error-load: " filename) c (current-error-handle)
+	    }
 
-				  trap-return 'fixnum-error
+	    trap-return 'fixnum-error
 	  }) {
 	    t0 := Tests
 	    (symbol-value 'load 'Idio) filename
@@ -51,7 +51,7 @@ fixnum-error-load := {
 	      Errors = Errors + 1
 	      Tests = t0 + exp-tests
 	    }
-	  }
+    }
   }
 }
 
