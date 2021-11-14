@@ -300,10 +300,7 @@ define (job-is-completed job) "test if job `job` has completed
 
   loop :+ function (procs) {
     (cond
-     ((null? procs) {
-       set-%idio-job-timing-end! job (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN))
-       #t
-     })
+     ((null? procs) #t)
      ((not (%idio-process-completed (ph procs))) #f)
      (else {
        loop (pt procs)
@@ -542,6 +539,14 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
 		 set-%idio-process-stopped! (ph procs) #t
 	       } {
 		 set-%idio-process-completed! (ph procs) #t
+		 job := ph jobs
+		 if (job-is-completed job) {
+		   unless (%idio-job-timing-end job) {
+		     set-%idio-job-timing-end! job (list (libc/gettimeofday)
+							 (libc/getrusage libc/RUSAGE_SELF)
+							 (libc/getrusage libc/RUSAGE_CHILDREN))
+		   }
+		 }
 		 if (and %idio-interactive
 			 (WIFSIGNALED status)) {
 		   eprintf "Job Terminated: kill -%s %d\n" (signal-name (WTERMSIG status)) pid
@@ -770,7 +775,16 @@ define (do-job-notification) "notify the user of any job status changes" {
 	      tv-before    := ph timing-start
 	      rus-before   := pht timing-start
 	      ruc-before   := phtt timing-start
+
 	      timing-end   := %idio-job-timing-end job
+	      unless (%idio-job-timing-end job) {
+		timing-end = (list (libc/gettimeofday)
+				   (libc/getrusage libc/RUSAGE_SELF)
+				   (libc/getrusage libc/RUSAGE_CHILDREN))
+		set-%idio-job-timing-end! job timing-end
+		eprintf "NOTICE: %d>%d: djn/jic setting timing-end: %s\n" PPID PID job
+	      }
+
 	      tv-end       := ph timing-end
 	      rus-end      := pht timing-end
 	      ruc-end      := phtt timing-end
@@ -1217,7 +1231,71 @@ define (%prep-process pgid infile outfile errfile foreground async-job) "prepare
   prep-io infile outfile errfile
 }
 
-define-template (pipeline foreground use-w-pipe use-r-pipe collect report-time async-job cmds) {
+define-template (pipeline kind cmds) {
+  foreground  := #t
+  use-w-pipe  := #f
+  use-r-pipe  := #f
+  collect     := #f
+  report-time := #f
+  async-job   := #f
+
+  meta-loop :+ function (cmd) {
+    (case (ph cmd)
+     ((collect-output) {
+       cmd         = (meta-loop (pt cmd))
+       collect     = #t
+       foreground  = #t
+       async-job   = #t
+       cmd
+     })
+     ((fg-job) {
+       cmd         = (meta-loop (pt cmd))
+       foreground  = #t
+       cmd
+     })
+     ((bg-job) {
+       cmd         = (meta-loop (pt cmd))
+       foreground  = #f
+       cmd
+     })
+     ((named-pipe-into) {
+       cmd         = (meta-loop (pt cmd))
+       use-w-pipe  = 'named
+       foreground  = #f
+       async-job   = #t
+       cmd
+     })
+     ((pipe-into) {
+       cmd         = (meta-loop (pt cmd))
+       use-w-pipe  = #t
+       foreground  = #f
+       async-job   = #t
+       cmd
+     })
+     ((named-pipe-from) {
+       cmd         = (meta-loop (pt cmd))
+       use-r-pipe  = 'named
+       foreground  = #f
+       async-job   = #t
+       cmd
+     })
+     ((pipe-from) {
+       cmd         = (meta-loop (pt cmd))
+       use-r-pipe  = #t
+       foreground  = #f
+       async-job   = #t
+       cmd
+     })
+     ((time) {
+       cmd         = (meta-loop (pt cmd))
+       report-time = #t
+       cmd
+     })
+    (else cmd))
+  }
+
+  cmds = append (list (meta-loop (append (list kind) (ph cmds)))) (pt cmds)
+
   #*
 
   pgrp-pipe:
@@ -1701,75 +1779,6 @@ define-template (pipeline foreground use-w-pipe use-r-pipe collect report-time a
 }
 
 define-infix-operator | 700 {
-  foreground  := #t
-  use-w-pipe  := #f
-  use-r-pipe  := #f
-  collect     := #f
-  report-time := #f
-  async-job   := #f
-
-  ;; Slightly annoyingly, some meta-instructions to the pipeline are
-  ;; consumed by the reader operator (us!) so we should look out for
-  ;; them.
-
-  meta-loop :+ function () {
-    (case (ph before)
-     ((collect-output) {
-       before      = pt before
-       collect     = #t
-       foreground  = #t
-       async-job   = #t
-       (meta-loop)
-     })
-     ((fg-job) {
-       before      = pt before
-       foreground  = #t
-       (meta-loop)
-     })
-     ((bg-job) {
-       before      = pt before
-       foreground  = #f
-       (meta-loop)
-     })
-     ((named-pipe-into) {
-       before      = pt before
-       use-w-pipe  = 'named
-       foreground  = #f
-       async-job   = #t
-       (meta-loop)
-     })
-     ((pipe-into) {
-       before      = pt before
-       use-w-pipe  = #t
-       foreground  = #f
-       async-job   = #t
-       (meta-loop)
-     })
-     ((named-pipe-from) {
-       before      = pt before
-       use-r-pipe  = 'named
-       foreground  = #f
-       async-job   = #t
-       (meta-loop)
-     })
-     ((pipe-from) {
-       before      = pt before
-       use-r-pipe  = #t
-       foreground  = #f
-       async-job   = #t
-       (meta-loop)
-     })
-     ((time) {
-       before      = pt before
-       report-time = #t
-       (meta-loop)
-     }))
-  }
-
-  (meta-loop)
-
-  orig-pipeline := append before (append (list op) after)
-
   ;; we want a list of lists -- a list of the |-separated commands
   split :+ function (op op-args expr after) {
     (cond
@@ -1786,36 +1795,36 @@ define-infix-operator | 700 {
   op-args = map operator-expand op-args
 
   #T{
-    pipeline $foreground $use-w-pipe $use-r-pipe $collect $report-time $async-job $op-args
+    pipeline fg-job $op-args
   }
 }
 
 define-template (collect-output & cmd) {
-  #T{ pipeline #t #f #f #t #f #t ($cmd) }
+  #T{ pipeline collect-output ($cmd) }
 }
 
 define-template (fg-job & cmd) {
-  #T{ pipeline #t #f #f #f #f #f ($cmd) }
+  #T{ pipeline fg-job ($cmd) }
 }
 
 define-template (bg-job & cmd) {
-  #T{ pipeline #f #f #f #f #f #f ($cmd) }
+  #T{ pipeline bg-job ($cmd) }
 }
 
 define-template (pipe-into & cmd) {
-  #T{ pipeline #f #t #f #f #f #t ($cmd) }
+  #T{ pipeline pipe-into ($cmd) }
 }
 
 define-template (named-pipe-into & cmd) {
-  #T{ pipeline #f 'named #f #f #f #t ($cmd) }
+  #T{ pipeline named-pipe-into ($cmd) }
 }
 
 define-template (pipe-from & cmd) {
-  #T{ pipeline #f #f #t #f #f #t ($cmd) }
+  #T{ pipeline pipe-from ($cmd) }
 }
 
 define-template (named-pipe-from & cmd) {
-  #T{ pipeline #f #f 'named #f #f #t ($cmd) }
+  #T{ pipeline named-pipe-from ($cmd) }
 }
 
 define (wait & jobs) "

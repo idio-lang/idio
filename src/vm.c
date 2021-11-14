@@ -6925,7 +6925,7 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 
 		    IDIO signal_condition = idio_array_ref_index (idio_vm_signal_handler_conditions, (idio_ai_t) signum);
 		    if (idio_S_nil != signal_condition) {
-			idio_vm_raise_condition (idio_S_true, signal_condition, 1, 0);
+			idio_vm_raise_condition (idio_S_true, signal_condition, 1, 1);
 
 			return idio_S_notreached;
 		    } else {
