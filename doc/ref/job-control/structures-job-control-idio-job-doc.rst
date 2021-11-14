@@ -12,8 +12,11 @@
 * `notify-completed` is a flag to say whether any failure on job
   completion has been reported
 
+  Notably, this is disabled in logical expressions.
+
 * `raise?` is a flag to say whether any failure on job completion
-  should have an ``^rt-command-status-error`` condition raised
+  should have an ``^rt-command-status-error`` /
+  ``^rt-async-command-status-error`` condition raised
 
   Notably, this is disabled in logical expressions thus allowing
   external commands that fail to be used.

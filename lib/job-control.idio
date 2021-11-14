@@ -68,6 +68,8 @@ export (%idio-interactive
 
 	do-job-notification
 
+	pipeline
+
 	bg-job
 	wait
 	with-input-from
@@ -1215,91 +1217,7 @@ define (%prep-process pgid infile outfile errfile foreground async-job) "prepare
   prep-io infile outfile errfile
 }
 
-define-infix-operator | 700 {
-  foreground  := #t
-  use-w-pipe  := #f
-  use-r-pipe  := #f
-  collect     := #f
-  report-time := #f
-  async-job   := #f
-
-  ;; Slightly annoyingly, some meta-instructions to the pipeline are
-  ;; consumed by the reader operator (us!) so we should look out for
-  ;; them.
-
-  meta-loop :+ function () {
-    (case (ph before)
-     ((collect-output) {
-       before      = pt before
-       collect     = #t
-       foreground  = #t
-       async-job   = #t
-       (meta-loop)
-     })
-     ((fg-job) {
-       before      = pt before
-       foreground  = #t
-       (meta-loop)
-     })
-     ((bg-job) {
-       before      = pt before
-       foreground  = #f
-       (meta-loop)
-     })
-     ((named-pipe-into) {
-       before      = pt before
-       use-w-pipe  = 'named
-       foreground  = #f
-       async-job   = #t
-       (meta-loop)
-     })
-     ((pipe-into) {
-       before      = pt before
-       use-w-pipe  = #t
-       foreground  = #f
-       async-job   = #t
-       (meta-loop)
-     })
-     ((named-pipe-from) {
-       before      = pt before
-       use-r-pipe  = 'named
-       foreground  = #f
-       async-job   = #t
-       (meta-loop)
-     })
-     ((pipe-from) {
-       before      = pt before
-       use-r-pipe  = #t
-       foreground  = #f
-       async-job   = #t
-       (meta-loop)
-     })
-     ((time) {
-       before      = pt before
-       report-time = #t
-       (meta-loop)
-     }))
-  }
-
-  (meta-loop)
-
-  orig-pipeline := append before (append (list op) after)
-
-  ;; we want a list of lists -- a list of the |-separated commands
-  split :+ function (op op-args expr after) {
-    (cond
-     ((null? after)		(reverse (pair (reverse expr) op-args)))
-     ((not (pair? after))	(error/type ^rt-syntax-error '| "bad syntax" op (reverse op-args) after))
-     ((eq? op (ph after))	(split op (pair (reverse expr) op-args) #n (pt after)))
-     (else			(split op op-args (pair (ph after) expr) (pt after))))
-  }
-
-  op-args := split op (list before) #n after
-
-  ;; we have created new lists so we should expand any operators in
-  ;; them
-  op-args = map operator-expand op-args
-
+define-template (pipeline foreground use-w-pipe use-r-pipe collect report-time async-job cmds) {
   #*
 
   pgrp-pipe:
@@ -1406,32 +1324,32 @@ define-infix-operator | 700 {
 
   *#
 
-  proc-subst-job         := gensym 'psj
+  proc-subst-job        := gensym 'psj
 
-  w-pipe		 := gensym 'w-pipe
-  pipeline-r-fdn         := gensym 'pl-r-fd
-  close-pipeline-r-fh    := gensym 'close-pl-r-fh
-  pipeline-w-phn         := gensym 'pl-w-h
-  cmd-r-fdn              := gensym 'cmd-r-fdn
+  w-pipe                := gensym 'w-pipe
+  pipeline-r-fdn        := gensym 'pl-r-fd
+  close-pipeline-r-fh   := gensym 'close-pl-r-fh
+  pipeline-w-phn        := gensym 'pl-w-h
+  cmd-r-fdn             := gensym 'cmd-r-fdn
 
-  r-pipe		 := gensym 'r-pipe
-  pipeline-w-fdn         := gensym 'pl-w-fd
-  pipeline-r-phn         := gensym 'pl-r-h
-  recover-pipeline-w-fd  := gensym 'rcvr-pl-w-fd
-  cmd-w-fdn              := gensym 'cmd-w-fdn
+  r-pipe                := gensym 'r-pipe
+  pipeline-w-fdn        := gensym 'pl-w-fd
+  pipeline-r-phn        := gensym 'pl-r-h
+  recover-pipeline-w-fd := gensym 'rcvr-pl-w-fd
+  cmd-w-fdn             := gensym 'cmd-w-fdn
 
-  stderr                 := gensym 'stderr
+  stderr                := gensym 'stderr
 
-  pgid                   := gensym 'pgid
-  job                    := gensym 'job
-  proc-id                := gensym 'proc-id
-  cmd-pipe               := gensym 'cmd-pipe
-  pgrp-pipe              := gensym 'pgrp-pipe
-  proc                   := gensym 'proc
-  pid                    := gensym 'pid
-  status                 := gensym 'status
+  pgid                  := gensym 'pgid
+  job                   := gensym 'job
+  proc-id               := gensym 'proc-id
+  cmd-pipe              := gensym 'cmd-pipe
+  pgrp-pipe             := gensym 'pgrp-pipe
+  proc                  := gensym 'proc
+  pid                   := gensym 'pid
+  status                := gensym 'status
 
-  nprocs := length op-args
+  nprocs                := length cmds
 
   #T{
     {
@@ -1515,7 +1433,7 @@ define-infix-operator | 700 {
       $stderr := (libc/stderr-fileno) ; STDERR_FILENO
 
       $pgid      := libc/0pid_t
-      $job       := (make-%idio-job '$orig-pipeline
+      $job       := (make-%idio-job '$cmds
 				    #n
 				    $pgid
 				    #f				  ; notify-stopped
@@ -1532,7 +1450,7 @@ define-infix-operator | 700 {
 				    $async-job)
 
       $proc-id   := 1
-      $cmd-pipe  := #n
+      $cmd-pipe  := #f
       $pgrp-pipe := (libc/pipe)
 
       $@(map (function (cmd) {
@@ -1590,7 +1508,9 @@ define-infix-operator | 700 {
 		     libc/close fd
 		   }
 		 } {
-		   libc/close (libc/pipe-reader $r-pipe)
+		   if $r-pipe {
+		     libc/close (libc/pipe-reader $r-pipe)
+		   }
 		 }
 	       }))
 
@@ -1609,7 +1529,9 @@ define-infix-operator | 700 {
 
 	      ;; Ah, OK.  We do.
 	      if ($proc-id lt $nprocs) {
-		libc/close (libc/pipe-reader $cmd-pipe)
+		if $cmd-pipe {
+		  libc/close (libc/pipe-reader $cmd-pipe)
+		}
 	      }
 
 	      ;; We don't have the same problem with (pipe-writer
@@ -1685,12 +1607,14 @@ define-infix-operator | 700 {
 	      }
 	    }
 
-	    $cmd-r-fdn = (libc/pipe-reader $cmd-pipe)
+	    if $cmd-pipe {
+	      $cmd-r-fdn = (libc/pipe-reader $cmd-pipe)
+	    }
 	    $proc-id = $proc-id + 1
 	  }
 	}
       })
-	 op-args)
+	 cmds)
 
       (cond
        ($use-w-pipe {
@@ -1776,313 +1700,122 @@ define-infix-operator | 700 {
   }
 }
 
-#*
+define-infix-operator | 700 {
+  foreground  := #t
+  use-w-pipe  := #f
+  use-r-pipe  := #f
+  collect     := #f
+  report-time := #f
+  async-job   := #f
 
-fork-command started life as per the Job Control info pages as taking
-a foreground boolean.
+  ;; Slightly annoyingly, some meta-instructions to the pipeline are
+  ;; consumed by the reader operator (us!) so we should look out for
+  ;; them.
 
-It was extended to take use-[rw]-pipe booleans for whether it should
-return write/read pipe handles for pipe-into and pipe-from.
+  meta-loop :+ function () {
+    (case (ph before)
+     ((collect-output) {
+       before      = pt before
+       collect     = #t
+       foreground  = #t
+       async-job   = #t
+       (meta-loop)
+     })
+     ((fg-job) {
+       before      = pt before
+       foreground  = #t
+       (meta-loop)
+     })
+     ((bg-job) {
+       before      = pt before
+       foreground  = #f
+       (meta-loop)
+     })
+     ((named-pipe-into) {
+       before      = pt before
+       use-w-pipe  = 'named
+       foreground  = #f
+       async-job   = #t
+       (meta-loop)
+     })
+     ((pipe-into) {
+       before      = pt before
+       use-w-pipe  = #t
+       foreground  = #f
+       async-job   = #t
+       (meta-loop)
+     })
+     ((named-pipe-from) {
+       before      = pt before
+       use-r-pipe  = 'named
+       foreground  = #f
+       async-job   = #t
+       (meta-loop)
+     })
+     ((pipe-from) {
+       before      = pt before
+       use-r-pipe  = #t
+       foreground  = #f
+       async-job   = #t
+       (meta-loop)
+     })
+     ((time) {
+       before      = pt before
+       report-time = #t
+       (meta-loop)
+     }))
+  }
 
-We can (ab)use those pipe "booleans" by testing if they are the 'named
-symbol to return a (named) pipe pathname for Process Substitution.  We
-can do this because we can't ask for both a pipe handle and a named
-pipe pathname to be returned at the same time:
+  (meta-loop)
 
-use-[rw]-pipe:
+  orig-pipeline := append before (append (list op) after)
 
-* #f		do nothing
+  ;; we want a list of lists -- a list of the |-separated commands
+  split :+ function (op op-args expr after) {
+    (cond
+     ((null? after)		(reverse (pair (reverse expr) op-args)))
+     ((not (pair? after))	(error/type ^rt-syntax-error '| "bad syntax" op (reverse op-args) after))
+     ((eq? op (ph after))	(split op (pair (reverse expr) op-args) #n (pt after)))
+     (else			(split op op-args (pair (ph after) expr) (pt after))))
+  }
 
-* 'named	return a (named) pipe pathname
+  op-args := split op (list before) #n after
 
-* any		return a pipe handle
-
-The only complication is that we can't open the true named pipe now,
-we must open it in the child process otherwise we block waiting for
-the other guy to open their end.  Which they can't because we've just
-blocked ourselves from starting them.
-
-*#
-
-define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) {
-  proc-subst-job   := gensym 'psj
-
-  w-pipe           := gensym 'w-pipe
-  cmd-r-fdn        := gensym 'cmd-r-fdn
-  close-cmd-r-fh   := gensym 'close-cmd-r-fh
-  cmd-w-phn        := gensym 'cmd-w-phn
-
-  r-pipe           := gensym 'r-pipe
-  cmd-w-fdn        := gensym 'cmd-w-fdn
-  cmd-r-phn        := gensym 'cmd-r-phn
-  recover-cmd-w-fd := gensym 'rcvr-cmd-w-fd
-
-  cmd-e-fd         := gensym 'cmd-e-fd
-  recover-cmd-e-fd := gensym 'rcvr-cmd-e-fd
-
-  pgid             := gensym 'pgid
-  proc             := gensym 'proc
-  job              := gensym 'job
-  pid              := gensym 'pid
-  status           := gensym 'status
+  ;; we have created new lists so we should expand any operators in
+  ;; them
+  op-args = map operator-expand op-args
 
   #T{
-    {
-      $proc-subst-job := #f
-
-      $w-pipe         := #f
-      $cmd-r-fdn      := #f
-      $close-cmd-r-fh := #f
-      $cmd-w-phn      := #f
-      (cond
-       ((eq? $use-w-pipe 'named) {
-	 named-pipe := (libc/proc-subst-named-pipe-into)
-	 $cmd-w-phn = (nth named-pipe 4)
-	 ;; true named pipes will not have opened an fd so substitute
-	 ;; the name
-	 $cmd-r-fdn = (or (nth named-pipe 1)
-			  (nth named-pipe 3))
-
-	 (cond
-	  ((nth named-pipe 2) {
-	    $proc-subst-job = job-control/make-%process-substitution-job #f (nth named-pipe 2) #f #f #f
-	  })
-	  (else {
-	    $proc-subst-job = job-control/make-%process-substitution-job #f #f (nth named-pipe 4) (nth named-pipe 5) #f
-	  }))
-       })
-       ($use-w-pipe {
-	 $w-pipe    = (libc/pipe)
-	 $cmd-w-phn = open-output-pipe (libc/pipe-writer $w-pipe)
-	 $cmd-r-fdn = libc/pipe-reader $w-pipe
-       })
-       (else {
-	 $cmd-r-fdn        = (libc/stdin-fileno) ; STDIN_FILENO
-	 $close-cmd-r-fh   = #f
-	 if (pair? $cmd-r-fdn) {
-	   $close-cmd-r-fh = ph $cmd-r-fdn
-	   $cmd-r-fdn      = fd-handle-fd $close-cmd-r-fh
-	 }
-       }))
-
-      $r-pipe           := #f
-      $cmd-w-fdn	:= #f
-      $cmd-r-phn	:= #f
-      $recover-cmd-w-fd := #f
-      (cond
-       ((eq? $use-r-pipe 'named) {
-	 named-pipe := (libc/proc-subst-named-pipe-from)
-	 $cmd-r-phn = (nth named-pipe 3)
-	 ;; true named pipes will not have opened an fd so substitute
-	 ;; the name
-	 $cmd-w-fdn = (or (nth named-pipe 2)
-			  (nth named-pipe 4))
-
-	 (cond
-	  ((nth named-pipe 1) {
-	    $proc-subst-job = job-control/make-%process-substitution-job #t (nth named-pipe 1) #f #f #f
-	  })
-	  (else {
-	    $proc-subst-job = job-control/make-%process-substitution-job #t #f (nth named-pipe 3) (nth named-pipe 5) #f
-	  }))
-       })
-       ($use-r-pipe {
-	 $r-pipe    = (libc/pipe)
-	 $cmd-r-phn = open-input-pipe (libc/pipe-reader $r-pipe)
-	 $cmd-w-fdn = libc/pipe-writer $r-pipe
-       })
-       (else {
-	 $cmd-w-fdn          = (libc/stdout-fileno) ; STDOUT_FILENO
-	 $recover-cmd-w-fd   = #f
-	 if (pair? $cmd-w-fdn) {
-	   $recover-cmd-w-fd = pht $cmd-w-fdn
-	   $cmd-w-fdn        = ph $cmd-w-fdn
-	 }
-       }))
-
-      $cmd-e-fd          := (libc/stderr-fileno) ; STDERR_FILENO
-      $recover-cmd-e-fd  := #f
-      if (pair? $cmd-e-fd) {
-	$recover-cmd-e-fd = pht $cmd-e-fd
-	$cmd-e-fd         = ph $cmd-e-fd
-      }
-      $pgid := libc/0pid_t
-      $proc := make-%idio-process '$cmd #n -1 #f #f #n
-      $job := (make-%idio-job '$cmd
-			      (list $proc)
-			      $pgid
-			      #f			    ; notify-stopped
-			      #f			    ; notify-completed
-			      (not/function command/%suppress-rcse)  ; raise?
-			      command/%suppress-rcse	    ; raised
-			      #n			    ; tcattrs
-			      $cmd-r-fdn
-			      $cmd-w-fdn
-			      $cmd-e-fd
-			      #f
-			      (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN))
-			      #f
-			      $async-job)
-
-      $pid := (libc/fork)
-      (cond
-       ((C/== $pid libc/0pid_t) {
-	 suppress-pipefail! = #f
-	 suppress-exit-on-error! = #f
-	 set-default-handler! ^idio-error default-child-handler
-	 job-control/%idio-jobs = #n
-	 job-control/%%last-job = #n
-	 job-control/%%process-substitution-jobs = #{}
-	 %prep-process $pgid $cmd-r-fdn $cmd-w-fdn $cmd-e-fd $foreground $async-job
-
-	 (cond
-	  ($use-w-pipe {
-	    ;; sub-Idio should not hold the write end of the
-	    ;; (named-)pipe-into pipe open (if a file descriptor) --
-	    ;; it will have been dup'ed in prep-io
-	    if (eq? $use-w-pipe 'named) {
-	      fd := %process-substitution-job-fd $proc-subst-job
-	      if fd {
-		libc/close fd
-	      }
-	    } {
-	      libc/close (libc/pipe-writer $w-pipe)
-	    }
-	  })
-	  ($use-r-pipe {
-	    ;; sub-Idio should not hold the read end of the
-	    ;; (named-)pipe-from pipe open (if a file descriptor) --
-	    ;; it will have been dup'ed in prep-io
-	    if (eq? $use-r-pipe 'named) {
-	      fd := %process-substitution-job-fd $proc-subst-job
-	      if fd {
-		libc/close fd
-	      }
-	    } {
-	      libc/close (libc/pipe-reader $r-pipe)
-	    }
-	  }))
-
-	 (cond
-	  ((pair? (ph '$cmd)) {
-	    $@cmd
-	  })
-	  (else $cmd))
-
-	 ;; We ought to definitively stop before this child continues
-	 ;; back into the main Idio engine.
-	 exit 0
-       })
-       (else {
-	 set-%idio-process-pid! $proc $pid
-	 if (or job-control/%idio-interactive
-		$async-job) {
-	   $pgid = $pid
-	   set-%idio-job-pgid! $job $pgid
-	   suppress-errors! ^system-error libc/setpgid $pid $pgid
-	 }
-       }))
-
-      (cond
-       ($use-w-pipe {
-	 ;; parent should not hold the read end of the
-	 ;; (named-)pipe-into pipe open
-	 if (eq? $use-w-pipe 'named) {
-	   job-control/add-process-substitution-job $job $proc-subst-job
-	   if (C/int? $cmd-r-fdn) {
-	     libc/close $cmd-r-fdn
-	   }
-	 } {
-	   libc/close $cmd-r-fdn
-	 }
-       })
-       ($use-r-pipe {
-	 ;; parent should not hold the write end of the
-	 ;; (named-)pipe-from pipe open
-	 if (eq? $use-r-pipe 'named) {
-	   job-control/add-process-substitution-job $job $proc-subst-job
-	   if (C/int? $cmd-w-fdn) {
-	     libc/close $cmd-w-fdn
-	   }
-	 } {
-	   libc/close $cmd-w-fdn
-	 }
-       }))
-
-      %idio-jobs = pair $job %idio-jobs
-      %%last-job = $job
-
-      (cond
-       ($use-w-pipe {
-	 $cmd-w-phn
-       })
-       ($use-r-pipe {
-	 $cmd-r-phn
-       })
-       (else {
-	 $status := #f
-	 (cond
-	  ($foreground {
-	    $status = foreground-job $job #f
-	  })
-	  (else {
-	    $status = background-job $job #f
-	  }))
-
-	 if $close-cmd-r-fh {
-	   close-handle $close-cmd-r-fh
-	 }
-
-	 if $recover-cmd-w-fd {
-	   ih := open-input-file-from-fd $cmd-w-fdn
-
-	   ;; NB the temporary file has just been written to so the file
-	   ;; pointer is currently at the end, we need to set it back to
-	   ;; the start to be able to read anything!
-	   seek-handle ih 0 'set
-	   display (read-lines ih) $recover-cmd-w-fd
-	   close-handle ih
-	 }
-
-	 if $recover-cmd-e-fd {
-	   ih := open-input-file-from-fd $cmd-e-fd
-
-	   ;; NB the temporary file has just been written to so the file
-	   ;; pointer is currently at the end, we need to set it back to
-	   ;; the start to be able to read anything!
-	   seek-handle ih 0 'set
-	   display (read-lines ih) $recover-cmd-e-fd
-	   close-handle ih
-	 }
-
-	 $status
-       }))
-    }
+    pipeline $foreground $use-w-pipe $use-r-pipe $collect $report-time $async-job $op-args
   }
 }
 
+define-template (collect-output & cmd) {
+  #T{ pipeline #t #f #f #t #f #t ($cmd) }
+}
+
 define-template (fg-job & cmd) {
-  #T{ fork-command #t #f #f #f $@cmd }
+  #T{ pipeline #t #f #f #f #f #f ($cmd) }
 }
 
 define-template (bg-job & cmd) {
-  #T{ fork-command #f #f #f #f $@cmd }
+  #T{ pipeline #f #f #f #f #f #f ($cmd) }
 }
 
 define-template (pipe-into & cmd) {
-  #T{ fork-command #f #t #f #t $@cmd }
+  #T{ pipeline #f #t #f #f #f #t ($cmd) }
 }
 
 define-template (named-pipe-into & cmd) {
-  #T{ fork-command #f 'named #f #t $@cmd }
+  #T{ pipeline #f 'named #f #f #f #t ($cmd) }
 }
 
 define-template (pipe-from & cmd) {
-  #T{ fork-command #f #f #t #t $@cmd }
+  #T{ pipeline #f #f #t #f #f #t ($cmd) }
 }
 
 define-template (named-pipe-from & cmd) {
-  #T{ fork-command #f #f 'named #t $@cmd }
+  #T{ pipeline #f #f 'named #f #f #t ($cmd) }
 }
 
 define (wait & jobs) "
@@ -2259,23 +1992,6 @@ define (with-output-to dst thunk) {
 
 define (with-error-to dst thunk) {
   with-handle-redir 'error dst thunk
-}
-
-;; collect-output works fine for standalone commands, (collect-output
-;; uname -n), but is caught up in a pipeline by the reader operator.
-;; See above.
-;;
-;; NB call fork-command directly as we want to be both in the
-;; foreground and an async command
-define-template (collect-output & cmd) {
-  osh := gensym 'osh
-  #T{
-    $osh := (open-output-string)
-    with-output-to $osh (function #n {
-      fork-command #t #f #f #t $@cmd
-    })
-    strip-string (get-output-string $osh) "\n"
-  }
 }
 
 define (cat-file fn) "
