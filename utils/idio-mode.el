@@ -515,6 +515,45 @@ indentation."
 		  (indent-to target-indent))))))
     (skip-chars-forward "[:space:]")))
 
+(defvar idio-func-regexp
+  (regexp-opt '("define" "define*" "define-" "function" "function*") t))
+
+(defvar idio-defun-regexp
+  (concat
+   "\\(^[[:space:]]*\\|\\(:[=+]\\|=\\)[[:space:]]*\\|(\\)"
+   idio-func-regexp))
+
+;; beginning/end code re-imagined from tcl.el
+(defun idio-beginning-of-defun-function (&optional arg)
+  "`beginning-of-defun-function' for Idio mode."
+  (when (or (not arg) (= arg 0))
+    (setq arg 1))
+  (let* ((search-fn (if (> arg 0)
+                        ;; Positive arg means to search backward.
+                        #'re-search-backward
+                      #'re-search-forward))
+         (arg (abs arg))
+         (result t))
+    (while (and (> arg 0) result)
+      (unless (funcall search-fn idio-defun-regexp nil t)
+        (setq result nil))
+      (setq arg (1- arg)))
+    result))
+
+(defun idio-end-of-defun-function ()
+  "`end-of-defun-function' for Idio mode."
+  (if (not (re-search-forward idio-func-regexp (line-end-position) nil))
+      (idio-beginning-of-defun-function))
+  (condition-case nil
+      (progn
+	;; args
+	(forward-sexp)
+	(if (looking-at "[[:space:]]+\"")
+	    (forward-sexp))
+	(forward-sexp))
+    (scan-error
+     (goto-char (point-max)))))
+
 (defvar idio-mode-default-indent 2)
 
 ;; Yuk - this appears to descend through scheme-syntax-propertize and
@@ -553,6 +592,9 @@ indentation."
   (setq-local comment-start-skip ";+[ \t]*")
   (setq-local comment-use-syntax t)
   (setq-local comment-column 40)
+
+  (setq-local beginning-of-defun-function #'idio-beginning-of-defun-function)
+  (setq-local end-of-defun-function #'idio-end-of-defun-function)
 
   (setq major-mode 'idio-mode)
   (setq mode-name "Idio")
