@@ -3415,26 +3415,29 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 #endif
     fprintf (stderr, "%7td ", IDIO_THREAD_PC (thr) - 1);
 
-    IDIO fmci = IDIO_THREAD_EXPR (thr);
-    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
-    idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
-
-    IDIO src = idio_vm_constants_ref (gci);
-
     IDIO lo_sh = idio_open_output_string_handle_C ();
+    IDIO fmci = IDIO_THREAD_EXPR (thr);
+    if (idio_isa_fixnum (fmci)) {
+	IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
+	idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-    if (idio_isa_pair (src)) {
-	IDIO lo = idio_hash_ref (idio_src_properties, src);
-	if (idio_S_unspec == lo){
-	    idio_display (lo, lo_sh);
+	IDIO src = idio_vm_constants_ref (gci);
+
+	if (idio_isa_pair (src)) {
+	    IDIO lo = idio_hash_ref (idio_src_properties, src);
+	    if (idio_S_unspec == lo){
+		idio_display (lo, lo_sh);
+	    } else {
+		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lo_sh);
+		idio_display_C (":line ", lo_sh);
+		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lo_sh);
+	    }
 	} else {
-	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lo_sh);
-	    idio_display_C (":line ", lo_sh);
-	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lo_sh);
+	    idio_display (src, lo_sh);
+	    idio_display_C (" !pair", lo_sh);
 	}
     } else {
-	idio_display (src, lo_sh);
-	idio_display_C (" !pair", lo_sh);
+	idio_display (fmci, lo_sh);
     }
     idio_debug ("%-40s", idio_get_output_string (lo_sh));
 
@@ -4194,7 +4197,7 @@ int idio_vm_run1 (IDIO thr)
 		    idio_ai_t gvi = idio_vm_extend_values ();
 		    fgvi = idio_fixnum (gvi);
 		    idio_module_set_vvi (ce, idio_fixnum (mci), fgvi);
-		    si_ce = IDIO_LIST5 (kind, fmci, fgvi, ce, idio_vm_GLOBAL_SYM_DEF_gvi0_string);
+		    si_ce = IDIO_LIST5 (IDIO_PAIR_H (si_ce), fmci, fgvi, ce, idio_vm_GLOBAL_SYM_DEF_gvi0_string);
 		    idio_module_set_symbol (sym, si_ce, ce);
 		}
 	    }

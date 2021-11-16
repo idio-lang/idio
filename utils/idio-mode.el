@@ -542,14 +542,22 @@ indentation."
 
 (defun idio-end-of-defun-function ()
   "`end-of-defun-function' for Idio mode."
-  (if (not (re-search-forward idio-func-regexp (line-end-position) nil))
+  (if (not (condition-case nil
+	       (re-search-forward idio-func-regexp (line-end-position) nil)
+	     (search-failed
+	      t)))
       (idio-beginning-of-defun-function))
   (condition-case nil
       (progn
 	;; args
 	(forward-sexp)
-	(if (looking-at "[[:space:]]+\"")
-	    (forward-sexp))
+	;; docstr?
+	(if (looking-at "[[:space:]]*\"")
+	    (progn
+	      (message "yo!")
+	      (forward-sexp))
+	  (message "no!"))
+	;; body
 	(forward-sexp))
     (scan-error
      (goto-char (point-max)))))

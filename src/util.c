@@ -2494,14 +2494,16 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 
 			    IDIO_STRCAT (r, sizep, "\n  expr=");
 			    IDIO fmci = IDIO_THREAD_EXPR (o);
-			    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
-			    idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
+			    if (idio_isa_fixnum (fmci)) {
+				IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
+				idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-			    IDIO src = idio_vm_constants_ref (gci);
+				IDIO src = idio_vm_constants_ref (gci);
 
-			    t_size = 0;
-			    t = idio_as_string (src, &t_size, 1, seen, 0);
-			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+				t_size = 0;
+				t = idio_as_string (src, &t_size, 1, seen, 0);
+				IDIO_STRCAT_FREE (r, sizep, t, t_size);
+			    }
 
 			    IDIO_STRCAT (r, sizep, "\n  input_handle=");
 			    t_size = 0;

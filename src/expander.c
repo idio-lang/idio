@@ -59,6 +59,8 @@
 IDIO idio_expander_module = idio_S_nil;
 IDIO idio_operator_module = idio_S_nil;
 
+static IDIO idio_evaluator_extend_str;
+
 static IDIO idio_expander_list = idio_S_nil;
 static IDIO idio_expander_list_src = idio_S_nil;
 IDIO idio_expander_thread = idio_S_nil;
@@ -108,7 +110,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, char c
 
     idio_module_set_vci (module, fmci, fmci);
     idio_module_set_vvi (module, fmci, fgvi);
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_predef, fmci, fgvi, module, idio_string_C_len (IDIO_STATIC_STR_LEN ("idio_evaluator_extend"))), module);
+    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_predef, fmci, fgvi, module, idio_evaluator_extend_str), module);
 
     /*
      * idio_module_set_symbol_value() is a bit sniffy about setting
@@ -1439,6 +1441,8 @@ void idio_init_expander ()
     idio_module_table_register (idio_expander_add_primitives, NULL, NULL);
 
     idio_expander_module = idio_module (IDIO_SYMBOLS_C_INTERN ("expander"));
+
+    idio_evaluator_extend_str = idio_string_C_len (IDIO_STATIC_STR_LEN ("idio_evaluator_extend"));
 
     idio_expander_list = IDIO_SYMBOLS_C_INTERN ("*expander-list*");
     idio_module_set_symbol_value (idio_expander_list, idio_S_nil, idio_expander_module);

@@ -116,6 +116,6 @@ Not all the meta-commands work together.
 * ``time`` flags that a report on the accumulated resources of the job
   should be produced when the job completes
 
-  If possible, ``time`` will return the boolean status of the job.
-  Other meta-commands may intervene.
+  If the job was backgrounded the reported timings will be wholly
+  inaccurate.
 

@@ -669,7 +669,7 @@ Report the User and System time for the shell and its children
   printf "U=%s S=%s CU=%s CS=%s\n" (hms utime) (hms stime) (hms cutime) (hms cstime)
 }
 
-define (time-command proc & args) "
+define (time-function-rus proc & args) "
 Return a list of the result and Real, User and System time for the
 invocation of
 
@@ -678,6 +678,9 @@ proc [args]
 The Real, User and System times are C struct timevals.
 
 This takes after Bash's time_command
+
+.. seealso:: :ref:`time-function <time-function>`
+
 " {
   tv-before := (libc/gettimeofday)
   rus-before := libc/getrusage libc/RUSAGE_SELF
@@ -735,23 +738,28 @@ This takes after Bash's time_command
   list r tv-real tv-utime tv-stime
 }
 
-define (time proc & args) "
+define (time-function proc & args) "
 Report the Real, User and System time for the invocation of
 
 proc [args]
 
 The report format is defined in :ref:`TIMEFORMAT <TIMEFORMAT>`.
 
+The result of calling `proc` is returned.
+
 This takes after Bash's time_command
+
+.. seealso:: :ref:`time-function-rus <time-function-rus>`
+
 " {
-  rusage-data := apply time-command proc args
+  rus-data := apply time-function-rus proc args
 
   h := (make-hash)
-  hash-set! h #\R (pht rusage-data)
-  hash-set! h #\U (phtt rusage-data)
-  hash-set! h #\S (phtt rusage-data)
+  hash-set! h #\R (pht rus-data)
+  hash-set! h #\U (phtt rus-data)
+  hash-set! h #\S (phtt rus-data)
 
   printf "%s" (%format 'timeformat TIMEFORMAT h)
-  ph rusage-data
+  ph rus-data
 }
 

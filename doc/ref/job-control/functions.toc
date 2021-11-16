@@ -13,6 +13,7 @@
 (nodocument job-control named-pipe-from)
 (nodocument job-control pipe-from)
 (nodocument job-control time)
+(document job-control time-function)
 
 (document job-control cat-file)
 

@@ -1231,6 +1231,8 @@ define (%prep-process pgid infile outfile errfile foreground async-job) "prepare
   prep-io infile outfile errfile
 }
 
+pipeline-no-op := gensym 'magic
+
 define-template (pipeline kind cmds) {
   foreground  := #t
   use-w-pipe  := #f
@@ -1294,7 +1296,11 @@ define-template (pipeline kind cmds) {
     (else cmd))
   }
 
-  cmds = append (list (meta-loop (append (list kind) (ph cmds)))) (pt cmds)
+  if (eq? kind pipeline-no-op) {
+    cmds = append (list (meta-loop (ph cmds))) (pt cmds)
+  } {
+    cmds = append (list (meta-loop (append (list kind) (ph cmds)))) (pt cmds)
+  }
 
   #*
 
@@ -1795,7 +1801,7 @@ define-infix-operator | 700 {
   op-args = map operator-expand op-args
 
   #T{
-    pipeline fg-job $op-args
+    pipeline $pipeline-no-op $op-args
   }
 }
 
@@ -1825,6 +1831,10 @@ define-template (pipe-from & cmd) {
 
 define-template (named-pipe-from & cmd) {
   #T{ pipeline named-pipe-from ($cmd) }
+}
+
+define-template (time & cmd) {
+  #T{ pipeline time ($cmd) }
 }
 
 define (wait & jobs) "

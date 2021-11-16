@@ -101,6 +101,7 @@ IDIO idio_S_stdout_fileno;
 IDIO idio_S_stderr_fileno;
 
 static IDIO idio_job_control_default_child_handler_sym;
+static IDIO idio_job_control_djn_sym;
 
 /*
  * Indexes into structures for direct references
@@ -1264,7 +1265,7 @@ IDIO idio_job_control_SIGCHLD_signal_handler ()
      * do-job-notification is a thunk so we can call it direct
      */
     IDIO r = idio_vm_invoke_C (idio_thread_current_thread (),
-			       idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("do-job-notification"),
+			       idio_module_symbol_value (idio_job_control_djn_sym,
 							 idio_job_control_module,
 							 idio_S_nil));
 
@@ -2350,5 +2351,6 @@ void idio_init_job_control ()
     idio_module_set_symbol_value (sym, idio_job_control_job_type, idio_job_control_module);
 
     idio_job_control_default_child_handler_sym = IDIO_SYMBOLS_C_INTERN ("default-child-handler");
+    idio_job_control_djn_sym = IDIO_SYMBOLS_C_INTERN ("do-job-notification");
 }
 
