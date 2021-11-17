@@ -1795,15 +1795,30 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	 *
 	 * We shouldn't be stamping over a primitive.  It's bad form.
 	 *
-	 * However the following operators do just that -- I need to
-	 * track them down.
+	 * However the following operators do just that:
 	 *
 	 * = := :+ :* :~ :$
 	 *
 	 * The remaining operators are all closures.
 	 *
-	 * Note to self: check the paths through
-	 * idio_operator_install().
+	 * The path is:
+	 *
+	 *   idio_expander_add_primitives
+	 *     IDIO_ADD_INFIX_OPERATOR
+	 *       idio_add_infix_operator_primitive
+	 *         idio_add_evaluation_primitive
+	 *           idio_evaluator_extend
+	 *             idio_module_set_symbol (predef, ..., "idio_evaluator_extend")
+	 *         idio_install_infix_operator
+	 *           idio_install_operator
+	 *             -- here --
+	 *
+	 * In other words, idio_add_infix_operator_primitive first
+	 * sets this up as a predef them immediately calls something
+	 * that tries to overwrite it.
+	 *
+	 * This could do with being tagged more deliberately but we
+	 * can live with it for now.
 	 */
 	if (module != idio_operator_module) {
 	    IDIO cv = idio_vm_values_ref (gvi);
