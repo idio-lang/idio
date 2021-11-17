@@ -30,6 +30,16 @@ Not all the meta-commands work together.
   This is the default and the meta-command exists for completeness.
 
 .. index::
+   single: subshell
+
+* ``subshell`` runs the job in the foreground
+
+  :return: the boolean status of the job
+  :rtype: boolean
+
+  This is called by the ``{{...}}`` reader form.
+
+.. index::
    single: bg-job
 
 * ``bg-job`` runs the job in the background

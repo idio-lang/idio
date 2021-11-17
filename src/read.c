@@ -3600,7 +3600,53 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t *ic, int depth, int
 		break;
 	    case IDIO_CHAR_LBRACE:
 	    {
+		/*
+		 * If we're looking at "{{..." then:
+		 *
+		 *   1. consume the inner block
+		 *
+		 *   2. look at the next character
+		 *
+		 *      if it is } then we've read in a "{{...}}"
+		 *      subshell block
+		 *
+		 *      if it isn't then carry on reading the rest of
+		 *      this block and insert the subshell
+		 */
+		IDIO subshell = idio_S_nil;
+		if (IDIO_CHAR_LBRACE == idio_peek_handle (handle)) {
+		    idio_getc_handle (handle);
+
+		    subshell = idio_read_block (handle, lo, idio_T_rbrace, ic, IDIO_LIST_BRACE (depth + 1));
+
+		    /* is this a } character? */
+		    if (IDIO_CHAR_RBRACE == idio_peek_handle (handle)) {
+			idio_getc_handle (handle);
+
+			/* convert to a subshell */
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, IDIO_LIST2 (idio_S_subshell, subshell));
+			idio_hash_put (idio_src_properties, subshell, lo);
+			return lo;
+		    }
+		}
+
 		IDIO block = idio_read_block (handle, lo, idio_T_rbrace, ic, IDIO_LIST_BRACE (depth + 1));
+
+		if (idio_S_nil != subshell) {
+		    /*
+		     * subshell will be
+		     *
+		     * (block ...subshell...)
+		     *
+		     * and we want to join it and block such that we
+		     * have
+		     *
+		     * (block (block ...subshell...) ...)
+		     */
+		    block = idio_pair (idio_S_block,
+				       idio_list_append2 (IDIO_LIST1 (subshell),
+							  IDIO_PAIR_T (block)));
+		}
 		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, block);
 		idio_hash_put (idio_src_properties, block, lo);
 		return lo;

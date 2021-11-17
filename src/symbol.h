@@ -119,6 +119,7 @@ extern IDIO_SYMBOL_DECL (root);
 extern IDIO_SYMBOL_DECL (set);
 extern IDIO_SYMBOL_DECL (setter);
 extern IDIO_SYMBOL_DECL (shallow);
+extern IDIO_SYMBOL_DECL (subshell);
 extern IDIO_SYMBOL_DECL (super);
 extern IDIO_SYMBOL_DECL (template);
 extern IDIO_SYMBOL_DECL (template_expand);

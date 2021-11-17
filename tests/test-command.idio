@@ -240,6 +240,66 @@ trap ^rt-command-status-error (function (c) {
   test (job-failed %%last-job) #t
   (test+1)
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;
+  ;; subshells
+
+  ;; Subshells aren't that easy to test as they really don't do very
+  ;; much so far are we are concerned, they simply run and exit 0 or
+  ;; terminate in some other way.
+
+  ;; So we can, at least, test that we identify them exiting 0 or some
+  ;; other way.
+
+  rcseh = exit0
+  (test=)
+  test {{
+      ;; Idio command
+      exit 0
+  }} #t
+  (test+1)
+
+  (test=)
+  test {{
+      ;; external command
+      auto-exit -E 0
+  }} #t
+  (test+1)
+
+  rcseh = exit1
+  (test=)
+  test {{
+      ;; Idio command
+      exit 1
+  }} #f
+  (test+3)
+
+  rcseh = exit1
+  (test=)
+  test {{
+      ;; external command
+      auto-exit -E 1
+  }} #f
+  (test+3)
+
+  ;; We can also test they really are subshells by seeing if they
+  ;; affect any local variables -- here, we're not testing the
+  ;; semantics of running a subshell, we're testing whether we are
+  ;; genuinely running a subshell and not just thinking we are.
+  v := 10
+  {{
+    v = 5
+  }}
+  test v 10
+
+  ;; compare that with a starts-like-but-isn't-a-subshell
+  {{
+    v = 5
+  }
+    ; need some expression here
+    v
+  }
+  test v 5
 }
 
 ;; IO redirection
@@ -564,4 +624,4 @@ if (x? a-e-str) {
 }
 
 ;; all done?
-Tests? (command0 + 133)
+Tests? (command0 + 143)

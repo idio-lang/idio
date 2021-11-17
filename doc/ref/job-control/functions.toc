@@ -7,13 +7,13 @@
 (rst "job-meta-commands" 0)
 (nodocument job-control collect-output)
 (nodocument job-control fg-job)
+(nodocument job-control subshell)
 (nodocument job-control bg-job)
 (nodocument job-control named-pipe-into)
 (nodocument job-control pipe-into)
 (nodocument job-control named-pipe-from)
 (nodocument job-control pipe-from)
 (nodocument job-control time)
-(document job-control time-function)
 
 (document job-control cat-file)
 

@@ -1837,6 +1837,10 @@ define-template (time & cmd) {
   #T{ pipeline time ($cmd) }
 }
 
+define-template (subshell & cmd) {
+  #T{ pipeline fg-job ($cmd) }
+}
+
 define (wait & jobs) "
 loop over `jobs` waiting for each job in turn to change status
 
