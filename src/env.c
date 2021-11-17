@@ -263,7 +263,7 @@ static void idio_env_add_environ ()
 	 * So, if we didn't create a new variable in
 	 * idio_env_set_default() then set the value regardless now.
 	 */
-	idio_module_env_set_symbol_value (idio_env_PWD_sym, idio_string_C (cwd));
+	idio_module_env_set_symbol_value (idio_env_PWD_sym, idio_pathname_C (cwd));
     }
 
     /*

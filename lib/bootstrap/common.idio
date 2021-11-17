@@ -763,3 +763,87 @@ This takes after Bash's time_command
   ph rus-data
 }
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; cd
+
+pushd := #f
+popd := #f
+setd := #f
+dirs := #f
+
+{
+  dir-stack := list PWD
+
+  pushd = function (d) "
+
+if `d` is a directory then change the working directory to it and push
+it onto the top of the directory stack.
+
+:param d: directory to change to
+:type d: string
+:return: current working directory or ``#f``
+
+" {
+    if (d? d) {
+      dir-stack = pair d dir-stack
+      libc/chdir d
+      PWD = d
+    } {
+      eprintf "pushd: %s: %s\n" d (libc/strerror libc/ENOENT)
+      #f
+    }
+  }
+
+  popd = function () "
+
+if the directory stack has more than one entry then pop an element off
+the directory stack and change the working directory to the top-most
+element
+
+:return: current working directory or ``#f``
+
+" {
+    if ((length dir-stack) gt 1) {
+      dir-stack = pt dir-stack
+      d := ph dir-stack
+      libc/chdir d
+      PWD = d
+    } {
+      eprintf "popd: directory stack empty\n"
+      #f
+    }
+  }
+
+  setd = function (d) "
+
+if `d` is a directory then change the working directory to it and set
+the top entry in the directory stack to it.
+
+:param d: directory to change to
+:type d: string
+:return: current working directory or ``#f``
+
+" {
+    if (d? d) {
+      (ph dir-stack) = d
+      libc/chdir d
+      PWD = d
+    } {
+      eprintf "cd: %s: %s\n" d (libc/strerror libc/ENOENT)
+      #f
+    }
+  }
+
+  dirs = function () "
+print the directory stack
+" {
+    printf "%@\n" dir-stack
+  }
+}
+
+(define-syntax cd
+ (syntax-rules (~)
+  ((cd)   (cd HOME))
+  ((cd ~) (cd HOME))
+  ((cd d) (setd d))))
