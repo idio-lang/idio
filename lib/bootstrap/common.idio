@@ -847,3 +847,12 @@ print the directory stack
   ((cd)   (cd HOME))
   ((cd ~) (cd HOME))
   ((cd d) (setd d))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; for
+
+(define-syntax for
+ (syntax-rules (in)
+  ((for (e1 e2 ...) in vs body) (apply for-each (function (e1 e2 ...) body) vs))
+  ((for e in v body) (for-each (function (e) body) v))))

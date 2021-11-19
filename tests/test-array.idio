@@ -244,6 +244,63 @@ array-for-each-set a (function (i v) {
 })
 test c 2
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; for
+
+;; testing `for` against a single array requires a little bit of
+;; artiface as we only know what to test for if we know what we've
+;; already seen
+
+prev := #f
+
+for x in #[ 1 2 3 ] {
+  if prev {
+    (case prev
+     ((1) {
+       test x 2
+       prev = x
+     })
+     ((2) {
+       test x 3
+       prev = x
+     }))
+  } {
+    test x 1
+    prev = x
+  }
+}
+
+;; for multiple arrays (in a list) we can check they line up
+
+arrays := list #[ 1 2 3 ] #[ #\a #\b #\c ]
+for (x y) in arrays {
+  (case x
+   ((1) (test y #\a))
+   ((2) (test y #\b))
+   ((3) (test y #\c)))
+  (case y
+   ((#\a) (test x 1))
+   ((#\b) (test x 2))
+   ((#\c) (test x 3)))
+}
+
+arrays := list #[ 1 2 3 ] #[ #\a #\b #\c ] #[ "a" "b" "c" ]
+for (x y z) in arrays {
+  (case x
+   ((1) {
+     test y #\a
+     test z "a"
+   })
+   ((2) {
+     test y #\b
+     test z "b"
+   })
+   ((3) {
+     test y #\c
+     test z "c"
+   }))
+}
 
 ;; all done?
-Tests? (array0 + 92)
+Tests? (array0 + 107)

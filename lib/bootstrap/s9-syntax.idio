@@ -113,9 +113,14 @@ map := {
     ;; keys of hash tables as there's no (reliable) ordering to ensure
     ;; the function gets called with the same n keys if the hash
     ;; tables are perturbed
-    if (and (pair? a*)
-	    (array? (ph a*))) {
-      a* = map-ph array->list a*
+    if (pair? a*) {
+      (cond
+       ((array? (ph a*)) {
+	 a* = map-ph array->list a*
+       })
+       ((string? (ph a*)) {
+	 a* = map-ph string->list a*
+       }))
     }
 
     if (null? a*) {

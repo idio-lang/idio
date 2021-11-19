@@ -520,8 +520,66 @@ test (strip-string "h" s 'left) "h"
 test (equal? (string->pathname "hello")   "hello")	#f
 test (equal? (string->pathname "hello") %P"hello")	#t
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; for
+
+;; testing `for` against a single string requires a little bit of
+;; artiface as we only know what to test for if we know what we've
+;; already seen
+
+prev := #f
+
+for x in "abc" {
+  if prev {
+    (case prev
+     ((#\a) {
+       test x #\b
+       prev = x
+     })
+     ((#\b) {
+       test x #\c
+       prev = x
+     }))
+  } {
+    test x #\a
+    prev = x
+  }
+}
+
+;; for multiple strings (in a list) we can check they line up
+
+strings := list "abc" "xyz"
+for (x y) in strings {
+  (case x
+   ((#\a) (test y #\x))
+   ((#\b) (test y #\y))
+   ((#\c) (test y #\z)))
+  (case y
+   ((#\x) (test x #\a))
+   ((#\y) (test x #\b))
+   ((#\z) (test x #\c)))
+}
+
+strings := list "abc" "xyz" "123"
+for (x y z) in strings {
+  (case x
+   ((#\a) {
+     test y #\x
+     test z #\1
+   })
+   ((#\b) {
+     test y #\y
+     test z #\2
+   })
+   ((#\c) {
+     test y #\z
+     test z #\3
+   }))
+}
+
 ;; all done?
-Tests? (string0 + 343)
+Tests? (string0 + 358)
 
 ;Local Variables:
 ;mode: Idio

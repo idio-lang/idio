@@ -4,7 +4,7 @@ each list in `lists` should be the same length.
 
 :param f: function to be applied
 :type f: function
-:param lists: list of lists or arrays
+:param lists: lists, arrays or strings
 :type lists: list
 :return: list of the results from applying `f`
 :rtype: list

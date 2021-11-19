@@ -31,7 +31,7 @@
 (nodocument Idio let*)
 (nodocument Idio letrec)
 
-(nodocument Idio for)
+(nodocument Idio C/for)
 (nodocument Idio while)
 (nodocument Idio values)
 

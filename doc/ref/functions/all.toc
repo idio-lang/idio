@@ -13,6 +13,7 @@
 (nodocument Idio any-null?)
 (document Idio map)
 (document Idio for-each)
+(document Idio for)
 (document Idio fold-left)
 (document Idio fold-right)
 
