@@ -23,7 +23,8 @@ import libc
 
 path0 := Tests
 
-test (pathname? "hello")	#f
+test (pathname?   "hello")	#f
+test (pathname? %B"hello")	#f
 test (pathname? %P"hello")	#t
 
 d := make-tmp-dir "idio-test-"
@@ -136,4 +137,4 @@ Idio/write pn osh
 close-handle osh
 
 ;; all done?
-Tests? (path0 + 23)
+Tests? (path0 + 24)

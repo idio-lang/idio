@@ -144,6 +144,64 @@ display ``#\\{space}`` -separated `x*` to the current error handle
   newline (current-error-handle)
 }
 
+define (concatenate-string ls) "
+concatenate strings in list `ls`
+
+:param ls: list of strings to concatenate together
+:type ls: list, optional
+:return: string	(\"\" if `ls` is ``#n``)
+
+``concatenate-string`` takes a single argument, which is a list of
+strings.  It is roughly comparable to
+
+.. code-block:: idio
+
+   apply append-string ls
+
+.. seealso:: :ref:`append-string <append-string>` takes multiple
+	arguments each of which is a string.
+" {
+  (cond
+   ((pair? ls) {
+     apply append-string ls
+   })
+   ((null? ls) {
+     ""
+   })
+   (else
+    (error/type ^rt-parameter-type-error 'concatenate-string "list" ls)))
+}
+
+define (join-string delim args) "
+return a string of `args` interspersed with `delim`
+
+:param delim: string
+:type delim: string
+:param args: string(s) to be joined
+:type args: list, optional
+:return: string	(\"\" if `args` is ``#n``)
+" {
+  (cond
+   ((not (string? delim))
+    (error/type ^rt-parameter-type-error 'concatenate-string "string" delim)))
+  (cond
+   ((pair? args) {
+     r := #n
+     for-each (function (s) {
+       if (not (null? r)) {
+	 r = pair delim r
+       }
+       r = pair s r
+     }) args
+     apply append-string (reverse r)
+   })
+   ((null? args) {
+     ""
+   })
+   (else
+    (error/type ^rt-parameter-type-error 'concatenate-string "list" args)))
+}
+
 #*
 
 %%value-as-string is a nominally generic mechanism to associate a

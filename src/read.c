@@ -1589,7 +1589,8 @@ static void idio_read_sl_block_comment (IDIO handle, IDIO lo, int depth)
  */
 
 #define IDIO_READ_STRING_UTF8	(1<<0)
-#define IDIO_READ_STRING_PATH	(1<<1)
+#define IDIO_READ_STRING_OCTET	(1<<1)
+#define IDIO_READ_STRING_PATH	(1<<2)
 static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_unicode_t *ic, int flag)
 {
     IDIO_ASSERT (handle);
@@ -1845,6 +1846,9 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 	    }
 	}
 	break;
+    case IDIO_READ_STRING_OCTET:
+	r = idio_octet_string_C_len (abuf, slen);
+	break;
     case IDIO_READ_STRING_PATH:
 	r = idio_pathname_C_len (abuf, slen);
 	break;
@@ -1857,6 +1861,11 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 static IDIO idio_read_utf8_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_unicode_t *ic)
 {
     return idio_read_string (handle, lo, delim, ic, IDIO_READ_STRING_UTF8);
+}
+
+static IDIO idio_read_octet_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_unicode_t *ic)
+{
+    return idio_read_string (handle, lo, delim, ic, IDIO_READ_STRING_OCTET);
 }
 
 static IDIO idio_read_path_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_unicode_t *ic)
@@ -3964,7 +3973,33 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t *ic, int depth, int
 		    }
 
 		    switch (c2) {
-			/* structured forms */
+			/*
+			 * This should be %O (U+004F LATIN CAPITAL
+			 * LETTER O) but that's too easily confused
+			 * with %0 (U+0030 DIGIT ZERO).
+			 *
+			 * On the other hand, I think that an
+			 * octet_string is more obvious in intent than
+			 * a byte_string.  YMMV
+			 */
+		    case 'B':
+			{
+			    idio_unicode_t odelim = idio_getc_handle (handle);
+			    idio_unicode_t cdelim = odelim;
+			    switch (odelim) {
+			    case IDIO_CHAR_LBRACE:
+				cdelim = IDIO_CHAR_RBRACE;
+				break;
+			    case IDIO_CHAR_LBRACKET:
+				cdelim = IDIO_CHAR_RBRACKET;
+				break;
+			    default:
+				/* use odelim */
+				break;
+			    }
+			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_octet_string (handle, lo, cdelim, idio_default_string_ic));
+			    return lo;
+			}
 		    case 'P':
 			{
 			    idio_unicode_t odelim = idio_getc_handle (handle);

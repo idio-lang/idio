@@ -326,6 +326,7 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
      * Figure out the number of bytes required including escape
      * sequences
      */
+    int is_octet = (flags & IDIO_STRING_FLAG_OCTET);
     int is_pathname = (flags & (IDIO_STRING_FLAG_PATHNAME | IDIO_STRING_FLAG_FD_PATHNAME | IDIO_STRING_FLAG_FIFO_PATHNAME));
 
     size_t i;
@@ -342,6 +343,7 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	case IDIO_STRING_FLAG_4BYTE:
 	    c = s32[i];
 	    break;
+	case IDIO_STRING_FLAG_OCTET:
 	case IDIO_STRING_FLAG_PATHNAME:
 	case IDIO_STRING_FLAG_FD_PATHNAME:
 	case IDIO_STRING_FLAG_FIFO_PATHNAME:
@@ -385,7 +387,8 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	    case '"': n++; break;
 	    case '\\': n++; break;
 	    default:
-		if (is_pathname &&
+		if ((is_pathname ||
+		     is_octet) &&
 		    ! isprint (c)) {
 		    /* c (1 char) -> \xhh (4 chars) */
 		    n += 3;
@@ -400,11 +403,12 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
     size_t bytes = n + 1;
     if (IDIO_UTF8_STRING_QUOTED == quoted) {
 	bytes += 2;		/* leading and trailing "s */
-	if (is_pathname) {
-	    bytes += 2;		/* leading %P */
+	if (is_pathname ||
+	    is_octet) {
+	    bytes += 2;		/* leading %P or %B */
 	}
 	if (flags & IDIO_STRING_FLAG_FIFO_PATHNAME) {
-	    bytes += 1;
+	    bytes += 1;		/* subsequent F to give %PF */
 	}
     }
 
@@ -415,9 +419,12 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	if (is_pathname) {
 	    r[n++] = '%';
 	    r[n++] = 'P';
-	}
-	if (flags & IDIO_STRING_FLAG_FIFO_PATHNAME) {
-	    r[n++] = 'F';
+	    if (flags & IDIO_STRING_FLAG_FIFO_PATHNAME) {
+		r[n++] = 'F';
+	    }
+	} else if (is_octet) {
+	    r[n++] = '%';
+	    r[n++] = 'B';
 	}
 	r[n++] = '"';
     }
@@ -433,6 +440,7 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	case IDIO_STRING_FLAG_4BYTE:
 	    c = s32[i];
 	    break;
+	case IDIO_STRING_FLAG_OCTET:
 	case IDIO_STRING_FLAG_PATHNAME:
 	case IDIO_STRING_FLAG_FD_PATHNAME:
 	case IDIO_STRING_FLAG_FIFO_PATHNAME:
@@ -469,7 +477,8 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	    case '"': ec = '"'; break;
 	    case '\\': ec = '\\'; break;
 	    default:
-		if (is_pathname &&
+		if ((is_pathname ||
+		     is_octet) &&
 		    ! isprint (c)) {
 		    hex = 1;
 		} else if (c < 0x20) {
@@ -488,7 +497,8 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	    r[n++] = hex_DIGITS[(c & 0xf0) >> 4];
 	    r[n++] = hex_DIGITS[(c & 0x0f)];
 	} else {
-	    if (is_pathname) {
+	    if (is_pathname ||
+		is_octet) {
 		r[n++] = c;
 	    } else {
 		if (idio_unicode_valid_code_point (c)) {

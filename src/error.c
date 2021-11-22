@@ -638,6 +638,25 @@ This does not return!				\n\
     IDIO_USER_TYPE_ASSERT (symbol, loc);
     IDIO_USER_TYPE_ASSERT (string, msg);
 
+    /*
+     * Use a standard format (ie. an existing C function) if we can
+     * for consistency.
+     *
+     * Some of the required conversions are inefficient.
+     */
+    if (idio_eqp (ct, idio_condition_rt_parameter_type_error_type)) {
+	if (idio_isa_pair (args)) {
+	    args = IDIO_PAIR_H (args);
+	}
+
+	IDIO loc_str = idio_string_C_len (IDIO_SYMBOL_S (loc), IDIO_SYMBOL_BLEN (loc));
+
+	size_t size = 0;
+	idio_error_param_type (idio_display_string (msg, &size), args, loc_str);
+
+	return idio_S_notreached;
+    }
+
     IDIO location = idio_vm_source_location ();
 
     IDIO sh = idio_open_output_string_handle_C ();

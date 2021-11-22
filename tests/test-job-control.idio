@@ -105,7 +105,7 @@ job-control-error-load := {
   n := 0
 
   function (filename exp) {
-    if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "not a string" filename)
+    if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1
 
@@ -227,7 +227,7 @@ job-control-async-load := {
   n := 0
 
   function (filename exp) {
-    if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "not a string" filename)
+    if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1
 

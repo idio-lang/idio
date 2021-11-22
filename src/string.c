@@ -302,6 +302,7 @@ size_t idio_string_storage_size (IDIO s)
     case IDIO_STRING_FLAG_4BYTE:
 	width = 4;
 	break;
+    case IDIO_STRING_FLAG_OCTET:
     case IDIO_STRING_FLAG_PATHNAME:
     case IDIO_STRING_FLAG_FD_PATHNAME:
     case IDIO_STRING_FLAG_FIFO_PATHNAME:
@@ -460,6 +461,44 @@ IDIO idio_string_C (char const *s_C)
     IDIO_C_ASSERT (s_C);
 
     return idio_string_C_len (s_C, strlen (s_C));
+}
+
+IDIO idio_octet_string_C_len (char const *s_C, size_t const blen)
+{
+    IDIO_C_ASSERT (s_C);
+
+    IDIO so = idio_gc_get (IDIO_TYPE_STRING);
+
+    IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
+    IDIO_STRING_BLEN (so) = blen;
+
+    uint8_t *us8 = (uint8_t *) IDIO_STRING_S (so);
+
+    uint8_t *us_C = (unsigned char *) s_C;
+    size_t i;
+    for (i = 0; i < blen; i++) {
+	us8[i] = (uint8_t) us_C[i];
+    }
+
+    IDIO_STRING_S (so)[i] = '\0';
+
+    IDIO_STRING_LEN (so) = blen;
+    IDIO_STRING_FLAGS (so) = IDIO_STRING_FLAG_OCTET;
+
+    return so;
+}
+
+/*
+ * Creating an octet string, something that can contain ASCII NULs,
+ * from a C string, which cannot, seems slightly pointless but I guess
+ * it keeps the interface similar and allows someone to scribble over
+ * the string later.
+ */
+IDIO idio_octet_string_C (char const *s_C)
+{
+    IDIO_C_ASSERT (s_C);
+
+    return idio_octet_string_C_len (s_C, strlen (s_C));
 }
 
 /*
@@ -694,6 +733,52 @@ int idio_isa_string (IDIO so)
 	    idio_isa (so, IDIO_TYPE_SUBSTRING));
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("string?", string_p, (IDIO o), "o", "\
+test if `o` is an string			\n\
+						\n\
+:param o: object to test			\n\
+:return: ``#t`` if `o` is an string, ``#f`` otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_string (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+int idio_isa_octet_string (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    return ((idio_isa (o, IDIO_TYPE_STRING) &&
+	     (IDIO_STRING_FLAGS (o) & IDIO_STRING_FLAG_OCTET)) ||
+	    (idio_isa (o, IDIO_TYPE_SUBSTRING) &&
+	     (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o)) & IDIO_STRING_FLAG_OCTET)));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("octet-string?", octet_string_p, (IDIO o), "o", "\
+test if `o` is an octet string			\n\
+						\n\
+:param o: object to test			\n\
+:return: ``#t`` if `o` is an octet string, ``#f`` otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_octet_string (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 void idio_free_string (IDIO so)
 {
     IDIO_ASSERT (so);
@@ -832,24 +917,6 @@ char *idio_string_as_C (IDIO so, size_t *sizep)
     IDIO_TYPE_ASSERT (string, so);
 
     return idio_utf8_string (so, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_USEPREC);
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("string?", string_p, (IDIO o), "o", "\
-test if `o` is an string				\n\
-						\n\
-:param o: object to test			\n\
-:return: ``#t`` if `o` is an string, ``#f`` otherwise	\n\
-")
-{
-    IDIO_ASSERT (o);
-
-    IDIO r = idio_S_false;
-
-    if (idio_isa_string (o)) {
-	r = idio_S_true;
-    }
-
-    return r;
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("make-string", make_string, (IDIO size, IDIO args), "size [fillc]", "\
@@ -1029,6 +1096,36 @@ create a string with an initial length of `size`\n\
     IDIO_STRING_FLAGS (so) = flags;
 
     return so;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("string->octet-string", string2octet_string, (IDIO s), "s", "\
+return an octet string of the UTF-8 encoding of `s`\n\
+						\n\
+:param s: string				\n\
+:type s: string					\n\
+:return: octet string				\n\
+:rtype: octet string				\n\
+")
+{
+    IDIO_ASSERT (s);
+
+    /*
+     * Test Case: string-errors/string2octet-string-bad-type.idio
+     *
+     * string->octet-string #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, s);
+
+    size_t size = 0;
+    char *s_C = NULL;
+
+    s_C = idio_string_as_C (s, &size);
+
+    IDIO r = idio_octet_string_C_len (s_C, size);
+
+    IDIO_GC_FREE (s_C);
+
+    return r;
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("string->pathname", string2pathname, (IDIO s), "s", "\
@@ -1364,16 +1461,53 @@ a string.								\n\
 
 	ptrdiff_t i = 0;
 
+	/*
+	 * Careful!  We need to degenerate the string type where
+	 * unicode > pathname > octet
+	 */
+	IDIO_FLAGS_T r_flags = IDIO_STRING_FLAG_1BYTE;
+
 	for (; idio_S_nil != args; i++) {
+	    IDIO str = IDIO_PAIR_H (args);
+
 	    /*
 	     * Test Case: string-errors/append-string-bad-arg-type.idio
 	     *
 	     * append-string #t
 	     */
-	    IDIO_USER_TYPE_ASSERT (string, IDIO_PAIR_H (args));
+	    IDIO_USER_TYPE_ASSERT (string, str);
+
+	    IDIO_FLAGS_T str_flags = IDIO_STRING_FLAG_1BYTE;
+
+	    if (idio_isa (str, IDIO_TYPE_SUBSTRING)) {
+		str_flags = IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (str));
+	    } else {
+		str_flags = IDIO_STRING_FLAGS (str);
+	    }
+
+	    switch (str_flags) {
+	    case IDIO_STRING_FLAG_1BYTE:
+	    case IDIO_STRING_FLAG_2BYTE:
+	    case IDIO_STRING_FLAG_4BYTE:
+		break;
+	    case IDIO_STRING_FLAG_PATHNAME:
+		if (r_flags != IDIO_STRING_FLAG_OCTET) {
+		    r_flags = str_flags;
+		}
+		break;
+	    case IDIO_STRING_FLAG_OCTET:
+		r_flags = str_flags;
+		break;
+	    default:
+		{
+		    idio_error_param_value_msg_only ("append-string", "string", "illegal use of pathname", IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		}
+	    }
 
 	    size_t size = 0;
-	    copies[i] = idio_string_as_C (IDIO_PAIR_H (args), &size);
+	    copies[i] = idio_string_as_C (str, &size);
 	    lens[i] = size;
 
 	    args = IDIO_PAIR_T (args);
@@ -1381,66 +1515,17 @@ a string.								\n\
 
 	r = idio_string_C_array_lens (n, (char const **) copies, lens);
 
-	for (i = 0; i < n; i++) {
-	    IDIO_GC_FREE (copies[i]);
+	switch (r_flags) {
+	case IDIO_STRING_FLAG_1BYTE:
+	    /* leave alone */
+	    break;
+	case IDIO_STRING_FLAG_PATHNAME:
+	    IDIO_STRING_FLAGS (r) = r_flags;
+	    break;
+	case IDIO_STRING_FLAG_OCTET:
+	    IDIO_STRING_FLAGS (r) = r_flags;
+	    break;
 	}
-    } else {
-	r = idio_string_C_len ("", 0);
-    }
-
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("concatenate-string", concatenate_string, (IDIO args), "[ls]", "\
-concatenate strings in list `ls`					\n\
-									\n\
-:param ls: list of strings to concatenate together			\n\
-:type ls: list, optional						\n\
-:return: string	(\"\" if no `ls` supplied)				\n\
-									\n\
-``concatenate-string`` takes a single argument,				\n\
-which is a list of strings.  It is roughly comparable to		\n\
-									\n\
-.. code-block:: idio							\n\
-									\n\
-   apply append-string ls						\n\
-									\n\
-.. seealso:: :ref:`append-string <append-string>` takes multiple	\n\
-	arguments each of which is a string.				\n\
-")
-{
-    IDIO_ASSERT (args);
-
-    /*
-     * Test Case: string-errors/concatenate-string-bad-type.idio
-     *
-     * concatenate-string #t
-     */
-    IDIO_USER_TYPE_ASSERT (list, args);
-
-    IDIO r = idio_S_nil;
-
-    ptrdiff_t n = idio_list_length (args);
-    if (n) {
-	char *copies[n];
-
-	ptrdiff_t i = 0;
-
-	for (; idio_S_nil != args; i++) {
-	    /*
-	     * Test Case: string-errors/concatenate-string-bad-arg-type.idio
-	     *
-	     * concatenate-string '(#t)
-	     */
-	    IDIO_USER_TYPE_ASSERT (string, IDIO_PAIR_H (args));
-
-	    size_t size = 0;
-	    copies[i] = idio_string_as_C (IDIO_PAIR_H (args), &size);
-
-	    args = IDIO_PAIR_T (args);
-	}
-
-	r = idio_string_C_array (n, (char const **) copies);
 
 	for (i = 0; i < n; i++) {
 	    IDIO_GC_FREE (copies[i]);
@@ -2902,81 +2987,6 @@ single delimiter.					\n\
     return idio_split_string (in, delim, IDIO_STRING_TOKEN_FLAG_ARRAY);
 }
 
-IDIO idio_join_string (IDIO delim, IDIO args)
-{
-    IDIO_ASSERT (delim);
-    IDIO_ASSERT (args);
-
-    IDIO_TYPE_ASSERT (string, delim);
-    IDIO_TYPE_ASSERT (list, args);
-
-    if (idio_S_nil == args) {
-	return idio_string_C_len ("", 0);
-    }
-
-    ptrdiff_t n = 2 * idio_list_length (args);
-    char *copies[n];
-    size_t lens[n];
-
-    size_t delim_size = 0;
-    char *delim_C = idio_string_as_C (delim, &delim_size);
-
-    ptrdiff_t i;
-    for (i = 0; idio_S_nil != args; i += 2) {
-	/*
-	 * Test Case: string-errors/join-string-bad-arg-type.idio
-	 *
-	 * join-string "abc" '(#t)
-	 */
-	IDIO_USER_TYPE_ASSERT (string, IDIO_PAIR_H (args));
-
-	copies[i] = idio_string_as_C (IDIO_PAIR_H (args), &lens[i]);
-	copies[i+1] = delim_C;
-	lens[i+1] = delim_size;
-
-	args = IDIO_PAIR_T (args);
-    }
-
-    IDIO r = idio_string_C_array_lens (n - 1, (char const **) copies, lens);
-
-    IDIO_GC_FREE (delim_C);
-    for (i = 0; i < n; i += 2) {
-	IDIO_GC_FREE (copies[i]);
-    }
-
-    return r;
-}
-
-
-IDIO_DEFINE_PRIMITIVE2_DS ("join-string", join_string, (IDIO delim, IDIO args), "delim [args]", "\
-return a string of `args` interspersed with `delim`	\n\
-						\n\
-:param delim: string				\n\
-:type delim: string				\n\
-:param args: string(s) to be joined		\n\
-:type args: list, optional			\n\
-:return: string	(\"\" if no `args` supplied)	\n\
-")
-{
-    IDIO_ASSERT (delim);
-    IDIO_ASSERT (args);
-
-    /*
-     * Test Case: string-errors/join-string-bad-delim-type.idio
-     *
-     * join-string #t '("abc")
-     */
-    IDIO_USER_TYPE_ASSERT (string, delim);
-    /*
-     * Test Case: string-errors/join-string-bad-args-type.idio
-     *
-     * join-string "abc" #t
-     */
-    IDIO_USER_TYPE_ASSERT (list, args);
-
-    return idio_join_string (delim, args);
-}
-
 IDIO idio_strip_string (IDIO str, IDIO discard, IDIO ends)
 {
     IDIO_ASSERT (str);
@@ -3244,13 +3254,14 @@ of `str`					\n\
 void idio_string_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (string_p);
+    IDIO_ADD_PRIMITIVE (octet_string_p);
     IDIO_ADD_PRIMITIVE (make_string);
+    IDIO_ADD_PRIMITIVE (string2octet_string);
     IDIO_ADD_PRIMITIVE (string2pathname);
     IDIO_ADD_PRIMITIVE (string2list);
     IDIO_ADD_PRIMITIVE (list2string);
     IDIO_ADD_PRIMITIVE (string2symbol);
     IDIO_ADD_PRIMITIVE (append_string);
-    IDIO_ADD_PRIMITIVE (concatenate_string);
     IDIO_ADD_PRIMITIVE (copy_string);
     IDIO_ADD_PRIMITIVE (string_length);
     IDIO_ADD_PRIMITIVE (string_ref);
@@ -3274,7 +3285,6 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (split_string);
     IDIO_ADD_PRIMITIVE (split_string_exactly);
     IDIO_ADD_PRIMITIVE (fields);
-    IDIO_ADD_PRIMITIVE (join_string);
     IDIO_ADD_PRIMITIVE (strip_string);
 }
 

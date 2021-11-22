@@ -25,7 +25,7 @@ file-handle-error-load := {
   n := 0
 
   function (filename msg & args) {
-    if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "not a string" filename)
+    if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1
 

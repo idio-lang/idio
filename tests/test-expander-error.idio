@@ -43,7 +43,7 @@ define-template (expander-trap type) {
 
     $loader-sym := {
       function (filename msg) {
-	if (not (string? filename)) (error/type ^rt-parameter-type-error '$loader-sym "not a string" filename)
+	if (not (string? filename)) (error/type ^rt-parameter-type-error '$loader-sym "string" filename)
 
 	thunk := function () {
 	  trap $condition-name (function (c) {

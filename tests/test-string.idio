@@ -41,6 +41,13 @@ test (string? #B{ 3 })			#f ; BITSET
 test (string? libc/INTMAX_MAX)		#f ; C_INT
 test (string? libc/UINTMAX_MAX)		#f ; C_UINT
 
+test (string? %B"hello")	#t
+test (string? %P"hello")	#t
+
+test (octet-string?   "hello")	#f
+test (octet-string? %B"hello")	#t
+test (octet-string? %P"hello")	#f
+
 test "hello" "hello"
 test "Hello" "Hello"
 test "Hello
@@ -68,6 +75,44 @@ test (append-string "a" "h")     "ah"
 test (append-string "a" "ħ")     "aħ"
 test (append-string "ħ" "a")     "ħa"
 test (append-string "a" "b" "c") "abc"
+
+;; graceful degradation of string class
+test (string?       (append-string "a"   "b")) #t
+test (string?       (append-string %P"a" "b")) #t
+test (pathname?     (append-string %P"a" "b")) #t
+test (octet-string? (append-string %P"a" "b")) #f
+test (string?       (append-string %B"a" "b")) #t
+test (pathname?     (append-string %B"a" "b")) #f
+test (octet-string? (append-string %B"a" "b")) #t
+test (string?       (append-string "a" %P"b")) #t
+test (pathname?     (append-string "a" %P"b")) #t
+test (octet-string? (append-string "a" %P"b")) #f
+test (string?       (append-string "a" %B"b")) #t
+test (pathname?     (append-string "a" %B"b")) #f
+test (octet-string? (append-string "a" %B"b")) #t
+
+;; concatenate-string is a simple call to append-string but
+;; join-string has both delim and args components
+test (string?       (join-string   "d" '("a"   "b"))) #t
+test (string?       (join-string %P"d" '("a"   "b"))) #t
+test (pathname?     (join-string %P"d" '("a"   "b"))) #t
+test (octet-string? (join-string %P"d" '("a"   "b"))) #f
+test (string?       (join-string %B"d" '("a"   "b"))) #t
+test (pathname?     (join-string %B"d" '("a"   "b"))) #f
+test (octet-string? (join-string %B"d" '("a"   "b"))) #t
+test (string?       (join-string   "d" '(%P"a" "b"))) #t
+test (pathname?     (join-string   "d" '(%P"a" "b"))) #t
+test (octet-string? (join-string   "d" '(%P"a" "b"))) #f
+test (string?       (join-string   "d" '(%B"a" "b"))) #t
+test (pathname?     (join-string   "d" '(%B"a" "b"))) #f
+test (octet-string? (join-string   "d" '(%B"a" "b"))) #t
+test (string?       (join-string   "d" '("a" %P"b"))) #t
+test (pathname?     (join-string   "d" '("a" %P"b"))) #t
+test (octet-string? (join-string   "d" '("a" %P"b"))) #f
+test (string?       (join-string   "d" '("a" %B"b"))) #t
+test (pathname?     (join-string   "d" '("a" %B"b"))) #f
+test (octet-string? (join-string   "d" '("a" %B"b"))) #t
+
 
 test (concatenate-string '())             ""
 test (concatenate-string '("a"))         "a"
@@ -520,6 +565,9 @@ test (strip-string "h" s 'left) "h"
 test (equal? (string->pathname "hello")   "hello")	#f
 test (equal? (string->pathname "hello") %P"hello")	#t
 
+test (equal? (string->octet-string "hello")   "hello")	#f
+test (equal? (string->octet-string "hello") %B"hello")	#t
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; for
@@ -579,7 +627,7 @@ for (x y z) in strings {
 }
 
 ;; all done?
-Tests? (string0 + 358)
+Tests? (string0 + 397)
 
 ;Local Variables:
 ;mode: Idio

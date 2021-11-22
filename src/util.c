@@ -723,7 +723,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		 * So really we want to verify that if one is a
 		 * pathname then the other is too.
 		 */
-		if (((IDIO_STRING_FLAGS (o1) & IDIO_STRING_FLAG_PATHNAME) !=
+		if (((IDIO_STRING_FLAGS (o1) & IDIO_STRING_FLAG_OCTET) !=
+		     (IDIO_STRING_FLAGS (o2) & IDIO_STRING_FLAG_OCTET)) ||
+		    ((IDIO_STRING_FLAGS (o1) & IDIO_STRING_FLAG_PATHNAME) !=
 		     (IDIO_STRING_FLAGS (o2) & IDIO_STRING_FLAG_PATHNAME)) ||
 		    ((IDIO_STRING_FLAGS (o1) & IDIO_STRING_FLAG_FD_PATHNAME) !=
 		     (IDIO_STRING_FLAGS (o2) & IDIO_STRING_FLAG_FD_PATHNAME)) ||

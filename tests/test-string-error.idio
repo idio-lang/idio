@@ -34,7 +34,7 @@ string-error-load := {
   n := 0
 
   function (filename msg) {
-    if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "not a string" filename)
+    if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1
 
@@ -70,6 +70,8 @@ string-error-load "string-errors/make-string-float.idio" "bad parameter type: '1
 string-error-load "string-errors/make-string-unicode.idio" "bad parameter type: 'a' a unicode is not a integer"
 string-error-load "string-errors/make-string-negative.idio" "string size: invalid"
 string-error-load "string-errors/make-string-bad-fill-type.idio" "bad parameter type: '#t' a constant is not a unicode"
+
+string-error-load "string-errors/string2octet-string-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
 
 string-error-load "string-errors/string2pathname-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
 
@@ -156,4 +158,4 @@ string-error-load "string-errors/strip-string-bad-str-type.idio" "bad parameter 
 string-error-load "string-errors/strip-string-bad-discard-type.idio" "bad parameter type: '#t' a constant is not a string"
 
 ;; all done?
-Tests? (string-error0 + 67)
+Tests? (string-error0 + 68)

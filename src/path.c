@@ -217,8 +217,7 @@ test if `o` is an pathname				\n\
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_string (o) &&
-	(IDIO_STRING_FLAGS (o) & IDIO_STRING_FLAG_PATHNAME)) {
+    if (idio_isa_pathname (o)) {
 	r = idio_S_true;
     }
 
