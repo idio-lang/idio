@@ -1436,6 +1436,9 @@ append strings								\n\
 :type args: list, optional						\n\
 :return: string	(\"\" if no `args` supplied)				\n\
 									\n\
+``append-string`` will gracefully degrade the string variant based on	\n\
+the arguments: `unicode` > `pathname` > `octet-string`			\n\
+									\n\
 ``append-string`` takes multiple arguments each of which is		\n\
 a string.								\n\
 									\n\
@@ -1454,20 +1457,38 @@ a string.								\n\
 
     IDIO r = idio_S_nil;
 
-    ptrdiff_t n = idio_list_length (args);
-    if (n) {
-	char *copies[n];
-	size_t lens[n];
+    ptrdiff_t ns = idio_list_length (args);
+    if (ns) {
+	char *copies[ns];
+	size_t lens[ns];
+	int substring[ns];
 
-	ptrdiff_t i = 0;
+	ptrdiff_t si;
+	for (si = 0; si < ns ; si++) {
+	    copies[si] = NULL;
+	    lens[si] = 0;
+	    substring[si] = 0;
+	}
+
+	IDIO oargs = args;
 
 	/*
 	 * Careful!  We need to degenerate the string type where
 	 * unicode > pathname > octet
+	 *
+	 * This is incovenient as unicode strings will need to be
+	 * encoded as UTF-8 whereas pathname and octet-strings will
+	 * need to be copied verbatim.
+	 *
+	 * However, we don't know the result string's variant until
+	 * we've looked at all the inputs and we don't know how long
+	 * an encoded UTF-8 string is until we've encoded it and we
+	 * won't do that unless we have to.
 	 */
 	IDIO_FLAGS_T r_flags = IDIO_STRING_FLAG_1BYTE;
+	size_t cp_count = 0;
 
-	for (; idio_S_nil != args; i++) {
+	for (si = 0; idio_S_nil != args; si++) {
 	    IDIO str = IDIO_PAIR_H (args);
 
 	    /*
@@ -1477,59 +1498,296 @@ a string.								\n\
 	     */
 	    IDIO_USER_TYPE_ASSERT (string, str);
 
-	    IDIO_FLAGS_T str_flags = IDIO_STRING_FLAG_1BYTE;
+	    IDIO_FLAGS_T str_flags;
 
 	    if (idio_isa (str, IDIO_TYPE_SUBSTRING)) {
+		substring[si] = 1;
 		str_flags = IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (str));
+		cp_count += IDIO_SUBSTRING_LEN (str);
 	    } else {
 		str_flags = IDIO_STRING_FLAGS (str);
+		cp_count += IDIO_STRING_LEN (str);
 	    }
 
 	    switch (str_flags) {
 	    case IDIO_STRING_FLAG_1BYTE:
+		break;
 	    case IDIO_STRING_FLAG_2BYTE:
+		if (IDIO_STRING_FLAG_1BYTE == r_flags) {
+		    r_flags = IDIO_STRING_FLAG_2BYTE;
+		}
+		break;
 	    case IDIO_STRING_FLAG_4BYTE:
+		if (IDIO_STRING_FLAG_1BYTE == r_flags ||
+		    IDIO_STRING_FLAG_2BYTE == r_flags) {
+		    r_flags = IDIO_STRING_FLAG_4BYTE;
+		}
+		break;
+	    case IDIO_STRING_FLAG_OCTET:
+		r_flags = str_flags;
 		break;
 	    case IDIO_STRING_FLAG_PATHNAME:
 		if (r_flags != IDIO_STRING_FLAG_OCTET) {
 		    r_flags = str_flags;
 		}
 		break;
-	    case IDIO_STRING_FLAG_OCTET:
-		r_flags = str_flags;
-		break;
 	    default:
 		{
-		    idio_error_param_value_msg_only ("append-string", "string", "illegal use of pathname", IDIO_C_FUNC_LOCATION ());
+		    switch (str_flags) {
+		    case IDIO_STRING_FLAG_FD_PATHNAME:
+			idio_error_param_value_msg_only ("append-string", "string", "illegal use of FD pathname", IDIO_C_FUNC_LOCATION ());
+			break;
+		    case IDIO_STRING_FLAG_FIFO_PATHNAME:
+			idio_error_param_value_msg_only ("append-string", "string", "illegal use of FIFO pathname", IDIO_C_FUNC_LOCATION ());
+			break;
+		    default:
+			idio_error_param_value_msg_only ("append-string", "string", "unexpected string variant", IDIO_C_FUNC_LOCATION ());
+			break;
+		    }
 
 		    return idio_S_notreached;
 		}
 	    }
 
-	    size_t size = 0;
-	    copies[i] = idio_string_as_C (str, &size);
-	    lens[i] = size;
+	    args = IDIO_PAIR_T (args);
+	}
+
+	/*
+	 * How many bytes do we need to allocate for the result?
+	 *
+	 * If the result is a unicode string then it is the cp_count *
+	 * cp width.
+	 *
+	 * If we are degrading then it is the sum of the lengths of
+	 * the UTF-8 encodings of the unicode string parts plus the
+	 * lengths of the pathname / octet-string parts.
+	 */
+	size_t reqd_bytes = 0;
+
+	switch (r_flags) {
+	case IDIO_STRING_FLAG_1BYTE:
+	    reqd_bytes = cp_count;
+	    break;
+	case IDIO_STRING_FLAG_2BYTE:
+	    reqd_bytes = cp_count * 2;
+	    break;
+	case IDIO_STRING_FLAG_4BYTE:
+	    reqd_bytes = cp_count * 4;
+	    break;
+	case IDIO_STRING_FLAG_OCTET:
+	case IDIO_STRING_FLAG_PATHNAME:
+	    {
+		args = oargs;
+		for (si = 0; idio_S_nil != args; si++) {
+		    IDIO str = IDIO_PAIR_H (args);
+
+		    size_t size = 0;
+
+		    IDIO_FLAGS_T str_flags;
+		    size_t str_len;
+
+		    if (substring[si]) {
+			str_flags = IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (str));
+			str_len = IDIO_SUBSTRING_LEN (str);
+		    } else {
+			str_flags = IDIO_STRING_FLAGS (str);
+			str_len = IDIO_STRING_LEN (str);
+		    }
+
+		    switch (str_flags) {
+		    case IDIO_STRING_FLAG_1BYTE:
+		    case IDIO_STRING_FLAG_2BYTE:
+		    case IDIO_STRING_FLAG_4BYTE:
+			copies[si] = idio_string_as_C (str, &size);
+			lens[si] = size;
+			reqd_bytes += size;
+			break;
+		    case IDIO_STRING_FLAG_OCTET:
+		    case IDIO_STRING_FLAG_PATHNAME:
+			reqd_bytes += str_len;
+			break;
+		    }
+
+		    args = IDIO_PAIR_T (args);
+		}
+	    }
+	}
+
+	IDIO so = idio_gc_get (IDIO_TYPE_STRING);
+
+	IDIO_GC_ALLOC (IDIO_STRING_S (so), reqd_bytes + 1);
+	IDIO_STRING_BLEN (so) = reqd_bytes;
+
+	uint8_t *so8 = (uint8_t *) IDIO_STRING_S (so);
+	uint16_t *so16 = (uint16_t *) IDIO_STRING_S (so);
+	uint32_t *so32 = (uint32_t *) IDIO_STRING_S (so);
+
+	size_t ri = 0;
+	args = oargs;
+	for (si = 0; idio_S_nil != args; si++) {
+	    IDIO str = IDIO_PAIR_H (args);
+
+	    uint8_t *str8;
+	    uint16_t *str16;
+	    uint32_t *str32;
+
+	    IDIO_FLAGS_T str_flags;
+	    size_t str_len;
+
+	    if (substring[si]) {
+		str8 = (uint8_t *) IDIO_SUBSTRING_S (str);
+		str16 = (uint16_t *) IDIO_SUBSTRING_S (str);
+		str32 = (uint32_t *) IDIO_SUBSTRING_S (str);
+		str_flags = IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (str));
+		str_len = IDIO_SUBSTRING_LEN (str);
+	    } else {
+		str8 = (uint8_t *) IDIO_STRING_S (str);
+		str16 = (uint16_t *) IDIO_STRING_S (str);
+		str32 = (uint32_t *) IDIO_STRING_S (str);
+		str_flags = IDIO_STRING_FLAGS (str);
+		str_len = IDIO_STRING_LEN (str);
+	    }
+
+	    switch (r_flags) {
+	    case IDIO_STRING_FLAG_1BYTE:
+	    case IDIO_STRING_FLAG_2BYTE:
+	    case IDIO_STRING_FLAG_4BYTE:
+		{
+		    int fault = 0;
+		    for (size_t str_i = 0; str_i < str_len; str_i++, ri++) {
+			switch (r_flags) {
+			case IDIO_STRING_FLAG_1BYTE:
+			    switch (str_flags) {
+			    case IDIO_STRING_FLAG_1BYTE:
+				so8[ri] = str8[str_i];
+				break;
+			    default:
+				fault = 1;
+				break;
+			    }
+			    break;
+			case IDIO_STRING_FLAG_2BYTE:
+			    switch (str_flags) {
+			    case IDIO_STRING_FLAG_1BYTE:
+				so16[ri] = str8[str_i];
+				break;
+			    case IDIO_STRING_FLAG_2BYTE:
+				so16[ri] = str16[str_i];
+				break;
+			    default:
+				fault = 1;
+				break;
+			    }
+			    break;
+			case IDIO_STRING_FLAG_4BYTE:
+			    switch (str_flags) {
+			    case IDIO_STRING_FLAG_1BYTE:
+				so32[ri] = str8[str_i];
+				break;
+			    case IDIO_STRING_FLAG_2BYTE:
+				so32[ri] = str16[str_i];
+				break;
+			    case IDIO_STRING_FLAG_4BYTE:
+				so32[ri] = str32[str_i];
+				break;
+			    default:
+				fault = 1;
+				break;
+			    }
+			    break;
+			}
+
+			if (fault) {
+			    /*
+			     * Test Case: coding error
+			     */
+			    idio_error_param_value_msg_only ("append-string", "string", "unexpected string width", IDIO_C_FUNC_LOCATION ());
+
+			    return idio_S_notreached;
+			}
+		    }
+		    break;
+		}
+		break;
+	    case IDIO_STRING_FLAG_OCTET:
+		{
+		    switch (str_flags) {
+		    case IDIO_STRING_FLAG_1BYTE:
+		    case IDIO_STRING_FLAG_2BYTE:
+		    case IDIO_STRING_FLAG_4BYTE:
+			{
+			    for (size_t str_i = 0; str_i < lens[si]; str_i++, ri++) {
+				so8[ri] = copies[si][str_i];
+			    }
+			}
+			break;
+		    case IDIO_STRING_FLAG_OCTET:
+		    case IDIO_STRING_FLAG_PATHNAME:
+			{
+			    for (size_t str_i = 0; str_i < str_len; str_i++, ri++) {
+				so8[ri] = str8[str_i];
+			    }
+			}
+			break;
+		    default:
+			idio_error_param_value_msg_only ("append-string", "string", "unexpected string width", IDIO_C_FUNC_LOCATION ());
+
+			return idio_S_notreached;
+		    }
+		}
+		break;
+	    case IDIO_STRING_FLAG_PATHNAME:
+		{
+		    switch (str_flags) {
+		    case IDIO_STRING_FLAG_1BYTE:
+		    case IDIO_STRING_FLAG_2BYTE:
+		    case IDIO_STRING_FLAG_4BYTE:
+			{
+			    for (size_t str_i = 0; str_i < lens[si]; str_i++, ri++) {
+				so8[ri] = copies[si][str_i];
+			    }
+			}
+			break;
+		    case IDIO_STRING_FLAG_PATHNAME:
+			{
+			    for (size_t str_i = 0; str_i < str_len; str_i++, ri++) {
+				if (substring[si]) {
+				    so8[ri] = IDIO_SUBSTRING_S (str) [str_i];
+				} else {
+				    so8[ri] = IDIO_STRING_S (str) [str_i];
+				}
+			    }
+			}
+			break;
+		    default:
+			idio_error_param_value_msg_only ("append-string", "string", "unexpected string width", IDIO_C_FUNC_LOCATION ());
+
+			return idio_S_notreached;
+		    }
+		}
+		break;
+	    default:
+		/*
+		 * Test Case: coding error
+		 */
+		idio_error_param_value_msg_only ("append-string", "string", "unexpected string width", IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
 
 	    args = IDIO_PAIR_T (args);
 	}
 
-	r = idio_string_C_array_lens (n, (char const **) copies, lens);
-
-	switch (r_flags) {
-	case IDIO_STRING_FLAG_1BYTE:
-	    /* leave alone */
-	    break;
-	case IDIO_STRING_FLAG_PATHNAME:
-	    IDIO_STRING_FLAGS (r) = r_flags;
-	    break;
-	case IDIO_STRING_FLAG_OCTET:
-	    IDIO_STRING_FLAGS (r) = r_flags;
-	    break;
+	for (si = 0; si < ns; si++) {
+	    IDIO_GC_FREE (copies[si]);
 	}
 
-	for (i = 0; i < n; i++) {
-	    IDIO_GC_FREE (copies[i]);
-	}
+	IDIO_STRING_S (so)[reqd_bytes] = '\0';
+
+	IDIO_STRING_FLAGS (so) = r_flags;
+	IDIO_STRING_LEN (so) = ri;
+
+	r = so;
     } else {
 	r = idio_string_C_len ("", 0);
     }

@@ -113,6 +113,157 @@ test (string?       (join-string   "d" '("a" %B"b"))) #t
 test (pathname?     (join-string   "d" '("a" %B"b"))) #f
 test (octet-string? (join-string   "d" '("a" %B"b"))) #t
 
+;; more appended strings -- pick them apart, put them back together
+
+;; XXX do not try this at home -- here we *know*, because we are
+;; carefully crafting the string, that we can pick apart and put back
+;; together.  In general you don't.
+
+;; In particular, when degraded to a pathname/octet-string we can
+;; reproduce a viable unicode string but only because we know what's
+;; in it.  In general you will silently get U+FFFD (REPLACEMENT
+;; CHARACTER).  We'll demonstrate that case too!
+
+;; You can get the UTF-8 representations with:
+;; echo (make-string 1 #U+127) | od -t x1
+
+;; The display-string function, in effect, calls the UTF-8 decoding
+;; code.  You will get bitten if you pass non-UTF-8 sequences of
+;; bytes.
+
+;; Annoyingly, the code path is very slightly different between
+;; pathnames and octet-strings (as pathnames degrade to octet-strings)
+;; so we need to test both.
+
+;; 1-byte strings -> pathnames
+str := append-string "a" %P"b"
+test (string-length str) 2
+test (string-ref str 0) #\a
+test (string-ref str 1) #\b
+str = display-string str
+test (string-length str) 2
+test (string-ref str 0) #\a
+test (string-ref str 1) #\b
+
+;; 1-byte strings -> octet-strings
+str := append-string "a" %B"b"
+test (string-length str) 2
+test (string-ref str 0) #\a
+test (string-ref str 1) #\b
+str = display-string str
+test (string-length str) 2
+test (string-ref str 0) #\a
+test (string-ref str 1) #\b
+
+;; 2-byte strings (2-byte encoding) -> pathnames
+;; U+0127 LATIN SMALL LETTER H WITH STROKE
+;; UTF-8 representation is 0xC4 0xA7
+str := append-string (make-string 1 #U+0127) %P"b"
+test (string-length str) 3
+test (string-ref str 0) #U+C4
+test (string-ref str 1) #U+A7
+test (string-ref str 2) #\b
+str = display-string str
+test (string-length str) 2
+test (string-ref str 0) #U+127
+test (string-ref str 1) #\b
+
+;; 2-byte strings (2-byte encoding) -> octet-strings
+;; U+0127 LATIN SMALL LETTER H WITH STROKE
+;; UTF-8 representation is 0xC4 0xA7
+str := append-string (make-string 1 #U+0127) %B"b"
+test (string-length str) 3
+test (string-ref str 0) #U+C4
+test (string-ref str 1) #U+A7
+test (string-ref str 2) #\b
+str = display-string str
+test (string-length str) 2
+test (string-ref str 0) #U+127
+test (string-ref str 1) #\b
+
+;; 2-byte strings (3-byte encoding) -> pathnames
+;; U+0905 DEVANAGARI LETTER A
+;; UTF-8 representation is 0xE0 0xA4 0x85
+str := append-string (make-string 1 #U+905) %P"b"
+test (string-length str) 4
+test (string-ref str 0) #U+E0
+test (string-ref str 1) #U+A4
+test (string-ref str 2) #U+85
+test (string-ref str 3) #\b
+str = display-string str
+test (string-length str) 2
+test (string-ref str 0) #U+905
+test (string-ref str 1) #\b
+
+;; 2-byte strings (3-byte encoding) -> octet-strings
+;; U+0905 DEVANAGARI LETTER A
+;; UTF-8 representation is 0xE0 0xA4 0x85
+str := append-string (make-string 1 #U+905) %B"b"
+test (string-length str) 4
+test (string-ref str 0) #U+E0
+test (string-ref str 1) #U+A4
+test (string-ref str 2) #U+85
+test (string-ref str 3) #\b
+str = display-string str
+test (string-length str) 2
+test (string-ref str 0) #U+905
+test (string-ref str 1) #\b
+
+;; 4-byte strings -> pathnames
+;; U+1FBF8 SEGMENTED DIGIT 8
+;; UTF-8 representation is 0xF0 0x9F 0xAF 0xB8
+str := append-string (make-string 1 #U+1fbf8) %P"b"
+test (string-length str) 5
+test (string-ref str 0) #U+F0
+test (string-ref str 1) #U+9F
+test (string-ref str 2) #U+AF
+test (string-ref str 3) #U+B8
+test (string-ref str 4) #\b
+str = display-string str
+test (string-length str) 2
+test (string-ref str 0) #U+1fbf8
+test (string-ref str 1) #\b
+
+;; 4-byte strings -> octet-strings
+;; U+1FBF8 SEGMENTED DIGIT 8
+;; UTF-8 representation is 0xF0 0x9F 0xAF 0xB8
+str := append-string (make-string 1 #U+1fbf8) %B"b"
+test (string-length str) 5
+test (string-ref str 0) #U+F0
+test (string-ref str 1) #U+9F
+test (string-ref str 2) #U+AF
+test (string-ref str 3) #U+B8
+test (string-ref str 4) #\b
+str = display-string str
+test (string-length str) 2
+test (string-ref str 0) #U+1fbf8
+test (string-ref str 1) #\b
+
+;; XXX 5- and 6-byte encodings?
+
+;; non-UTF-8 strings -> pathnames
+;; \xA9 (COPYRIGHT SIGN in ISO-8859-1)
+;; UTF-8 representation is 0xFFFD (REPLACEMENT CHARACTER)!!!
+str := append-string %P"\xA9" %P"b"
+test (string-length str) 2
+test (string-ref str 0) #U+A9
+test (string-ref str 1) #\b
+str = display-string str
+test (string-length str) 2
+test (string-ref str 0) #U+fffd
+test (string-ref str 1) #\b
+
+;; non-UTF-8 strings -> octet-strings
+;; \xA9 (COPYRIGHT SIGN in ISO-8859-1)
+;; UTF-8 representation is 0xFFFD (REPLACEMENT CHARACTER)!!!
+str := append-string %P"\xA9" %B"b"
+test (string-length str) 2
+test (string-ref str 0) #U+A9
+test (string-ref str 1) #\b
+str = display-string str
+test (string-length str) 2
+test (string-ref str 0) #U+fffd
+test (string-ref str 1) #\b
 
 test (concatenate-string '())             ""
 test (concatenate-string '("a"))         "a"
@@ -627,7 +778,7 @@ for (x y z) in strings {
 }
 
 ;; all done?
-Tests? (string0 + 397)
+Tests? (string0 + 469)
 
 ;Local Variables:
 ;mode: Idio
