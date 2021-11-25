@@ -1,13 +1,13 @@
 TOPDIR		:= $(abspath $(PWD)/../../..)
 
 ifneq ($(MAKECMDGOALS),clean)
-include Makefile.system
 include $(TOPDIR)/src/Makefile.system
+include Makefile.system
 endif
 
 # dummy versions if Makefile.system doesn't exist yet
-JSON5_SYSTEM_VERSION_MM		?= a.b
-JSON5_SYSTEM_VERSION_M		?= a
+MODULE_SYSTEM_VERSION_MM	?= a.b
+MODULE_SYSTEM_VERSION_M		?= a
 
 include $(TOPDIR)/src/Makefile.common
 
@@ -34,9 +34,9 @@ USISRCS		:= usi.c usi-wrap.c
 USIOBJS		:= $(patsubst %.c,%.o,$(USISRCS))
 
 # local install
-JSON5_LI_LIBDIR		:= $(LI_LIBVERDIR)/json5
-JSON5_LI_LIBVERDIR	:= $(JSON5_LI_LIBDIR)/$(JSON5_SYSTEM_VERSION_MM)
-JSON5_LI_LIBARCHDIR	:= $(JSON5_LI_LIBVERDIR)/$(IDIO_SYSTEM_ARCH)
+MODULE_LI_LIBDIR	:= $(LI_LIBVERDIR)/json5
+MODULE_LI_LIBVERDIR	:= $(MODULE_LI_LIBDIR)/$(MODULE_SYSTEM_VERSION_MM)
+MODULE_LI_LIBARCHDIR	:= $(MODULE_LI_LIBVERDIR)/$(IDIO_SYSTEM_ARCH)
 
 all : libjson5.so
 
@@ -63,26 +63,26 @@ debug-test :
 sanitize-test :
 	$(MAKE) test CDEBUG="-fsanitize=address -g" LDFLAGS="-L$(PWD) -lasan"
 
-local-install : $(JSON5_LI_LIBARCHDIR)/libjson5.so | Makefile.system $(JSON5_LI_LIBVERDIR)
-	cp json5.idio $(JSON5_LI_LIBVERDIR)
-	echo json5@${JSON5_SYSTEM_VERSION_MM} > $(JSON5_LI_LIBDIR)/latest
+local-install : $(MODULE_LI_LIBARCHDIR)/libjson5.so | Makefile.system $(MODULE_LI_LIBVERDIR)
+	cp json5.idio $(MODULE_LI_LIBVERDIR)
+	echo json5@${MODULE_SYSTEM_VERSION_MM} > $(MODULE_LI_LIBDIR)/latest
 
-$(JSON5_LI_LIBARCHDIR)/libjson5.so : libjson5.so | $(JSON5_LI_LIBARCHDIR)
-	tar cf - $^* | (cd $(JSON5_LI_LIBARCHDIR) ; tar xf -)
+$(MODULE_LI_LIBARCHDIR)/libjson5.so : libjson5.so | $(MODULE_LI_LIBARCHDIR)
+	tar cf - $^* | (cd $(MODULE_LI_LIBARCHDIR) ; tar xf -)
 
-$(JSON5_LI_LIBARCHDIR) :
+$(MODULE_LI_LIBARCHDIR) :
 	mkdir -p $@
 
 clean-local-install :
-	rm -rf $(JSON5_LI_LIBDIR)
+	rm -rf $(MODULE_LI_LIBDIR)
 
-libjson5.so : libjson5.so.${JSON5_SYSTEM_VERSION_M}
+libjson5.so : libjson5.so.${MODULE_SYSTEM_VERSION_M}
 	ln -sf $^ $@
 
-libjson5.so.${JSON5_SYSTEM_VERSION_M} : libjson5.so.${JSON5_SYSTEM_VERSION_MM}
+libjson5.so.${MODULE_SYSTEM_VERSION_M} : libjson5.so.${MODULE_SYSTEM_VERSION_MM}
 	ln -sf $^ $@
 
-libjson5.so.${JSON5_SYSTEM_VERSION_MM} : $(LIBOBJS) json5-module.o json5-api.o
+libjson5.so.${MODULE_SYSTEM_VERSION_MM} : $(LIBOBJS) json5-module.o json5-api.o
 	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^
 
 libjson5-bare.so : $(LIBOBJS) $(USIOBJS)

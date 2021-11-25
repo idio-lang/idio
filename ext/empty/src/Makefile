@@ -1,13 +1,13 @@
 TOPDIR		:= $(abspath $(PWD)/../../..)
 
 ifneq ($(MAKECMDGOALS),clean)
-include Makefile.system
 include $(TOPDIR)/src/Makefile.system
+include Makefile.system
 endif
 
 # dummy versions if Makefile.system doesn't exist yet
-EMPTY_SYSTEM_VERSION_MM		?= a.b
-EMPTY_SYSTEM_VERSION_M		?= a
+MODULE_SYSTEM_VERSION_MM	?= a.b
+MODULE_SYSTEM_VERSION_M		?= a
 
 include $(TOPDIR)/src/Makefile.common
 
@@ -28,9 +28,9 @@ LD_DLFLAGS	:= -shared
 endif
 
 # local install
-EMPTY_LI_LIBDIR		:= $(LI_LIBVERDIR)/empty
-EMPTY_LI_LIBVERDIR	:= $(EMPTY_LI_LIBDIR)/$(EMPTY_SYSTEM_VERSION_MM)
-EMPTY_LI_LIBARCHDIR	:= $(EMPTY_LI_LIBVERDIR)/$(IDIO_SYSTEM_ARCH)
+MODULE_LI_LIBDIR	:= $(LI_LIBVERDIR)/empty
+MODULE_LI_LIBVERDIR	:= $(MODULE_LI_LIBDIR)/$(MODULE_SYSTEM_VERSION_MM)
+MODULE_LI_LIBARCHDIR	:= $(MODULE_LI_LIBVERDIR)/$(IDIO_SYSTEM_ARCH)
 
 all : libempty.so
 
@@ -54,26 +54,26 @@ debug-test :
 sanitize-test :
 	$(MAKE) test CDEBUG="-fsanitize=address -g" LDFLAGS="-L$(PWD) -lasan"
 
-local-install : $(EMPTY_LI_LIBARCHDIR)/libempty.so | Makefile.system $(EMPTY_LI_LIBVERDIR)
-	cp empty.idio $(EMPTY_LI_LIBVERDIR)
-	echo empty@${EMPTY_SYSTEM_VERSION_MM} > $(EMPTY_LI_LIBDIR)/latest
+local-install : $(MODULE_LI_LIBARCHDIR)/libempty.so | Makefile.system $(MODULE_LI_LIBVERDIR)
+	cp empty.idio $(MODULE_LI_LIBVERDIR)
+	echo empty@${MODULE_SYSTEM_VERSION_MM} > $(MODULE_LI_LIBDIR)/latest
 
-$(EMPTY_LI_LIBARCHDIR)/libempty.so : libempty.so | $(EMPTY_LI_LIBARCHDIR)
-	tar cf - $^* | (cd $(EMPTY_LI_LIBARCHDIR) ; tar xf -)
+$(MODULE_LI_LIBARCHDIR)/libempty.so : libempty.so | $(MODULE_LI_LIBARCHDIR)
+	tar cf - $^* | (cd $(MODULE_LI_LIBARCHDIR) ; tar xf -)
 
-$(EMPTY_LI_LIBARCHDIR) :
+$(MODULE_LI_LIBARCHDIR) :
 	mkdir -p $@
 
 clean-local-install :
-	rm -rf $(EMPTY_LI_LIBDIR)
+	rm -rf $(MODULE_LI_LIBDIR)
 
-libempty.so : libempty.so.${EMPTY_SYSTEM_VERSION_M}
+libempty.so : libempty.so.${MODULE_SYSTEM_VERSION_M}
 	ln -sf $^ $@
 
-libempty.so.${EMPTY_SYSTEM_VERSION_M} : libempty.so.${EMPTY_SYSTEM_VERSION_MM}
+libempty.so.${MODULE_SYSTEM_VERSION_M} : libempty.so.${MODULE_SYSTEM_VERSION_MM}
 	ln -sf $^ $@
 
-libempty.so.${EMPTY_SYSTEM_VERSION_MM} : $(LIBOBJS) empty-module.o
+libempty.so.${MODULE_SYSTEM_VERSION_MM} : $(LIBOBJS) empty-module.o
 	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^
 
 %.o : %.d
