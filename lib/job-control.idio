@@ -1137,8 +1137,10 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
        dup2 infile STDIN_FILENO
 
        if (and (C/> infile STDERR_FILENO)
-	       (not (C/== infile outfile))
-	       (not (C/== infile errfile))) {
+	       (and (C/int? outfile)
+		    (not (C/== infile outfile)))
+	       (and (C/int? errfile)
+		    (not (C/== infile errfile)))) {
 	 close infile
        }
 
@@ -1160,7 +1162,8 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
        dup2 outfile STDOUT_FILENO
 
        if (and (C/> outfile STDERR_FILENO)
-	       (not (C/== outfile errfile))) {
+	       (and (C/int? errfile)
+		    (not (C/== outfile errfile)))) {
 	 close outfile
        }
 
