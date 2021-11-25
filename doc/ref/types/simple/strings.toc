@@ -3,6 +3,7 @@
 (rst "string-predicates" 0)
 (document Idio string?)
 (document Idio pathname? pathname-p)
+(document Idio octet-string? octet-string-p)
 
 (rst "string-constructors" 0)
 (document Idio make-string)
@@ -11,6 +12,7 @@
 (document Idio symbol->string)
 (document Idio keyword->string)
 (document Idio string->pathname)
+(document Idio string->octet-string)
 
 ; util.c
 (document Idio ->string)

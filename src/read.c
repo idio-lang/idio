@@ -3987,6 +3987,9 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t *ic, int depth, int
 			    idio_unicode_t odelim = idio_getc_handle (handle);
 			    idio_unicode_t cdelim = odelim;
 			    switch (odelim) {
+			    case IDIO_CHAR_LPAREN:
+				cdelim = IDIO_CHAR_RPAREN;
+				break;
 			    case IDIO_CHAR_LBRACE:
 				cdelim = IDIO_CHAR_RBRACE;
 				break;
@@ -4005,6 +4008,9 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t *ic, int depth, int
 			    idio_unicode_t odelim = idio_getc_handle (handle);
 			    idio_unicode_t cdelim = odelim;
 			    switch (odelim) {
+			    case IDIO_CHAR_LPAREN:
+				cdelim = IDIO_CHAR_RPAREN;
+				break;
 			    case IDIO_CHAR_LBRACE:
 				cdelim = IDIO_CHAR_RBRACE;
 				break;

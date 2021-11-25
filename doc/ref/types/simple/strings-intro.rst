@@ -90,8 +90,9 @@ There are a couple of notes:
 Pathnames
 ^^^^^^^^^
 
-``%P"..."`` (or ``%P(...)`` or ``%P{...}`` or ``%P[...]``) where the
-``...`` is a regular string as above.
+``%P"..."`` (or matching brackets, ``%P(...)`` or ``%P{...}`` or
+``%P[...]`` or, in general, :samp:`%P{c}...{c}`) where the ``...`` is
+a regular string as above.
 
 That's where the :samp:`\\x{HH}` escape for strings comes into its
 own.  If we know that a filename starts with ISO8859-1_'s 0xA9 (the
@@ -104,6 +105,30 @@ Pathnames, or strings being used as pathnames, with an ASCII NUL
 used.  They are perfectly valid code points for :lname:`Idio` strings
 but it is not possible to have an ASCII NUL in a :lname:`C` string,
 being passed to the operating system's API.
+
+.. _`octet string`:
+
+Octet Strings
+^^^^^^^^^^^^^
+
+``%B"..."`` (or matching brackets, ``%B(...)`` or ``%B{...}`` or
+``%B[...]`` or, in general, :samp:`%B{c}...{c}`) where the ``...`` is
+a regular string as above.
+
+.. note::
+
+   The name, byte string, seems too overloaded but the nominal reader
+   form, ``%O`` is too easily confused with a putative ``%0``.  So we
+   have a mixed result, the name, octet string, with a reader form
+   derived from byte string.
+
+Mixing Strings
+^^^^^^^^^^^^^^
+
+You can :ref:`append-string <append-string>` strings together and
+:ref:`join-string <join-string>` strings with a delimiter but be
+careful as mixing string variants will result in a gracefully degraded
+result: `unicode` to `pathname` to `octet-string`.
 
 .. _`string interpolation`:
 
