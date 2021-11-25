@@ -83,7 +83,7 @@ libjson5.so.${JSON5_SYSTEM_VERSION_M} : libjson5.so.${JSON5_SYSTEM_VERSION_MM}
 	ln -sf $^ $@
 
 libjson5.so.${JSON5_SYSTEM_VERSION_MM} : $(LIBOBJS) json5-module.o json5-api.o
-	$(CC) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^
 
 libjson5-bare.so : $(LIBOBJS) $(USIOBJS)
 	$(CC) $(LD_DLFLAGS) -o $@ $^

@@ -74,7 +74,7 @@ libempty.so.${EMPTY_SYSTEM_VERSION_M} : libempty.so.${EMPTY_SYSTEM_VERSION_MM}
 	ln -sf $^ $@
 
 libempty.so.${EMPTY_SYSTEM_VERSION_MM} : $(LIBOBJS) empty-module.o
-	$(CC) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^
 
 %.o : %.d
 
