@@ -304,15 +304,90 @@ IDIO idio_libc_poll_poll (idio_libc_poller_t *poller, int timeout)
      * Only interruptable by a signal.
      */
 
-    int poll_r = poll (poller->fds, poller->nfds, timeout);
+    /*
+     * EINTR - what should we do if we are interrupted?
+     *
+     * (This seems to happen on some SunOS variants when an async
+     * process we are polling for exits.  Timing, I guess.)
+     *
+     * I suspect we go round again but we should be shortening our
+     * timeout appropriately which mean we really should have been
+     * maintaining a target (real) time based on the original timeout.
+     *
+     * Remember, timeout is in milliseconds.
+     */
 
-    poller->in_use = 0;
-
-    if (-1 == poll_r) {
-	idio_error_system_errno ("poll", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+    struct timeval tt;
+    if (-1 == gettimeofday (&tt, NULL)) {
+	idio_error_system_errno ("gettimeofday", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
+
+    int to = timeout;
+    if (to > 1000) {
+	int ts = to / 1000;
+	tt.tv_sec += ts;
+	to -= (ts * 1000);
+    }
+
+    tt.tv_usec += to * 1000;
+    if (tt.tv_usec > 1000000) {
+	tt.tv_usec -= 1000000;
+	tt.tv_sec += 1;
+    }
+
+    int first = 1;
+    int done = 0;
+
+    while (! done) {
+	if (first) {
+	    first = 0;
+	} else {
+	    /*
+	     * How much of timeout is left?
+	     */
+	    struct timeval ct;
+	    if (-1 == gettimeofday (&ct, NULL)) {
+		idio_error_system_errno ("gettimeofday", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+
+	    time_t sec = tt.tv_sec - ct.tv_sec;
+	    suseconds_t usec = tt.tv_usec - ct.tv_usec;
+
+	    if (usec < 0) {
+		usec += 1000000;
+		sec -= 1;
+	    }
+
+	    if (sec < 0 ||
+		usec < 0) {
+		return idio_S_nil;
+	    }
+
+	    timeout = sec * 1000 + (usec / 1000);
+
+	    if (0 == timeout) {
+		return idio_S_nil;
+	    }
+	}
+
+	int poll_r = poll (poller->fds, poller->nfds, timeout);
+
+	if (-1 == poll_r) {
+	    if (EINTR != errno) {
+		idio_error_system_errno ("poll", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	} else {
+	    done = 1;
+	}
+    }
+
+    poller->in_use = 0;
 
     IDIO r = idio_S_nil;
     int n = 0;
