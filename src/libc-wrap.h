@@ -152,6 +152,7 @@ extern IDIO idio_libc_struct_stat;
 extern IDIO idio_vm_signal_handler_conditions;
 extern char **idio_libc_signal_names;
 void idio_libc_format_error (char const *msg, IDIO name, IDIO c_location);
+IDIO idio_libc_export_symbol_value (IDIO symbol, IDIO value);
 char *idio_libc_string_C (IDIO val, char const *func_C, int *free_me_p, IDIO c_location);
 char *idio_getcwd (char const *func, char *buf, size_t size);
 char *idio_libc_signal_name (int signum);

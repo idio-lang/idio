@@ -53,6 +53,17 @@ All :manpage:`open(2)` flag names: ``O_APPEND``, ``O_EXCL`` etc..
 You can get a list of the defined ``O_*`` open flag names with
 :ref:`open-flag-names <libc/open-flag-names>`.
 
+POLL Values
+^^^^^^^^^^^^^
+
+All :manpage:`poll(2)` POLL names: ``POLLIN``, ``POLLERR`` etc..
+
+You can get a list of the defined ``POLL*`` names with
+:ref:`poll-names <libc/poll-names>`.
+
+A suite of :ref:`poll predicates`, ``POLLIN?``, ``POLLERR?`` have been
+defined for convenient testing.
+
 Other Values
 ^^^^^^^^^^^^
 

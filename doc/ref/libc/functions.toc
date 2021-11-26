@@ -100,5 +100,14 @@
 
 (document libc open-flag-names)
 
+(document libc make-poller)
+(document libc poller-register)
+(document libc poller-deregister)
+(document libc poller-poll)
+
+(document libc poll-name)
+(document libc poll-names)
+
 (document libc proc-subst-named-pipe-from)
 (document libc proc-subst-named-pipe-into)
+

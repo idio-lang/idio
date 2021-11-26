@@ -30,6 +30,9 @@
 (document libc mode_t)
 (document libc mode_t?)
 
+(document libc nfds_t)
+(document libc nfds_t?)
+
 (document libc nlink_t)
 (document libc nlink_t?)
 

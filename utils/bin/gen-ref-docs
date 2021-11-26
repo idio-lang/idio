@@ -569,6 +569,7 @@ for-each (function (mod) {
   ;; errno	- E*
   ;; rlimits	- RLIMIT_*
   ;; signals	- SIG*
+  ;; poll masks	- POLL*
 
   ;; and the ^system-error-E* and ^rt-signal-SIG* struct-types in Idio
   ;; (the ^rt-signal-SIG* are used by the VM)
@@ -608,6 +609,8 @@ for-each (function (mod) {
 		 (equal? (substring ss 0 3) "SIG")) r)
 	   ((and (gt sl 2)
 		 (equal? (substring ss 0 2) "O_")) r)
+	   ((and (gt sl 4)
+		 (equal? (substring ss 0 4) "POLL")) r)
 	   (else (pair s r)))
 	})
 	((or (symbol? val)
@@ -618,6 +621,9 @@ for-each (function (mod) {
 	   ((and (gt sl 2)
 		 (equal? (substring ss 0 2) "__"))
 	     r)
+	   ((and (gt sl 4)
+		 (equal? (substring ss 0 4) "POLL")
+		 (equal? (substring ss (sl - 1) sl) "?")) r)
 	   (else {
 	     ;; is this actually a sym in this module and not
 	     ;; something we've created as a by-product of using the

@@ -17,6 +17,7 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <math.h>
+#include <poll.h>
 #include <pwd.h>
 #include <regex.h>
 #include <signal.h>
@@ -274,6 +275,12 @@ int main (int argc, char **argv)
     {
 	int pipefd[2];
 	int pipe_r = pipe (pipefd);
+    }
+
+    /* poll(2) */
+    {
+	nfds_t nfds = 2;
+	struct pollfd fds[nfds];
     }
 
     /* read(2) */

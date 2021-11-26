@@ -1310,7 +1310,7 @@ return the value indexed by `key` in hash table `ht`	\n\
 :param default: a default value if `key` not found	\n\
 :type default: a thunk or a simple value, optional	\n\
 :return: value						\n\
-:raises rt-hash-key-not-found-error: if `key` not found	\n\
+:raises ^rt-hash-key-not-found-error: if `key` not found	\n\
 	and no `default` supplied			\n\
 ")
 {

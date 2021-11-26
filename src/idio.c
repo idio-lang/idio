@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <dlfcn.h>
 #include <limits.h>
+#include <poll.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stddef.h>
@@ -63,6 +64,7 @@
 #include "idio-system.h"
 #include "job-control.h"
 #include "keyword.h"
+#include "libc-poll.h"
 #include "libc-wrap.h"
 #include "module.h"
 #include "pair.h"
@@ -270,6 +272,7 @@ void idio_init (void)
     idio_init_continuation ();
 
     idio_init_libc_wrap ();
+    idio_init_libc_poll ();
     idio_init_posix_regex ();
 
     idio_init_command ();

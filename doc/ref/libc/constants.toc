@@ -4,6 +4,7 @@
 (document libc 0pid_t)
 (document libc BUFSIZ)
 (document libc CHAR_MAX)
+(document libc CHAR_MIN)
 (document libc CLK_TCK)
 (document libc FD_CLOEXEC)
 (document libc F_DUPFD)
@@ -58,4 +59,5 @@
 (document libc RLIMIT_*)
 (document libc SIG*)
 (document libc O_*)
+(document libc POLL*)
 

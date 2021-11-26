@@ -1,0 +1,106 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-libc-poll.idio
+;;
+module tests/libc-poll
+import libc
+
+libc-poll0 := Tests
+
+;; code coverage with the variety of ways you can express (fdh
+;; eventmask [...])
+
+poller := (make-poller)
+
+; C/int
+poller := make-poller (list C/0i POLLIN)
+poller := make-poller (list C/0i POLLIN POLLERR)
+
+poller-register   poller (list C/0i POLLIN)
+poller-deregister poller C/0i
+
+; fd-handle (assuming stdin is an fd-handle...)
+poller := make-poller (list (current-input-handle) POLLIN)
+poller := make-poller (list (current-input-handle) POLLIN POLLERR)
+
+poller-register   poller (list (current-input-handle) POLLIN)
+poller-deregister poller (current-input-handle)
+
+;; simple poll test -- only one thing printed
+iph := pipe-from {
+  echo "hello"
+}
+
+poller := make-poller (list iph POLLIN)
+
+r1 := poller-poll poller 1000
+
+test (null? r1) #f
+
+if (pair? r1) {
+  ev := ph r1
+  test (ph ev) iph
+  test (POLLIN? (pht ev)) #t
+  test (read-line iph) "hello"
+} {
+  eprintf "WARNING: poller-poll -> %s\n" r
+  Skipped = Skipped + 3 
+}
+
+;; more complicated poll test -- two things printed, a second apart
+
+;; this is going to be prone to errors on slower systems
+iph := pipe-from {
+  echo "hello"
+  sleep 1
+  echo "world"
+}
+
+poller := make-poller (list iph POLLIN)
+
+r2 := poller-poll poller 500
+
+test (null? r2) #f
+
+if (pair? r2) {
+  ev := ph r2
+  test (ph ev) iph
+  test (POLLIN? (pht ev)) #t
+  test (read-line iph) "hello"
+} {
+  eprintf "WARNING: poller-poll -> %s\n" r
+  Skipped = Skipped + 3 
+}
+
+r3 := poller-poll poller 2000
+
+test (null? r3) #f
+
+if (pair? r3) {
+  ev := ph r3
+  test (ph ev) iph
+  test (POLLIN? (pht ev)) #t
+  test (read-line iph) "world"
+} {
+  eprintf "WARNING: poller-poll -> %s\n" r
+  Skipped = Skipped + 3 
+}
+
+;; all done?
+Tests? (libc-poll0 + 12)
