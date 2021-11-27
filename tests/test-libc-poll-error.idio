@@ -88,12 +88,18 @@ libc-poll-error-load := {
 
 poller := (make-poller)
 
+libc-poll-error-load "libc-poll-errors/poller-register-bad-poller-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+libc-poll-error-load "libc-poll-errors/poller-register-invalid-poller-pointer-type.idio" "poller-register poller='#<C/*>' a C/pointer is not a struct idio_libc_poller_s"
 libc-poll-error-load "libc-poll-errors/poller-register-bad-fdh-type.idio" "bad parameter type: '#t' a constant is not a fd-handle|C/int"
 libc-poll-error-load "libc-poll-errors/poller-register-bad-eventmask-list-type.idio" "bad parameter type: '#t' a constant is not a C_int"
 libc-poll-error-load "libc-poll-errors/poller-register-bad-eventmask-type.idio" "bad parameter type: '#t' a constant is not a C_int"
 
+libc-poll-error-load "libc-poll-errors/poller-deregister-bad-poller-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+libc-poll-error-load "libc-poll-errors/poller-deregister-invalid-poller-pointer-type.idio" "poller-deregister poller='#<C/*>' a C/pointer is not a struct idio_libc_poller_s"
 libc-poll-error-load "libc-poll-errors/poller-deregister-bad-fdh-type.idio" "bad parameter type: '#t' a constant is not a fd-handle|C/int"
 
+libc-poll-error-load "libc-poll-errors/poller-poll-bad-poller-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+libc-poll-error-load "libc-poll-errors/poller-poll-invalid-poller-pointer-type.idio" "poller-poll poller='#<C/*>' a C/pointer is not a struct idio_libc_poller_s"
 libc-poll-error-load "libc-poll-errors/poller-poll-bad-timeout-type.idio" "bad parameter type: '#t' a constant is not a fixnum|C/int"
 
 libc-poll-error-load "libc-poll-errors/poll-name-bad-type.idio" "bad parameter type: '#t' a constant is not a fixnum|C/int"
@@ -105,4 +111,4 @@ libc-poll-error-load "libc-poll-errors/poll-name-bad-type.idio" "bad parameter t
 libc-poll-error-load "libc-poll-errors/pollin-p-bad-type.idio" "bad parameter type: '#t' a constant is not a C/short"
 
 ;; all done?
-Tests? (libc-poll-error0 + 7)
+Tests? (libc-poll-error0 + 13)

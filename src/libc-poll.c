@@ -71,6 +71,7 @@
 #include "libc-api.h"
 
 IDIO idio_libc_poll_names;
+IDIO_C_STRUCT_IDENT_DECL (idio_libc_poller_s);
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("make-poller", make_poller, (IDIO args), "[args]", "\
 Create a `poller` from `args`		\n\
@@ -109,7 +110,7 @@ or C/int derived from such names	\n\
     poller->valid = 0;
     poller->in_use = 0;
 
-    IDIO C_poller = idio_C_pointer_free_me (poller);
+    IDIO C_poller = idio_C_pointer_type (idio_CSI_idio_libc_poller_s, poller);
     idio_gc_register_finalizer (C_poller, idio_libc_poll_finalizer);
     return C_poller;
 }
@@ -223,10 +224,25 @@ or C/int derived from such names	\n\
     IDIO_ASSERT (poller);
     IDIO_ASSERT (pollee);
 
-    IDIO_TYPE_ASSERT (C_pointer, poller);
-    IDIO_TYPE_ASSERT (list, pollee);
+    /*
+     * Test Case: libc-errors/poller-register-bad-poller-type.idio
+     *
+     * poller-register #t #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, poller);
+    if (idio_CSI_idio_libc_poller_s != IDIO_C_TYPE_POINTER_PTYPE (poller)) {
+	/*
+	 * Test Case: libc-poll-errors/poller-register-invalid-poller-pointer-type.idio
+	 *
+	 * poller-register libc/NULL #t
+	 */
+	idio_error_param_value_exp ("poller-register", "poller", poller, "struct idio_libc_poller_s", IDIO_C_FUNC_LOCATION ());
 
+	return idio_S_notreached;
+    }
     idio_libc_poller_t *C_poller = IDIO_C_TYPE_POINTER_P (poller);
+
+    IDIO_TYPE_ASSERT (list, pollee);
 
     idio_libc_poll_register (C_poller, pollee);
 
@@ -273,8 +289,22 @@ Remove `fdh` from `poller`		\n\
     IDIO_ASSERT (poller);
     IDIO_ASSERT (fdh);
 
-    IDIO_TYPE_ASSERT (C_pointer, poller);
+    /*
+     * Test Case: libc-errors/poller-deregister-bad-poller-type.idio
+     *
+     * poller-deregister #t #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, poller);
+    if (idio_CSI_idio_libc_poller_s != IDIO_C_TYPE_POINTER_PTYPE (poller)) {
+	/*
+	 * Test Case: libc-poll-errors/poller-deregister-invalid-poller-pointer-type.idio
+	 *
+	 * poller-deregister libc/NULL #t
+	 */
+	idio_error_param_value_exp ("poller-deregister", "poller", poller, "struct idio_libc_poller_s", IDIO_C_FUNC_LOCATION ());
 
+	return idio_S_notreached;
+    }
     idio_libc_poller_t *C_poller = IDIO_C_TYPE_POINTER_P (poller);
 
     idio_libc_poll_deregister (C_poller, fdh);
@@ -428,8 +458,22 @@ Poll `poller` for `timeout` milliseconds	\n\
     IDIO_ASSERT (poller);
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (C_pointer, poller);
+    /*
+     * Test Case: libc-errors/poller-poll-bad-poller-type.idio
+     *
+     * poller-poll #t #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, poller);
+    if (idio_CSI_idio_libc_poller_s != IDIO_C_TYPE_POINTER_PTYPE (poller)) {
+	/*
+	 * Test Case: libc-poll-errors/poller-poll-invalid-poller-pointer-type.idio
+	 *
+	 * poller-poll libc/NULL #t
+	 */
+	idio_error_param_value_exp ("poller-poll", "poller", poller, "struct idio_libc_poller_s", IDIO_C_FUNC_LOCATION ());
 
+	return idio_S_notreached;
+    }
     idio_libc_poller_t *C_poller = IDIO_C_TYPE_POINTER_P (poller);
 
     int C_timeout = -1;
@@ -751,6 +795,8 @@ void idio_init_libc_poll ()
     idio_module_table_register (idio_libc_poll_add_primitives, idio_final_libc_poll, NULL);
 
     idio_libc_set_poll_names ();
+
+    IDIO_C_STRUCT_IDENT_DEF ("struct idio_libc_poller_s", idio_libc_poller_s, idio_fixnum (0));
 }
 
 /* Local Variables: */
