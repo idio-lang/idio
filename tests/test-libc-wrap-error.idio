@@ -361,6 +361,11 @@ libc-wrap-error-load "libc-wrap-errors/nanosleep-req-nsec-float.idio" "nanosleep
 libc-wrap-error-load "libc-wrap-errors/nanosleep-req-nsec-range.idio" "Invalid argument" EINVAL "nanosleep"
 libc-wrap-error-load "libc-wrap-errors/nanosleep-req-invalid-pointer-type.idio" "nanosleep req='#<C/*>' a C/pointer is not a C struct timespec"
 
+libc-wrap-error-load "libc-wrap-errors/open-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/open-bad-pathname-format.idio" "open: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/open-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/open-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
+
 libc-wrap-error-load "libc-wrap-errors/pipe-reader-bad-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/pipe-writer-bad-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
 
@@ -386,7 +391,15 @@ libc-wrap-error-load "libc-wrap-errors/signal-bad-signal.idio" "Invalid argument
 libc-wrap-error-load "libc-wrap-errors/signal-handler-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/signal-handler-bad-signal.idio" "Invalid argument" EINVAL "sigaction"
 
-libc-wrap-error-load "libc-wrap-errors/sleep-bad-type.idio" "bad parameter type: '#t' a constant is not a unsigned fixnum|C_uint"
+libc-wrap-error-load "libc-wrap-errors/sleep-bad-type.idio" "bad parameter type: '#t' a constant is not a unsigned fixnum|C/uint"
+
+libc-wrap-error-load "libc-wrap-errors/posix_openpt-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+
+libc-wrap-error-load "libc-wrap-errors/grantpt-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+
+libc-wrap-error-load "libc-wrap-errors/unlockpt-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+
+libc-wrap-error-load "libc-wrap-errors/ptsname-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 
 libc-wrap-error-load "libc-wrap-errors/stat-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/stat-bad-format.idio" "stat: contains an ASCII NUL"
@@ -590,4 +603,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-type.idio" "bad parameter type: '#t
 libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII NUL"
 
 ;; all done?
-Tests? (libc-wrap-error0 + 331)
+Tests? (libc-wrap-error0 + 339)

@@ -1,0 +1,2 @@
+
+open "hello\x0world" #t

@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <poll.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stddef.h>
@@ -3045,12 +3046,170 @@ a wrapper to libc :manpage:`sleep(3)`				\n\
 	 *
 	 * sleep #t
 	 */
-	idio_error_param_type ("unsigned fixnum|C_uint", seconds, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("unsigned fixnum|C/uint", seconds, IDIO_C_FUNC_LOCATION ());
     }
 
     unsigned int sleep_r = sleep (C_seconds);
 
     return idio_C_uint (sleep_r);
+}
+
+IDIO_DEFINE_PRIMITIVE0V_DS ("posix_openpt", libc_posix_openpt, (IDIO args), "[flags]", "\
+in C, :samp:`posix_openpt ({flags})`			\n\
+a wrapper to libc :manpage:`posix_openpt(3)`		\n\
+							\n\
+:param flags: flags to posix_openpt, defaults to ``O_RDWR [| O_NOCTTY]``	\n\
+:type flags: C/int, optional				\n\
+:return: file descriptor for master			\n\
+:rtype: C/int						\n\
+:raises ^system-error:					\n\
+							\n\
+``O_NOCTTY`` is not available on some systems.		\n\
+")
+{
+    IDIO_ASSERT (args);
+
+#if defined (__APPLE__) && defined (__MACH__)
+    int C_flags = O_RDWR;
+#else
+    int C_flags = O_RDWR | O_NOCTTY;
+#endif
+    IDIO flags = args;
+    if (idio_S_nil != args) {
+	flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-wrap-errors/posix_openpt-bad-type.idio
+	 *
+	 * posix_openpt #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags = IDIO_C_TYPE_int (flags);
+    }
+
+    int posix_openpt_r = posix_openpt (C_flags);
+
+    if (-1 == posix_openpt_r) {
+	/*
+	 * Test Case: ??
+	 */
+        idio_error_system_errno ("posix_openpt", flags, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (posix_openpt_r);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("grantpt", libc_grantpt, (IDIO fd), "fd", "\
+in C, :samp:`grantpt ({fd})`			\n\
+a wrapper to libc :manpage:`grantpt(3)`		\n\
+						\n\
+:param fd: fd to grantpt			\n\
+:type fd: C/int					\n\
+:return: 0					\n\
+:rtype: C/int					\n\
+:raises ^system-error:				\n\
+")
+{
+    IDIO_ASSERT (fd);
+
+    /*
+     * Test Case: libc-wrap-errors/grantpt-bad-type.idio
+     *
+     * grantpt #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+    int grantpt_r = grantpt (C_fd);
+
+    if (-1 == grantpt_r) {
+	/*
+	 * Test Case: ??
+	 */
+        idio_error_system_errno ("grantpt", fd, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (grantpt_r);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("unlockpt", libc_unlockpt, (IDIO fd), "fd", "\
+in C, :samp:`unlockpt ({fd})`			\n\
+a wrapper to libc :manpage:`unlockpt(3)`	\n\
+						\n\
+:param fd: fd to unlockpt			\n\
+:type fd: C/int					\n\
+:return: 0					\n\
+:rtype: C/int					\n\
+:raises ^system-error:				\n\
+")
+{
+    IDIO_ASSERT (fd);
+
+    /*
+     * Test Case: libc-wrap-errors/unlockpt-bad-type.idio
+     *
+     * unlockpt #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+    int unlockpt_r = unlockpt (C_fd);
+
+    if (-1 == unlockpt_r) {
+	/*
+	 * Test Case: ??
+	 */
+        idio_error_system_errno ("unlockpt", fd, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (unlockpt_r);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("ptsname", libc_ptsname, (IDIO fd), "fd", "\
+in C, :samp:`ptsname ({fd})`			\n\
+a wrapper to libc :manpage:`ptsname(3)`		\n\
+						\n\
+:param fd: fd to ptsname			\n\
+:type fd: C/int					\n\
+:return: ptsname				\n\
+:rtype: C/int					\n\
+:raises ^system-error:				\n\
+")
+{
+    IDIO_ASSERT (fd);
+
+    /*
+     * Test Case: libc-wrap-errors/ptsname-bad-type.idio
+     *
+     * ptsname #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+    char buf[PATH_MAX];
+    buf[0] = '\0';
+    int ptsname_r_r = ptsname_r (C_fd, buf, PATH_MAX);
+
+    if (-1 == ptsname_r_r) {
+	/*
+	 * Test Case: ??
+	 */
+        idio_error_system_errno ("ptsname", fd, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_pathname_C (buf);
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("signal", libc_signal, (IDIO sig, IDIO handler), "sig handler", "\
@@ -3445,6 +3604,85 @@ a wrapper to libc :manpage:`pipe(2)`			       \n\
     return idio_C_pointer_free_me (pipefd);
 }
 
+IDIO_DEFINE_PRIMITIVE2V_DS ("open", libc_open, (IDIO pathname, IDIO flags, IDIO args), "pathname flags [mode]", "\
+in C, :samp:`open ({pathname}, {mode})`	\n\
+a wrapper to libc open()		\n\
+					\n\
+:param pathname: filename		\n\
+:type pathname: string			\n\
+:param flags: access/creation flags	\n\
+:type flags: C/int			\n\
+:param mode: mode flags			\n\
+:type mode: libc/mode_t			\n\
+:return: file descriptor		\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (flags);
+    IDIO_ASSERT (args);
+
+    /*
+     * Test Case: libc-errors/open-bad-pathname-type.idio
+     *
+     * open #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    int free_pathname_C = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/open-bad-pathname-format.idio
+     *
+     * open (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     */
+    char *pathname_C = idio_libc_string_C (pathname, "open", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+
+    /*
+     * Test Case: libc-errors/open-bad-flags-type.idio
+     *
+     * open "." #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, flags);
+    int C_flags = IDIO_C_TYPE_int (flags);
+
+    IDIO mode = idio_S_nil;
+    mode_t C_mode = 0;
+    if (idio_S_nil != args) {
+	mode = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/open-bad-mode-type.idio
+	 *
+	 * open "." C/0i #t
+	 */
+	IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+
+	C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+    }
+
+    int open_r = open (pathname_C, C_flags, C_mode);
+
+    if (free_pathname_C) {
+	IDIO_GC_FREE (pathname_C);
+    }
+
+    if (-1 == open_r) {
+	IDIO a = IDIO_LIST2 (pathname, flags);
+	if (idio_S_nil != mode) {
+	    a = IDIO_LIST3 (pathname, flags, mode);
+	}
+        idio_error_system_errno ("open", a, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (open_r);
+
+}
+
 /*
  * XXX nanosleep requires bignums because 32-bit fixnums only get
  * halfway...
@@ -3739,11 +3977,11 @@ a wrapper to libc mkfifo()		\n\
     IDIO_ASSERT (path);
     IDIO_ASSERT (mode);
 
-   /*
-    * Test Case: libc-errors/mkfifo-bad-path-type.idio
-    *
-    * mkfifo #t #t
-    */
+    /*
+     * Test Case: libc-errors/mkfifo-bad-path-type.idio
+     *
+     * mkfifo #t #t
+     */
     IDIO_USER_TYPE_ASSERT (string, path);
 
     int free_path_C = 0;
@@ -3755,11 +3993,11 @@ a wrapper to libc mkfifo()		\n\
      */
     char *path_C = idio_libc_string_C (path, "mkfifo", &free_path_C, IDIO_C_FUNC_LOCATION ());
 
-   /*
-    * Test Case: libc-errors/mkfifo-bad-mode-type.idio
-    *
-    * mkfifo "." #t
-    */
+    /*
+     * Test Case: libc-errors/mkfifo-bad-mode-type.idio
+     *
+     * mkfifo "." #t
+     */
     IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
     mode_t C_mode = IDIO_C_TYPE_libc_mode_t (mode);
 
@@ -5170,12 +5408,17 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strerror);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_stat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_sleep);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_posix_openpt);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_grantpt);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlockpt);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ptsname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_signal);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_read);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_open);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_nanosleep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mktime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkstemp);
