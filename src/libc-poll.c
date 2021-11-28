@@ -430,7 +430,12 @@ IDIO idio_libc_poll_poll (idio_libc_poller_t *poller, int timeout)
 	    IDIO k = idio_C_int (pfd->fd);
 	    IDIO v = idio_hash_ref (poller->fd_map, k);
 	    if (idio_S_unspec == v) {
-		fprintf (stderr, "%ld: fd=%d %d\n", i, pfd->fd, poller->fds[i].fd);
+		/*
+		 * XXX the nfds_t varies between a ulong and a uint so
+		 * the printf format specifier is wrong (some of the
+		 * time).
+		 */
+		fprintf (stderr, "%lu: fd=%d %d\n", (unsigned long) i, pfd->fd, poller->fds[i].fd);
 		idio_debug ("ERROR: poller-poll v=#unspec for k=%s\n", k);
 		idio_debug ("fd_map=%s\n", poller->fd_map);
 		IDIO_C_ASSERT (0);

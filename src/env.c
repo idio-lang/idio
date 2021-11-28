@@ -40,6 +40,8 @@
 #include <strings.h>
 #include <unistd.h>
 
+#include "idio-system.h"
+
 #include "gc.h"
 #include "idio.h"
 
@@ -49,7 +51,6 @@
 #include "evaluate.h"
 #include "handle.h"
 #include "idio-string.h"
-#include "idio-system.h"
 #include "libc-wrap.h"
 #include "module.h"
 #include "pair.h"

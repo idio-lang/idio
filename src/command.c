@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <glob.h>
 #include <limits.h>
+#include <poll.h>
 #include <setjmp.h>
 #include <stddef.h>
 #include <stdint.h>

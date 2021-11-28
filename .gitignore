@@ -24,6 +24,7 @@ src/map
 
 bin/idio
 src/idio-system.h
+src/idio-config.h
 src/libc-api.h
 lib/libc-api.idio
 lib/system.idio

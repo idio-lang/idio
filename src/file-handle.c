@@ -39,6 +39,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "idio-system.h"
+
 #include "gc.h"
 #include "idio.h"
 
@@ -53,7 +55,6 @@
 #include "handle.h"
 #include "hash.h"
 #include "idio-string.h"
-#include "idio-system.h"
 #include "job-control.h"
 #include "libc-wrap.h"
 #include "module.h"

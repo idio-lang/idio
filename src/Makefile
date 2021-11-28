@@ -81,7 +81,7 @@ local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)
 $(LI_BINDIR)/idio : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
 	ln -sf idio.${IDIO_SYSTEM_VERSION_MM} $@
 
-$(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(objects) | Makefile.system $(LI_BINDIR) libc-api.h idio-system.h
+$(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(objects) | Makefile.system $(LI_BINDIR) libc-api.h idio-system.h idio-config.h
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 $(LI_BINDIR) $(LI_LIBVERDIR) :
@@ -115,6 +115,7 @@ edit-clean :
 
 dist-clean : clean clean-local-install
 	rm -f $(SRCDIR)/libc-api.h
+	rm -f $(SRCDIR)/idio-config.h
 	rm -f $(LIBDIR)/libc-api.idio
 	rm -rf $(LI_TOPDIR)
 
@@ -136,9 +137,13 @@ cppcheck:
 # the include $(deps) means that, in effect, *.d are the first things
 # built and some of them require idio-system.h -- and %.d doesn't work
 env.d file-handle.d idio.d vars.d : idio-system.h
+libc-api.d : idio-config.h
 
 idio-system.h Makefile.system $(LIBDIR)/system.idio : $(UTILSDIR)/bin/gen-idio-system $(sources) $(filter-out $(LIBDIR)/system.idio,$(isources))
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(LIBDIR)/system.idio
+
+idio-config.h : $(UTILSDIR)/bin/gen-idio-config
+	CC=${CC} $(UTILSDIR)/bin/gen-idio-config
 
 # Bootstrap
 #

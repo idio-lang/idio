@@ -33,6 +33,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "idio-system.h"
+
 #include "gc.h"
 #include "idio.h"
 
@@ -41,7 +43,6 @@
 #include "evaluate.h"
 #include "fixnum.h"
 #include "idio-string.h"
-#include "idio-system.h"
 #include "module.h"
 #include "pair.h"
 #include "symbol.h"

@@ -264,7 +264,6 @@ cat <<EOF > ${var_header}
 #define ${var_MODULE}_BUILD_DESCRIBE		"${git_describe}"
 
 #endif
-
 EOF
 
 cat <<EOF > Makefile.system

@@ -35,6 +35,9 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "idio-system.h"
+#include "idio-config.h"
+
 #include "gc.h"
 #include "idio.h"
 
@@ -3196,6 +3199,7 @@ a wrapper to libc :manpage:`ptsname(3)`		\n\
 
     int C_fd = IDIO_C_TYPE_int (fd);
 
+#if defined (HAVE_PTSNAME_R)
     char buf[PATH_MAX];
     buf[0] = '\0';
     int ptsname_r_r = ptsname_r (C_fd, buf, PATH_MAX);
@@ -3210,6 +3214,20 @@ a wrapper to libc :manpage:`ptsname(3)`		\n\
     }
 
     return idio_pathname_C (buf);
+#else
+    char *ptsname_r = ptsname (C_fd);
+
+    if (NULL == ptsname_r) {
+	/*
+	 * Test Case: ??
+	 */
+        idio_error_system_errno ("ptsname", fd, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_pathname_C (ptsname_r);
+#endif
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("signal", libc_signal, (IDIO sig, IDIO handler), "sig handler", "\
