@@ -11,6 +11,7 @@
 (tree unicode)
 (tree C)
 (tree libc)
+(tree pty)
 (tree json5)
 (tree SRFI-14)
 (tree SRFI-115)

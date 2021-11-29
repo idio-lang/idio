@@ -3,6 +3,9 @@
 (document job-control jobs)
 (document job-control wait)
 
+(nodocument job-control add-known-pid)
+(nodocument job-control pipeline)
+
 ; meta-commands
 (rst "job-meta-commands" 0)
 (nodocument job-control collect-output)

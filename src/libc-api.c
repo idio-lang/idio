@@ -2395,10 +2395,18 @@ Options will be IORed together			     \n\
 		 * Either way it feels like we're in the wrong, not
 		 * erroring.
 		 */
+		IDIO known_pids = idio_module_symbol_value (idio_job_control_known_pids_sym, idio_job_control_module, idio_S_nil);
+
 		IDIO stray_pids = idio_module_symbol_value (idio_job_control_stray_pids_sym, idio_job_control_module, idio_S_nil);
 
 		if (C_pid > 0) {
-		    IDIO spid = idio_hash_ref (stray_pids, pid);
+		    IDIO spid = idio_hash_ref (known_pids, pid);
+		    if (idio_S_unspec != spid) {
+			idio_hash_delete (known_pids, pid);
+			return IDIO_LIST2 (pid, spid);
+		    }
+
+		    spid = idio_hash_ref (stray_pids, pid);
 		    if (idio_S_unspec != spid) {
 			fprintf (stderr, "%6d: waitpid: recovered stray pid %d\n", getpid (), C_pid);
 			idio_hash_delete (stray_pids, pid);
@@ -3346,6 +3354,31 @@ and ``RLIMIT_NOFILE``.						\n\
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_PRIMITIVE0_DS ("setsid", libc_setsid, (void), "", "\
+in C, :samp:`setsid ()`						\n\
+a wrapper to libc :manpage:`setsid(2)`				\n\
+								\n\
+:return: Process Group ID of progress group			\n\
+:rtype: libc/pid_t						\n\
+:raises ^system-error:						\n\
+")
+{
+    pid_t C_pid = setsid ();
+
+    if (-1 == C_pid) {
+	/*
+	 * Test Case: ??
+	 *
+	 * How do you make setsid(2) fail?
+	 */
+	idio_error_system_errno ("setsid", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_libc_pid_t (C_pid);
+}
+
 IDIO_DEFINE_PRIMITIVE2_DS ("setpgid", libc_setpgid, (IDIO pid, IDIO pgid), "pid pgid", "\
 in C, :samp:`setpgid ({pid}, {pgid})`				\n\
 a wrapper to libc :manpage:`setpgid(2)`				\n\
@@ -3630,8 +3663,8 @@ a wrapper to libc open()		\n\
 :type pathname: string			\n\
 :param flags: access/creation flags	\n\
 :type flags: C/int			\n\
-:param mode: mode flags			\n\
-:type mode: libc/mode_t			\n\
+:param mode: mode flags, defaults to 0	\n\
+:type mode: libc/mode_t, optional	\n\
 :return: file descriptor		\n\
 :rtype: C/int				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
@@ -4922,7 +4955,7 @@ a wrapper to libc :manpage:`dup2(2)`				\n\
 :param oldfd: file descriptor					\n\
 :type oldfd: C/int						\n\
 :param newfd: file descriptor					\n\
-:type newfd: C/int						\n\
+:type newfd: fixnum or C/int					\n\
 :return: new fd							\n\
 :rtype: C/int							\n\
 :raises ^system-error:						\n\
@@ -4931,11 +4964,29 @@ a wrapper to libc :manpage:`dup2(2)`				\n\
     IDIO_ASSERT (oldfd);
     IDIO_ASSERT (newfd);
 
+    /*
+     * Test Case: libc-errors/dup2-bad-old-type.idio
+     *
+     * dup2 #t 99
+     */
     IDIO_USER_C_TYPE_ASSERT (int, oldfd);
     int C_oldfd = IDIO_C_TYPE_int (oldfd);
 
-    IDIO_USER_C_TYPE_ASSERT (int, newfd);
-    int C_newfd = IDIO_C_TYPE_int (newfd);
+    int C_newfd = -1;
+    if (idio_isa_C_int (newfd)) {
+	C_newfd = IDIO_C_TYPE_int (newfd);
+    } else if (idio_isa_fixnum (newfd)) {
+	C_newfd = IDIO_FIXNUM_VAL (newfd);
+    } else {
+	/*
+	 * Test Case: libc-errors/dup2-bad-new-type.idio
+	 *
+	 * dup2 C/0i #t
+	 */
+	idio_error_param_type ("fixnum|C/int", newfd, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
 
     int dup2_r = dup2 (C_oldfd, C_newfd);
 
@@ -5432,6 +5483,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ptsname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_signal);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setrlimit);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setsid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_read);

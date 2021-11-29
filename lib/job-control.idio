@@ -57,6 +57,7 @@ export (%idio-interactive
 	%%process-substitution-jobs
 	add-process-substitution-job
 	tidy-process-substitution-job
+	add-known-pid
 	wait-for-job
 
 	format-job-detail
@@ -260,6 +261,12 @@ entries in the file system.
       eprintf "%6d: tidy-psj: kill -TERM %d? from %s\n" PID pgid job
     }
   }
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+define (add-known-pid pid) {
+  hash-set! %idio-known-pids pid #n
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -520,10 +527,16 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
      jobs-loop :+ function (jobs) {
        (cond
 	((null? jobs) {
-	  if %idio-interactive {
-	    eprintf "no child process %d\n" pid
+	  (cond
+	   ((hash-exists? %idio-known-pids pid) #t)
+	   (%idio-interactive {
+	     eprintf "no child process %d\n" pid
+	   }))
+	  if (hash-exists? %idio-known-pids pid) {
+	    hash-set! %idio-known-pids pid status
+	    } {
+	    hash-set! %idio-stray-pids pid status
 	  }
-	  hash-set! %idio-stray-pids pid status
 	  #t
 	})
 	(else {

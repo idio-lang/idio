@@ -92,6 +92,7 @@ IDIO idio_job_control_process_type;
 IDIO idio_job_control_job_type;
 static IDIO idio_job_control_jobs_sym;
 static IDIO idio_job_control_last_job;
+IDIO idio_job_control_known_pids_sym;
 IDIO idio_job_control_stray_pids_sym;
 
 static IDIO idio_S_background_job;
@@ -2315,6 +2316,17 @@ void idio_init_job_control ()
     idio_module_set_symbol_value (idio_job_control_jobs_sym, idio_S_nil, idio_job_control_module);
     idio_job_control_last_job = IDIO_SYMBOLS_C_INTERN ("%%last-job");
     idio_module_set_symbol_value (idio_job_control_last_job, idio_S_nil, idio_job_control_module);
+
+    /*
+     * Job Control is not the only mechanism that will fork&exec child
+     * processes but Job Control (through waitpid) *is* the only
+     * handler for SIGCHLD events.
+     *
+     * So we need a mechanism to handle these other known processes.
+     */
+    idio_job_control_known_pids_sym = IDIO_SYMBOLS_C_INTERN ("%idio-known-pids");
+    idio_module_set_symbol_value (idio_job_control_known_pids_sym, IDIO_HASH_EQP (4), idio_job_control_module);
+
     idio_job_control_stray_pids_sym = IDIO_SYMBOLS_C_INTERN ("%idio-stray-pids");
     idio_module_set_symbol_value (idio_job_control_stray_pids_sym, IDIO_HASH_EQP (4), idio_job_control_module);
 

@@ -24,11 +24,17 @@ with these predicates:
 .. code-block:: idio
 
    fh := open-input-file ...
-   poller := libc/make-poller (list fh libc/POLLIN libc/POLLERR)
+   poller := libc/make-poller (list fh libc/POLLIN)
    r := libc/poller-poll poller 1000
 
    for p in r {
-     if (libc/POLLIN? (pht p)) {
-       ...
-     }
+     fdh := ph p
+     revents := pht p
+     (cond
+      ((libc/POLLERR? revents) {
+         libc/poller-deregister poller fdh
+       })
+      ((libc/POLLIN? revents) {
+         ...
+       }))
    }
