@@ -2235,7 +2235,7 @@ existing storage allocation for `s`		\n\
  *
  * The (most common) alternative is: substring str offset len
  */
-IDIO_DEFINE_PRIMITIVE3_DS ("substring", substring, (IDIO s, IDIO p0, IDIO pn), "s p0 pn", "\
+IDIO_DEFINE_PRIMITIVE2V_DS ("substring", substring, (IDIO s, IDIO p0, IDIO args), "s p0 [pn]", "\
 return a substring of `s` from position `p0`	\n\
 through to but excluding position `pn`		\n\
 						\n\
@@ -2243,15 +2243,15 @@ through to but excluding position `pn`		\n\
 :type s: string					\n\
 :param p0: position				\n\
 :type p0: integer				\n\
-:param pn: position				\n\
-:type pn: integer				\n\
+:param pn: position, defaults to string length	\n\
+:type pn: integer, optional			\n\
 :return: the substring				\n\
 :rtype: string					\n\
 ")
 {
     IDIO_ASSERT (s);
     IDIO_ASSERT (p0);
-    IDIO_ASSERT (pn);
+    IDIO_ASSERT (args);
 
     /*
      * Test Case: string-errors/substring-bad-type.idio
@@ -2260,8 +2260,10 @@ through to but excluding position `pn`		\n\
      */
     IDIO_USER_TYPE_ASSERT (string, s);
 
+    size_t l = idio_string_len (s);
+
     ptrdiff_t ip0 = -1;
-    ptrdiff_t ipn = -1;
+    ptrdiff_t ipn = l;
 
     if (idio_isa_fixnum (p0)) {
 	ip0 = IDIO_FIXNUM_VAL (p0);
@@ -2302,46 +2304,47 @@ through to but excluding position `pn`		\n\
 	return idio_S_notreached;
     }
 
-    if (idio_isa_fixnum (pn)) {
-	ipn = IDIO_FIXNUM_VAL (pn);
-    } else if (idio_isa_bignum (pn)) {
-	if (IDIO_BIGNUM_INTEGER_P (pn)) {
-	    /*
-	     * Test Case: string-errors/substring-length-bignum.idio
-	     *
-	     * substring "hello" 0 #x2000000000000000
-	     *
-	     * This is a code coverage case which will (probably)
-	     * provoke the out of bounds error below.
-	     */
-	    ipn = idio_bignum_ptrdiff_t_value (pn);
-	} else {
-	    IDIO pn_i = idio_bignum_real_to_integer (pn);
-	    if (idio_S_nil == pn_i) {
+    if (idio_S_nil != args) {
+	IDIO pn = IDIO_PAIR_H (args);
+	if (idio_isa_fixnum (pn)) {
+	    ipn = IDIO_FIXNUM_VAL (pn);
+	} else if (idio_isa_bignum (pn)) {
+	    if (IDIO_BIGNUM_INTEGER_P (pn)) {
 		/*
-		 * Test Case: string-errors/substring-length-float.idio
+		 * Test Case: string-errors/substring-length-bignum.idio
 		 *
-		 * substring "hello world" 2 1.5
+		 * substring "hello" 0 #x2000000000000000
+		 *
+		 * This is a code coverage case which will (probably)
+		 * provoke the out of bounds error below.
 		 */
-		idio_error_param_type ("integer", pn, IDIO_C_FUNC_LOCATION ());
-
-		return idio_S_notreached;
+		ipn = idio_bignum_ptrdiff_t_value (pn);
 	    } else {
-		ipn = idio_bignum_ptrdiff_t_value (pn_i);
+		IDIO pn_i = idio_bignum_real_to_integer (pn);
+		if (idio_S_nil == pn_i) {
+		    /*
+		     * Test Case: string-errors/substring-length-float.idio
+		     *
+		     * substring "hello world" 2 1.5
+		     */
+		    idio_error_param_type ("integer", pn, IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		} else {
+		    ipn = idio_bignum_ptrdiff_t_value (pn_i);
+		}
 	    }
+	} else {
+	    /*
+	     * Test Case: string-errors/substring-length-unicode.idio
+	     *
+	     * substring "hello world" 0 #\a
+	     */
+	    idio_error_param_type ("integer", pn, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
-    } else {
-	/*
-	 * Test Case: string-errors/substring-length-unicode.idio
-	 *
-	 * substring "hello world" 0 #\a
-	 */
-	idio_error_param_type ("integer", pn, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
     }
-
-    size_t l = idio_string_len (s);
 
     if (ip0 < 0 ||
 	ip0 > l ||

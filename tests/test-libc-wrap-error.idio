@@ -213,7 +213,7 @@ libc-wrap-error-load "libc-wrap-errors/dup-bad-type.idio" "bad parameter type: '
 libc-wrap-error-load "libc-wrap-errors/dup-bad-fd.idio" strerror-EBADF EBADF "dup"
 
 libc-wrap-error-load "libc-wrap-errors/dup2-bad-old-type.idio" "bad parameter type: '#t' a constant is not a C/int"
-libc-wrap-error-load "libc-wrap-errors/dup2-bad-new-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/dup2-bad-new-type.idio" "bad parameter type: '#t' a constant is not a fixnum|C/int"
 libc-wrap-error-load "libc-wrap-errors/dup2-bad-fd.idio" strerror-EBADF EBADF "dup2"
 
 libc-wrap-error-load "libc-wrap-errors/exit-bad-type.idio" "bad parameter type: '#t' a constant is not a fixnum|C/int"
