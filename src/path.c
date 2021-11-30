@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <glob.h>
 #include <setjmp.h>
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
