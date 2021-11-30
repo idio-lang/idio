@@ -301,28 +301,28 @@ IDIO idio_libc_struct_tms_as_string (struct tms *tmsp)
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_clock_t);
     idio_snprintf (buf, BUFSIZ, fmt, tmsp->tms_utime);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" tms_stime:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_clock_t);
     idio_snprintf (buf, BUFSIZ, fmt, tmsp->tms_stime);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" tms_cutime:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_clock_t);
     idio_snprintf (buf, BUFSIZ, fmt, tmsp->tms_cutime);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" tms_cstime:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_clock_t);
     idio_snprintf (buf, BUFSIZ, fmt, tmsp->tms_cstime);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (">", CSI_sh);
 
@@ -622,28 +622,28 @@ IDIO idio_libc_struct_termios_as_string (struct termios *termiosp)
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_tcflag_t);
     idio_snprintf (buf, BUFSIZ, fmt, termiosp->c_iflag);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" c_oflag:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_tcflag_t);
     idio_snprintf (buf, BUFSIZ, fmt, termiosp->c_oflag);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" c_cflag:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_tcflag_t);
     idio_snprintf (buf, BUFSIZ, fmt, termiosp->c_cflag);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" c_lflag:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_tcflag_t);
     idio_snprintf (buf, BUFSIZ, fmt, termiosp->c_lflag);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" c_cc:", CSI_sh);
 
@@ -656,14 +656,14 @@ IDIO idio_libc_struct_termios_as_string (struct termios *termiosp)
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_speed_t);
     idio_snprintf (buf, BUFSIZ, fmt, termiosp->c_ispeed);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" c_ospeed:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_speed_t);
     idio_snprintf (buf, BUFSIZ, fmt, termiosp->c_ospeed);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 #endif
 
     idio_display_C (">", CSI_sh);
@@ -1022,63 +1022,63 @@ IDIO idio_libc_struct_tm_as_string (struct tm *tmp)
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
     idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_sec);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" tm_min:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
     idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_min);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" tm_hour:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
     idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_hour);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" tm_mday:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
     idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_mday);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" tm_mon:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
     idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_mon);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" tm_year:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
     idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_year);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" tm_wday:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
     idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_wday);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" tm_yday:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
     idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_yday);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" tm_isdst:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
     idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_isdst);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
 #if defined (__sun) && defined (__SVR4)
 #else
@@ -1087,7 +1087,7 @@ IDIO idio_libc_struct_tm_as_string (struct tm *tmp)
     fmt = idio_C_type_format_string (IDIO_TYPE_C_LONG);
     idio_snprintf (buf, BUFSIZ, fmt, tmp->tm_gmtoff);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" tm_zone:", CSI_sh);
 
@@ -1305,70 +1305,70 @@ IDIO idio_libc_struct_stat_as_string (struct stat *statp)
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_dev_t);
     idio_snprintf (buf, BUFSIZ, fmt, statp->st_dev);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" st_ino:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_ino_t);
     idio_snprintf (buf, BUFSIZ, fmt, statp->st_ino);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" st_nlink:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_nlink_t);
     idio_snprintf (buf, BUFSIZ, fmt, statp->st_nlink);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" st_mode:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_mode_t);
     idio_snprintf (buf, BUFSIZ, fmt, statp->st_mode);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" st_uid:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_uid_t);
     idio_snprintf (buf, BUFSIZ, fmt, statp->st_uid);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" st_gid:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_gid_t);
     idio_snprintf (buf, BUFSIZ, fmt, statp->st_gid);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" st_rdev:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_dev_t);
     idio_snprintf (buf, BUFSIZ, fmt, statp->st_rdev);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" st_size:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_off_t);
     idio_snprintf (buf, BUFSIZ, fmt, statp->st_size);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" st_blksize:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_blksize_t);
     idio_snprintf (buf, BUFSIZ, fmt, statp->st_blksize);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" st_blocks:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_blkcnt_t);
     idio_snprintf (buf, BUFSIZ, fmt, statp->st_blocks);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" st_atim:", CSI_sh);
 
@@ -1622,7 +1622,7 @@ IDIO idio_libc_struct_timespec_as_string (struct timespec *timespecp)
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_time_t);
     idio_snprintf (buf, BUFSIZ, fmt, timespecp->tv_sec);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (".", CSI_sh);
 
@@ -1839,14 +1839,14 @@ IDIO idio_libc_struct_rlimit_as_string (struct rlimit *rlimitp)
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_rlim_t);
     idio_snprintf (buf, BUFSIZ, fmt, rlimitp->rlim_cur);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (" rlim_max:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_rlim_t);
     idio_snprintf (buf, BUFSIZ, fmt, rlimitp->rlim_max);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (">", CSI_sh);
 
@@ -2070,7 +2070,7 @@ IDIO idio_libc_struct_timeval_as_string (struct timeval *timevalp)
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_time_t);
     idio_snprintf (buf, BUFSIZ, fmt, timevalp->tv_sec);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 
     idio_display_C (".", CSI_sh);
 
@@ -2320,7 +2320,7 @@ a wrapper to libc :manpage:`write(2)` \n\
 	return idio_S_notreached;
     }
 
-    IDIO_GC_FREE (C_str);
+    IDIO_GC_FREE (C_str, blen);
 
     return idio_libc_ssize_t (write_r);
 }
@@ -2461,7 +2461,7 @@ a wrapper to libc :manpage:`unlink(2)`		\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    int free_pathname_C = 0;
+    size_t free_pathname_C = 0;
     /*
      * Test Case: libc-wrap-errors/unlink-bad-format.idio
      *
@@ -2472,7 +2472,7 @@ a wrapper to libc :manpage:`unlink(2)`		\n\
     int unlink_r = unlink (pathname_C);
 
     if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C);
+	IDIO_GC_FREE (pathname_C, free_pathname_C);
     }
 
     if (-1 == unlink_r) {
@@ -2804,7 +2804,7 @@ a wrapper to libc :manpage:`strptime(3)`\n\
      */
     IDIO_USER_TYPE_ASSERT (string, s);
     
-    int free_C_s = 0;
+    size_t free_C_s = 0;
     /*
      * Test Case: libc-wrap-errors/strptime-bad-s-format.idio
      *
@@ -2819,7 +2819,7 @@ a wrapper to libc :manpage:`strptime(3)`\n\
      */
     IDIO_USER_TYPE_ASSERT (string, format);
 
-    int free_C_format = 0;
+    size_t free_C_format = 0;
     /*
      * Test Case: libc-wrap-errors/strptime-bad-s-format.idio
      *
@@ -2836,15 +2836,15 @@ a wrapper to libc :manpage:`strptime(3)`\n\
     char* strptime_r = strptime (C_s, C_format, tmp);
 
     if (free_C_s) {
-	IDIO_GC_FREE (C_s);
+	IDIO_GC_FREE (C_s, free_C_s);
     }
 
     if (free_C_format) {
-	IDIO_GC_FREE (C_format);
+	IDIO_GC_FREE (C_format, free_C_format);
     }
 
     if (NULL == strptime_r) {
-	IDIO_GC_FREE (tmp);
+	idio_free (tmp);
 
         idio_error_param_value_exp ("strptime", "format", IDIO_LIST2 (s, format), "", IDIO_C_FUNC_LOCATION ());
 
@@ -2892,7 +2892,7 @@ a wrapper to libc :manpage:`strftime(3)`\n\
      */
     IDIO_USER_TYPE_ASSERT (string, format);
 
-    int free_C_format = 0;
+    size_t free_C_format = 0;
     /*
      * Test Case: libc-wrap-errors/strftime-bad-s-format.idio
      *
@@ -2923,7 +2923,7 @@ a wrapper to libc :manpage:`strftime(3)`\n\
     size_t strftime_r = strftime (s, BUFSIZ, C_format, C_tm);
 
     if (0 == strftime_r) {
-	IDIO_GC_FREE (s);
+	idio_free (s);
 
         idio_error_system_errno ("strftime", IDIO_LIST2 (format, tm), IDIO_C_FUNC_LOCATION ());
 
@@ -2932,7 +2932,7 @@ a wrapper to libc :manpage:`strftime(3)`\n\
 
     IDIO r = idio_string_C_len (s, strftime_r);
 
-    IDIO_GC_FREE (s);
+    idio_free (s);
 
     return r;
 }
@@ -3003,7 +3003,7 @@ a wrapper to libc :manpage:`stat(2)`		\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    int free_pathname_C = 0;
+    size_t free_pathname_C = 0;
     /*
      * Test Case: libc-wrap-errors/stat-bad-format.idio
      *
@@ -3016,7 +3016,7 @@ a wrapper to libc :manpage:`stat(2)`		\n\
     int stat_r = stat (pathname_C, statp);
 
     if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C);
+	IDIO_GC_FREE (pathname_C, free_pathname_C);
     }
 
     if (-1 == stat_r) {
@@ -3494,7 +3494,7 @@ a wrapper to libc :manpage:`rmdir(2)`				\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    int free_pathname_C = 0;
+    size_t free_pathname_C = 0;
     /*
      * Test Case: libc-wrap-errors/rmdir-bad-format.idio
      *
@@ -3505,7 +3505,7 @@ a wrapper to libc :manpage:`rmdir(2)`				\n\
     int rmdir_r = rmdir (pathname_C);
 
     if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C);
+	IDIO_GC_FREE (pathname_C, free_pathname_C);
     }
 
     if (-1 == rmdir_r) {
@@ -3617,7 +3617,7 @@ If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
 	r = idio_S_eof;
     }
 
-    IDIO_GC_FREE (buf);
+    idio_free (buf);
 
     return r;
 }
@@ -3682,7 +3682,7 @@ a wrapper to libc open()		\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    int free_pathname_C = 0;
+    size_t free_pathname_C = 0;
 
     /*
      * Test Case: libc-wrap-errors/open-bad-pathname-format.idio
@@ -3717,7 +3717,7 @@ a wrapper to libc open()		\n\
     int open_r = open (pathname_C, C_flags, C_mode);
 
     if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C);
+	IDIO_GC_FREE (pathname_C, free_pathname_C);
     }
 
     if (-1 == open_r) {
@@ -3965,7 +3965,7 @@ a wrapper to libc :manpage:`mkstemp(3)`				\n\
      * modify the template part.
      */
 
-    int free_template_C = 0;
+    size_t free_template_C = 0;
     /*
      * Test Case: libc-wrap-errors/mkstemp-bad-format.idio
      *
@@ -3982,7 +3982,7 @@ a wrapper to libc :manpage:`mkstemp(3)`				\n\
 	 * mkstemp "XXX"
 	 */
 	if (free_template_C) {
-	    IDIO_GC_FREE (template_C);
+	    IDIO_GC_FREE (template_C, free_template_C);
 	}
 
 	idio_error_system_errno ("mkstemp", template, IDIO_C_FUNC_LOCATION ());
@@ -4005,7 +4005,7 @@ a wrapper to libc :manpage:`mkstemp(3)`				\n\
     IDIO filename = idio_pathname_C (template_C);
 
     if (free_template_C) {
-	IDIO_GC_FREE (template_C);
+	IDIO_GC_FREE (template_C, free_template_C);
     }
 
     return IDIO_LIST2 (idio_C_int (mkstemp_r), filename);
@@ -4035,7 +4035,7 @@ a wrapper to libc mkfifo()		\n\
      */
     IDIO_USER_TYPE_ASSERT (string, path);
 
-    int free_path_C = 0;
+    size_t free_path_C = 0;
 
     /*
      * Test Case: libc-wrap-errors/mkfifo-bad-path-format.idio
@@ -4055,7 +4055,7 @@ a wrapper to libc mkfifo()		\n\
     int mkfifo_r = mkfifo (path_C, C_mode);
 
     if (free_path_C) {
-	IDIO_GC_FREE (path_C);
+	IDIO_GC_FREE (path_C, free_path_C);
     }
 
     if (-1 == mkfifo_r) {
@@ -4094,7 +4094,7 @@ a wrapper to libc :manpage:`mkdtemp(3)`				\n\
      * modify the template part.
      */
 
-    int free_template_C = 0;
+    size_t free_template_C = 0;
 
     /*
      * Test Case: libc-wrap-errors/mkdtemp-bad-format.idio
@@ -4112,7 +4112,7 @@ a wrapper to libc :manpage:`mkdtemp(3)`				\n\
 	 * mkdtemp "XXX"
 	 */
 	if (free_template_C) {
-	    IDIO_GC_FREE (template_C);
+	    IDIO_GC_FREE (template_C, free_template_C);
 	}
 
 	idio_error_system_errno ("mkdtemp", template, IDIO_C_FUNC_LOCATION ());
@@ -4126,7 +4126,7 @@ a wrapper to libc :manpage:`mkdtemp(3)`				\n\
      * XXX free this after using mkdtemp_r
      */
     if (free_template_C) {
-	IDIO_GC_FREE (template_C);
+	IDIO_GC_FREE (template_C, free_template_C);
     }
 
     return r;
@@ -4156,7 +4156,7 @@ a wrapper to libc :manpage:`mkdir(2)`				\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    int free_pathname_C = 0;
+    size_t free_pathname_C = 0;
     /*
      * Test Case: libc-wrap-errors/mkdir-bad-format.idio
      *
@@ -4175,7 +4175,7 @@ a wrapper to libc :manpage:`mkdir(2)`				\n\
     int mkdir_r = mkdir (pathname_C, C_mode);
 
     if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C);
+	IDIO_GC_FREE (pathname_C, free_pathname_C);
     }
 
     if (-1 == mkdir_r) {
@@ -4218,7 +4218,7 @@ a wrapper to libc :manpage:`lstat(2)`		\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    int free_pathname_C = 0;
+    size_t free_pathname_C = 0;
 
     /*
      * Test Case: libc-wrap-errors/lstat-bad-format.idio
@@ -4232,7 +4232,7 @@ a wrapper to libc :manpage:`lstat(2)`		\n\
     int lstat_r = lstat (pathname_C, statp);
 
     if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C);
+	IDIO_GC_FREE (pathname_C, free_pathname_C);
     }
 
     if (-1 == lstat_r) {
@@ -4424,7 +4424,7 @@ a wrapper to libc :manpage:`gmtime(3)`	\n\
     struct tm* gmtime_r_r = gmtime_r (&C_t, result);
 
     if (NULL == gmtime_r_r) {
-	IDIO_GC_FREE (result);
+	idio_free (result);
 
         idio_error_system_errno ("gmtime_r", idio_libc_time_t (C_t), IDIO_C_FUNC_LOCATION ());
 
@@ -4555,7 +4555,7 @@ The parameter `who` refers to ``libc/RUSAGE_SELF`` or		\n\
 	 * getrusage (C/integer-> 15)
 	 */
 
-	IDIO_GC_FREE (rusagep);
+	idio_free (rusagep);
 
 	idio_error_system_errno ("getrusage", who, IDIO_C_FUNC_LOCATION ());
 
@@ -5162,7 +5162,7 @@ a wrapper to libc :manpage:`chdir(2)`				\n\
      */
     IDIO_USER_TYPE_ASSERT (string, path);
 
-    int free_path_C = 0;
+    size_t free_path_C = 0;
 
     /*
      * Test Case: libc-wrap-errors/chdir-bad-format.idio
@@ -5174,7 +5174,7 @@ a wrapper to libc :manpage:`chdir(2)`				\n\
     int chdir_r = chdir (path_C);
 
     if (free_path_C) {
-	IDIO_GC_FREE (path_C);
+	IDIO_GC_FREE (path_C, free_path_C);
     }
 
     if (-1 == chdir_r) {
@@ -5297,7 +5297,7 @@ a wrapper to libc :manpage:`localtime(3)`	\n\
     struct tm* localtime_r_r = localtime_r (&C_t, result);
 
     if (NULL == localtime_r_r) {
-	IDIO_GC_FREE (result);
+	idio_free (result);
 
         idio_error_system_errno ("localtime_r", idio_libc_time_t (C_t), IDIO_C_FUNC_LOCATION ());
 
@@ -5353,7 +5353,7 @@ no ^system-error is raised.					\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    int free_pathname_C = 0;
+    size_t free_pathname_C = 0;
 
     /*
      * Test Case: libc-wrap-errors/access-bad-format.idio
@@ -5388,7 +5388,7 @@ no ^system-error is raised.					\n\
     }
 
     if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C);
+	IDIO_GC_FREE (pathname_C, free_pathname_C);
     }
 
     return access_r;

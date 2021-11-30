@@ -97,10 +97,11 @@ IDIO idio_json5_string_value_to_idio (json5_unicode_string_t *js)
 	return idio_S_notreached;
     }
 
-    IDIO_GC_ALLOC (IDIO_STRING_S (so), reqd_bytes);
+    IDIO_GC_ALLOC (IDIO_STRING_S (so), reqd_bytes + 1);
     IDIO_STRING_BLEN (so) = reqd_bytes;
 
     memcpy (IDIO_STRING_S (so), js->s, reqd_bytes);
+    IDIO_STRING_S (so)[reqd_bytes] = '\0';
 
     return so;
 }
@@ -187,8 +188,7 @@ void idio_print_bignum_as_json (IDIO v, IDIO oh, int json5, int depth)
 	idio_display_C (bs, oh);
     }
 
-    IDIO_GC_FREE (bs);
-    idio_gc_stats_free (size);
+    IDIO_GC_FREE (bs, size);
 }
 
 void idio_print_array_as_json (IDIO a, IDIO oh, int json5, int depth)

@@ -75,8 +75,7 @@ Say hello to ``name``		\n\
 
     IDIO r = idio_string_C_array_lens (3, ss, lens);
 
-    IDIO_GC_FREE (name_C);
-    idio_gc_stats_free (size);
+    IDIO_GC_FREE (name_C, size);
 
     return r;
 }

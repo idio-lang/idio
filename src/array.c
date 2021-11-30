@@ -227,10 +227,8 @@ void idio_free_array (IDIO a)
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
 
-    idio_gc_stats_free (sizeof (idio_array_t) + IDIO_ARRAY_ASIZE (a) * sizeof (IDIO));
-
-    IDIO_GC_FREE (a->u.array->ae);
-    IDIO_GC_FREE (a->u.array);
+    IDIO_GC_FREE (a->u.array->ae, IDIO_ARRAY_ASIZE (a) * sizeof (IDIO));
+    IDIO_GC_FREE (a->u.array, sizeof (idio_array_t));
 }
 
 void idio_resize_array (IDIO a)
@@ -260,10 +258,8 @@ void idio_resize_array (IDIO a)
     /* all the inserts above will have mucked usize up */
     IDIO_ARRAY_USIZE (a) = ousize;
 
-    idio_gc_stats_free (sizeof (idio_array_t) + oasize * sizeof (IDIO));
-
-    IDIO_GC_FREE (oarray->ae);
-    IDIO_GC_FREE (oarray);
+    IDIO_GC_FREE (oarray->ae, oasize * sizeof (IDIO));
+    IDIO_GC_FREE (oarray, sizeof (idio_array_t));
 }
 
 /**
@@ -734,7 +730,7 @@ void idio_duplicate_array (IDIO a, IDIO o, idio_ai_t n, int depth)
     }
     if (osz > IDIO_ARRAY_ASIZE (a)) {
 	fprintf (stderr, "dupe %td -> %td\n", IDIO_ARRAY_ASIZE (a), osz);
-	IDIO_GC_FREE (a->u.array->ae);
+	IDIO_GC_FREE (a->u.array->ae, IDIO_ARRAY_ASIZE (a) * sizeof (IDIO));
 	IDIO_GC_ALLOC (a->u.array->ae, osz * sizeof (IDIO));
     }
     IDIO_ARRAY_USIZE (a) = osz;

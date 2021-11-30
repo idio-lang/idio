@@ -1434,6 +1434,7 @@ void idio_gc_deregister_finalizer (IDIO o);
 void idio_run_finalizer (IDIO o);
 void *idio_alloc (size_t s);
 void idio_free (void *p);
+void idio_gc_free (void *p, size_t size);
 void *idio_realloc (void *p, size_t s);
 IDIO idio_gc_get (idio_type_e type);
 void idio_gc_alloc (void **p, size_t size);
@@ -1447,7 +1448,7 @@ void idio_gc_alloc (void **p, size_t size);
  * value.
  */
 #define IDIO_GC_ALLOC(p,s)	(idio_gc_alloc ((void **)&(p), s))
-#define IDIO_GC_FREE(p)		(idio_gc_free ((void *)(p)))
+#define IDIO_GC_FREE(p,s)	(idio_gc_free ((void *)(p), s))
 
 IDIO idio_clone_base (IDIO o);
 int idio_isa (IDIO o, idio_type_e type);
@@ -1486,7 +1487,6 @@ int idio_gc_get_pause (char const *caller);
 void idio_gc_pause (char const *caller);
 void idio_gc_resume (char const *caller);
 void idio_gc_reset (char const *caller, int pause);
-void idio_gc_free ();
 
 int idio_vasprintf (char **strp, char const *fmt, va_list ap);
 int idio_asprintf(char **strp, char const *fmt, ...);

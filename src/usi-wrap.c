@@ -735,7 +735,7 @@ void idio_init_usi_wrap ()
 	 */
 	idio_module_export_symbol_value (idio_symbols_C_intern (SRFI_14_char_sets[csi].name, strnlen (SRFI_14_char_sets[csi].name, 40)), css[csi], idio_SRFI_14_module);
     }
-    IDIO_GC_FREE (css);
+    idio_free (css);
 
     IDIO *bss = idio_alloc (ncss * sizeof (IDIO));
     idio_unicode_t cp = 0;
@@ -1291,8 +1291,8 @@ void idio_init_usi_wrap ()
     idio_bitset_set (idio_array_ref_index (as[word_constituent], 0), '_');
     idio_bitset_set (idio_array_ref_index (as[ASCII_word_constituent], 0), '_');
 
-    IDIO_GC_FREE (bss);
-    IDIO_GC_FREE (as);
+    idio_free (bss);
+    idio_free (as);
 }
 
 /* Local Variables: */

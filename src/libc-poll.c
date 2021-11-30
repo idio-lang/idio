@@ -511,7 +511,7 @@ void idio_libc_poll_finalizer (IDIO poller)
     idio_libc_poller_t *C_poller = IDIO_C_TYPE_POINTER_P (poller);
 
     idio_gc_expose (C_poller->fd_map);
-    IDIO_GC_FREE (C_poller->fds);
+    idio_free (C_poller->fds);
 }
 
 static void idio_libc_set_poll_names ()

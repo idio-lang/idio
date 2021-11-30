@@ -172,10 +172,12 @@ static void idio_handle_bad_input_error (IDIO h, IDIO c_location)
     if (idio_isa_handle (h)) {
 	size_t hn_size;
 	char *hn = idio_string_as_C (IDIO_HANDLE_FILENAME (h), &hn_size);
+
 	char em[BUFSIZ];
 	idio_snprintf (em, BUFSIZ, "handle '%s' is not a input handle", hn);
 
-	IDIO_GC_FREE (hn);
+	IDIO_GC_FREE (hn, hn_size);
+
 	idio_error_param_type_msg (em, c_location);
     } else {
 	idio_error_param_type ("input handle", h, c_location);
@@ -193,10 +195,12 @@ static void idio_handle_bad_output_error (IDIO h, IDIO c_location)
     if (idio_isa_handle (h)) {
 	size_t hn_size;
 	char *hn = idio_string_as_C (IDIO_HANDLE_FILENAME (h), &hn_size);
+
 	char em[BUFSIZ];
 	idio_snprintf (em, BUFSIZ, "handle '%s' is not a output handle", hn);
 
-	IDIO_GC_FREE (hn);
+	IDIO_GC_FREE (hn, hn_size);
+
 	idio_error_param_type_msg (em, c_location);
     } else {
 	idio_error_param_type ("output handle", h, c_location);
@@ -364,11 +368,9 @@ void idio_free_handle (IDIO h)
 
     IDIO_TYPE_ASSERT (handle, h);
 
-    idio_gc_stats_free (sizeof (idio_handle_t));
-
     IDIO_HANDLE_M_FREE (h) (h);
 
-    IDIO_GC_FREE (h->u.handle);
+    IDIO_GC_FREE (h->u.handle, sizeof (idio_handle_t));
 }
 
 /*
@@ -962,7 +964,7 @@ Write the printed form of `s` to `handle`		\n\
 
     ptrdiff_t n = idio_puts_handle (h, str, size);
 
-    IDIO_GC_FREE (str);
+    IDIO_GC_FREE (str, size);
 
     return idio_integer (n);
 }
@@ -1565,7 +1567,7 @@ IDIO idio_write (IDIO o, IDIO h)
 
     idio_puts_handle (h, os, size);
 
-    IDIO_GC_FREE (os);
+    IDIO_GC_FREE (os, size);
 
     return idio_S_unspec;
 }
@@ -1672,7 +1674,8 @@ IDIO idio_display (IDIO o, IDIO h)
     char *s = idio_display_string (o, &size);
 
     idio_puts_handle (h, s, size);
-    IDIO_GC_FREE (s);
+
+    IDIO_GC_FREE (s, size);
 
     return idio_S_unspec;
 }
@@ -1882,7 +1885,7 @@ num	specifies a maximum limit on the output		\n\
 				    size_t s_size = 0;
 				    s = idio_bignum_as_string (arg, &s_size);
 				    idio_puts_handle (h, s, s_size);
-				    IDIO_GC_FREE (s);
+				    IDIO_GC_FREE (s, s_size);
 				} else {
 				    /* ?? */
 				    idio_puts_handle (h, c, ss - s);
@@ -1928,7 +1931,7 @@ num	specifies a maximum limit on the output		\n\
 				    }
 				}
 
-				IDIO_GC_FREE (c);
+				IDIO_GC_FREE (c, c_size);
 			    } else {
 				c = "<no-arg>";
 				idio_puts_handle (h, c, sizeof (c) - 1);
@@ -1954,7 +1957,7 @@ num	specifies a maximum limit on the output		\n\
 	i++;
     }
 
-    IDIO_GC_FREE (fmt_C);
+    IDIO_GC_FREE (fmt_C, blen);
 
     return idio_S_unspec;
 }
@@ -2011,8 +2014,7 @@ IDIO idio_handle_location (IDIO h)
     char buf[BUFSIZ];
     size_t buflen = idio_snprintf (buf, BUFSIZ, "%s:line %jd", sname, (intmax_t) IDIO_HANDLE_LINE (h));
 
-    IDIO_GC_FREE (sname);
-    idio_gc_stats_free (size);
+    IDIO_GC_FREE (sname, size);
 
     return idio_string_C_len (buf, buflen);
 }
@@ -2153,8 +2155,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 		char *sname = idio_handle_name_as_C (h, &size);
 		fprintf (stderr, "load-handle: %s: SS %td != %td\n", sname, ss, ss0);
 
-		IDIO_GC_FREE (sname);
-		idio_gc_stats_free (size);
+		IDIO_GC_FREE (sname, size);
 
 		idio_vm_thread_state (thr);
 	    }
@@ -2326,7 +2327,9 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	size_t r_size = 0;
 	char *rs = idio_as_string_safe (r, &r_size, 40, 1);
 	idio_puts_handle (oh, rs, r_size);
-	IDIO_GC_FREE (rs);
+
+	IDIO_GC_FREE (rs, r_size);
+
 	idio_display_C ("\n", oh);
     }
 
@@ -2346,8 +2349,7 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	char *sname = idio_handle_name_as_C (fh, &size);
 	fprintf (stderr, "load-file-handle-interactive: %s: SP %td != SP0 %td\n", sname, sp, sp0);
 
-	IDIO_GC_FREE (sname);
-	idio_gc_stats_free (size);
+	IDIO_GC_FREE (sname, size);
 
 	idio_debug ("THR %s\n", thr);
 	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));

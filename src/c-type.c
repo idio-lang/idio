@@ -675,11 +675,10 @@ void idio_free_C_pointer (IDIO co)
     IDIO_ASSERT (co);
 
     if (IDIO_C_TYPE_POINTER_FREEP (co)) {
-	IDIO_GC_FREE (IDIO_C_TYPE_POINTER_P (co));
+	idio_free (IDIO_C_TYPE_POINTER_P (co));
     }
 
-    IDIO_GC_FREE (co->u.C_type.u.C_pointer);
-    idio_gc_stats_free (sizeof (idio_C_pointer_t));
+    IDIO_GC_FREE (co->u.C_type.u.C_pointer, sizeof (idio_C_pointer_t));
 }
 
 int idio_isa_C_type (IDIO o)

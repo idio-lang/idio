@@ -120,9 +120,7 @@ void idio_free_continuation (IDIO k)
     IDIO_ASSERT (k);
     IDIO_TYPE_ASSERT (continuation, k);
 
-    idio_gc_stats_free (sizeof (idio_continuation_t));
-
-    IDIO_GC_FREE (k->u.continuation);
+    IDIO_GC_FREE (k->u.continuation, sizeof (idio_continuation_t));
 }
 
 void idio_continuation_add_primitives ()

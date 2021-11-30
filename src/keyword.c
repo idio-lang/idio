@@ -194,7 +194,7 @@ create a keyword from `s`			\n\
 	     *
 	     * make-keyword (join-string (make-string 1 #U+0) '("hello" "world"))
 	     */
-	    IDIO_GC_FREE (sC);
+	    IDIO_GC_FREE (sC, size);
 
 	    idio_keyword_format_error ("keyword contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
 
@@ -203,7 +203,7 @@ create a keyword from `s`			\n\
 
 	IDIO r = idio_keywords_C_intern (sC, size);
 
-	IDIO_GC_FREE (sC);
+	IDIO_GC_FREE (sC, size);
 
 	return r;
     } else if (idio_isa_symbol (s)) {
@@ -232,9 +232,6 @@ void idio_free_keyword (IDIO s)
     IDIO_ASSERT (s);
     IDIO_TYPE_ASSERT (keyword, s);
 
-    idio_gc_stats_free (IDIO_KEYWORD_BLEN (s) + 1);
-
-    /* IDIO_GC_FREE (s->u.keyword); */
 }
 
 IDIO idio_keywords_C_intern (char const *s, size_t const slen)

@@ -1915,8 +1915,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    char *info;
 		    size_t info_size = idio_asprintf (&info, ":\"%s\":%jd:%jd>", sname, (intmax_t) IDIO_HANDLE_LINE (o), (intmax_t) IDIO_HANDLE_POS (o));
 
-		    idio_gc_free (sname);
-		    idio_gc_stats_free (size);
+		    idio_gc_free (sname, size);
 
 		    IDIO_STRCAT_FREE (r, sizep, info, info_size);
 		}
@@ -2920,8 +2919,7 @@ IDIO idio_util_string (IDIO o)
     char *str = idio_as_string_safe (o, &size, 40, 1);
     IDIO r = idio_string_C_len (str, size);
 
-    idio_gc_free (str);
-    idio_gc_stats_free (size);
+    idio_gc_free (str, size);
 
     return r;
 }
@@ -2971,8 +2969,7 @@ convert `o` to a display string			\n\
     char *str = idio_display_string (o, &size);
     IDIO r = idio_string_C_len (str, size);
 
-    idio_gc_free (str);
-    idio_gc_stats_free (size);
+    idio_gc_free (str, size);
 
     return r;
 }
@@ -3529,8 +3526,7 @@ void idio_dump (IDIO o, int detail)
 				char *s = idio_as_string_safe (IDIO_ARRAY_AE (o, i), &size, 4, 1);
 				fprintf (stderr, "\t%3zu: %10p %10s\n", i, IDIO_ARRAY_AE (o, i), s);
 
-				idio_gc_free (s);
-				idio_gc_stats_free (size);
+				idio_gc_free (s, size);
 			    }
 			}
 		    }
@@ -3583,8 +3579,7 @@ void idio_dump (IDIO o, int detail)
 						 s);
 				    }
 				    if (! (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
-					idio_gc_free (s);
-					idio_gc_stats_free (size);
+					idio_gc_free (s, size);
 				    }
 				    if (IDIO_HASH_HE_VALUE (he)) {
 					size = 0;
@@ -3594,8 +3589,7 @@ void idio_dump (IDIO o, int detail)
 				    }
 				    fprintf (stderr, "%-10s\n", s);
 
-				    idio_gc_free (s);
-				    idio_gc_stats_free (size);
+				    idio_gc_free (s, size);
 				}
 			    }
 			}
@@ -3686,8 +3680,7 @@ void idio_debug_FILE (FILE *file, char const *fmt, IDIO o)
     char *os = idio_as_string_safe (o, &size, 40, 1);
     fprintf (file, fmt, os);
 
-    idio_gc_free (os);
-    idio_gc_stats_free (size);
+    idio_gc_free (os, size);
 }
 
 void idio_debug (char const *fmt, IDIO o)
@@ -3743,8 +3736,7 @@ idio-debug \"foo is %20s\n\" foo			\n\
 	 *
 	 * However, we should be protective of the careless user.
 	 */
-	idio_gc_free (sfmt);
-	idio_gc_stats_free (size);
+	idio_gc_free (sfmt, size);
 
 	idio_error_param_value_msg ("idio-debug", "fmt", fmt, "contains an ASCII NUL", IDIO_C_FUNC_LOCATION ());
 
@@ -3753,8 +3745,7 @@ idio-debug \"foo is %20s\n\" foo			\n\
 
     idio_debug (sfmt, o);
 
-    idio_gc_free (sfmt);
-    idio_gc_stats_free (size);
+    idio_gc_free (sfmt, size);
 
     return idio_S_unspec;
 }
@@ -3824,8 +3815,7 @@ IDIO idio_add_feature_ps (char const *p, size_t const plen, char const *s, size_
     size_t blen = idio_snprintf (buf, buflen, "%s%s", p, s);
     IDIO r = idio_add_feature (idio_string_C_len (buf, blen));
 
-    IDIO_GC_FREE (buf);
-    idio_gc_stats_free (buflen);
+    IDIO_GC_FREE (buf, buflen);
 
     return r;
 }
@@ -3840,8 +3830,7 @@ IDIO idio_add_feature_pi (char const *p, size_t const plen, size_t const size)
     size_t blen = idio_snprintf (buf, buflen, "%s%zu", p, size);
     IDIO r = idio_add_feature (idio_symbols_C_intern (buf, blen));
 
-    IDIO_GC_FREE (buf);
-    idio_gc_stats_free (buflen);
+    IDIO_GC_FREE (buf, buflen);
 
     return r;
 }

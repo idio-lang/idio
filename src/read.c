@@ -1624,7 +1624,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 	     *
 	     * "
 	     */
-	    IDIO_GC_FREE (abuf);
+	    idio_free (abuf);
 
 	    idio_read_error_string (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
@@ -1854,7 +1854,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 	break;
     }
 
-    IDIO_GC_FREE (abuf);
+    idio_free (abuf);
     return r;
 }
 
@@ -4401,7 +4401,8 @@ normal hexadecimal digits are extended to all ASCII	\n\
 	     * Not sure what to do.
 	     */
 	    handle = idio_open_input_string_handle_C (src_C, size);
-	    IDIO_GC_FREE (src_C);
+
+	    IDIO_GC_FREE (src_C, size);
 	} else {
 	    idio_error_param_type ("handle|string", src, IDIO_C_FUNC_LOCATION ());
 

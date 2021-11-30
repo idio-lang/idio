@@ -178,8 +178,8 @@ void idio_bsa_free (IDIO_BSA bsa)
     if (bsa->refs > 1) {
 	bsa->refs--;
     } else {
-	IDIO_GC_FREE (bsa->ae);
-	IDIO_GC_FREE (bsa);
+	idio_free (bsa->ae);
+	idio_free (bsa);
 	idio_bignums--;
     }
 }
@@ -409,10 +409,7 @@ void idio_free_bignum (IDIO bn)
     IDIO_ASSERT (bn);
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    /* idio_gc_stats_free (sizeof (idio_bignum_t)); */
-
     idio_bsa_free (IDIO_BIGNUM_SIG (bn));
-    /* IDIO_GC_FREE (bn->u.bignum); */
 }
 
 IDIO idio_bignum_copy (IDIO bn)
@@ -576,7 +573,7 @@ IDIO idio_bignum_copy_to_integer (IDIO bn)
 		char *bn_is = idio_bignum_as_string (bn_i, &size);	\
 		char em[BUFSIZ];					\
 		idio_snprintf (em, BUFSIZ, "%s is too large for " #T " (%" P ")", bn_is, M); \
-		IDIO_GC_FREE (bn_is);					\
+		IDIO_GC_FREE (bn_is, size);				\
 		idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());	\
 		return -1;						\
 	    } else {							\
@@ -617,7 +614,7 @@ IDIO idio_bignum_copy_to_integer (IDIO bn)
 		char *bn_is = idio_bignum_as_string (bn_i, &size);	\
 		char em[BUFSIZ];					\
 		idio_snprintf (em, BUFSIZ, "%s is too large for " #T " (%" P ")", bn_is, M); \
-		IDIO_GC_FREE (bn_is);					\
+		IDIO_GC_FREE (bn_is, size);				\
 		idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());	\
 		return -1;						\
 	    } else {							\
@@ -3237,12 +3234,13 @@ IDIO idio_bignum_integer_C (char const *nums, size_t const nums_len, const int r
 	      i == LLONG_MIN)) ||
 	    (errno != 0 &&
 	     i == 0)) {
+	    idio_free (buf);
+
 	    /*
 	     * Test Case: ??
 	     *
 	     * I need more brainpower to figure out how to get here.
 	     */
-	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
 	    idio_snprintf (em, BUFSIZ, "(%s) = %lld", nums, i);
 
@@ -3252,12 +3250,13 @@ IDIO idio_bignum_integer_C (char const *nums, size_t const nums_len, const int r
 	}
 
 	if (end == nums) {
+	    idio_free (buf);
+
 	    /*
 	     * Test Case: ??
 	     *
 	     * I need more brainpower to figure out how to get here.
 	     */
-	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
 	    idio_snprintf (em, BUFSIZ, "(%s): No digits?", nums);
 
@@ -3267,12 +3266,13 @@ IDIO idio_bignum_integer_C (char const *nums, size_t const nums_len, const int r
 	}
 
 	if ('\0' != *end) {
+	    idio_free (buf);
+
 	    /*
 	     * Test Case: ??
 	     *
 	     * I need more brainpower to figure out how to get here.
 	     */
-	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
 	    idio_snprintf (em, BUFSIZ, "strtoll (%s) = %lld", nums, i);
 
@@ -3293,7 +3293,7 @@ IDIO idio_bignum_integer_C (char const *nums, size_t const nums_len, const int r
 	ri++;
     }
 
-    IDIO_GC_FREE (buf);
+    idio_free (buf);
 
     /* remove leading zeroes */
     size_t rl = ri;

@@ -785,9 +785,7 @@ void idio_free_string (IDIO so)
 
     IDIO_TYPE_ASSERT (string, so);
 
-    idio_gc_stats_free (IDIO_STRING_BLEN (so) + 1);
-
-    IDIO_GC_FREE (IDIO_STRING_S (so));
+    IDIO_GC_FREE (IDIO_STRING_S (so), IDIO_STRING_BLEN (so) + 1);
 }
 
 /*
@@ -1123,7 +1121,7 @@ return an octet string of the UTF-8 encoding of `s`\n\
 
     IDIO r = idio_octet_string_C_len (s_C, size);
 
-    IDIO_GC_FREE (s_C);
+    IDIO_GC_FREE (s_C, size);
 
     return r;
 }
@@ -1153,7 +1151,7 @@ return a pathname of the UTF-8 encoding of `s`\n\
 
     IDIO r = idio_pathname_C_len (s_C, size);
 
-    IDIO_GC_FREE (s_C);
+    IDIO_GC_FREE (s_C, size);
 
     return r;
 }
@@ -1415,7 +1413,7 @@ return a symbol derived from `s`		\n\
 	 *
 	 * string->symbol (join-string (make-string 1 #U+0) '("hello" "world"))
 	 */
-	IDIO_GC_FREE (sC);
+	IDIO_GC_FREE (sC, size);
 
 	idio_string_format_error ("string contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
 
@@ -1424,7 +1422,7 @@ return a symbol derived from `s`		\n\
 
     IDIO r = idio_symbols_C_intern (sC, size);
 
-    IDIO_GC_FREE (sC);
+    IDIO_GC_FREE (sC, size);
 
     return r;
 }
@@ -1779,7 +1777,7 @@ a string.								\n\
 	}
 
 	for (si = 0; si < ns; si++) {
-	    IDIO_GC_FREE (copies[si]);
+	    IDIO_GC_FREE (copies[si], lens[si]);
 	}
 
 	IDIO_STRING_S (so)[reqd_bytes] = '\0';
@@ -2640,18 +2638,18 @@ int idio_string_equal (IDIO s1, IDIO s2)
 	    }								\
 									\
 	    if (0 == cr) {						\
-		IDIO_GC_FREE (C1);					\
-		IDIO_GC_FREE (C2);					\
+		IDIO_GC_FREE (C1, l1);					\
+		IDIO_GC_FREE (C2, l2);					\
 		return idio_S_false;					\
 	    }								\
 									\
-	    IDIO_GC_FREE (C1);						\
+	    IDIO_GC_FREE (C1, l1);					\
 	    C1 = C2;							\
 	    l1 = l2;							\
 	    args = IDIO_PAIR_T (args);					\
 	}								\
 									\
-	IDIO_GC_FREE (C1);						\
+	IDIO_GC_FREE (C1, l1);						\
 	return idio_S_true;						\
     }
 

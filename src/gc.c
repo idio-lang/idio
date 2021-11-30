@@ -136,13 +136,19 @@ void *idio_realloc (void *p, size_t const s)
  * XXX has the caller decremented idio_gc->stats.nbytes by calling
  * idio_gc_stats_free()?
  */
-void idio_gc_free (void *p)
+void idio_free (void *p)
 {
 #ifdef IDIO_MALLOC
     idio_malloc_free (p);
 #else
     free (p);
 #endif
+}
+
+void idio_gc_free (void *p, size_t size)
+{
+    idio_free (p);
+    idio_gc_stats_free (size);
 }
 
 /**
@@ -966,7 +972,7 @@ void idio_gc_expose (IDIO o)
 		} else {
 		    gc->roots = r->next;
 		}
-		IDIO_GC_FREE (r);
+		idio_free (r);
 		break;
 	    } else {
 		p = r;
@@ -1235,7 +1241,7 @@ void idio_gc_mark_weak (idio_gc_t *gc)
 					IDIO_HASH_HE_NEXT (hep) = hen;
 				    }
 
-				    IDIO_GC_FREE (he);
+				    idio_free (he);
 				    IDIO_HASH_COUNT (o) -= 1;
 				}
 				break;
@@ -1482,7 +1488,7 @@ void idio_gc_sweep (idio_gc_t *gc)
     while (0 && gc->stats.nfree > IDIO_GC_ALLOC_POOL) {
     	IDIO fo = gc->free;
 	gc->free = fo->next;
-	IDIO_GC_FREE (fo);
+	idio_free (fo);
 	gc->stats.nfree--;
     }
 
@@ -2075,7 +2081,7 @@ void idio_gc_obj_free ()
 	    idio_error_error_message ("root->object is #n at %s:%d", __FILE__, __LINE__);
 	    abort ();
 	}
-	IDIO_GC_FREE (root);
+	idio_free (root);
     }
 
     if (idio_gc->pause) {
@@ -2094,8 +2100,7 @@ void idio_gc_obj_free ()
 	while (gc->free) {
 	    IDIO co = gc->free;
 	    gc->free = co->next;
-	    IDIO_GC_FREE (co);
-	    gc->stats.nbytes -= sizeof (idio_t);
+	    IDIO_GC_FREE (co, sizeof (idio_t));
 	    n++;
 	}
 	IDIO_C_ASSERT (n == gc->stats.nfree);
@@ -2104,14 +2109,13 @@ void idio_gc_obj_free ()
 	while (gc->used) {
 	    IDIO co = gc->used;
 	    gc->used = co->next;
-	    IDIO_GC_FREE (co);
-	    gc->stats.nbytes -= sizeof (idio_t);
+	    IDIO_GC_FREE (co, sizeof (idio_t));
 	    n++;
 	}
 
 	idio_gc_t *ogc = gc;
 	gc = gc->next;
-	IDIO_GC_FREE (ogc);
+	idio_free (ogc);
     }
 }
 
@@ -2205,8 +2209,7 @@ char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, size_t const s2s)
     }
 
     char *r = idio_strcat (s1, s1sp, s2, s2s);
-    idio_gc_free (s2);
-    idio_gc_stats_free (s2s);
+    idio_gc_free (s2, s2s);
 
     return r;
 }

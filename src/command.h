@@ -28,9 +28,9 @@ extern IDIO idio_command_suppress_rcse;
 
 void idio_command_not_found_error (char const *msg, IDIO cmd, IDIO c_location);
 
-char **idio_command_get_envp ();
+char **idio_command_get_envp (size_t *sizep);
 char *idio_command_find_exe_C (char const *command, size_t cmdlen, size_t *lenp);
-char *idio_command_find_exe (IDIO func);
+char *idio_command_find_exe (IDIO func, size_t *sizep);
 IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname);
 
 void idio_init_command ();

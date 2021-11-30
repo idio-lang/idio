@@ -130,7 +130,7 @@ IDIO idio_libc_export_symbol_value (IDIO symbol, IDIO value)
     return idio_module_export_symbol_value (symbol, value, idio_libc_module);
 }
 
-char *idio_libc_string_C (IDIO val, char const *func_C, int *free_me_p, IDIO c_location)
+char *idio_libc_string_C (IDIO val, char const *func_C, size_t *free_me_p, IDIO c_location)
 {
     IDIO_ASSERT (val);
     IDIO_C_ASSERT (func_C);
@@ -142,16 +142,15 @@ char *idio_libc_string_C (IDIO val, char const *func_C, int *free_me_p, IDIO c_l
     if (idio_isa_symbol (val)) {
 	return IDIO_SYMBOL_S (val);
     } else if (idio_isa_string (val)) {
-	size_t size = 0;
-	char *val_C = idio_string_as_C (val, &size);
+	char *val_C = idio_string_as_C (val, free_me_p);
 
 	/*
-	 * Use size + 1 to avoid a truncation warning -- we're just
+	 * Use *free_me_p + 1 to avoid a truncation warning -- we're just
 	 * seeing if val_C includes a NUL
 	 */
-	size_t C_size = idio_strnlen (val_C, size + 1);
-	if (C_size != size) {
-	    IDIO_GC_FREE (val_C);
+	size_t C_size = idio_strnlen (val_C, *free_me_p + 1);
+	if (C_size != *free_me_p) {
+	    IDIO_GC_FREE (val_C, *free_me_p);
 
 	    char em[BUFSIZ];
 	    idio_snprintf (em, BUFSIZ, "%s: contains an ASCII NUL", func_C);
@@ -161,7 +160,6 @@ char *idio_libc_string_C (IDIO val, char const *func_C, int *free_me_p, IDIO c_l
 	    /* notreached */
 	    return NULL;
 	}
-	*free_me_p = 1;
 
 	return val_C;
     } else {
@@ -571,7 +569,7 @@ IDIO idio_libc_proc_subst_named_pipe (int into)
 	/* á Magritte */
 	idio_snprintf (np_name_C, PATH_MAX, "%s/une-pipe", td_C);
 
-	IDIO_GC_FREE (td_C);
+	IDIO_GC_FREE (td_C, blen);
 
 	IDIO npr_name;
 	IDIO npw_name;
@@ -2963,7 +2961,7 @@ IDIO idio_libc_wrap_access_predicate (IDIO pathname, char const *pred_C, int mod
     IDIO_ASSERT (pathname);
     IDIO_C_ASSERT (pred_C);
 
-    int free_pathname_C = 0;
+    size_t free_pathname_C = 0;
     char *pathname_C = idio_libc_string_C (pathname, pred_C, &free_pathname_C, IDIO_C_FUNC_LOCATION ());
 
     IDIO r = idio_S_false;
@@ -2973,7 +2971,7 @@ IDIO idio_libc_wrap_access_predicate (IDIO pathname, char const *pred_C, int mod
     }
 
     if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C);
+	IDIO_GC_FREE (pathname_C, free_pathname_C);
     }
 
     return r;
@@ -2984,7 +2982,7 @@ IDIO idio_libc_wrap_stat_predicate (IDIO pathname, char const *pred_C, int mask)
     IDIO_ASSERT (pathname);
     IDIO_C_ASSERT (pred_C);
 
-    int free_pathname_C = 0;
+    size_t free_pathname_C = 0;
     char *pathname_C = idio_libc_string_C (pathname, pred_C, &free_pathname_C, IDIO_C_FUNC_LOCATION ());
 
     struct stat sb;
@@ -2997,7 +2995,7 @@ IDIO idio_libc_wrap_stat_predicate (IDIO pathname, char const *pred_C, int mask)
     }
 
     if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C);
+	IDIO_GC_FREE (pathname_C, free_pathname_C);
     }
 
     return r;
@@ -3227,7 +3225,7 @@ is `pathname` a symlink?		\n\
 {
     IDIO_ASSERT (pathname);
 
-    int free_pathname_C = 0;
+    size_t free_pathname_C = 0;
 
     /*
      * Test Cases:
@@ -3249,7 +3247,7 @@ is `pathname` a symlink?		\n\
     }
 
     if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C);
+	IDIO_GC_FREE (pathname_C, free_pathname_C);
     }
 
     return r;
@@ -3514,19 +3512,19 @@ void idio_final_libc_wrap ()
     int i;
 
     for (i = IDIO_LIBC_FSIG; NULL != idio_libc_signal_names[i]; i++) {
-        IDIO_GC_FREE (idio_libc_signal_names[i]);
+        idio_free (idio_libc_signal_names[i]);
     }
-    IDIO_GC_FREE (idio_libc_signal_names);
+    idio_free (idio_libc_signal_names);
 
     for (i = IDIO_LIBC_FERRNO; i < IDIO_LIBC_NERRNO; i++) {
-        IDIO_GC_FREE (idio_libc_errno_names[i]);
+        idio_free (idio_libc_errno_names[i]);
     }
-    IDIO_GC_FREE (idio_libc_errno_names);
+    idio_free (idio_libc_errno_names);
 
     for (i = IDIO_LIBC_FRLIMIT; i < IDIO_LIBC_NRLIMIT; i++) {
-        IDIO_GC_FREE (idio_libc_rlimit_names[i]);
+        idio_free (idio_libc_rlimit_names[i]);
     }
-    IDIO_GC_FREE (idio_libc_rlimit_names);
+    idio_free (idio_libc_rlimit_names);
 }
 
 void idio_init_libc_wrap ()
@@ -3749,7 +3747,7 @@ void idio_init_libc_wrap ()
     for (ng = 0; ng < ngroups ; ng++) {
 	idio_array_insert_index (GROUPS, idio_libc_gid_t (grp_list[ng]), ng);
     }
-    IDIO_GC_FREE (grp_list);
+    idio_free (grp_list);
 
     idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("GROUPS"), GROUPS, main_module);
 

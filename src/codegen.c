@@ -90,8 +90,8 @@ IDIO_IA_T idio_ia (size_t const asize)
 void idio_ia_free (IDIO_IA_T ia)
 {
     if (ia) {
-	IDIO_GC_FREE (ia->ae);
-	IDIO_GC_FREE (ia);
+	idio_free (ia->ae);
+	idio_free (ia);
     } else {
 	fprintf (stderr, "already freed ia?\n");
     }

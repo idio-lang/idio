@@ -727,7 +727,8 @@ display to stderr `msg` alongside job `job` details\n\
     size_t size = 0;
     char *msgs = idio_string_as_C (msg, &size);
     idio_job_control_format_job_info (job, msgs);
-    IDIO_GC_FREE (msgs);
+
+    IDIO_GC_FREE (msgs, size);
 
     return idio_S_unspec;
 }
@@ -833,11 +834,11 @@ void idio_job_control_do_job_notification ()
 				}
 			    }
 
-			    IDIO_GC_FREE (dir_C);
+			    IDIO_GC_FREE (dir_C, size);
 			}
 		    }
 
-		    IDIO_GC_FREE (path_C);
+		    IDIO_GC_FREE (path_C, size);
 		}
 	    }
 	}
@@ -1729,7 +1730,8 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
     int job_stderr = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_STDERR));
     IDIO job_async = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_ASYNC);
 
-    char **envp = idio_command_get_envp ();
+    size_t envp_size = 0;
+    char **envp = idio_command_get_envp (&envp_size);
 
     /*
      * We're here because the VM saw a symbol in functional position
@@ -1756,7 +1758,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 	 */
 	int pgrp_pipe[2];
 	if (pipe (pgrp_pipe) < 0) {
-	    IDIO_GC_FREE (envp);
+	    IDIO_GC_FREE (envp, envp_size);
 
 	    idio_error_system_errno ("pipe", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
@@ -1765,7 +1767,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 
 	pid_t pid = fork ();
 	if (pid < 0) {
-	    IDIO_GC_FREE (envp);
+	    IDIO_GC_FREE (envp, envp_size);
 
 	    /*
 	     * was idio_alloc()'ed no no stat decrement
@@ -1788,7 +1790,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 					   0);
 
 	    if (close (pgrp_pipe[1]) < 0) {
-		IDIO_GC_FREE (envp);
+		IDIO_GC_FREE (envp, envp_size);
 
 		idio_error_system_errno ("close", idio_fixnum (pgrp_pipe[1]), IDIO_C_FUNC_LOCATION ());
 
@@ -1802,7 +1804,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 	    read (pgrp_pipe[0], buf, 1);
 
 	    if (close (pgrp_pipe[0]) < 0) {
-		IDIO_GC_FREE (envp);
+		IDIO_GC_FREE (envp, envp_size);
 
 		idio_error_system_errno ("close", idio_fixnum (pgrp_pipe[0]), IDIO_C_FUNC_LOCATION ());
 
@@ -1822,7 +1824,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 	    exit (33);
 	    return idio_S_notreached;
 	} else {
-	    IDIO_GC_FREE (envp);
+	    IDIO_GC_FREE (envp, envp_size);
 
 	    idio_struct_instance_set_direct (proc, IDIO_PROCESS_ST_PID, idio_libc_pid_t (pid));
 	    if (idio_job_control_interactive) {

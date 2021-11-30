@@ -389,7 +389,7 @@ void idio_free_hash (IDIO h)
 	    for ( ; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
 		void *kv = IDIO_HASH_HE_KEY (he);
 		if (idio_S_nil != kv) {
-		    IDIO_GC_FREE (kv);
+		    idio_free (kv);
 		}
 	    }
 	}
@@ -401,16 +401,12 @@ void idio_free_hash (IDIO h)
 	while (NULL != he) {
 	    idio_hash_entry_t *che = he;
 	    he = IDIO_HASH_HE_NEXT (he);
-	    IDIO_GC_FREE (che);
-	    idio_gc_stats_free (sizeof (idio_hash_entry_t));
+	    IDIO_GC_FREE (che, sizeof (idio_hash_entry_t));
 	}
     }
 
-    idio_gc_stats_free (sizeof (idio_hash_t));
-    idio_gc_stats_free (IDIO_HASH_SIZE (h) * sizeof (idio_hash_entry_t));
-
-    IDIO_GC_FREE (h->u.hash->ha);
-    IDIO_GC_FREE (h->u.hash);
+    IDIO_GC_FREE (h->u.hash->ha, IDIO_HASH_SIZE (h) * sizeof (idio_hash_entry_t));
+    IDIO_GC_FREE (h->u.hash, sizeof (idio_hash_t));
 }
 
 void idio_hash_resize (IDIO h, int larger)
@@ -529,19 +525,16 @@ void idio_hash_resize (IDIO h, int larger)
 	exit (3);
     }
 
-    idio_gc_stats_free (osize * sizeof (idio_hash_entry_t));
-    idio_gc_stats_free (osize * sizeof (idio_hash_entry_t));
-
     for (i = 0; i < ohsize; i++) {
 	idio_hash_entry_t *he = oha[i];
 	while (NULL != he) {
 	    idio_hash_entry_t *che = he;
 	    he = IDIO_HASH_HE_NEXT (he);
-	    IDIO_GC_FREE (che);
+	    IDIO_GC_FREE (che, sizeof (idio_hash_entry_t));
 	}
     }
 
-    IDIO_GC_FREE (oha);
+    IDIO_GC_FREE (oha, ohsize * sizeof (idio_hash_entry_t));
 }
 
 /*
@@ -767,7 +760,8 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void const *kv)
 	    size_t size = 0;
 	    char *sk = idio_string_as_C (k, &size);
 	    hv = idio_hash_default_hash_C_string_C (size, sk);
-	    IDIO_GC_FREE (sk);
+
+	    IDIO_GC_FREE (sk, size);
 	}
 	break;
     case IDIO_TYPE_SUBSTRING:
@@ -775,7 +769,8 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void const *kv)
 	    size_t size = 0;
 	    char *sk = idio_string_as_C (k, &size);
 	    hv = idio_hash_default_hash_C_string_C (size, sk);
-	    IDIO_GC_FREE (sk);
+
+	    IDIO_GC_FREE (sk, size);
 	}
 	break;
     case IDIO_TYPE_SYMBOL:
@@ -1421,7 +1416,7 @@ int idio_hash_delete (IDIO h, void *kv)
 	return 0;
     }
 
-    IDIO_GC_FREE (he);
+    IDIO_GC_FREE (he, sizeof (idio_hash_entry_t));
     IDIO_HASH_COUNT (h) -= 1;
 
     idio_hi_t hsize = IDIO_HASH_SIZE (h);

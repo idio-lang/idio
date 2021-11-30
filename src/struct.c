@@ -279,11 +279,8 @@ void idio_free_struct_type (IDIO p)
 
     IDIO_TYPE_ASSERT (struct_type, p);
 
-    idio_gc_stats_free (IDIO_STRUCT_TYPE_SIZE (p) * sizeof (IDIO));
-    idio_gc_stats_free (sizeof (idio_struct_type_t));
-
-    IDIO_GC_FREE (p->u.struct_type->fields);
-    IDIO_GC_FREE (p->u.struct_type);
+    IDIO_GC_FREE (p->u.struct_type->fields, IDIO_STRUCT_TYPE_SIZE (p) * sizeof (IDIO));
+    IDIO_GC_FREE (p->u.struct_type, sizeof (idio_struct_type_t));
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-type-name", struct_type_name, (IDIO st), "st", "\
@@ -575,9 +572,7 @@ void idio_free_struct_instance (IDIO p)
 
     IDIO_TYPE_ASSERT (struct_instance, p);
 
-    idio_gc_stats_free (IDIO_STRUCT_INSTANCE_SIZE (p) * sizeof (IDIO));
-
-    IDIO_GC_FREE (p->u.struct_instance.fields);
+    IDIO_GC_FREE (p->u.struct_instance.fields, IDIO_STRUCT_INSTANCE_SIZE (p) * sizeof (IDIO));
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-instance-type", struct_instance_type, (IDIO si), "si", "\

@@ -299,7 +299,7 @@ IDIO idio_glob_expand (IDIO s)
 	 * p := make-struct-instance ~path (join-string (make-string 1 #U+0) '("hello" "world"))
 	 * length p
 	 */
-	IDIO_GC_FREE (s_C);
+	IDIO_GC_FREE (s_C, size);
 
 	idio_glob_error_C ("pattern contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
 
@@ -331,7 +331,7 @@ IDIO idio_glob_expand (IDIO s)
 	 * notably passing GLOB_ERR.
 	 */
 	globfree (&g);
-	IDIO_GC_FREE (s_C);
+	IDIO_GC_FREE (s_C, size);
 	idio_glob_error_C ("pattern glob failed", s, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -339,7 +339,7 @@ IDIO idio_glob_expand (IDIO s)
     }
 
     globfree (&g);
-    IDIO_GC_FREE (s_C);
+    IDIO_GC_FREE (s_C, size);
 
     return idio_list_reverse (r);
 }

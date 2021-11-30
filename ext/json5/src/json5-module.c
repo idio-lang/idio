@@ -92,11 +92,11 @@ IDIO json5_error_string (char *format, va_list argp)
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (s, sh);
 
-    IDIO_GC_FREE (s);
     /*
      * idio_vasprintf will not have called idio_gc_alloc to no stats
      * decrement
      */
+    idio_free (s);
 
     return idio_get_output_string (sh);
 }

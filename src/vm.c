@@ -470,7 +470,7 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t const given, size_
 	    size_t size = 0;
 	    char *s = idio_display_string (args, &size);
 	    idio_display_C_len (s + 1, size - 2, dsh);
-	    IDIO_GC_FREE (s);
+	    IDIO_GC_FREE (s, size);
 	}
 	idio_display_C (")", dsh);
     }
@@ -1731,10 +1731,11 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
     case IDIO_TYPE_STRING:
     case IDIO_TYPE_SYMBOL:
 	{
-	    char *pathname = idio_command_find_exe (func);
+	    size_t pathname_len = 0;
+	    char *pathname = idio_command_find_exe (func, &pathname_len);
 	    if (NULL != pathname) {
 		IDIO_THREAD_VAL (thr) = idio_command_invoke (func, thr, pathname);
-		IDIO_GC_FREE (pathname);
+		IDIO_GC_FREE (pathname, pathname_len);
 	    } else {
 		/*
 		 * Test Case: vm-errors/idio_vm_invoke-command-not-found.idio
@@ -3453,7 +3454,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 	    size_t size = 0;
 	    char *s = idio_display_string (name, &size);
 	    fprintf (stderr, "(%s", s);
-	    IDIO_GC_FREE (s);
+	    IDIO_GC_FREE (s, size);
 	} else {
 	    fprintf (stderr, "(-anon-");
 	}
@@ -3461,7 +3462,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 	    size_t size = 0;
 	    char *s = idio_display_string (sigstr, &size);
 	    fprintf (stderr, " %s", s);
-	    IDIO_GC_FREE (s);
+	    IDIO_GC_FREE (s, size);
 	}
 	fprintf (stderr, ") was ");
     } else if (idio_isa_primitive (func)) {
@@ -5723,7 +5724,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 	    size_t size = 0;
 	    char *hint_C = idio_as_string_safe (hint, &size, 40, 1);
 	    IDIO_VM_DASM ("%-20s ", hint_C);
-	    IDIO_GC_FREE (hint_C);
+	    IDIO_GC_FREE (hint_C, size);
 	} else {
 	    IDIO_VM_DASM ("%20s ", "");
 	}
@@ -6141,7 +6142,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		size_t size = 0;
 		char *ids = idio_display_string (ss, &size);
 		IDIO_VM_DASM (" args=%s", ids);
-		IDIO_GC_FREE (ids);
+		IDIO_GC_FREE (ids, size);
 
 		/* docstr lookup */
 		IDIO fdsci = idio_fixnum (dsci);
@@ -6156,7 +6157,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		    size = 0;
 		    ids = idio_as_string_safe (ds, &size, 1, 1);
 		    IDIO_VM_DASM ("\n%s", ids);
-		    IDIO_GC_FREE (ids);
+		    IDIO_GC_FREE (ids, size);
 		}
 
 		/* srcloc lookup */
@@ -6172,7 +6173,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		    size = 0;
 		    ids = idio_as_string_safe (sl, &size, 1, 1);
 		    IDIO_VM_DASM ("\n%s", ids);
-		    IDIO_GC_FREE (ids);
+		    IDIO_GC_FREE (ids, size);
 		}
 	    }
 	    break;
@@ -7314,7 +7315,7 @@ void idio_vm_dump_constants ()
 	size_t size = 0;
 	char *cs = idio_as_string_safe (c, &size, 40, 1);
 	fprintf (fp, "%-20s %s\n", idio_type2string (c), cs);
-	IDIO_GC_FREE (cs);
+	IDIO_GC_FREE (cs, size);
     }
 
     fclose (fp);
@@ -7466,7 +7467,7 @@ void idio_vm_dump_values ()
 	    vs = idio_as_string_safe (v, &size, 40, 1);
 	}
 	fprintf (fp, "%-20s %s\n", idio_type2string (v), vs);
-	IDIO_GC_FREE (vs);
+	IDIO_GC_FREE (vs, size);
     }
 
     idio_gc_resume ("vm-dump-values");

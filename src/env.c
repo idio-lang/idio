@@ -184,7 +184,8 @@ static void idio_env_add_environ ()
 	    name[name_len] = '\0';
 
 	    var = idio_symbols_C_intern (name, name_len);
-	    IDIO_GC_FREE (name);
+
+	    IDIO_GC_FREE (name, name_len);
 
 	    val = idio_string_C (e + 1);
 	} else {
@@ -338,7 +339,7 @@ static void idio_env_add_environ ()
     IDIO_ENV_EXPORT (HOME);
     IDIO_ENV_EXPORT (SHELL);
 
-    IDIO_GC_FREE (pwd_buf);
+    idio_free (pwd_buf);
 }
 
 /*
@@ -602,7 +603,7 @@ void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0r
 	    memcpy (a0rp, n_a0rp, n_len);
 	    a0rp[n_len] = '\0';
 	}
-	IDIO_GC_FREE (n_a0rp);
+	idio_free (n_a0rp);
     }
 
     char *e0_rp = realpath (e0, erp);
@@ -636,7 +637,7 @@ void idio_env_exe_pathname (char const *argv0, size_t const argv0_len, char *a0r
     }
 
     if (NULL == dir) {
-	IDIO_GC_FREE (e0);
+	idio_free (e0);
     }
 }
 
@@ -805,7 +806,7 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
 		     * environment variable into idio's environment
 		     * with an ASCII NUL in it?
 		     */
-		    IDIO_GC_FREE (idiolib_C);
+		    IDIO_GC_FREE (idiolib_C, idiolib_C_len);
 
 		    idio_env_format_error ("bootstrap", "contains an ASCII NUL", idio_env_IDIOLIB_sym, idiolib, IDIO_C_FUNC_LOCATION ());
 
@@ -882,11 +883,11 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
 		} else {
 		    idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, idio_string_C_len (ni, ni_len));
 		}
-		IDIO_GC_FREE (ni);
+		idio_free (ni);
 	    }
 
-	    IDIO_GC_FREE (idiolib_C);
-	    IDIO_GC_FREE (ieId);
+	    IDIO_GC_FREE (idiolib_C, idiolib_C_len);
+	    IDIO_GC_FREE (ieId, ieId_len);
 	}
     }
 }
@@ -960,7 +961,7 @@ void idio_env_add_primitives ()
 
 void idio_final_env ()
 {
-    IDIO_GC_FREE (idio_env_IDIOLIB_default);
+    idio_free (idio_env_IDIOLIB_default);
 }
 
 void idio_init_env ()

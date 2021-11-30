@@ -121,9 +121,7 @@ void idio_free_thread (IDIO t)
     IDIO_ASSERT (t);
     IDIO_TYPE_ASSERT (thread, t);
 
-    idio_gc_stats_free (sizeof (idio_thread_t));
-
-    IDIO_GC_FREE (t->u.thread);
+    IDIO_GC_FREE (t->u.thread, sizeof (idio_thread_t));
 }
 
 IDIO idio_thread_current_thread ()

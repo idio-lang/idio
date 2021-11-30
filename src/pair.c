@@ -126,9 +126,6 @@ void idio_free_pair (IDIO p)
     IDIO_ASSERT (p);
     IDIO_TYPE_ASSERT (pair, p);
 
-    /* idio_gc_stats_free (sizeof (idio_pair_t)); */
-
-    /* IDIO_GC_FREE (p->u.pair); */
 }
 
 /*

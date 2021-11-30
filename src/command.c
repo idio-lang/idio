@@ -346,7 +346,7 @@ char *idio_command_string_C (IDIO var, IDIO val, size_t *sizep, char const *op_C
 	 */
 	size_t C_size = idio_strnlen (val_C, *sizep + 1);
 	if (C_size != *sizep) {
-	    IDIO_GC_FREE (val_C);
+	    IDIO_GC_FREE (val_C, *sizep);
 
 	    idio_command_format_error (op_C, "contains an ASCII NUL", var, val, c_location);
 
@@ -373,12 +373,13 @@ char *idio_command_string_C (IDIO var, IDIO val, size_t *sizep, char const *op_C
  * whatever execve() places on it -- which presumes execve() is going
  * to get called.
  */
-char **idio_command_get_envp ()
+char **idio_command_get_envp (size_t *sizep)
 {
     IDIO symbols = idio_module_visible_symbols (idio_thread_env_module (), idio_S_environ);
     size_t n = idio_list_length (symbols);
 
-    char **envp = idio_alloc ((n + 1) * sizeof (char *));
+    *sizep = (n + 1) * sizeof (char *);
+    char **envp = idio_alloc (*sizep);
 
     n = 0;
     while (idio_S_nil != symbols) {
@@ -428,10 +429,10 @@ char **idio_command_get_envp ()
 		n++;
 
 		if (free_val_C) {
-		    IDIO_GC_FREE (val_C);
+		    IDIO_GC_FREE (val_C, vlen);
 		}
 	    } else {
-		IDIO_GC_FREE (envp);
+		IDIO_GC_FREE (envp, *sizep);
 
 		/*
 		 * Test Case: command-errors/env-format.idio
@@ -465,6 +466,7 @@ char *idio_command_find_exe_C (char const *command, size_t const cmdlen, size_t 
 
     int free_path_C = 0;
     char *path_C = NULL;
+    size_t plen;
     char *path;
     char *pathe;
     if (idio_S_undef == PATH ||
@@ -493,7 +495,6 @@ char *idio_command_find_exe_C (char const *command, size_t const cmdlen, size_t 
 	 * PATH :* join-string (make-string 1 #U+0) '("hello" "world")
 	 * (env)
 	 */
-	size_t plen;
 	path_C = idio_command_string_C (idio_env_PATH_sym, PATH, &plen, "find-exe", &free_path_C, IDIO_C_FUNC_LOCATION ());
 
 	path = path_C;
@@ -507,7 +508,7 @@ char *idio_command_find_exe_C (char const *command, size_t const cmdlen, size_t 
     char cwd[PATH_MAX];
     if (idio_getcwd ("find-exe/getcwd", cwd, PATH_MAX) == NULL) {
 	if (free_path_C){
-	    IDIO_GC_FREE (path_C);
+	    IDIO_GC_FREE (path_C, plen);
 	}
 
 	/*
@@ -542,7 +543,7 @@ char *idio_command_find_exe_C (char const *command, size_t const cmdlen, size_t 
 		 */
 
 		if (free_path_C) {
-		    IDIO_GC_FREE (path_C);
+		    IDIO_GC_FREE (path_C, plen);
 		}
 
 		idio_error_system ("cwd+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C_len (command, cmdlen)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -572,7 +573,7 @@ char *idio_command_find_exe_C (char const *command, size_t const cmdlen, size_t 
 		     */
 
 		    if (free_path_C) {
-			IDIO_GC_FREE (path_C);
+			IDIO_GC_FREE (path_C, plen);
 		    }
 
 		    idio_error_system ("PATH+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C_len (command, cmdlen)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -597,7 +598,7 @@ char *idio_command_find_exe_C (char const *command, size_t const cmdlen, size_t 
 			 */
 
 			if (free_path_C) {
-			    IDIO_GC_FREE (path_C);
+			    IDIO_GC_FREE (path_C, plen);
 			}
 
 			idio_error_system ("cwd+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C_len (command, cmdlen)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -627,7 +628,7 @@ char *idio_command_find_exe_C (char const *command, size_t const cmdlen, size_t 
 			 */
 
 			if (free_path_C) {
-			    IDIO_GC_FREE (path_C);
+			    IDIO_GC_FREE (path_C, plen);
 			}
 
 			idio_error_system ("dir+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C_len (command, cmdlen)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -662,7 +663,7 @@ char *idio_command_find_exe_C (char const *command, size_t const cmdlen, size_t 
 		 */
 
 		if (free_path_C) {
-		    IDIO_GC_FREE (path_C);
+		    IDIO_GC_FREE (path_C, plen);
 		}
 
 		idio_error_system_errno ("stat", idio_string_C_len (exename, exelen), IDIO_C_FUNC_LOCATION ());
@@ -700,13 +701,13 @@ char *idio_command_find_exe_C (char const *command, size_t const cmdlen, size_t 
     }
 
     if (free_path_C) {
-	IDIO_GC_FREE (path_C);
+	IDIO_GC_FREE (path_C, plen);
     }
 
     return pathname;
 }
 
-char *idio_command_find_exe (IDIO func)
+char *idio_command_find_exe (IDIO func, size_t *sizep)
 {
     IDIO_ASSERT (func);
 
@@ -720,17 +721,17 @@ char *idio_command_find_exe (IDIO func)
      * %find-exe (join-string (make-string 1 #U+0) '("hello" "world"))
      % %find-exe #t 2 3
      */
-    size_t flen;
-    char *func_C = idio_command_string_C (idio_S_nil, func, &flen, "command", &free_func_C, IDIO_C_FUNC_LOCATION ());
+    char *func_C = idio_command_string_C (idio_S_nil, func, sizep, "command", &free_func_C, IDIO_C_FUNC_LOCATION ());
 
     if (strchr (func_C, '/') == NULL) {
 	size_t rlen = 0;
-	char *r = idio_command_find_exe_C (func_C, flen, &rlen);
+	char *r = idio_command_find_exe_C (func_C, *sizep, &rlen);
 
 	if (free_func_C) {
-	    IDIO_GC_FREE (func_C);
+	    IDIO_GC_FREE (func_C, *sizep);
 	}
 
+	*sizep = rlen;
 	return r;
     } else {
 	/*
@@ -743,12 +744,12 @@ char *idio_command_find_exe (IDIO func)
 	 * which our caller frees.  We then get a second attempt to
 	 * free it (from the symbol table) when the VM shuts down.
 	 */
-	char *cmdname = idio_alloc (flen + 1);
-	memcpy (cmdname, func_C, flen);
-	cmdname[flen] = '\0';
+	char *cmdname = idio_alloc (*sizep + 1);
+	memcpy (cmdname, func_C, *sizep);
+	cmdname[*sizep] = '\0';
 
 	if (free_func_C) {
-	    IDIO_GC_FREE (func_C);
+	    IDIO_GC_FREE (func_C, *sizep);
 	}
 
 	return cmdname;
@@ -771,7 +772,8 @@ find `command` on :var:`PATH`			\n\
      * either a symbol or a string
      */
 
-    char *pathname = idio_command_find_exe (command);
+    size_t pathname_len = 0;
+    char *pathname = idio_command_find_exe (command, &pathname_len);
     if (NULL == pathname) {
 	/*
 	 * Test Case: command-errors/find-exe-not-found.idio
@@ -787,7 +789,7 @@ find `command` on :var:`PATH`			\n\
 
     IDIO r = idio_pathname_C (pathname);
 
-    IDIO_GC_FREE (pathname);
+    IDIO_GC_FREE (pathname, pathname_len);
 
     return r;
 }
@@ -904,7 +906,7 @@ static ssize_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
 	     * out so we don't get here.
 	     */
 	    if (free_glob_C) {
-		IDIO_GC_FREE (glob_C);
+		IDIO_GC_FREE (glob_C, glen);
 	    }
 
 	    idio_command_glob_error (arg, IDIO_C_FUNC_LOCATION ());
@@ -915,7 +917,7 @@ static ssize_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
     }
 
     if (free_glob_C) {
-	IDIO_GC_FREE (glob_C);
+	IDIO_GC_FREE (glob_C, glen);
     }
 
     return r;
@@ -1221,12 +1223,14 @@ void idio_command_free_argv1 (char **argv)
 {
     /*
      * NB don't free pathname, argv[0] -- we didn't allocate it
+     *
+     * XXX we've lost the argv[i] lengths
      */
     int j;
     for (j = 1; NULL != argv[j]; j++) {
-	IDIO_GC_FREE (argv[j]);
+	idio_free (argv[j]);
     }
-    IDIO_GC_FREE (argv);
+    idio_free (argv);
 }
 
 /*
@@ -1620,7 +1624,8 @@ exec `command` `args`				\n\
 
     IDIO_USER_TYPE_ASSERT (symbol, command);
 
-    char *pathname = idio_command_find_exe (command);
+    size_t pathname_len = 0;
+    char *pathname = idio_command_find_exe (command, &pathname_len);
     if (NULL == pathname) {
 	/*
 	 * Test Case: command-errors/exec-not-found.idio
@@ -1651,7 +1656,8 @@ exec `command` `args`				\n\
 
     argv[0] = pathname;
 
-    char **envp = idio_command_get_envp ();
+    size_t envp_len = 0;
+    char **envp = idio_command_get_envp (&envp_len);
 
     execve (argv[0], argv, envp);
     perror ("execv");

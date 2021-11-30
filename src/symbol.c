@@ -381,9 +381,6 @@ void idio_free_symbol (IDIO s)
     IDIO_ASSERT (s);
     IDIO_TYPE_ASSERT (symbol, s);
 
-    idio_gc_stats_free (IDIO_SYMBOL_BLEN (s) + 1);
-
-    /* IDIO_GC_FREE (s->u.symbol); */
 }
 
 IDIO idio_symbols_C_intern (char const *sym_C, size_t const blen)
@@ -420,7 +417,7 @@ IDIO idio_symbols_string_intern (IDIO str)
 	 * Coding error.  idio_symbols_string_intern() is called from
 	 * the primitive {symbols} and uses already existing symbols.
 	 */
-	IDIO_GC_FREE (sC);
+	IDIO_GC_FREE (sC, size);
 
 	idio_symbol_format_error ("symbol: contains an ASCII NUL", str, IDIO_C_FUNC_LOCATION ());
 
@@ -429,7 +426,7 @@ IDIO idio_symbols_string_intern (IDIO str)
 
     IDIO r = idio_symbols_C_intern (sC, size);
 
-    IDIO_GC_FREE (sC);
+    IDIO_GC_FREE (sC, size);
 
     return r;
 }
@@ -517,7 +514,7 @@ Such *gensyms* are not guaranteed to be unique if saved.\n\
 		 *
 		 * gensym (join-string (make-string 1 U+0) '("hello" "world"))
 		 */
-		IDIO_GC_FREE (prefix_C);
+		IDIO_GC_FREE (prefix_C, prefix_C_len);
 
 		idio_symbol_format_error ("gensym: prefix contains an ASCII NUL", prefix, IDIO_C_FUNC_LOCATION ());
 
@@ -543,7 +540,7 @@ Such *gensyms* are not guaranteed to be unique if saved.\n\
     IDIO sym = idio_gensym (prefix_C, prefix_C_len);
 
     if (free_me) {
-	IDIO_GC_FREE (prefix_C);
+	IDIO_GC_FREE (prefix_C, prefix_C_len);
     }
 
     return sym;

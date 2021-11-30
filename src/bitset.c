@@ -144,9 +144,7 @@ void idio_free_bitset (IDIO bs)
     IDIO_ASSERT (bs);
     IDIO_TYPE_ASSERT (bitset, bs);
 
-    idio_gc_stats_free (sizeof (idio_bitset_t) + IDIO_BITSET_SIZE (bs) / sizeof (idio_bitset_word_t) + 1);
-
-    IDIO_GC_FREE (bs->u.bitset.words);
+    IDIO_GC_FREE (bs->u.bitset.words, IDIO_BITSET_SIZE (bs) / sizeof (idio_bitset_word_t) + 1);
 }
 
 IDIO idio_bitset_set (IDIO bs, size_t const bit)

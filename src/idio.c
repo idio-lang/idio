@@ -512,13 +512,13 @@ int main (int argc, char **argv, char **envp)
 	break;
     case IDIO_VM_SIGLONGJMP_EXIT:
 	fprintf (stderr, "NOTICE: bootstrap/exit (%d) for PID %d\n", idio_exit_status, getpid ());
-	IDIO_GC_FREE (sargv);
+	idio_free (sargv);
 	idio_final ();
 	exit (idio_exit_status);
 	break;
     default:
 	fprintf (stderr, "sigsetjmp: bootstrap failed: exit (%d)\n", idio_exit_status);
-	IDIO_GC_FREE (sargv);
+	idio_free (sargv);
 	idio_final ();
 	exit (idio_exit_status);
 	break;
@@ -555,7 +555,7 @@ int main (int argc, char **argv, char **envp)
      */
     IDIO load = idio_module_symbol_value (idio_S_load, idio_Idio_module_instance (), IDIO_LIST1 (idio_S_false));
     if (idio_S_false == load) {
-	IDIO_GC_FREE (sargv);
+	idio_free (sargv);
 	idio_coding_error_C ("cannot lookup 'load'", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -581,13 +581,13 @@ int main (int argc, char **argv, char **envp)
 	if (idio_exit_status) {
 	    fprintf (stderr, "NOTICE: script/exit (%d) for PID %d\n", idio_exit_status, getpid ());
 	}
-	IDIO_GC_FREE (sargv);
+	idio_free (sargv);
 	idio_final ();
 	exit (idio_exit_status);
 	break;
     default:
 	fprintf (stderr, "sigsetjmp: script failed: exit (%d)\n", idio_exit_status);
-	IDIO_GC_FREE (sargv);
+	idio_free (sargv);
 	idio_final ();
 	exit (idio_exit_status);
 	break;
@@ -673,13 +673,13 @@ int main (int argc, char **argv, char **envp)
 			    break;
 			case IDIO_VM_SIGLONGJMP_EXIT:
 			    fprintf (stderr, "load %s/exit (%d)\n", argv[i], idio_exit_status);
-			    IDIO_GC_FREE (sargv);
+			    idio_free (sargv);
 			    idio_final ();
 			    exit (idio_exit_status);
 			    break;
 			default:
 			    fprintf (stderr, "sigsetjmp: load %s: failed\n", argv[i]);
-			    IDIO_GC_FREE (sargv);
+			    idio_free (sargv);
 			    idio_final ();
 			    exit (1);
 			    break;
@@ -791,13 +791,13 @@ int main (int argc, char **argv, char **envp)
 	    break;
 	case IDIO_VM_SIGLONGJMP_EXIT:
 	    fprintf (stderr, "load/exit (%d)\n", idio_exit_status);
-	    IDIO_GC_FREE (sargv);
+	    idio_free (sargv);
 	    idio_final ();
 	    exit (idio_exit_status);
 	    break;
 	default:
 	    fprintf (stderr, "sigsetjmp: load %s: failed\n", sargv[0]);
-	    IDIO_GC_FREE (sargv);
+	    idio_free (sargv);
 	    idio_final ();
 	    exit (1);
 	    break;
@@ -848,12 +848,12 @@ int main (int argc, char **argv, char **envp)
 	    break;
 	case IDIO_VM_SIGLONGJMP_EXIT:
 	    idio_gc_reset ("REPL/exit", gc_pause);
-	    IDIO_GC_FREE (sargv);
+	    idio_free (sargv);
 	    idio_final ();
 	    exit (idio_exit_status);
 	default:
 	    fprintf (stderr, "sigsetjmp: repl failed\n");
-	    IDIO_GC_FREE (sargv);
+	    idio_free (sargv);
 	    exit (1);
 	    break;
 	}
@@ -867,7 +867,7 @@ int main (int argc, char **argv, char **envp)
 	idio_load_handle_C (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);
     }
 
-    IDIO_GC_FREE (sargv);
+    idio_free (sargv);
     idio_final ();
 
     return idio_exit_status;

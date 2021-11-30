@@ -265,9 +265,7 @@ void idio_free_module (IDIO mo)
 
     IDIO_TYPE_ASSERT (module, mo);
 
-    idio_gc_stats_free (sizeof (idio_module_t));
-
-    IDIO_GC_FREE (mo->u.module);
+    IDIO_GC_FREE (mo->u.module, sizeof (idio_module_t));
 }
 
 IDIO idio_module_get_vci (IDIO module, IDIO mci)
@@ -1099,7 +1097,7 @@ IDIO idio_module_direct_reference (IDIO name)
 	IDIO m_sym = idio_symbols_C_intern (copy_C, mlen);
 	IDIO s_sym = idio_symbols_C_intern (slash + 1, name_len - mlen - 1);
 
-	IDIO_GC_FREE (copy_C);
+	idio_free (copy_C);
 
 	IDIO mod = idio_module_find_module (m_sym);
 

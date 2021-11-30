@@ -126,7 +126,8 @@ IDIO idio_error_string (char const *format, va_list argp)
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (s, sh);
-    IDIO_GC_FREE (s);
+
+    idio_free (s);
 
     return idio_get_output_string (sh);
 }

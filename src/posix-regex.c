@@ -85,8 +85,7 @@ static IDIO idio_posix_regex_error (int errcode, regex_t *preg, char const *C_fu
 	idio_display_C (" failure: ", msh);
 	idio_display_C (errbuf, msh);
 
-	IDIO_GC_FREE (errbuf);
-	idio_gc_stats_free (errbufsiz);
+	IDIO_GC_FREE (errbuf, errbufsiz);
 
 	IDIO location = idio_vm_source_location ();
 
@@ -174,13 +173,11 @@ IDIO idio_posix_regex_regcomp (IDIO rx, IDIO flags)
 
     int errcode = regcomp (preg, Crx, cflags);
 
-    idio_gc_free (Crx);
-    idio_gc_stats_free (Crx_size);
+    idio_gc_free (Crx, Crx_size);
 
     if (errcode) {
 	regfree (preg);
-	IDIO_GC_FREE (preg);
-	idio_gc_stats_free (sizeof (regex_t));
+	IDIO_GC_FREE (preg, sizeof (regex_t));
 
 	/*
 	 * Test Case: posix-regex-errors/regcomp-bad-pattern.idio
@@ -331,11 +328,9 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
     int errcode = regexec (preg, Cs, nmatch, matches, eflags);
 
     if (errcode) {
-	IDIO_GC_FREE (matches);
-	idio_gc_stats_free (nmatch * sizeof (regmatch_t));
+	IDIO_GC_FREE (matches, nmatch * sizeof (regmatch_t));
 
-	idio_gc_free (Cs);
-	idio_gc_stats_free (Cs_size);
+	idio_gc_free (Cs, Cs_size);
 
 	if (REG_NOMATCH == errcode) {
 	    return idio_S_false;
@@ -353,11 +348,9 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
 	}
     }
 
-    idio_gc_free (Cs);
-    idio_gc_stats_free (Cs_size);
+    idio_gc_free (Cs, Cs_size);
 
-    IDIO_GC_FREE (matches);
-    idio_gc_stats_free (nmatch * sizeof (regmatch_t));
+    IDIO_GC_FREE (matches, nmatch * sizeof (regmatch_t));
 
     return r;
 }

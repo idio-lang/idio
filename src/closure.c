@@ -159,9 +159,7 @@ void idio_free_closure (IDIO c)
     IDIO_ASSERT (c);
     IDIO_TYPE_ASSERT (closure, c);
 
-    idio_gc_stats_free (sizeof (idio_closure_t));
-
-    IDIO_GC_FREE (c->u.closure);
+    IDIO_GC_FREE (c->u.closure, sizeof (idio_closure_t));
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("function?", functionp, (IDIO o), "o", "\
