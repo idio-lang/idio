@@ -65,12 +65,6 @@ IDIO idio_json5_literal_value_neg_NaN_sym = idio_S_nil;
 IDIO idio_condition_rt_json5_error_type;
 IDIO idio_condition_rt_json5_value_error_type;
 
-#ifdef IDIO_MALLOC
-#define JSON5_VASPRINTF idio_malloc_vasprintf
-#else
-#define JSON5_VASPRINTF vasprintf
-#endif
-
 void json5_error_alloc (char *m)
 {
     assert (m);
@@ -91,17 +85,18 @@ void json5_error_alloc (char *m)
 IDIO json5_error_string (char *format, va_list argp)
 {
     char *s;
-    if (-1 == JSON5_VASPRINTF (&s, format, argp)) {
+    if (-1 == idio_vasprintf (&s, format, argp)) {
 	json5_error_alloc ("asprintf");
     }
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (s, sh);
-#ifdef IDIO_MALLOC
+
     IDIO_GC_FREE (s);
-#else
-    free (s);
-#endif
+    /*
+     * idio_vasprintf will not have called idio_gc_alloc to no stats
+     * decrement
+     */
 
     return idio_get_output_string (sh);
 }

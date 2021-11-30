@@ -132,6 +132,10 @@ void *idio_realloc (void *p, size_t const s)
     return p;
 }
 
+/*
+ * XXX has the caller decremented idio_gc->stats.nbytes by calling
+ * idio_gc_stats_free()?
+ */
 void idio_gc_free (void *p)
 {
 #ifdef IDIO_MALLOC
@@ -149,11 +153,7 @@ void idio_gc_free (void *p)
  * goes.
  */
 
-#ifdef IDIO_MALLOC
 #define IDIO_GC_ALLOC_POOL	1
-#else
-#define IDIO_GC_ALLOC_POOL	1024
-#endif
 
 IDIO idio_gc_get_alloc ()
 {
@@ -2095,6 +2095,7 @@ void idio_gc_obj_free ()
 	    IDIO co = gc->free;
 	    gc->free = co->next;
 	    IDIO_GC_FREE (co);
+	    gc->stats.nbytes -= sizeof (idio_t);
 	    n++;
 	}
 	IDIO_C_ASSERT (n == gc->stats.nfree);
@@ -2104,6 +2105,7 @@ void idio_gc_obj_free ()
 	    IDIO co = gc->used;
 	    gc->used = co->next;
 	    IDIO_GC_FREE (co);
+	    gc->stats.nbytes -= sizeof (idio_t);
 	    n++;
 	}
 
@@ -2111,6 +2113,15 @@ void idio_gc_obj_free ()
 	gc = gc->next;
 	IDIO_GC_FREE (ogc);
     }
+}
+
+int idio_vasprintf (char **strp, char const *fmt, va_list ap)
+{
+#ifdef IDIO_MALLOC
+    return idio_malloc_vasprintf (strp, fmt, ap);
+#else
+    return vasprintf (strp, fmt, ap);
+#endif
 }
 
 /*
@@ -2123,11 +2134,7 @@ int idio_asprintf(char **strp, char const *fmt, ...)
     va_list ap;
 
     va_start (ap, fmt);
-#ifdef IDIO_MALLOC
-    r = idio_malloc_vasprintf (strp, fmt, ap);
-#else
-    r = vasprintf (strp, fmt, ap);
-#endif
+    r = idio_vasprintf (strp, fmt, ap);
     va_end (ap);
 
     if (-1 == r) {
@@ -2162,17 +2169,7 @@ char *idio_strcat (char *s1, size_t *s1sp, char const *s2, size_t const s2s)
 	return s1;
     }
 
-#ifdef IDIO_MALLOC
-    /*
-     * The original string was allocated by idio_malloc_asprintf()
-     */
-    char *r = idio_malloc_realloc (s1, *s1sp + s2s + 1);
-#else
-    /*
-     * The original string was allocated by asprintf()
-     */
-    char *r = realloc (s1, *s1sp + s2s + 1);
-#endif
+    char *r = idio_realloc (s1, *s1sp + s2s + 1);
     if (NULL == r) {
 	idio_error_alloc ("realloc");
 
@@ -2208,11 +2205,8 @@ char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, size_t const s2s)
     }
 
     char *r = idio_strcat (s1, s1sp, s2, s2s);
-#ifdef IDIO_MALLOC
-    idio_malloc_free (s2);
-#else
-    free (s2);
-#endif
+    idio_gc_free (s2);
+    idio_gc_stats_free (s2s);
 
     return r;
 }

@@ -40,12 +40,6 @@
 #include "json5-token.h"
 #include "json5-parser.h"
 
-#ifdef IDIO_MALLOC
-#define JSON5_VASPRINTF idio_malloc_vasprintf
-#else
-#define JSON5_VASPRINTF vasprintf
-#endif
-
 void json5_error_alloc (char *m)
 {
     assert (m);
@@ -66,7 +60,7 @@ void json5_error_alloc (char *m)
 char *json5_error_string (char *format, va_list argp)
 {
     char *s;
-    if (-1 == JSON5_VASPRINTF (&s, format, argp)) {
+    if (-1 == idio_vasprintf (&s, format, argp)) {
 	json5_error_alloc ("asprintf");
     }
 

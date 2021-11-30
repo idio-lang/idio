@@ -86,6 +86,7 @@ static IDIO idio_posix_regex_error (int errcode, regex_t *preg, char const *C_fu
 	idio_display_C (errbuf, msh);
 
 	IDIO_GC_FREE (errbuf);
+	idio_gc_stats_free (errbufsiz);
 
 	IDIO location = idio_vm_source_location ();
 
@@ -165,8 +166,8 @@ IDIO idio_posix_regex_regcomp (IDIO rx, IDIO flags)
 	flags = IDIO_PAIR_T (flags);
     }
 
-    size_t size = 0;
-    char *Crx = idio_display_string (rx, &size);
+    size_t Crx_size = 0;
+    char *Crx = idio_display_string (rx, &Crx_size);
 
     regex_t *preg;
     IDIO_GC_ALLOC (preg, sizeof (regex_t));
@@ -174,8 +175,13 @@ IDIO idio_posix_regex_regcomp (IDIO rx, IDIO flags)
     int errcode = regcomp (preg, Crx, cflags);
 
     idio_gc_free (Crx);
+    idio_gc_stats_free (Crx_size);
 
     if (errcode) {
+	regfree (preg);
+	IDIO_GC_FREE (preg);
+	idio_gc_stats_free (sizeof (regex_t));
+
 	/*
 	 * Test Case: posix-regex-errors/regcomp-bad-pattern.idio
 	 *
@@ -309,8 +315,8 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
 	flags = IDIO_PAIR_T (flags);
     }
 
-    size_t size = 0;
-    char *Cs = idio_display_string (s, &size);
+    size_t Cs_size = 0;
+    char *Cs = idio_display_string (s, &Cs_size);
 
     regex_t *preg = IDIO_C_TYPE_POINTER_P (rx);
     /*
@@ -325,7 +331,11 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
     int errcode = regexec (preg, Cs, nmatch, matches, eflags);
 
     if (errcode) {
+	IDIO_GC_FREE (matches);
+	idio_gc_stats_free (nmatch * sizeof (regmatch_t));
+
 	idio_gc_free (Cs);
+	idio_gc_stats_free (Cs_size);
 
 	if (REG_NOMATCH == errcode) {
 	    return idio_S_false;
@@ -344,7 +354,10 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
     }
 
     idio_gc_free (Cs);
+    idio_gc_stats_free (Cs_size);
+
     IDIO_GC_FREE (matches);
+    idio_gc_stats_free (nmatch * sizeof (regmatch_t));
 
     return r;
 }

@@ -120,11 +120,7 @@ void idio_error_warning_message (char const *format, ...)
 IDIO idio_error_string (char const *format, va_list argp)
 {
     char *s;
-#ifdef IDIO_MALLOC
-    if (-1 == idio_malloc_vasprintf (&s, format, argp)) {
-#else
-    if (-1 == vasprintf (&s, format, argp)) {
-#endif
+    if (-1 == idio_vasprintf (&s, format, argp)) {
 	idio_error_alloc ("asprintf");
     }
 

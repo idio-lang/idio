@@ -431,6 +431,8 @@ char **idio_command_get_envp ()
 		    IDIO_GC_FREE (val_C);
 		}
 	    } else {
+		IDIO_GC_FREE (envp);
+
 		/*
 		 * Test Case: command-errors/env-format.idio
 		 *

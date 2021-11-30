@@ -1756,6 +1756,8 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 	 */
 	int pgrp_pipe[2];
 	if (pipe (pgrp_pipe) < 0) {
+	    IDIO_GC_FREE (envp);
+
 	    idio_error_system_errno ("pipe", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -1763,6 +1765,12 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 
 	pid_t pid = fork ();
 	if (pid < 0) {
+	    IDIO_GC_FREE (envp);
+
+	    /*
+	     * was idio_alloc()'ed no no stat decrement
+	     */
+
 	    idio_error_system_errno ("fork", IDIO_LIST2 (proc, job), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -1780,6 +1788,8 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 					   0);
 
 	    if (close (pgrp_pipe[1]) < 0) {
+		IDIO_GC_FREE (envp);
+
 		idio_error_system_errno ("close", idio_fixnum (pgrp_pipe[1]), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -1792,6 +1802,8 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 	    read (pgrp_pipe[0], buf, 1);
 
 	    if (close (pgrp_pipe[0]) < 0) {
+		IDIO_GC_FREE (envp);
+
 		idio_error_system_errno ("close", idio_fixnum (pgrp_pipe[0]), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -1810,6 +1822,8 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 	    exit (33);
 	    return idio_S_notreached;
 	} else {
+	    IDIO_GC_FREE (envp);
+
 	    idio_struct_instance_set_direct (proc, IDIO_PROCESS_ST_PID, idio_libc_pid_t (pid));
 	    if (idio_job_control_interactive) {
 		if (0 == job_pgid) {

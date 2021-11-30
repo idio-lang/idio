@@ -886,6 +886,7 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
 	    }
 
 	    IDIO_GC_FREE (idiolib_C);
+	    IDIO_GC_FREE (ieId);
 	}
     }
 }

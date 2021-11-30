@@ -127,6 +127,7 @@ void idio_free_frame (IDIO fo)
 
     IDIO_TYPE_ASSERT (frame, fo);
 
+    idio_gc_stats_free (IDIO_FRAME_NALLOC (fo) * sizeof (IDIO));
     idio_gc_stats_free (sizeof (idio_frame_t));
 
     IDIO_GC_FREE (fo->u.frame->args);

@@ -188,6 +188,7 @@ void idio_print_bignum_as_json (IDIO v, IDIO oh, int json5, int depth)
     }
 
     IDIO_GC_FREE (bs);
+    idio_gc_stats_free (size);
 }
 
 void idio_print_array_as_json (IDIO a, IDIO oh, int json5, int depth)

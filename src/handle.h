@@ -29,7 +29,7 @@ void idio_handle_closed_error (IDIO h, IDIO c_location);
 
 IDIO idio_handle ();
 int idio_isa_handle (IDIO d);
-char *idio_handle_name_as_C (IDIO h);
+char *idio_handle_name_as_C (IDIO h, size_t *sizep);
 void idio_free_handle (IDIO d);
 void idio_handle_finalizer (IDIO handle);
 

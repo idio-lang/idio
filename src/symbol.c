@@ -381,6 +381,8 @@ void idio_free_symbol (IDIO s)
     IDIO_ASSERT (s);
     IDIO_TYPE_ASSERT (symbol, s);
 
+    idio_gc_stats_free (IDIO_SYMBOL_BLEN (s) + 1);
+
     /* IDIO_GC_FREE (s->u.symbol); */
 }
 

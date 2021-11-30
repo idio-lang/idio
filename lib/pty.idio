@@ -145,8 +145,7 @@ read some data from `fd`
 
 :param fd: fd to read from
 :type fd: C/int
-:return: string read
-:rtype: string
+:return: see :ref:`libc/read <libc/read>`
 :raises ^system-error:
 
 " {
@@ -176,34 +175,41 @@ write `mfd` (`in-read` STDIN_FILENO)
     if (not (null? r)) {
       for p in r {
 	fd := ph p
+	revents := pht p
 	(cond
 	 ((C/== mfd fd) {
 	   (cond
-	    ((POLLERR? (pht p)) {
+	    ((POLLERR? revents) {
 	      poller-deregister poller fd
 	    })
-	    ((POLLIN? (pht p)) {
+	    ((POLLIN? revents) {
 	      data := m-read fd
-	      if (eof-object? data) {
-		poller-deregister poller fd
-	      } {
-		write STDOUT_FILENO data
-		(loop)
+	      if data {
+		if (eof-object? data) {
+		  poller-deregister poller fd
+		} {
+		  n := write STDOUT_FILENO data
+		  eprintf "write STDOUT %d / %d\n" n (string-length data)
+		  (loop)
+		}
 	      }
 	    }))
 	 })
 	 ((C/== STDIN_FILENO fd) {
 	   (cond
-	    ((POLLERR? (pht p)) {
+	    ((POLLERR? revents) {
 	      poller-deregister poller fd
 	    })
-	    ((POLLIN? (pht p)) {
+	    ((POLLIN? revents) {
 	      data := in-read fd
-	      if (eof-object? data) {
-		poller-deregister poller fd
-	      } {
-		write mfd data
-		(loop)
+	      if data {
+		if (eof-object? data) {
+		  poller-deregister poller fd
+		} {
+		  n := write mfd data
+		  eprintf "write mfd %d / %d\n" n (string-length data)
+		  (loop)
+		}
 	      }
 	    }))
 	 }))
@@ -241,7 +247,7 @@ sub-process.
     apply command/%exec argv
 
     ;; just in case!
-    exit 0
+    libc/exit 0
   }
 
   ;; tty.setraw?

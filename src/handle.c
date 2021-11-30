@@ -213,7 +213,8 @@ static void idio_handle_bad_output_error (IDIO h, IDIO c_location)
  */
 void idio_handle_lookahead_error (IDIO h, int c)
 {
-    idio_error_printf (IDIO_C_FUNC_LOCATION (), "%s->unget => %#x (!= EOF)", idio_handle_name_as_C (h), c);
+    size_t size = 0;
+    idio_error_printf (IDIO_C_FUNC_LOCATION (), "%s->unget => %#x (!= EOF)", idio_handle_name_as_C (h, &size), c);
 
     /* notreached */
 }
@@ -274,7 +275,7 @@ int idio_isa_handle (IDIO h)
  * There's no direct user call to here but handle-location does use
  * idio_handle_name_as_C().
  */
-char *idio_handle_name_as_C (IDIO h)
+char *idio_handle_name_as_C (IDIO h, size_t *sizep)
 {
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
@@ -284,9 +285,9 @@ char *idio_handle_name_as_C (IDIO h)
 	hname = IDIO_HANDLE_PATHNAME (h);
     }
     char *name;;
-    size_t size = 0;
+    *sizep = 0;
     if (idio_isa_string (hname)) {
-	name = idio_string_as_C (hname, &size);
+	name = idio_string_as_C (hname, sizep);
     } else {
 	/*
 	 * I need to stop myself printing things out
@@ -2005,11 +2006,13 @@ IDIO idio_handle_location (IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    char *sname = idio_handle_name_as_C (h);
+    size_t size = 0;
+    char *sname = idio_handle_name_as_C (h, &size);
     char buf[BUFSIZ];
     size_t buflen = idio_snprintf (buf, BUFSIZ, "%s:line %jd", sname, (intmax_t) IDIO_HANDLE_LINE (h));
 
     IDIO_GC_FREE (sname);
+    idio_gc_stats_free (size);
 
     return idio_string_C_len (buf, buflen);
 }
@@ -2146,9 +2149,13 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	    idio_ai_t ss = idio_array_size (stack);
 
 	    if (ss != ss0) {
-		char *sname = idio_handle_name_as_C (h);
+		size_t size = 0;
+		char *sname = idio_handle_name_as_C (h, &size);
 		fprintf (stderr, "load-handle: %s: SS %td != %td\n", sname, ss, ss0);
+
 		IDIO_GC_FREE (sname);
+		idio_gc_stats_free (size);
+
 		idio_vm_thread_state (thr);
 	    }
 
@@ -2335,9 +2342,13 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
     idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (sp != sp0) {
-	char *sname = idio_handle_name_as_C (fh);
+	size_t size = 0;
+	char *sname = idio_handle_name_as_C (fh, &size);
 	fprintf (stderr, "load-file-handle-interactive: %s: SP %td != SP0 %td\n", sname, sp, sp0);
+
 	IDIO_GC_FREE (sname);
+	idio_gc_stats_free (size);
+
 	idio_debug ("THR %s\n", thr);
 	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
     }

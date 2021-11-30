@@ -232,6 +232,8 @@ void idio_free_keyword (IDIO s)
     IDIO_ASSERT (s);
     IDIO_TYPE_ASSERT (keyword, s);
 
+    idio_gc_stats_free (IDIO_KEYWORD_BLEN (s) + 1);
+
     /* IDIO_GC_FREE (s->u.keyword); */
 }
 

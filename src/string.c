@@ -785,7 +785,7 @@ void idio_free_string (IDIO so)
 
     IDIO_TYPE_ASSERT (string, so);
 
-    idio_gc_stats_free (IDIO_STRING_BLEN (so));
+    idio_gc_stats_free (IDIO_STRING_BLEN (so) + 1);
 
     IDIO_GC_FREE (IDIO_STRING_S (so));
 }

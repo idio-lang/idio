@@ -382,9 +382,6 @@ void idio_free_hash (IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (hash, h);
 
-    idio_gc_stats_free (sizeof (idio_hash_t));
-    idio_gc_stats_free (IDIO_HASH_SIZE (h) * sizeof (idio_hash_entry_t));
-
     if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
 	idio_hi_t i;
 	for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
@@ -397,6 +394,20 @@ void idio_free_hash (IDIO h)
 	    }
 	}
     }
+
+    idio_hi_t i;
+    for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
+	idio_hash_entry_t *he = IDIO_HASH_HA (h, i);
+	while (NULL != he) {
+	    idio_hash_entry_t *che = he;
+	    he = IDIO_HASH_HE_NEXT (he);
+	    IDIO_GC_FREE (che);
+	    idio_gc_stats_free (sizeof (idio_hash_entry_t));
+	}
+    }
+
+    idio_gc_stats_free (sizeof (idio_hash_t));
+    idio_gc_stats_free (IDIO_HASH_SIZE (h) * sizeof (idio_hash_entry_t));
 
     IDIO_GC_FREE (h->u.hash->ha);
     IDIO_GC_FREE (h->u.hash);
@@ -520,6 +531,15 @@ void idio_hash_resize (IDIO h, int larger)
 
     idio_gc_stats_free (osize * sizeof (idio_hash_entry_t));
     idio_gc_stats_free (osize * sizeof (idio_hash_entry_t));
+
+    for (i = 0; i < ohsize; i++) {
+	idio_hash_entry_t *he = oha[i];
+	while (NULL != he) {
+	    idio_hash_entry_t *che = he;
+	    he = IDIO_HASH_HE_NEXT (he);
+	    IDIO_GC_FREE (che);
+	}
+    }
 
     IDIO_GC_FREE (oha);
 }

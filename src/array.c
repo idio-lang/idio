@@ -261,7 +261,6 @@ void idio_resize_array (IDIO a)
     IDIO_ARRAY_USIZE (a) = ousize;
 
     idio_gc_stats_free (sizeof (idio_array_t) + oasize * sizeof (IDIO));
-    idio_gc_stats_free (sizeof (idio_array_t) + oasize * sizeof (IDIO));
 
     IDIO_GC_FREE (oarray->ae);
     IDIO_GC_FREE (oarray);

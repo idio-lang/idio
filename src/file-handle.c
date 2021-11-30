@@ -1478,6 +1478,14 @@ IDIO idio_open_file_handle_C (char const *func, IDIO filename, char const *pathn
 
     IDIO fh = idio_open_file_handle (filename, pathname, pathname_len, fd, h_type, h_flags, s_flags);
 
+    if (free_pathname) {
+	IDIO_GC_FREE (pathname);
+    }
+
+    if (free_mode_str) {
+	IDIO_GC_FREE (mode_str);
+    }
+
     return fh;
 }
 
@@ -1547,7 +1555,9 @@ IDIO idio_file_handle_open_file (char const *func, IDIO name, IDIO mode, char co
 	     *
 	     * open-file "bob" #t
 	     */
-	    IDIO_GC_FREE (name_C);
+	    if (free_name_C) {
+		IDIO_GC_FREE (name_C);
+	    }
 
 	    idio_error_param_type ("string", mode, IDIO_C_FUNC_LOCATION ());
 
@@ -3117,6 +3127,7 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 	    return NULL;
 	}
 
+	free_idiolib_copy_C = 1;
 	idiolib = idiolib_copy_C;
 	idiolibe = idiolib + C_size;
     }

@@ -1488,6 +1488,7 @@ void idio_gc_resume (char const *caller);
 void idio_gc_reset (char const *caller, int pause);
 void idio_gc_free ();
 
+int idio_vasprintf (char **strp, char const *fmt, va_list ap);
 int idio_asprintf(char **strp, char const *fmt, ...);
 char *idio_strcat (char *s1, size_t *s1sp, char const *s2, size_t s2s);
 char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, size_t s2s);

@@ -39,8 +39,10 @@ profiled :
 coverage :
 	$(MAKE) COVFLAGS="-fprofile-arcs -ftest-coverage"
 
-sanitize-address :
-	$(MAKE) SAN_CFLAGS="-fsanitize=address -g -UIDIO_MALLOC" SAN_LDFLAGS=-lasan
+# adding -DIDIO_DEBUG=3 to SAN_CFLAGS causes a memory leak in
+# __vasprintf_internal ...
+asan sanitize-address :
+	$(MAKE) SAN_CFLAGS="-fsanitize=address -g" SAN_LDFLAGS=-fsanitize=address
 
 lean :
 	$(MAKE) MAKE_LEAN=1
