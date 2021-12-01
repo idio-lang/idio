@@ -164,7 +164,7 @@ static int idio_assign_hash_he (IDIO h, idio_hi_t size)
      */
     size = mask + 1;
 
-    IDIO_GC_ALLOC (h->u.hash->ha, size * sizeof (idio_hash_entry_t));
+    IDIO_GC_ALLOC (h->u.hash->ha, size * sizeof (idio_hash_entry_t *));
 
     IDIO_HASH_MASK (h) = mask;
     IDIO_HASH_SIZE (h) = size;
@@ -535,7 +535,7 @@ void idio_hash_resize (IDIO h, int larger)
 	}
     }
 
-    IDIO_GC_FREE (oha, ohsize * sizeof (idio_hash_entry_t));
+    IDIO_GC_FREE (oha, ohsize * sizeof (idio_hash_entry_t *));
 }
 
 /*

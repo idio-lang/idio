@@ -140,6 +140,8 @@ json5_unicode_string_t *idio_string_to_json5_string_value (IDIO is)
 	reqd_bytes *= 4;
 	break;
     default:
+	free (so);
+
 	/*
 	 * Test Case: json5-errors/parse-string-bad-string-value.idio
 	 *
