@@ -31,6 +31,7 @@ void idio_command_not_found_error (char const *msg, IDIO cmd, IDIO c_location);
 char **idio_command_get_envp (size_t *sizep);
 char *idio_command_find_exe_C (char const *command, size_t cmdlen, size_t *lenp);
 char *idio_command_find_exe (IDIO func, size_t *sizep);
+void idio_command_free_argv1 (char **argv);
 IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname);
 
 void idio_init_command ();

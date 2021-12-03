@@ -302,8 +302,11 @@ void idio_add_primitives ()
     idio_init_first_thread ();
 }
 
+void idio_remove_terminal_signals ();
+
 void idio_final ()
 {
+    idio_remove_terminal_signals ();
     idio_state = IDIO_STATE_SHUTDOWN;
 
     idio_module_table_final ();
@@ -346,18 +349,44 @@ void idio_terminal_signal_handler (int sig)
     }
     terminating = 1;
 
-    idio_state = IDIO_STATE_SHUTDOWN;
+    idio_remove_terminal_signals ();
 
     /*
-     * restore the terminal state
+     * Careful!  We can get signals during shutdown where we may have
+     * already freed some key structures, notably %%idio-jobs,
+     * idio-print-conversion-precision, etc..
+     *
+     * This came up where a short script had "pipe-from ..." and the
+     * parent ended which calls
+     * idio_job_control_SIGTERM_stopped_jobs() which SIGTERM'd the
+     * async process "..." which was itself in the middle of shutting
+     * down.  The async process was then forced to come here where it
+     * tries to call these functions which try to use %%idio-jobs
+     * etc. which it had just freed...  Doh!
+     *
+     * Confusingly, you get a complaint from an IDIO_ASSERT() which,
+     * despite your best debugging doesn't appear to be a fault in the
+     * parent.  Which, of course, it isn't.  An assert() that reports
+     * the PID would have sped things up a bit.
+     *
+     * We can do two complimentary things: firstly, check we are not
+     * already shutting down and secondly, disable terminal signals
+     * (at least, set them back to default behaviour).
      */
-    idio_job_control_restore_terminal ();
+    if (IDIO_STATE_RUNNING == idio_state) {
+	/*
+	 * restore the terminal state
+	 */
+	idio_job_control_restore_terminal ();
 
-    if (SIGHUP == sig) {
-	idio_job_control_SIGHUP_signal_handler ();
+	if (SIGHUP == sig) {
+	    idio_job_control_SIGHUP_signal_handler ();
+	}
+
+	idio_job_control_SIGTERM_stopped_jobs ();
     }
 
-    idio_job_control_SIGTERM_stopped_jobs ();
+    idio_state = IDIO_STATE_SHUTDOWN;
 
     /*
      * Fall on our sword in the same way for clarity to our parent.
@@ -429,10 +458,41 @@ void idio_add_terminal_signal (int sig)
     }
 }
 
+void idio_remove_terminal_signal (int sig)
+{
+    struct sigaction nsa;
+    struct sigaction osa;
+
+    nsa.sa_handler = SIG_DFL;
+    nsa.sa_flags = 0;
+    sigemptyset (&nsa.sa_mask);
+
+    idio_sigaddset (&nsa.sa_mask, sig);
+
+    if (sigaction (sig, &nsa, &osa) == -1) {
+	/*
+	 * Test Case: ??
+	 */
+	char em[BUFSIZ];
+	idio_snprintf (em, BUFSIZ, "sigaction %s", idio_libc_signal_name (sig));
+
+	idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
+    }
+}
+
 void idio_add_terminal_signals ()
 {
     idio_add_terminal_signal (SIGHUP);
     idio_add_terminal_signal (SIGTERM);
+}
+
+void idio_remove_terminal_signals ()
+{
+    idio_remove_terminal_signal (SIGHUP);
+    idio_remove_terminal_signal (SIGTERM);
 }
 
 static void idio_usage (char *argv0)
@@ -579,9 +639,11 @@ int main (int argc, char **argv, char **envp)
     case 0:
 	break;
     case IDIO_VM_SIGLONGJMP_EXIT:
+#ifdef IDIO_DEBUG
 	if (idio_exit_status) {
 	    fprintf (stderr, "NOTICE: script/exit (%d) for PID %d\n", idio_exit_status, getpid ());
 	}
+#endif
 	idio_free (sargv);
 	idio_final ();
 	exit (idio_exit_status);

@@ -47,6 +47,8 @@ The C derived features are:
 
 IDIO_DEBUG				if compiled with C macro IDIO_DEBUG enabled
 
+__SANITIZE_ADDRESS__			if compiled with C -fsanitize=address flag
+
 uname/sysname/$sysname			uname(2)
 uname/nodename/$nodename		uname(2)
 uname/release/$release			uname(2)

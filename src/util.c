@@ -1142,8 +1142,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		 *
 		 * Coding error.
 		 */
-		size_t s = 0;
-		fprintf (stderr, "ipcf isa %s %s\n", idio_type2string (ipcf), idio_as_string (ipcf, &s, 1, seen, 0));
+		size_t size = 0;
+		char *ipcf_C = idio_as_string (ipcf, &size, 1, seen, 0);
+		fprintf (stderr, "ipcf isa %s %s\n", idio_type2string (ipcf), ipcf_C);
+		idio_gc_free (ipcf_C, size);
 
 		idio_error_param_value_msg_only ("idio_as_string", "idio-print-conversion-format", "should be unicode", IDIO_C_FUNC_LOCATION ());
 
@@ -4005,6 +4007,10 @@ void idio_init_util ()
 
 #ifdef IDIO_DEBUG
     idio_add_feature (IDIO_SYMBOLS_C_INTERN ("IDIO_DEBUG"));
+#endif
+
+#ifdef __SANITIZE_ADDRESS__
+    idio_add_feature (IDIO_SYMBOLS_C_INTERN ("__SANITIZE_ADDRESS__"));
 #endif
 
 #ifdef IDIO_EQUAL_DEBUG

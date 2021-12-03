@@ -1759,6 +1759,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 	 */
 	int pgrp_pipe[2];
 	if (pipe (pgrp_pipe) < 0) {
+	    idio_command_free_argv1 (argv);
 	    IDIO_GC_FREE (envp, envp_size);
 
 	    idio_error_system_errno ("pipe", idio_S_nil, IDIO_C_FUNC_LOCATION ());
@@ -1768,6 +1769,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 
 	pid_t pid = fork ();
 	if (pid < 0) {
+	    idio_command_free_argv1 (argv);
 	    IDIO_GC_FREE (envp, envp_size);
 
 	    /*
@@ -1791,6 +1793,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 					   0);
 
 	    if (close (pgrp_pipe[1]) < 0) {
+		idio_command_free_argv1 (argv);
 		IDIO_GC_FREE (envp, envp_size);
 
 		idio_error_system_errno ("close", idio_fixnum (pgrp_pipe[1]), IDIO_C_FUNC_LOCATION ());
@@ -1805,6 +1808,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 	    read (pgrp_pipe[0], buf, 1);
 
 	    if (close (pgrp_pipe[0]) < 0) {
+		idio_command_free_argv1 (argv);
 		IDIO_GC_FREE (envp, envp_size);
 
 		idio_error_system_errno ("close", idio_fixnum (pgrp_pipe[0]), IDIO_C_FUNC_LOCATION ());

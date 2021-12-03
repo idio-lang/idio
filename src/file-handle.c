@@ -3041,7 +3041,8 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 
     if (access (lib_idio, R_OK) == 0) {
 	IDIO lib_idio_I = idio_string_C_len (lib_idio, lib_idio_len);
-	idio_gc_protect (lib_idio_I);
+	IDIO thr = idio_thread_current_thread ();
+	idio_array_push (IDIO_THREAD_STACK (thr), lib_idio_I);
 
 	/*
 	 * There is the obvious race condition of substituting an
@@ -3069,7 +3070,7 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 
 	r = idio_load_handle_C (fh, reader, evaluator, cs);
 
-	idio_gc_expose (lib_idio_I);
+	idio_array_pop (IDIO_THREAD_STACK (thr));
     }
 
     return r;
@@ -3882,6 +3883,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 		    reader = fe->reader;
 		    evaluator = fe->evaluator;
 
+		    IDIO thr = idio_thread_current_thread ();
 		    /*
 		     * If it's not the same extension as the user gave
 		     * us then tack it on the end
@@ -3893,7 +3895,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 
 			filename_ext = idio_string_C_array (2, ss);
 
-			idio_gc_protect (filename_ext);
+			idio_array_push (IDIO_THREAD_STACK (thr), filename_ext);
 		    }
 
 		    if (access (lfn, R_OK) == 0) {
@@ -3910,7 +3912,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 			    }
 
 			    if (filename_ext != filename) {
-				idio_gc_expose (filename_ext);
+				idio_array_pop (IDIO_THREAD_STACK (thr));
 			    }
 
 			    return r;
@@ -3927,7 +3929,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 			    }
 
 			    if (filename_ext != filename) {
-				idio_gc_expose (filename_ext);
+				idio_array_pop (IDIO_THREAD_STACK (thr));
 			    }
 
 			    return idio_load_handle_C (fh, reader, evaluator, cs);
@@ -3943,24 +3945,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 	    IDIO_GC_FREE (filename_C, filename_C_len);
 	}
 
-	if (filename_ext != filename) {
-	    idio_gc_expose (filename_ext);
-	}
-
 	return idio_load_handle_C (fh, reader, evaluator, cs);
-    }
-
-    /*
-     * Test Case: ??
-     *
-     * It would require that a file we found via idio_find_libfile_C()
-     * which uses access(2) with R_OK now fail the same access(2)
-     * test.
-     *
-     * Race condition?
-     */
-    if (filename_ext != filename) {
-	idio_gc_expose (filename_ext);
     }
 
     if (free_filename_C) {

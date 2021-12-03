@@ -3642,7 +3642,7 @@ static idio_ai_t idio_vm_get_or_create_vvi (idio_ai_t mci)
 		    idio_module_set_vvi (ce, fmci, fgvi);
 		    return IDIO_FIXNUM_VAL (fgvi);
 		} else {
-#ifdef IDIO_DEBUG
+#ifdef IDIO_DEBUG_X
 		    fprintf (stderr, "[%d] iv-goc-vvi:", getpid ());
 		    idio_debug (" %-20s return 0\n", sym);
 		    idio_debug ("  ce %s\n", ce);
@@ -8322,10 +8322,11 @@ void idio_final_vm ()
 	    fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-38s %10" PRIu64 " %5.1f %5ld.%09ld %5.1f\n", "", "total", c, c_pct, t.tv_sec, t.tv_nsec, t_pct);
 #endif
 	}
-    }
+
 #ifdef IDIO_DEBUG
-    fprintf (stderr, "\n");
+	fprintf (stderr, "\n");
 #endif
+    }
 
     idio_ia_free (idio_all_code);
     idio_all_code = NULL;

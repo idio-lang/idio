@@ -355,17 +355,19 @@ IDIO idio_libc_poll_poll (idio_libc_poller_t *poller, int timeout)
 	return idio_S_notreached;
     }
 
-    int to = timeout;
-    if (to > 1000) {
-	int ts = to / 1000;
-	tt.tv_sec += ts;
-	to -= (ts * 1000);
-    }
+    if (timeout > 0) {
+	int to = timeout;
+	if (to > 1000) {
+	    int ts = to / 1000;
+	    tt.tv_sec += ts;
+	    to -= (ts * 1000);
+	}
 
-    tt.tv_usec += to * 1000;
-    if (tt.tv_usec > 1000000) {
-	tt.tv_usec -= 1000000;
-	tt.tv_sec += 1;
+	tt.tv_usec += to * 1000;
+	if (tt.tv_usec > 1000000) {
+	    tt.tv_usec -= 1000000;
+	    tt.tv_sec += 1;
+	}
     }
 
     int first = 1;
@@ -375,33 +377,31 @@ IDIO idio_libc_poll_poll (idio_libc_poller_t *poller, int timeout)
 	if (first) {
 	    first = 0;
 	} else {
-	    /*
-	     * How much of timeout is left?
-	     */
-	    struct timeval ct;
-	    if (-1 == gettimeofday (&ct, NULL)) {
-		idio_error_system_errno ("gettimeofday", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	    if (timeout > 0) {
+		/*
+		 * How much of timeout is left?
+		 */
+		struct timeval ct;
+		if (-1 == gettimeofday (&ct, NULL)) {
+		    idio_error_system_errno ("gettimeofday", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
-		return idio_S_notreached;
-	    }
+		    return idio_S_notreached;
+		}
 
-	    time_t sec = tt.tv_sec - ct.tv_sec;
-	    suseconds_t usec = tt.tv_usec - ct.tv_usec;
+		time_t sec = tt.tv_sec - ct.tv_sec;
+		suseconds_t usec = tt.tv_usec - ct.tv_usec;
 
-	    if (usec < 0) {
-		usec += 1000000;
-		sec -= 1;
-	    }
+		if (usec < 0) {
+		    usec += 1000000;
+		    sec -= 1;
+		}
 
-	    if (sec < 0 ||
-		usec < 0) {
-		return idio_S_nil;
-	    }
+		if (sec < 0 ||
+		    usec < 0) {
+		    return idio_S_nil;
+		}
 
-	    timeout = sec * 1000 + (usec / 1000);
-
-	    if (0 == timeout) {
-		return idio_S_nil;
+		timeout = sec * 1000 + (usec / 1000);
 	    }
 	}
 
@@ -455,7 +455,7 @@ Poll `poller` for `timeout` milliseconds	\n\
 :type poller: C/pointer				\n\
 :param timeout: timeout, defaults to ``#n``	\n\
 :type timeout: fixnum or C/int			\n\
-:return: list of :samp:`({fdh} {event})` tuples	\n\
+:return: list of :samp:`({fdh} {event})` tuples or ``#n``	\n\
 :rtype: list					\n\
 :raises ^rt-parameter-type-error:		\n\
 :raises ^system-error:				\n\

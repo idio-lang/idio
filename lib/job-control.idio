@@ -35,9 +35,53 @@ dutifully call the libc/X "direct" names for any libc X they use and
 that we export X here.
 
 There's nominally no such problem with our own names,
-eg. add-process-substitution-job, as bootstrap imports job-control.
-However, templates/operators should probably use direct names
-regardless.
+eg. add-process-substitution-job, as all modules import job-control by
+default.  However, templates/operators should probably use direct
+names regardless.
+
+
+Process Exits
+-------------
+
+When we fork(2) the sub-process is another Idio (no surprises, there)
+which will run any commands and then definitively call exit 0 --
+largely to prevent the child process returning and continuing with the
+code only the parent should be running!
+
+Hmm.  "exit 0" would be picked up as "libc/exit 0" which most things
+are fine with but ASAN complains about a raft of Direct and Indirect
+memory leaks from the likes of regcomp(3) and vasprintf(3).  Que?
+Anyway, it changes the exit status to 1 irrespective of what we do
+here.
+
+Of course, if a child exits non-zero then it'll throw a spanner in
+our "thou shalt not fail" belief in our children and we'll get
+unexpected warnings left right and centre.
+
+So, to appease the ASAN gods we need to exit cleanly with Idio/exit.
+
+However, if we are running under debug (IDIO_DEBUG) and we've not
+successfully tidied up everything that we allocated then the GC will
+announce that xyz has not been tidied.  Not just once but every single
+sub-process Idio will report the same thing.
+
+The obvious first fix is to figure out and fix why anything has been
+left behind: the usual culprit is a protected object where a clause
+before the expose can trigger a condition being raised (consider
+pushing onto the stack).
+
+So, ideally, we would "Idio/exit 0" but we may want to wrap it with a
+cond-expand testing for __SANITIZE_ADDRESS__ because it is much
+slower.
+
+This problem also applies to the default-child-handler (and anywhere
+else that calls libc/fork) where we would rather that ASAN didn't fill
+the disk with spurious copies of the same complaints.
+
+In the meanwhile, Idio/exit is considerably slower than libc/exit (in
+the scheme of things) which perturbs some of the tests which should
+now look to poller-poll to see if the read end of pipes have gone
+away.
 
 *#
 
@@ -1072,12 +1116,19 @@ The default condition handler set in child processes.
 It will report the condition and exit (1).
 " {
   (cond-expand
-   (IDIO_DEBUG-X {
-     condition-report (sprintf "[%d] child-error-handler" (libc/getpid)) c (current-error-handle)
-     eprintf "[%d] child process will exit (1)\n" (libc/getpid)
+   (IDIO_DEBUG {
+     condition-report (sprintf "[%d] default-child-handler" (libc/getpid)) c (current-error-handle)
+     ;eprintf "[%d] child process will exit (1)\n" (libc/getpid)
    }))
 
-  libc/exit 1
+  ;; See Process Exits, above
+  (cond-expand
+   (__SANITIZE_ADDRESS__ {
+     Idio/exit 1
+   })
+   (else {
+     libc/exit 1
+   }))
 }
 
 define (prep-io infile outfile errfile) "prepare the IO for the current process
@@ -1677,10 +1728,14 @@ define-template (pipeline kind cmds) {
 		 $cmd
 	       }))
 
-	      ;; We ought to definitively stop before this child
-	      ;; continues back into the main Idio engine.
-
-	      exit 0
+	      ;; See Process Exits, above
+	      (cond-expand
+	       (__SANITIZE_ADDRESS__ {
+		 Idio/exit 0
+	       })
+	       (else {
+		 libc/exit 0
+	       }))
 	    } {
 	      set-%idio-process-pid! $proc $pid
 	      if (or job-control/%idio-interactive

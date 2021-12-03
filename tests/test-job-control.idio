@@ -93,6 +93,9 @@ as we exercise all the variations above.  Don't get too lost!
 process to load and execute the test code but Idio isn't the fastest
 starting piece of code ever.  We don't have all day!
 
+In the meanwhile, ASAN will get upset if we call libc/exit rather than
+Idio/exit.
+
     ***
 
 We'll have a generic testing function to do the forking and running.
@@ -502,24 +505,35 @@ enough for the RHS to exit, obviously!
 No, I don't know how long is enough either but something less than the
 standard "sleep 1" otherwise we'll be here all day!
 
-Hmm, on some *really* slow systems launching an external command takes
-over half a second -- I know, I know -- and it's not even the
-Raspberry Pi 3B+(*)!  We *could* delay the LHS for our estimated
-time-to-launch-plus-a-bit but it seems that so long as we delay for
-long enough then we get time-sliced out in favour of the RHS.  That
-empirically observed value is about 60ms.
+Enter poll(2) where we can poller-poll for POLLPRI on STDOUT_FILENO
+which we shouldn't get (hopefully).  In the meanwhile, when the
+read-end closes we'll get a POLLERR on STDOUT_FILENO and away we go to
+SIGPIPE city.
 
-It's not Art.
-
-So, I expect this to statistically fail on slow or heavily loaded
-systems.  YMMV.
-
-(*) Ubuntu under WLS1 on Windows 10, if you must know.
+The only moot point, here, is the timeout or, rather, who is calling
+us as we're assuming we are in a pipeline.  If we're not and we simply
+want to delay then we need a (the original) simple delay function as
+well.
 
 *#
 
-define (job-control-pipeline-delay n) {
+define (job-control-delay n) {
   libc/nanosleep (list 0 (n * 10e6))
+}
+
+define (job-control-pipeline-delay n) {
+  poller := make-poller (list STDOUT_FILENO POLLPRI)
+  r := poller-poll poller
+
+  if (null? r) {
+    eprintf "[%d] job-control-pipeline-delay: nothing from poll\n" PID
+  } {
+    for pp in r {
+      if (not (POLLERR? (pht pp))) {
+	eprintf "[%d] job-control-pipeline-delay: %s is not POLLERR?\n" PID pp
+      }
+    }
+  }
 }
 
 job-control-error-load "job-control-errors/pipeline-Idio-compound-SIGPIPE-Idio-simple-exit-0.idio" kill-PIPE

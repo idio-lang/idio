@@ -247,7 +247,13 @@ sub-process.
     apply command/%exec argv
 
     ;; just in case!
-    libc/exit 0
+    (cond-expand
+     (__SANITIZE_ADDRESS__ {
+       Idio/exit 0
+     })
+     (else {
+       libc/exit 0
+     }))
   }
 
   ;; tty.setraw?

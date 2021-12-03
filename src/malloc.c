@@ -645,24 +645,40 @@ void idio_malloc_stats (char const *s)
 
 /*
  * http://stackoverflow.com/questions/3774417/sprintf-with-automatic-memory-allocation
+ *
+ * also the Linux man page for snprintf(3)
  */
 int idio_malloc_vasprintf (char **strp, char const *fmt, va_list ap)
 {
     va_list ap1;
-    size_t size;
-    char *buffer;
 
     va_copy (ap1, ap);
-    size = vsnprintf (NULL, 0, fmt, ap1) + 1;
+    int n = vsnprintf (NULL, 0, fmt, ap1);
     va_end (ap1);
-    buffer = idio_malloc_calloc (1, size);
 
-    if (!buffer)
+    if (n < 0) {
+	perror ("vsnprintf");
+	return n;
+    }
+
+    size_t size = n + 1;
+    *strp = idio_malloc_calloc (1, size);
+
+    if (NULL == *strp) {
         return -1;
+    }
 
-    *strp = buffer;
+    va_copy (ap1, ap);
+    n = vsnprintf (*strp, size, fmt, ap1);
+    va_end (ap1);
 
-    return vsnprintf (buffer, size, fmt, ap);
+    if (n < 0) {
+	idio_malloc_free (*strp);
+	perror ("vsnprintf");
+	return n;
+    }
+
+    return n;
 }
 
 int idio_malloc_asprintf(char **strp, char const *fmt, ...)

@@ -649,7 +649,12 @@ This does not return!				\n\
 	IDIO loc_str = idio_string_C_len (IDIO_SYMBOL_S (loc), IDIO_SYMBOL_BLEN (loc));
 
 	size_t size = 0;
-	idio_error_param_type (idio_display_string (msg, &size), args, loc_str);
+	char *msg_C = idio_display_string (msg, &size);
+	char em[BUFSIZ];
+	snprintf (em, BUFSIZ, "%s", msg_C);
+	IDIO_GC_FREE (msg_C, size);
+
+	idio_error_param_type (em, args, loc_str);
 
 	return idio_S_notreached;
     }
