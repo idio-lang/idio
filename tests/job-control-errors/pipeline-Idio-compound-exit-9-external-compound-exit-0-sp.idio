@@ -5,7 +5,7 @@ suppress-pipefail! = #t
   libc/sleep 0
   libc/exit 9
 } | {
-  sleep 0
+  'sleep 0
   auto-exit -E 0
 }
 

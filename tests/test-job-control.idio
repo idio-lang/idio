@@ -506,31 +506,42 @@ No, I don't know how long is enough either but something less than the
 standard "sleep 1" otherwise we'll be here all day!
 
 Enter poll(2) where we can poller-poll for POLLPRI on STDOUT_FILENO
-which we shouldn't get (hopefully).  In the meanwhile, when the
-read-end closes we'll get a POLLERR on STDOUT_FILENO and away we go to
-SIGPIPE city.
+which we shouldn't get(*).  In the meanwhile, when the read-end closes
+we'll get a POLLERR on STDOUT_FILENO and away we go to SIGPIPE city.
 
-The only moot point, here, is the timeout or, rather, who is calling
-us as we're assuming we are in a pipeline.  If we're not and we simply
-want to delay then we need a (the original) simple delay function as
-well.
+The only moot point, here, is the timeout(**) or, rather, who is
+calling us as we're assuming we are in a pipeline.  If we're not and
+we simply want to delay then we need a (the original) simple delay
+function as well.
+
+(*) So SunOS, the *BSDs and Mac OS X return POLLHUP and Mac OS X also
+    returns POLLPRI.
+
+(**) On top of that, OpenBSD doesn't appear to return these flags
+     within the timeout -- so an infinite timeout is very long indeed.
+
 
 *#
 
 define (job-control-delay n) {
-  libc/nanosleep (list 0 (n * 10e6))
+  libc/nanosleep (list 0 (n * 1000000))
 }
 
 define (job-control-pipeline-delay n) {
   poller := make-poller (list STDOUT_FILENO POLLPRI)
-  r := poller-poll poller
+  r := poller-poll poller n
 
   if (null? r) {
-    eprintf "[%d] job-control-pipeline-delay: nothing from poll\n" PID
+    (cond-expand
+     (IDIO_DEBUG {
+       eprintf "[%d] job-control-pipeline-delay: nothing from poll\n" PID
+     })
+     (else #t))
   } {
     for pp in r {
-      if (not (POLLERR? (pht pp))) {
-	eprintf "[%d] job-control-pipeline-delay: %s is not POLLERR?\n" PID pp
+      if (not (or (POLLERR? (pht pp))
+		  (POLLHUP? (pht pp)))) {
+	eprintf "[%d] job-control-pipeline-delay: %s is not POLLERR/POLLHUP?\n" PID pp
       }
     }
   }

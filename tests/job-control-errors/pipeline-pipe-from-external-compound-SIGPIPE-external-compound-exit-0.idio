@@ -2,10 +2,17 @@
 str := sprintf "hello from %d" PID
 
 iph := pipe-from {
-  job-control-pipeline-delay 6
+  (cond-expand
+   ((or "uname/sysname/SunOS"
+	"uname/sysname/OpenBSD") {
+     libc/sleep 1
+   })
+   (else {
+     job-control-pipeline-delay 1000
+   }))
   echo str
 } | {
-  sleep 0
+  'sleep 0
 }
 
 hprintf pid-ph "%d,%d\n" PID (%idio-job-pgid %%last-job)

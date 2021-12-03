@@ -2,7 +2,7 @@
 str := sprintf "hello from %d" PID
 
 ipn := named-pipe-from {
-  job-control-pipeline-delay 6
+  job-control-pipeline-delay 1000
   echo str
 } | {
   libc/sleep 0

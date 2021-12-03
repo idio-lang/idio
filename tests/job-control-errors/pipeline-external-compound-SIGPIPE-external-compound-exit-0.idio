@@ -1,14 +1,15 @@
 
 {
   (cond-expand
-   ("uname/sysname/SunOS" {
+   ((or "uname/sysname/SunOS"
+	"uname/sysname/OpenBSD") {
      libc/sleep 1
    })
    (else {
-     job-control-pipeline-delay 10
+     job-control-pipeline-delay 1000
    }))
   echo "hello"
 } | {
-  sleep 0
+  'sleep 0
   cat %P"/dev/null"
 }

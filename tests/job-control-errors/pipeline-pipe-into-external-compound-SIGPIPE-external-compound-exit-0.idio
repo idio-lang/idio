@@ -4,10 +4,17 @@ if (e? testfile) {
 }
 
 oph := pipe-into {
-  job-control-pipeline-delay 6
+  (cond-expand
+   ((or "uname/sysname/SunOS"
+	"uname/sysname/OpenBSD") {
+     libc/sleep 1
+   })
+   (else {
+     job-control-pipeline-delay 1000
+   }))
   cat "/dev/fd/0"
 } | {
-  sleep 0
+  'sleep 0
 }
 
 hprintf pid-ph "%d,%d\n" PID (%idio-job-pgid %%last-job)

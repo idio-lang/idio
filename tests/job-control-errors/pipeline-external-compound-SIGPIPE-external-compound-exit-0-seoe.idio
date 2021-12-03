@@ -2,10 +2,17 @@
 suppress-exit-on-error! = #t
 
 {
-  job-control-pipeline-delay 6
+  (cond-expand
+   ((or "uname/sysname/SunOS"
+	"uname/sysname/OpenBSD") {
+     libc/sleep 1
+   })
+   (else {
+     job-control-pipeline-delay 1000
+   }))
   echo "hello"
 } | {
-  sleep 0
+  'sleep 0
   cat %P"/dev/null"
 }
 

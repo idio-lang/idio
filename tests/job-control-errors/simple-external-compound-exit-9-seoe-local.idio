@@ -2,7 +2,7 @@
 {
   suppress-exit-on-error! :~ #t
 
-  sleep 0
+  'sleep 0
   auto-exit -E 9
 }
 
