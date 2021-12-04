@@ -42,6 +42,7 @@ module pty
 export (
 	 openpty
 	 forkpty
+	 spawn-sync
 	 spawn
 )
 
@@ -149,7 +150,7 @@ read some data from `fd`
 :raises ^system-error:
 
 " {
-  read fd 1024
+  libc/read fd 1024
 }
 
 define (spawn-copy-loop mfd m-read in-read) "
@@ -172,6 +173,7 @@ write `mfd` (`in-read` STDIN_FILENO)
 
   loop :+ function #n {
     r := poller-poll poller
+
     if (not (null? r)) {
       for p in r {
 	fd := ph p
@@ -220,10 +222,10 @@ write `mfd` (`in-read` STDIN_FILENO)
   (loop)
 }
 
-define* (spawn (:mreader mreader spawn-read) (:inreader inreader spawn-read) & argv) "
-Spawn a process defined by `argv`
+define* (spawn-sync (:mreader mreader spawn-read) (:inreader inreader spawn-read) & argv) "
+Spawn a process defined by `argv` and interact with it synchronously
 
-:param argv: command and argument list
+:param argv: command and arguments
 :type argv: list
 :param mreader: function to read from master device, defaults to simple internal function
 :type mreader: function, optional
@@ -232,6 +234,10 @@ Spawn a process defined by `argv`
 :return: result from :ref:`waitpid <libc/waitpid>`
 :rtype: list
 :raises ^system-error:
+
+Both `mreader` and `inreader` should be a function which accepts a
+`C/int` file descriptor as its single argument and should return a
+string.
 
 This function invokes a simple copy of data to and from the
 sub-process.
@@ -265,5 +271,49 @@ sub-process.
   close mfd
   waitpid pid
 }
+
+define* (spawn-async & argv) "
+Spawn a process defined by `argv`
+
+:param argv: command and arguments
+:type argv: list
+:return: see below
+:rtype: list
+:raises ^system-error:
+
+The return value is a list of: the child Process ID, the master file
+descriptor, the original terminal mode for
+stdin (:ref:`libc/struct-termios <libc/struct-termios>`).
+
+.. seealso:: :ref:`libc/tcsetattr <libc/tcsetattr>` to reset the
+             terminal mode
+
+" {
+  eprintf "pty/spawn: forkpty\n"
+  fpty := (forkpty)
+  eprintf "pty/spawn: forkpty => %s\n" fpty
+  pid := ph fpty
+  mfd := pht fpty
+
+  mode := tcgetattr STDIN_FILENO
+
+  if (C/== pid 0pid_t) {
+    apply command/%exec argv
+
+    ;; just in case!
+    (cond-expand
+     (__SANITIZE_ADDRESS__ {
+       Idio/exit 0
+     })
+     (else {
+       libc/exit 0
+     }))
+  }
+
+  eprintf "pty/spawn: => %s\n" (list pid mfd mode)
+  list pid mfd mode
+}
+
+spawn := spawn-async
 
 provide pty
