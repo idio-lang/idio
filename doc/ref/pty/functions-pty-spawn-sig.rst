@@ -1,1 +1,1 @@
-argv (mreader spawn-read) (inreader spawn-read)
+(:mreader spawn-read) (:inreader spawn-read) [argv ...]

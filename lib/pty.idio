@@ -189,7 +189,7 @@ write `mfd` (`in-read` STDIN_FILENO)
 		  poller-deregister poller fd
 		} {
 		  n := write STDOUT_FILENO data
-		  eprintf "write STDOUT %d / %d\n" n (string-length data)
+		  ;eprintf "write STDOUT %d / %d\n" n (string-length data)
 		  (loop)
 		}
 	      }
@@ -207,7 +207,7 @@ write `mfd` (`in-read` STDIN_FILENO)
 		  poller-deregister poller fd
 		} {
 		  n := write mfd data
-		  eprintf "write mfd %d / %d\n" n (string-length data)
+		  ;eprintf "write mfd %d / %d\n" n (string-length data)
 		  (loop)
 		}
 	      }
@@ -220,7 +220,7 @@ write `mfd` (`in-read` STDIN_FILENO)
   (loop)
 }
 
-define* (spawn argv (mreader spawn-read) (inreader spawn-read)) "
+define* (spawn (:mreader mreader spawn-read) (:inreader inreader spawn-read) & argv) "
 Spawn a process defined by `argv`
 
 :param argv: command and argument list
@@ -229,7 +229,7 @@ Spawn a process defined by `argv`
 :type mreader: function, optional
 :param inreader: function to read from stdin, defaults to simple internal function
 :type inreader: function, optional
-:return: result from :ref:`waitpid`
+:return: result from :ref:`waitpid <libc/waitpid>`
 :rtype: list
 :raises ^system-error:
 

@@ -300,8 +300,16 @@ define-template (function* formals & body) {
 	})
 		     rest-binding)
 
+	docstr := "function*"
+	if (and (string? (ph body))
+		(pair? (pt body))) {
+	  docstr = ph body
+	  body = pt body
+	}
+
+
 	#T{
-	  function $(append (if positional-before-named? positional-reqs #n) '&args) {
+	  function $(append (if positional-before-named? positional-reqs #n) '&args) $docstr {
 	    let* $bindings $@body
 	  }
 	}
