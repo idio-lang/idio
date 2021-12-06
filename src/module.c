@@ -1334,16 +1334,16 @@ IDIO idio_module_find_symbol (IDIO symbol, IDIO m_or_n)
     return idio_module_find_symbol_recurse (symbol, m_or_n, 0);
 }
 
-IDIO_DEFINE_PRIMITIVE1V_DS ("find-symbol", find_symbol, (IDIO sym, IDIO args), "sym [mod]", "\
+IDIO_DEFINE_PRIMITIVE1V_DS ("find-symbol", find_symbol, (IDIO sym, IDIO args), "sym [[mod] recurse]", "\
 find evaluator details for symbol `sym` in module `mod`		\n\
 or the current environment if no `mod` supplied			\n\
 								\n\
-This does not recurse into imported modules.			\n\
-								\n\
 :param sym: symbol to find					\n\
 :type sym: symbol						\n\
-:param mod: module to search from				\n\
-:type mod: module or module name				\n\
+:param mod: module to search from, defaults to current module	\n\
+:type mod: module or module name, optional			\n\
+:param recurse: recurse into imported modules, defaults to ``#t``	\n\
+:type recurse: recurse, optional				\n\
 :return: evaluator details for `sym`				\n\
 ")
 {
@@ -1357,7 +1357,9 @@ This does not recurse into imported modules.			\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, sym);
 
-    IDIO m_or_n = idio_thread_current_env ();
+    IDIO m_or_n = idio_thread_current_module ();
+
+    int recurse = 1;
 
     if (idio_isa_pair (args)) {
 	IDIO m = IDIO_PAIR_H (args);
@@ -1365,9 +1367,16 @@ This does not recurse into imported modules.			\n\
 	    idio_isa_symbol (m)) {
 	    m_or_n = m;
 	}
+
+	args = IDIO_PAIR_T (args);
+	if (idio_isa_pair (args)) {
+	    if (idio_S_false == IDIO_PAIR_H (args)) {
+		recurse = 0;
+	    }
+	}
     }
 
-    return idio_module_find_symbol_recurse (sym, m_or_n, 0);
+    return idio_module_find_symbol_recurse (sym, m_or_n, recurse);
 }
 
 /*

@@ -345,11 +345,11 @@ define (meaning-nametree-dynamic-extend nametree name index scope) {
   pair (list (list name scope index)) nametree
 }
 
-define (meaning-variable-info src nametree name flags cs cm) {
+define* (meaning-variable-info src nametree name flags cs cm (recurse? #t)) {
   r := meaning-lexical-lookup src nametree name
 
   if (not r) {
-    r = find-symbol name cm
+    r = find-symbol name cm recurse?
     if (not r) {
       ; is name M/S ?
       r = symbol-direct-reference name
@@ -855,7 +855,9 @@ define (meaning-define src name e nametree escapes flags cs cm) {
   }
 
   define-flags := make-eval-flags (eval-flags-tailp flags) 'toplevel #t
-  si := meaning-variable-info src nametree name define-flags cs cm
+
+  ;; Careful!  Don't recurse when defining variables.
+  si := meaning-variable-info src nametree name define-flags cs cm #f
 
   ;; if the act of looking the variable up auto-created it then
   ;; actually give it a value slot as this *is* the definition of it

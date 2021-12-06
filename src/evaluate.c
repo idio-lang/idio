@@ -1008,7 +1008,7 @@ static IDIO idio_meaning_nametree_dynamic_extend (IDIO nametree, IDIO name, IDIO
     return idio_pair (IDIO_LIST1 (IDIO_LIST3 (name, scope, index)), nametree);
 }
 
-static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int flags, IDIO cs, IDIO cm)
+static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int flags, IDIO cs, IDIO cm, int recurse)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (nametree);
@@ -1026,9 +1026,12 @@ static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int 
     if (idio_S_false == r) {
 	/*
 	 * NOTICE This must be a recursive lookup.  Otherwise we'll
-	 * not see any bindings in Idio
+	 * not see any bindings in Idio.
+	 *
+	 * Unless we're defining something in which case we mustn't
+	 * recurse...
 	 */
-        r = idio_module_find_symbol_recurse (name, cm, 1);
+        r = idio_module_find_symbol_recurse (name, cm, recurse);
 	if (idio_S_false == r) {
 
 	    r = idio_module_direct_reference (name);
@@ -1110,7 +1113,7 @@ static IDIO idio_meaning_reference (IDIO src, IDIO name, IDIO nametree, IDIO esc
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO si = idio_meaning_variable_info (src, nametree, name, flags, cs, cm);
+    IDIO si = idio_meaning_variable_info (src, nametree, name, flags, cs, cm, 1);
 
     if (idio_S_unspec == si) {
 	/*
@@ -1177,7 +1180,7 @@ static IDIO idio_meaning_function_reference (IDIO src, IDIO name, IDIO nametree,
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO si = idio_meaning_variable_info (src, nametree, name, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
+    IDIO si = idio_meaning_variable_info (src, nametree, name, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm, 1);
 
     if (idio_S_unspec == si) {
 	/*
@@ -1737,7 +1740,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 
     IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, escapes, mflags, cs, cm);
 
-    IDIO si = idio_meaning_variable_info (src, nametree, name, flags, cs, cm);
+    IDIO si = idio_meaning_variable_info (src, nametree, name, flags, cs, cm, 1);
 
     if (idio_S_unspec == si) {
 	/*
@@ -1874,7 +1877,11 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, IDI
     }
 
     int define_flags = IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags));
-    IDIO si = idio_meaning_variable_info (src, nametree, name, define_flags, cs, cm);
+
+    /*
+     * Careful!  When defining a value we don't want to recurse.
+     */
+    IDIO si = idio_meaning_variable_info (src, nametree, name, define_flags, cs, cm, 0);
 
     /*
      * if the act of looking the variable up auto-created it then
@@ -3702,7 +3709,7 @@ static IDIO idio_meaning_application (IDIO src, IDIO fe, IDIO aes, IDIO nametree
     IDIO_TYPE_ASSERT (module, cm);
 
     if (idio_isa_symbol (fe)) {
-	IDIO si = idio_meaning_variable_info (src, nametree, fe, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
+	IDIO si = idio_meaning_variable_info (src, nametree, fe, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm, 1);
 
 	if (idio_isa_pair (si)) {
 	    IDIO scope = IDIO_PAIR_H (si);
@@ -5057,7 +5064,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 	    }
 	} else {
 	    if (idio_isa_symbol (eh)) {
-		IDIO si = idio_meaning_variable_info (src, nametree, eh, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
+		IDIO si = idio_meaning_variable_info (src, nametree, eh, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm, 1);
 
 		if (idio_S_unspec != si) {
 		    if (idio_S_false != idio_expanderp (eh)) {
