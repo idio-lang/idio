@@ -47,6 +47,7 @@
 #include "condition.h"
 #include "error.h"
 #include "evaluate.h"
+#include "fixnum.h"
 #include "handle.h"
 #include "idio-string.h"
 #include "pair.h"
@@ -67,6 +68,7 @@ IDIO idio_posix_regex_REG_NOTEOL_sym;
 #ifdef REG_STARTEND
 IDIO idio_posix_regex_REG_STARTEND_sym;
 #endif
+IDIO idio_posix_regex_REG_VERBOSE_sym;
 
 /*
  * Technically, never returns
@@ -275,6 +277,7 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
     IDIO_TYPE_ASSERT (list, flags);
 
     int eflags = 0;
+    int verbose = 0;
     while (idio_S_nil != flags) {
 	IDIO flag = IDIO_PAIR_H (flags);
 	if (idio_isa_symbol (flag)) {
@@ -290,6 +293,8 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
 		 */
 		/* eflags |= REG_STARTEND; */
 #endif
+	    } else if (idio_posix_regex_REG_VERBOSE_sym == flag) {
+		verbose = 1;
 	    } else {
 		/*
 		 * Test Case: posix-regex-errors/regexec-bad-flag.idio
@@ -345,7 +350,15 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
 	 * rm_so == rm_eo		for empty subexpression
 	 */
 	if (-1 != matches[i].rm_so) {
-	    idio_array_insert_index (r, idio_string_C_len (Cs + matches[i].rm_so, matches[i].rm_eo - matches[i].rm_so), i);
+	    IDIO match = idio_string_C_len (Cs + matches[i].rm_so, matches[i].rm_eo - matches[i].rm_so);
+
+	    if (verbose) {
+		idio_array_insert_index (r, IDIO_LIST3 (match,
+							idio_integer (matches[i].rm_so),
+							idio_integer (matches[i].rm_eo)), i);
+	    } else {
+		idio_array_insert_index (r, match, i);
+	    }
 	}
     }
 
@@ -368,6 +381,8 @@ The `flags` are:	 			\n\
 ``REG_NOTEOL``		 			\n\
 ``REG_STARTEND`` (if supported)			\n\
 						\n\
+``REG_VERBOSE`` return verbose results		\n\
+						\n\
 On a successful match an array of the subexpressions	\n\
 in `rx` is returned with the first (zero-th) being	\n\
 the entire matched string.				\n\
@@ -384,8 +399,17 @@ corresponding array element will be ``#f``	.	\n\
 :type rx: string				\n\
 :param flags: regexec flags			\n\
 :type flags: list of symbols			\n\
-:return: array of matching subexpressions or ``#f`` for no match	\n\
+:return: see below				\n\
 :rtype: array or ``#f``				\n\
+						\n\
+By default `regexec` returns an array of	\n\
+matching subexpressions or ``#f`` for no match.	\n\
+						\n\
+If ``REG_VERBOSE`` is passed in flags then each	\n\
+element of the array is a list of the matched	\n\
+sub-expression, its starting offset and its	\n\
+ending offset plus one (suitable for		\n\
+:ref:`substring <substring>`).			\n\
 ")
 {
     IDIO_ASSERT (rx);
@@ -438,5 +462,6 @@ void idio_init_posix_regex ()
 #ifdef REG_STARTEND
     idio_posix_regex_REG_STARTEND_sym = IDIO_SYMBOLS_C_INTERN ("REG_STARTEND");
 #endif
+    idio_posix_regex_REG_VERBOSE_sym = IDIO_SYMBOLS_C_INTERN ("REG_VERBOSE");
 }
 
