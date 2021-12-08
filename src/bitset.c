@@ -67,7 +67,9 @@ static void idio_bitset_bounds_error (size_t const bit, size_t const size, IDIO 
     size_t eml = idio_snprintf (em, BUFSIZ, "bitset bounds error: %zu >= size %zu", bit, size);
     idio_display_C_len (em, eml, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -79,7 +81,7 @@ static void idio_bitset_bounds_error (size_t const bit, size_t const size, IDIO 
 
     IDIO c = idio_struct_instance (idio_condition_rt_bitset_bounds_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       idio_integer (bit)));
 
@@ -97,7 +99,9 @@ static void idio_bitset_size_mismatch_error (size_t const s1, size_t const s2, I
     size_t eml = idio_snprintf (em, BUFSIZ, "bitset size mistmatch: %zu != %zu", s1, s2);
     idio_display_C_len (em, eml, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -109,7 +113,7 @@ static void idio_bitset_size_mismatch_error (size_t const s1, size_t const s2, I
 
     IDIO c = idio_struct_instance (idio_condition_rt_bitset_size_mismatch_error_type,
 				   IDIO_LIST5 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       idio_integer (s1),
 					       idio_integer (s2)));

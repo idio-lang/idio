@@ -89,7 +89,9 @@ static void idio_module_base_name_error (IDIO msg, IDIO name, IDIO c_location)
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -101,7 +103,7 @@ static void idio_module_base_name_error (IDIO msg, IDIO name, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_rt_module_error_type,
 				   IDIO_LIST4 (msg,
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       name));
 
@@ -165,7 +167,9 @@ static void idio_module_unbound_name_error (IDIO symbol, IDIO module, IDIO c_loc
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("symbol unbound in module", msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -177,7 +181,7 @@ static void idio_module_unbound_name_error (IDIO symbol, IDIO module, IDIO c_loc
 
     IDIO c = idio_struct_instance (idio_condition_rt_module_symbol_unbound_error_type,
 				   IDIO_LIST5 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       module,
 					       symbol));

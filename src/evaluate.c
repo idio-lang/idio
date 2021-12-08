@@ -247,7 +247,9 @@ static void idio_meaning_base_error (IDIO src, IDIO c_location, IDIO msg, IDIO e
      * code the error in their user code was spotted.
      */
 
-    IDIO location = idio_meaning_error_location (src);
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -259,7 +261,7 @@ static void idio_meaning_base_error (IDIO src, IDIO c_location, IDIO msg, IDIO e
 
     IDIO c = idio_struct_instance (idio_condition_evaluation_error_type,
 				   IDIO_LIST4 (msg,
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       expr));
     idio_raise_condition (idio_S_false, c);
@@ -341,7 +343,9 @@ void idio_meaning_error_static_redefine (IDIO src, IDIO c_location, char const *
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
-    IDIO location = idio_meaning_error_location (src);
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO dsh = idio_open_output_string_handle_C ();
     idio_display_C (msg, dsh);
@@ -359,7 +363,7 @@ void idio_meaning_error_static_redefine (IDIO src, IDIO c_location, char const *
 
     IDIO c = idio_struct_instance (idio_condition_st_variable_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       idio_get_output_string (dsh),
 					       name));
     idio_raise_condition (idio_S_true, c);
@@ -384,20 +388,22 @@ static void idio_meaning_error_static_variable (IDIO src, IDIO c_location, char 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
-    IDIO location = idio_meaning_error_location (src);
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
 #ifdef IDIO_DEBUG
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display (c_location, sh);
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
 
-    detail = idio_get_output_string (sh);
+    detail = idio_get_output_string (dsh);
 #endif
 
     IDIO c = idio_struct_instance (idio_condition_st_variable_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       name));
     idio_raise_condition (idio_S_true, c);
@@ -451,7 +457,9 @@ void idio_meaning_error_static_arity (IDIO src, IDIO c_location, char const *msg
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
-    IDIO location = idio_meaning_error_location (src);
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO dsh = idio_open_output_string_handle_C ();
     idio_display (args, dsh);
@@ -463,7 +471,7 @@ void idio_meaning_error_static_arity (IDIO src, IDIO c_location, char const *msg
 
     IDIO c = idio_struct_instance (idio_condition_st_function_arity_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       idio_get_output_string (dsh)));
     idio_raise_condition (idio_S_true, c);
 
@@ -487,7 +495,9 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
-    IDIO location = idio_meaning_error_location (src);
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO dsh = idio_open_output_string_handle_C ();
 
@@ -519,7 +529,7 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
 
     IDIO c = idio_struct_instance (idio_condition_st_function_arity_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       idio_get_output_string (dsh)));
     idio_raise_condition (idio_S_true, c);
 

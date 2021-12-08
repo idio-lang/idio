@@ -67,6 +67,10 @@ static void idio_string_error (IDIO msg, IDIO detail, IDIO c_location)
     IDIO_TYPE_ASSERT (string, detail);
     IDIO_TYPE_ASSERT (string, c_location);
 
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
+
 #ifdef IDIO_DEBUG
     IDIO dsh = idio_open_output_string_handle_C ();
     if (idio_S_nil != detail) {
@@ -80,7 +84,7 @@ static void idio_string_error (IDIO msg, IDIO detail, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_string_error_type,
 				   IDIO_LIST3 (msg,
-					       idio_S_nil,
+					       idio_get_output_string (lsh),
 					       detail));
 
     idio_raise_condition (idio_S_false, c);

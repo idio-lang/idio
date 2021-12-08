@@ -73,7 +73,9 @@ void idio_keyword_key_not_found_error (IDIO key, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("keyword not found", msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -85,7 +87,7 @@ void idio_keyword_key_not_found_error (IDIO key, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_rt_keyword_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       key));
 
@@ -103,7 +105,9 @@ void idio_keyword_format_error (char const *msg, IDIO kw, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -115,7 +119,7 @@ void idio_keyword_format_error (char const *msg, IDIO kw, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_rt_keyword_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       kw));
 

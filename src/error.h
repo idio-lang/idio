@@ -35,6 +35,7 @@ void idio_error_printf (IDIO loc, char const *format, ...);
 void idio_error_error_message (char const *format, ...);
 void idio_error_warning_message (char const *format, ...);
 void idio_error_alloc (char const *m);
+void idio_error_func_name (IDIO msh, char *prefix, char *suffix);
 void idio_error_param_type (char const *etype, IDIO who, IDIO c_location);
 void idio_error_param_type_msg (char const *msg, IDIO c_location);
 void idio_error_param_type_msg_args (char const *msg, IDIO args, IDIO c_location);

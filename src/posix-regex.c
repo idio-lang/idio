@@ -90,7 +90,9 @@ static IDIO idio_posix_regex_error (int errcode, regex_t *preg, char const *C_fu
 
 	IDIO_GC_FREE (errbuf, errbufsiz);
 
-	IDIO location = idio_vm_source_location ();
+	IDIO lsh = idio_open_output_string_handle_C ();
+	idio_display (idio_vm_source_location (), lsh);
+	idio_error_func_name (lsh, ":", NULL);
 
 	IDIO detail = idio_S_nil;
 
@@ -102,7 +104,7 @@ static IDIO idio_posix_regex_error (int errcode, regex_t *preg, char const *C_fu
 
 	IDIO c = idio_struct_instance (idio_condition_rt_regex_error_type,
 				       IDIO_LIST3 (idio_get_output_string (msh),
-						   location,
+						   idio_get_output_string (lsh),
 						   detail));
 
 	idio_raise_condition (idio_S_true, c);

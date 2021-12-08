@@ -73,7 +73,9 @@ void idio_handle_read_error (IDIO h, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("handle read error", msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -85,7 +87,7 @@ void idio_handle_read_error (IDIO h, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_io_read_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       IDIO_HANDLE_PATHNAME (h)));
     idio_raise_condition (idio_S_true, c);
@@ -103,7 +105,9 @@ void idio_handle_write_error (IDIO h, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("handle write error", msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -115,7 +119,7 @@ void idio_handle_write_error (IDIO h, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_io_write_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       IDIO_HANDLE_PATHNAME (h)));
     idio_raise_condition (idio_S_true, c);
@@ -133,7 +137,9 @@ void idio_handle_closed_error (IDIO h, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("handle already closed", msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -145,7 +151,7 @@ void idio_handle_closed_error (IDIO h, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_io_closed_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       IDIO_HANDLE_PATHNAME (h)));
     idio_raise_condition (idio_S_true, c);

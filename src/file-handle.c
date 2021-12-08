@@ -118,7 +118,9 @@ static void idio_file_handle_filename_system_error (char const *circumstance, ID
     idio_display_C (": ", msh);
     idio_display_C (strerror (errno), msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -130,7 +132,7 @@ static void idio_file_handle_filename_system_error (char const *circumstance, ID
 
     IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       filename));
 
@@ -151,7 +153,9 @@ static void idio_file_handle_filename_delete_error (IDIO filename, IDIO c_locati
     idio_display_C ("remove: ", msh);
     idio_display_C (strerror (errno), msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -163,7 +167,7 @@ static void idio_file_handle_filename_delete_error (IDIO filename, IDIO c_locati
 
     IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       filename));
 
@@ -190,7 +194,9 @@ static void idio_file_handle_malformed_filename_error (char const *msg, IDIO fil
     idio_display_C ("malformed filename: ", msh);
     idio_display_C (msg, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -202,7 +208,7 @@ static void idio_file_handle_malformed_filename_error (char const *msg, IDIO fil
 
     IDIO c = idio_struct_instance (idio_condition_io_malformed_filename_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       filename));
 
@@ -225,7 +231,9 @@ static void idio_file_handle_file_protection_error (char const *circumstance, ID
     idio_display_C (": ", msh);
     idio_display_C (strerror (errno), msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -237,7 +245,7 @@ static void idio_file_handle_file_protection_error (char const *circumstance, ID
 
     IDIO c = idio_struct_instance (idio_condition_io_file_protection_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       filename));
 
@@ -260,7 +268,9 @@ static void idio_file_handle_filename_already_exists_error (char const *circumst
     idio_display_C (": ", msh);
     idio_display_C (strerror (errno), msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -272,7 +282,7 @@ static void idio_file_handle_filename_already_exists_error (char const *circumst
 
     IDIO c = idio_struct_instance (idio_condition_io_file_already_exists_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       filename));
 
@@ -303,7 +313,9 @@ static void idio_file_handle_filename_not_found_error (char const *circumstance,
 	idio_display_C (strerror (errno), msh);
     }
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -315,7 +327,7 @@ static void idio_file_handle_filename_not_found_error (char const *circumstance,
 
     IDIO c = idio_struct_instance (idio_condition_io_no_such_file_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       filename));
 
@@ -342,7 +354,9 @@ void idio_file_handle_format_error (char const *circumstance, char const *kind, 
     idio_display_C (" ", msh);
     idio_display_C (msg, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -354,7 +368,7 @@ void idio_file_handle_format_error (char const *circumstance, char const *kind, 
 
     IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       filename));
 
@@ -377,7 +391,9 @@ void idio_file_handle_filename_format_error (char const *circumstance, char cons
     idio_display_C (" filename ", msh);
     idio_display_C (msg, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -389,7 +405,7 @@ void idio_file_handle_filename_format_error (char const *circumstance, char cons
 
     IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       filename));
 
@@ -412,7 +428,9 @@ void idio_file_handle_mode_format_error (char const *circumstance, char const *m
     idio_display_C (" mode ", msh);
     idio_display_C (msg, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -424,7 +442,7 @@ void idio_file_handle_mode_format_error (char const *circumstance, char const *m
 
     IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       mode));
 
@@ -447,7 +465,9 @@ void idio_file_handle_dynamic_load_error (char const *circumstance, char const *
     idio_display_C (": ", msh);
     idio_display_C (msg, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
 #ifdef IDIO_DEBUG
     IDIO dsh = idio_open_output_string_handle_C ();
@@ -457,7 +477,7 @@ void idio_file_handle_dynamic_load_error (char const *circumstance, char const *
 
     IDIO c = idio_struct_instance (idio_condition_rt_load_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       filename));
 

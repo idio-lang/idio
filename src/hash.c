@@ -70,7 +70,9 @@ void idio_hash_error (char const *msg, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -82,7 +84,7 @@ void idio_hash_error (char const *msg, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_rt_hash_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail));
     idio_raise_condition (idio_S_true, c);
 
@@ -98,7 +100,9 @@ void idio_hash_key_not_found_error (IDIO key, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("key not found", msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -110,7 +114,7 @@ void idio_hash_key_not_found_error (IDIO key, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       key));
     idio_raise_condition (idio_S_true, c);

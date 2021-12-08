@@ -93,7 +93,9 @@ static void idio_array_length_error (char const *msg, idio_ai_t size, IDIO c_loc
     size_t eml = idio_snprintf (em, BUFSIZ, "%s: size %td", msg, size);
     idio_display_C_len (em, eml, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -105,7 +107,7 @@ static void idio_array_length_error (char const *msg, idio_ai_t size, IDIO c_loc
 
     IDIO c = idio_struct_instance (idio_condition_rt_array_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       idio_S_nil));
 
@@ -123,7 +125,9 @@ static void idio_array_bounds_error (idio_ai_t index, idio_ai_t size, IDIO c_loc
     size_t eml = idio_snprintf (em, BUFSIZ, "array bounds error: abs (%td) >= #elem %td", index, size);
     idio_display_C_len (em, eml, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -135,7 +139,7 @@ static void idio_array_bounds_error (idio_ai_t index, idio_ai_t size, IDIO c_loc
 
     IDIO c = idio_struct_instance (idio_condition_rt_array_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       idio_integer (index)));
 

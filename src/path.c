@@ -96,7 +96,9 @@ static void idio_glob_base_error (IDIO msg, IDIO pattern, IDIO c_location)
     IDIO_TYPE_ASSERT (string, msg);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -108,7 +110,7 @@ static void idio_glob_base_error (IDIO msg, IDIO pattern, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_rt_glob_error_type,
 				   IDIO_LIST4 (msg,
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       pattern));
 

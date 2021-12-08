@@ -41,6 +41,7 @@
 #include "idio.h"
 
 #include "c-type.h"
+#include "closure.h"
 #include "condition.h"
 #include "error.h"
 #include "evaluate.h"
@@ -48,9 +49,11 @@
 #include "idio-string.h"
 #include "malloc.h"
 #include "pair.h"
+#include "primitive.h"
 #include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
+#include "thread.h"
 #include "util.h"
 #include "vm.h"
 
@@ -178,6 +181,41 @@ void idio_error_alloc (char const *m)
     abort ();
 }
 
+void idio_error_func_name (IDIO lsh, char *prefix, char *suffix)
+{
+    IDIO_ASSERT (lsh);
+
+    IDIO_TYPE_ASSERT (handle, lsh);
+
+    IDIO thr = idio_thread_current_thread ();
+    IDIO func = IDIO_THREAD_FUNC (thr);
+    if (idio_isa_primitive (func)) {
+	if (NULL != prefix) {
+	    idio_display_C (prefix, lsh);
+	}
+
+	idio_display_C (IDIO_PRIMITIVE_NAME (func), lsh);
+
+	if (NULL != suffix) {
+	    idio_display_C (suffix, lsh);
+	}
+    } else if (idio_isa_closure (func)) {
+	IDIO name = idio_vm_closure_name (func);
+
+	if (idio_S_nil != name) {
+	    if (NULL != prefix) {
+		idio_display_C (prefix, lsh);
+	    }
+
+	    idio_display (name, lsh);
+
+	    if (NULL != suffix) {
+		idio_display_C (suffix, lsh);
+	    }
+	}
+    }
+}
+
 void idio_error_param_type (char const *etype, IDIO who, IDIO c_location)
 {
     IDIO_C_ASSERT (etype);
@@ -187,6 +225,7 @@ void idio_error_param_type (char const *etype, IDIO who, IDIO c_location)
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
+
     idio_display_C ("bad parameter type: '", msh);
     idio_display (who, msh);
     idio_display_C ("' a ", msh);
@@ -194,7 +233,9 @@ void idio_error_param_type (char const *etype, IDIO who, IDIO c_location)
     idio_display_C (" is not a ", msh);
     idio_display_C (etype, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -206,7 +247,7 @@ void idio_error_param_type (char const *etype, IDIO who, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail));
 
     idio_raise_condition (idio_S_false, c);
@@ -225,9 +266,12 @@ void idio_error_param_type_msg (char const *msg, IDIO c_location)
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
+
     idio_display_C (msg, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -239,7 +283,7 @@ void idio_error_param_type_msg (char const *msg, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail));
 
     idio_raise_condition (idio_S_false, c);
@@ -255,6 +299,7 @@ void idio_error_param_type_msg_args (char const *msg, IDIO args, IDIO c_location
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
+
     idio_display_C (msg, msh);
 
     if (idio_S_nil != args) {
@@ -262,7 +307,9 @@ void idio_error_param_type_msg_args (char const *msg, IDIO args, IDIO c_location
 	idio_display (args, msh);
     }
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -274,7 +321,7 @@ void idio_error_param_type_msg_args (char const *msg, IDIO args, IDIO c_location
 
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail));
 
     idio_raise_condition (idio_S_false, c);
@@ -302,18 +349,20 @@ void idio_error_const_param (char const *type_name, IDIO who, IDIO c_location)
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("bad parameter: ", sh);
-    idio_display_C (type_name, sh);
-    idio_display_C (" (", sh);
-    idio_write (who, sh);
-    idio_display_C (") is constant", sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("bad parameter: ", msh);
+    idio_display_C (type_name, msh);
+    idio_display_C (" (", msh);
+    idio_write (who, msh);
+    idio_display_C (") is constant", msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO c = idio_struct_instance (idio_condition_rt_const_parameter_error_type,
-				   IDIO_LIST3 (idio_get_output_string (sh),
-					       location,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       idio_get_output_string (lsh),
 					       c_location));
 
     idio_raise_condition (idio_S_false, c);
@@ -359,7 +408,9 @@ void idio_error_param_value_exp (char const *func, char const *param, IDIO val, 
     idio_display_C (" is not a ", msh);
     idio_display_C (exp, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -371,7 +422,7 @@ void idio_error_param_value_exp (char const *func, char const *param, IDIO val, 
 
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_value_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail));
 
     idio_raise_condition (idio_S_false, c);
@@ -401,7 +452,9 @@ void idio_error_param_value_msg (char const *func, char const *param, IDIO val, 
     idio_display_C ("': ", msh);
     idio_display_C (msg, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -413,7 +466,7 @@ void idio_error_param_value_msg (char const *func, char const *param, IDIO val, 
 
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_value_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail));
 
     idio_raise_condition (idio_S_false, c);
@@ -440,7 +493,9 @@ void idio_error_param_value_msg_only (char const *func, char const *param, char 
     idio_display_C (": ", msh);
     idio_display_C (msg, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -452,7 +507,7 @@ void idio_error_param_value_msg_only (char const *func, char const *param, char 
 
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_value_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail));
 
     idio_raise_condition (idio_S_false, c);
@@ -467,10 +522,13 @@ void idio_error_param_undefined (IDIO name, IDIO c_location)
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
+
     idio_display (name, msh);
     idio_display_C (" is undefined", msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -482,7 +540,7 @@ void idio_error_param_undefined (IDIO name, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_value_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail));
 
     idio_raise_condition (idio_S_false, c);
@@ -526,32 +584,34 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO c_location)
 	idio_error_param_type ("string|symbol", c_location, IDIO_C_FUNC_LOCATION ());
     }
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display (msg, msh);
     if (idio_S_nil != args) {
-	idio_display_C (" ", sh);
-	idio_display (args, sh);
+	idio_display_C (" ", msh);
+	idio_display (args, msh);
     }
     /*
      * Quick hack for when called by {error} primitive
      */
     if (idio_isa_symbol (c_location)) {
-	idio_display_C (" at ", sh);
-	idio_display (c_location, sh);
+	idio_display_C (" at ", msh);
+	idio_display (c_location, msh);
     }
 
 #ifdef IDIO_DEBUG
     if (idio_isa_string (c_location)) {
-	idio_display_C (" at ", sh);
-	idio_display (c_location, sh);
+	idio_display_C (" at ", msh);
+	idio_display (c_location, msh);
     }
 #endif
 
     IDIO c = idio_struct_instance (idio_condition_idio_error_type,
-				   IDIO_LIST3 (idio_get_output_string (sh),
-					       location,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       idio_get_output_string (lsh),
 					       who));
 
     idio_raise_condition (idio_S_false, c);
@@ -659,18 +719,20 @@ This does not return!				\n\
 	return idio_S_notreached;
     }
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display (msg, msh);
     if (idio_S_nil != args) {
-	idio_display_C (" ", sh);
-	idio_display (args, sh);
+	idio_display_C (" ", msh);
+	idio_display (args, msh);
     }
 
     if (idio_isa_symbol (loc)) {
-	idio_display_C (" at ", sh);
-	idio_display (loc, sh);
+	idio_display_C (" at ", msh);
+	idio_display (loc, msh);
     }
 
     /*
@@ -680,8 +742,8 @@ This does not return!				\n\
      * arguments based ont he type of condition.
      */
     IDIO c = idio_struct_instance (ct,
-				   IDIO_LIST3 (idio_get_output_string (sh),
-					       location,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       idio_get_output_string (lsh),
 					       args));
 
     idio_raise_condition (idio_S_false, c);
@@ -698,13 +760,16 @@ void idio_error_system (char const *func, char const *msg, IDIO args, int err, I
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
+
     if (NULL != msg) {
 	idio_display_C (msg, msh);
 	idio_display_C (": ", msh);
     }
     idio_display_C (strerror (err), msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO dsh = idio_open_output_string_handle_C ();
     if (idio_S_nil != args) {
@@ -719,7 +784,7 @@ void idio_error_system (char const *func, char const *msg, IDIO args, int err, I
 
     IDIO c = idio_struct_instance (idio_condition_system_error_type,
 				   IDIO_LIST5 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       idio_get_output_string (dsh),
 					       idio_C_int (err),
 					       idio_string_C (func)));
@@ -758,9 +823,12 @@ void idio_error_divide_by_zero (char const *msg, IDIO nums, IDIO c_location)
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
+
     idio_display_C (msg, msh);
 
-    IDIO location = idio_vm_source_location ();
+    IDIO lsh = idio_open_output_string_handle_C ();
+    idio_display (idio_vm_source_location (), lsh);
+    idio_error_func_name (lsh, ":", NULL);
 
     IDIO detail = idio_S_nil;
 
@@ -772,7 +840,7 @@ void idio_error_divide_by_zero (char const *msg, IDIO nums, IDIO c_location)
 
     IDIO c = idio_struct_instance (idio_condition_rt_divide_by_zero_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       location,
+					       idio_get_output_string (lsh),
 					       detail,
 					       nums));
 
