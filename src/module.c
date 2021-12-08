@@ -89,25 +89,15 @@ static void idio_module_base_name_error (IDIO msg, IDIO name, IDIO c_location)
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (NULL, &lsh, &dsh, c_location);
 
-    IDIO detail = idio_S_nil;
-
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_rt_module_error_type,
-				   IDIO_LIST4 (msg,
-					       idio_get_output_string (lsh),
-					       detail,
-					       name));
-
-    idio_raise_condition (idio_S_true, c);
+    idio_error_raise_cont (idio_condition_rt_module_error_type,
+			   IDIO_LIST4 (msg,
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       name));
 
     /* notreached */
 }
@@ -164,29 +154,19 @@ static void idio_module_unbound_name_error (IDIO symbol, IDIO module, IDIO c_loc
     IDIO_TYPE_ASSERT (module, module);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C ("symbol unbound in module", msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO detail = idio_S_nil;
-
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_rt_module_symbol_unbound_error_type,
-				   IDIO_LIST5 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       detail,
-					       module,
-					       symbol));
-
-    idio_raise_condition (idio_S_true, c);
+    idio_error_raise_cont (idio_condition_rt_module_symbol_unbound_error_type,
+			   IDIO_LIST5 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       module,
+				       symbol));
 
     /* notreached */
 }

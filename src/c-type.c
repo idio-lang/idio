@@ -100,28 +100,20 @@ static void idio_C_conversion_error (char const *msg, IDIO n, IDIO c_location)
 
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
 
     idio_display_C (msg, msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
+    idio_error_raise_cont (idio_condition_rt_C_conversion_error_type,
+			   IDIO_LIST4 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       n));
 
-    IDIO detail = idio_S_nil;
-
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_rt_C_conversion_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       detail,
-					       n));
-    idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 IDIO idio_C_char (char const v)

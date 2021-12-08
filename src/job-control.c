@@ -144,14 +144,18 @@ static void idio_job_control_error_exec (char **argv, char **envp, IDIO c_locati
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("exec:", sh);
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
+    idio_display_C ("exec:", msh);
     int j;
     for (j = 0; NULL != argv[j]; j++) {
 	/*
 	 * prefix each argv[*] with a space
 	 */
-    	idio_display_C (" ", sh);
+	idio_display_C (" ", msh);
 
 	/*
 	 * quote argv[*] if necessary
@@ -162,7 +166,7 @@ static void idio_job_control_error_exec (char **argv, char **envp, IDIO c_locati
 
 	 char *qs = NULL;
 	 qs = "\"";
-	 idio_display_C (qs, sh);
+	 idio_display_C (qs, msh);
 
 	 */
 	int q = 0;
@@ -170,31 +174,21 @@ static void idio_job_control_error_exec (char **argv, char **envp, IDIO c_locati
 	    q = 1;
 	}
 	if (q) {
-	    idio_display_C ("\"", sh);
+	    idio_display_C ("\"", msh);
 	}
-    	idio_display_C (argv[j], sh);
+	idio_display_C (argv[j], msh);
 	if (q) {
-	    idio_display_C ("\"", sh);
+	    idio_display_C ("\"", msh);
 	}
     }
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
 
-    IDIO detail = idio_S_nil;
+    idio_error_raise_cont (idio_condition_rt_command_exec_error_type,
+			   IDIO_LIST4 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       idio_fixnum ((intptr_t) errno)));
 
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_rt_command_exec_error_type,
-				   IDIO_LIST4 (idio_get_output_string (sh),
-					       idio_get_output_string (lsh),
-					       detail,
-					       idio_fixnum ((intptr_t) errno)));
-    idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 static int idio_job_control_job_is_stopped (IDIO job)

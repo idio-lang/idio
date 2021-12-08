@@ -83,31 +83,21 @@ static IDIO idio_posix_regex_error (int errcode, regex_t *preg, char const *C_fu
 	IDIO_GC_ALLOC (errbuf, errbufsiz);
 	regerror (errcode, preg, errbuf, errbufsiz);
 
-	IDIO msh = idio_open_output_string_handle_C ();
+	IDIO msh;
+	IDIO lsh;
+	IDIO dsh;
+	idio_error_init (&msh, &lsh, &dsh, c_location);
+
 	idio_display_C (C_func, msh);
 	idio_display_C (" failure: ", msh);
 	idio_display_C (errbuf, msh);
 
 	IDIO_GC_FREE (errbuf, errbufsiz);
 
-	IDIO lsh = idio_open_output_string_handle_C ();
-	idio_display (idio_vm_source_location (), lsh);
-	idio_error_func_name (lsh, ":", NULL);
-
-	IDIO detail = idio_S_nil;
-
-#ifdef IDIO_DEBUG
-	IDIO dsh = idio_open_output_string_handle_C ();
-	idio_display (c_location, dsh);
-	detail = idio_get_output_string (dsh);
-#endif
-
-	IDIO c = idio_struct_instance (idio_condition_rt_regex_error_type,
-				       IDIO_LIST3 (idio_get_output_string (msh),
-						   idio_get_output_string (lsh),
-						   detail));
-
-	idio_raise_condition (idio_S_true, c);
+	idio_error_raise_cont (idio_condition_rt_regex_error_type,
+			       IDIO_LIST3 (idio_get_output_string (msh),
+					   idio_get_output_string (lsh),
+					   idio_get_output_string (dsh)));
 
 	return idio_S_notreached;
     } else {

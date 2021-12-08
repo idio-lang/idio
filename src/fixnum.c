@@ -77,28 +77,18 @@ static void idio_fixnum_conversion_error (char const *msg, IDIO num, IDIO c_loca
 
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C (msg, msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO detail = idio_S_nil;
-
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_rt_fixnum_conversion_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       detail,
-					       num));
-
-    idio_raise_condition (idio_S_true, c);
+    idio_error_raise_cont (idio_condition_rt_fixnum_conversion_error_type,
+			   IDIO_LIST4 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       num));
 
     /* notreached */
 }
@@ -111,28 +101,18 @@ static void idio_fixnum_number_error (char const *msg, IDIO num, IDIO c_location
 
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C (msg, msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO detail = idio_S_nil;
-
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_rt_fixnum_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       detail,
-					       num));
-
-    idio_raise_condition (idio_S_true, c);
+    idio_error_raise_cont (idio_condition_rt_fixnum_error_type,
+			   IDIO_LIST4 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       num));
 
     /* notreached */
 }

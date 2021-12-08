@@ -283,14 +283,14 @@ static void idio_read_error (IDIO handle, IDIO lo, IDIO c_location, IDIO msg)
     IDIO detail = idio_S_nil;
 
 #ifdef IDIO_DEBUG
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display (c_location, sh);
-    idio_display_C (": reached line ", sh);
-    idio_display (idio_integer (IDIO_HANDLE_LINE (handle)), sh);
-    idio_display_C (": pos ", sh);
-    idio_display (idio_integer (IDIO_HANDLE_POS (handle)), sh);
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    idio_display_C (": reached line ", dsh);
+    idio_display (idio_integer (IDIO_HANDLE_LINE (handle)), dsh);
+    idio_display_C (": pos ", dsh);
+    idio_display (idio_integer (IDIO_HANDLE_POS (handle)), dsh);
 
-    detail = idio_get_output_string (sh);
+    detail = idio_get_output_string (dsh);
 #endif
 
     IDIO c = idio_struct_instance (idio_condition_read_error_type,
@@ -299,6 +299,7 @@ static void idio_read_error (IDIO handle, IDIO lo, IDIO c_location, IDIO msg)
 					       detail,
 					       idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE),
 					       idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_POS)));
+
     idio_raise_condition (idio_S_true, c);
 
     /* notreached */
@@ -315,10 +316,12 @@ static void idio_read_error_parse (IDIO handle, IDIO lo, IDIO c_location, char c
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
+
+    /* notreached */
 }
 
 static void idio_read_error_parse_args (IDIO handle, IDIO lo, IDIO c_location, char const *msg, IDIO args)
@@ -333,11 +336,11 @@ static void idio_read_error_parse_args (IDIO handle, IDIO lo, IDIO c_location, c
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C (msg, sh);
-    idio_display (args, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+    idio_display (args, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }
@@ -374,12 +377,14 @@ static void idio_read_error_parse_word_too_long (IDIO handle, IDIO lo, IDIO c_lo
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("word is too long: '", sh);
-    idio_display_C (word, sh);
-    idio_display_C ("'", sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("word is too long: '", msh);
+    idio_display_C (word, msh);
+    idio_display_C ("'", msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
+
+    /* notreached */
 }
 
 static void idio_read_error_list_eof (IDIO handle, IDIO lo, IDIO c_location)
@@ -389,10 +394,10 @@ static void idio_read_error_list_eof (IDIO handle, IDIO lo, IDIO c_location)
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (handle, handle);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("EOF in list", sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("EOF in list", msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }
@@ -405,10 +410,10 @@ static void idio_read_error_pair_separator (IDIO handle, IDIO lo, IDIO c_locatio
     IDIO_C_ASSERT (msg);
     IDIO_TYPE_ASSERT (handle, handle);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }
@@ -425,11 +430,11 @@ static void idio_read_error_comment (IDIO handle, IDIO lo, IDIO c_location, char
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("comment: ", sh);
-    idio_display_C (e_msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("comment: ", msh);
+    idio_display_C (e_msg, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }
@@ -446,11 +451,11 @@ static void idio_read_error_string (IDIO handle, IDIO lo, IDIO c_location, char 
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("string: ", sh);
-    idio_display_C (e_msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("string: ", msh);
+    idio_display_C (e_msg, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }
@@ -466,11 +471,11 @@ static void idio_read_error_named_character (IDIO handle, IDIO lo, IDIO c_locati
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("named character: ", sh);
-    idio_display_C (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("named character: ", msh);
+    idio_display_C (msg, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }
@@ -486,11 +491,11 @@ static void idio_read_error_named_character_unknown_name (IDIO handle, IDIO lo, 
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("unknown named character: ", sh);
-    idio_display_C (name, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("unknown named character: ", msh);
+    idio_display_C (name, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }
@@ -506,11 +511,11 @@ static void idio_read_error_bitset (IDIO handle, IDIO lo, IDIO c_location, char 
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("bitset: ", sh);
-    idio_display_C (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("bitset: ", msh);
+    idio_display_C (msg, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }
@@ -526,11 +531,11 @@ static void idio_read_error_template (IDIO handle, IDIO lo, IDIO c_location, cha
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("template: ", sh);
-    idio_display_C (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("template: ", msh);
+    idio_display_C (msg, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }
@@ -546,11 +551,11 @@ static void idio_read_error_pathname (IDIO handle, IDIO lo, IDIO c_location, cha
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("pathname: ", sh);
-    idio_display_C (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("pathname: ", msh);
+    idio_display_C (msg, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }
@@ -566,11 +571,11 @@ static void idio_read_error_integer (IDIO handle, IDIO lo, IDIO c_location, char
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("integer: ", sh);
-    idio_display_C (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("integer: ", msh);
+    idio_display_C (msg, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }
@@ -586,11 +591,11 @@ static void idio_read_error_bignum (IDIO handle, IDIO lo, IDIO c_location, char 
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("bignum: ", sh);
-    idio_display_C (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("bignum: ", msh);
+    idio_display_C (msg, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }
@@ -606,11 +611,11 @@ static void idio_read_error_utf8_decode (IDIO handle, IDIO lo, IDIO c_location, 
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("UTF-8 decode: ", sh);
-    idio_display_C (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("UTF-8 decode: ", msh);
+    idio_display_C (msg, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }
@@ -626,11 +631,11 @@ static void idio_read_error_unicode_decode (IDIO handle, IDIO lo, IDIO c_locatio
     IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("U+hhhh decode: ", sh);
-    idio_display_C (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("U+hhhh decode: ", msh);
+    idio_display_C (msg, msh);
 
-    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+    idio_read_error (handle, lo, c_location, idio_get_output_string (msh));
 
     /* notreached */
 }

@@ -383,27 +383,21 @@ void idio_vm_error (char const *msg, IDIO args, IDIO c_location)
     IDIO_TYPE_ASSERT (list, args);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C (msg, msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO dsh = idio_open_output_string_handle_C ();
     idio_display (args, dsh);
 
-#ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
-    idio_display (c_location, dsh);
-#endif
+    idio_error_raise_cont (idio_condition_runtime_error_type,
+			   IDIO_LIST3 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh)));
 
-    IDIO c = idio_struct_instance (idio_condition_runtime_error_type,
-				   IDIO_LIST3 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       idio_get_output_string (dsh)));
-
-    idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 static void idio_vm_error_function_invoke (char const *msg, IDIO args, IDIO c_location)
@@ -414,27 +408,21 @@ static void idio_vm_error_function_invoke (char const *msg, IDIO args, IDIO c_lo
     IDIO_TYPE_ASSERT (list, args);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C (msg, msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO dsh = idio_open_output_string_handle_C ();
     idio_display (args, dsh);
 
-#ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
-    idio_display (c_location, dsh);
-#endif
+    idio_error_raise_cont (idio_condition_rt_function_error_type,
+			   IDIO_LIST3 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh)));
 
-    IDIO c = idio_struct_instance (idio_condition_rt_function_error_type,
-				   IDIO_LIST3 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       idio_get_output_string (dsh)));
-
-    idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 static void idio_vm_function_trace (IDIO_I ins, IDIO thr);
@@ -449,12 +437,15 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t const given, size_
 	idio_vm_function_trace (ins, thr);
     }
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     char em[BUFSIZ];
     size_t eml = idio_snprintf (em, BUFSIZ, "incorrect arity: %zd args for an arity-%zd function", given, arity);
     idio_display_C_len (em, eml, msh);
 
-    IDIO dsh = idio_open_output_string_handle_C ();
     IDIO func = IDIO_THREAD_FUNC (thr);
 
     IDIO val = IDIO_THREAD_VAL (thr);
@@ -480,21 +471,12 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t const given, size_
 	idio_display_C (")", dsh);
     }
 
-#ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
-    idio_display (c_location, dsh);
-#endif
+    idio_error_raise_cont (idio_condition_rt_function_arity_error_type,
+			   IDIO_LIST3 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh)));
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO c = idio_struct_instance (idio_condition_rt_function_arity_error_type,
-				   IDIO_LIST3 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       idio_get_output_string (dsh)));
-
-    idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t const given, size_t const arity, IDIO c_location)
@@ -508,29 +490,21 @@ static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t const give
 	idio_vm_function_trace (ins, thr);
     }
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     char em[BUFSIZ];
     size_t eml = idio_snprintf (em, BUFSIZ, "incorrect arity: %zd args for an arity-%zd+ function", given, arity);
     idio_display_C_len (em, eml, msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
+    idio_error_raise_cont (idio_condition_rt_function_arity_error_type,
+			   IDIO_LIST3 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh)));
 
-    IDIO detail = idio_S_nil;
-
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_rt_function_arity_error_type,
-				   IDIO_LIST3 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       detail));
-
-    idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 /*
@@ -543,31 +517,25 @@ static void idio_error_runtime_unbound (IDIO fmci, IDIO fgci, IDIO sym, IDIO c_l
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C ("no such binding", msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO dsh = idio_open_output_string_handle_C ();
     idio_display_C ("mci ", dsh);
     idio_display (fmci, dsh);
     idio_display_C (" -> gci ", dsh);
     idio_display (fgci, dsh);
 
-#ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
-    idio_display (c_location, dsh);
-#endif
+    idio_error_raise_cont (idio_condition_rt_variable_unbound_error_type,
+			   IDIO_LIST4 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       sym));
 
-    IDIO c = idio_struct_instance (idio_condition_rt_variable_unbound_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       idio_get_output_string (dsh),
-					       sym));
-
-    idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 static void idio_error_dynamic_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO c_location)
@@ -575,14 +543,13 @@ static void idio_error_dynamic_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO c_loc
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C ("no such dynamic binding", msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO dsh = idio_open_output_string_handle_C ();
     idio_display_C ("mci ", dsh);
     IDIO fmci = idio_fixnum (mci);
     idio_display (fmci, dsh);
@@ -592,24 +559,18 @@ static void idio_error_dynamic_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO c_loc
     idio_display_C (" -> gvi ", dsh);
     idio_display (idio_fixnum (gvi), dsh);
 
-
-#ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
-    idio_display (c_location, dsh);
-#endif
-
     IDIO sym = idio_S_unspec;
     if (idio_S_unspec != fgci) {
 	sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
     }
 
-    IDIO c = idio_struct_instance (idio_condition_rt_dynamic_variable_unbound_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       idio_get_output_string (dsh),
-					       sym));
+    idio_error_raise_cont (idio_condition_rt_dynamic_variable_unbound_error_type,
+			   IDIO_LIST4 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       sym));
 
-    idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 static void idio_error_environ_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO c_location)
@@ -617,14 +578,13 @@ static void idio_error_environ_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO c_loc
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C ("no such environ binding", msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO dsh = idio_open_output_string_handle_C ();
     idio_display_C ("mci ", dsh);
     IDIO fmci = idio_fixnum (mci);
     idio_display (fmci, dsh);
@@ -639,18 +599,13 @@ static void idio_error_environ_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO c_loc
 	sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
     }
 
-#ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
-    idio_display (c_location, dsh);
-#endif
+    idio_error_raise_cont (idio_condition_rt_environ_variable_unbound_error_type,
+			   IDIO_LIST4 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       sym));
 
-    IDIO c = idio_struct_instance (idio_condition_rt_environ_variable_unbound_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       idio_get_output_string (dsh),
-					       sym));
-
-    idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 /*
@@ -667,14 +622,13 @@ static void idio_vm_error_computed (char const *msg, idio_ai_t mci, idio_ai_t gv
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C (msg, msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO dsh = idio_open_output_string_handle_C ();
     idio_display_C ("mci ", dsh);
     IDIO fmci = idio_fixnum (mci);
     idio_display (fmci, dsh);
@@ -689,18 +643,13 @@ static void idio_vm_error_computed (char const *msg, idio_ai_t mci, idio_ai_t gv
 	sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
     }
 
-#ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
-    idio_display (c_location, dsh);
-#endif
+    idio_error_raise_cont (idio_condition_rt_computed_variable_error_type,
+			   IDIO_LIST4 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       sym));
 
-    IDIO c = idio_struct_instance (idio_condition_rt_computed_variable_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       idio_get_output_string (dsh),
-					       sym));
-
-    idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 static void idio_vm_error_computed_no_accessor (char const *msg, idio_ai_t mci, idio_ai_t gvi, IDIO c_location)
@@ -708,16 +657,15 @@ static void idio_vm_error_computed_no_accessor (char const *msg, idio_ai_t mci, 
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C ("no computed ", msh);
     idio_display_C (msg, msh);
     idio_display_C (" accessor", msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO dsh = idio_open_output_string_handle_C ();
     idio_display_C ("mci ", dsh);
     IDIO fmci = idio_fixnum (mci);
     idio_display (fmci, dsh);
@@ -732,18 +680,13 @@ static void idio_vm_error_computed_no_accessor (char const *msg, idio_ai_t mci, 
 	sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
     }
 
-#ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
-    idio_display (c_location, dsh);
-#endif
+    idio_error_raise_cont (idio_condition_rt_computed_variable_no_accessor_error_type,
+			   IDIO_LIST4 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       sym));
 
-    IDIO c = idio_struct_instance (idio_condition_rt_computed_variable_no_accessor_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       idio_get_output_string (dsh),
-					       sym));
-
-    idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 /*

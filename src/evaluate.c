@@ -229,6 +229,10 @@ static void idio_meaning_base_error (IDIO src, IDIO c_location, IDIO msg, IDIO e
     IDIO_TYPE_ASSERT (string, c_location);
     IDIO_TYPE_ASSERT (string, msg);
 
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (NULL, &lsh, &dsh, c_location);
+
     /*
      * How do we describe our error?
      *
@@ -247,24 +251,11 @@ static void idio_meaning_base_error (IDIO src, IDIO c_location, IDIO msg, IDIO e
      * code the error in their user code was spotted.
      */
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO detail = idio_S_nil;
-
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_evaluation_error_type,
-				   IDIO_LIST4 (msg,
-					       idio_get_output_string (lsh),
-					       detail,
-					       expr));
-    idio_raise_condition (idio_S_false, c);
+    idio_error_raise_noncont (idio_condition_evaluation_error_type,
+			      IDIO_LIST4 (msg,
+					  idio_get_output_string (lsh),
+					  idio_get_output_string (dsh),
+					  expr));
 
     /* notreached */
 }
@@ -278,11 +269,11 @@ void idio_meaning_error_param_type (IDIO src, IDIO c_location, char const *msg, 
 
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("parameter type: ", sh);
-    idio_display_C (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("parameter type: ", msh);
+    idio_display_C (msg, msh);
 
-    idio_meaning_base_error (src, c_location, idio_get_output_string (sh), expr);
+    idio_meaning_base_error (src, c_location, idio_get_output_string (msh), expr);
 
     /* notreached */
 }
@@ -296,12 +287,12 @@ static void idio_meaning_error_param (IDIO src, IDIO c_location, char const *msg
 
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display (expr, sh);
-    idio_display_C (": ", sh);
-    idio_display_C (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display (expr, msh);
+    idio_display_C (": ", msh);
+    idio_display_C (msg, msh);
 
-    idio_meaning_base_error (src, c_location, idio_get_output_string (sh), expr);
+    idio_meaning_base_error (src, c_location, idio_get_output_string (msh), expr);
 
     /* notreached */
 }
@@ -315,10 +306,10 @@ void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char const *msg, 
 
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C (msg, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
 
-    idio_meaning_base_error (src, c_location, idio_get_output_string (sh), expr);
+    idio_meaning_base_error (src, c_location, idio_get_output_string (msh), expr);
 
     /* notreached */
 }
@@ -340,14 +331,13 @@ void idio_meaning_error_static_redefine (IDIO src, IDIO c_location, char const *
     IDIO_TYPE_ASSERT (string, c_location);
     IDIO_TYPE_ASSERT (symbol, name);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C (msg, msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO dsh = idio_open_output_string_handle_C ();
     idio_display_C (msg, dsh);
     idio_display_C (": ", dsh);
     idio_display (name, dsh);
@@ -356,17 +346,11 @@ void idio_meaning_error_static_redefine (IDIO src, IDIO c_location, char const *
     idio_display_C (": proposed: ", dsh);
     idio_display (new, dsh);
 
-#ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
-    idio_display (c_location, dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_st_variable_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       idio_get_output_string (dsh),
-					       name));
-    idio_raise_condition (idio_S_true, c);
+    idio_error_raise_noncont (idio_condition_st_variable_error_type,
+			      IDIO_LIST4 (idio_get_output_string (msh),
+					  idio_get_output_string (lsh),
+					  idio_get_output_string (dsh),
+					  name));
 
     /* notreached */
 }
@@ -385,28 +369,18 @@ static void idio_meaning_error_static_variable (IDIO src, IDIO c_location, char 
     IDIO_TYPE_ASSERT (string, c_location);
     IDIO_TYPE_ASSERT (symbol, name);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C (msg, msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO detail = idio_S_nil;
-
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
-
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_st_variable_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       detail,
-					       name));
-    idio_raise_condition (idio_S_true, c);
+    idio_error_raise_noncont (idio_condition_st_variable_error_type,
+			      IDIO_LIST4 (idio_get_output_string (msh),
+					  idio_get_output_string (lsh),
+					  idio_get_output_string (dsh),
+					  name));
 
     /* notreached */
 }
@@ -454,26 +428,17 @@ void idio_meaning_error_static_arity (IDIO src, IDIO c_location, char const *msg
     IDIO_TYPE_ASSERT (string, c_location);
     IDIO_TYPE_ASSERT (list, args);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C (msg, msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (args, dsh);
-
-#ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
-    idio_display (c_location, dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_st_function_arity_error_type,
-				   IDIO_LIST3 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       idio_get_output_string (dsh)));
-    idio_raise_condition (idio_S_true, c);
+    idio_error_raise_noncont (idio_condition_st_function_arity_error_type,
+			      IDIO_LIST3 (idio_get_output_string (msh),
+					  idio_get_output_string (lsh),
+					  idio_get_output_string (dsh)));
 
     /* notreached */
 }
@@ -492,14 +457,12 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
     IDIO_TYPE_ASSERT (list, args);
     IDIO_TYPE_ASSERT (primitive, primdata);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C (msg, msh);
-
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO dsh = idio_open_output_string_handle_C ();
 
     char em[BUFSIZ];
     size_t eml = idio_snprintf (em, BUFSIZ, "ARITY != %" PRId8 "%s; primitive (", IDIO_PRIMITIVE_ARITY (primdata), IDIO_PRIMITIVE_VARARGS (primdata) ? "+" : "");
@@ -522,16 +485,10 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
     }
     idio_display_C (")", dsh);
 
-#ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
-    idio_display (c_location, dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_st_function_arity_error_type,
-				   IDIO_LIST3 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       idio_get_output_string (dsh)));
-    idio_raise_condition (idio_S_true, c);
+    idio_error_raise_noncont (idio_condition_st_function_arity_error_type,
+			      IDIO_LIST3 (idio_get_output_string (msh),
+					  idio_get_output_string (lsh),
+					  idio_get_output_string (dsh)));
 
     /* notreached */
 }

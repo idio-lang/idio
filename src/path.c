@@ -65,24 +65,15 @@ static void idio_pathname_error (IDIO msg, IDIO detail, IDIO c_location)
     IDIO_TYPE_ASSERT (string, detail);
     IDIO_TYPE_ASSERT (string, c_location);
 
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    if (idio_S_nil != detail) {
-	idio_display (detail, dsh);
-	idio_display_C (": ", dsh);
-    }
-    idio_display (c_location, dsh);
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (NULL, &lsh, &dsh, c_location);
 
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_rt_path_error_type,
-				   IDIO_LIST4 (msg,
-					       idio_S_nil,
-					       detail,
-					       detail));
-
-    idio_raise_condition (idio_S_false, c);
+    idio_error_raise_cont (idio_condition_rt_path_error_type,
+			   IDIO_LIST4 (msg,
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       detail));
 
     /* notreached */
 }
@@ -96,25 +87,15 @@ static void idio_glob_base_error (IDIO msg, IDIO pattern, IDIO c_location)
     IDIO_TYPE_ASSERT (string, msg);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (NULL, &lsh, &dsh, c_location);
 
-    IDIO detail = idio_S_nil;
-
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_rt_glob_error_type,
-				   IDIO_LIST4 (msg,
-					       idio_get_output_string (lsh),
-					       detail,
-					       pattern));
-
-    idio_raise_condition (idio_S_true, c);
+    idio_error_raise_cont (idio_condition_rt_glob_error_type,
+			   IDIO_LIST4 (msg,
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       pattern));
 
     /* notreached */
 }

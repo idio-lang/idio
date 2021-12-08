@@ -62,31 +62,19 @@ static void idio_struct_error (IDIO msg, IDIO st, IDIO args, IDIO c_location)
     IDIO_TYPE_ASSERT (struct_type, st);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO detail = idio_S_nil;
-    IDIO dsh = idio_open_output_string_handle_C ();
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (NULL, &lsh, &dsh, c_location);
 
     idio_display_C ("st=", dsh);
     idio_display (IDIO_STRUCT_TYPE_NAME (st), dsh);
     idio_display_C (" from ", dsh);
     idio_display (args, dsh);
 
-#ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
-    idio_display (c_location, dsh);
-#endif
-
-    detail = idio_get_output_string (dsh);
-
-    IDIO c = idio_struct_instance (idio_condition_rt_struct_error_type,
-				   IDIO_LIST3 (msg,
-					       idio_get_output_string (lsh),
-					       detail));
-
-    idio_raise_condition (idio_S_false, c);
+    idio_error_raise_cont (idio_condition_rt_struct_error_type,
+			   IDIO_LIST3 (msg,
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh)));
 
     /* notreached */
 }
@@ -97,29 +85,19 @@ static void idio_struct_instance_field_not_found_error (IDIO field, IDIO c_locat
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("field '", sh);
-    idio_display (field, sh);
-    idio_display_C ("' not found", sh);
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
+    idio_display_C ("field '", msh);
+    idio_display (field, msh);
+    idio_display_C ("' not found", msh);
 
-    IDIO detail = idio_S_nil;
-
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_rt_struct_error_type,
-				   IDIO_LIST3 (idio_get_output_string (sh),
-					       idio_get_output_string (lsh),
-					       detail));
-
-    idio_raise_condition (idio_S_true, c);
+    idio_error_raise_cont (idio_condition_rt_struct_error_type,
+			   IDIO_LIST3 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh)));
 
     /* notreached */
 }
@@ -129,27 +107,17 @@ static void idio_struct_instance_bounds_error (char const *em, idio_ai_t index, 
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
+
     idio_display_C (em, msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
-
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (idio_integer (index), dsh);
-
-#ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
-    idio_display (c_location, dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_rt_struct_error_type,
-				   IDIO_LIST3 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       idio_get_output_string (dsh)));
-
-    idio_raise_condition (idio_S_true, c);
+    idio_error_raise_cont (idio_condition_rt_struct_error_type,
+			   IDIO_LIST3 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh)));
 
     /* notreached */
 }

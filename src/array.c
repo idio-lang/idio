@@ -87,31 +87,22 @@ static void idio_array_length_error (char const *msg, idio_ai_t size, IDIO c_loc
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
 
     char em[BUFSIZ];
     size_t eml = idio_snprintf (em, BUFSIZ, "%s: size %td", msg, size);
     idio_display_C_len (em, eml, msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
+    idio_error_raise_cont (idio_condition_rt_array_error_type,
+			   IDIO_LIST4 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       idio_S_nil));
 
-    IDIO detail = idio_S_nil;
-
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_rt_array_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       detail,
-					       idio_S_nil));
-
-    idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 static void idio_array_bounds_error (idio_ai_t index, idio_ai_t size, IDIO c_location)
@@ -119,31 +110,22 @@ static void idio_array_bounds_error (idio_ai_t index, idio_ai_t size, IDIO c_loc
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO msh = idio_open_output_string_handle_C ();
+    IDIO msh;
+    IDIO lsh;
+    IDIO dsh;
+    idio_error_init (&msh, &lsh, &dsh, c_location);
 
     char em[BUFSIZ];
     size_t eml = idio_snprintf (em, BUFSIZ, "array bounds error: abs (%td) >= #elem %td", index, size);
     idio_display_C_len (em, eml, msh);
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    idio_display (idio_vm_source_location (), lsh);
-    idio_error_func_name (lsh, ":", NULL);
+    idio_error_raise_cont (idio_condition_rt_array_error_type,
+			   IDIO_LIST4 (idio_get_output_string (msh),
+				       idio_get_output_string (lsh),
+				       idio_get_output_string (dsh),
+				       idio_integer (index)));
 
-    IDIO detail = idio_S_nil;
-
-#ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
-    detail = idio_get_output_string (dsh);
-#endif
-
-    IDIO c = idio_struct_instance (idio_condition_rt_array_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_get_output_string (lsh),
-					       detail,
-					       idio_integer (index)));
-
-    idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 /**
