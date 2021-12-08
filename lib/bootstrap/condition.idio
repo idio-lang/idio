@@ -508,8 +508,10 @@ multiple lines.
       cr-printf "%s:" (idio-error-location c)
       cr-printf "%s:" (struct-type-name (struct-instance-type c))
       cr-printf "%s" (idio-error-message c)
-      if (not (null? (idio-error-detail c))) {
-	cr-printf ": detail %s" (idio-error-detail c)
+      detail := idio-error-detail c
+      if (and (string? detail)
+	      ((string-length detail) gt 0)) {
+	cr-printf ": detail %s" detail
       }
     }
 
