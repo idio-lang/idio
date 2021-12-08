@@ -1747,7 +1747,8 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	     * ^error 1 2
 	     */
 	    idio_vm_error_function_invoke ("cannot invoke",
-					   IDIO_LIST2 (func, IDIO_THREAD_VAL (thr)),
+					   idio_list_append2 (IDIO_LIST1 (func),
+							      idio_frame_params_as_list (IDIO_THREAD_VAL (thr))),
 					   IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
