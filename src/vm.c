@@ -447,29 +447,32 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t const given, size_
     idio_display_C_len (em, eml, msh);
 
     IDIO func = IDIO_THREAD_FUNC (thr);
+    IDIO name;
+    if (idio_isa_closure (func)) {
+	name = idio_ref_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+	if (idio_S_nil == name) {
+	    name = idio_string_C_len (IDIO_STATIC_STR_LEN ("-anon-"));
+	}
+    } else if (idio_isa_primitive (func)) {
+	name = idio_string_C_len (IDIO_PRIMITIVE_NAME (func), IDIO_PRIMITIVE_NAME_LEN (func));
+    }
+    IDIO sigstr = idio_ref_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
 
     IDIO val = IDIO_THREAD_VAL (thr);
-    if (idio_isa_closure (func)) {
-	IDIO name = idio_ref_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
-	IDIO sigstr = idio_ref_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
 
-	eml = idio_snprintf (em, BUFSIZ, "ARITY != %zd%s; closure (", arity, "");
-	idio_display_C_len (em, eml, dsh);
-	idio_display (name, dsh);
+    idio_display_C ("(", dsh);
+    idio_display (name, dsh);
+    idio_display_C (" ", dsh);
+    idio_display (sigstr, dsh);
+    idio_display_C (") was called as (", dsh);
+    idio_display (name, dsh);
+    IDIO args = idio_frame_params_as_list (val);
+    while (idio_S_nil != args) {
 	idio_display_C (" ", dsh);
-	idio_display (sigstr, dsh);
-	idio_display_C (") was called as (", dsh);
-	idio_display (func, dsh);
-	IDIO args = idio_frame_params_as_list (val);
-	if (idio_S_nil != args) {
-	    idio_display_C (" ", dsh);
-	    size_t size = 0;
-	    char *s = idio_display_string (args, &size);
-	    idio_display_C_len (s + 1, size - 2, dsh);
-	    IDIO_GC_FREE (s, size);
-	}
-	idio_display_C (")", dsh);
+	idio_display (IDIO_PAIR_H (args), dsh);
+	args = IDIO_PAIR_T (args);
     }
+    idio_display_C (")", dsh);
 
     idio_error_raise_cont (idio_condition_rt_function_arity_error_type,
 			   IDIO_LIST3 (idio_get_output_string (msh),
@@ -498,6 +501,34 @@ static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t const give
     char em[BUFSIZ];
     size_t eml = idio_snprintf (em, BUFSIZ, "incorrect arity: %zd args for an arity-%zd+ function", given, arity);
     idio_display_C_len (em, eml, msh);
+
+    IDIO func = IDIO_THREAD_FUNC (thr);
+    IDIO name;
+    if (idio_isa_closure (func)) {
+	name = idio_ref_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+	if (idio_S_nil == name) {
+	    name = idio_string_C_len (IDIO_STATIC_STR_LEN ("-anon-"));
+	}
+    } else if (idio_isa_primitive (func)) {
+	name = idio_string_C_len (IDIO_PRIMITIVE_NAME (func), IDIO_PRIMITIVE_NAME_LEN (func));
+    }
+    IDIO sigstr = idio_ref_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
+
+    IDIO val = IDIO_THREAD_VAL (thr);
+
+    idio_display_C ("(", dsh);
+    idio_display (name, dsh);
+    idio_display_C (" ", dsh);
+    idio_display (sigstr, dsh);
+    idio_display_C (") was called as (", dsh);
+    idio_display (name, dsh);
+    IDIO args = idio_frame_params_as_list (val);
+    while (idio_S_nil != args) {
+	idio_display_C (" ", dsh);
+	idio_display (IDIO_PAIR_H (args), dsh);
+	args = IDIO_PAIR_T (args);
+    }
+    idio_display_C (")", dsh);
 
     idio_error_raise_cont (idio_condition_rt_function_arity_error_type,
 			   IDIO_LIST3 (idio_get_output_string (msh),
