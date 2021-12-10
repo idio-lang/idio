@@ -329,6 +329,9 @@ test (substring "abc" 3)   ""
 test (substring "abc" 0.0 3.0) "abc"
 test (substring "abc" 0.0)     "abc"
 
+test (substring "abc" -2)      "bc"
+test (substring "abc" -2 -1)   "b"
+
 test (string-index "hello" #\h) 0
 test (string-index "hello" #\l) 2
 test (string-index "hello" #\o) 4
@@ -783,7 +786,7 @@ for (x y z) in strings {
 }
 
 ;; all done?
-Tests? (string0 + 474)
+Tests? (string0 + 476)
 
 ;Local Variables:
 ;mode: Idio

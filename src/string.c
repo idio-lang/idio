@@ -2241,6 +2241,10 @@ through to but excluding position `pn`		\n\
 :type pn: integer, optional			\n\
 :return: the substring				\n\
 :rtype: string					\n\
+						\n\
+If `p0` or `pn` are negative they are considered	\n\
+to be with respect to the end of the string.  This	\n\
+can still result in a negative index.			\n\
 ")
 {
     IDIO_ASSERT (s);
@@ -2298,6 +2302,10 @@ through to but excluding position `pn`		\n\
 	return idio_S_notreached;
     }
 
+    if (ip0 < 0) {
+	ip0 += l;
+    }
+
     if (idio_S_nil != args) {
 	IDIO pn = IDIO_PAIR_H (args);
 	if (idio_isa_fixnum (pn)) {
@@ -2338,6 +2346,10 @@ through to but excluding position `pn`		\n\
 
 	    return idio_S_notreached;
 	}
+    }
+
+    if (ipn < 0) {
+	ipn += l;
     }
 
     if (ip0 < 0 ||
