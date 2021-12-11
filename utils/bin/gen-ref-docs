@@ -409,6 +409,30 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 
 	      hash-set! mod-ht sym #t
 	    })
+	    ((or (boolean? val)) {
+	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
+
+	      hprintf out-fh ".. idio:value:: %s\n\n" sym
+
+	      if (not (eq? mod 'Idio)) {
+		hprintf out-fh "   :canonical: %s\n" mod-sym
+	      }
+
+	      (cond
+	       ((dynamic? (string->symbol mod-sym)) {
+		 hprintf out-fh "   :scope: dynamic\n"
+	       })
+	       ((computed? (string->symbol mod-sym)) {
+		 hprintf out-fh "   :computed:\n"
+	       }))
+	      hprintf out-fh "\n"
+
+	      insert-file out-fh 1 dfn
+
+	      hprintf out-fh "\n"
+
+	      hash-set! mod-ht sym #t
+	    })
 	    ((symbol? val) {
 	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
 

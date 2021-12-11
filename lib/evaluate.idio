@@ -33,7 +33,7 @@ define (meaning-src-location e) {
   if lo {
     sprintf "%s:line %d" (%idio-lexical-object-name lo) (%idio-lexical-object-line lo)
   } {
-    #n
+    #f
   }
 }
 
