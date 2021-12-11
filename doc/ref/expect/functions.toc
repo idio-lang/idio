@@ -1,0 +1,5 @@
+(rst "functions-intro" 0)
+
+(document expect spawn)
+(document expect expect-case)
+

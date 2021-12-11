@@ -181,7 +181,8 @@ write `mfd` (`in-read` STDIN_FILENO)
 	(cond
 	 ((C/== mfd fd) {
 	   (cond
-	    ((POLLERR? revents) {
+	    ((or (POLLHUP? revents)
+		 (POLLERR? revents)) {
 	      poller-deregister poller fd
 	    })
 	    ((POLLIN? revents) {
@@ -199,7 +200,8 @@ write `mfd` (`in-read` STDIN_FILENO)
 	 })
 	 ((C/== STDIN_FILENO fd) {
 	   (cond
-	    ((POLLERR? revents) {
+	    ((or (POLLHUP? revents)
+		 (POLLERR? revents)) {
 	      poller-deregister poller fd
 	    })
 	    ((POLLIN? revents) {
@@ -272,7 +274,7 @@ sub-process.
   waitpid pid
 }
 
-define* (spawn-async & argv) "
+define* (spawn & argv) "
 Spawn a process defined by `argv`
 
 :param argv: command and arguments
@@ -289,9 +291,7 @@ stdin (:ref:`libc/struct-termios <libc/struct-termios>`).
              terminal mode
 
 " {
-  eprintf "pty/spawn: forkpty\n"
   fpty := (forkpty)
-  eprintf "pty/spawn: forkpty => %s\n" fpty
   pid := ph fpty
   mfd := pht fpty
 
@@ -310,10 +310,9 @@ stdin (:ref:`libc/struct-termios <libc/struct-termios>`).
      }))
   }
 
-  eprintf "pty/spawn: => %s\n" (list pid mfd mode)
   list pid mfd mode
 }
 
-spawn := spawn-async
+spawn-async := spawn
 
 provide pty
