@@ -27,12 +27,14 @@
 #include <sys/resource.h>
 
 #include <assert.h>
+#include <fcntl.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "idio-system.h"
@@ -171,6 +173,50 @@ Return the VM's \"suppress rcse\" state		\n\
 
 void idio_vars_add_primitives ()
 {
+    /*
+     * Seed the random number generator -- which requires an unsigned
+     * int.
+     *
+     * https://en.wikipedia.org/wiki/Entropy-supplying_system_calls
+     * describes the problems in getting some entropy albeit I'm not
+     * sure anyone should be relying on RANDOM returning anything
+     * truly cryptographically worthy.
+     *
+     * getrandom() isn't portable (even across Linux platforms) and we
+     * can't rely on getentropy() either (missing on older SunOS, Mac
+     * OS X etc.) so we need to cobble something together ourselves.
+     *
+     * 1. try /dev/urandom
+     *
+     * 2. try something to do with the time
+     */
+    size_t buflen = sizeof (unsigned int);
+    char buf[buflen];
+
+    int use_time = 0;
+    int fd = open ("/dev/urandom", O_RDONLY | O_NONBLOCK);
+    if (fd >= 0) {
+	int n = read (fd, buf, buflen);
+	if (n == buflen) {
+	    srandom ((unsigned int) *((unsigned int *) buf));
+	} else {
+	    use_time = 1;
+	}
+	close (fd);
+    } else {
+	use_time = 1;
+    }
+
+    if (use_time) {
+	/*
+	 * This is a bit old-school (and probably rubbish by today's
+	 * standards).
+	 *
+	 * Should we be XOR'ing this with some tv_usec or tv_nsec?
+	 */
+	srandom ((unsigned int) time (NULL));
+    }
+
     IDIO geti;
     IDIO seti;
     geti = IDIO_ADD_PRIMITIVE (RANDOM_get);
