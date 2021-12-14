@@ -32,6 +32,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "idio-system.h"
@@ -39,6 +40,8 @@
 #include "gc.h"
 #include "idio.h"
 
+#include "bignum.h"
+#include "c-type.h"
 #include "command.h"
 #include "error.h"
 #include "evaluate.h"
@@ -72,6 +75,78 @@ static int idio_vars_set_dynamic_default (IDIO name, IDIO val)
     return 0;
 }
 
+IDIO_DEFINE_PRIMITIVE0_DS ("RANDOM/get", RANDOM_get, (void), "", "\
+in C, :samp:`random ()`				\n\
+a wrapper to libc :manpage:`random(3)`		\n\
+						\n\
+Return a random non-negative 32-bit number	\n\
+						\n\
+Normally accessed as the variable :ref:`RANDOM`	\n\
+						\n\
+:return: random non-negative 32-bit number	\n\
+:rtype: integer					\n\
+")
+{
+    return idio_integer (random ());
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("RANDOM/set", RANDOM_set, (IDIO seed), "seed", "\
+in C, :samp:`srandom ({seed})`			\n\
+a wrapper to libc :manpage:`srandom(3)`		\n\
+						\n\
+Seed the random number generator		\n\
+						\n\
+Normally invoked by setting the variable :ref:`RANDOM`	\n\
+						\n\
+:param seed: seed integer			\n\
+:type seed: integer				\n\
+:return: ``#<unspec>``				\n\
+						\n\
+Negative values for `seed` will be implicitly	\n\
+converted to C unsigned	values.			\n\
+")
+{
+    IDIO_ASSERT (seed);
+
+    unsigned int C_seed = 1;
+    if (idio_isa_C_uint (seed)) {
+	C_seed = IDIO_C_TYPE_uint (seed);
+    } else if (idio_isa_fixnum (seed)) {
+	C_seed = IDIO_FIXNUM_VAL (seed);
+    } else if (idio_isa_bignum (seed)) {
+	if (IDIO_BIGNUM_INTEGER_P (seed)) {
+	    C_seed = idio_bignum_ptrdiff_t_value (seed);
+	} else {
+	    IDIO seed_i = idio_bignum_real_to_integer (seed);
+	    if (idio_S_nil == seed_i) {
+		/*
+		 * Test Case: libc-errors/RANDOM-set-float.idio
+		 *
+		 * RANDOM = 1.1
+		 */
+		idio_error_param_value_exp ("RANDOM", "seed", seed, "integer bignum", IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    } else {
+		C_seed = idio_bignum_ptrdiff_t_value (seed_i);
+	    }
+	}
+    } else {
+	/*
+	 * Test Case: libc-errors/RANDOM-set-bad-type.idio
+	 *
+	 * RANDOM = #t
+	 */
+	idio_error_param_type ("integer C/uint|fixnum|bignum", seed, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    srandom (C_seed);
+
+    return idio_S_unspec;
+}
+
 IDIO_DEFINE_PRIMITIVE0_DS ("SECONDS/get", SECONDS_get, (void), "", "\
 Return the VM's elapsed running time in seconds	\n\
 						\n\
@@ -97,6 +172,11 @@ Return the VM's \"suppress rcse\" state		\n\
 void idio_vars_add_primitives ()
 {
     IDIO geti;
+    IDIO seti;
+    geti = IDIO_ADD_PRIMITIVE (RANDOM_get);
+    seti = IDIO_ADD_PRIMITIVE (RANDOM_set);
+    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("RANDOM"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_vm_values_ref (IDIO_FIXNUM_VAL (seti)), idio_Idio_module);
+
     geti = IDIO_ADD_PRIMITIVE (SECONDS_get);
     idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("SECONDS"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_Idio_module);
 
