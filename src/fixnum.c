@@ -485,6 +485,12 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 	}
 
 	/*
+	 * What is our predicted negativity?
+	 */
+	int neg = (ir < 0) != (ih < 0);
+	intptr_t im;
+
+	/*
 	 * Prechecks for potential multiplication overflow.
 	 *
 	 * NB According to the C specification, if integer
@@ -500,7 +506,7 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 	 * of ir*ih will be at most mr+mh.
 	 *
 	 * If both mr and mh are less than half a wordsize then we cannot
-	 * overflow.
+	 * overflow(*).
 	 *
 	 *
 	 * MSB (3*3) == MSB (9) == MSB (8+1) == 3
@@ -511,6 +517,9 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 	 * is <=
 	 * MSB(3) + MSB (9) == MSB (2+1) + MSB (8+1) == 2 + 4 == 6
 	 *
+	 *
+	 * (*) Except our result is signed so we, uh, can overflow.
+	 * We can spot that if the expected sign changes (hopefully).
 	 */
 	if (ir & IDIO_FIXNUM_HALFWORD_MASK ||
 	    ih & IDIO_FIXNUM_HALFWORD_MASK) {
@@ -559,20 +568,23 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 		bn_args = idio_list_reverse (bn_args);
 		return idio_bignum_primitive_multiply (bn_args);
 	    } else {
-		ir = ir * ih;
+		im = ir * ih;
 	    }
 	} else {
-	    ir = ir * ih;
+	    im = ir * ih;
 	}
 
-	if (ir > IDIO_FIXNUM_MAX ||
-	    ir < IDIO_FIXNUM_MIN) {
+	if (im > IDIO_FIXNUM_MAX ||
+	    im < IDIO_FIXNUM_MIN ||
+	    (neg &&
+	     im > 0) ||
+	    (0 == neg &&
+	     im < 0)) {
 	    /*
 	     * Shift everything to bignums and pass the calculation on
 	     * to the bignum code
 	     */
 	    IDIO bn_args = IDIO_LIST1 (idio_bignum_integer_intmax_t (ir));
-	    args = IDIO_PAIR_T (args);
 	    while (idio_S_nil != args) {
 		IDIO h = IDIO_PAIR_H (args);
 		IDIO_TYPE_ASSERT (fixnum, h);
@@ -585,6 +597,7 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 	    return idio_bignum_primitive_multiply (bn_args);
 	}
 
+	ir = im;
 	args = IDIO_PAIR_T (args);
     }
 
