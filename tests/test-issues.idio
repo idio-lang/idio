@@ -38,9 +38,12 @@ issues-load := {
 ; maintaining the set of issues with the issue number within it
 ;
 ; 1 - Ian's Gitlab
+;
+; 2 - Githib
 
 issues-load "issues/1-173.idio"
 issues-load "issues/1-178.idio"
+issues-load "issues/2-2.idio"
 
 ;; all done?
-Tests? (issues0 + 13)
+Tests? (issues0 + 17)

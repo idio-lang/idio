@@ -1144,17 +1144,17 @@ test (- 0.0 1.1)             -1.1
 2fnm := 2 * FIXNUM-MAX
 3fnm := 3 * FIXNUM-MAX
 
-test (lt 0.0 1.1) #t
-test (lt 2fnm 3fnm) #t
+test (lt 0.0 1.1)       #t
+test (lt 2fnm 3fnm)     #t
 test (lt 2fnm (- 2fnm)) #f
 test (lt (- 2fnm) 2fnm) #t
 
-test (lt 2fnm 3.0) #f
-test (lt 3.0 2fnm) #t
-test (lt (- 2fnm) 3.0) #t
-test (lt 3.0 (- 2fnm)) #f
-test (lt 2fnm 0.0) #f
-test (lt 0.0 2fnm) #t
+test (lt 2fnm 3.0)      #f
+test (lt 3.0 2fnm)      #t
+test (lt (- 2fnm) 3.0)  #t
+test (lt 3.0 (- 2fnm))  #f
+test (lt 2fnm 0.0)      #f
+test (lt 0.0 2fnm)      #t
 
 (cond-expand
  (sizeof/pointer/32 {
@@ -1168,9 +1168,8 @@ test (lt 0.0 2fnm) #t
    ;; 64-bit systems use one 18-digit segment.  2fnm,
    ;; 4611686018427387902, at 19 digits is using more than one
    ;; segments worth of significant digits so the result is normalised
-   ;; to an inexect number
 
-   test (+ 3.0 2fnm) #i4e18
+   test (+ 3.0 2fnm) 4.6116860184273879e+18
  })
 )
 

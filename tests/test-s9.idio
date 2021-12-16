@@ -867,42 +867,42 @@ test (lt -0.9422223409 (cos   2.8) -0.9422223400) #t
 test (lt -0.4902608219 (cos   4.2) -0.4902608210) #t
 test (lt  0.7755658780 (cos   5.6)  0.7755658789) #t
 
-test (even? -1) #f
-test (even? 0) #t
-test (even? 1) #f
-test (even? 2) #t
-test (even? 1234567890) #t
-test (even? 1234567891) #f
+test (even? -1)          #f
+test (even?  0)          #t
+test (even?  1)          #f
+test (even?  2)          #t
+test (even?  1234567890) #t
+test (even?  1234567891) #f
 
-test (expt 0 2) 0
-test (expt 2 0) 1
-test (expt 2 1) 2
-test (expt 2 2) 4
-test (expt 2 3) 8
-test (expt -2 3) -8
-test (expt -2 4) 16
-test (expt 2 100) 1267650600228229401496703205376
-test (expt 2.0 2.0) 4.0
+test (expt  0   2)    0
+test (expt  2   0)    1
+test (expt  2   1)    2
+test (expt  2   2)    4
+test (expt  2   3)    8
+test (expt -2   3)   -8
+test (expt -2   4)    16
+test (expt  2   100)  1267650600228229401496703205376
+test (expt  2.0 2.0)  4.0
 
-test (expt 0. 2) 0
-test (expt 2.0 0) 1.0
-test (expt 2.0 1) 2.0
-test (expt 2.0 2) 4.0
-test (expt 2.0 3) 8.0
-test (expt -2.0 3) -8.0
-test (expt -2.0 4) 16.0
-test (expt 2.0 40) 1.099511627776e+12
+test (expt  0.  2)    0
+test (expt  2.0 0)    1.0
+test (expt  2.0 1)    2.0
+test (expt  2.0 2)    4.0
+test (expt  2.0 3)    8.0
+test (expt -2.0 3)   -8.0
+test (expt -2.0 4)    16.0
+test (expt  2.0 40)   1.099511627776e+12
 
-test (expt 1 -1) 1.0
-test (expt  2 -1) 0.5
-test (expt -2  -1) -0.5
-test (expt  2  -1) 0.5
-test (expt  2  -2) 0.25
-test (expt -2  -2) 0.25
-test (expt  2  -3) 0.125
-test (expt -2  -3) -0.125
-test (expt  2 -10) 0.0009765625
-test (expt -2 -10) 0.0009765625
+test (expt  1 -1)    1.0
+test (expt  2 -1)    0.5
+test (expt -2  -1)   -0.5
+test (expt  2  -1)   0.5
+test (expt  2  -2)   0.25
+test (expt -2  -2)   0.25
+test (expt  2  -3)   0.125
+test (expt -2  -3)   -0.125
+test (expt  2 -10)   0.0009765625
+test (expt -2 -10)   0.0009765625
 test (expt 10   -10) 1.0e-10
 test (expt 10  -100) 1.0e-100
 test (expt 10 -1000) 1.0e-1000
@@ -1031,13 +1031,13 @@ test (lt -0.6312666379 (sin   5.6) -0.6312666370) #t
 
 test (sqrt 0) 0
 test (sqrt 1) 1
-test (sqrt 144) #i12
-test (sqrt 15241578750190521) #i123456789
-test (sqrt 15241578750190521.0) #i123456789.0
+test (sqrt 144) 12
+test (sqrt 15241578750190521) 123456789
+test (sqrt 15241578750190521.0) 123456789.0
 test (lt 1.4142135620   (sqrt 2) 1.4142135629) #t
 test (lt 11.090536500 (sqrt 123) 11.090536509) #t
-test (sqrt 15239.9025) #i123.45
-test (sqrt 1e20) #i1e10
+test (sqrt 15239.9025) 123.45
+test (sqrt 1e20) 1e10
 
 test (tan    0.0) 0.0
 test (tan   pi/4) (if (exact? pi)  1.0 #i1)

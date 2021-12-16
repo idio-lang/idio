@@ -8,8 +8,7 @@ with a concept of exactness.
 
 In principle, bignums allow arbitrary precision but most operations
 involving bignums (including reading them in!) will "normalize" the
-result to a value with up to 18 significant digits and flag the number
-as *inexact* to indicate that rounding has taken place.
+result to a value with up to 18 significant digits.
 
 A bignum exponent is a signed 32-bit entity.
 

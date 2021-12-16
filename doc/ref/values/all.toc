@@ -15,6 +15,7 @@
 (document Idio SECONDS)
 (nodocument Idio SECONDS/get)
 (document Idio TIMEFORMAT)
+(document Idio *epsilon* epsilon)
 
 (rst "environment-values" 0)
 (document Idio PATH)

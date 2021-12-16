@@ -22,12 +22,12 @@
 (document Idio round)
 (document Idio truncate)
 
-(nodocument Idio fact2)
+(document Idio factorial)
 (document Idio exp)
 (document Idio log)
 
 (nodocument Idio ->circle)
-(nodocument Idio p-series)
+(nodocument Idio sine-series)
 
 (document Idio cos)
 (document Idio sin)

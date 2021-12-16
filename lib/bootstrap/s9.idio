@@ -25,6 +25,11 @@
 ;; By Nils M Holm <nmh@t3x.org>, 2007,2008,2009
 ;;
 
+;; The 2009 S9fES real_add() had a bug (issues/2-2.idio) which
+;; manifested itself in log.  As a side-effect, some algorithms have
+;; been updated with inspiration from the Reimagined code which
+;; includes some factoring improvements.
+
 ;;----- Library -----
 
 ;; Some obvious procedures first
@@ -180,7 +185,7 @@ raise `x` to the power of `y`
 
 .. seealso:: :ref:`exp <exp>`
 " {
-  square :+ function (x) (* x x)
+  square :+ function (x) (x * x)
   expt2 :+ function (x y) {
     (cond
      ((zero? y) 1)
@@ -189,9 +194,16 @@ raise `x` to the power of `y`
   }
 
   (cond
-   ((negative? y) (/ (expt2 (0.0 + x) y)))
+   ((negative? y) (/ (expt (exact->inexact x) (- y))))
+   ((zero? x) {
+     if (inexact? y) {
+       if (positive? y) 0 (/ 1 0)
+     } {
+       expt2 x y
+     }
+   })
    ((integer? y) (expt2 x y))
-   (else (exp (y * (log x)))))
+   (else         (exp (y * (log x)))))
 }
 
 gcd := {
@@ -375,17 +387,7 @@ return the `integer` furthest from 0 but no further than `x`
   (if (x lt 0) ceiling floor) x
 }
 
-; used by EXP and SIN
-define (fact2 x r) {
-  if (x eq 0) r {
-    fact2 (x - 1) (x * r)
-  }
-}
-
-exp := {
-  fact2 := fact2
-
-  function (x) "
+define (exp x) "
 raise Euler's number, `e`, to the power of `x`
 
 :param x: number
@@ -395,29 +397,39 @@ raise Euler's number, `e`, to the power of `x`
 
 .. seealso:: :ref:`expt <expt>` and  :ref:`log <log>`
 " {
-    e-series :+ function (x y r last) {
-      if (r eq last) r {
-	(e-series x
-		  (1 + y)
-		  (r + ((expt x y) /
-				   (fact2 y 1)))
-		  r)
-      }
-    }
+  #*
 
-    if (x ge 2.0) {
-      e^x/2 := 1 + (x / 2) + (e-series (x / 2)
-				       2
-				       0.0
-				       1.0)
+  https://en.wikipedia.org/wiki/Exponential_function#Computation
 
-      e^x/2 * e^x/2
-    } {
-      1 + x + (e-series x
-			2
-			0.0
-			1.0)
+  This is the standard Taylor series (1 + x + x^2/2! + x^3/3! + ...)
+  with the elements factored out for passing round the loop.
+
+  Technically, e-series is the William Kahan (e^x - 1) function.
+
+  *#
+
+  e-series :+ function (x y x^y y! r last) {
+    if ((abs (r - last)) le *epsilon*) r {
+      (e-series x
+		(1 + y)
+		(x^y * x)
+		(y! * (1 + y))
+		(r + (x^y / y!))
+		r)
     }
+  }
+
+  if (x ge 2.0) {
+    e^x/2 := exp (x / 2)
+
+    e^x/2 * e^x/2
+  } {
+    1 + (e-series x
+		  1
+		  x
+		  1
+		  0.0
+		  1.0)
   }
 }
 
@@ -425,49 +437,75 @@ define (log x) "
 return the natural logarithm of `x`
 
 :param x: number
-:type x: number
+:type x: positive number
 :return: natural log of `x`
 :rtype: number
 
 .. seealso:: :ref:`exp <exp>`
 " {
-  l-series :+ function (x y r last lim) {
+  #*
+
+  The algorithm relates to "More efficient series" under
+  https://en.wikipedia.org/wiki/Logarithm#Power_series
+
+  For the general case, summing over k, the first pass, k=0, has just
+  the fraction (z - 1) / (z + 1) and then subsequently the fractional
+  part is raised to the power 2k+1, ie another 2 times fractional part
+  and divided by 2k+1 == y + 2.
+
+  We can draw those parts out and pass them individually.
+
+  x	(z - 1) / (z + 1)
+  y	2k+1
+  x^y	((z - 1) / (z + 1))^(2k+1)
+
+  lim is used to limit the number of times the approximation loop runs
+
+  *#
+
+  l-series :+ function (x y x^y r last lim)   {
+    if (y gt 4000) {
+      printf "l2 x %s y %4s x^y %s r %s l %s %s δ %s\n" x y x^y r last lim (r - last)
+      sleep 1
+    }
     (cond
-     ((and lim (zero? lim)) r)
-     ((r eq last) (2 * r))
+     ((and lim (zero? lim)) (2 * r))
+     (((abs (r - last)) le *epsilon*) (2 * r))
      (else (l-series x
 		     (2 + y)
-		     (r + ((expt ((x - 1) / (x + 1))
-				 y)
-			    /
-			    y))
+		     (* x^y x x)
+		     (r + (x^y / y))
 		     r
 		     (if lim (lim - 1) lim))))
   }
 
   (cond
    ((negative? x) (1.0 / 0))
-   ((lt 0.1 x 5) (l-series x
-			   1
-			   0.0
-			   1.0
-			   #f))
+   ((lt 0.1 x 5) {
+     fr := (x - 1) / (x + 1)
+     (l-series fr
+	       1
+	       fr
+	       0.0
+	       1.0
+	       #f)
+   })
    (else {
-     approx := l-series x 1 0.0 1.0 5
-     a := x / (exp approx)
-     approx + (log a)
+     y := l-series x 1 ((x - 1) / (x + 1)) 0.0 1.0 5
+     A := x / (exp y)
+     y + (log A)
    }))
 }
 
 ; auxilary definitions for SIN, COS, TAN
-pi := 3.141592653589793238462643383279502884197169399375105820974944
-pi/4 := pi / 4
-pi/2 := pi / 2
+pi    := 3.141592653589793238462643383279502884197169399375105820974944
+pi/4  := pi / 4
+pi/2  := pi / 2
 3pi/4 := pi/2 + pi/4
 3pi/2 := pi + pi/2
 5pi/4 := pi + pi/4
 7pi/4 := pi + 3pi/4
-2pi := pi + pi
+2pi   := pi + pi
 
 ->circle := {
   2pi := 2pi
@@ -484,27 +522,47 @@ pi/2 := pi / 2
   }
 }
 
-p-series  := {
-  fact2 := fact2
+; Used by sine-series (cos, sin), atan
+define (factorial x) "
+Return the factorial of `x`
+
+:param x: number
+:type x: number
+:return: factorial of `x`
+:rtype: number
+" {
+  define (fact2 x y) {
+    if (x lt 2) y {
+      q := quotient x 2
+      (fact2 q y) * (fact2 (x - q) (y + q))
+    }
+  }
+
+  fact2 x 1
+}
+
+; p-series in S9fES, used by cos, sin
+sine-series  := {
+  factorial := factorial
 
   function (x y r add last) {
-    if (r eq last) r {
-      (p-series x
-		(2 + y)
-		((if add \+ \-) r ((expt x y) / (fact2 y 1)))
-		(not add)
-		r)
+    if ((abs (r - last)) le *epsilon*) r {
+      (sine-series x
+		   (2 + y)
+		   ((if add \+ \-) r ((expt x y) / (factorial y)))
+		   (not add)
+		   r)
     }
   }
 }
 
 cos := {
-  ->circle := ->circle
-  p-series := p-series
-  pi := pi
-  pi/2 := pi/2
-  3pi/2 := 3pi/2
-  2pi := 2pi
+  ->circle    := ->circle
+  sine-series := sine-series
+  pi          := pi
+  pi/2        := pi/2
+  3pi/2       := 3pi/2
+  2pi         := 2pi
 
   function (x) "
 return the cosine of `x`
@@ -517,24 +575,24 @@ return the cosine of `x`
     x := ->circle x
 
     (cond
-     ((0 eq     x)       (if (inexact? x)  #i1.0  1.0))
-     ((pi/2 eq  x)       (if (inexact? x)  #i0.0  0.0))
-     ((pi eq    x)       (if (inexact? x) #i-1.0 -1.0))
-     ((3pi/2 eq x)       (if (inexact? x)  #i0.0  0.0))
-     ((le 0     x pi/2)  (p-series    x         2 1.0 #f 0))
-     ((le pi/2  x pi)    (- (p-series (- pi x)  2 1.0 #f 0)))
-     ((le pi    x 3pi/2) (- (p-series (- x pi)  2 1.0 #f 0)))
-     (else               (p-series    (- 2pi x) 2 1.0 #f 0)))
+     ((0 eq     x)       (if (inexact? x)  1.0  1))
+     ((pi/2 eq  x)        0.0)
+     ((pi eq    x)       -1.0)
+     ((3pi/2 eq x)        0.0)
+     ((le 0     x pi/2)  (sine-series    x         2 1.0 #f 0))
+     ((le pi/2  x pi)    (- (sine-series (pi - x)  2 1.0 #f 0)))
+     ((le pi    x 3pi/2) (- (sine-series (x - pi)  2 1.0 #f 0)))
+     (else               (sine-series    (2pi - x) 2 1.0 #f 0)))
   }
 }
 
 sin := {
-  ->circle := ->circle
-  p-series := p-series
-  pi := pi
-  pi/2 := pi/2
-  3pi/2 := 3pi/2
-  2pi := 2pi
+  ->circle    := ->circle
+  sine-series := sine-series
+  pi          := pi
+  pi/2        := pi/2
+  3pi/2       := 3pi/2
+  2pi         := 2pi
 
   function (x) "
 return the sine of `x`
@@ -547,21 +605,21 @@ return the sine of `x`
     x := ->circle x
 
     (cond
-     ((0     eq x) (if (inexact? x)  #i0.0  0.0))
-     ((pi/2  eq x) (if (inexact? x)  #i1.0  1.0))
-     ((pi    eq x) (if (inexact? x)  #i0.0  0.0))
-     ((3pi/2 eq x) (if (inexact? x) #i-1.0 -1.0))
+     ((0     eq x) (if (inexact? x)  0.0  0))
+     ((pi/2  eq x)  1.0)
+     ((pi    eq x)  0.0)
+     ((3pi/2 eq x) -1.0)
      (else {
        z := (cond
 	     ((le 0    x  pi/2) x)
-	     ((le pi/2 x  pi)   (- pi x))
-	     ((le pi   x 3pi/2) (- x pi))
-	     (else              (- 2pi x)))
+	     ((le pi/2 x  pi)   (pi - x))
+	     ((le pi   x 3pi/2) (x - pi))
+	     (else              (2pi - x)))
 
        if (x gt pi) {
-	 - (p-series z 3 z #f 0)
+	 - (sine-series z 3 z #f 0)
        } {
-	 p-series z 3 z #f 0
+	 sine-series z 3 z #f 0
        }
      }))
   }
@@ -569,11 +627,11 @@ return the sine of `x`
 
 tan := {
   ->circle := ->circle
-  pi := pi
-  pi/4 := pi/4
-  3pi/4 := 3pi/4
-  5pi/4 := 5pi/4
-  7pi/4 := 7pi/4
+  pi       := pi
+  pi/4     := pi/4
+  3pi/4    := 3pi/4
+  5pi/4    := 5pi/4
+  7pi/4    := 7pi/4
 
   function (x) "
 return the tangent of `x`
@@ -585,23 +643,33 @@ return the tangent of `x`
 " {
     x := ->circle x
     (cond
-     ((or (x eq 0)     (x eq  pi))   (if (inexact? x)  #i0.0  0.0))
-     ((or (x eq  pi/4) (x eq 5pi/4)) (if (inexact? x)  #i1.0  1.0))
-     ((or (x eq 3pi/4) (x eq 7pi/4)) (if (inexact? x) #i-1.0 -1.0))
+     ((or (x eq 0)     (x eq  pi))   (if (inexact? x)  0.0  0))
+     ((or (x eq  pi/4) (x eq 5pi/4))  1.0)
+     ((or (x eq 3pi/4) (x eq 7pi/4)) -1.0)
      (else                           ((sin x) / (cos x))))
   }
 }
 
 atan := {
-  pi/2 := pi/2
+  pi/2      := pi/2
+  factorial := factorial
+
+  #*
+
+  The at-series formula is the "Alternatively, this can be expressed
+  as..." in
+
+  https://en.wikipedia.org/wiki/Inverse_trigonometric_functions#Infinite_series
+
+  *#
+
   at-series :+ function (x y r last) {
-    if (r eq last) r {
+    if ((abs (r - last)) le *epsilon*) r {
       (at-series x
 		 (1 + y)
-		 (r + ((((expt 2 (y + y)) * (expt (fact2 y 1) 2)) /
-								  (fact2 (y + y + 1) 1)) *
-			((expt x (y + y + 1)) /
-					      (expt (1 + (x * x)) (1 + y)))))
+		 (r + ((((expt 2 (y + y)) * (expt (factorial y) 2)) / (factorial (+ y y 1)))
+			*
+			((expt x (+ y y 1)) / (expt (1 + (x * x)) (1 + y)))))
 		 r)
     }
   }
@@ -615,9 +683,9 @@ return the arctangent of `x`
 :rtype: number
 " {
     (cond
-     ((negative? x) (- (at-series (- x) 0.0 0 1)))
-     ((x gt 1) (pi/2 - (atan (/ x))))
-     (else (at-series x 0.0 0 1)))
+     ((negative? x) (- (atan (- x))))
+     ((x gt 1)      (pi/2 - (atan (/ x))))
+     (else          (at-series x 0.0 0 1)))
   }
 }
 
@@ -630,13 +698,13 @@ return the arcsine of `x`
 :rtype: number
 " {
   (cond
-   ((1 eq x) (2 * (atan x)))
+   ((1 eq x)      (2 * (atan x)))
    ((negative? x) (- (asin (- x))))
-   (else (atan (x / (sqrt (1 - (x * x)))))))
+   (else          (atan (x / (sqrt (1 - (x * x)))))))
 }
 
 acos := {
-  pi := pi
+  pi   := pi
   pi/2 := pi/2
 
   function (x) "
@@ -649,8 +717,8 @@ return the arccosine of `x`
 " {
     (cond
      ((-1 eq x) pi)
-     ((1  eq x) 0)
-     (else (pi/2 - (asin x))))
+     (( 1 eq x) 0)
+     (else      (pi/2 - (asin x))))
   }
 }
 
@@ -663,7 +731,7 @@ return the square root of `square`
 :rtype: number
 " {
   sqrt2 :+ function (x last) {
-    if (last eq x) x {
+    if ((abs (last - x)) le *epsilon*) x {
       sqrt2 ((x + (square / x)) / 2) x
     }
   }
@@ -671,10 +739,7 @@ return the square root of `square`
   if (negative? square) {
     error/type ^rt-parameter-value-error 'sqrt "negative argument" square
   } {
-    rt := sqrt2 square 0
-    if (square eq (* rt rt)) {
-      inexact->exact rt
-    } rt
+    sqrt2 square 0
   }
 }
 
