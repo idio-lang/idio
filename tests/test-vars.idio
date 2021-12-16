@@ -36,12 +36,21 @@ rounding.
 module tests/vars
 
 vars0 := Tests
+vars-skipped := 0
 
-;; re-seed with the same value
-RANDOM = 1
-r1 := RANDOM
-RANDOM = 1
-test RANDOM r1
+(cond-expand
+ ("uname/sysname/OpenBSD" {
+   ;; In OpenBSD the seed variable is ignored, and strong random
+   ;; number results will be provided from arc4random(3).
+   vars-skipped = vars-skipped + 1
+ })
+ (else {
+   ;; re-seed with the same value
+   RANDOM = 1
+   r1 := RANDOM
+   RANDOM = 1
+   test RANDOM r1
+ }))
 
 ;; seed with other types
 RANDOM = (C/integer-> 0 'uint)
@@ -50,7 +59,8 @@ RANDOM = 1e0
 RANDOM = -1e0
 
 ;; all done?
-Tests? (vars0 + 1)
+Skipped = Skipped + vars-skipped
+Tests? (vars0 + 1 - vars-skipped)
 
 ;Local Variables:
 ;mode: Idio
