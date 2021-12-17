@@ -9,3 +9,7 @@ Setting :var:`RANDOM` re-seeds the random number generator.
 
    :var:`RANDOM` is based on :manpage:`random(3)` with attendant risks
    for use in scenarios requiring high quality randomness.
+
+   In OpenBSD, when setting :var:`RANDOM`, the seed variable is
+   ignored, and strong random number results will be provided from
+   :manpage:`arc4random(3)`.
