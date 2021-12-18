@@ -16,22 +16,15 @@
  */
 
 /*
- * usi-wrap.h
+ * expect-module.h
  *
  */
 
-#ifndef USI_WRAP_H
-#define USI_WRAP_H
+#ifndef EXPECT_MODULE_H
+#define EXPECT_MODULE_H
 
-int idio_usi_isa (IDIO o, int flag);
-int idio_usi_codepoint_is_category (idio_unicode_t cp, int cat);
-int idio_usi_codepoint_has_attribute (idio_unicode_t cp, int flag);
+extern IDIO idio_expect_module;
 
-void idio_init_usi_wrap ();
+void idio_init_expect ();
 
 #endif
-
-/* Local Variables: */
-/* mode: C */
-/* coding: utf-8-unix */
-/* End: */

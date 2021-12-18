@@ -1,0 +1,656 @@
+#*
+
+Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+expect.idio
+
+*#
+
+module expect
+export (
+	 spawn
+	 spawn-id
+	 exp-timeout
+	 exp-match-max
+	 exp-before
+	 exp-after
+	 exp-slow
+	 exp-human
+	 exp-log
+	 exp-log-user
+	 exp-log-file
+	 exp-case
+	 exp-send
+)
+
+import libc
+import pty
+import unicode
+
+(export-struct
+ struct-spawn
+ argv pid mfd mode buffer matched eof timeout)
+
+;; a simplified constructor
+make-struct-spawn = {
+  orig-make-struct-spawn := make-struct-spawn
+
+  function (argv pid mfd mode) "
+create a :ref:`struct-spawn <expect/struct-spawn>`
+
+:param argv: command and arguments
+:type argv: list
+:param pid: Process ID of spawned process
+:type pid: C/int
+:param mfd: master file descriptor of pseudo-terminal
+:type mfd: C/int
+:param mode: initial terminal mode os standard input
+:type mode: :ref:`libc/struct-termios <libc/struct-termios>`
+:return: `struct-spawn`
+:rtype: struct-instance
+   
+The `buffer` attribute is initialised to the empty string, ``\"\"``,
+and the remaining attributes initialised to ``#f``.
+
+" {
+    orig-make-struct-spawn argv pid mfd mode "" #f #f #f
+  }
+}
+
+spawn-id      :~ #f
+exp-timeout   :~ -1
+exp-match-max :~ 2000
+exp-before    :~ #n
+exp-after     :~ #n
+
+#*
+
+exp-slow wants to describe a relatively slow rate of textual input --
+ie. don't have us outrun the input buffer of the pseudo-terminal which
+is expecting a human to be typing.  But humans are *really* slow so
+this is lightning quick by comparison but nowhere near flat out.
+
+It is a tuple of the number of code points and the millisecond gap
+after.
+
+A 9600 baud modem is roughly a byte per millisecond.  Twelve per
+millisecond is roughly a 115200 baud modem (a bit more "modern") and
+therefore (120 10) means we don't make systems calls through
+libc/poller-poll to implement the timeout too often.
+
+*#
+exp-slow      :~ '(120 10)
+
+#*
+
+exp-human is derived from Don Libes' work.  He chose (see
+human_write() in exp_command.c) a Weibull
+distribution (https://en.wikipedia.org/wiki/Weibull_distribution) to
+describe the average rate at which characters appear when a human is
+typing.  Further, he differentiated between the average rate of
+characters in a word and the average rate of characters outside of a
+word (whitespace and punctuation).
+
+In particular, the cumulative distribution function (CDF) is the
+result of the characters appearing so we need the inverse cumulative
+distribution function, the
+quantile (https://en.wikipedia.org/wiki/Weibull_distribution#Cumulative_distribution_function),
+to generate the CDF.
+
+Here, accomodating the human_write() code, the function is
+
+ λ (- (ln R))^K
+
+where λ is the "scale", ie. average inter-character gap, R is a random
+number, 0 <= R < 1, and K is the inverse of the "scale", nominally 1/K
+in the quantile function, which determines if the gap gets larger or
+smaller over time (technically, k, ie. 1/K, is about the rate of
+failures -- I was quite pleased I found the web page, don't ask me to
+understand the maths).
+
+Expect drives the algorithm with a 5-tuple:
+
+ in-word-gap out-word-gap K min max
+
+Professional typists are reckoned to be around 60 wpm (close enough to
+make the maths easy), that is a word per second.  Four letter words
+and a space might be, say 190ms per in-word character and 240ms per
+non-word character with a K of 1.  Roughly a 50 baud modem!
+
+World record (accurate) typing is around 200 wpm, let's call it 180
+wpm (maths) so the figures might be 65ms per in-word character and
+75ms per non-word character.  Roughly a 150 baud modem.
+
+There doesn't appear to be any peer-reviewed numbers for "enhanced
+two-finger" typists.
+
+In the meanwhile, "tiredness" might be represented by a K < 1 and
+preternaturally good typing by a K > 1.
+
+min and max obviously clip the generated distribution values.
+
+*#
+exp-human     :~ '(190 240 1 10 400)
+
+log-user      := #t
+
+log-file      :~ #f
+
+define (exp-log spawn-id in? msg) {
+  dir := ">>"
+  if in? {
+    dir = "<<"
+  }
+  if log-user {
+    if (string? msg) {
+      printf "%s" msg
+    } {
+      printf "expect: log: %s '%s\n" dir msg
+    }
+  }
+  if log-file {
+    if (string? msg) {
+      hprintf log-file "%s" msg
+    } {
+      hprintf log-file "expect: log: %s '%s\n" dir msg
+    }
+  }
+}
+
+define (exp-log-user on?) "
+Log the send/expect dialog to the user (`stdout`) or not
+
+:param on?: to log or not
+:type on?: boolean
+:return: ``#<unspec>``
+
+" {
+  ;; don't keep a reference to on?
+  log-user = (and on?
+		  #t)
+}
+
+define* (exp-log-file file (:append append #t)) "
+Log the send/expect dialog to `file` or not
+
+:param file: the file to log to
+:type file: see below
+:param append: to append or not, defaults to ``#t``
+:type append: boolean, optional
+:return: ``#<unspec>``
+
+`file` can be:
+
+* ``#f`` to disable logging to a file
+
+* a string, indicating the filename to log to
+
+* an output handle
+
+* a file descriptor (open for output)
+
+" {
+  (cond
+   ((not file) {
+     if log-file {
+       close-handle log-file
+       log-file = #f
+     }
+   })
+   ((string? file) {
+     oflags := "we"
+     if append {
+       oflags = "ae"
+     }
+     log-file = open-file file oflags
+   })
+   ((output-handle? file) {
+     log-file = file
+   })
+   ((C/int? file) {
+     oflags := "we"
+     if append {
+       oflags = "ae"
+     }
+     log-file = open-output-file-from-fd file oflags
+   })
+   (else {
+     error/type ^rt-parameter-type-error 'exp-log-file "string|output handle|output file descriptor" file
+   }))
+}
+
+define (spawn & argv) "
+Spawn a process defined by `argv`
+
+:param argv: command and arguments
+:type argv: list
+:return: :ref:`struct-spawn <expect/struct-spawn>`
+:rtype: struct-instance
+:raises ^system-error:
+
+
+" {
+  exp-log #f #f (sprintf "spawn %@\n" argv)
+  spawn-id = apply make-struct-spawn argv (apply pty/spawn argv)
+
+  spawn-id
+}
+
+#*
+
+expect(1) allows for
+
+  expect [[-opts] pat1 body1] ... [-opts] patn [bodyn]
+
+with opts:
+
+  -gl	(default)
+  -ex
+  -re
+  -nocase
+
+  [and others]
+
+patn can be
+
+  eof
+  timeout
+  default	== eof|timeout
+
+exp-case {
+}
+
+
+loop over (test body) tuples
+
+where test can be
+
+  (regexec rx buffer)
+
+    with rx derived from
+
+      flags string
+
+        and flags being
+
+	  :re / :gl / :ex
+	  :icase
+
+	ie.
+
+	  (regcomp (prepared string) [REG_ICASE])
+
+  (or (POLLHUP? revents)
+      (POLLERR? revents))
+
+  (null? <result from poller-poll>)
+
+******************************
+
+What we want is to do is three things:
+
+1. define a set of regcomps
+
+  $e-a := make-array 5
+  array-set! $e-a 0 (apply regcomp str1 flags1)
+  array-set! $e-a 1 (apply regcomp str2 flags2)
+  ...
+  array-set! $e-a 4 :eof
+  array-set! $e-a 5 :timeout
+
+  where the keywords act as non-regcomp toggles
+
+2. define a set of match clauses in cond which either call regexec or
+   test the keyword's state and then run the corresponding body in a
+   function which is passed (spawn-id) or (spawn-id r prefix) where r
+   is the array result from regexec and prefix is the buffer up to
+   r.0:
+
+  define ($exp-match spawn-id) {
+    (cond
+     ((regexec (array-ref $e-a 0) (struct-spawn-buffer spawn-id) 'REG_VERBOSE)
+      => (function (r) {
+	set-struct-spawn-matched! spawn-id #t
+	r0 := r.0
+	prefix := substring (struct-spawn-buffer spawn-id) 0 r0.2
+	set-struct-spawn-buffer! (substring (struct-spawn-buffer spawn-id) r0.3)
+
+	((function (spawn-id r prefix) {
+	  ...
+	}) spawn-id r prefix)
+      }))
+     ((regexec (array-ref $e-a 1) (struct-spawn-buffer spawn-id) 'REG_VERBOSE)
+      => (function (r) {
+	set-struct-spawn-matched! spawn-id #t
+	r0 := r.0
+	prefix := substring (struct-spawn-buffer spawn-id) 0 r0.2
+	set-struct-spawn-buffer! (substring (struct-spawn-buffer spawn-id) r0.3)
+
+	((function (spawn-id r prefix) {
+	  ...
+	}) spawn-id r prefix)
+      }))
+     ...
+     ((struct-spawn-eof spawn-id) => (function (r) {
+       set-struct-spawn-matched! spawn-id #t
+       ((function (spawn-id)
+	$@(pth c*)) spawn-id)
+     }))
+     ((struct-spawn-timeout spawn-id) => (function (r) {
+       set-struct-spawn-matched! spawn-id #t
+       ((function (spawn-id) {
+	 ...
+       }) spawn-id)
+     })))
+    
+  }
+
+3. define the exp-continue loop (in the scope of the user's body
+   forms) where we run $exp-match against the existing buffer contents
+   and if not then poller-poll for more data
+
+*#
+
+define-template (exp-case & clauses) {
+
+  define (exact-string str) {
+    (regex-case str
+		("([[:alnum:]]*)([^[:alnum:]])(.*)" {
+		  append-string r.1 "\\" r.2 (exact-string r.3)
+		})
+		(else r))
+  }
+
+  define (glob-string str) {
+    (regex-case str
+		("(.*)\\*(.*)" {
+		  append-string r.1 ".*" (glob-string r.2)
+		})
+		("(.*)\\?(.*)" {
+		  append-string r.1 "." (glob-string r.2)
+		})
+		(else r))
+  }
+
+  ;; #[ <regcomp> ]
+  exp-regcomps := gensym 'e-r
+
+  define (process-args re-kind re-flags a*) {
+    (cond
+     ((null? a*)
+      (error/type ^rt-syntax-error 'exp-case "invalid syntax: no string/body" re-kind re-flags))
+     ((not (pair? a*))
+      (error/type ^rt-syntax-error 'exp-case "invalid syntax: no string/body" re-kind re-flags a*))
+     (else {
+       (case (ph a*)
+	((:eof :timeout) {
+	  list (ph a*) (pt a*)
+	})
+	((:re :gl :ex) {
+	  process-args (ph a*) re-flags (pt a*)
+	})
+	((:icase) {
+	  process-args re-kind 'REG_ICASE (pt a*)
+	})
+	(else {
+	  (cond
+	   ((not (string? (ph a*)))
+	    (error/type ^rt-syntax-error 'exp-case "invalid syntax: not a string" re-kind re-flags a*))
+	   ((or (null? re-kind)
+		(eq? :gl re-kind)) {
+	     list (list (glob-string (ph a*)) re-flags) (pt a*)
+	   })
+	   ((eq? :ex re-kind) {
+	     list (list (exact-string (ph a*)) re-flags) (pt a*)
+	   })
+	   ((eq? :re re-kind) {
+	     list (list (ph a*) re-flags) (pt a*)
+	   }))
+	}))
+     }))
+  }
+
+  define (process-clauses c* i i* k* b*) {
+    (cond
+     ((null? c*) (list (reverse i*) (reverse k*) (reverse b*)))
+     ((or (not (pair? c*))
+	  (not (pair? (ph c*)))
+	  (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'exp-case "invalid syntax" c*))
+     (else {
+       ;; key body
+       kb := process-args #n #n (ph c*)
+       process-clauses (pt c*) (i + 1) (pair i i*) (pair (ph kb) k*) (pair (pht kb) b*)
+     }))
+
+  }
+
+  ;; before-clauses-after
+  bca := clauses
+  if (pair? exp-after) {
+    bca = append clauses exp-after
+  }
+  if (pair? exp-before) {
+    bca = append exp-before clauses
+  }
+
+  ikb := process-clauses bca 0 #n #n #n
+
+  n := length bca
+  exp-match := gensym 'e-m
+
+  #T{
+    {
+      $exp-regcomps := make-array $n
+      $@(map (function (i t) {
+	;; t is kw|(str flags)
+	(cond
+	 ((keyword? t) {
+	   #T{
+	     array-set! $exp-regcomps $i $t
+	   }
+	 })
+	 (else {
+	   #T{
+	     array-set! $exp-regcomps $i (apply regcomp $(ph t) $(pht t))
+	   }
+	 }))
+      }) (ph ikb) (pht ikb))
+      
+      exp-continue := #f
+
+      define ($exp-match spawn-id) {
+	(cond
+	 $@(map (function (i k b) {
+	   (case k
+	    ((:eof) {
+	      #T{
+		((struct-spawn-eof spawn-id) => (function (r) {
+		  set-struct-spawn-matched! spawn-id #t
+		  ((function (spawn-id)
+		   $@b) spawn-id)
+		}))
+	      }
+	    })
+	    ((:timeout) {
+	      #T{
+		((struct-spawn-timeout spawn-id) => (function (r) {
+		  set-struct-spawn-matched! spawn-id #t
+		  ((function (spawn-id)
+		   $@b) spawn-id)
+		}))
+	      }
+	    })
+	    (else {
+	      #T{
+		((regexec (array-ref $exp-regcomps $i) (struct-spawn-buffer spawn-id) 'REG_VERBOSE)
+		 => (function (r) {
+		   set-struct-spawn-matched! spawn-id #t
+		   r0 := r.0
+		   prefix := substring (struct-spawn-buffer spawn-id) 0 r0.2
+		   set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) r0.3)
+
+		   ((function (spawn-id r prefix)
+		    $@b) spawn-id r prefix)
+		 }))
+	      }
+	    }))
+	 }) (ph ikb) (pht ikb) (phtt ikb)))
+      }
+
+      t0 := SECONDS
+
+      exp-continue = function #n    {
+	set-struct-spawn-matched! spawn-id #f
+   
+   	;; search existing buffer
+   	$exp-match spawn-id
+
+   	if (not (struct-spawn-matched spawn-id)) {
+   	  set-struct-spawn-timeout! spawn-id #f
+   	  set-struct-spawn-eof! spawn-id #f
+
+   	  mfd := struct-spawn-mfd spawn-id
+   	  poller := libc/make-poller (list mfd libc/POLLIN)
+
+	  poll-results := libc/poller-poll poller (exp-timeout * 1000)
+
+   	  (cond
+   	   ((null? poll-results) {
+   	     set-struct-spawn-timeout! spawn-id #t
+	     ;expect/exp-log spawn-id #t 'timeout
+   	   })
+   	   (else {
+   	     for p-r in poll-results {
+   	       poll-fd := ph p-r
+   	       poll-revents := pht p-r
+   	       (cond
+   		((libc/POLLIN? poll-revents) {
+   		  data := libc/read poll-fd 1024
+   		  if data {
+   		    if (eof-object? data) {
+   		      libc/poller-deregister poller poll-fd
+		      set-struct-spawn-eof! spawn-id #t
+		      ;expect/exp-log spawn-id #t 'EOF
+   		    } {
+   		      set-struct-spawn-buffer! spawn-id (append-string (struct-spawn-buffer spawn-id) data)
+		      expect/exp-log spawn-id #t data
+   		    }
+   		  }
+   		})
+   		((or (libc/POLLHUP? poll-revents)
+   		     (libc/POLLERR? poll-revents)) {
+   		  libc/poller-deregister poller poll-fd
+		  set-struct-spawn-eof! spawn-id #t
+		  ;expect/exp-log spawn-id #t 'EOF
+   		}))
+   	     }
+   	   }))
+   	  $exp-match spawn-id
+
+	  if (not (struct-spawn-matched spawn-id)) {
+	    if ((string-length (struct-spawn-buffer spawn-id)) gt exp-match-max) {
+	      set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) (- exp-match-max))
+	    }
+	    (exp-continue)
+	  }
+   	}
+      }
+
+      (exp-continue)
+    }
+  }
+}
+
+define* (exp-send msg
+		  (:slow slow #f)
+		  (:human human #f)
+		  (:spawn-id spawn-id spawn-id)
+		  (:cr cr #f)) "
+send `msg` to the spawned process
+
+:param msg: the string to send
+:type msg: string
+:param slow: send `msg` slowly, defaults to ``#f``
+:type slow: boolean, optional
+:param human: send `msg` humanly, defaults to ``#f``
+:type human: boolean, optional
+:param spawn-id: the spawn-id to use, defaults to :ref:`spawn-id <expect/spawn-id>`
+:type spawn-id: boolean, optional
+:param cr: to send a 'newline' or not, defaults to ``#f``
+:type cr: boolean, optional
+:return: ``#<unspec>``
+
+``:slow`` says to use the value of :ref:`exp-slow <expect/exp-slow>`
+which is a tuple of the number of code points in a burst separated by
+a number of milliseconds.  The default is ``(120 10)`` roughly
+equivalent to a 115200 baud modem (if the code points were ASCII).
+
+``:human`` says to use the value of :ref:`exp-human
+<expect/exp-human>` which is a tuple of: the average gap between
+in-word code points ; the average gap between non-word code points; a
+moderating factor; the minimum and maximum gaps.  The default is
+``(190 240 1 10 400)`` roughly equivalent to a 60 wpm typist.
+
+" {
+  (cond
+   (slow {
+     if (and (pair? exp-slow)
+	     ((length exp-slow) ge 2)
+	     (integer? (ph exp-slow))
+	     (integer? (pht exp-slow))) {
+       n      := ph exp-slow
+       ms     := pht exp-slow
+
+       poller := (libc/make-poller)
+       pe     := string-length msg
+       mfd    := struct-spawn-mfd spawn-id
+
+       loop :+ function (p) {
+	 if (p lt pe) {
+	   pl := p + n
+	   if (pl ge pe) {
+	     libc/write mfd (substring msg p)
+	     libc/poller-poll poller ms
+	   } {
+	     libc/write mfd (substring msg p pl)
+	     libc/poller-poll poller ms
+	     loop pl
+	   }
+	 }
+       }
+
+       loop 0
+     } {
+       error/type ^rt-parameter-value-error 'exp-send "should be (#cp ms): not" exp-slow
+     }
+   })
+   (human {
+     expect/exp-send-human (struct-spawn-mfd spawn-id) msg
+   })
+   (else {
+     libc/write (struct-spawn-mfd spawn-id) msg
+   }))
+  if cr {
+    libc/write (struct-spawn-mfd spawn-id) "\r"
+  }
+  expect/exp-log spawn-id #f msg
+}
+
+provide expect
+
+;Local Variables:
+;mode: Idio
+;buffer-file-coding-system: utf-8-unix
+;End:

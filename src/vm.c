@@ -7522,8 +7522,10 @@ void idio_vm_thread_state (IDIO thr)
 	    fprintf (stderr, "\n");
 	}
 	fprintf (stderr, "vm-thread-state: dynamic: SP %3td ", dsp);
-	idio_debug ("= %s\n", idio_array_ref_index (stack, dsp - 1));
-	dsp = IDIO_FIXNUM_VAL (idio_array_ref_index (stack, dsp - 2));
+	idio_debug (" next %s", idio_array_ref_index (stack, dsp - 3));
+	idio_debug (" vi %s", idio_array_ref_index (stack, dsp - 1));
+	idio_debug (" val %s\n", idio_array_ref_index (stack, dsp - 2));
+	dsp = IDIO_FIXNUM_VAL (idio_array_ref_index (stack, dsp - 3));
     }
 
     header = 1;
@@ -7539,7 +7541,10 @@ void idio_vm_thread_state (IDIO thr)
 	}
 	fprintf (stderr, "vm-thread-state: environ: SP %3td ", esp);
 	idio_debug ("= %s\n", idio_array_ref_index (stack, esp - 1));
-	esp = IDIO_FIXNUM_VAL (idio_array_ref_index (stack, esp - 2));
+	idio_debug (" next %s", idio_array_ref_index (stack, dsp - 3));
+	idio_debug (" vi %s", idio_array_ref_index (stack, dsp - 1));
+	idio_debug (" val %s\n", idio_array_ref_index (stack, dsp - 2));
+	esp = IDIO_FIXNUM_VAL (idio_array_ref_index (stack, esp - 3));
     }
 
     header = 1;

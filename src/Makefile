@@ -21,6 +21,7 @@ endif
 
 all : local-install
 	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
+	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
 	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -50,6 +51,7 @@ lean :
 debug :
 	$(MAKE) MAKE_DEBUG=1
 	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
+	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
 	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
 
 test : local-install
@@ -78,6 +80,7 @@ doc :
 local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)
 	cp -r $(LIBDIR)/*.idio $(LIBDIR)/bootstrap $(LI_LIBVERDIR)
 	(cd $(EXTDIR)/json5/src; $(MAKE) local-install)
+	(cd $(EXTDIR)/expect/src; $(MAKE) local-install)
 	(cd $(EXTDIR)/empty/src; $(MAKE) local-install)
 
 $(LI_BINDIR)/idio : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
@@ -97,6 +100,7 @@ clean-local-install :
 
 clean : build-clean run-clean edit-clean
 	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
+	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
 	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
 	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system $(LIBDIR)/system.idio
 

@@ -48,6 +48,7 @@
 #include "idio.h"
 
 #include "array.h"
+#include "bignum.h"
 #include "c-type.h"
 #include "condition.h"
 #include "error.h"
@@ -313,7 +314,7 @@ Remove `fdh` from `poller`		\n\
     return idio_S_unspec;
 }
 
-IDIO idio_libc_poll_poll (idio_libc_poller_t *poller, int timeout)
+IDIO idio_libc_poll_poll (idio_libc_poller_t *poller, intmax_t timeout)
 {
     IDIO_C_ASSERT (poller);
 
@@ -409,6 +410,9 @@ IDIO idio_libc_poll_poll (idio_libc_poller_t *poller, int timeout)
 
 	if (-1 == poll_r) {
 	    if (EINTR != errno) {
+		/*
+		 * Test Case: ??
+		 */
 		idio_error_system_errno ("poll", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -453,8 +457,8 @@ Poll `poller` for `timeout` milliseconds	\n\
 						\n\
 :param poller: a poller from :ref:`libc/make-poller <libc/make-poller>`		\n\
 :type poller: C/pointer				\n\
-:param timeout: timeout, defaults to ``#n``	\n\
-:type timeout: fixnum or C/int			\n\
+:param timeout: timeout in milliseconds, defaults to ``#n``	\n\
+:type timeout: fixnum, bignum or C/int		\n\
 :return: list of :samp:`({fdh} {event})` tuples or ``#n``	\n\
 :rtype: list					\n\
 :raises ^rt-parameter-type-error:		\n\
@@ -482,20 +486,38 @@ Poll `poller` for `timeout` milliseconds	\n\
     }
     idio_libc_poller_t *C_poller = IDIO_C_TYPE_POINTER_P (poller);
 
-    int C_timeout = -1;
+    intmax_t C_timeout = -1;
     if (idio_S_nil != args) {
 	IDIO timeout = IDIO_PAIR_H (args);
 	if (idio_isa_fixnum (timeout)) {
 	    C_timeout = IDIO_FIXNUM_VAL (timeout);
 	} else if (idio_isa_C_int (timeout)) {
 	    C_timeout = IDIO_C_TYPE_int (timeout);
+	} else if (idio_isa_bignum (timeout)) {
+	    if (IDIO_BIGNUM_INTEGER_P (timeout)) {
+		C_timeout = idio_bignum_ptrdiff_t_value (timeout);
+	    } else {
+		IDIO timeout_i = idio_bignum_real_to_integer (timeout);
+		if (idio_S_nil == timeout_i) {
+		    /*
+		     * Test Case: libc-poll-errors/poller-poll-timeout-float.idio
+		     *
+		     * poller-poll <poller> 1.1
+		     */
+		    idio_error_param_value_exp ("poller-poll", "timeout", timeout, "an integer bignum", IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		} else {
+		    C_timeout = idio_bignum_ptrdiff_t_value (timeout_i);
+		}
+	    }
 	} else {
 	    /*
 	     * Test Case: libc-poll-errors/poller-poll-bad-timeout-type.idio
 	     *
 	     * libc/poller-poll <poller> #t
 	     */
-	    idio_error_param_type ("fixnum|C/int", timeout, IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_type ("fixnum|bignum|C/int", timeout, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
