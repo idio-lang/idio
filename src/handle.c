@@ -2055,6 +2055,31 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     IDIO_TYPE_ASSERT (handle, h);
     IDIO_TYPE_ASSERT (array, cs);
 
+    /*
+     * load/load-handle are both wrappered by closures meaning that
+     * *env* will be set to the module of the wrappering code,
+     * (re-)defined in bootstrap/module.idio, ie. Idio.
+     *
+     * As a consequence, variable lookup in a loaded file will be from
+     * Idio not the module of the file doing the loading.
+     *
+     *   module foo
+     *   load "bar"
+     *
+     * lookups in bar.idio are now in Idio, not in foo.  That fails
+     * the principle of least surprise.
+     *
+     * bar.idio is, of course, free to change module itself.
+     *
+     * So, in the particular case of load/load-handle, where we are
+     * expecting to evaluate more code, reset *env* to *module*.
+     *
+     * We are reasonably safe, here, as when the (wrappering) closure
+     * unwinds it will reset *env* back to the calling module anyway.
+     */
+    IDIO thr = idio_thread_current_thread ();
+    IDIO_THREAD_ENV (thr) = IDIO_THREAD_MODULE (thr);
+
     if (idio_isa_file_handle (h) &&
 	IDIO_FILE_HANDLE_FLAGS (h) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
 	/*
@@ -2072,7 +2097,6 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
      */
     idio_job_control_set_interactive (0);
 
-    IDIO thr = idio_thread_current_thread ();
     IDIO stack = IDIO_THREAD_STACK (thr);
 
     /*
