@@ -1,0 +1,156 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-expect.idio
+;;
+
+module tests/expect
+
+import expect
+
+expect-0 := Tests
+
+exp-log-user #f
+exp-timeout = 10
+
+;; EOF in clauses
+spawn auto-exit
+
+(exp-case
+ (:eof {
+   test #t #t
+ }))
+
+;; EOF in exp-before
+exp-before = '((:eof {
+  test #t #t
+}))
+
+spawn auto-exit
+
+;; NB needs at least one clause
+(exp-case
+ ("foo" {
+   ;; shouldn't get here
+   test #f #t
+ }))
+
+exp-before = #n
+
+;; EOF in exp-after
+exp-after = '((:eof {
+  test #t #t
+}))
+
+spawn auto-exit
+
+;; NB needs at least one clause
+(exp-case
+ ("foo" {
+   ;; shouldn't get here
+   test #f #t
+ }))
+
+;; XXX leave :eof in exp-after for a "free" test when the spawned
+;; process exits -- assuming we cann exp-continue
+;exp-after = #n
+
+;; read from program
+spawn auto-exit -o 1
+
+(exp-case
+ (:re "wrote line ([[:digit:]]) to stdout" {
+   test r.1 .1 "1"
+   (exp-continue)
+ }))
+
+;; read from program with a timeout
+spawn auto-exit -o 2 -s 2
+exp-timeout = 1
+
+;; XXX there is a race condition here in that it is possible to get
+;; two :timeout alerts waiting for the program to output lines.  We
+;; can work around this by stopping after the first :timeout and
+;; reverting to the more common timeout of 10s.
+
+;; Nobody said this would be Art.
+
+(exp-case
+ ("wrote line 1 to stdout" {
+   test #t #t
+   (exp-continue)
+ })
+ (:timeout {
+   test #t #t
+ }))
+
+exp-timeout = 10
+
+(exp-case
+ ("wrote line 2 to stdout" {
+   test #t #t
+   (exp-continue)
+ })
+ (:timeout {
+   ;; shouldn't get here
+   test #f #t
+   (exp-continue)			; for EOF
+ }))
+
+exp-timeout = 10
+
+;; write to a program: here, -v will report the line back to us
+spawn auto-exit -r 3 -v
+
+;; XXX \r to generate the line-feed the program is expecting
+exp-send "hello\r"
+
+(exp-case
+ (:re "read #([[:digit:]]) '(.*)'" {
+   test r.1 .1 "1"
+   test r.2 .1 "hello"
+   ;(exp-continue)
+ }))
+
+;; XXX \r to generate the line-feed the program is expecting
+exp-send "world\r" :slow #t
+
+(exp-case
+ (:re "read #([[:digit:]]) '(.*)'" {
+   test r.1 .1 "2"
+   test r.2 .1 "world"
+   ;(exp-continue)
+ }))
+
+;; XXX \r to generate the line-feed the program is expecting
+exp-send "hello world\r" :human #t
+
+(exp-case
+ (:re "read #([[:digit:]]) '(.*)'" {
+   test r.1 .1 "3"
+   test r.2 .1 "hello world"
+   (exp-continue)
+ }))
+
+;; all done?
+Tests? (expect-0 + 16)
+
+;Local Variables:
+;mode: Idio
+;buffer-file-coding-system: utf-8-unix
+;End:

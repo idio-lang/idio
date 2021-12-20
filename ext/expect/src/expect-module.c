@@ -116,9 +116,9 @@ to :manpage:`expect(1)`			\n\
 
     int C_fd = IDIO_C_TYPE_int (fd);
 
-    IDIO exp_human = idio_module_symbol_value (idio_expect_exp_human_sym,
-					       idio_Idio_module,
-					       IDIO_LIST1 (idio_S_false));
+    IDIO exp_human = idio_module_symbol_value_recurse (idio_expect_exp_human_sym,
+						       idio_thread_current_module (),
+						       IDIO_LIST1 (idio_S_false));
 
     if (idio_S_false == exp_human) {
 	/*
@@ -166,7 +166,7 @@ to :manpage:`expect(1)`			\n\
 		 *   exp-send-human C/0i "hello"
 		 * }
 		 */
-		idio_error_param_type ("exp-human K: fixnum|bignum", exp_human, IDIO_C_FUNC_LOCATION ());
+		idio_error_param_type ("fixnum|bignum", e, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -179,7 +179,7 @@ to :manpage:`expect(1)`			\n\
 		 *   exp-send-human C/0i "hello"
 		 * }
 		 */
-		idio_error_param_value_msg ("exp-send-human", "exp-human", exp_human, "negative K", IDIO_C_FUNC_LOCATION ());
+		idio_error_param_value_msg ("exp-send-human", "K", e, "negative K", IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -202,7 +202,7 @@ to :manpage:`expect(1)`			\n\
 		     *   exp-send-human C/0i "hello"
 		     * }
 		     */
-		    idio_error_param_value_msg ("exp-send-human", "exp-human", exp_human, "negative ms", IDIO_C_FUNC_LOCATION ());
+		    idio_error_param_value_msg ("exp-send-human", "ms", e, "negative ms", IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		} else if (ms > INT_MAX) {
@@ -210,11 +210,17 @@ to :manpage:`expect(1)`			\n\
 		     * Test Case(s): expect-errors/exp-send-human-exp-human-X-too-large.idio
 		     *
 		     * {
-		     *   exp-human :~ '((C/INT_MAX + 1) 2 3 4 5)
+		     *   exp-human :~ (list large-int 2 3 4 5)
 		     *   exp-send-human C/0i "hello"
 		     * }
+		     *
+		     * XXX The point of this test is that the poll(2)
+		     * timeout is an int and on many systems we can be
+		     * given a number that is > INT_MAX.  However, if
+		     * sizeof (int) == sizeof (intmax_t) then this
+		     * test is not possible.
 		     */
-		    idio_error_param_value_msg ("exp-send-human", "exp-human", exp_human, "too large ms", IDIO_C_FUNC_LOCATION ());
+		    idio_error_param_value_msg ("exp-send-human", "ms", e, "ms too large", IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		}
@@ -242,7 +248,7 @@ to :manpage:`expect(1)`			\n\
 		 *   exp-send-human C/0i "hello"
 		 * }
 		 */
-		idio_error_param_type ("list of integer", exp_human, IDIO_C_FUNC_LOCATION ());
+		idio_error_param_type ("integer", e, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -257,7 +263,12 @@ to :manpage:`expect(1)`			\n\
 
     if (n < 5) {
 	/*
-	 * Test Cases: 
+	 * Test Case: expect-errors/exp-send-human-exp-human-bad-type.idio
+	 *
+	 * {
+	 *   exp-human :~ '(1 2 3)
+	 *   exp-send-human C/0i "hello"
+	 * }
 	 */
 	idio_error_param_value_msg ("exp-send-human", "exp-human", exp_human, "5-tuple", IDIO_C_FUNC_LOCATION ());
 
@@ -266,7 +277,12 @@ to :manpage:`expect(1)`			\n\
 
     if (min_ms > max_ms) {
 	/*
-	 * Test Cases: 
+	 * Test Case:  expect-errors/exp-send-human-exp-human-min-gt-max.idio
+	 *
+	 * {
+	 *   exp-human :~ '(1 2 3 5 4)
+	 *   exp-send-human C/0i "hello"
+	 * }
 	 */
 	idio_error_param_value_msg ("exp-send-human", "exp-human", exp_human, "min-ms > max-ms", IDIO_C_FUNC_LOCATION ());
 
@@ -276,7 +292,13 @@ to :manpage:`expect(1)`			\n\
     if (min_ms > in_ms ||
 	min_ms > out_ms) {
 	/*
-	 * Test Cases: 
+	 * Test Case:  expect-errors/exp-send-human-exp-human-bad-type.idio
+	 *
+	 * {
+	 *   exp-human :~ '( 1 2 3 10 20)
+	 *   exp-human :~ '(10 2 3 10 20)
+	 *   exp-send-human C/0i "hello"
+	 * }
 	 */
 	idio_error_param_value_msg ("exp-send-human", "exp-human", exp_human, "min-ms > in-ms|out-ms", IDIO_C_FUNC_LOCATION ());
 
@@ -286,7 +308,13 @@ to :manpage:`expect(1)`			\n\
     if (max_ms < in_ms ||
 	max_ms < out_ms) {
 	/*
-	 * Test Cases: 
+	 * Test Case:  expect-errors/exp-send-human-exp-human-bad-type.idio
+	 *
+	 * {
+	 *   exp-human :~ '(10 20 3 5  5)
+	 *   exp-human :~ '(10 20 3 5 15)
+	 *   exp-send-human C/0i "hello"
+	 * }
 	 */
 	idio_error_param_value_msg ("exp-send-human", "exp-human", exp_human, "max-ms < in-ms|out-ms", IDIO_C_FUNC_LOCATION ());
 

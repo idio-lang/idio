@@ -442,7 +442,7 @@ define-template (exp-case & clauses) {
     bca = append clauses exp-after
   }
   if (pair? exp-before) {
-    bca = append exp-before clauses
+    bca = append exp-before bca
   }
 
   ikb := process-clauses bca 0 #n #n #n
@@ -509,9 +509,11 @@ define-template (exp-case & clauses) {
 	 }) (ph ikb) (pht ikb) (phtt ikb)))
       }
 
-      t0 := SECONDS
-
-      exp-continue = function #n    {
+      exp-continue = function #n {
+	; reset all flags (otherwise if you match a timeout and then
+	; exp-continue you'll loop matching timeout)
+	set-struct-spawn-timeout! spawn-id #f
+	set-struct-spawn-eof! spawn-id #f
 	set-struct-spawn-matched! spawn-id #f
    
    	;; search existing buffer
@@ -621,11 +623,11 @@ moderating factor; the minimum and maximum gaps.  The default is
 	 if (p lt pe) {
 	   pl := p + n
 	   if (pl ge pe) {
+	     libc/poller-poll poller ms
 	     libc/write mfd (substring msg p)
-	     libc/poller-poll poller ms
 	   } {
-	     libc/write mfd (substring msg p pl)
 	     libc/poller-poll poller ms
+	     libc/write mfd (substring msg p pl)
 	     loop pl
 	   }
 	 }
