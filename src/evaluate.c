@@ -3806,7 +3806,7 @@ static IDIO idio_meaning_dynamic_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
     IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, escapes, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
     IDIO fmci;
-    IDIO si = idio_module_find_symbol (name, cm);
+    IDIO si = idio_module_find_symbol_recurse (name, cm, 1);
 
     if (idio_S_false != si) {
 	fmci = IDIO_PAIR_HT (si);
@@ -3886,7 +3886,7 @@ static IDIO idio_meaning_environ_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
     IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, escapes, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
     IDIO fmci;
-    IDIO si = idio_module_find_symbol (name, cm);
+    IDIO si = idio_module_find_symbol_recurse (name, cm, 1);
 
     if (idio_S_false != si) {
 	fmci = IDIO_PAIR_HT (si);

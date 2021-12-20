@@ -1239,7 +1239,9 @@ IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	IDIO scope = IDIO_PAIR_H (cm_si);
 	IDIO fgvi = IDIO_PAIR_HTT (cm_si);
 	idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
-	if (idio_S_toplevel == scope) {
+	if (idio_S_toplevel == scope ||
+	    idio_S_environ == scope ||
+	    idio_S_dynamic == scope) {
 	    if (0 == gvi) {
 		if (recurse) {
 		    cm_si = idio_S_false;
