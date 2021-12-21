@@ -57,28 +57,46 @@ Equivalent to :manpage:`openpty(3)`
 :rtype: list
 :raises ^system-error:
 
-``openpty`` returns a tuple of :samp:`({mfd} {sfd} {ptsname})` for the
-master file descriptor, `mfd`, slave file descriptor, `sfd`, and slave
-terminal device name, `ptsname`.  `sfd` is an open file descriptor to
-`ptsname` opened with `flags`.
+``openpty`` returns a tuple of :samp:`({mfd} {sfd} {ptsname})` for the:
+
+* master file descriptor, `mfd`
+
+* slave file descriptor, `sfd`
+
+* slave terminal device name, `ptsname`
+
+`sfd` is an open file descriptor to `ptsname` opened with `flags`.
 
 ``O_NOCTTY`` is not available on some systems.
 " {
-  mfd := apply posix_openpt flags
+  oflags := #f
+  if (pair? flags) {
+    oflags = ph flags
+  } {
+    (cond-expand
+     ("uname/sysname/Darwin" {
+       oflags = O_RDWR
+     })
+     (else {
+       oflags = O_RDWR C/| O_NOCTTY
+     }))
+  }
+  mfd := apply posix_openpt oflags
   grantpt mfd
   unlockpt mfd
 
   sn := ptsname mfd
-  flags := #f
-  (cond-expand
-   ("uname/sysname/Darwin" {
-     flags = O_RDWR
-   })
-   (else {
-     flags = O_RDWR C/| O_NOCTTY
-   }))
 
-  sfd := open sn flags
+  sfd := open sn oflags
+
+  (cond-expand
+   ("uname/sysname/SunOS" {
+     ;;; SunOS (OpenIndiana) is a bit old-school and requires these
+     ;;; STREAMS modules before the child can tcgetattr(3) on
+     ;;; STDIN_FILENO.
+     ioctl sfd I_PUSH "ptem"
+     ioctl sfd I_PUSH "ldterm"
+   }))
 
   list mfd sfd sn
 }
@@ -115,7 +133,7 @@ the slave file descriptor will be set as the controlling tty.
     ;; TIOCSCTTY) -- not available on Mac OS X -- or by an open of the
     ;; device.
 
-    ;; The sample C code (look for the login_tty() source code) closes
+    ;; The sample C code (look for the login_tty.c source code) closes
     ;; stdin, stdout and stderr then opens/closes ttyname(sfd).  The
     ;; Python code does the open/close after the dup2()'s, next.
 
@@ -249,8 +267,6 @@ sub-process.
   pid := ph fpty
   mfd := pht fpty
 
-  mode := tcgetattr STDIN_FILENO
-
   if (C/== pid 0pid_t) {
     apply command/%exec argv
 
@@ -263,6 +279,8 @@ sub-process.
        libc/exit 0
      }))
   }
+
+  mode := tcgetattr STDIN_FILENO
 
   ;; tty.setraw?
 
@@ -283,9 +301,16 @@ Spawn a process defined by `argv`
 :rtype: list
 :raises ^system-error:
 
-The return value is a list of: the child Process ID, the master file
-descriptor, the original terminal mode for
-stdin (:ref:`libc/struct-termios <libc/struct-termios>`).
+The child process will :manpage:`execve(2)` `argv`.
+
+The parent's return value is a list of:
+
+* the child Process ID
+
+* the master file descriptor
+
+* the original terminal mode for stdin (:ref:`libc/struct-termios
+  <libc/struct-termios>`)
 
 .. seealso:: :ref:`libc/tcsetattr <libc/tcsetattr>` to reset the
              terminal mode
@@ -294,8 +319,6 @@ stdin (:ref:`libc/struct-termios <libc/struct-termios>`).
   fpty := (forkpty)
   pid := ph fpty
   mfd := pht fpty
-
-  mode := tcgetattr STDIN_FILENO
 
   if (C/== pid 0pid_t) {
     apply command/%exec argv
@@ -309,6 +332,8 @@ stdin (:ref:`libc/struct-termios <libc/struct-termios>`).
        libc/exit 0
      }))
   }
+
+  mode := tcgetattr STDIN_FILENO
 
   list pid mfd mode
 }

@@ -36,6 +36,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#if defined (__sun) && defined (__SVR4)
+#include <stropts.h>
+#endif
+
 #include "idio-system.h"
 #include "idio-config.h"
 
@@ -4383,6 +4387,92 @@ a wrapper to libc :manpage:`isatty(3)`				\n\
     return idio_C_int (isatty_r);
 }
 
+/*
+ * Code coverage/Test Cases
+ *
+ * ioctl was added because SunOS (OpenIndiana) requires ioctl/I_PUSH
+ * of "ptem" and "ldterm" when opening pseudo-terminals otherwise
+ * tcgetattr(3) etc. cry foul.
+ *
+ * Other operating systems seem to live without STREAMS modules these
+ * days.
+ *
+ * Code coverage and potential tests, therefore, vary by operating
+ * system.
+ */
+IDIO_DEFINE_PRIMITIVE2V_DS ("ioctl", libc_ioctl, (IDIO fd, IDIO cmd, IDIO args), "fd cmd [args]", "\
+in C, :samp:`ioctl ({fd}, {cmd}[, {args}])`			\n\
+a wrapper to libc :manpage:`ioctl(2)`				\n\
+								\n\
+:param fd: file descriptor					\n\
+:type fd: C/int							\n\
+:param cmd: ioctl command					\n\
+:type cmd: C/int						\n\
+:param args: ioctl command args					\n\
+:type args: list						\n\
+:return: appropriate value					\n\
+:rtype: C/int							\n\
+:raises ^system-error:						\n\
+								\n\
+Supported commands include:					\n\
+``libc/I_PUSH``							\n\
+"
+)
+{
+    IDIO_ASSERT (fd);
+    IDIO_ASSERT (cmd);
+    IDIO_ASSERT (args);
+
+#if defined (__sun) && defined (__SVR4)
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+#endif
+
+    IDIO_USER_C_TYPE_ASSERT (int, cmd);
+    int C_cmd = IDIO_C_TYPE_int (cmd);
+
+    int ioctl_r;
+
+    switch (C_cmd) {
+#if defined (__sun) && defined (__SVR4)
+    case I_PUSH:
+	{
+	    IDIO arg = idio_list_head (args);
+
+	    IDIO_USER_TYPE_ASSERT (string, arg);
+
+	    size_t size = 0;
+	    char *C_arg = idio_string_as_C (arg, &size);
+
+	    ioctl_r = ioctl (C_fd, C_cmd, C_arg);
+	}
+	break;
+#endif
+    default:
+	/*
+	 * Test Case: libc-wrap-errors/ioctl-unknown-cmd.idio
+	 *
+	 * ioctl C/0i (C/integer-> 98765)
+	 */
+	idio_error_param_value_msg ("ioctl", "cmd", cmd, "unexpected cmd", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    if (-1 == ioctl_r) {
+	/*
+	 * Test Case: ??
+	 */
+	args = idio_pair (cmd, args);
+	args = idio_pair (fd, args);
+	idio_error_system_errno ("ioctl", args, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_C_int (ioctl_r);
+}
+
 IDIO_DEFINE_PRIMITIVE0V_DS ("gmtime", libc_gmtime, (IDIO args), "[t]", "\
 in C, :samp:`gmtime ({t})`		\n\
 a wrapper to libc :manpage:`gmtime(3)`	\n\
@@ -5501,6 +5591,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_kill);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_isatty);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ioctl);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_gmtime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_gettimeofday);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getsid);

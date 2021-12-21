@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <math.h>
 #include <poll.h>
 #include <setjmp.h>
@@ -36,6 +37,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "gc.h"
 
@@ -191,6 +193,16 @@ to :manpage:`expect(1)`			\n\
 		    ms = (intmax_t) IDIO_FIXNUM_VAL (e);
 		} else if (idio_isa_bignum (e)) {
 		    ms = idio_bignum_intmax_t_value (e);
+		} else {
+		    /*
+		     * Code coverage: strictly it is not possible to
+		     * get here because we already checked this is an
+		     * integer.  Coding error?
+		     *
+		     * Also we can squelch an uninitialised variable
+		     * error.
+		     */
+		    ms = 0;
 		}
 
 		if (ms < 0) {

@@ -455,7 +455,17 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t const given, size_
 	}
     } else if (idio_isa_primitive (func)) {
 	name = idio_string_C_len (IDIO_PRIMITIVE_NAME (func), IDIO_PRIMITIVE_NAME_LEN (func));
+    } else {
+	/*
+	 * Code coverage: strictly it is not possible to get here
+	 * because we already checked for closures and primitives.
+	 * Coding error?
+	 *
+	 * Also we can squelch an uninitialised variable error.
+	 */
+	name = idio_string_C_len (IDIO_STATIC_STR_LEN ("-anon-"));
     }
+
     IDIO sigstr = idio_ref_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
 
     IDIO val = IDIO_THREAD_VAL (thr);
@@ -511,7 +521,17 @@ static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t const give
 	}
     } else if (idio_isa_primitive (func)) {
 	name = idio_string_C_len (IDIO_PRIMITIVE_NAME (func), IDIO_PRIMITIVE_NAME_LEN (func));
+    } else {
+	/*
+	 * Code coverage: strictly it is not possible to get here
+	 * because we already checked for closures and primitives.
+	 * Coding error?
+	 *
+	 * Also we can squelch an uninitialised variable error.
+	 */
+	name = idio_string_C_len (IDIO_STATIC_STR_LEN ("-anon-"));
     }
+
     IDIO sigstr = idio_ref_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
 
     IDIO val = IDIO_THREAD_VAL (thr);

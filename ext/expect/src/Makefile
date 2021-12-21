@@ -18,8 +18,8 @@ CDEBUG		:=
 endif
 
 CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -I$(PWD) -I$(TOPDIR)/src $(CFLAGS) $(CDEBUG) $(COVFLAGS) $(LIBFFI_INC)
-LDFLAGS		:= -L$(PWD) -lm $(LDFLAGS) $(COVFLAGS)
-LIBS		:= $(LIBS)
+LDFLAGS		:= -L$(PWD) $(LDFLAGS) $(COVFLAGS)
+LIBS		:= $(LIBS) -lm
 
 ifeq ($(OS),Darwin)
 LD_DLFLAGS	:= -dynamiclib -undefined dynamic_lookup
@@ -74,7 +74,7 @@ libexpect.so.${MODULE_SYSTEM_VERSION_M} : libexpect.so.${MODULE_SYSTEM_VERSION_M
 	ln -sf $^ $@
 
 libexpect.so.${MODULE_SYSTEM_VERSION_MM} : expect-module.o
-	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^
+	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^ $(LIBS)
 
 %.o : %.d
 

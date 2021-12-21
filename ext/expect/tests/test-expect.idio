@@ -47,7 +47,7 @@ spawn auto-exit
 (exp-case
  ("foo" {
    ;; shouldn't get here
-   test #f #t
+   test "unexpected exp-before test clause" #t
  }))
 
 exp-before = #n
@@ -63,7 +63,7 @@ spawn auto-exit
 (exp-case
  ("foo" {
    ;; shouldn't get here
-   test #f #t
+   test "unexpected exp-after test clause" #t
  }))
 
 ;; XXX leave :eof in exp-after for a "free" test when the spawned
@@ -108,8 +108,7 @@ exp-timeout = 10
  })
  (:timeout {
    ;; shouldn't get here
-   test #f #t
-   (exp-continue)			; for EOF
+   test "unexpected timeout clause" #t
  }))
 
 exp-timeout = 10

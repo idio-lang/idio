@@ -47,6 +47,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#if defined (__sun) && defined (__SVR4)
+#include <stropts.h>
+#endif
+
 #include "gc.h"
 #include "idio.h"
 
@@ -3774,6 +3778,10 @@ void idio_init_libc_wrap ()
      * FreeBSD 10 you might need to define it yourself (as 1).  It is
      * not in OpenIndiana.
      */
+
+#if defined (__sun) && defined (__SVR4)
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("I_PUSH"), idio_C_int (I_PUSH), idio_libc_module);
+#endif
 
 #ifdef IDIO_DEV_FD
     idio_add_feature (IDIO_SYMBOLS_C_INTERN ("/dev/fd"));
