@@ -1,3 +1,5 @@
+* `argv` is the arguments to :ref:`spawn <expect/spawn>`
+
 * `pid` is the Process ID of the spawned process
 
 * `mfd` is master file descriptor of the pseudo-terminal

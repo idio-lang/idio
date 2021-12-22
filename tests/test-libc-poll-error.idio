@@ -110,5 +110,21 @@ libc-poll-error-load "libc-poll-errors/poll-name-bad-type.idio" "bad parameter t
 ;; know if POLLIN is defined.  It should be, though...
 libc-poll-error-load "libc-poll-errors/pollin-p-bad-type.idio" "bad parameter type: '#t' a constant is not a C/short"
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; select
+
+libc-poll-error-load "libc-poll-errors/select-bad-list-element-type.idio" "bad parameter type: '#t' a constant is not a C/int|fd-handle"
+libc-poll-error-load "libc-poll-errors/select-bad-list-fd-value.idio" "select fd='98765': 0 <= fd < FD_SETSIZE"
+
+libc-poll-error-load "libc-poll-errors/select-timeout-float.idio" "select timeout='1.1e+0' a bignum is not a integer bignum"
+
+libc-poll-error-load "libc-poll-errors/select-bad-timeout-type.idio" "bad parameter type: '#t' a constant is not a fixnum|bignum|C/struct-timeval"
+
+libc-poll-error-load "libc-poll-errors/select-bad-rlist-type.idio" "bad parameter type: '#t' a constant is not a list"
+libc-poll-error-load "libc-poll-errors/select-bad-wlist-type.idio" "bad parameter type: '#t' a constant is not a list"
+libc-poll-error-load "libc-poll-errors/select-bad-elist-type.idio" "bad parameter type: '#t' a constant is not a list"
+
+
 ;; all done?
-Tests? (libc-poll-error0 + 13)
+Tests? (libc-poll-error0 + 20)

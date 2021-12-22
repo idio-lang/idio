@@ -1,5 +1,13 @@
 (rst "functions-intro" 0)
 
 (document expect spawn)
-(document expect expect-case)
+(document expect exp-case)
+(document expect exp-close)
+(document expect exp-log-file)
+(document expect exp-log-user)
+(document expect exp-send)
+(document expect exp-send-human)
+(document expect exp-wait)
+
+(nodocument expect exp-log)
 

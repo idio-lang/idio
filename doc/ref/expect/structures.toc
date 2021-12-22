@@ -4,6 +4,8 @@
 (document expect struct-spawn? struct-spawn-p)
 (document expect make-struct-spawn)
 
+(nodocument expect struct-spawn-argv)
+(nodocument expect set-struct-spawn-argv!)
 (nodocument expect struct-spawn-pid)
 (nodocument expect set-struct-spawn-pid!)
 (nodocument expect struct-spawn-mfd)

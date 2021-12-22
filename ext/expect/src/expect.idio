@@ -33,6 +33,8 @@ export (
 	 exp-log-file
 	 exp-case
 	 exp-send
+	 exp-close
+	 exp-wait
 )
 
 import libc
@@ -509,68 +511,160 @@ define-template (exp-case & clauses) {
 	 }) (ph ikb) (pht ikb) (phtt ikb)))
       }
 
-      exp-continue = function #n {
-	; reset all flags (otherwise if you match a timeout and then
-	; exp-continue you'll loop matching timeout)
-	set-struct-spawn-timeout! spawn-id #f
-	set-struct-spawn-eof! spawn-id #f
-	set-struct-spawn-matched! spawn-id #f
-   
-   	;; search existing buffer
-   	$exp-match spawn-id
+      (cond-expand
+       (IDIO_CAN_POLL_DEVICE {
+	 ;; normalize the poll-timeout noting that Mac OS X says poll
+	 ;; doesn't like a timeout less than -1
+	 poll-timeout := (cond
+			  ((exp-timeout gt 0) (exp-timeout * 1000))
+			  ((exp-timeout lt 0) -1)
+			  (else               0))
 
-   	if (not (struct-spawn-matched spawn-id)) {
-   	  set-struct-spawn-timeout! spawn-id #f
-   	  set-struct-spawn-eof! spawn-id #f
+	 exp-continue = function #n {
+	   ; reset all flags (otherwise if you match a timeout and then
+	   ; exp-continue you'll loop matching timeout)
+	   set-struct-spawn-timeout! spawn-id #f
+	   set-struct-spawn-eof! spawn-id #f
+	   set-struct-spawn-matched! spawn-id #f
 
-   	  mfd := struct-spawn-mfd spawn-id
-   	  poller := libc/make-poller (list mfd libc/POLLIN)
+	   ;; search existing buffer
+	   $exp-match spawn-id
 
-	  poll-results := libc/poller-poll poller (exp-timeout * 1000)
+	   if (not (struct-spawn-matched spawn-id)) {
+	     set-struct-spawn-timeout! spawn-id #f
+	     set-struct-spawn-eof! spawn-id #f
 
-   	  (cond
-   	   ((null? poll-results) {
-   	     set-struct-spawn-timeout! spawn-id #t
-	     ;expect/exp-log spawn-id #t 'timeout
-   	   })
-   	   (else {
-   	     for p-r in poll-results {
-   	       poll-fd := ph p-r
-   	       poll-revents := pht p-r
-   	       (cond
-   		((libc/POLLIN? poll-revents) {
-   		  data := libc/read poll-fd 1024
-   		  if data {
-   		    if (eof-object? data) {
-   		      libc/poller-deregister poller poll-fd
+	     mfd := struct-spawn-mfd spawn-id
+	     poller := libc/make-poller (list mfd libc/POLLIN)
+
+	     poll-results := libc/poller-poll poller poll-timeout
+
+	     (cond
+	      ((null? poll-results) {
+		set-struct-spawn-timeout! spawn-id #t
+		expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll: timeout\n" (struct-spawn-argv spawn-id))
+	      })
+	      (else {
+		for p-r in poll-results {
+		  poll-fd := ph p-r
+		  poll-revents := pht p-r
+		  (cond
+		   ((libc/POLLIN? poll-revents) {
+		     data := libc/read poll-fd 1024
+		     if data {
+		       if (eof-object? data) {
+			 libc/poller-deregister poller poll-fd
+			 set-struct-spawn-eof! spawn-id #t
+			 expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (%d): POLLIN EOF\n" (struct-spawn-argv spawn-id) poll-fd)
+		       } {
+			 set-struct-spawn-buffer! spawn-id (append-string (struct-spawn-buffer spawn-id) data)
+			 expect/exp-log spawn-id #t data
+		       }
+		     }
+		   })
+		   ((libc/POLLHUP? poll-revents) {
+		     libc/poller-deregister poller poll-fd
+		     set-struct-spawn-eof! spawn-id #t
+		     expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (%d): POLLHUP EOF\n" (struct-spawn-argv spawn-id) poll-fd)
+		   })
+		   ((libc/POLLERR? poll-revents) {
+		     libc/poller-deregister poller poll-fd
+		     set-struct-spawn-eof! spawn-id #t
+		     expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (%d): POLLERR EOF\n" (struct-spawn-argv spawn-id) poll-fd)
+		   })
+		   ((libc/POLLNVAL? poll-revents) {
+		     libc/poller-deregister poller poll-fd
+		     set-struct-spawn-eof! spawn-id #t
+		     expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (%d): invalid request\n" (struct-spawn-argv spawn-id) poll-fd)
+		   }))
+		}
+	      }))
+
+	     ;; search buffer + new data
+	     $exp-match spawn-id
+
+	     if (not (struct-spawn-matched spawn-id)) {
+	       if ((string-length (struct-spawn-buffer spawn-id)) gt exp-match-max) {
+		 set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) (- exp-match-max))
+	       }
+	       (exp-continue)
+	     }
+	   }
+	 }
+
+	 (exp-continue)
+       })
+       (else {
+	 ;; Mac OS 10.5.8 does have poll(2) but it reports POLLNVAL
+	 ;; for (pseudo-terminal) devices.  It does mention devices in
+	 ;; the BUGS section in the man page.
+
+	 ;; Of interest, Mac OS 10.15.7 also has the same BUGS section
+	 ;; but does work for (pseudo-terminal) devices.
+
+	 ;; In the meanwhile, and for anything else in the same boat,
+	 ;; we'll fall back to select with attendant issues.
+
+	 ;; normalize the select-timeout
+	 select-timeout := (cond
+			    ((exp-timeout gt 0) (exp-timeout * 1000000))
+			    ((exp-timeout lt 0) #n)
+			    (else               0))
+
+	 exp-continue = function #n {
+	   ; reset all flags (otherwise if you match a timeout and then
+	   ; exp-continue you'll loop matching timeout)
+	   set-struct-spawn-timeout! spawn-id #f
+	   set-struct-spawn-eof! spawn-id #f
+	   set-struct-spawn-matched! spawn-id #f
+
+	   ;; search existing buffer
+	   $exp-match spawn-id
+
+	   if (not (struct-spawn-matched spawn-id)) {
+	     set-struct-spawn-timeout! spawn-id #f
+	     set-struct-spawn-eof! spawn-id #f
+
+	     mfd := struct-spawn-mfd spawn-id
+
+	     select-results := libc/select (list mfd) #n #n select-timeout
+	     rlist := ph select-results
+
+	     (cond
+	      ((null? rlist) {
+		set-struct-spawn-timeout! spawn-id #t
+		expect/exp-log spawn-id #t (sprintf "exp-case: %@: select (%d): timeout\n" (struct-spawn-argv spawn-id) mfd)
+	      })
+	      (else {
+		;; we know it is mfd but let's go through the motions
+		for fd in rlist {
+		  data := libc/read fd 1024
+		  if data {
+		    if (eof-object? data) {
 		      set-struct-spawn-eof! spawn-id #t
-		      ;expect/exp-log spawn-id #t 'EOF
-   		    } {
-   		      set-struct-spawn-buffer! spawn-id (append-string (struct-spawn-buffer spawn-id) data)
+		      expect/exp-log spawn-id #t (sprintf "exp-case: %@: select (%d): EOF\n" (struct-spawn-argv spawn-id) fd)
+		    } {
+		      set-struct-spawn-buffer! spawn-id (append-string (struct-spawn-buffer spawn-id) data)
 		      expect/exp-log spawn-id #t data
-   		    }
-   		  }
-   		})
-   		((or (libc/POLLHUP? poll-revents)
-   		     (libc/POLLERR? poll-revents)) {
-   		  libc/poller-deregister poller poll-fd
-		  set-struct-spawn-eof! spawn-id #t
-		  ;expect/exp-log spawn-id #t 'EOF
-   		}))
-   	     }
-   	   }))
-   	  $exp-match spawn-id
+		    }
+		  }
+		}
+	      }))
 
-	  if (not (struct-spawn-matched spawn-id)) {
-	    if ((string-length (struct-spawn-buffer spawn-id)) gt exp-match-max) {
-	      set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) (- exp-match-max))
-	    }
-	    (exp-continue)
-	  }
-   	}
-      }
+	     ;; search buffer + new data
+	     $exp-match spawn-id
 
-      (exp-continue)
+	     if (not (struct-spawn-matched spawn-id)) {
+	       if ((string-length (struct-spawn-buffer spawn-id)) gt exp-match-max) {
+		 set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) (- exp-match-max))
+	       }
+	       (exp-continue)
+	     }
+	   }
+	 }
+
+	 (exp-continue)
+       }))
     }
   }
 }
@@ -589,21 +683,39 @@ send `msg` to the spawned process
 :param human: send `msg` humanly, defaults to ``#f``
 :type human: boolean, optional
 :param spawn-id: the spawn-id to use, defaults to :ref:`spawn-id <expect/spawn-id>`
-:type spawn-id: boolean, optional
+:type spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`, optional
 :param cr: to send a 'newline' or not, defaults to ``#f``
 :type cr: boolean, optional
 :return: ``#<unspec>``
 
 ``:slow`` says to use the value of :ref:`exp-slow <expect/exp-slow>`
-which is a tuple of the number of code points in a burst separated by
-a number of milliseconds.  The default is ``(120 10)`` roughly
-equivalent to a 115200 baud modem (if the code points were ASCII).
+which is a tuple of the number of code points in a burst prefixed by a
+delay of a number of milliseconds.  The default is ``(120 10)``
+roughly equivalent to a 115200 baud modem (if the code points were
+ASCII).
 
 ``:human`` says to use the value of :ref:`exp-human
-<expect/exp-human>` which is a tuple of: the average gap between
-in-word code points ; the average gap between non-word code points; a
-moderating factor; the minimum and maximum gaps.  The default is
-``(190 240 1 10 400)`` roughly equivalent to a 60 wpm typist.
+<expect/exp-human>` which is a tuple of:
+
+* the average gap between in-word code points
+
+* the average gap between non-word code points
+
+* a moderating factor, K:
+
+  \"tiredness\" might be represented by a K < 1 and preternaturally
+  consistent typing by a K > 1
+
+* the minimum inter-code point gap
+
+* the maximum inter-code point gap
+
+The default is ``(190 240 1 10 400)`` roughly equivalent to a 60 wpm
+typist.
+
+The algorithm used to calculate the inter-code point gap is the
+inverse cumulative distribution function of the Weibull distribution.
+The same as Don Libes' :manpage:`expect(1)`.
 
 " {
   (cond
@@ -648,6 +760,60 @@ moderating factor; the minimum and maximum gaps.  The default is
     libc/write (struct-spawn-mfd spawn-id) "\r"
   }
   expect/exp-log spawn-id #f msg
+}
+
+define* (exp-close (:spawn-id spawn-id spawn-id)) "
+close the master file descriptor to the spawned process
+
+:param spawn-id: the spawn-id to use, defaults to :ref:`spawn-id <expect/spawn-id>`
+:type spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`, optional
+:return: ``#<unspec>``
+
+``exp-close`` will set the `mfd` structure element to ``#f``
+
+" {
+  libc/close (struct-spawn-mfd spawn-id)
+  set-struct-spawn-mfd! spawn-id #f
+}
+
+define* (exp-wait (:spawn-id spawn-id spawn-id)) "
+wait for the spawned process
+
+:param spawn-id: the spawn-id to use, defaults to :ref:`spawn-id <expect/spawn-id>`
+:type spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`, optional
+:return: see below
+:rtype: list
+
+``exp-wait`` will call :ref:`exp-close <expect/exp-close>` if not
+already called.
+
+``exp-wait`` will return a list of the result from :ref:`waitpid
+<libc/waitpid>` plus a decoding of the status, eg. ``(exit 0)``.
+
+" {
+  if (struct-spawn-mfd spawn-id) {
+    exp-close :spawn-id spawn-id
+  }
+
+  wr := libc/waitpid (struct-spawn-pid spawn-id)
+  pid := ph wr
+  status := pht wr
+  coding := (cond
+	     ((null? status) {
+	       '(null)
+	     })
+	     ((WIFEXITED status) {
+	       list 'exit (WEXITSTATUS status)
+
+	     })
+	     ((WIFSIGNALED status) {
+	       list 'killed (WTERMSIG status)
+	     })
+	     (else {
+	       '(unknown)
+	     }))
+
+  append wr (list coding)
 }
 
 provide expect

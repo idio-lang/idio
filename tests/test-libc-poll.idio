@@ -102,5 +102,27 @@ if (pair? r3) {
   Skipped = Skipped + 3 
 }
 
+;; code coverage for select
+
+; fixnum timeout
+libc/select #n #n #n 10
+
+; bignum timeout
+libc/select #n #n #n 10e0
+
+; struct-timeval timeout
+tv := (libc/gettimeofday)
+struct-timeval-set! tv 'tv_sec (C/integer-> 0 libc/time_t)
+struct-timeval-set! tv 'tv_usec (C/integer-> 10 libc/suseconds_t)
+libc/select #n #n #n tv
+
+; rlist wlist elist
+libc/select (list STDIN_FILENO) (list STDOUT_FILENO) (list STDIN_FILENO) 10
+
+; fd-handle
+fh := open-input-file testfile
+libc/select (list fh) #n #n 10
+close-handle fh
+
 ;; all done?
 Tests? (libc-poll0 + 12)

@@ -97,6 +97,9 @@ send `msg` slowly as if a human was typing	\n\
 					\n\
 ``exp-send-human`` uses a similar algorithm	\n\
 to :manpage:`expect(1)`			\n\
+					\n\
+.. seealso:: :ref:`exp-send <expect/exp-send>` 	\n\
+	for details		 	\n\
 ")
 {
     IDIO_ASSERT (fd);

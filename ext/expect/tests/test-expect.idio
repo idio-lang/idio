@@ -36,6 +36,8 @@ spawn auto-exit
    test #t #t
  }))
 
+(exp-wait)
+
 ;; EOF in exp-before
 exp-before = '((:eof {
   test #t #t
@@ -49,6 +51,8 @@ spawn auto-exit
    ;; shouldn't get here
    test "unexpected exp-before test clause" #t
  }))
+
+(exp-wait)
 
 exp-before = #n
 
@@ -66,6 +70,8 @@ spawn auto-exit
    test "unexpected exp-after test clause" #t
  }))
 
+(exp-wait)
+
 ;; XXX leave :eof in exp-after for a "free" test when the spawned
 ;; process exits -- assuming we cann exp-continue
 ;exp-after = #n
@@ -78,6 +84,8 @@ spawn auto-exit -o 1
    test r.1 .1 "1"
    (exp-continue)
  }))
+
+(exp-wait)
 
 ;; read from program with a timeout
 spawn auto-exit -o 2 -s 2
@@ -111,13 +119,20 @@ exp-timeout = 10
    test "unexpected timeout clause" #t
  }))
 
-exp-timeout = 10
+(exp-wait)
 
 ;; write to a program: here, -v will report the line back to us
 spawn auto-exit -r 3 -v
 
-;; XXX \r to generate the line-feed the program is expecting
-exp-send "hello\r"
+;; XXX \r to generate the line-feed the program is expecting -- except
+;; SunOS which somehow needs a \n -- need to bottom this out
+(cond-expand
+ ("uname/sysname/SunOS" {
+   exp-send "hello\n"
+ })
+ (else {
+   exp-send "hello\r"
+ }))
 
 (exp-case
  (:re "read #([[:digit:]]) '(.*)'" {
@@ -126,8 +141,14 @@ exp-send "hello\r"
    ;(exp-continue)
  }))
 
-;; XXX \r to generate the line-feed the program is expecting
-exp-send "world\r" :slow #t
+;; XXX \r or \n
+(cond-expand
+ ("uname/sysname/SunOS" {
+   exp-send "world\n" :slow #t
+ })
+ (else {
+   exp-send "world\r" :slow #t
+ }))
 
 (exp-case
  (:re "read #([[:digit:]]) '(.*)'" {
@@ -136,8 +157,14 @@ exp-send "world\r" :slow #t
    ;(exp-continue)
  }))
 
-;; XXX \r to generate the line-feed the program is expecting
-exp-send "hello world\r" :human #t
+;; XXX \r or \n
+(cond-expand
+ ("uname/sysname/SunOS" {
+   exp-send "hello world\n" :human #t
+ })
+ (else {
+   exp-send "hello world\r" :human #t
+ }))
 
 (exp-case
  (:re "read #([[:digit:]]) '(.*)'" {
@@ -145,6 +172,8 @@ exp-send "hello world\r" :human #t
    test r.2 .1 "hello world"
    (exp-continue)
  }))
+
+(exp-wait)
 
 ;; all done?
 Tests? (expect-0 + 16)

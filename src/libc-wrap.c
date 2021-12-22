@@ -51,6 +51,8 @@
 #include <stropts.h>
 #endif
 
+#include "idio-config.h"
+
 #include "gc.h"
 #include "idio.h"
 
@@ -3785,6 +3787,10 @@ void idio_init_libc_wrap ()
 
 #ifdef IDIO_DEV_FD
     idio_add_feature (IDIO_SYMBOLS_C_INTERN ("/dev/fd"));
+#endif
+
+#ifdef IDIO_CAN_POLL_DEVICE
+    idio_add_feature (IDIO_SYMBOLS_C_INTERN ("IDIO_CAN_POLL_DEVICE"));
 #endif
 }
 

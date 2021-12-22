@@ -3212,7 +3212,7 @@ a wrapper to libc :manpage:`ptsname(3)`		\n\
 
     int C_fd = IDIO_C_TYPE_int (fd);
 
-#if defined (HAVE_PTSNAME_R)
+#if defined (IDIO_HAVE_PTSNAME_R)
     char buf[PATH_MAX];
     buf[0] = '\0';
     int ptsname_r_r = ptsname_r (C_fd, buf, PATH_MAX);

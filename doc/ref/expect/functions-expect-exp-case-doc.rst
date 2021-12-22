@@ -27,6 +27,15 @@ the following arguments:
 :samp:`{body}` can invoke the function ``exp-continue`` to loop around
 again otherwise the result of :samp:`{body}` is returned.
 
+.. note::
+
+   All (supported) operating systems can use :manpage:`poll(2)`.
+   However, some tested operating systems (Mac OS 10.5.8) return
+   ``POLLNVAL`` for (pseudo-terminal) devices.
+
+   In this case, the code reverts to the uses of :manpage:`select(2)`
+   with any associated limits (notably, ``FD_SETSIZE``).
+
 :Example:
 
 From the top of the :lname:`Idio` distribution you might try:

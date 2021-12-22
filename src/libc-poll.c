@@ -755,6 +755,335 @@ IDIO_DEFINE_LIBC_POLL_PRIMITIVE(POLLIN)
     IDIO_DEFINE_LIBC_POLL_PRIMITIVE (POLLRDHUP);
 #endif
 
+IDIO idio_libc_poll_select (IDIO rlist, IDIO wlist, IDIO elist, IDIO timeout)
+{
+    IDIO_ASSERT (rlist);
+    IDIO_ASSERT (wlist);
+    IDIO_ASSERT (elist);
+    IDIO_ASSERT (timeout);
+
+    fd_set rfds, wfds, efds;
+    int max_fd = -1;		/* we will add one later */
+
+    IDIO fd_map = IDIO_HASH_EQP (8);
+
+    /*
+     * Three identical loops over the fd lists
+     */
+    for (int i = 0; i < 3; i++) {
+	fd_set *fdsp;
+	IDIO fd_list;
+	switch (i) {
+	case 0:
+	    fdsp = &rfds;
+	    fd_list = rlist;
+	    break;
+	case 1:
+	    fdsp = &wfds;
+	    fd_list = wlist;
+	    break;
+	case 2:
+	    fdsp = &efds;
+	    fd_list = elist;
+	    break;
+	}
+
+	FD_ZERO (fdsp);
+
+	while (idio_S_nil != fd_list) {
+	    IDIO e = IDIO_PAIR_H (fd_list);
+
+	    int fd = -1;
+	    if (idio_isa_C_int (e)) {
+		fd = IDIO_C_TYPE_int (e);
+	    } else if (idio_isa_fd_handle (e)) {
+		fd = IDIO_FILE_HANDLE_FD (e);
+	    } else {
+		/*
+		 * Test Case: libc-poll-errors/select-bad-list-element-type.idio
+		 *
+		 * libc/select '(#t) #n #n
+		 */
+		idio_error_param_type ("C/int|fd-handle", e, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+
+	    if (fd < 0 ||
+		fd >= FD_SETSIZE) {
+		/*
+		 * Test Case: libc-poll-errors/select-bad-list-fd-value.idio
+		 *
+		 * libc/select (list (C/integer-> 98765)) #n #n
+		 */
+		idio_error_param_value_msg ("select", "fd", idio_C_int (fd), "0 <= fd < FD_SETSIZE", IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+
+	    FD_SET (fd, fdsp);
+
+	    if (fd > max_fd) {
+		max_fd = fd;
+	    }
+
+	    /*
+	     * There is a risk that different entities representing fd
+	     * N could override each other here -- however, anyone
+	     * with two entities in their hands that represent the
+	     * same FD are going to be in a world of pain when one is
+	     * GC'd and closed under the feet of the other.
+	     */
+	    idio_hash_put (fd_map, idio_C_int (fd), e);
+
+	    fd_list = IDIO_PAIR_T (fd_list);
+	}
+    }
+    max_fd++;
+
+    /*
+     * Calculate a (potential) relative time from timeout
+     */
+    int use_rt = 1;
+    struct timeval rt;
+
+    /*
+     * While we're passing through we can make a decision about the
+     * timeout value being passed to select, a NULL or not
+     */
+    struct timeval st;
+    struct timeval *stp = &st;
+
+    if (idio_S_nil == timeout) {
+	use_rt = 0;
+	stp = NULL;
+    } else if (idio_isa_fixnum (timeout)) {
+	intptr_t C_timeout = IDIO_FIXNUM_VAL (timeout);
+	rt.tv_usec = C_timeout % 1000000;
+	C_timeout -= rt.tv_usec;
+	rt.tv_sec = C_timeout / 1000000;
+    } else if (idio_isa_bignum (timeout)) {
+	intmax_t C_timeout = 0;
+	if (IDIO_BIGNUM_INTEGER_P (timeout)) {
+	    /*
+	     * Code coverage: big timeout...test at your leisure.
+	     */
+	    C_timeout = idio_bignum_ptrdiff_t_value (timeout);
+	} else {
+	    IDIO timeout_i = idio_bignum_real_to_integer (timeout);
+	    if (idio_S_nil == timeout_i) {
+		/*
+		 * Test Case: libc-poll-errors/select-timeout-float.idio
+		 *
+		 * select #n #n #n 1.1
+		 */
+		idio_error_param_value_exp ("select", "timeout", timeout, "integer bignum", IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    } else {
+		C_timeout = idio_bignum_ptrdiff_t_value (timeout_i);
+	    }
+	}
+	rt.tv_usec = C_timeout % 1000000;
+	C_timeout -= rt.tv_usec;
+	rt.tv_sec = C_timeout / 1000000;
+    } else if (idio_isa_C_pointer (timeout)) {
+	if (idio_CSI_libc_struct_timeval != IDIO_C_TYPE_POINTER_PTYPE (timeout)) {
+	    /*
+	     * Test Case: libc-poll-errors/select-invalid-timeout-pointer-type.idio
+	     *
+	     * select #n #n #n libc/NULL
+	     */
+	    idio_error_param_value_exp ("select", "timeout", timeout, "struct idio_libc_struct_timeval", IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	struct timeval *tvp = IDIO_C_TYPE_POINTER_P (timeout);
+	rt.tv_sec = tvp->tv_sec;
+	rt.tv_usec = tvp->tv_usec;
+    } else {
+	/*
+	 * Test Case: libc-poll-errors/select-bad-timeout-type.idio
+	 *
+	 * libc/select #n #n #n #t
+	 */
+	idio_error_param_type ("fixnum|bignum|C/struct-timeval", timeout, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Similar to poll(2), we need to run round the loop again if we
+     * get EINTR or EAGAIN.  So, in the same way, we need to calculate
+     * the End of Times(tm) and set the actual timeout with respect to
+     * that.
+     */
+    struct timeval tt;
+    if (-1 == gettimeofday (&tt, NULL)) {
+	idio_error_system_errno ("gettimeofday", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    if (use_rt) {
+	tt.tv_sec += rt.tv_sec;
+	tt.tv_usec += rt.tv_usec;
+	if (tt.tv_usec > 1000000) {
+	    tt.tv_usec -= 1000000;
+	    tt.tv_sec += 1;
+	}
+    }
+
+    int first = 1;
+    int done = 0;
+
+    while (! done) {
+	if (first) {
+	    first = 0;
+	    if (use_rt) {
+		st.tv_sec = rt.tv_sec;
+		st.tv_usec = rt.tv_usec;
+	    }
+	} else {
+	    if (use_rt) {
+		/*
+		 * How much of timeout is left?
+		 */
+		struct timeval ct;
+		if (-1 == gettimeofday (&ct, NULL)) {
+		    idio_error_system_errno ("gettimeofday", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		}
+
+		st.tv_sec = tt.tv_sec - ct.tv_sec;
+		st.tv_usec = tt.tv_usec - ct.tv_usec;
+
+		if (st.tv_usec < 0) {
+		    st.tv_usec += 1000000;
+		    st.tv_sec -= 1;
+		}
+
+		if (st.tv_sec < 0 ||
+		    st.tv_usec < 0) {
+		    return IDIO_LIST3 (idio_S_nil, idio_S_nil, idio_S_nil);
+		}
+	    }
+	}
+
+	int select_r = select (max_fd, &rfds, &wfds, &efds, stp);
+
+	if (-1 == select_r) {
+	    if (EINTR != errno &&
+		EAGAIN != errno) {
+		/*
+		 * Test Case: ??
+		 */
+		idio_error_system_errno ("select", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	} else if (0 == select_r) {
+	    return IDIO_LIST3 (idio_S_nil, idio_S_nil, idio_S_nil);
+	} else {
+	    done = 1;
+	}
+    }
+
+    IDIO rr = idio_S_nil;
+    IDIO wr = idio_S_nil;
+    IDIO er = idio_S_nil;
+
+    /*
+     * Three identical loops over the fd lists
+     */
+    for (int i = 0; i < 3; i++) {
+	fd_set *fdsp;
+	switch (i) {
+	case 0:
+	    fdsp = &rfds;
+	    break;
+	case 1:
+	    fdsp = &wfds;
+	    break;
+	case 2:
+	    fdsp = &efds;
+	    break;
+	}
+
+	IDIO rl = idio_S_nil;
+
+	for (int i = 0; i < max_fd; i++) {
+	    if (FD_ISSET (i, fdsp)) {
+		rl = idio_pair (idio_hash_ref (fd_map, idio_C_int (i)), rl);
+	    }
+	}
+
+	switch (i) {
+	case 0:
+	    rr = idio_list_reverse (rl);
+	    break;
+	case 1:
+	    wr = idio_list_reverse (rl);
+	    break;
+	case 2:
+	    er = idio_list_reverse (rl);
+	    break;
+	}
+    }
+
+    IDIO r = IDIO_LIST3 (rr, wr, er);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE3V_DS ("select", libc_select, (IDIO rlist, IDIO wlist, IDIO elist, IDIO args), "rlist wlist elist [timeout]", "\
+Call :manpage:`select(2)` for `timeout` microseconds	\n\
+						\n\
+:param rlist: a list of selectable entities for read events	\n\
+:type rlist: list				\n\
+:param wlist: a list of selectable entities for write events	\n\
+:type wlist: list				\n\
+:param elist: a list of selectable entities for exception events	\n\
+:type elist: list				\n\
+:param timeout: timeout in microseconds, defaults to ``#n``	\n\
+:type timeout: fixnum, bignum or :ref:`libc/struct-timeval <libc/struct-timeval>`	\n\
+:return: list of three lists of events, see below	\n\
+:rtype: list					\n\
+:raises ^rt-parameter-type-error:		\n\
+:raises ^system-error:				\n\
+						\n\
+The return value is a list of three lists of 	\n\
+ready objects, derived from the first three arguments.	\n\
+						\n\
+Selectable entities are file descriptors (C/int) 	\n\
+and file descriptor handles.		 	\n\
+")
+{
+    IDIO_ASSERT (rlist);
+    IDIO_ASSERT (wlist);
+    IDIO_ASSERT (elist);
+    IDIO_ASSERT (args);
+
+    /*
+     * Test Cases: libc-errors/select-bad-Xlist-type.idio
+     *
+     * select #t #t #t
+     * select #n #n #t
+     * select #n #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (list, rlist);
+    IDIO_USER_TYPE_ASSERT (list, wlist);
+    IDIO_USER_TYPE_ASSERT (list, elist);
+
+    IDIO timeout = idio_S_nil;
+    if (idio_isa_pair (args)) {
+	timeout = IDIO_PAIR_H (args);
+    }
+
+    return idio_libc_poll_select (rlist, wlist, elist, timeout);
+}
+
 void idio_libc_poll_add_primitives ()
 {
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, make_poller);
@@ -812,6 +1141,7 @@ void idio_libc_poll_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_poll_POLLRDHUP_p);
 #endif
 
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_select);
 }
 
 void idio_final_libc_poll ()

@@ -1,8 +1,12 @@
 (rst "values-intro" 0)
 
 (document expect spawn-id)
-(document expect expect-timeout)
-(document expect expect-match-max)
-(document expect expect-before)
-(document expect expect-after)
+(document expect exp-timeout)
+(document expect exp-match-max)
+(document expect exp-before)
+(document expect exp-after)
+(document expect exp-slow)
+(document expect exp-human)
+
+(nodocument expect version)
 
