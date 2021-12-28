@@ -9,8 +9,9 @@ form>` where `e` is the string to be matched against and the
 
 `e` will be evaluated and should return a string.
 
-Here, *pattern matches* have ``*`` and ``?`` replaced with ``.*`` and
-``.`` and the code continues like :ref:`regex-case <regex-case>`.
+Here, *pattern matches* have :ref:`regex-pattern-string
+<regex-pattern-string>` applied and the code continues like
+:ref:`regex-case <regex-case>`.
 
 If the pattern matches then the consequent expression is
 treated like an implict ``=>`` clause where the supplied parameter is
@@ -34,10 +35,11 @@ BSD-style operating system:
 
 .. note::
 
-   ``pattern-case`` stashes the compiled regular expression in a
-   global table.  This means that in loops the regular expression
-   doesn't need to be recompiled.  It also means the compiled regular
-   expressions are not reaped until :lname:`Idio` exits.
+   ``pattern-case`` stashes the compiled regular expression for
+   literal strings in a global table.  This means that in loops the
+   regular expression doesn't need to be recompiled.  It also means
+   the compiled regular expressions are not reaped until :lname:`Idio`
+   exits.
 
 .. seealso:: :ref:`regex-case <regex-case>`
 

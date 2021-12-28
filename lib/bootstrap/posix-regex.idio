@@ -118,6 +118,99 @@ define-template (regex-case e & clauses) {
   }
 }
 
+define (regex-exact-string str) "
+Return a :manpage:`regcomp(3)`-safe version of `str`
+
+:param str: string to make safe
+:type str: string
+:return: regcomp-safe string
+:rtype: string
+
+In particular, code points in the set ``$^.[()|*+?{\`` (see
+:manpage:`regex(7)`) are escaped.
+" {
+  (regex-case str
+	      ("([^$^.[()|*+?{\\]*)([$^.[()|*+?{\\])(.*)" {
+		append-string r.1 "\\" r.2 (regex-exact-string r.3)
+	      })
+	      (else r))
+}
+
+define (regex-pattern-string str) "
+Return a `Pattern Matching` version of `str`
+
+:param str: string to convert
+:type str: string
+:return: pattern-like string
+:rtype: string
+
+In particular:
+
+* ``*`` is replaced with ``.*``
+
+* ``?`` is replaced with ``.``
+
+* (simple) `bracket expressions` are allowed
+
+* ``.^$|+\`` are escaped and become literals
+
+* ``{`` is escaped and is a literal therefore `bounds` (``{n,m}``) are
+  not allowed
+
+* ``()`` are escaped and are literals therefore sub-expressions are
+  not allowed
+
+" {
+  #*
+
+  This is slightly more tricksome than it looks.
+
+  Consider:
+
+  * "([b]*)" which should become "\\([b]*\\)"
+
+  * "(b*)" which should become "\\(b.*\\)"
+
+  where the * is treated differently based on the presence of []
+
+  In either case, you need to split "opening" regex elements from
+  the "other" regex elements so that "(" "[b]*" and ")" can each be
+  treated separately.
+
+  Even then we mess up "[()]" if "opening" doesn't prevent matching a
+  leading [.  That extends to all rules not heaving a leading instance
+  of later rules.  Yuk!
+
+  *#
+  (regex-case str
+	      ;; opening (^|{
+	      ("^([^(^|{[*?$.+\\]*)([(^|{])(.*)" {
+		;eprintf "0 r %s\n" r
+		append-string r.1 "\\" r.2 (regex-pattern-string r.3)
+	      })
+	      ;; bracket expression
+	      ("^([^[*?$.+\\]*)(\\[[^]]+\\][*+?]?)(.*)" {
+		;eprintf "1 r %s\n" r
+		append-string r.1 r.2 (regex-pattern-string r.3)
+	      })
+	      ;; *
+	      ("^([^*?$.+\\]*)\\*(.*)" {
+		;eprintf "2 r %s\n" r
+		append-string r.1 ".*" (regex-pattern-string r.2)
+	      })
+	      ;; ?
+	      ("^([^?$.+\\]*)\\?(.*)" {
+		;eprintf "3 r %s\n" r
+		append-string r.1 "." (regex-pattern-string r.2)
+	      })
+	      ;; other $.)+\\
+	      ("^([^$.)+\\]*)([$.)+\\])(.*)" {
+		;eprintf "4 r %s\n" r
+		append-string r.1 "\\" r.2 (regex-pattern-string r.3)
+	      })
+	      (else r))
+}
+
 define-template (pattern-case e & clauses) {
   ;; regex-strings want to extract the regex strings
   regex-strings :+ function (c* r) {
@@ -174,25 +267,11 @@ define-template (pattern-case e & clauses) {
 
   }
 
-  ;; pattern-case rewrite loop
-  pcr-loop :+ function (str) {
-    (regex-case str
-		("(.*)\\*(.*)" {
-		  append-string r.1 ".*" (pcr-loop r.2)
-		})
-		("(.*)\\?(.*)" {
-		  append-string r.1 "." (pcr-loop r.2)
-		})
-		(else r))
-  }
-
-
   #T{
     $@(map (function (s) {
-      ;s = sprintf "^%s$" (pcr-loop s)
       #T{
 	if (not (hash-exists? *regcomp-table* $s)) {
-	  hash-set! *regcomp-table* $s (regcomp (sprintf "^%s$" $(pcr-loop s)))
+	  hash-set! *regcomp-table* $s (regcomp (sprintf "^%s$" $(regex-pattern-string s)))
 	}
       }
     }) (regex-strings clauses #n))
@@ -204,3 +283,4 @@ define-template (pattern-case e & clauses) {
     }
   }
 }
+

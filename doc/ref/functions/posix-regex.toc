@@ -5,5 +5,7 @@
 
 (document Idio regex-matches)
 (document Idio regex-case)
+(document Idio regex-exact-string)
+(document Idio regex-pattern-string)
 (document Idio pattern-case)
 

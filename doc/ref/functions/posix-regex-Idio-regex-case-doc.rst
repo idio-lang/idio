@@ -30,10 +30,11 @@ Suppose we want to match a common :samp:`{var}={value}` assignment:
 
 .. note::
 
-   ``regex-case`` stashes the compiled regular expression in a global
-   table.  This means that in loops the regular expression doesn't
-   need to be recompiled.  It also means the compiled regular
-   expressions are not reaped until :lname:`Idio` exits.
+   ``regex-case`` stashes the compiled regular expression for literal
+   strings in a global table.  This means that in loops the regular
+   expression doesn't need to be recompiled.  It also means the
+   compiled regular expressions are not reaped until :lname:`Idio`
+   exits.
 
 .. seealso:: :ref:`pattern-case <pattern-case>`
 

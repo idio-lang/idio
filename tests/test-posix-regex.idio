@@ -162,5 +162,46 @@ test (pc "barpost")	'unknown
 test (pc "barp")	'1-after-bar
 test (pc "bar")		'unknown
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; regex-exact-string
+
+test (regex-exact-string "abc")		"abc"
+test (regex-exact-string "a\\bc")	"a\\\\bc" ; a\bc -> a\\bc
+test (regex-exact-string "a.c")		"a\\.c"
+test (regex-exact-string "a|c")		"a\\|c"
+test (regex-exact-string "a*b+c?")	"a\\*b\\+c\\?"
+test (regex-exact-string "a[b]c")	"a\\[b]c"
+test (regex-exact-string "a(b)c")	"a\\(b\\)c"
+test (regex-exact-string "^abc$")	"\\^abc\\$"
+test (regex-exact-string "abc{1,2}")	"abc\\{1,2}"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; regex-pattern-string
+
+test (regex-pattern-string "abc")	"abc"
+test (regex-pattern-string "a\\bc")	"a\\\\bc" ; a\bc -> a\\bc
+test (regex-pattern-string "a.c")	"a\\.c"
+test (regex-pattern-string "a|c")	"a\\|c"
+test (regex-pattern-string "a*b+c?")	"a.*b\\+c."
+test (regex-pattern-string "a[b]c")	"a[b]c"
+test (regex-pattern-string "a[b]*c")	"a[b]*c"
+test (regex-pattern-string "a[b]+c")	"a[b]+c"
+test (regex-pattern-string "a[b]?c")	"a[b]?c"
+test (regex-pattern-string "a(b)c")	"a\\(b\\)c"
+test (regex-pattern-string "^abc$")	"\\^abc\\$"
+test (regex-pattern-string "abc{1,2}")	"abc\\{1,2}"
+
+;; nested brackets/parentheses
+test (regex-pattern-string "a([b]*)c")	"a\\([b]*\\)c"
+test (regex-pattern-string "a[()b]*c")	"a[()b]*c"
+
+;; mixed matching of elements
+test (regex-pattern-string "a|[b]c")	"a\\|[b]c"
+test (regex-pattern-string "a|*c")	"a\\|.*c"
+test (regex-pattern-string "a*?c")	"a.*.c"
+test (regex-pattern-string "a*+c")	"a.*\\+c"
+
 ;; all done?
-Tests? (posix-regex-0 + 35)
+Tests? (posix-regex-0 + 62)
