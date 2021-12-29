@@ -1142,5 +1142,5 @@ json5_token_t *json5_tokenize_string_C (char *s_C, size_t slen)
 
 /* Local Variables: */
 /* mode: C */
-/* buffer-file-coding-system: utf-8-unix */
+/* coding: utf-8-unix */
 /* End: */

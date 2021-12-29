@@ -730,5 +730,5 @@ for-each (function (mod) {
 
 ;Local Variables:
 ;mode: Idio
-;buffer-file-coding-system: utf-8-unix
+;coding: utf-8-unix
 ;End:

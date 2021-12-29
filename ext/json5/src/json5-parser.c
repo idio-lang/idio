@@ -761,5 +761,5 @@ json5_value_t *json5_parse_fd (int fd)
 
 /* Local Variables: */
 /* mode: C */
-/* buffer-file-coding-system: utf-8-unix */
+/* coding: utf-8-unix */
 /* End: */

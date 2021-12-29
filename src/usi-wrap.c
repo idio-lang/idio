@@ -1298,5 +1298,5 @@ void idio_init_usi_wrap ()
 
 /* Local Variables: */
 /* mode: C */
-/* buffer-file-coding-system: utf-8-unix */
+/* coding: utf-8-unix */
 /* End: */

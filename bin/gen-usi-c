@@ -1028,5 +1028,5 @@ printf "Complete in %ds\n" SECONDS
 
 ;Local Variables:
 ;mode: Idio
-;buffer-file-coding-system: undecided-unix
+;coding: utf-8-unix
 ;End:

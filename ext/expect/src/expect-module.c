@@ -411,5 +411,5 @@ void idio_init_expect (void *handle)
 
 }
 /* Local Variables: */
-/* buffer-file-coding-system: utf-8-unix */
+/* coding: utf-8-unix */
 /* End: */
