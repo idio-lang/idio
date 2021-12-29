@@ -9,8 +9,9 @@
 
 * `buffer` is current unmatched input from the pseudo-terminal
 
-  If, after matching has been attempted, this may be truncated to
-  :ref:`expect-match-max <expect/expect-match-max>` code points.
+  If new data was required to be read and after matching has been
+  attempted but no match made, `buffer` may be truncated to the most
+  recent :ref:`exp-match-max <expect/exp-match-max>` code points.
 
 The following attributes are used internally and are not supported for
 use by users:
@@ -23,6 +24,6 @@ use by users:
 * `timeout` is a flag indicating if interaction with the
   pseudo-terminal timed out
 
-  The timeout used is :ref:`expect-timeout <expect/expect-timeout>` in
+  The timeout used is :ref:`exp-timeout <expect/exp-timeout>` in
   seconds.
 

@@ -20,5 +20,6 @@ sub-expression, :var:`r.2` the second matched sub-expression, etc..
 
 Similarly, :ref:`pattern-case <pattern-case>` provides something like
 the shell's *Pattern Matching* where ``*`` and ``?`` are really ``.*``
-and ``.`` respectively.
+and ``.`` respectively.  In particular, see :ref:`regex-pattern-string
+<regex-pattern-string>` for how how the string is processed.
 

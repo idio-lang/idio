@@ -10,8 +10,11 @@ form>` where `e` is the string to be matched against and the
 `e` will be evaluated and should return a string.
 
 Here, *pattern matches* have :ref:`regex-pattern-string
-<regex-pattern-string>` applied and the code continues like
-:ref:`regex-case <regex-case>`.
+<regex-pattern-string>` applied, are anchored to the entire string and
+the code continues like :ref:`regex-case <regex-case>`.  The string
+manipulation is like:
+
+    :samp:`sprintf "^%s$" (regex-pattern-string {pattern-match})`
 
 If the pattern matches then the consequent expression is
 treated like an implict ``=>`` clause where the supplied parameter is

@@ -143,12 +143,31 @@ test (rc "foobar") '(foo "bar")
 test (rc "prefoo") '("pre" foo)
 test (rc "prefoobar") 'unknown
 
+;; rc with variables
+define (rcv s) {
+  p1 := "^foo(.*)"
+  p2 := "(.*)foo$"
+  (regex-case s
+	      (p1 (list 'foo r.1))
+	      (p2 (list r.1 'foo))
+	      (else 'unknown))
+}
+
+test (rcv "foobar") '(foo "bar")
+test (rcv "prefoo") '("pre" foo)
+test (rcv "prefoobar") 'unknown
+
 define (pc s) {
   (pattern-case s
 		("foo*" 'foo-before)
 		("*foo" 'foo-after)
 		("bar?" '1-after-bar)
 		("?bar" '1-before-bar)
+		("baz+" 'plus-after-baz)
+		("baz." 'dot-after-baz)
+		("bak[q]*" 'q-star-after-bak)
+		("bal[p]+" 'p-plus-after-bal)
+		("bam[r]?" 'r-query-after-bam)
 		(else 'unknown))
 }
 
@@ -160,7 +179,62 @@ test (pc "prebar")	'unknown
 test (pc "pbar")	'1-before-bar
 test (pc "barpost")	'unknown
 test (pc "barp")	'1-after-bar
+test (pc "baz+")	'plus-after-baz
+test (pc "baz.")	'dot-after-baz
+test (pc "bak")		'q-star-after-bak
+test (pc "bakq")	'q-star-after-bak
+test (pc "bakqq")	'q-star-after-bak
+test (pc "bal")		'unknown
+test (pc "balp")	'p-plus-after-bal
+test (pc "balpp")	'p-plus-after-bal
+test (pc "bam")		'r-query-after-bam
+test (pc "bamr")	'r-query-after-bam
+test (pc "bamrr")	'unknown
 test (pc "bar")		'unknown
+
+define (pcv s) {
+  p1 := "foo*"
+  p2 := "*foo"
+  p3 := "bar?"
+  p4 := "?bar"
+  p5 := "baz+"
+  p6 := "baz."
+  p7 := "bak[q]*"
+  p8 := "bal[p]+"
+  p9 := "bam[r]?"
+  (pattern-case s
+		(p1 'foo-before)
+		(p2 'foo-after)
+		(p3 '1-after-bar)
+		(p4 '1-before-bar)
+		(p5 'plus-after-baz)
+		(p6 'dot-after-baz)
+		(p7 'q-star-after-bak)
+		(p8 'p-plus-after-bal)
+		(p9 'r-query-after-bam)
+		(else 'unknown))
+}
+
+test (pcv "foobar")	'foo-before
+test (pcv "prefoo")	'foo-after	; .* matches empty string
+test (pcv "foo")	'foo-before	; tested first
+test (pcv "prefoobar")	'unknown
+test (pcv "prebar")	'unknown
+test (pcv "pbar")	'1-before-bar
+test (pcv "barpost")	'unknown
+test (pcv "barp")	'1-after-bar
+test (pcv "baz+")	'plus-after-baz
+test (pcv "baz.")	'dot-after-baz
+test (pcv "bak")	'q-star-after-bak
+test (pcv "bakq")	'q-star-after-bak
+test (pcv "bakqq")	'q-star-after-bak
+test (pcv "bal")	'unknown
+test (pcv "balp")	'p-plus-after-bal
+test (pcv "balpp")	'p-plus-after-bal
+test (pcv "bam")	'r-query-after-bam
+test (pcv "bamr")	'r-query-after-bam
+test (pcv "bamrr")	'unknown
+test (pcv "bar")	'unknown
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -204,4 +278,4 @@ test (regex-pattern-string "a*?c")	"a.*.c"
 test (regex-pattern-string "a*+c")	"a.*\\+c"
 
 ;; all done?
-Tests? (posix-regex-0 + 62)
+Tests? (posix-regex-0 + 96)

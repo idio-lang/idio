@@ -11,9 +11,14 @@ expression match, glob-style match (the default) or an exact match.
 The string keyword ``:icase`` indicates that a case-insensitive match
 should be used.
 
-:samp:`:term-kw` is one of the terminal keywords: ``:eof`` for
-matching the End of File indicator, ``:timeout`` for matching a time
-out.
+:samp:`:term-kw` is one of the terminal keywords:
+
+* ``:eof`` for matching the End of File indicator
+
+* ``:timeout`` for matching a time out
+
+* ``:all`` to match everything in the buffer, ie. in effect, to empty
+  the buffer
 
 :samp:`{body}` will be invoked as though the body of a function with
 the following arguments:
