@@ -242,6 +242,7 @@ Spawn a process defined by `argv`
 :rtype: struct-instance
 :raises ^system-error:
 
+``spawn`` will set and return :ref:`spawn-id <expect/spawn-id>`.
 
 " {
   exp-log #f #f (sprintf "spawn %@\n" argv)
@@ -367,25 +368,6 @@ What we want is to do is three things:
 
 define-template (exp-case & clauses) {
 
-  define (exact-string str) {
-    (regex-case str
-		("([[:alnum:]]*)([^[:alnum:]])(.*)" {
-		  append-string r.1 "\\" r.2 (exact-string r.3)
-		})
-		(else r))
-  }
-
-  define (glob-string str) {
-    (regex-case str
-		("(.*)\\*(.*)" {
-		  append-string r.1 ".*" (glob-string r.2)
-		})
-		("(.*)\\?(.*)" {
-		  append-string r.1 "." (glob-string r.2)
-		})
-		(else r))
-  }
-
   ;; #[ <regcomp> ]
   exp-regcomps := gensym 'e-r
 
@@ -397,7 +379,7 @@ define-template (exp-case & clauses) {
       (error/type ^rt-syntax-error 'exp-case "invalid syntax: no string/body" re-kind re-flags a*))
      (else {
        (case (ph a*)
-	((:eof :timeout) {
+	((:eof :timeout :all) {
 	  list (ph a*) (pt a*)
 	})
 	((:re :gl :ex) {
@@ -408,17 +390,35 @@ define-template (exp-case & clauses) {
 	})
 	(else {
 	  (cond
-	   ((not (string? (ph a*)))
-	    (error/type ^rt-syntax-error 'exp-case "invalid syntax: not a string" re-kind re-flags a*))
-	   ((or (null? re-kind)
-		(eq? :gl re-kind)) {
-	     list (list (glob-string (ph a*)) re-flags) (pt a*)
+	   ((string? (ph a*)) {
+	     (cond
+	      ((eq? :gl re-kind) {
+		list (list (regex-pattern-string (ph a*)) re-flags) (pt a*)
+	      })
+	      ((eq? :ex re-kind) {
+		list (list (regex-exact-string (ph a*)) re-flags) (pt a*)
+	      })
+	      ((eq? :re re-kind) {
+		list (list (ph a*) re-flags) (pt a*)
+	      }))
 	   })
-	   ((eq? :ex re-kind) {
-	     list (list (exact-string (ph a*)) re-flags) (pt a*)
-	   })
-	   ((eq? :re re-kind) {
-	     list (list (ph a*) re-flags) (pt a*)
+	   (else {
+	     (cond
+	      ((eq? :gl re-kind) {
+		#T{
+		  (((regex-pattern-string $(ph a*)) $re-flags) $(pt a*))
+		}
+	      })
+	      ((eq? :ex re-kind) {
+		#T{
+		  (((regex-exact-string $(ph a*)) $re-flags) $(pt a*))
+		}
+	      })
+	      ((eq? :re re-kind) {
+		#T{
+		  (($(ph a*) $re-flags) $(pt a*))
+		}
+	      }))
 	   }))
 	}))
      }))
@@ -432,7 +432,7 @@ define-template (exp-case & clauses) {
 	  (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'exp-case "invalid syntax" c*))
      (else {
        ;; key body
-       kb := process-args #n #n (ph c*)
+       kb := process-args :gl #n (ph c*)
        process-clauses (pt c*) (i + 1) (pair i i*) (pair (ph kb) k*) (pair (pht kb) b*)
      }))
 
@@ -447,6 +447,7 @@ define-template (exp-case & clauses) {
     bca = append exp-before bca
   }
 
+  ;; index key body
   ikb := process-clauses bca 0 #n #n #n
 
   n := length bca
@@ -491,6 +492,17 @@ define-template (exp-case & clauses) {
 		  set-struct-spawn-matched! spawn-id #t
 		  ((function (spawn-id)
 		   $@b) spawn-id)
+		}))
+	      }
+	    })
+	    ((:all) {
+	      #T{
+		((struct-spawn-eof spawn-id) => (function (r) {
+		  set-struct-spawn-matched! spawn-id #t
+		  r0 := list (struct-spawn-buffer spawn-id) 0 (string-length (struct-spawn-buffer spawn-id))
+		  set-struct-spawn-buffer! spawn-id ""
+		  ((function (spawn-id r prefix)
+		   $@b) spawn-id (list->array (list r0)) "")
 		}))
 	      }
 	    })
@@ -719,6 +731,9 @@ The same as Don Libes' :manpage:`expect(1)`.
 
 " {
   (cond
+   (human {
+     expect/exp-send-human (struct-spawn-mfd spawn-id) msg
+   })
    (slow {
      if (and (pair? exp-slow)
 	     ((length exp-slow) ge 2)
@@ -750,14 +765,18 @@ The same as Don Libes' :manpage:`expect(1)`.
        error/type ^rt-parameter-value-error 'exp-send "should be (#cp ms): not" exp-slow
      }
    })
-   (human {
-     expect/exp-send-human (struct-spawn-mfd spawn-id) msg
-   })
    (else {
      libc/write (struct-spawn-mfd spawn-id) msg
    }))
   if cr {
-    libc/write (struct-spawn-mfd spawn-id) "\r"
+    ;; XXX why does SunOS require \n ??
+    (cond-expand
+     ("uname/sysname/SunOS" {
+       libc/write (struct-spawn-mfd spawn-id) "\n"
+     })
+     (else {
+       libc/write (struct-spawn-mfd spawn-id) "\r"
+     }))
   }
   expect/exp-log spawn-id #f msg
 }

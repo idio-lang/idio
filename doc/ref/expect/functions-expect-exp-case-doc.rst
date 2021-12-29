@@ -4,12 +4,20 @@ Each clause in `clauses` takes one of the forms
 
     :samp:`(:term-kw {body})`
 
-Here, :samp:`:str-kw` is one of the string keywords: ``:re``, ``:gl``,
-``:ex`` indicating that :samp:`{string}` should be used as a regular
-expression match, glob-style match (the default) or an exact match.
+Here, :samp:`:str-kw` is one of the string keywords:
 
-The string keyword ``:icase`` indicates that a case-insensitive match
-should be used.
+* ``:re`` indicating that :samp:`{string}` should be used for a
+  regular expression match
+
+* ``:gl`` indicating that :samp:`{string}` should be used for a
+  glob-style match (the default) -- see :ref:`regex-pattern-string
+  <regex-pattern-string>` for how the string is modified
+  
+* ``:ex`` indicating that :samp:`{string}` should be used for an exact
+  match -- see :ref:`regex-exact-string <regex-exact-string>` for how
+  the string is modified
+
+* ``:icase`` indicates that a case-insensitive match should be used
 
 :samp:`:term-kw` is one of the terminal keywords:
 

@@ -87,6 +87,18 @@ spawn auto-exit -o 1
 
 (exp-wait)
 
+;; read from program using variables
+spawn auto-exit -o 1
+
+re := "wrote line ([[:digit:]]) to stdout"
+(exp-case
+ (:re re {
+   test r.1 .1 "1"
+   (exp-continue)
+ }))
+
+(exp-wait)
+
 ;; read from program with a timeout
 spawn auto-exit -o 2 -s 2
 exp-timeout = 1
@@ -124,15 +136,7 @@ exp-timeout = 10
 ;; write to a program: here, -v will report the line back to us
 spawn auto-exit -r 3 -v
 
-;; XXX \r to generate the line-feed the program is expecting -- except
-;; SunOS which somehow needs a \n -- need to bottom this out
-(cond-expand
- ("uname/sysname/SunOS" {
-   exp-send "hello\n"
- })
- (else {
-   exp-send "hello\r"
- }))
+exp-send "hello" :cr #t
 
 (exp-case
  (:re "read #([[:digit:]]) '(.*)'" {
@@ -141,14 +145,7 @@ spawn auto-exit -r 3 -v
    ;(exp-continue)
  }))
 
-;; XXX \r or \n
-(cond-expand
- ("uname/sysname/SunOS" {
-   exp-send "world\n" :slow #t
- })
- (else {
-   exp-send "world\r" :slow #t
- }))
+exp-send "world" :slow #t :cr #t
 
 (exp-case
  (:re "read #([[:digit:]]) '(.*)'" {
@@ -157,14 +154,7 @@ spawn auto-exit -r 3 -v
    ;(exp-continue)
  }))
 
-;; XXX \r or \n
-(cond-expand
- ("uname/sysname/SunOS" {
-   exp-send "hello world\n" :human #t
- })
- (else {
-   exp-send "hello world\r" :human #t
- }))
+exp-send "hello world" :human #t :cr #t
 
 (exp-case
  (:re "read #([[:digit:]]) '(.*)'" {
@@ -176,7 +166,7 @@ spawn auto-exit -r 3 -v
 (exp-wait)
 
 ;; all done?
-Tests? (expect-0 + 16)
+Tests? (expect-0 + 18)
 
 ;Local Variables:
 ;mode: Idio

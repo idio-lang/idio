@@ -72,7 +72,8 @@
 (rst "idio-features" 0)
 (document Idio *idio-features* idio-features)
 
-(nodocument Idio *regcomp-table*)
+(nodocument Idio *regex-regcomp-table*)
+(nodocument Idio *pattern-regcomp-table*)
 
 
 (nodocument Idio *require-features*)
