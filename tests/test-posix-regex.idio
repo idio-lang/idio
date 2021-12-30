@@ -132,6 +132,12 @@ r := regexec (regcomp "[bc]+") "abcd" REG_VERBOSE
 test (not r)	#f
 test r.0	'("bc" 1 3)
 
+;; REG_VERBOSE did get confused with non-ASCII characters giving the
+;; answer ("ll" 3 5)
+r := regexec (regcomp "l+") "ħello" REG_VERBOSE
+test (not r)	#f
+test r.0	'("ll" 2 4)
+
 define (rc s) {
   (regex-case s
 	      ("^foo(.*)" (list 'foo r.1))
@@ -278,4 +284,4 @@ test (regex-pattern-string "a*?c")	"a.*.c"
 test (regex-pattern-string "a*+c")	"a.*\\+c"
 
 ;; all done?
-Tests? (posix-regex-0 + 96)
+Tests? (posix-regex-0 + 98)
