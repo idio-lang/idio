@@ -345,9 +345,22 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
 	    IDIO match = idio_string_C_len (Cs + matches[i].rm_so, matches[i].rm_eo - matches[i].rm_so);
 
 	    if (verbose) {
-		idio_array_insert_index (r, IDIO_LIST3 (match,
-							idio_integer (matches[i].rm_so),
-							idio_integer (matches[i].rm_eo)), i);
+		/*
+		 * Grr!  I'm impressed I stumbled across this, though,
+		 * as it requires something of mine use non-ASCII code
+		 * points.  In this case U+2018/U+2019 around an error
+		 * message.  All hail buggy startups!  :)
+		 *
+		 * rm_so/rm_eo are in characters, as in C characters,
+		 * not code points.  Cue an expensive recalculation.
+		 */
+		IDIO prefix = idio_string_C_len (Cs, matches[i].rm_so);
+		size_t prefix_len = idio_string_len (prefix);
+		idio_array_insert_index (r,
+					 IDIO_LIST3 (match,
+						     idio_integer (prefix_len),
+						     idio_integer (prefix_len + idio_string_len (match))),
+					 i);
 	    } else {
 		idio_array_insert_index (r, match, i);
 	    }

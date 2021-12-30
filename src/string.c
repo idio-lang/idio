@@ -221,7 +221,7 @@ void idio_substring_index_error (char const *msg, IDIO str, ptrdiff_t ip0, ptrdi
     IDIO dsh = idio_open_output_string_handle_C ();
 
     char em[BUFSIZ];
-    size_t eml = idio_snprintf (em, BUFSIZ, " offset %td end %td", ip0, ipn);
+    size_t eml = idio_snprintf (em, BUFSIZ, " offset %td end %td of %zd code points", ip0, ipn, idio_string_len (str));
     idio_display_C_len (em, eml, dsh);
 
     idio_string_error (idio_get_output_string (msh), idio_get_output_string (dsh), c_location);
