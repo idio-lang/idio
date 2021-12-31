@@ -696,7 +696,7 @@ send `msg` to the spawned process
 :type human: boolean, optional
 :param spawn-id: the spawn-id to use, defaults to :ref:`spawn-id <expect/spawn-id>`
 :type spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`, optional
-:param cr: to send a 'newline' or not, defaults to ``#f``
+:param cr: to send a 'carriage return' or not, defaults to ``#f``
 :type cr: boolean, optional
 :return: ``#<unspec>``
 
@@ -769,14 +769,7 @@ The same as Don Libes' :manpage:`expect(1)`.
      libc/write (struct-spawn-mfd spawn-id) msg
    }))
   if cr {
-    ;; XXX why does SunOS require \n ??
-    (cond-expand
-     ("uname/sysname/SunOS" {
-       libc/write (struct-spawn-mfd spawn-id) "\n"
-     })
-     (else {
-       libc/write (struct-spawn-mfd spawn-id) "\r"
-     }))
+    libc/write (struct-spawn-mfd spawn-id) "\r"
   }
   expect/exp-log spawn-id #f msg
 }
