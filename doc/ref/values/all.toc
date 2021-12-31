@@ -19,6 +19,7 @@
 
 (rst "environment-values" 0)
 (document Idio PATH)
+(document Idio PWD)
 (document Idio HOME)
 (document Idio LOGNAME)
 (document Idio SHELL)

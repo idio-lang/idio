@@ -130,11 +130,13 @@ void idio_env_format_error (char const *circumstance, char const *msg, IDIO name
     /* notreached */
 }
 
-static int idio_env_set_default (IDIO name, char const *val)
+static int idio_env_set_default (IDIO name, IDIO val)
 {
     IDIO_ASSERT (name);
-    IDIO_C_ASSERT (val);
+    IDIO_ASSERT (val);
+
     IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (string, val);
 
     IDIO ENV = idio_module_env_symbol_value (name, IDIO_LIST1 (idio_S_false));
     if (idio_S_false == ENV) {
@@ -154,11 +156,20 @@ static int idio_env_set_default (IDIO name, char const *val)
 	 * So, we'll get here if no-one has set IDIOLIB otherwise it's
 	 * a manual test.
 	 */
-	idio_environ_extend (name, name, idio_string_C (val), idio_vm_constants);
+	idio_environ_extend (name, name, val, idio_vm_constants);
 	return 1;
     }
 
     return 0;
+}
+
+static int idio_env_set_default_C (IDIO name, char const *val)
+{
+    IDIO_ASSERT (name);
+    IDIO_C_ASSERT (val);
+    IDIO_TYPE_ASSERT (symbol, name);
+
+    return idio_env_set_default (name, idio_string_C (val));
 }
 
 static void idio_env_add_environ ()
@@ -178,9 +189,16 @@ static void idio_env_add_environ ()
 
 	    var = idio_symbols_C_intern (name, name_len);
 
-	    IDIO_GC_FREE (name, name_len);
+	    if ((4 == name_len &&
+		 strncmp (name, "HOME", 4) == 0) ||
+		(5 == name_len &&
+		 strncmp (name, "SHELL", 5) == 0)) {
+		val = idio_pathname_C (e + 1);
+	    } else {
+		val = idio_string_C (e + 1);
+	    }
 
-	    val = idio_string_C (e + 1);
+	    IDIO_GC_FREE (name, name_len);
 	} else {
 	    /*
 	     * Code coverage:
@@ -216,13 +234,13 @@ static void idio_env_add_environ ()
      * SHELL
      */
 
-    idio_env_set_default (idio_env_PATH_sym, idio_env_PATH_default);
+    idio_env_set_default_C (idio_env_PATH_sym, idio_env_PATH_default);
 
     /*
      * See comment in libc-wrap.c re: getcwd(3)
      */
-    char *cwd = idio_getcwd ("environ/getcwd", NULL, PATH_MAX);
-    if (NULL == cwd) {
+    char *C_cwd = idio_getcwd ("environ/getcwd", NULL, PATH_MAX);
+    if (NULL == C_cwd) {
 	/*
 	 * Test Case: ??
 	 *
@@ -239,6 +257,7 @@ static void idio_env_add_environ ()
 	return;
     }
 
+    IDIO cwd = idio_pathname_C (C_cwd);
     if (idio_env_set_default (idio_env_PWD_sym, cwd) == 0) {
 	/*
 	 * On Mac OS X (Mavericks):
@@ -258,13 +277,13 @@ static void idio_env_add_environ ()
 	 * So, if we didn't create a new variable in
 	 * idio_env_set_default() then set the value regardless now.
 	 */
-	idio_module_env_set_symbol_value (idio_env_PWD_sym, idio_pathname_C (cwd));
+	idio_module_env_set_symbol_value (idio_env_PWD_sym, cwd);
     }
 
     /*
      * XXX getcwd() used system allocator
      */
-    free (cwd);
+    free (C_cwd);
 
     /*
      * From getpwuid(3) on CentOS
@@ -310,21 +329,28 @@ static void idio_env_add_environ ()
      * specification as known environment variables.
      *
      * Why would SECONDS or RANDOM be in the environment?
+     *
+     * Furthermore, with our splitting hairs hat on, HOME and SHELL
+     * should be pathnames.
      */
-    char *LOGNAME = "";
-    char *HOME = "";
-    char *SHELL = "";
+    char *C_LOGNAME = "";
+    char *C_HOME = "";
+    char *C_SHELL = "";
     if (pwd_exists) {
-	LOGNAME = pwd.pw_name;
-	HOME = pwd.pw_dir;
-	SHELL = pwd.pw_shell;
+	C_LOGNAME = pwd.pw_name;
+	C_HOME = pwd.pw_dir;
+	C_SHELL = pwd.pw_shell;
     }
+
+    IDIO LOGNAME = idio_string_C (C_LOGNAME);
+    IDIO HOME = idio_pathname_C (C_HOME);
+    IDIO SHELL = idio_pathname_C (C_SHELL);
 
 #define IDIO_ENV_EXPORT(name)						\
     if (getenv (#name) == NULL) {					\
 	IDIO sym = idio_symbols_C_intern (#name, sizeof (#name) - 1);	\
 	if (idio_env_set_default (sym, name) == 0) {			\
-	    idio_module_env_set_symbol_value (sym, idio_string_C (name)); \
+	    idio_module_env_set_symbol_value (sym, name);		\
 	}								\
     }
 
@@ -871,10 +897,11 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
 		}
 		ni[ni_len] = '\0';
 
+		IDIO I_ni = idio_string_C_len (ni, ni_len);
 		if (idio_S_false == idiolib) {
-		    idio_env_set_default (idio_env_IDIOLIB_sym, ni);
+		    idio_env_set_default (idio_env_IDIOLIB_sym, I_ni);
 		} else {
-		    idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, idio_string_C_len (ni, ni_len));
+		    idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, I_ni);
 		}
 		idio_free (ni);
 	    }
@@ -915,7 +942,7 @@ void idio_env_init_idiolib (char const *argv0, size_t const argv0_len)
     /*
      * While we are here, set IDIO_CMD and IDIO_EXE.
      */
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD"), idio_string_C_len (argv0, argv0_len), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD"), idio_pathname_C_len (argv0, argv0_len), idio_Idio_module_instance ());
     idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD_PATH"), idio_pathname_C_len (a0rp, a0rp_len), idio_Idio_module_instance ());
     idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_EXE"), idio_pathname_C_len (erp, erp_len), idio_Idio_module_instance ());
 

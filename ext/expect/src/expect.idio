@@ -729,10 +729,25 @@ The algorithm used to calculate the inter-code point gap is the
 inverse cumulative distribution function of the Weibull distribution.
 The same as Don Libes' :manpage:`expect(1)`.
 
+`:spawn-id` can be passed a C/int representing an open (for output)
+file descriptor which will be used instead.  For example, to send
+output to the user pass ``libc/STDOUT_FILENO``.
 " {
+  mfd := #f
+  (cond
+   ((struct-spawn? spawn-id) {
+     mfd = struct-spawn-mfd spawn-id
+   })
+   ((C/int? spawn-id) {
+     mfd = spawn-id
+   })
+   (else {
+     error/type ^rt-parameter-type-error 'exp-send "struct-spawn|C/int" spawn-id
+   }))
+
   (cond
    (human {
-     expect/exp-send-human (struct-spawn-mfd spawn-id) msg
+     expect/exp-send-human mfd msg
    })
    (slow {
      if (and (pair? exp-slow)
@@ -744,7 +759,6 @@ The same as Don Libes' :manpage:`expect(1)`.
 
        poller := (libc/make-poller)
        pe     := string-length msg
-       mfd    := struct-spawn-mfd spawn-id
 
        loop :+ function (p) {
 	 if (p lt pe) {
@@ -766,12 +780,14 @@ The same as Don Libes' :manpage:`expect(1)`.
      }
    })
    (else {
-     libc/write (struct-spawn-mfd spawn-id) msg
+     libc/write mfd msg
    }))
-  if cr {
-    libc/write (struct-spawn-mfd spawn-id) "\r"
-  }
   expect/exp-log spawn-id #f msg
+
+  if cr {
+    libc/write mfd "\r"
+    expect/exp-log spawn-id #f "\r"
+  }
 }
 
 define* (exp-close (:spawn-id spawn-id spawn-id)) "

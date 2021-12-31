@@ -516,4 +516,101 @@ define* (normalize-pathname val (:sep sep "/")) {
   }
 }
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; cd
+
+pushd := #f
+popd := #f
+setd := #f
+dirs := #f
+
+{
+  dir-stack := list PWD
+
+  define (test-and-chdir d) {
+    if (d? d) {
+      dir-stack = pair d dir-stack
+      (pattern-case d
+		    ("/*" {
+		      PWD = d
+		    })
+		    (else {
+		      PWD = normalize-pathname (append-string PWD "/" d)
+		    }))
+      libc/chdir PWD
+    } {
+      #f
+    }
+  }
+
+  pushd = function (d) "
+
+if `d` is a directory then change the working directory to it and push
+it onto the top of the directory stack.
+
+:param d: directory to change to
+:type d: string
+:return: current working directory or ``#f``
+
+This function modifies :ref:`PWD <PWD>`.
+
+" {
+    (test-and-chdir d) or {
+      eprintf "pushd: %s: %s\n" d (libc/strerror libc/ENOENT)
+      #f
+    }
+  }
+
+  popd = function () "
+
+if the directory stack has more than one entry then pop an element off
+the directory stack and change the working directory to the top-most
+element
+
+:return: current working directory or ``#f``
+
+This function modifies :ref:`PWD <PWD>`.
+
+" {
+    if ((length dir-stack) gt 1) {
+      dir-stack = pt dir-stack
+      setd (ph dir-stack)
+    } {
+      eprintf "popd: directory stack empty\n"
+      #f
+    }
+  }
+
+  setd = function (d) "
+
+if `d` is a directory then change the working directory to it and set
+the top entry in the directory stack to it.
+
+:param d: directory to change to
+:type d: string
+:return: current working directory or ``#f``
+
+This function modifies :ref:`PWD <PWD>`.
+
+" {
+    (test-and-chdir d) or {
+      eprintf "cd: %s: %s\n" d (libc/strerror libc/ENOENT)
+      #f
+    }
+  }
+
+  dirs = function () "
+print the directory stack
+" {
+    printf "%@\n" dir-stack
+  }
+}
+
+(define-syntax cd
+ (syntax-rules (~)
+  ((cd)   (cd HOME))
+  ((cd ~) (cd HOME))
+  ((cd d) (setd d))))
+
 provide path-functions

@@ -9,4 +9,6 @@ If `dir` does not exist a message is displayed and ``#f`` is returned.
 If `dir` is not supplied or is the symbol ``~``, :envvar:`HOME` is
 used.
 
+This function modifies :ref:`PWD <PWD>`.
+
 .. seealso:: ``cd`` calls :ref:`setd <setd>`.
