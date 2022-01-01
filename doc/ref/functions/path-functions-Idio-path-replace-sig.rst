@@ -1,1 +1,1 @@
-var old new [keyword options]
+var old new [keyword arguments]

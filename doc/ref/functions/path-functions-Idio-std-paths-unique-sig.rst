@@ -1,1 +1,1 @@
-act val [keyword options]
+act val [keyword arguments]

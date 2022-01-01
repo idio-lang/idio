@@ -1,6 +1,6 @@
 #*
 
-Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2021, 2022 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -247,15 +247,15 @@ Spawn a process defined by `argv` and interact with it synchronously
 
 :param argv: command and arguments
 :type argv: list
-:param mreader: function to read from master device, defaults to simple internal function
-:type mreader: function, optional
-:param inreader: function to read from stdin, defaults to simple internal function
-:type inreader: function, optional
+:keyword :mreader: function to read from master device, defaults to simple internal function
+:type :mreader: function, optional
+:keyword :inreader: function to read from stdin, defaults to simple internal function
+:type :inreader: function, optional
 :return: result from :ref:`waitpid <libc/waitpid>`
 :rtype: list
 :raises ^system-error:
 
-Both `mreader` and `inreader` should be a function which accepts a
+Both `:mreader` and `:inreader` should be a function which accepts a
 `C/int` file descriptor as its single argument and should return a
 string.
 

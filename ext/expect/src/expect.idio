@@ -1,6 +1,6 @@
 #*
 
-Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2021, 2022 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -189,8 +189,8 @@ Log the send/expect dialog to `file` or not
 
 :param file: the file to log to
 :type file: see below
-:param append: to append or not, defaults to ``#t``
-:type append: boolean, optional
+:keyword :append: to append or not, defaults to ``#t``
+:type :append: boolean, optional
 :return: ``#<unspec>``
 
 `file` can be:
@@ -690,24 +690,24 @@ send `msg` to the spawned process
 
 :param msg: the string to send
 :type msg: string
-:param slow: send `msg` slowly, defaults to ``#f``
-:type slow: boolean, optional
-:param human: send `msg` humanly, defaults to ``#f``
-:type human: boolean, optional
-:param spawn-id: the spawn-id to use, defaults to :ref:`spawn-id <expect/spawn-id>`
-:type spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`, optional
-:param cr: to send a 'carriage return' or not, defaults to ``#f``
-:type cr: boolean, optional
+:keyword :slow: send `msg` slowly, defaults to ``#f``
+:type :slow: boolean, optional
+:keyword :human: send `msg` humanly, defaults to ``#f``
+:type :human: boolean, optional
+:keyword :spawn-id: the spawn-id to use, defaults to :ref:`spawn-id <expect/spawn-id>`
+:type :spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`, optional
+:keyword :cr: to send a 'carriage return' or not, defaults to ``#f``
+:type :cr: boolean, optional
 :return: ``#<unspec>``
 
-``:slow`` says to use the value of :ref:`exp-slow <expect/exp-slow>`
+`:slow` says to use the value of :ref:`exp-slow <expect/exp-slow>`
 which is a tuple of the number of code points in a burst prefixed by a
 delay of a number of milliseconds.  The default is ``(120 10)``
 roughly equivalent to a 115200 baud modem (if the code points were
 ASCII).
 
-``:human`` says to use the value of :ref:`exp-human
-<expect/exp-human>` which is a tuple of:
+`:human` says to use the value of :ref:`exp-human <expect/exp-human>`
+which is a tuple of:
 
 * the average gap between in-word code points
 
@@ -729,9 +729,22 @@ The algorithm used to calculate the inter-code point gap is the
 inverse cumulative distribution function of the Weibull distribution.
 The same as Don Libes' :manpage:`expect(1)`.
 
+`:human` is preferred to `:slow` if both are supplied.
+
 `:spawn-id` can be passed a C/int representing an open (for output)
 file descriptor which will be used instead.  For example, to send
 output to the user pass ``libc/STDOUT_FILENO``.
+
+:Example:
+
+Suppose we wanted to observe a professional typist attempting a
+well-known English `pangram <https://en.wikipedia.org/wiki/Pangram>`_:
+
+.. code-block:: idio
+
+   exp-send \"The quick brown fox jumps over the lazy dog\" :spawn-id libc/STDOUT_FILENO :human #t
+
+
 " {
   mfd := #f
   (cond
@@ -793,8 +806,8 @@ output to the user pass ``libc/STDOUT_FILENO``.
 define* (exp-close (:spawn-id spawn-id spawn-id)) "
 close the master file descriptor to the spawned process
 
-:param spawn-id: the spawn-id to use, defaults to :ref:`spawn-id <expect/spawn-id>`
-:type spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`, optional
+:keyword :spawn-id: the spawn-id to use, defaults to :ref:`spawn-id <expect/spawn-id>`
+:type :spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`, optional
 :return: ``#<unspec>``
 
 ``exp-close`` will set the `mfd` structure element to ``#f``
@@ -804,22 +817,32 @@ close the master file descriptor to the spawned process
   set-struct-spawn-mfd! spawn-id #f
 }
 
-define* (exp-wait (:spawn-id spawn-id spawn-id)) "
+define* (exp-wait (:spawn-id spawn-id spawn-id) (:close close? #f)) "
 wait for the spawned process
 
-:param spawn-id: the spawn-id to use, defaults to :ref:`spawn-id <expect/spawn-id>`
-:type spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`, optional
+:keyword :spawn-id: the `spawn-id` to use, defaults to :ref:`spawn-id <expect/spawn-id>`
+:type :spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`
+:keyword :close: close the `mfd`, defaults to ``#f``
+:type :close: boolean
 :return: see below
 :rtype: list
 
-``exp-wait`` will call :ref:`exp-close <expect/exp-close>` if not
-already called.
+``exp-wait`` will call :ref:`exp-close <expect/exp-close>` if `:close`
+is `true` and ``exp-close`` has not already been called.
 
 ``exp-wait`` will return a list of the result from :ref:`waitpid
-<libc/waitpid>` plus a decoding of the status, eg. ``(exit 0)``.
+<libc/waitpid>` plus a decoding of the status, eg. ``(exit 0)`` or
+``(killed 1)`` (see note).
+
+.. warning::
+
+   Calling ``exp-close`` on the `mfd` of a running program will
+   probably have the operating system send the spawned process a
+   hangup signal.
 
 " {
-  if (struct-spawn-mfd spawn-id) {
+  if (and close?
+	  (struct-spawn-mfd spawn-id)) {
     exp-close :spawn-id spawn-id
   }
 
