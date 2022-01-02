@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2018, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2019,7 +2019,7 @@ static void idio_vm_push_dynamic (IDIO thr, idio_ai_t gvi, IDIO val)
 #else
     idio_ai_t dsp = idio_vm_find_stack_marker (stack, idio_SM_dynamic, 0, 0);
     if (dsp >= 3) {
-	idio_array_push (stack, idio_array_ref_index (stack, dsp - 3));
+	idio_array_push (stack, idio_fixnum (dsp));
     } else {
 	idio_array_push (stack, idio_fixnum (-1));
     }
@@ -2066,26 +2066,26 @@ IDIO idio_vm_dynamic_ref (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO args)
     idio_ai_t sp = idio_vm_find_stack_marker (stack, idio_SM_dynamic, 0, 0);
 #endif
 
-    IDIO v = idio_S_undef;
+    IDIO val = idio_S_undef;
 
     for (;;) {
 	if (sp >= 3) {
-	    IDIO sv = idio_array_ref_index (stack, sp - 1);
-	    IDIO_TYPE_ASSERT (fixnum, sv);
+	    IDIO dvi = idio_array_ref_index (stack, sp - 1);
+	    IDIO_TYPE_ASSERT (fixnum, dvi);
 
-	    if (IDIO_FIXNUM_VAL (sv) == gvi) {
-		v = idio_array_ref_index (stack, sp - 2);
+	    if (IDIO_FIXNUM_VAL (dvi) == gvi) {
+		val = idio_array_ref_index (stack, sp - 2);
 		break;
 	    } else {
 		sp = IDIO_FIXNUM_VAL (idio_array_ref_index (stack, sp - 3));
 	    }
 	} else {
-	    v = idio_vm_values_ref (gvi);
+	    val = idio_vm_values_ref (gvi);
 	    break;
 	}
     }
 
-    if (idio_S_undef == v) {
+    if (idio_S_undef == val) {
 	if (idio_S_nil == args) {
 	    /*
 	     * Test Case: vm-errors/idio_vm_dynamic_ref-unbound.idio
@@ -2104,7 +2104,7 @@ IDIO idio_vm_dynamic_ref (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO args)
 	}
     }
 
-    return v;
+    return val;
 }
 
 void idio_vm_dynamic_set (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO v)
@@ -2179,7 +2179,7 @@ static void idio_vm_push_environ (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO v
 #else
     idio_ai_t esp = idio_vm_find_stack_marker (stack, idio_SM_environ, 0, 0);
     if (esp >= 3) {
-	idio_array_push (stack, idio_array_ref_index (stack, esp - 3));
+	idio_array_push (stack, idio_fixnum (esp));
     } else {
 	idio_array_push (stack, idio_fixnum (-1));
     }
@@ -2226,26 +2226,26 @@ IDIO idio_vm_environ_ref (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO args)
     idio_ai_t sp = idio_vm_find_stack_marker (stack, idio_SM_environ, 0, 0);
 #endif
 
-    IDIO v = idio_S_undef;
+    IDIO val = idio_S_undef;
 
     for (;;) {
 	if (sp >= 3) {
-	    IDIO sv = idio_array_ref_index (stack, sp - 1);
-	    IDIO_TYPE_ASSERT (fixnum, sv);
+	    IDIO evi = idio_array_ref_index (stack, sp - 1);
+	    IDIO_TYPE_ASSERT (fixnum, evi);
 
-	    if (IDIO_FIXNUM_VAL (sv) == gvi) {
-		v = idio_array_ref_index (stack, sp - 2);
+	    if (IDIO_FIXNUM_VAL (evi) == gvi) {
+		val = idio_array_ref_index (stack, sp - 2);
 		break;
 	    } else {
 		sp = IDIO_FIXNUM_VAL (idio_array_ref_index (stack, sp - 3));
 	    }
 	} else {
-	    v = idio_vm_values_ref (gvi);
+	    val = idio_vm_values_ref (gvi);
 	    break;
 	}
     }
 
-    if (idio_S_undef == v) {
+    if (idio_S_undef == val) {
 	if (idio_S_nil == args) {
 	    /*
 	     * Test Case: vm-errors/idio_vm_environ_ref-unbound.idio
@@ -2264,7 +2264,7 @@ IDIO idio_vm_environ_ref (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO args)
 	}
     }
 
-    return v;
+    return val;
 }
 
 void idio_vm_environ_set (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO v)

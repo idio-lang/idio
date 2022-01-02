@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -855,24 +855,23 @@ static IDIO idio_meaning_nametree_to_list (IDIO nametree)
      */
 
     int done = 0;
-    while (! done) {
-	if (idio_S_nil != nametree) {
-	    IDIO v_list = IDIO_PAIR_H (nametree);
-	    while (idio_S_nil != v_list) {
-		IDIO v_data = IDIO_PAIR_H (v_list);
+    while (! done &&
+	   idio_S_nil != nametree) {
+	IDIO v_list = IDIO_PAIR_H (nametree);
+	while (idio_S_nil != v_list) {
+	    IDIO v_data = IDIO_PAIR_H (v_list);
 
-		r = idio_pair (IDIO_PAIR_H (v_data), r);
+	    r = idio_pair (IDIO_PAIR_H (v_data), r);
 
-		if (! done &&
-		    idio_S_param == IDIO_PAIR_HT (v_data)) {
-		    done = 1;
-		}
-
-		v_list = IDIO_PAIR_T (v_list);
+	    if (! done &&
+		idio_S_param == IDIO_PAIR_HT (v_data)) {
+		done = 1;
 	    }
 
-	    nametree = IDIO_PAIR_T (nametree);
+	    v_list = IDIO_PAIR_T (v_list);
 	}
+
+	nametree = IDIO_PAIR_T (nametree);
     }
 
     return r;
