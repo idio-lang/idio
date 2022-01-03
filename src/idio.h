@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -348,7 +348,7 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_ADD_POSTFIX_OPERATOR(cname,pri)	  idio_add_postfix_operator_primitive (&idio_postfix_operator_data_ ## cname, pri);
 
 #define IDIO_C_STRUCT_IDENT_DECL(n)			IDIO idio_CSI_ ## n
-#define IDIO_C_STRUCT_IDENT_DEF(iname,cname,fvi)	idio_CSI_ ## cname = IDIO_LIST2 (idio_string_C (iname), idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi)));  idio_gc_protect_auto (idio_CSI_ ## cname);
+#define IDIO_C_STRUCT_IDENT_DEF(sname,fnames,cname,fvi)	idio_CSI_ ## cname = IDIO_LIST3 (sname, fnames, idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi)));  idio_gc_protect_auto (idio_CSI_ ## cname);
 
 /*
  * Some well-known constants.

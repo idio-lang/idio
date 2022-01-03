@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -661,6 +661,55 @@ test if `o` is a C/pointer			\n\
 
     if (idio_isa_C_pointer (o)) {
 	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("pointer-name", C_pointer_name, (IDIO p), "p", "\
+Return the CSI name of C/pointer `p`		\n\
+						\n\
+:param p: C/pointer to query			\n\
+:type p: C/pointer				\n\
+:return: CSI name or ``#n``			\n\
+:rtype: symbol or ``#n``			\n\
+						\n\
+The CSI name is descriptive only.		\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    IDIO r = idio_S_nil;
+
+    if (idio_isa_C_pointer (p)) {
+	IDIO pt = IDIO_C_TYPE_POINTER_PTYPE (p);
+	if (idio_isa_pair (pt)) {
+	    r = IDIO_PAIR_H (pt);
+	}
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("pointer-members", C_pointer_members, (IDIO p), "p", "\
+Return the CSI members of C/pointer `p`		\n\
+						\n\
+:param p: C/pointer to query			\n\
+:type p: C/pointer				\n\
+:return: CSI members or ``#n``			\n\
+:rtype: list					\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    IDIO r = idio_S_nil;
+
+    if (idio_isa_C_pointer (p)) {
+	IDIO pt = IDIO_C_TYPE_POINTER_PTYPE (p);
+	if (idio_isa_pair (pt) &&
+	    idio_list_length (pt) > 1) {
+	    r = IDIO_PAIR_HT (pt);
+	}
     }
 
     return r;
@@ -2533,6 +2582,8 @@ void idio_c_type_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_doublep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_longdoublep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_pointerp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_pointer_name);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_pointer_members);
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_typep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_numberp);

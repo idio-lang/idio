@@ -30,3 +30,7 @@
 (rst "type-converters" 0)
 (document C ->integer)
 (document C ->number)
+
+(rst "pointer-reflection" 0)
+(document C pointer-name)
+(document C pointer-members)

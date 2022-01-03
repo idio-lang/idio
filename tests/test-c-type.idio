@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -586,6 +586,11 @@ test (C/->number (C/integer->unsigned 1 'ulonglong)) 1
 c-uintmax-max := C/->number libc/UINTMAX_MAX
 test (C/->number (C/integer->unsigned c-uintmax-max libc/uintmax_t)) c-uintmax-max
 
+sb := libc/stat "."
+test (C/pointer-name sb) 'libc/struct-stat
+;; memq might get some random list of members so check we got something!
+test (not (memq 'st_uid (C/pointer-members sb))) #f
+
 ;; all done?
 Skipped = Skipped + c-type-skipped
-Tests? (c-type0 + 918 - c-type-skipped)
+Tests? (c-type0 + 920 - c-type-skipped)

@@ -5656,113 +5656,140 @@ void idio_init_libc_api ()
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RUSAGE_THREAD"), idio_C_int (RUSAGE_THREAD), idio_libc_module);
 #endif  /* __rusage_who */
 
+    IDIO struct_fields;
+    IDIO struct_name;
     IDIO fgvi;
 
+#define IDIO_FIELD_DEF(iname,cname)		\
+    IDIO_SYMBOL_DEF(iname,cname);		\
+    struct_fields = idio_pair (idio_S_ ## cname, struct_fields);
+
     /* /usr/include/sys/utsname.h */
-    IDIO_SYMBOL_DEF ("sysname", sysname);
-    IDIO_SYMBOL_DEF ("nodename", nodename);
-    IDIO_SYMBOL_DEF ("release", release);
-    IDIO_SYMBOL_DEF ("version", version);
-    IDIO_SYMBOL_DEF ("machine", machine);
+    struct_fields = idio_S_nil;
+    IDIO_FIELD_DEF ("sysname", sysname);
+    IDIO_FIELD_DEF ("nodename", nodename);
+    IDIO_FIELD_DEF ("release", release);
+    IDIO_FIELD_DEF ("version", version);
+    IDIO_FIELD_DEF ("machine", machine);
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_utsname_ref);
-    IDIO_C_STRUCT_IDENT_DEF ("struct utsname", libc_struct_utsname, fgvi);
+    struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-utsname");
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_utsname, fgvi);
 
     /* /usr/include/sys/times.h */
-    IDIO_SYMBOL_DEF ("tms_utime", tms_utime);
-    IDIO_SYMBOL_DEF ("tms_stime", tms_stime);
-    IDIO_SYMBOL_DEF ("tms_cutime", tms_cutime);
-    IDIO_SYMBOL_DEF ("tms_cstime", tms_cstime);
+    struct_fields = idio_S_nil;
+    IDIO_FIELD_DEF ("tms_utime", tms_utime);
+    IDIO_FIELD_DEF ("tms_stime", tms_stime);
+    IDIO_FIELD_DEF ("tms_cutime", tms_cutime);
+    IDIO_FIELD_DEF ("tms_cstime", tms_cstime);
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tms_ref);
-    IDIO_C_STRUCT_IDENT_DEF ("struct tms", libc_struct_tms, fgvi);
+    struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-tms");
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_tms, fgvi);
 
     /* /usr/include/bits/termios-struct.h */
-    IDIO_SYMBOL_DEF ("c_iflag", c_iflag);
-    IDIO_SYMBOL_DEF ("c_oflag", c_oflag);
-    IDIO_SYMBOL_DEF ("c_cflag", c_cflag);
-    IDIO_SYMBOL_DEF ("c_lflag", c_lflag);
-    IDIO_SYMBOL_DEF ("c_line", c_line);
-    IDIO_SYMBOL_DEF ("c_cc", c_cc);
-    IDIO_SYMBOL_DEF ("c_ispeed", c_ispeed);
-    IDIO_SYMBOL_DEF ("c_ospeed", c_ospeed);
+    struct_fields = idio_S_nil;
+    IDIO_FIELD_DEF ("c_iflag", c_iflag);
+    IDIO_FIELD_DEF ("c_oflag", c_oflag);
+    IDIO_FIELD_DEF ("c_cflag", c_cflag);
+    IDIO_FIELD_DEF ("c_lflag", c_lflag);
+    IDIO_FIELD_DEF ("c_line", c_line);
+    IDIO_FIELD_DEF ("c_cc", c_cc);
+    IDIO_FIELD_DEF ("c_ispeed", c_ispeed);
+    IDIO_FIELD_DEF ("c_ospeed", c_ospeed);
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_termios_ref);
-    IDIO_C_STRUCT_IDENT_DEF ("struct termios", libc_struct_termios, fgvi);
+    struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-termios");
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_termios, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_termios_set);
 
     /* /usr/include/bits/types/struct_tm.h */
-    IDIO_SYMBOL_DEF ("tm_sec", tm_sec);
-    IDIO_SYMBOL_DEF ("tm_min", tm_min);
-    IDIO_SYMBOL_DEF ("tm_hour", tm_hour);
-    IDIO_SYMBOL_DEF ("tm_mday", tm_mday);
-    IDIO_SYMBOL_DEF ("tm_mon", tm_mon);
-    IDIO_SYMBOL_DEF ("tm_year", tm_year);
-    IDIO_SYMBOL_DEF ("tm_wday", tm_wday);
-    IDIO_SYMBOL_DEF ("tm_yday", tm_yday);
-    IDIO_SYMBOL_DEF ("tm_isdst", tm_isdst);
+    struct_fields = idio_S_nil;
+    IDIO_FIELD_DEF ("tm_sec", tm_sec);
+    IDIO_FIELD_DEF ("tm_min", tm_min);
+    IDIO_FIELD_DEF ("tm_hour", tm_hour);
+    IDIO_FIELD_DEF ("tm_mday", tm_mday);
+    IDIO_FIELD_DEF ("tm_mon", tm_mon);
+    IDIO_FIELD_DEF ("tm_year", tm_year);
+    IDIO_FIELD_DEF ("tm_wday", tm_wday);
+    IDIO_FIELD_DEF ("tm_yday", tm_yday);
+    IDIO_FIELD_DEF ("tm_isdst", tm_isdst);
 #if defined (__sun) && defined (__SVR4)
 #else
-    IDIO_SYMBOL_DEF ("tm_gmtoff", tm_gmtoff);
-    IDIO_SYMBOL_DEF ("tm_zone", tm_zone);
+    IDIO_FIELD_DEF ("tm_gmtoff", tm_gmtoff);
+    IDIO_FIELD_DEF ("tm_zone", tm_zone);
 #endif
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tm_ref);
-    IDIO_C_STRUCT_IDENT_DEF ("struct tm", libc_struct_tm, fgvi);
+    struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-tm");
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_tm, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tm_set);
 
     /* /usr/include/bits/struct_stat.h */
-    IDIO_SYMBOL_DEF ("st_dev", st_dev);
-    IDIO_SYMBOL_DEF ("st_ino", st_ino);
-    IDIO_SYMBOL_DEF ("st_nlink", st_nlink);
-    IDIO_SYMBOL_DEF ("st_mode", st_mode);
-    IDIO_SYMBOL_DEF ("st_uid", st_uid);
-    IDIO_SYMBOL_DEF ("st_gid", st_gid);
-    IDIO_SYMBOL_DEF ("st_rdev", st_rdev);
-    IDIO_SYMBOL_DEF ("st_size", st_size);
-    IDIO_SYMBOL_DEF ("st_blksize", st_blksize);
-    IDIO_SYMBOL_DEF ("st_blocks", st_blocks);
-    IDIO_SYMBOL_DEF ("st_atim", st_atim);
-    IDIO_SYMBOL_DEF ("st_mtim", st_mtim);
-    IDIO_SYMBOL_DEF ("st_ctim", st_ctim);
+    struct_fields = idio_S_nil;
+    IDIO_FIELD_DEF ("st_dev", st_dev);
+    IDIO_FIELD_DEF ("st_ino", st_ino);
+    IDIO_FIELD_DEF ("st_nlink", st_nlink);
+    IDIO_FIELD_DEF ("st_mode", st_mode);
+    IDIO_FIELD_DEF ("st_uid", st_uid);
+    IDIO_FIELD_DEF ("st_gid", st_gid);
+    IDIO_FIELD_DEF ("st_rdev", st_rdev);
+    IDIO_FIELD_DEF ("st_size", st_size);
+    IDIO_FIELD_DEF ("st_blksize", st_blksize);
+    IDIO_FIELD_DEF ("st_blocks", st_blocks);
+    IDIO_FIELD_DEF ("st_atim", st_atim);
+    IDIO_FIELD_DEF ("st_mtim", st_mtim);
+    IDIO_FIELD_DEF ("st_ctim", st_ctim);
 
     /* specials */
     IDIO_SYMBOL_DEF ("st_atime", st_atime);
+    struct_fields = idio_pair (idio_S_st_atime, struct_fields);
     IDIO_SYMBOL_DEF ("st_mtime", st_mtime);
+    struct_fields = idio_pair (idio_S_st_mtime, struct_fields);
     IDIO_SYMBOL_DEF ("st_ctime", st_ctime);
+    struct_fields = idio_pair (idio_S_st_ctime, struct_fields);
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_stat_ref);
-    IDIO_C_STRUCT_IDENT_DEF ("struct stat", libc_struct_stat, fgvi);
+    struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-stat");
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_stat, fgvi);
 
     /* /usr/include/bits/types/struct_timespec.h */
-    IDIO_SYMBOL_DEF ("tv_sec", tv_sec);
-    IDIO_SYMBOL_DEF ("tv_nsec", tv_nsec);
+    struct_fields = idio_S_nil;
+    IDIO_FIELD_DEF ("tv_sec", tv_sec);
+    IDIO_FIELD_DEF ("tv_nsec", tv_nsec);
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timespec_ref);
-    IDIO_C_STRUCT_IDENT_DEF ("struct timespec", libc_struct_timespec, fgvi);
+    struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-timespec");
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_timespec, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timespec_set);
 
     /* /usr/include/bits/resource.h */
-    IDIO_SYMBOL_DEF ("rlim_cur", rlim_cur);
-    IDIO_SYMBOL_DEF ("rlim_max", rlim_max);
+    struct_fields = idio_S_nil;
+    IDIO_FIELD_DEF ("rlim_cur", rlim_cur);
+    IDIO_FIELD_DEF ("rlim_max", rlim_max);
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rlimit_ref);
-    IDIO_C_STRUCT_IDENT_DEF ("struct rlimit", libc_struct_rlimit, fgvi);
+    struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-rlimit");
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_rlimit, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rlimit_set);
 
     /* /usr/include/bits/types/struct_timeval.h */
+    struct_fields = idio_S_nil;
     /* tv_sec already declared */
-    IDIO_SYMBOL_DEF ("tv_usec", tv_usec);
+    struct_fields = idio_pair (idio_S_tv_sec, struct_fields);
+    IDIO_FIELD_DEF ("tv_usec", tv_usec);
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timeval_ref);
-    IDIO_C_STRUCT_IDENT_DEF ("struct timeval", libc_struct_timeval, fgvi);
+    struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-timeval");
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_timeval, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timeval_set);
 
     /* /usr/include/bits/types/struct_rusage.h */
-    IDIO_SYMBOL_DEF ("ru_utime", ru_utime);
-    IDIO_SYMBOL_DEF ("ru_stime", ru_stime);
+    struct_fields = idio_S_nil;
+    IDIO_FIELD_DEF ("ru_utime", ru_utime);
+    IDIO_FIELD_DEF ("ru_stime", ru_stime);
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rusage_ref);
-    IDIO_C_STRUCT_IDENT_DEF ("struct rusage", libc_struct_rusage, fgvi);
-
+    struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-rusage");
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_rusage, fgvi);
 }

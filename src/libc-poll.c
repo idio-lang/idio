@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1154,7 +1154,8 @@ void idio_init_libc_poll ()
 
     idio_libc_set_poll_names ();
 
-    IDIO_C_STRUCT_IDENT_DEF ("struct idio_libc_poller_s", idio_libc_poller_s, idio_fixnum (0));
+    IDIO struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-idio-libc-poller-s");
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_S_nil, idio_libc_poller_s, idio_fixnum (0));
 }
 
 /* Local Variables: */

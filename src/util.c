@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -3190,8 +3190,9 @@ otherwise index the object `o` by `i`		\n\
 	    case IDIO_TYPE_C_POINTER:
 		{
 		    IDIO t = IDIO_C_TYPE_POINTER_PTYPE (o);
-		    if (idio_S_nil != t) {
-			IDIO cmd = IDIO_LIST3 (IDIO_PAIR_HT (t), o, i);
+		    if (idio_isa_pair (t) &&
+			idio_list_length (t) > 2) {
+			IDIO cmd = IDIO_LIST3 (IDIO_PAIR_HTT (t), o, i);
 
 			IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
 
@@ -3253,7 +3254,8 @@ set value of the object `o` indexed by `i` to `v`	\n\
 	    case IDIO_TYPE_C_POINTER:
 		{
 		    IDIO t = IDIO_C_TYPE_POINTER_PTYPE (o);
-		    if (idio_S_nil != t) {
+		    if (idio_isa_pair (t) &&
+			idio_list_length (t) > 2) {
 			/*
 			 * We want: (setter ref) o i v
 			 *
@@ -3262,7 +3264,7 @@ set value of the object `o` indexed by `i` to `v`	\n\
 			IDIO setter_cmd = IDIO_LIST2 (idio_module_symbol_value (idio_S_setter,
 										idio_Idio_module,
 										idio_S_nil),
-						      IDIO_PAIR_HT (t));
+						      IDIO_PAIR_HTT (t));
 
 			IDIO setter_r = idio_vm_invoke_C (idio_thread_current_thread (), setter_cmd);
 
