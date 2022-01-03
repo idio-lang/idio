@@ -5695,8 +5695,11 @@ void idio_init_libc_api ()
     IDIO_FIELD_DEF ("c_lflag", c_lflag);
     IDIO_FIELD_DEF ("c_line", c_line);
     IDIO_FIELD_DEF ("c_cc", c_cc);
+#if defined (__sun) && defined (__SVR4)
+#else
     IDIO_FIELD_DEF ("c_ispeed", c_ispeed);
     IDIO_FIELD_DEF ("c_ospeed", c_ospeed);
+#endif
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_termios_ref);
     struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-termios");
