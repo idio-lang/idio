@@ -65,10 +65,15 @@ define-template (help x) {
        display* "fields" (struct-type-fields $x)
      })
      ((struct-instance? $x) {
-       display* "struct-instance:" '$x "\n"
+       display* "struct-instance:" '$x
        t := (struct-instance-type $x)
-       display* "struct-type:" (struct-type-name t) "\n"
-       display* "fields" (struct-type-fields t)
+       display* "struct-type:" (struct-type-name t)
+       display* "fields:" (struct-type-fields t)
+     })
+     ((C/pointer? $x) {
+       display* "C/pointer:" '$x
+       display* "C struct type:" (C/pointer-name $x)
+       display* "C struct members:" (C/pointer-members $x)
      })
      ((dynamic? '$x) {
        display* "dynamic:" '$x
