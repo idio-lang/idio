@@ -40,6 +40,10 @@ the following arguments:
 :samp:`{body}` can invoke the function ``exp-continue`` to loop around
 again otherwise the result of :samp:`{body}` is returned.
 
+Passing no clauses will still attempt to match using any existing
+clauses from :ref:`exp-case-before <expect/exp-case-before>` or
+:ref:`exp-case-after <expect/exp-case-after>`.
+
 .. note::
 
    All (supported) operating systems can use :manpage:`poll(2)`.

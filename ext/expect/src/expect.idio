@@ -24,14 +24,18 @@ export (
 	 spawn-id
 	 exp-timeout
 	 exp-match-max
-	 exp-before
-	 exp-after
+	 exp-match-before
+	 exp-match
+	 exp-match-after
+	 exp-match-all
 	 exp-slow
 	 exp-human
 	 exp-log
 	 exp-log-user
 	 exp-log-file
+	 exp-case-before
 	 exp-case
+	 exp-case-after
 	 exp-send
 	 exp-close
 	 exp-wait
@@ -71,11 +75,12 @@ and the remaining attributes initialised to ``#f``.
   }
 }
 
-spawn-id      :~ #f
-exp-timeout   :~ -1
-exp-match-max :~ 2000
-exp-before    :~ #n
-exp-after     :~ #n
+spawn-id         :~ #f
+exp-timeout      :~ -1
+exp-match-max    :~ 2000
+exp-match-before :~ #f
+exp-match        :~ #f
+exp-match-after  :~ #f
 
 #*
 
@@ -302,16 +307,16 @@ where test can be
 
 ******************************
 
-What we want is to do is three things:
+What we want to do is, broadly, three things:
 
 1. define a set of regcomps
 
-  $e-a := make-array 5
-  array-set! $e-a 0 (apply regcomp str1 flags1)
-  array-set! $e-a 1 (apply regcomp str2 flags2)
+  $e-r := make-array 5
+  array-set! $e-r 0 (apply regcomp str1 flags1)
+  array-set! $e-r 1 (apply regcomp str2 flags2)
   ...
-  array-set! $e-a 4 :eof
-  array-set! $e-a 5 :timeout
+  array-set! $e-r 4 :eof
+  array-set! $e-r 5 :timeout
 
   where the keywords act as non-regcomp toggles
 
@@ -321,9 +326,9 @@ What we want is to do is three things:
    is the array result from regexec and prefix is the buffer up to
    r.0:
 
-  define ($exp-match spawn-id) {
+  define (exp-match spawn-id) {
     (cond
-     ((regexec (array-ref $e-a 0) (struct-spawn-buffer spawn-id) 'REG_VERBOSE)
+     ((regexec (array-ref $e-r 0) (struct-spawn-buffer spawn-id) 'REG_VERBOSE)
       => (function (r) {
 	set-struct-spawn-matched! spawn-id #t
 	r0 := r.0
@@ -334,7 +339,7 @@ What we want is to do is three things:
 	  ...
 	}) spawn-id r prefix)
       }))
-     ((regexec (array-ref $e-a 1) (struct-spawn-buffer spawn-id) 'REG_VERBOSE)
+     ((regexec (array-ref $e-r 1) (struct-spawn-buffer spawn-id) 'REG_VERBOSE)
       => (function (r) {
 	set-struct-spawn-matched! spawn-id #t
 	r0 := r.0
@@ -361,100 +366,176 @@ What we want is to do is three things:
   }
 
 3. define the exp-continue loop (in the scope of the user's body
-   forms) where we run $exp-match against the existing buffer contents
+   forms) where we run exp-match against the existing buffer contents
    and if not then poller-poll for more data
+
+This is all complicated because our {str} could actually be an
+expression (usually a variable but could be anything), in which case
+we want to delay the regcomp/string processing until we're in the
+match loop
+
+    ***
+
+exp-before and exp-after behaviour can't be done as simply as in
+expect(1) as Expect evals the behaviour "strings" whereas we need to
+manage them through a template which means we need to see them in the
+evaluator.  In addition, it would be nice if we could use some dynamic
+scope.
+
+Part of the problem, here, is that exp-case, a template, being
+processed by the evaluator can't see any dynamic changes of
+exp-before/exp-after variables.
+
+The, not terrible, fix is to define exp-case-before and exp-case-after
+templates which do the same clause manipulation as exp-case where the
+template expands to the assignment to the exp-match-before and
+exp-match-after functions (with a simple assignment if no clauses are
+passed).
+
+exp-case, itself, can assign to exp-match then call exp-match-before,
+exp-match and exp-match after at the appropriate points.
 
 *#
 
-define-template (exp-case & clauses) {
+define (process-args exp-regcomps i re-kind re-flags a*) {
+  (cond
+   ((null? a*)
+    (error/type ^rt-syntax-error 'exp-case "invalid syntax: no string/body" re-kind re-flags))
+   ((not (pair? a*))
+    (error/type ^rt-syntax-error 'exp-case "invalid syntax: no string/body" re-kind re-flags a*))
+   (else {
+     (case (ph a*)
+      ((:eof) {
+	list (ph a*) #T{
+	  ((struct-spawn-eof spawn-id) => (function (r) {
+	    set-struct-spawn-matched! spawn-id #t
+	    ((function (spawn-id)
+	     $@(pt a*)) spawn-id)
+	  }))
+	}
+      })
+      ((:timeout) {
+	list (ph a*) #T{
+	  ((struct-spawn-timeout spawn-id) => (function (r) {
+	    set-struct-spawn-matched! spawn-id #t
+	    ((function (spawn-id)
+	     $@(pt a*)) spawn-id)
+	  }))
+	}
+      })
+      ((:all) {
+	list (ph a*) #T{
+	  ((struct-spawn-eof spawn-id) => (function (r) {
+	    set-struct-spawn-matched! spawn-id #t
+	    r0 := list (struct-spawn-buffer spawn-id) 0 (string-length (struct-spawn-buffer spawn-id))
+	    set-struct-spawn-buffer! spawn-id ""
+	    ((function (spawn-id r prefix)
+	     $@(pt a*)) spawn-id (list->array (list r0)) "")
+	  }))
+	}
+      })
+      ((:re :gl :ex) {
+	process-args exp-regcomps i (ph a*) re-flags (pt a*)
+      })
+      ((:icase) {
+	process-args exp-regcomps i re-kind 'REG_ICASE (pt a*)
+      })
+      (else {
+	body := #T{
+	  ((regexec (array-ref $exp-regcomps $i) (struct-spawn-buffer spawn-id) 'REG_VERBOSE)
+	   => (function (r) {
+	     set-struct-spawn-matched! spawn-id #t
+	     r0 := r.0
+	     prefix := substring (struct-spawn-buffer spawn-id) 0 r0.2
+	     set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) r0.3)
 
-  ;; #[ <regcomp> ]
-  exp-regcomps := gensym 'e-r
-
-  define (process-args re-kind re-flags a*) {
-    (cond
-     ((null? a*)
-      (error/type ^rt-syntax-error 'exp-case "invalid syntax: no string/body" re-kind re-flags))
-     ((not (pair? a*))
-      (error/type ^rt-syntax-error 'exp-case "invalid syntax: no string/body" re-kind re-flags a*))
-     (else {
-       (case (ph a*)
-	((:eof :timeout :all) {
-	  list (ph a*) (pt a*)
-	})
-	((:re :gl :ex) {
-	  process-args (ph a*) re-flags (pt a*)
-	})
-	((:icase) {
-	  process-args re-kind 'REG_ICASE (pt a*)
-	})
-	(else {
-	  (cond
-	   ((string? (ph a*)) {
-	     (cond
-	      ((eq? :gl re-kind) {
-		list (list (regex-pattern-string (ph a*)) re-flags) (pt a*)
-	      })
-	      ((eq? :ex re-kind) {
-		list (list (regex-exact-string (ph a*)) re-flags) (pt a*)
-	      })
-	      ((eq? :re re-kind) {
-		list (list (ph a*) re-flags) (pt a*)
-	      }))
-	   })
-	   (else {
-	     (cond
-	      ((eq? :gl re-kind) {
-		#T{
-		  (((regex-pattern-string $(ph a*)) $re-flags) $(pt a*))
-		}
-	      })
-	      ((eq? :ex re-kind) {
-		#T{
-		  (((regex-exact-string $(ph a*)) $re-flags) $(pt a*))
-		}
-	      })
-	      ((eq? :re re-kind) {
-		#T{
-		  (($(ph a*) $re-flags) $(pt a*))
-		}
-	      }))
+	     ((function (spawn-id r prefix)
+	      $@(pt a*)) spawn-id r prefix)
 	   }))
-	}))
-     }))
+	}
+
+	(cond
+	 ((string? (ph a*)) {
+	   (cond
+	    ((eq? :gl re-kind) {
+	      list (list (regex-pattern-string (ph a*)) re-flags) body
+	    })
+	    ((eq? :ex re-kind) {
+	      list (list (regex-exact-string (ph a*)) re-flags) body
+	    })
+	    ((eq? :re re-kind) {
+	      list (list (ph a*) re-flags) body
+	    }))
+	 })
+	 (else {
+	   (cond
+	    ((eq? :gl re-kind) {
+	      #T{
+		(((regex-pattern-string $(ph a*)) $re-flags) $body)
+	      }
+	    })
+	    ((eq? :ex re-kind) {
+	      #T{
+		(((regex-exact-string $(ph a*)) $re-flags) $body)
+	      }
+	    })
+	    ((eq? :re re-kind) {
+	      #T{
+		(($(ph a*) $re-flags) $body)
+	      }
+	    }))
+	 }))
+      }))
+   }))
+}
+
+define (process-clauses c* exp-regcomps i ri* rk* rb*) {
+  (cond
+   ((null? c*) (list (reverse ri*) (reverse rk*) (reverse rb*)))
+   ((or (not (pair? c*))
+	(not (pair? (ph c*)))
+	(not (pair? (pth c*)))) (error/type ^rt-syntax-error 'exp-case "invalid syntax" c*))
+   (else {
+     ;; key body
+     kb := process-args exp-regcomps i :gl #n (ph c*)
+     process-clauses (pt c*) exp-regcomps (i + 1) (pair i ri*) (pair (ph kb) rk*) (pair (pht kb) rb*)
+   }))
+
+}
+
+define (exp-match-all spawn-id) {
+  r := (void)
+  if (function? exp-match-before) {
+    r = exp-match-before spawn-id
+  }
+  if (and (not (struct-spawn-matched spawn-id))
+	  (function? exp-match)) {
+    r = exp-match spawn-id
+  }
+  if (and (not (struct-spawn-matched spawn-id))
+	  (function? exp-match-after)) {
+    r = exp-match-after spawn-id
   }
 
-  define (process-clauses c* i i* k* b*) {
-    (cond
-     ((null? c*) (list (reverse i*) (reverse k*) (reverse b*)))
-     ((or (not (pair? c*))
-	  (not (pair? (ph c*)))
-	  (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'exp-case "invalid syntax" c*))
-     (else {
-       ;; key body
-       kb := process-args :gl #n (ph c*)
-       process-clauses (pt c*) (i + 1) (pair i i*) (pair (ph kb) k*) (pair (pht kb) b*)
-     }))
+  r
+}
 
-  }
+define-template (exp-case-before & clauses) {
 
-  ;; before-clauses-after
-  bca := clauses
-  if (pair? exp-after) {
-    bca = append clauses exp-after
-  }
-  if (pair? exp-before) {
-    bca = append exp-before bca
-  }
+  if (null? clauses) {
+    #T{
+      exp-match-before :~ #f
+    }
+  } {
+    ;; #[ <regcomp> ]
+    exp-regcomps := gensym 'e-r
 
-  ;; index key body
-  ikb := process-clauses bca 0 #n #n #n
+    ;; index key body
+    ikb := process-clauses clauses exp-regcomps 0 #n #n #n
 
-  n := length bca
-  exp-match := gensym 'e-m
+    n := length clauses
 
-  #T{
-    {
+    #T{
       $exp-regcomps := make-array $n
       $@(map (function (i t) {
 	;; t is kw|(str flags)
@@ -470,214 +551,271 @@ define-template (exp-case & clauses) {
 	   }
 	 }))
       }) (ph ikb) (pht ikb))
-      
-      exp-continue := #f
 
-      define ($exp-match spawn-id) {
+      exp-match-before :~ function (spawn-id) {
 	(cond
-	 $@(map (function (i k b) {
-	   (case k
-	    ((:eof) {
-	      #T{
-		((struct-spawn-eof spawn-id) => (function (r) {
-		  set-struct-spawn-matched! spawn-id #t
-		  ((function (spawn-id)
-		   $@b) spawn-id)
-		}))
-	      }
-	    })
-	    ((:timeout) {
-	      #T{
-		((struct-spawn-timeout spawn-id) => (function (r) {
-		  set-struct-spawn-matched! spawn-id #t
-		  ((function (spawn-id)
-		   $@b) spawn-id)
-		}))
-	      }
-	    })
-	    ((:all) {
-	      #T{
-		((struct-spawn-eof spawn-id) => (function (r) {
-		  set-struct-spawn-matched! spawn-id #t
-		  r0 := list (struct-spawn-buffer spawn-id) 0 (string-length (struct-spawn-buffer spawn-id))
-		  set-struct-spawn-buffer! spawn-id ""
-		  ((function (spawn-id r prefix)
-		   $@b) spawn-id (list->array (list r0)) "")
-		}))
-	      }
+	 $@(map (function (b) {
+	   #T{
+	     ($@b)
+	   }
+
+	 }) (phtt ikb)))
+      }
+
+    }
+  }
+}
+
+define-template (exp-case-after & clauses) {
+
+  if (null? clauses) {
+    #T{
+      exp-match-after :~ #f
+    }
+  } {
+    ;; #[ <regcomp> ]
+    exp-regcomps := gensym 'e-r
+
+    ;; index key body
+    ikb := process-clauses clauses exp-regcomps 0 #n #n #n
+
+    n := length clauses
+
+    #T{
+      $exp-regcomps := make-array $n
+      $@(map (function (i t) {
+	;; t is kw|(str flags)
+	(cond
+	 ((keyword? t) {
+	   #T{
+	     array-set! $exp-regcomps $i $t
+	   }
+	 })
+	 (else {
+	   #T{
+	     array-set! $exp-regcomps $i (apply regcomp $(ph t) $(pht t))
+	   }
+	 }))
+      }) (ph ikb) (pht ikb))
+
+      exp-match-after :~ function (spawn-id) {
+	(cond
+	 $@(map (function (b) {
+	   #T{
+	     ($@b)
+	   }
+
+	 }) (phtt ikb)))
+      }
+
+    }
+  }
+}
+
+define-template (exp-case & clauses) {
+  ;; #[ <regcomp> ]
+  exp-regcomps := gensym 'e-r
+
+  ;; index key body
+  ikb := process-clauses clauses exp-regcomps 0 #n #n #n
+
+  n := length clauses
+
+  #T{
+    ;; put exp-continue in scope of the behaviour clauses
+    exp-continue := #f
+
+    ;; exp-case needs to behave slightly differently in the face of no
+    ;; clauses as there could be exp-case-before and/or exp-case-after
+    ;; clauses to process
+    $(if (n gt 0) {
+      #T{
+	$exp-regcomps := make-array $n
+	$@(map (function (i t) {
+	  ;; t is kw|(str flags)
+	  (cond
+	   ((keyword? t) {
+	     #T{
+	       array-set! $exp-regcomps $i $t
+	     }
+	   })
+	   (else {
+	     #T{
+	       array-set! $exp-regcomps $i (apply regcomp $(ph t) $(pht t))
+	     }
+	   }))
+	}) (ph ikb) (pht ikb))
+	
+	exp-match = function (spawn-id) {
+	  (cond
+	   $@(map (function (b) {
+	     #T{
+	       ($@b)
+	     }
+
+	   }) (phtt ikb)))
+	}
+      }
+    } {
+      #T{
+	exp-match = #f
+      }
+    })
+
+    (cond-expand
+     (IDIO_CAN_POLL_DEVICE {
+       ;; normalize the poll-timeout noting that Mac OS X says poll
+       ;; doesn't like a timeout less than -1
+       poll-timeout := (cond
+			((exp-timeout gt 0) (exp-timeout * 1000))
+			((exp-timeout lt 0) -1)
+			(else               0))
+
+       exp-continue = function #n {
+	 ; reset all flags (otherwise if you match a timeout and then
+	 ; exp-continue you'll loop matching timeout)
+	 set-struct-spawn-timeout! spawn-id #f
+	 set-struct-spawn-eof! spawn-id #f
+	 set-struct-spawn-matched! spawn-id #f
+
+	 ;; search existing buffer
+	 r := expect/exp-match-all spawn-id
+
+	 if (not (struct-spawn-matched spawn-id)) {
+	   set-struct-spawn-timeout! spawn-id #f
+	   set-struct-spawn-eof! spawn-id #f
+
+	   mfd := struct-spawn-mfd spawn-id
+	   poller := libc/make-poller (list mfd libc/POLLIN)
+
+	   poll-results := libc/poller-poll poller poll-timeout
+
+	   (cond
+	    ((null? poll-results) {
+	      set-struct-spawn-timeout! spawn-id #t
+	      expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll: timeout\n" (struct-spawn-argv spawn-id))
 	    })
 	    (else {
-	      #T{
-		((regexec (array-ref $exp-regcomps $i) (struct-spawn-buffer spawn-id) 'REG_VERBOSE)
-		 => (function (r) {
-		   set-struct-spawn-matched! spawn-id #t
-		   r0 := r.0
-		   prefix := substring (struct-spawn-buffer spawn-id) 0 r0.2
-		   set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) r0.3)
-
-		   ((function (spawn-id r prefix)
-		    $@b) spawn-id r prefix)
+	      for p-r in poll-results {
+		poll-fd := ph p-r
+		poll-revents := pht p-r
+		(cond
+		 ((libc/POLLIN? poll-revents) {
+		   data := libc/read poll-fd 1024
+		   if data {
+		     if (eof-object? data) {
+		       libc/poller-deregister poller poll-fd
+		       set-struct-spawn-eof! spawn-id #t
+		       expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (fd=%d): POLLIN EOF\n" (struct-spawn-argv spawn-id) poll-fd)
+		     } {
+		       set-struct-spawn-buffer! spawn-id (append-string (struct-spawn-buffer spawn-id) data)
+		       expect/exp-log spawn-id #t data
+		     }
+		   }
+		 })
+		 ((libc/POLLHUP? poll-revents) {
+		   libc/poller-deregister poller poll-fd
+		   set-struct-spawn-eof! spawn-id #t
+		   expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (fd=%d): POLLHUP EOF\n" (struct-spawn-argv spawn-id) poll-fd)
+		 })
+		 ((libc/POLLERR? poll-revents) {
+		   libc/poller-deregister poller poll-fd
+		   set-struct-spawn-eof! spawn-id #t
+		   expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (fd=%d): POLLERR EOF\n" (struct-spawn-argv spawn-id) poll-fd)
+		 })
+		 ((libc/POLLNVAL? poll-revents) {
+		   libc/poller-deregister poller poll-fd
+		   set-struct-spawn-eof! spawn-id #t
+		   expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (fd=%d): invalid request\n" (struct-spawn-argv spawn-id) poll-fd)
 		 }))
 	      }
 	    }))
-	 }) (ph ikb) (pht ikb) (phtt ikb)))
-      }
 
-      (cond-expand
-       (IDIO_CAN_POLL_DEVICE {
-	 ;; normalize the poll-timeout noting that Mac OS X says poll
-	 ;; doesn't like a timeout less than -1
-	 poll-timeout := (cond
-			  ((exp-timeout gt 0) (exp-timeout * 1000))
-			  ((exp-timeout lt 0) -1)
+	   ;; search buffer + new data
+	   r = expect/exp-match-all spawn-id
+
+	   if (not (struct-spawn-matched spawn-id)) {
+	     if ((string-length (struct-spawn-buffer spawn-id)) gt exp-match-max) {
+	       set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) (- exp-match-max))
+	     }
+	     (exp-continue)
+	   } r
+	 } r
+       }
+
+       (exp-continue)
+     })
+     (else {
+       ;; Mac OS 10.5.8 does have poll(2) but it reports POLLNVAL
+       ;; for (pseudo-terminal) devices.  It does mention devices in
+       ;; the BUGS section in the man page.
+
+       ;; Of interest, Mac OS 10.15.7 also has the same BUGS section
+       ;; but does work for (pseudo-terminal) devices.
+
+       ;; In the meanwhile, and for anything else in the same boat,
+       ;; we'll fall back to select with attendant issues.
+
+       ;; normalize the select-timeout
+       select-timeout := (cond
+			  ((exp-timeout gt 0) (exp-timeout * 1000000))
+			  ((exp-timeout lt 0) #n)
 			  (else               0))
 
-	 exp-continue = function #n {
-	   ; reset all flags (otherwise if you match a timeout and then
-	   ; exp-continue you'll loop matching timeout)
+       exp-continue = function #n {
+	 ; reset all flags (otherwise if you match a timeout and then
+	 ; exp-continue you'll loop matching timeout)
+	 set-struct-spawn-timeout! spawn-id #f
+	 set-struct-spawn-eof! spawn-id #f
+	 set-struct-spawn-matched! spawn-id #f
+
+	 ;; search existing buffer
+	 r := expect/exp-match-all spawn-id
+
+	 if (not (struct-spawn-matched spawn-id)) {
 	   set-struct-spawn-timeout! spawn-id #f
 	   set-struct-spawn-eof! spawn-id #f
-	   set-struct-spawn-matched! spawn-id #f
 
-	   ;; search existing buffer
-	   $exp-match spawn-id
+	   mfd := struct-spawn-mfd spawn-id
 
-	   if (not (struct-spawn-matched spawn-id)) {
-	     set-struct-spawn-timeout! spawn-id #f
-	     set-struct-spawn-eof! spawn-id #f
+	   select-results := libc/select (list mfd) #n #n select-timeout
+	   rlist := ph select-results
 
-	     mfd := struct-spawn-mfd spawn-id
-	     poller := libc/make-poller (list mfd libc/POLLIN)
-
-	     poll-results := libc/poller-poll poller poll-timeout
-
-	     (cond
-	      ((null? poll-results) {
-		set-struct-spawn-timeout! spawn-id #t
-		expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll: timeout\n" (struct-spawn-argv spawn-id))
-	      })
-	      (else {
-		for p-r in poll-results {
-		  poll-fd := ph p-r
-		  poll-revents := pht p-r
-		  (cond
-		   ((libc/POLLIN? poll-revents) {
-		     data := libc/read poll-fd 1024
-		     if data {
-		       if (eof-object? data) {
-			 libc/poller-deregister poller poll-fd
-			 set-struct-spawn-eof! spawn-id #t
-			 expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (%d): POLLIN EOF\n" (struct-spawn-argv spawn-id) poll-fd)
-		       } {
-			 set-struct-spawn-buffer! spawn-id (append-string (struct-spawn-buffer spawn-id) data)
-			 expect/exp-log spawn-id #t data
-		       }
-		     }
-		   })
-		   ((libc/POLLHUP? poll-revents) {
-		     libc/poller-deregister poller poll-fd
-		     set-struct-spawn-eof! spawn-id #t
-		     expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (%d): POLLHUP EOF\n" (struct-spawn-argv spawn-id) poll-fd)
-		   })
-		   ((libc/POLLERR? poll-revents) {
-		     libc/poller-deregister poller poll-fd
-		     set-struct-spawn-eof! spawn-id #t
-		     expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (%d): POLLERR EOF\n" (struct-spawn-argv spawn-id) poll-fd)
-		   })
-		   ((libc/POLLNVAL? poll-revents) {
-		     libc/poller-deregister poller poll-fd
-		     set-struct-spawn-eof! spawn-id #t
-		     expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (%d): invalid request\n" (struct-spawn-argv spawn-id) poll-fd)
-		   }))
-		}
-	      }))
-
-	     ;; search buffer + new data
-	     $exp-match spawn-id
-
-	     if (not (struct-spawn-matched spawn-id)) {
-	       if ((string-length (struct-spawn-buffer spawn-id)) gt exp-match-max) {
-		 set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) (- exp-match-max))
-	       }
-	       (exp-continue)
-	     }
-	   }
-	 }
-
-	 (exp-continue)
-       })
-       (else {
-	 ;; Mac OS 10.5.8 does have poll(2) but it reports POLLNVAL
-	 ;; for (pseudo-terminal) devices.  It does mention devices in
-	 ;; the BUGS section in the man page.
-
-	 ;; Of interest, Mac OS 10.15.7 also has the same BUGS section
-	 ;; but does work for (pseudo-terminal) devices.
-
-	 ;; In the meanwhile, and for anything else in the same boat,
-	 ;; we'll fall back to select with attendant issues.
-
-	 ;; normalize the select-timeout
-	 select-timeout := (cond
-			    ((exp-timeout gt 0) (exp-timeout * 1000000))
-			    ((exp-timeout lt 0) #n)
-			    (else               0))
-
-	 exp-continue = function #n {
-	   ; reset all flags (otherwise if you match a timeout and then
-	   ; exp-continue you'll loop matching timeout)
-	   set-struct-spawn-timeout! spawn-id #f
-	   set-struct-spawn-eof! spawn-id #f
-	   set-struct-spawn-matched! spawn-id #f
-
-	   ;; search existing buffer
-	   $exp-match spawn-id
-
-	   if (not (struct-spawn-matched spawn-id)) {
-	     set-struct-spawn-timeout! spawn-id #f
-	     set-struct-spawn-eof! spawn-id #f
-
-	     mfd := struct-spawn-mfd spawn-id
-
-	     select-results := libc/select (list mfd) #n #n select-timeout
-	     rlist := ph select-results
-
-	     (cond
-	      ((null? rlist) {
-		set-struct-spawn-timeout! spawn-id #t
-		expect/exp-log spawn-id #t (sprintf "exp-case: %@: select (%d): timeout\n" (struct-spawn-argv spawn-id) mfd)
-	      })
-	      (else {
-		;; we know it is mfd but let's go through the motions
-		for fd in rlist {
-		  data := libc/read fd 1024
-		  if data {
-		    if (eof-object? data) {
-		      set-struct-spawn-eof! spawn-id #t
-		      expect/exp-log spawn-id #t (sprintf "exp-case: %@: select (%d): EOF\n" (struct-spawn-argv spawn-id) fd)
-		    } {
-		      set-struct-spawn-buffer! spawn-id (append-string (struct-spawn-buffer spawn-id) data)
-		      expect/exp-log spawn-id #t data
-		    }
+	   (cond
+	    ((null? rlist) {
+	      set-struct-spawn-timeout! spawn-id #t
+	      expect/exp-log spawn-id #t (sprintf "exp-case: %@: select (fd=%d): timeout\n" (struct-spawn-argv spawn-id) mfd)
+	    })
+	    (else {
+	      ;; we know it is mfd but let's go through the motions
+	      for fd in rlist {
+		data := libc/read fd 1024
+		if data {
+		  if (eof-object? data) {
+		    set-struct-spawn-eof! spawn-id #t
+		    expect/exp-log spawn-id #t (sprintf "exp-case: %@: select (fd=%d): EOF\n" (struct-spawn-argv spawn-id) fd)
+		  } {
+		    set-struct-spawn-buffer! spawn-id (append-string (struct-spawn-buffer spawn-id) data)
+		    expect/exp-log spawn-id #t data
 		  }
 		}
-	      }))
+	      }
+	    }))
 
-	     ;; search buffer + new data
-	     $exp-match spawn-id
+	   ;; search buffer + new data
+	   r = expect/exp-match-all spawn-id
 
-	     if (not (struct-spawn-matched spawn-id)) {
-	       if ((string-length (struct-spawn-buffer spawn-id)) gt exp-match-max) {
-		 set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) (- exp-match-max))
-	       }
-	       (exp-continue)
+	   if (not (struct-spawn-matched spawn-id)) {
+	     if ((string-length (struct-spawn-buffer spawn-id)) gt exp-match-max) {
+	       set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) (- exp-match-max))
 	     }
-	   }
-	 }
+	     (exp-continue)
+	   } r
+	 } r
+       }
 
-	 (exp-continue)
-       }))
-    }
+       (exp-continue)
+     }))
   }
 }
 

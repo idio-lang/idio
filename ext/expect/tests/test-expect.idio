@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -38,43 +38,34 @@ spawn auto-exit
 
 (exp-wait)
 
-;; EOF in exp-before
-exp-before = '((:eof {
-  test #t #t
-}))
+;; EOF in exp-case-before
+(exp-case-before
+ (:eof {
+   test #t #t
+ }))
 
 spawn auto-exit
 
-;; NB needs at least one clause
-(exp-case
- ("foo" {
-   ;; shouldn't get here
-   test "unexpected exp-before test clause" #t
- }))
+(exp-case)
 
 (exp-wait)
 
-exp-before = #n
+(exp-case-before)
 
-;; EOF in exp-after
-exp-after = '((:eof {
-  test #t #t
-}))
+;; EOF in exp-case-after
+(exp-case-after
+ (:eof {
+   test #t #t
+ }))
 
 spawn auto-exit
 
-;; NB needs at least one clause
-(exp-case
- ("foo" {
-   ;; shouldn't get here
-   test "unexpected exp-after test clause" #t
- }))
+(exp-case)
 
 (exp-wait)
 
-;; XXX leave :eof in exp-after for a "free" test when the spawned
-;; process exits -- assuming we cann exp-continue
-;exp-after = #n
+;; XXX leave :eof in exp-case-after for a "free" test when the spawned
+;; process exits -- assuming we can exp-continue
 
 ;; read from program
 spawn auto-exit -o 1
@@ -104,9 +95,9 @@ spawn auto-exit -o 2 -s 2
 exp-timeout = 1
 
 ;; XXX there is a race condition here in that it is possible to get
-;; two :timeout alerts waiting for the program to output lines.  We
-;; can work around this by stopping after the first :timeout and
-;; reverting to the more common timeout of 10s.
+;; two 1s :timeout matches waiting for the program to output lines 2s
+;; apart.  We can work around this by stopping after the first
+;; :timeout and reverting to the more common timeout of 10s.
 
 ;; Nobody said this would be Art.
 
@@ -165,8 +156,83 @@ exp-send "hello world" :human #t :cr #t
 
 (exp-wait)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; exp-case return value
+
+spawn auto-exit -o 10
+
+(exp-case-before
+ ("wrote" 'match-before))
+
+(exp-case-after
+ ("wrote" 'match-after)
+ (:eof {
+   test #t #t
+ }))
+
+test (exp-case
+      ("wrote" 'match-case)) 'match-before
+
+(exp-case-before)
+
+test (exp-case
+      ("wrote" 'match-case)) 'match-case
+
+test (exp-case) 'match-after
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; dynamic scope before and after tests
+;;
+;; same before and after at the top-level
+
+(exp-case-before
+ ("wrote" 'match-before))
+
+(exp-case-after
+ ("wrote" 'match-after)
+ (:eof {
+   test #t #t
+ }))
+
+{
+  ;; new before and after on the inside
+  (exp-case-before
+   ("wrote" 'match-inside-before))
+
+  (exp-case-after
+   ("wrote" 'match-inside-after)
+   (:eof {
+     test #t #t
+   }))
+
+  test (exp-case
+	("wrote" 'match-case)) 'match-inside-before
+
+  (exp-case-before)
+
+  test (exp-case
+	("wrote" 'match-case)) 'match-case
+
+  test (exp-case) 'match-inside-after
+}
+
+;; check we have reverted to top-level
+test (exp-case
+      ("wrote" 'match-case)) 'match-before
+
+(exp-case-before)
+
+test (exp-case
+      ("wrote" 'match-case)) 'match-case
+
+test (exp-case) 'match-after
+
+(exp-wait)
+
 ;; all done?
-Tests? (expect-0 + 18)
+Tests? (expect-0 + 27)
 
 ;Local Variables:
 ;mode: Idio

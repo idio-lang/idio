@@ -2,6 +2,8 @@
 
 (document expect spawn)
 (document expect exp-case)
+(document expect exp-case-before)
+(document expect exp-case-after)
 (document expect exp-close)
 (document expect exp-log-file)
 (document expect exp-log-user)
@@ -10,4 +12,8 @@
 (document expect exp-wait)
 
 (nodocument expect exp-log)
+(nodocument expect exp-match-before)
+(nodocument expect exp-match)
+(nodocument expect exp-match-after)
+(nodocument expect exp-match-all)
 

@@ -3,8 +3,6 @@
 (document expect spawn-id)
 (document expect exp-timeout)
 (document expect exp-match-max)
-(document expect exp-before)
-(document expect exp-after)
 (document expect exp-slow)
 (document expect exp-human)
 
