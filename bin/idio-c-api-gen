@@ -2,6 +2,22 @@
 
 #*
 
+Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+------------------------------
+
 Generating C API code so that we can make C "calls" from Idio is a
 complex business.  The Idio C code we're looking to create is
 reasonably well structured meaning we should be able to generate much
@@ -313,6 +329,12 @@ for-each (function (d) {
      }
    }))
 }) (split-string IDIOLIB ":")
+
+if (null? ext-dirs) {
+  eprintf "ERROR: %s: no ext subdirectories found wrt IDIOLIB %s?\n" ARGV0 IDIOLIB
+  eprintf "The running %s is %s\n" IDIO_CMD IDIO_EXE
+  exit 1
+}
 
 define (find-ext-dir lib-n) {
   loop :+ function (ed*) {
