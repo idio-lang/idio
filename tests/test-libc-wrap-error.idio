@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -23,6 +23,7 @@ module tests/libc-wrap
 import libc
 
 libc-wrap-error0 := Tests
+libc-wrap-skipped := 0
 
 #*
 
@@ -242,7 +243,7 @@ libc-wrap-error-load "libc-wrap-errors/fstat-bad-fd.idio" strerror-EBADF EBADF "
  ("uname/sysname/SunOS" {
    ;; SunOS won't let you rmdir "." or any equivalent => EINVAL
    eprintf "SunOS: skipping test using rmdir .\n"
-   Tests = Tests + 3
+   libc-wrap-skipped = libc-wrap-skipped + 3
  })
  (else {
    cwd := (getcwd)
@@ -281,14 +282,14 @@ libc-wrap-error-load "libc-wrap-errors/ioctl-unknown-cmd.idio" "ioctl cmd='98765
 libc-wrap-error-load "libc-wrap-errors/isatty-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 (cond-expand
  ("uname/sysname/SunOS" {
-   ;; OpenIndiana oi_151.1.8 returns ENOENT which isn't even listed on the man page
-   libc-wrap-error-load "libc-wrap-errors/isatty-not-tty.idio" "No such file or directory" ENOENT "isatty"
+   ;; these don't set errno in this case
+   libc-wrap-skipped = libc-wrap-skipped + 3
  })
  (else {
    ;; The Linux manpage notes: On some older kernels, some types of files
    ;; resulted in the error EINVAL in this case (which is a violation of
    ;; POSIX, which specifies the error ENOTTY).
-   libc-wrap-error-load "libc-wrap-errors/isatty-not-tty.idio" "Inappropriate ioctl for device" ENOTTY "isatty"
+   libc-wrap-error-load "libc-wrap-errors/isatty-not-tty.idio" "Bad file descriptor" EBADF "isatty"
  }))
 
 libc-wrap-error-load "libc-wrap-errors/kill-bad-pid-type.idio" "bad parameter type: '#t' a constant is not a libc/pid_t"
@@ -317,7 +318,7 @@ libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-format.idio" "mkdtemp: contai
       "uname/sysname/Darwin") {
    ;; SunOS/FreeBSD/Mac OS appear to be considerably more relaxed
    ;; about the template
-   Tests = Tests + 3
+   libc-wrap-skipped = libc-wrap-skipped + 3
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-template.idio" "Invalid argument" EINVAL "mkdtemp"
@@ -335,7 +336,7 @@ libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-format.idio" "mkstemp: contai
       "uname/sysname/Darwin") {
    ;; SunOS/FreeBSD/Mac OS appear to be considerably more relaxed
    ;; about the template
-   Tests = Tests + 3
+   libc-wrap-skipped = libc-wrap-skipped + 3
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-template.idio" "Invalid argument" EINVAL "mkstemp"
@@ -351,7 +352,7 @@ libc-wrap-error-load "libc-wrap-errors/nanosleep-req-sec-bad-type.idio" "bad par
 (cond-expand
  ("uname/sysname/FreeBSD" {
    ;; FreeBSD treats negative seconds as zero?
-   Tests = Tests + 3
+   libc-wrap-skipped = libc-wrap-skipped + 3
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/nanosleep-req-sec-negative.idio" "Invalid argument" EINVAL "nanosleep"
@@ -522,7 +523,7 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
  (virtualisation/WSL {
    ;; WSL doesn't generate an error...
    eprintf "WSL: skipping GID assignment test\n"
-   Tests = Tests + 3
+   libc-wrap-skipped = libc-wrap-skipped + 3
  })
  ((or "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"
@@ -541,7 +542,7 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
  (virtualisation/WSL {
    ;; WSL doesn't generate an error...
    eprintf "WSL: skipping UID assignment test\n"
-   Tests = Tests + 3
+   libc-wrap-skipped = libc-wrap-skipped + 3
  })
  ((or "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"
@@ -605,4 +606,5 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-type.idio" "bad parameter type: '#t
 libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII NUL"
 
 ;; all done?
-Tests? (libc-wrap-error0 + 340)
+Skipped = Skipped + libc-wrap-skipped
+Tests? (libc-wrap-error0 + 340 - libc-wrap-skipped)

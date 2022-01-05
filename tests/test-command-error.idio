@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -23,6 +23,7 @@ module tests/command-error
 import job-control libc
 
 command-error0 := Tests
+command-skipped := 0
 
 #*
 
@@ -155,7 +156,7 @@ command-parent-error-load "command-errors/PATH-format.idio" "find-exe 'PATH' con
  ("uname/sysname/SunOS" {
    ;; SunOS won't let you rmdir "." or any equivalent => EINVAL
    eprintf "SunOS: skipping test using rmdir .\n"
-   Tests = Tests + 2
+   command-skipped = command-skipped + 2
  })
  (else {
    cwd := (getcwd)
@@ -203,4 +204,5 @@ PATH = OPATH
 (wait)
 
 ;; all done?
-Tests? (command-error0 + 24)
+Skipped = Skipped + command-skipped
+Tests? (command-error0 + 24 - command-skipped)

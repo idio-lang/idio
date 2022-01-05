@@ -2,8 +2,7 @@
 module tests/libc-wrap
 import libc
 
-fd+name := mkstemp "XXXXXX"
-delete-file (pht fd+name)
+;; EBADF
+isatty (C/integer-> nofiles_lim)
 
-;; ENOTTY
-isatty (ph fd+name)
+;; NB nofiles_lim was defined in test.idio

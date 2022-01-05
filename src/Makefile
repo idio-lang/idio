@@ -117,7 +117,7 @@ else ifeq ($(OS),FreeBSD)
 endif
 
 edit-clean :
-	rm -f $(BINDIR)/*~ $(SRCDIR)/*~ $(SRCDIR)/build-bootstrap/*~ $(LIBDIR)/*~ $(TESTSDIR)/*~ $(TESTSDIR)/*/*~ $(EXTDIR)/*/src/*~ $(UTILSDIR)/*~ $(UTILSDIR)/*/*~
+	rm -f $(shell find $(TOPDIR) -name \*~)
 
 dist-clean : clean clean-local-install
 	rm -f $(SRCDIR)/libc-api.h

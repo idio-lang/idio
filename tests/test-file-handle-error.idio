@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -20,6 +20,7 @@
 ;;
 
 file-handle-error0 := Tests
+file-handle-skipped := 0
 
 file-handle-error-load := {
   n := 0
@@ -238,7 +239,7 @@ file-handle-error-load "file-handle-errors/find-lib-bad-type.idio" "bad paramete
  ("uname/sysname/SunOS" {
    ;; SunOS won't let you rmdir "." or any equivalent => EINVAL
    eprintf "SunOS: skipping test using rmdir .\n"
-   Tests = Tests + 2
+   file-handle-skipped = file-handle-skipped + 2
  })
  (else {
    cwd := (getcwd)
@@ -443,4 +444,5 @@ rm -rf tmpdir
 IDIOLIB = OIDIOLIB
 
 ;; all done?
-Tests? (file-handle-error0 + 113)
+Skipped = Skipped + file-handle-skipped
+Tests? (file-handle-error0 + 113 - file-handle-skipped)

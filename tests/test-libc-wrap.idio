@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -165,15 +165,15 @@ struct-tm-ref tm 'tm_isdst
    struct-tm-ref tm 'tm_zone
  }))
 
-struct-tm-set! tm 'tm_sec (C/integer-> 0)
-struct-tm-set! tm 'tm_min (C/integer-> 0)
-struct-tm-set! tm 'tm_hour (C/integer-> 0)
-struct-tm-set! tm 'tm_mday (C/integer-> 0)
-struct-tm-set! tm 'tm_mon (C/integer-> 0)
-struct-tm-set! tm 'tm_year (C/integer-> 0)
-struct-tm-set! tm 'tm_wday (C/integer-> 0)
-struct-tm-set! tm 'tm_yday (C/integer-> 0)
-struct-tm-set! tm 'tm_isdst (C/integer-> 0)
+struct-tm-set! tm 'tm_sec C/0i
+struct-tm-set! tm 'tm_min C/0i
+struct-tm-set! tm 'tm_hour C/0i
+struct-tm-set! tm 'tm_mday C/0i
+struct-tm-set! tm 'tm_mon C/0i
+struct-tm-set! tm 'tm_year C/0i
+struct-tm-set! tm 'tm_wday C/0i
+struct-tm-set! tm 'tm_yday C/0i
+struct-tm-set! tm 'tm_isdst C/0i
 (cond-expand
  ((not "uname/sysname/SunOS") {
    struct-tm-set! tm 'tm_gmtoff (C/integer-> 0 'long)
@@ -273,14 +273,19 @@ getpgid (getpid)
 (getpgrp)
 (getppid)
 
+;; isatty -> ENOTTY -> #f
+fd+name := mkstemp "XXXXXX"
+delete-file (pht fd+name)
+test (isatty (ph fd+name)) #f
+
 ;; I sometimes run the tests with redirected I/O
 trap ^system-error (function (c) {
 		      #t
 }) {
-  isatty (C/integer-> 0)
+  isatty C/0i
 }
 
-kill (C/integer-> PID libc/pid_t) (C/integer-> 0)
+kill (C/integer-> PID libc/pid_t) C/0i
 
 ;; test mkdir(2) for which we need a directory we can mkdir safely --
 ;; how about a random one we just deleted?
@@ -350,11 +355,11 @@ strsignal SIGHUP
    eprintf "SunOS: skipping tcsetattr *stdin* test\n"
  })
  (else {
-   tcsetattr (C/integer-> 0) (C/integer-> 0) (tcgetattr (C/integer-> 0))
+   tcsetattr C/0i C/0i (tcgetattr C/0i)
  }))
 
 ;; should be safe...
-tcsetpgrp (C/integer-> 0) (tcgetpgrp (C/integer-> 0))
+tcsetpgrp C/0i (tcgetpgrp C/0i)
 
 (times)
 
@@ -410,7 +415,7 @@ strptime "1999" "%Y"
 strftime "%F" (libc/localtime)
 
 linkfile := "__link__"
-ln -s testfile linkfile
+ln -sf testfile linkfile
 ; block special devices?
 test (b? "/dev/tty") #f
 test (b? ".")        #f
@@ -518,4 +523,4 @@ test STDERR (current-error-handle)
 module tests/libc-wrap
 
 ;; all done?
-Tests? (libc-wrap0 + 120)
+Tests? (libc-wrap0 + 121)

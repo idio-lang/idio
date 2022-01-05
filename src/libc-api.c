@@ -4353,9 +4353,17 @@ a wrapper to libc :manpage:`isatty(3)`				\n\
 								\n\
 :param fd: file descriptor					\n\
 :type fd: C/int							\n\
-:return: 1							\n\
-:rtype: C/int							\n\
+:return: ``#t`` or ``#f``					\n\
+:rtype: boolean							\n\
 :raises ^system-error:						\n\
+								\n\
+A strictly conforming ``isatty`` would raise a ^system-error	\n\
+for ``ENOTTY`` however this wrapper returns ``#f`` in that case	\n\
+but raises ^system-error for any other :manpage:`isatty(3)` error.	\n\
+								\n\
+.. warning::							\n\
+	Not all operating systems set ``errno`` when :manpage:`isatty(3)`	\n\
+	returns 0, ``isatty`` also returns ``#f`` in that case.	\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -4369,22 +4377,41 @@ a wrapper to libc :manpage:`isatty(3)`				\n\
 
     int C_fd = IDIO_C_TYPE_int (fd);
 
+    /*
+     * SunOS, FreeBSD and Mac OS X all say:
+     *
+     *   otherwise, it returns 0 and may set errno to indicate the error
+     *
+     * Note the "may".  SunOS does not set errno for some random fd.
+     *
+     * The upshot being that we need to set errno to 0 then test for
+     * errno being set before raising a ^system-error.
+     */
+
+    errno = 0;
     int isatty_r = isatty (C_fd);
 
-    if (0 == isatty_r) {
+    if (0 == isatty_r &&
+	errno &&
+	ENOTTY != errno) {
 	/*
 	 * Test Case: libc-wrap-errors/isatty-not-tty.idio
 	 *
-	 * fd+name := mkstemp "XXXXXX"
-	 * delete-file (pht fd+name)
-	 * isatty (ph fd+name)
+	 * isatty (C/integer-> nofiles_lim)
+	 *
+	 * NB nofiles_lim was defined in test.idio
 	 */
+
 	idio_error_system_errno ("isatty", fd, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
-    return idio_C_int (isatty_r);
+    if (isatty_r) {
+	return idio_S_true;
+    } else {
+	return idio_S_false;
+    }
 }
 
 /*
