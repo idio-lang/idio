@@ -294,7 +294,9 @@ IDIOLIB                        = ${join-string ":" (map pht il)}}
     (pattern-case (->string f)
 		  ("uname/nodename/*" #n)
 		  (else {
-		    printf "  %s\n" f
+		    display "  "
+		    write f
+		    (newline)
 		  }))
   }) *idio-features*
 

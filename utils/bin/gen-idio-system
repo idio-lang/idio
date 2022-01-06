@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# Copyright (c) 2021 Ian Fitchet <idf@idio-lang.org>
+# Copyright (c) 2021-2022 Ian Fitchet <idf@idio-lang.org>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License.  You
@@ -161,28 +161,32 @@ esac
 
 libdir=/usr/lib
 
-case "${uname_a[0]}" in
-*BSD)
-    libdir=/usr/local/lib
-    ;;
-*)
-    # this might not be generic -- at least systemd systems will
-    # override it, below
-    case "${uname_a[2]}" in
-    x86_64)
-	if [[ -d /usr/lib64 ]] ; then
-	    libdir=/usr/lib64
-	fi
-	;;
-    esac
-    ;;
-esac
-
 if type -p systemd-path >/dev/null 2>&1 ; then
     libdir=$(systemd-path system-library-arch)
 else
-    libdir=${libdir}/${DUMPMACHINE}
+    case "${uname_a[0]}" in
+    *BSD)
+	libdir=/usr/local/lib
+	;;
+    *)
+	case "${uname_a[2]}" in
+	x86_64)
+	    if [[ -d /usr/lib64 ]] ; then
+		libdir=/usr/lib64
+	    fi
+	    ;;
+	esac
+
+	# Hopeful...
+	if [[ -d ${libdir}/${DUMPMACHINE} ]] ; then
+	    libdir=${libdir}/${DUMPMACHINE}
+	fi
+
+	;;
+    esac
 fi
+
+[[ -d ${libdir} ]]
 
 ######################################################################
 #

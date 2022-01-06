@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1000,10 +1000,12 @@ void idio_init_env ()
      * idio_env_IDIOLIB_default.
      */
     size_t isl_len = sizeof (IDIO_SYSTEM_LIBDIR) - 1;
-    idio_env_IDIOLIB_default_len = isl_len + 5;
+    size_t mm_len = sizeof (IDIO_SYSTEM_VERSION_MM) - 1;
+    idio_env_IDIOLIB_default_len = isl_len + 1 + mm_len;
     idio_env_IDIOLIB_default = idio_alloc (idio_env_IDIOLIB_default_len + 1);
     memcpy (idio_env_IDIOLIB_default, IDIO_SYSTEM_LIBDIR, isl_len);
-    memcpy (idio_env_IDIOLIB_default + isl_len, "/idio", 5);
+    memcpy (idio_env_IDIOLIB_default + isl_len, "/", 1);
+    memcpy (idio_env_IDIOLIB_default + isl_len + 1, IDIO_SYSTEM_VERSION_MM, mm_len);
     idio_env_IDIOLIB_default[idio_env_IDIOLIB_default_len] = '\0';
 }
 

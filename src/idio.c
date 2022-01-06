@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -497,15 +497,36 @@ void idio_remove_terminal_signals ()
 
 static void idio_usage (char *argv0)
 {
-    fprintf (stderr, "%s: [Idio-args] [script-name [script-args]]\n\n", argv0);
+    fprintf (stderr, "\n");
+    fprintf (stderr, "usage: %s [Idio-options] [script-name [script-args]]\n\n", argv0);
     fprintf (stderr, "Idio options:\n\n");
     fprintf (stderr, "  --load NAME             load NAME and continue processing\n");
     fprintf (stderr, "  --debugger              enable the debugger if interactive\n");
     fprintf (stderr, "  --vm-reports            enable various VM reports\n");
 
     fprintf (stderr, "\n");
-    fprintf (stderr, "  --version               print the version number and quit\n");
+    fprintf (stderr, "  -V                      print the version number and quit\n");
+    fprintf (stderr, "  --version               invoke 'idio-version -v' and quit\n");
+    fprintf (stderr, "  -h                      print this message and quit\n");
     fprintf (stderr, "  --help                  print this message and quit\n");
+
+    fprintf (stderr, "\n");
+    fprintf (stderr, "An invalid Idio option will print this message and quit with an error\n");
+}
+
+int idio_static_match (char * const arg, char const * const str, size_t const str_size)
+{
+    int strncmp_r = strncmp (arg, str, str_size);
+
+    if (0 == strncmp_r) {
+	if ('\0' == arg[str_size]) {
+	    return 1;
+	} else {
+	    return 0;
+	}
+    } else {
+	return 0;
+    }
 }
 
 int main (int argc, char **argv, char **envp)
@@ -761,20 +782,41 @@ int main (int argc, char **argv, char **envp)
 
 		option = OPTION_NONE;
 	    } else if (strncmp (argv[i], "--", 2) == 0) {
-		if (strncmp (argv[i], IDIO_STATIC_STR_LEN ("--vm-reports")) == 0) {
+		if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--vm-reports"))) {
 		    idio_vm_reports = 1;
-		} else if (strncmp (argv[i], IDIO_STATIC_STR_LEN ("--debugger")) == 0) {
+		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--debugger"))) {
 		    import_debugger = 1;
-		} else if (strncmp (argv[i], IDIO_STATIC_STR_LEN ("--load")) == 0) {
+		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--load"))) {
 		    option = OPTION_LOAD;
-		} else if (strncmp (argv[i], IDIO_STATIC_STR_LEN ("--version")) == 0) {
-		    printf ("Idio %s\n", IDIO_SYSTEM_VERSION);
+		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--version"))) {
+		    idio_vm_invoke_C (idio_thread_current_thread (),
+				      IDIO_LIST2 (idio_module_symbol_value (idio_symbols_C_intern (IDIO_STATIC_STR_LEN ("idio-version")),
+									    idio_Idio_module_instance (),
+									    IDIO_LIST1 (idio_S_false)),
+						  idio_symbols_C_intern (IDIO_STATIC_STR_LEN ("-v"))));
+
 		    exit (0);
-		} else if (strncmp (argv[i], IDIO_STATIC_STR_LEN ("--help")) == 0) {
+		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--help"))) {
 		    idio_usage (argv[0]);
 		    exit (0);
 		} else if ('\0' == argv[i][2]) {
 		    in_idio_options = 0;
+		} else {
+		    fprintf (stderr, "ERROR: unrecognized Idio option: %s\n", argv[i]);
+		    idio_usage (argv[0]);
+		    exit (1);
+		}
+	    } else if (strncmp (argv[i], "-", 1) == 0) {
+		if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("-V"))) {
+		    printf ("Idio %s\n", IDIO_SYSTEM_VERSION);
+		    exit (0);
+		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("-h"))) {
+		    idio_usage (argv[0]);
+		    exit (0);
+		} else {
+		    fprintf (stderr, "ERROR: unrecognized Idio option: %s\n", argv[i]);
+		    idio_usage (argv[0]);
+		    exit (1);
 		}
 	    } else {
 		if (in_idio_options) {
