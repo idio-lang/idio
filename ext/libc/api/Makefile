@@ -8,3 +8,5 @@ ifneq ($(OS),Darwin)
 DLIBS		:= libos.so libposix-regex.so
 endif
 
+clean:
+	rm -f *.o

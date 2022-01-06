@@ -98,11 +98,18 @@ lib%.so : %.o
 clean-local-install :
 	rm -rf $(LI_TOPDIR)
 
-clean : build-clean run-clean edit-clean
-	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
-	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
-	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
+clean : build-clean clean-ext-src clean-ext-api run-clean edit-clean
 	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system $(LIBDIR)/system.idio
+
+clean-ext-src: $(EXTDIR)/*/src
+	for dir in $^ ; do \
+	    (cd $${dir}; ${MAKE} clean) ; \
+	done
+
+clean-ext-api: $(EXTDIR)/*/api
+	for dir in $^ ; do \
+	    (cd $${dir}; ${MAKE} clean) ; \
+	done
 
 build-clean:
 	rm -f *.o *.d *.so map
@@ -124,6 +131,7 @@ dist-clean : clean clean-local-install
 	rm -f $(SRCDIR)/idio-config.h
 	rm -f $(LIBDIR)/libc-api.idio
 	rm -rf $(LI_TOPDIR)
+	rm -rf $(DOCDIR)/ref/build $(DOCDIR)/ref/source
 
 tags : TAGS
 
