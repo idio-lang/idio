@@ -34,6 +34,13 @@ endif
 IDIO_SYSTEM_VERSION_MM		?= a.b
 IDIO_SYSTEM_VERSION_M		?= a
 
+# system install
+SI_BINDIR	?= $(IDIO_SYSTEM_BINDIR)
+SI_LIBDIR	?= $(IDIO_SYSTEM_LIBDIR)
+SI_LIBVERDIR	?= $(SI_LIBDIR)/${IDIO_SYSTEM_VERSION_MM}
+
+
+
 profiled :
 	$(MAKE) PROFLAGS=-pg
 
@@ -92,11 +99,59 @@ $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(objects) | Makefile.system $(LI_
 $(LI_BINDIR) $(LI_LIBVERDIR) :
 	mkdir -p $@
 
-lib%.so : %.o
-	$(CC) -shared -o $@ $^
-
 clean-local-install :
 	rm -rf $(LI_TOPDIR)
+
+user-install : local-install $(UI_BINDIR)/idio | $(UI_LIBVERDIR)
+	(cd $(LI_LIBDIR); tar cf - ${IDIO_SYSTEM_VERSION_MM}) | (cd $(UI_LIBDIR); tar xf -)
+
+$(UI_BINDIR)/idio : $(UI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
+	ln -sf idio.${IDIO_SYSTEM_VERSION_MM} $@
+
+$(UI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} | $(UI_BINDIR)
+ifeq ($(OS),SunOS)
+ifeq (/usr/sbin/install,$(shell which install))
+	install -f $(UI_BINDIR) $^
+else
+	install $^ $@
+endif
+else
+	install $^ $@
+endif
+
+$(UI_BINDIR) $(UI_LIBVERDIR) :
+	mkdir -p $@
+
+clean-user-install :
+	rm -f $(UI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} $(UI_BINDIR)/idio
+	rm -rf $(UI_LIBVERDIR)
+
+system-install : local-install $(SI_BINDIR)/idio | $(SI_LIBVERDIR)
+	(cd $(LI_LIBDIR); tar cf - ${IDIO_SYSTEM_VERSION_MM}) | (cd $(SI_LIBDIR); tar xf -)
+
+$(SI_BINDIR)/idio : $(SI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
+	ln -sf idio.${IDIO_SYSTEM_VERSION_MM} $@
+
+$(SI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
+ifeq ($(OS),SunOS)
+ifeq (/usr/sbin/install,$(shell which install))
+	install -f $(UI_BINDIR) $^
+else
+	install $^ $@
+endif
+else
+	install $^ $@
+endif
+
+$(SI_LIBVERDIR) :
+	mkdir -p $@
+
+clean-system-install :
+	rm -f $(SI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} $(SI_BINDIR)/idio
+	rm -rf $(SI_LIBVERDIR)
+
+lib%.so : %.o
+	$(CC) -shared -o $@ $^
 
 clean : build-clean clean-ext-src clean-ext-api run-clean edit-clean
 	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system $(LIBDIR)/system.idio
@@ -130,7 +185,6 @@ dist-clean : clean clean-local-install
 	rm -f $(SRCDIR)/libc-api.h
 	rm -f $(SRCDIR)/idio-config.h
 	rm -f $(LIBDIR)/libc-api.idio
-	rm -rf $(LI_TOPDIR)
 	rm -rf $(DOCDIR)/ref/build $(DOCDIR)/ref/source
 
 tags : TAGS

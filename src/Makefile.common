@@ -20,6 +20,12 @@ LI_BINDIR	?= $(LI_TOPDIR)/bin
 LI_LIBDIR	?= $(LI_TOPDIR)/lib/idio
 LI_LIBVERDIR	?= $(LI_LIBDIR)/${IDIO_SYSTEM_VERSION_MM}
 
+# user install
+UI_TOPDIR	?= $(HOME)/.local
+UI_BINDIR	?= $(UI_TOPDIR)/bin
+UI_LIBDIR	?= $(UI_TOPDIR)/lib/idio
+UI_LIBVERDIR	?= $(UI_LIBDIR)/${IDIO_SYSTEM_VERSION_MM}
+
 DOCDIR		?= $(TOPDIR)/doc
 SRCDOCDIR	:= $(DOCDIR)/src
 SRCKDOUTDIR	:= $(SRCDOCDIR)/kernel-autodoc-out

@@ -159,6 +159,7 @@ case "${MULTIARCH}" in
     ;;
 esac
 
+bindir=/usr/bin
 libdir=/usr/lib
 
 if type -p systemd-path >/dev/null 2>&1 ; then
@@ -166,6 +167,7 @@ if type -p systemd-path >/dev/null 2>&1 ; then
 else
     case "${uname_a[0]}" in
     *BSD)
+	bindir=/usr/local/bin
 	libdir=/usr/local/lib
 	;;
     *)
@@ -278,10 +280,11 @@ cat <<EOF > Makefile.system
 ${var_name}_NAME			:= ${opt_module}
 
 ${var_name}_SYSTEM_VERSION		:= ${version}
-${var_name}_SYSTEM_VERSION_MM	:= ${version_mm}
+${var_name}_SYSTEM_VERSION_MM		:= ${version_mm}
 ${var_name}_SYSTEM_VERSION_M		:= ${version_m}
-${var_name}_SYSTEM_BUILD_DATE	:= ${build_date}
+${var_name}_SYSTEM_BUILD_DATE		:= ${build_date}
 ${var_name}_SYSTEM_BUILD_TIMESTAMP	:= ${build_timestamp}
+${var_name}_SYSTEM_BINDIR		:= ${bindir}
 ${var_name}_SYSTEM_LIBDIR		:= ${libdir}/idio
 ${var_name}_SYSTEM_ARCH		:= ${MULTIARCH}
 
@@ -298,6 +301,7 @@ ${var_MODULE}_MM_VERSION			:= "${version_mm}"
 ${var_MODULE}_M_VERSION			:= "${version_m}"
 ${var_MODULE}_BUILD_DATE			:= "${build_date}"
 ${var_MODULE}_BUILD_TIMESTAMP		:= "${build_timestamp}"
+${var_MODULE}_SYSTEM_BINDIR		:= "${bindir}"
 ${var_MODULE}_SYSTEM_LIBDIR		:= "${libdir}/idio"
 ${var_MODULE}_SYSTEM_ARCH		:= "${MULTIARCH}"
 ${var_MODULE}_BUILD_COMMIT		:= "${git_commit}"

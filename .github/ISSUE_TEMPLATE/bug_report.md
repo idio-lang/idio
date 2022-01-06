@@ -23,7 +23,7 @@ A clear and concise description of what you expected to happen.
 **Idio version**
 The output from `idio --version` (or `idio-version -v` when running)
 would be useful.  Please remove any personal information, your HOME
-directory is changed to `$HOME`.
+directory in pathnames is generally changed to `$HOME`.
 
 **Additional context**
 Add any other context about the problem here.
