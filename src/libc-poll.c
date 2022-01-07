@@ -101,7 +101,7 @@ or C/int derived from such names	\n\
 
     nfds_t nfds = idio_list_length (args);
     poller->nfds = nfds;
-    poller->fds = idio_alloc (sizeof (struct pollfd));
+    poller->fds = idio_alloc (nfds * sizeof (struct pollfd));
     if (nfds) {
 	while (idio_S_nil != args) {
 	    idio_libc_poll_register (poller, IDIO_PAIR_H (args));
@@ -124,23 +124,25 @@ void idio_libc_poll_set_pollfds (idio_libc_poller_t *poller)
     IDIO keys = idio_hash_keys_to_list (poller->fd_map);
 
     idio_hi_t nkeys = IDIO_HASH_COUNT (poller->fd_map);
-    if (nkeys != poller->nfds) {
-	poller->fds = idio_realloc (poller->fds, nkeys);
-    }
     poller->nfds = nkeys;
+    if (nkeys > 0) {
+	if (nkeys != poller->nfds) {
+	    poller->fds = idio_realloc (poller->fds, nkeys * sizeof (struct pollfd));
+	}
 
-    /* use nkeys as an index so reverse order! */
-    nkeys--;
-    while (idio_S_nil != keys) {
-	IDIO k = IDIO_PAIR_H (keys);
-	IDIO v = idio_hash_ref (poller->fd_map, k);
-
-	struct pollfd *pfd = &(poller->fds[nkeys]);
-	pfd->fd = IDIO_C_TYPE_int (k);
-	pfd->events = IDIO_C_TYPE_short (IDIO_PAIR_H (v));
-
-	keys = IDIO_PAIR_T (keys);
+	/* use nkeys as an index so reverse order! */
 	nkeys--;
+	while (idio_S_nil != keys) {
+	    IDIO k = IDIO_PAIR_H (keys);
+	    IDIO v = idio_hash_ref (poller->fd_map, k);
+
+	    struct pollfd *pfd = &(poller->fds[nkeys]);
+	    pfd->fd = IDIO_C_TYPE_int (k);
+	    pfd->events = IDIO_C_TYPE_short (IDIO_PAIR_H (v));
+
+	    keys = IDIO_PAIR_T (keys);
+	    nkeys--;
+	}
     }
 
     poller->valid = 1;
