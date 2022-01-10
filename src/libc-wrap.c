@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2018, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -3578,7 +3578,7 @@ void idio_init_libc_wrap ()
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("SIG_IGN"), idio_C_pointer (SIG_IGN), idio_libc_module);
 
     /* stdio.h */
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("BUFSIZ"), idio_C_int (BUFSIZ), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("BUFSIZ"), idio_libc_size_t (BUFSIZ), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("EOF"), idio_C_int (EOF), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("NULL"), idio_C_pointer (NULL), idio_libc_module);
 
