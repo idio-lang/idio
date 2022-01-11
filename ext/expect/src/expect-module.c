@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -343,14 +343,20 @@ to :manpage:`expect(1)`			\n\
     size_t slen = IDIO_STRING_LEN (msg);
     size_t i;
 
+    int in_word = 1;
+
     for (i = 0; i < slen; i++) {
 	IDIO cp = idio_string_ref_C (msg, i);
 
+	int not_word = (idio_usi_isa (cp, IDIO_USI_FLAG_White_Space) ||
+			idio_usi_isa (cp, IDIO_USI_FLAG_Punctuation));
+
 	intmax_t avg_ms = in_ms;
-	if (idio_usi_isa (cp, IDIO_USI_FLAG_White_Space) ||
-	    idio_usi_isa (cp, IDIO_USI_FLAG_Punctuation)) {
+	if (in_word &&
+	    not_word) {
 	    avg_ms = out_ms;
 	}
+	in_word = ! not_word;
 
 	/*
 	 * random() is 2^31-1
