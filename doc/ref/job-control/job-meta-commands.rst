@@ -129,3 +129,16 @@ Not all the meta-commands work together.
   If the job was backgrounded the reported timings will be wholly
   inaccurate.
 
+  .. warning::
+
+     ``time`` will run the supplied command in a subshell which might
+     not be obvious if the supplied command is a regular function
+     call.
+
+     Repeated runnings might produce some quirks such as random
+     numbers repeating the same sequence -- which is entirely expected
+     as it is simply this instance of :lname:`Idio` continuing
+     multiple times.
+
+     Here, a more useful timer might be :ref:`time-function
+     <time-function>`.

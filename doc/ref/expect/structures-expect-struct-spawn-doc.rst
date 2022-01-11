@@ -27,3 +27,11 @@ use by users:
   The timeout used is :ref:`exp-timeout <expect/exp-timeout>` in
   seconds.
 
+* `log-file` is the `file` argument passed to :ref:`exp-log-file
+  <expect/exp-log-file>`
+
+* `lfh` is the file handle derived from `log-file`
+
+* `status` is the status as reported by :ref:`exp-wait
+  <expect/exp-wait>` plus a decoding of that status, eg. ``(exit 0)``
+

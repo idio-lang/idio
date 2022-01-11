@@ -20,24 +20,41 @@ expect.idio
 
 module expect
 export (
-	 spawn
+	 ;; vars
 	 spawn-id
 	 exp-timeout
 	 exp-match-max
+	 exp-slow
+	 exp-human
+
+	 ;; names of functions to be...
 	 exp-match-before
 	 exp-match
 	 exp-match-after
-	 exp-match-all
-	 exp-slow
-	 exp-human
+
+	 ;; funcs
 	 exp-log
 	 exp-log-user
 	 exp-log-file
-	 exp-case-before
-	 exp-case
-	 exp-case-after
-	 exp-send
+
+	 spawn
+
+	 exp-case-eof?
+	 exp-case-timeout?
+	 exp-case-regexec
+
 	 exp-close
+	 exp-case-reset
+	 exp-case-matched
+	 exp-case-remaining?
+	 exp-match-all
+
+	 exp-case-set-timeout
+	 exp-case-before
+	 exp-case-after
+	 exp-case
+
+	 exp-send
 	 exp-wait
 )
 
@@ -47,14 +64,14 @@ import unicode
 
 (export-struct
  struct-spawn
- argv pid mfd mode buffer matched eof timeout)
+ argv pid mfd mode buffer matched eof timeout log-file lfh status)
 
 ;; a simplified constructor
 make-struct-spawn = {
   orig-make-struct-spawn := make-struct-spawn
 
   function (argv pid mfd mode) "
-create a :ref:`struct-spawn <expect/struct-spawn>`
+create an instance of a :ref:`struct-spawn <expect/struct-spawn>`
 
 :param argv: command and arguments
 :type argv: list
@@ -71,7 +88,7 @@ The `buffer` attribute is initialised to the empty string, ``\"\"``,
 and the remaining attributes initialised to ``#f``.
 
 " {
-    orig-make-struct-spawn argv pid mfd mode "" #f #f #f
+    orig-make-struct-spawn argv pid mfd mode "" #f #f #f #f #f #f
   }
 }
 
@@ -133,8 +150,9 @@ Expect drives the algorithm with a 5-tuple:
 
 Professional typists are reckoned to be around 60 wpm (close enough to
 make the maths easy), that is a word per second.  Four letter words
-and a space might be, say 190ms per in-word character and 240ms per
-non-word character with a K of 1.  Roughly a 50 baud modem!
+and a space might be, say 190ms per in-word character and 240ms
+transitioning from an in-word character to a non-word character with a
+K of 1.  Roughly a 50 baud modem!
 
 World record (accurate) typing is around 200 wpm, let's call it 180
 wpm (maths) so the figures might be 65ms per in-word character and
@@ -153,13 +171,18 @@ exp-human     :~ '(190 240 1 10 400)
 
 log-user      := #t
 
-log-file      :~ #f
+define (exp-log spawn-id in? msg) "
 
-define (exp-log spawn-id in? msg) {
+``exp-log`` is a helper function for :ref:`exp-case <expect/exp-case>`
+and others
+
+" {
   dir := ">>"
   if in? {
     dir = "<<"
   }
+
+  ;; log to user
   if log-user {
     if (string? msg) {
       printf "%s" msg
@@ -167,21 +190,29 @@ define (exp-log spawn-id in? msg) {
       printf "expect: log: %s '%s\n" dir msg
     }
   }
-  if log-file {
-    if (string? msg) {
-      hprintf log-file "%s" msg
-    } {
-      hprintf log-file "expect: log: %s '%s\n" dir msg
+
+  ;; log to file -- spawn itself logs but we won't have set the log
+  ;; file by then
+  if (struct-spawn? spawn-id) {
+    if (and (struct-spawn-lfh spawn-id)
+	    (not (closed-handle? (struct-spawn-lfh spawn-id)))) {
+      if (string? msg) {
+	hprintf (struct-spawn-lfh spawn-id) "%s" msg
+      } {
+	hprintf (struct-spawn-lfh spawn-id) "expect: log: %s '%s\n" dir msg
+      }
     }
   }
 }
 
 define (exp-log-user on?) "
-Log the send/expect dialog to the user (`stdout`) or not
+Log the send/expect dialog to the user (ie. `stdout`) or not
 
 :param on?: to log or not
 :type on?: boolean
 :return: ``#<unspec>``
+
+The default is to have logging to the user enabled.
 
 " {
   ;; don't keep a reference to on?
@@ -189,11 +220,13 @@ Log the send/expect dialog to the user (`stdout`) or not
 		  #t)
 }
 
-define* (exp-log-file file (:append append #t)) "
-Log the send/expect dialog to `file` or not
+define* (exp-log-file file (:spawn-id spawn-id spawn-id) (:append append #t)) "
+Log the send/expect dialog for `spawn-id` to `file` or not
 
 :param file: the file to log to
 :type file: see below
+:keyword :spawn-id: the spawn-id(s) to use, defaults to :ref:`spawn-id <expect/spawn-id>`
+:type :spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`, optional
 :keyword :append: to append or not, defaults to ``#t``
 :type :append: boolean, optional
 :return: ``#<unspec>``
@@ -202,18 +235,41 @@ Log the send/expect dialog to `file` or not
 
 * ``#f`` to disable logging to a file
 
+  If the existing log file was passed as a string, ie. it was opened
+  by this module, then the associated log file handle will be closed.
+  If this log file was shared with other spawn-ids then this closure
+  will affect all of them.
+
+  Both `log-file` and `lfh` will be set to ``#f`` in all cases.
+
 * a string, indicating the filename to log to
 
 * an output handle
 
 * a file descriptor (open for output)
 
+`spawn-id` can be a :ref:`struct-spawn <expect/struct-spawn>` or a
+list of such ``struct-spawn``\ s.
+
 " {
   (cond
+   ((struct-spawn? spawn-id) {
+     spawn-id = list spawn-id
+   }))
+
+  (cond
    ((not file) {
-     if log-file {
-       close-handle log-file
-       log-file = #f
+     for sid in spawn-id {
+       if sid {
+	 if (string? (struct-spawn-log-file sid)) {
+	   lfh := struct-spawn-lfh sid
+	   if (not (closed-handle? lfh)) {
+	     close-handle lfh
+	   }
+	   set-struct-spawn-log-file! sid #f
+	   set-struct-spawn-lfh! sid #f
+	 }
+       }
      }
    })
    ((string? file) {
@@ -221,17 +277,34 @@ Log the send/expect dialog to `file` or not
      if append {
        oflags = "ae"
      }
-     log-file = open-file file oflags
+     lfh := open-file file oflags
+     for sid in spawn-id {
+       if sid {
+	 set-struct-spawn-log-file! sid file
+	 set-struct-spawn-lfh! sid lfh
+       }
+     }
    })
    ((output-handle? file) {
-     log-file = file
+     for sid in spawn-id {
+       if sid {
+	 set-struct-spawn-log-file! sid file
+	 set-struct-spawn-lfh! sid file
+       }
+     }
    })
    ((C/int? file) {
      oflags := "we"
      if append {
        oflags = "ae"
      }
-     log-file = open-output-file-from-fd file oflags
+     lfh := open-output-file-from-fd file oflags
+     for sid in spawn-id {
+       if sid {
+	 set-struct-spawn-log-file! sid file
+	 set-struct-spawn-lfh! sid lfh
+       }
+     }
    })
    (else {
      error/type ^rt-parameter-type-error 'exp-log-file "string|output handle|output file descriptor" file
@@ -249,11 +322,26 @@ Spawn a process defined by `argv`
 
 ``spawn`` will set and return :ref:`spawn-id <expect/spawn-id>`.
 
-" {
-  exp-log #f #f (sprintf "spawn %@\n" argv)
-  spawn-id = apply make-struct-spawn argv (apply pty/spawn argv)
+.. tip::
 
-  spawn-id
+   ``spawn-id`` defaults to ``#f`` however if you set it to ``#n`` or
+   a list of spawn-id(s) then ``spawn`` will prepend any new value to
+   the list.
+
+" {
+  sid := apply make-struct-spawn argv (apply pty/spawn argv)
+
+  ;; Faintly annoyingly, this log entry cannot go into a
+  ;; (spawn-specific) log file as we can't have set one up, yet.  We
+  ;; could buffer logs but for how long and maybe the user is
+  ;; judiciously not logging until the interesting bit.
+  exp-log #f #f (sprintf "spawn %@\n" argv)
+
+  if (list? spawn-id) {
+    spawn-id = pair sid spawn-id
+  } {
+    spawn-id = sid
+  }
 }
 
 #*
@@ -397,7 +485,81 @@ exp-match and exp-match after at the appropriate points.
 
 *#
 
-define (process-args exp-regcomps i re-kind re-flags a*) {
+define (exp-case-eof? sid+) "
+
+``exp-case-eof?`` is a helper function for :ref:`exp-case
+<expect/exp-case>`
+
+" {
+  loop :+ function (sid*) {
+    (cond
+     ((null? sid*) #f)
+     (else {
+       sid := ph sid*
+       if (and sid
+	       (struct-spawn-eof sid)) {
+	 sid
+       } (loop (pt sid*))
+     }))
+  }
+
+  loop sid+
+}
+
+define (exp-case-timeout? sid+) "
+
+``exp-case-timeout?`` is a helper function for :ref:`exp-case
+<expect/exp-case>`
+
+" {
+  ;; timeout is a bit different as if one sid+ has timed out then
+  ;; they all have
+
+  loop :+ function (sid*) {
+    (cond
+     ((null? sid*) #f)
+     (else {
+       sid := ph sid+
+       if (and sid
+	       (struct-spawn-timeout sid)) {
+	 ;; return the lot
+	 sid+
+       } (loop (pt sid*))
+     }))
+  }
+
+  loop sid+
+}
+
+define (exp-case-regexec exp-regcomps i sid+) "
+
+``exp-case-regexec`` is a helper function for :ref:`exp-case
+<expect/exp-case>`
+
+" {
+  loop :+ function (sid*) {
+    (cond
+     ((null? sid*) #f)
+     (else {
+       sid := ph sid*
+       if sid {
+	 r := regexec (array-ref exp-regcomps i) (struct-spawn-buffer sid) 'REG_VERBOSE
+	 if r {
+	   list sid r
+	 } (loop (pt sid*))
+       } (loop (pt sid*))
+     }))
+  }
+
+  loop sid+
+}
+
+define (process-args exp-regcomps i re-kind re-flags a*) "
+
+``process-args`` is a helper function for :ref:`exp-case
+<expect/exp-case>` and others
+
+" {
   (cond
    ((null? a*)
     (error/type ^rt-syntax-error 'exp-case "invalid syntax: no string/body" re-kind re-flags))
@@ -407,31 +569,39 @@ define (process-args exp-regcomps i re-kind re-flags a*) {
      (case (ph a*)
       ((:eof) {
 	list (ph a*) #T{
-	  ((struct-spawn-eof spawn-id) => (function (r) {
-	    set-struct-spawn-matched! spawn-id #t
+	  ((exp-case-eof? spawn-id) => (function (sid) {
+	    set-struct-spawn-matched! sid #t
 	    ((function (spawn-id)
-	     $@(pt a*)) spawn-id)
+	     $@(pt a*)) sid)
 	  }))
 	}
       })
       ((:timeout) {
 	list (ph a*) #T{
-	  ((struct-spawn-timeout spawn-id) => (function (r) {
-	    set-struct-spawn-matched! spawn-id #t
+	  ((exp-case-timeout? spawn-id) => (function (sid*) {
+	    for sid in sid* {
+	      if sid {
+		set-struct-spawn-matched! sid #t
+	      }
+	    }
 	    ((function (spawn-id)
-	     $@(pt a*)) spawn-id)
+	     $@(pt a*)) sid*)
 	  }))
 	}
       })
       ((:all) {
 	list (ph a*) #T{
-	  ((struct-spawn-eof spawn-id) => (function (r) {
-	    set-struct-spawn-matched! spawn-id #t
-	    r0 := list (struct-spawn-buffer spawn-id) 0 (string-length (struct-spawn-buffer spawn-id))
-	    set-struct-spawn-buffer! spawn-id ""
-	    ((function (spawn-id r prefix)
-	     $@(pt a*)) spawn-id (list->array (list r0)) "")
-	  }))
+	  (#t {
+	    for sid in spawn-id {
+	      if sid {
+		set-struct-spawn-matched! sid #t
+		r0 := list (struct-spawn-buffer sid) 0 (string-length (struct-spawn-buffer sid))
+		set-struct-spawn-buffer! sid ""
+		((function (spawn-id r prefix)
+		 $@(pt a*)) sid (list->array (list r0)) "")
+	      }
+	    }
+	  })
 	}
       })
       ((:re :gl :ex) {
@@ -442,15 +612,17 @@ define (process-args exp-regcomps i re-kind re-flags a*) {
       })
       (else {
 	body := #T{
-	  ((regexec (array-ref $exp-regcomps $i) (struct-spawn-buffer spawn-id) 'REG_VERBOSE)
-	   => (function (r) {
-	     set-struct-spawn-matched! spawn-id #t
-	     r0 := r.0
-	     prefix := substring (struct-spawn-buffer spawn-id) 0 r0.2
-	     set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) r0.3)
+	  ((exp-case-regexec $exp-regcomps $i spawn-id)
+	   => (function (sid-r) {
+	     sid := ph sid-r
+	     r := pht sid-r
+	     set-struct-spawn-matched! sid #t
+	     r0 := array-ref r 0
+	     prefix := substring (struct-spawn-buffer sid) 0 r0.2
+	     set-struct-spawn-buffer! sid (substring (struct-spawn-buffer sid) r0.3)
 
 	     ((function (spawn-id r prefix)
-	      $@(pt a*)) spawn-id r prefix)
+	      $@(pt a*)) sid r prefix)
 	   }))
 	}
 
@@ -489,7 +661,12 @@ define (process-args exp-regcomps i re-kind re-flags a*) {
    }))
 }
 
-define (process-clauses c* exp-regcomps i ri* rk* rb*) {
+define (process-clauses c* exp-regcomps i ri* rk* rb*) "
+
+``process-clauses`` is a helper function for :ref:`exp-case
+<expect/exp-case>` and others
+
+" {
   (cond
    ((null? c*) (list (reverse ri*) (reverse rk*) (reverse rb*)))
    ((or (not (pair? c*))
@@ -503,21 +680,148 @@ define (process-clauses c* exp-regcomps i ri* rk* rb*) {
 
 }
 
-define (exp-match-all spawn-id) {
+define* (exp-close (:spawn-id spawn-id spawn-id)) "
+close the master file descriptor to the spawned process
+
+:keyword :spawn-id: the spawn-id(s) to use, defaults to :ref:`spawn-id <expect/spawn-id>`
+:type :spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`, optional
+:return: ``#<unspec>``
+
+``exp-close`` will also set the `mfd` structure element to ``#f``
+
+`spawn-id` can be a :ref:`struct-spawn <expect/struct-spawn>` or a
+list of such ``struct-spawn``\ s.
+
+" {
+  (cond
+   ((struct-spawn? spawn-id) {
+     mfd := struct-spawn-mfd spawn-id
+     if mfd {
+       libc/close mfd
+       set-struct-spawn-mfd! spawn-id #f
+     }
+   })
+   ((pair? spawn-id) {
+     for sid in spawn-id {
+       mfd := struct-spawn-mfd sid
+       if mfd {
+	 libc/close mfd
+	 set-struct-spawn-mfd! sid #f
+       }
+     }
+   }))
+}
+
+define (exp-case-reset sid+ & matched) "
+
+``exp-case-reset`` is a helper function for :ref:`exp-case
+<expect/exp-case>`
+
+" {
+  loop :+ function (sid*) {
+    (cond
+     ((null? sid*) #t)
+     ((ph sid*) => (function (sid) {
+       if (struct-spawn-eof sid) {
+	 exp-close :spawn-id sid
+	 set-ph! sid* #f
+       } {
+	 set-struct-spawn-timeout! sid #f
+	 if (not (null? matched)) {
+	   set-struct-spawn-matched! sid #f
+	 }
+       }
+       loop (pt sid*)
+     }))
+    (else (loop (pt sid*))))
+  }
+
+  loop sid+
+
+  #*
+  for sid in sid+ {
+    if sid {
+      set-struct-spawn-timeout! sid #f
+      set-struct-spawn-eof! sid #f
+      if (not (null? matched)) {
+	set-struct-spawn-matched! sid #f
+      }
+    }
+  }
+  *#
+}
+
+define (exp-case-matched sid+) "
+
+``exp-case-matched`` is a helper function for :ref:`exp-case
+<expect/exp-case>`
+
+" {
+  loop :+ function (sid*) {
+    (cond
+     ((null? sid*) #f)
+     ((and (ph sid*)
+	   (struct-spawn-matched (ph sid*))) #t)
+     (else (loop (pt sid*))))
+  }
+
+  loop sid+
+}
+
+define (exp-case-remaining? sid+) "
+
+``exp-case-remaining?`` is a helper function for :ref:`exp-case
+<expect/exp-case>`
+
+" {
+  loop :+ function (sid*) {
+    (cond
+     ((null? sid*) #f)
+     ((ph sid*) #t)
+     (else (loop (pt sid*))))
+  }
+
+  loop sid+
+}
+
+define (exp-match-all sid+) "
+
+``exp-match-all`` is a helper function for :ref:`exp-case
+<expect/exp-case>`
+
+" {
   r := (void)
   if (function? exp-match-before) {
-    r = exp-match-before spawn-id
+    r = exp-match-before sid+
   }
-  if (and (not (struct-spawn-matched spawn-id))
-	  (function? exp-match)) {
-    r = exp-match spawn-id
+
+  if (and (function? exp-match)
+	  (not (exp-case-matched sid+))
+	  (exp-case-remaining? sid+)) {
+    r = exp-match sid+
   }
-  if (and (not (struct-spawn-matched spawn-id))
-	  (function? exp-match-after)) {
-    r = exp-match-after spawn-id
+
+  if (and (function? exp-match-after)
+	  (not (exp-case-matched sid+))
+	  (exp-case-remaining? sid+)) {
+    r = exp-match-after sid+
   }
 
   r
+}
+
+define (exp-case-set-timeout sid+) "
+
+``exp-case-set-timeout`` is a helper function for :ref:`exp-case
+<expect/exp-case>`
+
+" {
+  for sid in sid+ {
+    if sid {
+      set-struct-spawn-timeout! sid #t
+      expect/exp-log sid #t (sprintf "exp-case: %@: poll: timeout\n" (struct-spawn-argv sid))
+    }
+  }
 }
 
 define-template (exp-case-before & clauses) {
@@ -621,6 +925,8 @@ define-template (exp-case & clauses) {
 
   n := length clauses
 
+  sid* := gensym 'sid*
+
   #T{
     ;; put exp-continue in scope of the behaviour clauses
     exp-continue := #f
@@ -671,76 +977,111 @@ define-template (exp-case & clauses) {
 			((exp-timeout lt 0) -1)
 			(else               0))
 
+       poller := #f
+
+       ;; poller only uses mfd so we need a hash table to get us back
+       ;; to spawn-ids
+       poller-map := #f
+
+       ;; always deal with a list of spawn-ids
+       sid+ := #n
+       if (struct-spawn? spawn-id) {
+	 sid+ = list spawn-id
+       } {
+	 ;; ensure we operate on a copy of the list
+	 sid+ = copy-value spawn-id
+       }
+
        exp-continue = function #n {
 	 ; reset all flags (otherwise if you match a timeout and then
 	 ; exp-continue you'll loop matching timeout)
-	 set-struct-spawn-timeout! spawn-id #f
-	 set-struct-spawn-eof! spawn-id #f
-	 set-struct-spawn-matched! spawn-id #f
+	 exp-case-reset sid+ #t
 
-	 ;; search existing buffer
-	 r := expect/exp-match-all spawn-id
+	 ;; anything to do -- clearly there is the first time through
+	 ;; but calls to (exp-continue) after End of File indications
+	 ;; will have reduced the list
+	 n := (fold-left (function (c v) (if v (c + 1) c)) 0 sid+)
 
-	 if (not (struct-spawn-matched spawn-id)) {
-	   set-struct-spawn-timeout! spawn-id #f
-	   set-struct-spawn-eof! spawn-id #f
+	 if (n gt 0) {
+	   ;; search existing buffer
+	   r := expect/exp-match-all sid+
 
-	   mfd := struct-spawn-mfd spawn-id
-	   poller := libc/make-poller (list mfd libc/POLLIN)
+	   if (exp-case-matched sid+) r {
+	     exp-case-reset sid+
 
-	   poll-results := libc/poller-poll poller poll-timeout
-
-	   (cond
-	    ((null? poll-results) {
-	      set-struct-spawn-timeout! spawn-id #t
-	      expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll: timeout\n" (struct-spawn-argv spawn-id))
-	    })
-	    (else {
-	      for p-r in poll-results {
-		poll-fd := ph p-r
-		poll-revents := pht p-r
-		(cond
-		 ((libc/POLLIN? poll-revents) {
-		   data := libc/read poll-fd 1024
-		   if data {
-		     if (eof-object? data) {
-		       libc/poller-deregister poller poll-fd
-		       set-struct-spawn-eof! spawn-id #t
-		       expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (fd=%d): POLLIN EOF\n" (struct-spawn-argv spawn-id) poll-fd)
-		     } {
-		       set-struct-spawn-buffer! spawn-id (append-string (struct-spawn-buffer spawn-id) data)
-		       expect/exp-log spawn-id #t data
-		     }
-		   }
-		 })
-		 ((libc/POLLHUP? poll-revents) {
-		   libc/poller-deregister poller poll-fd
-		   set-struct-spawn-eof! spawn-id #t
-		   expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (fd=%d): POLLHUP EOF\n" (struct-spawn-argv spawn-id) poll-fd)
-		 })
-		 ((libc/POLLERR? poll-revents) {
-		   libc/poller-deregister poller poll-fd
-		   set-struct-spawn-eof! spawn-id #t
-		   expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (fd=%d): POLLERR EOF\n" (struct-spawn-argv spawn-id) poll-fd)
-		 })
-		 ((libc/POLLNVAL? poll-revents) {
-		   libc/poller-deregister poller poll-fd
-		   set-struct-spawn-eof! spawn-id #t
-		   expect/exp-log spawn-id #t (sprintf "exp-case: %@: poll (fd=%d): invalid request\n" (struct-spawn-argv spawn-id) poll-fd)
-		 }))
-	      }
-	    }))
-
-	   ;; search buffer + new data
-	   r = expect/exp-match-all spawn-id
-
-	   if (not (struct-spawn-matched spawn-id)) {
-	     if ((string-length (struct-spawn-buffer spawn-id)) gt exp-match-max) {
-	       set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) (- exp-match-max))
+	     if (not poller) {
+	       poller-map = make-hash #n #n 4
+	       poller = apply libc/make-poller (map (function (sid) {
+		 if sid {
+		   mfd := struct-spawn-mfd sid
+		   hash-set! poller-map mfd sid
+		   list mfd libc/POLLIN
+		 }
+	       }) sid+)
 	     }
-	     (exp-continue)
-	   } r
-	 } r
+
+	     poll-results := libc/poller-poll poller poll-timeout
+
+	     (cond
+	      ((null? poll-results) {
+		exp-case-set-timeout sid+
+	      })
+	      (else {
+		for p-r in poll-results {
+		  poll-fd := ph p-r
+		  poll-revents := pht p-r
+		  sid := hash-ref poller-map poll-fd
+		  (cond
+		   ((libc/POLLIN? poll-revents) {
+		     data := libc/read poll-fd 1024
+		     if data {
+		       if (eof-object? data) {
+			 libc/poller-deregister poller poll-fd
+			 set-struct-spawn-eof! sid #t
+			 expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLIN EOF\n" (struct-spawn-argv sid) poll-fd)
+		       } {
+			 set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
+			 expect/exp-log sid #t data
+		       }
+		     }
+		   })
+		   ((libc/POLLHUP? poll-revents) {
+		     libc/poller-deregister poller poll-fd
+		     set-struct-spawn-eof! sid #t
+		     expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLHUP EOF\n" (struct-spawn-argv sid) poll-fd)
+		   })
+		   ((libc/POLLERR? poll-revents) {
+		     libc/poller-deregister poller poll-fd
+		     set-struct-spawn-eof! sid #t
+		     expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLERR EOF\n" (struct-spawn-argv sid) poll-fd)
+		   })
+		   ((libc/POLLNVAL? poll-revents) {
+		     libc/poller-deregister poller poll-fd
+		     set-struct-spawn-eof! sid #t
+		     expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): invalid request\n" (struct-spawn-argv sid) poll-fd)
+		   }))
+		}
+	      }))
+
+	     ;; search buffer + new data
+	     r = expect/exp-match-all sid+
+
+	     if (exp-case-matched sid+) r {
+	       for-each (function (sid) {
+		 if sid {
+		   if ((string-length (struct-spawn-buffer sid)) gt exp-match-max) {
+		     set-struct-spawn-buffer! sid (substring (struct-spawn-buffer sid) (- exp-match-max))
+		   }
+		 }
+	       }) sid+
+
+	       (and (exp-case-remaining? sid+)
+		    (exp-continue))
+	     }
+	   }
+	 } {
+	   #f
+	 }
        }
 
        (exp-continue)
@@ -762,56 +1103,85 @@ define-template (exp-case & clauses) {
 			  ((exp-timeout lt 0) #n)
 			  (else               0))
 
+       ;; select only uses mfd so we need a hash table to get us back
+       ;; to spawn-ids
+       select-map := make-hash #n #n 4
+
+       ;; always deal with a list of spawn-ids
+       sid+ := #n
+       if (struct-spawn? spawn-id) {
+	 sid+ = list spawn-id
+       } {
+	 ;; ensure we operate on a copy of the list
+	 sid+ = copy-value spawn-id
+       }
+
        exp-continue = function #n {
 	 ; reset all flags (otherwise if you match a timeout and then
 	 ; exp-continue you'll loop matching timeout)
-	 set-struct-spawn-timeout! spawn-id #f
-	 set-struct-spawn-eof! spawn-id #f
-	 set-struct-spawn-matched! spawn-id #f
+	 exp-case-reset sid+ #t
 
-	 ;; search existing buffer
-	 r := expect/exp-match-all spawn-id
+	 ;; anything to do -- clearly there is the first time through
+	 ;; but calls to (exp-continue) after End of File indications
+	 ;; will have reduced the list
+	 n := (fold-left (function (c v) (if v (c + 1) c)) 0 sid+)
 
-	 if (not (struct-spawn-matched spawn-id)) {
-	   set-struct-spawn-timeout! spawn-id #f
-	   set-struct-spawn-eof! spawn-id #f
+	 if (n gt 0) {
+	   ;; search existing buffer
+	   r := expect/exp-match-all sid+
 
-	   mfd := struct-spawn-mfd spawn-id
+	   if (exp-case-matched sid+) r {
+	     exp-case-reset sid+
 
-	   select-results := libc/select (list mfd) #n #n select-timeout
-	   rlist := ph select-results
+	     select-results := libc/select (fold-left (function (r sid) {
+	       if sid {
+		 mfd := struct-spawn-mfd sid
+		 hash-set! select-map mfd sid
+		 pair mfd r
+	       } r
+	     }) #n sid+) #n #n select-timeout
+	     rlist := ph select-results
 
-	   (cond
-	    ((null? rlist) {
-	      set-struct-spawn-timeout! spawn-id #t
-	      expect/exp-log spawn-id #t (sprintf "exp-case: %@: select (fd=%d): timeout\n" (struct-spawn-argv spawn-id) mfd)
-	    })
-	    (else {
-	      ;; we know it is mfd but let's go through the motions
-	      for fd in rlist {
-		data := libc/read fd 1024
-		if data {
-		  if (eof-object? data) {
-		    set-struct-spawn-eof! spawn-id #t
-		    expect/exp-log spawn-id #t (sprintf "exp-case: %@: select (fd=%d): EOF\n" (struct-spawn-argv spawn-id) fd)
-		  } {
-		    set-struct-spawn-buffer! spawn-id (append-string (struct-spawn-buffer spawn-id) data)
-		    expect/exp-log spawn-id #t data
+	     (cond
+	      ((null? rlist) {
+		exp-case-set-timeout sid+
+	      })
+	      (else {
+		;; we know it is mfd but let's go through the motions
+		for fd in rlist {
+		  sid := hash-ref select-map fd
+		  data := libc/read fd 1024
+		  if data {
+		    if (eof-object? data) {
+		      set-struct-spawn-eof! sid #t
+		      expect/exp-log sid #t (sprintf "exp-case: %@: select (fd=%d): EOF\n" (struct-spawn-argv sid) fd)
+		    } {
+		      set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
+		      expect/exp-log sid #t data
+		    }
 		  }
 		}
-	      }
-	    }))
+	      }))
 
-	   ;; search buffer + new data
-	   r = expect/exp-match-all spawn-id
+	     ;; search buffer + new data
+	     r = expect/exp-match-all sid+
 
-	   if (not (struct-spawn-matched spawn-id)) {
-	     if ((string-length (struct-spawn-buffer spawn-id)) gt exp-match-max) {
-	       set-struct-spawn-buffer! spawn-id (substring (struct-spawn-buffer spawn-id) (- exp-match-max))
+	     if (exp-case-matched sid+) r {
+	       for-each (function (sid) {
+		 if sid {
+		   if ((string-length (struct-spawn-buffer sid)) gt exp-match-max) {
+		     set-struct-spawn-buffer! sid (substring (struct-spawn-buffer sid) (- exp-match-max))
+		   }
+		 }
+	       }) sid+
+
+	       (and (exp-case-remaining? sid+)
+		    (exp-continue))
 	     }
-	     (exp-continue)
-	   } r
-	 } r
+	   }
+	 } {
+	   #f
+	 }
        }
 
        (exp-continue)
@@ -840,16 +1210,17 @@ send `msg` to the spawned process
 
 `:slow` says to use the value of :ref:`exp-slow <expect/exp-slow>`
 which is a tuple of the number of code points in a burst prefixed by a
-delay of a number of milliseconds.  The default is ``(120 10)``
-roughly equivalent to a 115200 baud modem (if the code points were
-ASCII).
+delay of a number of milliseconds.  The default is ``(120 10)`` ---
+120 code points and a 10 ms delay -- roughly equivalent to a 115200
+baud modem (if the code points were ASCII).
 
 `:human` says to use the value of :ref:`exp-human <expect/exp-human>`
 which is a tuple of:
 
 * the average gap between in-word code points
 
-* the average gap between non-word code points
+* the average gap transitioning from an in-word code point to a
+  non-word code point
 
 * a moderating factor, K:
 
@@ -941,26 +1312,12 @@ well-known English `pangram <https://en.wikipedia.org/wiki/Pangram>`_:
   }
 }
 
-define* (exp-close (:spawn-id spawn-id spawn-id)) "
-close the master file descriptor to the spawned process
-
-:keyword :spawn-id: the spawn-id to use, defaults to :ref:`spawn-id <expect/spawn-id>`
-:type :spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`, optional
-:return: ``#<unspec>``
-
-``exp-close`` will set the `mfd` structure element to ``#f``
-
-" {
-  libc/close (struct-spawn-mfd spawn-id)
-  set-struct-spawn-mfd! spawn-id #f
-}
-
-define* (exp-wait (:spawn-id spawn-id spawn-id) (:close close? #f)) "
+define* (exp-wait (:spawn-id spawn-id spawn-id) (:close close? #t)) "
 wait for the spawned process
 
-:keyword :spawn-id: the `spawn-id` to use, defaults to :ref:`spawn-id <expect/spawn-id>`
+:keyword :spawn-id: the spawn-id(s) to use, defaults to :ref:`spawn-id <expect/spawn-id>`
 :type :spawn-id: :ref:`expect/struct-spawn <expect/struct-spawn>`
-:keyword :close: close the `mfd`, defaults to ``#f``
+:keyword :close: close the `mfd`, defaults to ``#t``
 :type :close: boolean
 :return: see below
 :rtype: list
@@ -968,41 +1325,105 @@ wait for the spawned process
 ``exp-wait`` will call :ref:`exp-close <expect/exp-close>` if `:close`
 is `true` and ``exp-close`` has not already been called.
 
-``exp-wait`` will return a list of the result from :ref:`waitpid
-<libc/waitpid>` plus a decoding of the status, eg. ``(exit 0)`` or
-``(killed 1)`` (see note).
+Otherwise ``exp-wait`` will read data from the spawned process until
+End of File (or some ^system-error) is indicated.
 
 .. warning::
 
-   Calling ``exp-close`` on the `mfd` of a running program will
-   probably have the operating system send the spawned process a
-   hangup signal.
+   Neither option is ideal if the spawned process has not completed
+   its processing
+
+   * pro-actively closing the `mfd` of a running program will probably
+     have the operating system send the spawned process a hangup
+     signal
+
+     This is most likely to result in a failed process state (and
+     presumes the spawned process does not ignore or otherwise handle
+     a ``SIGHUP``).
+
+   * on the other hand, *not* closing the `mfd` might have the spawned
+     process block waiting for full output buffers to be emptied,
+     hence reading from the spawned process until End of File is
+     indicated
+
+     However, if the spawned process is waiting for some input before
+     writing any final output then the spawned process will also
+     block.
+
+``exp-wait`` will return a list of the result from :ref:`waitpid
+<libc/waitpid>` plus a decoding of the status, eg. ``(exit 0)`` or
+``(killed 1)`` (see tip).
+
+`spawn-id` can be a :ref:`struct-spawn <expect/struct-spawn>` or a
+list of such ``struct-spawn``\ s.  If `spawn-id` is a list the value
+returned will be a list of individual result lists.
+
+.. tip::
+
+   The per-`spawn-id` result is also stored in the ``struct-spawn``
+   structure as the `status` field.
 
 " {
-  if (and close?
-	  (struct-spawn-mfd spawn-id)) {
-    exp-close :spawn-id spawn-id
+  define (waiter sid) {
+    if (struct-spawn-mfd sid) {
+      if close? {
+	exp-close :spawn-id sid
+      } {
+	loop :+ function (mfd) {
+	  eprintf "."
+	  trap ^system-error (function (c) {
+	    trap-return #t
+	  }) {
+	    data := libc/read mfd
+	    if data {
+	      if (eof-object? data) #t (loop mfd)
+	    } (loop mfd)
+	  }
+	}
+
+	loop (struct-spawn-mfd sid)
+	eprintf "\n"
+      }
+    }
+
+    r := struct-spawn-status sid
+    if (not r) {
+      wr := libc/waitpid (struct-spawn-pid sid)
+      pid := ph wr
+      status := pht wr
+      coding := (cond
+		 ((null? status) {
+		   eprintf "waitpid -> #n for %s\n" sid
+		   '(null)
+		 })
+		 ((WIFEXITED status) {
+		   list 'exit (WEXITSTATUS status)
+
+		 })
+		 ((WIFSIGNALED status) {
+		   list 'killed (WTERMSIG status)
+		 })
+		 (else {
+		   '(unknown)
+		 }))
+
+      r = append wr (list coding)
+      set-struct-spawn-status! sid r
+    }
+    r
   }
 
-  wr := libc/waitpid (struct-spawn-pid spawn-id)
-  pid := ph wr
-  status := pht wr
-  coding := (cond
-	     ((null? status) {
-	       '(null)
-	     })
-	     ((WIFEXITED status) {
-	       list 'exit (WEXITSTATUS status)
-
-	     })
-	     ((WIFSIGNALED status) {
-	       list 'killed (WTERMSIG status)
-	     })
-	     (else {
-	       '(unknown)
-	     }))
-
-  append wr (list coding)
+  (cond
+   ((struct-spawn? spawn-id) {
+     waiter spawn-id
+   })
+   ((pair? spawn-id) {
+     r := #n
+     for sid in spawn-id {
+       r = pair (waiter sid) r
+     }
+     r
+   }))
 }
 
 provide expect

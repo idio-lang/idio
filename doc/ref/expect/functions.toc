@@ -12,6 +12,13 @@
 (document expect exp-wait)
 
 (nodocument expect exp-log)
+(nodocument expect exp-case-eof?)
+(nodocument expect exp-case-timeout?)
+(nodocument expect exp-case-remaining?)
+(nodocument expect exp-case-regexec)
+(nodocument expect exp-case-matched)
+(nodocument expect exp-case-reset)
+(nodocument expect exp-case-set-timeout)
 (nodocument expect exp-match-before)
 (nodocument expect exp-match)
 (nodocument expect exp-match-after)

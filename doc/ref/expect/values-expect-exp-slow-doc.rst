@@ -1,4 +1,4 @@
-:default: ``(120 10)``
+:default: ``(120 10)`` -- 120 code points and a 10ms delay
 
 ``exp-slow`` is a tuple of the number of code points in a burst
 prefixed by a delay of a number of milliseconds.  The default is

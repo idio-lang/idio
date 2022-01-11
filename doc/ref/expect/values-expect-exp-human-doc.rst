@@ -4,7 +4,8 @@
 
 * the average gap between in-word code points
 
-* the average gap between non-word code points
+* the average gap transitioning from an in-word code point to a
+  non-word code point
 
 * a moderating factor, K:
 
