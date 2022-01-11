@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf@idio-lang.org>
+# Copyright (c) 2015-2022 Ian Fitchet <idf@idio-lang.org>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License.  You
@@ -23,6 +23,11 @@
 # -e should only apply to read (write?) and broken pipes
 set -ue
 
+stderr ()
+{
+    echo "$@" >&2
+}
+
 note ()
 {
     :
@@ -38,8 +43,8 @@ deterministic way: a specific exit status or a simulated signal.
 
 usage: $0 [options]
 where options are:
-  -E STATUS	exit with STATUS
-  -K SIGNAL	kill self with SIGNAL
+  -E STATUS	exit with STATUS (0-127)
+  -K SIGNAL	kill self with SIGNAL (1, 2, 3, ... or HUP, INT, QUIT, ...)
   -r NUM	read NUM lines (-s N seconds apart)
   -s NUM	sleep for NUM seconds
   -t NUM	set read's timeout to NUM seconds, '' for default [${opt_timeout}]
@@ -55,12 +60,12 @@ EOF
 
 opt_exit=0
 opt_kill=
-opt_read=
+opt_read=0
 opt_sleep=0
 opt_timeout=
 opt_verbose=
-opt_write_out_lines=
-opt_write_err_lines=
+opt_write_out_lines=0
+opt_write_err_lines=0
 
 var_write_out_name=stdout
 
@@ -71,6 +76,11 @@ while getopts "E:e:hI:K:O:o:r:s:t:v" opt ; do
 	;;
     e)
 	opt_write_err_lines=${OPTARG}
+	if [[ ${opt_write_err_lines} -lt 0 ]] ; then
+	    stderr "ERROR: -e ${opt_write_err_lines}: NUM >= 0"
+	    usage
+	    exit 1
+	fi
 	;;
     h)
 	usage
@@ -88,15 +98,35 @@ while getopts "E:e:hI:K:O:o:r:s:t:v" opt ; do
 	;;
     o)
 	opt_write_out_lines=${OPTARG}
+	if [[ ${opt_write_out_lines} -lt 0 ]] ; then
+	    stderr "ERROR: -e ${opt_write_out_lines}: NUM >= 0"
+	    usage
+	    exit 1
+	fi
 	;;
     r)
 	opt_read=${OPTARG}
+	if [[ ${opt_read} -lt 0 ]] ; then
+	    stderr "ERROR: -e ${opt_read}: NUM >= 0"
+	    usage
+	    exit 1
+	fi
 	;;
     s)
 	opt_sleep=${OPTARG}
+	if [[ ${opt_sleep} -lt 0 ]] ; then
+	    stderr "ERROR: -e ${opt_sleep}: NUM >= 0"
+	    usage
+	    exit 1
+	fi
 	;;
     t)
 	opt_timeout=${OPTARG}
+	if [[ ${opt_timeout} -lt 0 ]] ; then
+	    stderr "ERROR: -e ${opt_timeout}: NUM >= 0"
+	    usage
+	    exit 1
+	fi
 	;;
     v)
 	opt_verbose=1
@@ -119,36 +149,24 @@ var_read=1
 var_write_out_lines=1
 var_write_err_lines=1
 
-if [[ ${opt_read} || $opt_write_out_lines || $opt_write_err_lines ]] ; then
-    while [[ ${opt_read} || ${opt_write_out_lines} || ${opt_write_err_lines} ]] ; do
-	if [[ ${opt_write_out_lines} ]] ; then
-	    if [[ ${opt_write_out_lines} -gt 0 ]] ; then
-		echo "${0##*/}: $$: wrote line ${var_write_out_lines} to ${var_write_out_name}"
-		var_write_out_lines=$(( var_write_out_lines + 1 ))
-		opt_write_out_lines=$(( opt_write_out_lines - 1 ))
-	    else
-		opt_write_out_lines=
-	    fi
+if [[ ${opt_read} -gt 0 || ${opt_write_out_lines} -gt 0 || ${opt_write_err_lines} -gt 0 ]] ; then
+    while [[ ${opt_read} -gt 0 || ${opt_write_out_lines} -gt 0 || ${opt_write_err_lines} -gt 0 ]] ; do
+	if [[ ${opt_write_out_lines} -gt 0 ]] ; then
+	    echo "${0##*/}: $$: wrote line ${var_write_out_lines} to ${var_write_out_name}"
+	    var_write_out_lines=$(( var_write_out_lines + 1 ))
+	    opt_write_out_lines=$(( opt_write_out_lines - 1 ))
 	fi
-	if [[ ${opt_write_err_lines} ]] ; then
-	    if [[ ${opt_write_err_lines} -gt 0 ]] ; then
-		echo "${0##*/}: $$: wrote line ${var_write_err_lines} stderr" >&2
-		var_write_err_lines=$(( var_write_err_lines + 1 ))
-		opt_write_err_lines=$(( opt_write_err_lines - 1 ))
-	    else
-		opt_write_err_lines=
-	    fi
+	if [[ ${opt_write_err_lines} -gt 0 ]] ; then
+	    echo "${0##*/}: $$: wrote line ${var_write_err_lines} stderr" >&2
+	    var_write_err_lines=$(( var_write_err_lines + 1 ))
+	    opt_write_err_lines=$(( opt_write_err_lines - 1 ))
 	fi
 	sleep $opt_sleep
-	if [[ ${opt_read} ]] ; then
-	    if [[ ${opt_read} -gt 0 ]] ; then
-		read ${opt_timeout:+-t ${opt_timeout}} line
-		note "${0##*/}: $$: read #${var_read} '${line}'"
-		var_read=$(( var_read + 1 ))
-		opt_read=$(( opt_read - 1 ))
-	    else
-		opt_read=
-	    fi
+	if [[ ${opt_read} -gt 0 ]] ; then
+	    read ${opt_timeout:+-t ${opt_timeout}} line
+	    note "${0##*/}: $$: read #${var_read} '${line}'"
+	    var_read=$(( var_read + 1 ))
+	    opt_read=$(( opt_read - 1 ))
 	fi
     done
 else
