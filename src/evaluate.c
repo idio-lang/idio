@@ -5196,6 +5196,14 @@ test if `o` is an environ variable		\n\
 						\n\
 :param o: object to test			\n\
 :return: ``#t`` if `o` is an environ variable, ``#f`` otherwise	\n\
+						\n\
+``environ?`` is a function so :ref:`quote <quote special form>`	\n\
+any argument likely to be expanded by the evaluator:	\n\
+						\n\
+.. code-block:: idio				\n\
+						\n\
+   environ? HOME	; == environ? %P\"/home/me\"	\n\
+   environ? 'HOME	; #t (or #f?)		\n\
 ")
 {
     IDIO_ASSERT (o);
