@@ -41,6 +41,11 @@ Here, :samp:`:str-kw` is one of the string keywords:
      If ``spawn-id`` is a list then :samp:`{body}` will be called for
      each spawn-id for which the condition is true.
 
+     If ``spawn-id`` is a list then it is inadvisable to call
+     ``(exp-continue)`` in the :samp:`{body}` of an ``:eof`` clause as
+     that will prevent the invocation of any other extant End of File
+     notifications.
+
      See also the End of File note below.
 
 * ``:timeout`` for matching a time out
@@ -73,18 +78,24 @@ the following arguments:
 * for a successful terminal match the argument is ``spawn-id``
 
 :samp:`{body}` can invoke the function ``(exp-continue)`` to loop
-around again otherwise the result of :samp:`{body}` is returned.
+around again.
 
 Passing no clauses will still attempt to match using any existing
 clauses from :ref:`exp-case-before <expect/exp-case-before>` or
 :ref:`exp-case-after <expect/exp-case-after>`.
+
+If a clause matches, ``exp-case`` returns the value from
+:samp:`{body}`.  If no clauses match or all spawn-ids have indicated
+End of File, or a timeout has occurred and there is no ``:timeout``
+clause ``exp-case`` returns ``#f``.
 
 .. admonition:: End of File
 
    If the spawned process indicates End of File then the master file
    descriptor is generally closed although this is not guaranteed.
 
-   Call :ref:`exp-wait <expect/exp-wait>` to clean up.
+   Call :ref:`exp-wait <expect/exp-wait>` to clean up both file
+   descriptors and spawned processes.
 
 .. note::
 

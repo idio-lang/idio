@@ -231,8 +231,198 @@ test (exp-case) 'match-after
 
 (exp-wait)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; exp-close/exp-wait mid-session -- exp-wait should be identical to
+;; exp-close
+
+;; exp-close before we start
+spawn echo "foo"
+(exp-close)
+test (exp-case (:eof #t)) #f
+(exp-wait)
+
+;; exp-close mid-session
+spawn echo "foo"
+(exp-case
+ ("f" (exp-close)))
+test (exp-case (:eof #t)) #f
+(exp-wait)
+
+;; exp-wait before we start
+spawn echo "foo"
+(exp-wait)
+test (exp-case (:eof #t)) #f
+(exp-wait)
+
+;; exp-wait mid-session
+spawn echo "foo"
+(exp-case
+ ("f" (exp-wait)))
+test (exp-case (:eof #t)) #f
+(exp-wait)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; exp-wait with blocked processes -- we expect[sic] to have exp-wait
+;; return in these examples though in general YMMV
+
+;; NB. read something to ensure the spawned process has actually
+;; started
+
+;; auto-exit blocking on stdin
+spawn auto-exit -o 1 -r 1
+(exp-case ("stdout" #t))
+(exp-wait)
+
+;; man bash blocking on stdout (assuming the terminal hasn't buffered
+;; everything) -- NB switch PAGER to "cat" to avoid the PAGER
+;; prompting and blocking on stdin
+set-PAGER := environ? 'PAGER
+OPAGER := #f
+if set-PAGER {
+  OPAGER = PAGER
+  PAGER = "cat"
+}
+spawn man bash
+(exp-case ("." #t))
+(exp-wait)
+if set-PAGER {
+  PAGER = OPAGER
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; spawn-id is a list
+spawn-id = #n
+
+;; a list of one spawn-id
+spawn echo "foo"
+(exp-case
+ ("o" {
+   test prefix "f"
+ }))
+(exp-wait)
+
+;; a list of two spawn-ids -- we'll plod through one step at a time
+spawn-id = #n
+
+spawn echo "foo"
+spawn echo "bar"
+
+;; exp-case will cause a single read from each spawned process --
+;; hopefully the terminal can buffer the four output characters from
+;; each echo
+
+;; match something from one of them -- which one depends on operating
+;; system scheduling
+(exp-case
+ ("oo" {
+   test prefix "f"
+ })
+ ("ar" {
+   test prefix "b"
+ }))
+
+;; match the other using the same clauses
+(exp-case
+ ("oo" {
+   test prefix "f"
+ })
+ ("ar" {
+   test prefix "b"
+ }))
+
+;; At this point, we shouldn't have required a second read from the
+;; terminal for either process as both of the previous matches could
+;; be satisfied from the initial read.  Consequently, we will not have
+;; generated any End of File indications.  Let's force the issue.
+
+;; get both EOF
+(exp-case
+ (:eof {
+   test #t #t				; twice
+ }))
+
+(exp-wait)
+
+;; a list of two spawn-ids -- this time we'll crash through everything
+;; at once by calling exp-continue
+spawn-id = #n
+
+spawn echo "foo"
+spawn echo "bar"
+
+;; madness...
+(exp-case
+ ("oo" {
+   test prefix "f"			; once
+   (exp-continue)
+ })
+ ("ar" {
+   test prefix "b"			; once
+   (exp-continue)
+ })
+ (:eof {
+   test #t #t				; twice
+
+   ;; No (exp-continue) as we'll be called twice for these simple
+   ;; processes.  Hopefully.
+ }))
+
+(exp-wait)
+
+;; What if we forget to clear spawn-id?  Let's run through the same
+;; again with the previous spawn-ids still in the list.
+spawn echo "foo"
+spawn echo "bar"
+
+;; madness...
+(exp-case
+ ("oo" {
+   test prefix "f"			; once
+   (exp-continue)
+ })
+ ("ar" {
+   test prefix "b"			; once
+   (exp-continue)
+ })
+ (:eof {
+   test #t #t				; twice
+
+   ;; No (exp-continue) as we'll be called twice for these simple
+   ;; processes.  Hopefully.
+ }))
+
+(exp-wait)
+
+;; What if the spawned processes do not, conveniently, end at the same
+;; time?
+spawn-id = #n
+
+spawn echo "foo"
+spawn auto-exit -r 1
+
+(exp-case
+ (:eof {
+   test #t #t				; once for the echo
+ }))
+
+;; send a message to auto-exit, at the head of the list
+exp-send "hello" :cr #t :spawn-id (ph spawn-id)
+
+(exp-case
+ (:eof {
+   test #t #t				; once for auto-exit
+ }))
+
+(exp-wait)
+
+;; normal spawn-id behaviour resumes
+spawn-id = #f
+
 ;; all done?
-Tests? (expect-0 + 27)
+Tests? (expect-0 + 46)
 
 ;Local Variables:
 ;mode: Idio

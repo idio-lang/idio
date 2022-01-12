@@ -498,7 +498,9 @@ define (exp-case-eof? sid+) "
        sid := ph sid*
        if (and sid
 	       (struct-spawn-eof sid)) {
-	 sid
+	 ;; return the lot and the code in process-args can filter the
+	 ;; individuals out again, calling the body for each in turn
+	 sid+
        } (loop (pt sid*))
      }))
   }
@@ -569,23 +571,28 @@ define (process-args exp-regcomps i re-kind re-flags a*) "
      (case (ph a*)
       ((:eof) {
 	list (ph a*) #T{
-	  ((exp-case-eof? spawn-id) => (function (sid) {
-	    set-struct-spawn-matched! sid #t
-	    ((function (spawn-id)
-	     $@(pt a*)) sid)
+	  ((exp-case-eof? spawn-id) => (function (sid+) {
+	    for sid in sid+ {
+	      if (and sid
+		      (struct-spawn-eof sid)) {
+		set-struct-spawn-matched! sid #t
+		((function (spawn-id)
+		 $@(pt a*)) sid)
+	      }
+	    }
 	  }))
 	}
       })
       ((:timeout) {
 	list (ph a*) #T{
-	  ((exp-case-timeout? spawn-id) => (function (sid*) {
-	    for sid in sid* {
+	  ((exp-case-timeout? spawn-id) => (function (sid+) {
+	    for sid in sid+ {
 	      if sid {
 		set-struct-spawn-matched! sid #t
 	      }
 	    }
 	    ((function (spawn-id)
-	     $@(pt a*)) sid*)
+	     $@(pt a*)) sid+)
 	  }))
 	}
       })
@@ -1000,7 +1007,13 @@ define-template (exp-case & clauses) {
 	 ;; anything to do -- clearly there is the first time through
 	 ;; but calls to (exp-continue) after End of File indications
 	 ;; will have reduced the list
-	 n := (fold-left (function (c v) (if v (c + 1) c)) 0 sid+)
+	 n := (fold-left (function (c sid) {
+	   if sid {
+	     ;; also exclude (the first time through) people who've
+	     ;; managed to call exp-close before exp-case...
+	     if (struct-spawn-mfd sid) (c + 1) c
+	   } c
+	 }) 0 sid+)
 
 	 if (n gt 0) {
 	   ;; search existing buffer
@@ -1011,13 +1024,15 @@ define-template (exp-case & clauses) {
 
 	     if (not poller) {
 	       poller-map = make-hash #n #n 4
-	       poller = apply libc/make-poller (map (function (sid) {
+	       poller = apply libc/make-poller (fold-left (function (r sid) {
 		 if sid {
 		   mfd := struct-spawn-mfd sid
-		   hash-set! poller-map mfd sid
-		   list mfd libc/POLLIN
-		 }
-	       }) sid+)
+		   if mfd {
+		     hash-set! poller-map mfd sid
+		     pair (list mfd libc/POLLIN) r
+		   } r
+		 } r
+	       }) #n sid+)
 	     }
 
 	     poll-results := libc/poller-poll poller poll-timeout
@@ -1037,6 +1052,7 @@ define-template (exp-case & clauses) {
 		     if data {
 		       if (eof-object? data) {
 			 libc/poller-deregister poller poll-fd
+			 expect/exp-close :spawn-id sid
 			 set-struct-spawn-eof! sid #t
 			 expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLIN EOF\n" (struct-spawn-argv sid) poll-fd)
 		       } {
@@ -1047,16 +1063,19 @@ define-template (exp-case & clauses) {
 		   })
 		   ((libc/POLLHUP? poll-revents) {
 		     libc/poller-deregister poller poll-fd
+		     expect/exp-close :spawn-id sid
 		     set-struct-spawn-eof! sid #t
 		     expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLHUP EOF\n" (struct-spawn-argv sid) poll-fd)
 		   })
 		   ((libc/POLLERR? poll-revents) {
 		     libc/poller-deregister poller poll-fd
+		     expect/exp-close :spawn-id sid
 		     set-struct-spawn-eof! sid #t
 		     expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLERR EOF\n" (struct-spawn-argv sid) poll-fd)
 		   })
 		   ((libc/POLLNVAL? poll-revents) {
 		     libc/poller-deregister poller poll-fd
+		     expect/exp-close :spawn-id sid
 		     set-struct-spawn-eof! sid #t
 		     expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): invalid request\n" (struct-spawn-argv sid) poll-fd)
 		   }))
@@ -1124,7 +1143,13 @@ define-template (exp-case & clauses) {
 	 ;; anything to do -- clearly there is the first time through
 	 ;; but calls to (exp-continue) after End of File indications
 	 ;; will have reduced the list
-	 n := (fold-left (function (c v) (if v (c + 1) c)) 0 sid+)
+	 n := (fold-left (function (c sid) {
+	   if sid {
+	     ;; also exclude (the first time through) people who've
+	     ;; managed to call exp-close before exp-case...
+	     if (struct-spawn-mfd sid) (c + 1) c
+	   } c
+	 }) 0 sid+)
 
 	 if (n gt 0) {
 	   ;; search existing buffer
@@ -1136,8 +1161,10 @@ define-template (exp-case & clauses) {
 	     select-results := libc/select (fold-left (function (r sid) {
 	       if sid {
 		 mfd := struct-spawn-mfd sid
-		 hash-set! select-map mfd sid
-		 pair mfd r
+		 if mfd {
+		   hash-set! select-map mfd sid
+		   pair mfd r
+		 } r
 	       } r
 	     }) #n sid+) #n #n select-timeout
 	     rlist := ph select-results
@@ -1210,9 +1237,9 @@ send `msg` to the spawned process
 
 `:slow` says to use the value of :ref:`exp-slow <expect/exp-slow>`
 which is a tuple of the number of code points in a burst prefixed by a
-delay of a number of milliseconds.  The default is ``(120 10)`` ---
-120 code points and a 10 ms delay -- roughly equivalent to a 115200
-baud modem (if the code points were ASCII).
+delay of a number of milliseconds.  The default is ``(120 10)`` -- 120
+code points and a 10 ms delay -- roughly equivalent to a 115200 baud
+modem (if the code points were ASCII).
 
 `:human` says to use the value of :ref:`exp-human <expect/exp-human>`
 which is a tuple of:
@@ -1369,6 +1396,8 @@ returned will be a list of individual result lists.
       if close? {
 	exp-close :spawn-id sid
       } {
+	;; XXX there's bound to be a (trivial) pathological case where
+	;; draining the pty to get to EOF doesn't work
 	loop :+ function (mfd) {
 	  eprintf "."
 	  trap ^system-error (function (c) {
