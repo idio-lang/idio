@@ -275,21 +275,20 @@ spawn auto-exit -o 1 -r 1
 (exp-case ("stdout" #t))
 (exp-wait)
 
-;; man bash blocking on stdout (assuming the terminal hasn't buffered
-;; everything) -- NB switch PAGER to "cat" to avoid the PAGER
-;; prompting and blocking on stdin
-set-PAGER := environ? 'PAGER
-OPAGER := #f
-if set-PAGER {
-  OPAGER = PAGER
-  PAGER = "cat"
-}
-spawn man bash
+;; blocking on stdout (assuming the terminal hasn't buffered
+;; everything)
+
+;; This was originally the equivalent of "PAGER=cat man bash" but
+;; OpenBSD's man(1) seemed to do something weird that I don't have the
+;; skills to debug.  In the meanwhile, the basic premise for the test
+;; is the spawned process blocking on stdout because of a lot of data
+;; for which "cat file" suffices.  The contents of file?  man bash, of
+;; course.
+man bash > testfile
+spawn cat testfile
 (exp-case ("." #t))
 (exp-wait)
-if set-PAGER {
-  PAGER = OPAGER
-}
+rm testfile
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
