@@ -166,7 +166,7 @@ if type -p systemd-path >/dev/null 2>&1 ; then
     libdir=$(systemd-path system-library-arch)
 else
     case "${uname_a[0]}" in
-    *BSD)
+    *BSD|Darwin)
 	bindir=/usr/local/bin
 	libdir=/usr/local/lib
 	;;

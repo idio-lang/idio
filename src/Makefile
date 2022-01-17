@@ -135,7 +135,7 @@ $(SI_BINDIR)/idio : $(SI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
 $(SI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
 ifeq ($(OS),SunOS)
 ifeq (/usr/sbin/install,$(shell which install))
-	install -f $(UI_BINDIR) $^
+	install -f $(SI_BINDIR) $^
 else
 	install $^ $@
 endif
