@@ -392,6 +392,8 @@ Returns a path value with duplicate elements removed after the first.
   join-string sep (reverse seen)
 }
 
+IDIOLIB = trim-path IDIOLIB
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 define* (std-paths act val (:sep sep ":") (:once once? #f) (:test test? #f)) "
