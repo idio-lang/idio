@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -214,6 +214,12 @@ define (unwind-to* tag v) {
   }
 
   loop (reverse holes-prefix)
+
+  abort-top! v
+}
+
+define (abort-to* tag v) {
+  unwind-till-tagged! tag
 
   abort-top! v
 }
@@ -488,13 +494,13 @@ for-loop-break-tag := make-prompt-tag 'for-loop-break
 (define-syntax break
  (syntax-rules ()
   ((break)   (break (void)))
-  ((break v) (unwind-to* for-loop-break-tag v))))
+  ((break v) (abort-to* for-loop-break-tag v))))
 
 for-loop-continue-tag := make-prompt-tag 'for-loop-continue
 (define-syntax continue
  (syntax-rules ()
   ((continue)   (continue (void)))
-  ((continue v) (unwind-to* for-loop-continue-tag v))))
+  ((continue v) (abort-to* for-loop-continue-tag v))))
 
 define-template (C/for var-clauses test & body) {
   split :+ function (clauses vars inits steps) {
@@ -520,17 +526,19 @@ define-template (C/for var-clauses test & body) {
 
   #T{
     {
-      $for-loop :+ function $v {
-	prompt-at for-loop-break-tag {
-	  (if $test {
-	    prompt-at for-loop-continue-tag {
+      prompt-at for-loop-break-tag {
+	$for-loop :+ function $v {
+	  prompt-at for-loop-continue-tag {
+	    if $test {
 	      $@body
-	    }
-	    $for-loop $@s
-	  })
+	    } (break)
+	  }
+
+	  $for-loop $@s
 	}
+
+	$for-loop $@i
       }
-      $for-loop $@i
     }
   }
 }

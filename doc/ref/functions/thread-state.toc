@@ -31,8 +31,6 @@
 (nodocument Idio let*)
 (nodocument Idio letrec)
 
-(nodocument Idio C/for)
-(nodocument Idio while)
 (nodocument Idio values)
 
 (nodocument Idio setter)
@@ -75,9 +73,8 @@
 (nodocument Idio hole-tagged?)
 (nodocument Idio tag-exists?)
 (nodocument Idio abort)
+(nodocument Idio abort-to*)
 (nodocument Idio abort-top!)
-(nodocument Idio break)
-(nodocument Idio continue)
 (nodocument Idio control)
 (nodocument Idio control*)
 (nodocument Idio control-at)

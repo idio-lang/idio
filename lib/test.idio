@@ -316,6 +316,7 @@ test-load "test-vars.idio"
 test-load "test-vm-error.idio"
 
 test-load "test-s9.idio"
+test-load "test-loop.idio"
 
 test-load "test-operator.idio"
 test-load "test-template.idio"
@@ -364,7 +365,7 @@ test-load "test-job-control.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? (7480 - Skipped)
+Tests? (7489 - Skipped)
 
 if (e? testfile) (delete-file testfile)
 

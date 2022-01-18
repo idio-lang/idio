@@ -10,9 +10,5 @@ define (bad-printer o s) {
 
 tv := (libc/gettimeofday)
 
-unwind-protect {
-  add-as-string tv bad-printer
-  format "%s" tv
-} {
-  add-as-string tv libc/struct-timeval-as-string
-}
+add-as-string tv bad-printer
+format "%s" tv

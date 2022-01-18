@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -633,7 +633,7 @@ close-handle fh
 
 format "%s" libc/UINTMAX_MAX
 
-; A C-pointer with a printer
+; A C/pointer with a printer
 format "%s" (libc/gettimeofday)
 
 copy-value "hello" 'deep

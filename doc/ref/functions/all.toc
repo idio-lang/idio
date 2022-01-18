@@ -6,6 +6,10 @@
 
 (document Idio case)
 (document Idio do)
+(document Idio C/for C-for)
+(document Idio break)
+(document Idio continue)
+(document Idio while)
 
 (nodocument Idio delay)
 (nodocument Idio force)
