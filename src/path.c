@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -325,7 +325,7 @@ IDIO idio_glob_expand (IDIO s)
     globfree (&g);
     IDIO_GC_FREE (s_C, size);
 
-    return idio_list_reverse (r);
+    return idio_list_nreverse (r);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("glob", glob, (IDIO s), "s", "\

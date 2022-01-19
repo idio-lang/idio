@@ -1143,7 +1143,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, idio_unicod
 	    count++;
 
 	    if (closedel == e) {
-		r = idio_list_reverse (r);
+		r = idio_list_nreverse (r);
 		if (! (IDIO_LIST_QUOTE_P (depth) ||
 		       IDIO_LIST_CONSTANT_P (depth))) {
 		    r = idio_operator_expand (r, 0);
@@ -1298,7 +1298,7 @@ static IDIO idio_read_unescape (IDIO ls)
 	ls = IDIO_PAIR_T (ls);
     }
 
-    return idio_list_reverse (r);
+    return idio_list_nreverse (r);
 }
 
 static void idio_read_line_comment (IDIO handle, IDIO lo, int depth)
@@ -1841,7 +1841,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 
 	    if (ic[0]) {
 		r = idio_pair (s, r);
-		r = idio_list_reverse (r);
+		r = idio_list_nreverse (r);
 		r = IDIO_LIST2 (idio_S_concatenate_string,
 				IDIO_LIST3 (idio_S_map,
 					    idio_S_2string,
@@ -4120,7 +4120,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, idio_unicode_t *ic,
 
 	if (idio_S_eof == expr) {
 	    if (idio_S_nil != re) {
-		re = idio_list_reverse (re);
+		re = idio_list_nreverse (re);
 		if (idio_S_nil == IDIO_PAIR_T (re)) {
 		    re = IDIO_PAIR_H (re);
 		} else {
@@ -4144,7 +4144,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, idio_unicode_t *ic,
 	    }
 	} else if (idio_T_eol == expr) {
 	    if (idio_S_nil != re) {
-		re = idio_list_reverse (re);
+		re = idio_list_nreverse (re);
 		if (idio_S_nil == IDIO_PAIR_T (re)) {
 		    re = IDIO_PAIR_H (re);
 		} else {
@@ -4168,7 +4168,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, idio_unicode_t *ic,
 	    }
 	} else if (closedel == expr) {
 	    if (idio_S_nil != re) {
-		re = idio_list_reverse (re);
+		re = idio_list_nreverse (re);
 		idio_hash_put (idio_src_properties, re, lo);
 		if (idio_S_nil == IDIO_PAIR_T (re)) {
 		    re = IDIO_PAIR_H (re);
@@ -4299,7 +4299,7 @@ static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, idio_unicode_t
 	}
 
 	if (closedel == reason) {
-	    r = idio_list_reverse (r);
+	    r = idio_list_nreverse (r);
 
 	    /*
 	     * A few places will have used us to read a block in but

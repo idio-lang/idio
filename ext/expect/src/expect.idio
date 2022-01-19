@@ -675,7 +675,7 @@ define (process-clauses c* exp-regcomps i ri* rk* rb*) "
 
 " {
   (cond
-   ((null? c*) (list (reverse ri*) (reverse rk*) (reverse rb*)))
+   ((null? c*) (list (reverse! ri*) (reverse! rk*) (reverse! rb*)))
    ((or (not (pair? c*))
 	(not (pair? (ph c*)))
 	(not (pair? (pth c*)))) (error/type ^rt-syntax-error 'exp-case "invalid syntax" c*))

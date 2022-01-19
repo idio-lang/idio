@@ -2847,7 +2847,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 		 */
 		idio_meaning_warning ("rewrite-body", "empty body for let/function+", cur);
 
-		return idio_list_reverse (r);
+		return idio_list_nreverse (r);
 	    }
 
 	    IDIO body_sequence = idio_list_append2 (IDIO_LIST1 (idio_S_begin), body);
@@ -2866,7 +2866,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 
 	    idio_meaning_copy_src_properties (IDIO_MPP (cur, src), r_cur);
 	    r = idio_list_append2 (IDIO_LIST1 (r_cur), r);
-	    return idio_list_reverse (r);
+	    return idio_list_nreverse (r);
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_colon_star == IDIO_PAIR_H (cur)) {
 	    /* :* -> environ-let */
@@ -2876,7 +2876,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 	     */
 	    IDIO body = idio_meaning_rewrite_body (IDIO_MPP (cur, src), IDIO_PAIR_T (l), nametree);
 	    if (idio_S_nil != r) {
-		r = idio_list_reverse (r);
+		r = idio_list_nreverse (r);
 	    }
 
 	    if (idio_S_nil == body) {
@@ -2904,7 +2904,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 	     */
 	    IDIO body = idio_meaning_rewrite_body (IDIO_MPP (cur, src), IDIO_PAIR_T (l), nametree);
 	    if (idio_S_nil != r) {
-		r = idio_list_reverse (r);
+		r = idio_list_nreverse (r);
 	    }
 
 	    if (idio_S_nil == body) {
@@ -2930,7 +2930,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 	     */
 	    IDIO body = idio_meaning_rewrite_body (IDIO_MPP (cur, src), IDIO_PAIR_T (l), nametree);
 	    if (idio_S_nil != r) {
-		r = idio_list_reverse (r);
+		r = idio_list_nreverse (r);
 	    }
 
 	    if (idio_S_nil == body) {
@@ -2958,7 +2958,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 	     */
 	    IDIO body = idio_meaning_rewrite_body (IDIO_MPP (cur, src), IDIO_PAIR_T (l), nametree);
 	    if (idio_S_nil != r) {
-		r = idio_list_reverse (r);
+		r = idio_list_nreverse (r);
 	    }
 
 	    if (idio_S_nil == body) {
@@ -3000,7 +3000,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 	}
     }
 
-    return idio_list_reverse (r);
+    return idio_list_nreverse (r);
 }
 
 /*
@@ -3231,7 +3231,7 @@ static IDIO idio_meaning_abstraction (IDIO src, IDIO nns, IDIO docstr, IDIO ep, 
 	} else if (idio_S_nil == ns) {
 	    return idio_meaning_fix_abstraction (src, nns, nns, docstr, ep, nametree, escapes, flags, cs, cm);
 	} else {
-	    return idio_meaning_dotted_abstraction (src, idio_list_reverse (regular), ns, nns, docstr, ep, nametree, escapes, flags, cs, cm);
+	    return idio_meaning_dotted_abstraction (src, idio_list_nreverse (regular), ns, nns, docstr, ep, nametree, escapes, flags, cs, cm);
 	}
     }
 
@@ -3523,7 +3523,7 @@ static IDIO idio_meaning_closed_application (IDIO src, IDIO fe, IDIO aes, IDIO n
 		return idio_S_notreached;
 	    }
 	} else {
-	    return idio_meaning_dotted_closed_application (fe, idio_list_reverse (fixed_args), ns, IDIO_PAIR_T (fet), aes, nametree, escapes, flags, cs, cm);
+	    return idio_meaning_dotted_closed_application (fe, idio_list_nreverse (fixed_args), ns, IDIO_PAIR_T (fet), aes, nametree, escapes, flags, cs, cm);
 	}
     }
 

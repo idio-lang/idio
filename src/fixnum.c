@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -359,7 +359,7 @@ IDIO idio_fixnum_primitive_add (IDIO args)
 		args = IDIO_PAIR_T (args);
 	    }
 
-	    return idio_bignum_primitive_add (idio_list_reverse (bn_args));
+	    return idio_bignum_primitive_add (idio_list_nreverse (bn_args));
 	}
 
 	args = IDIO_PAIR_T (args);
@@ -431,7 +431,7 @@ IDIO idio_fixnum_primitive_subtract (IDIO args)
 		    args = IDIO_PAIR_T (args);
 		}
 
-		return idio_bignum_primitive_subtract (idio_list_reverse (bn_args));
+		return idio_bignum_primitive_subtract (idio_list_nreverse (bn_args));
 	    }
 	}
 
@@ -565,7 +565,7 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 		    args = IDIO_PAIR_T (args);
 		}
 
-		bn_args = idio_list_reverse (bn_args);
+		bn_args = idio_list_nreverse (bn_args);
 		return idio_bignum_primitive_multiply (bn_args);
 	    } else {
 		im = ir * ih;
@@ -593,7 +593,7 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 		args = IDIO_PAIR_T (args);
 	    }
 
-	    bn_args = idio_list_reverse (bn_args);
+	    bn_args = idio_list_nreverse (bn_args);
 	    return idio_bignum_primitive_multiply (bn_args);
 	}
 
@@ -895,7 +895,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		args = IDIO_PAIR_T (args);				\
 	    }								\
 									\
-	    bn_args = idio_list_reverse (bn_args);			\
+	    bn_args = idio_list_nreverse (bn_args);			\
 	    IDIO num = idio_bignum_primitive_ ## cname (bn_args);	\
 									\
 	    /* convert to a fixnum if possible */			\
@@ -963,7 +963,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		args = IDIO_PAIR_T (args);				\
 	    }								\
 	    								\
-	    bn_args = idio_list_reverse (bn_args);			\
+	    bn_args = idio_list_nreverse (bn_args);			\
 	    IDIO num = idio_bignum_primitive_ ## cname (bn_args);	\
 									\
 	    /* convert to a fixnum if possible */			\
@@ -1006,7 +1006,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    								\
 	    a = IDIO_PAIR_T (a);					\
 	}								\
-	bn_args = idio_list_reverse (bn_args);				\
+	bn_args = idio_list_nreverse (bn_args);				\
 									\
 	IDIO num = idio_bignum_primitive_ ## cname (bn_args);		\
 									\
@@ -1072,7 +1072,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		args = IDIO_PAIR_T (args);				\
 	    }								\
 	    								\
-	    bn_args = idio_list_reverse (bn_args);			\
+	    bn_args = idio_list_nreverse (bn_args);			\
 	    return idio_bignum_primitive_ ## cname (bn_args);		\
 	} else {							\
 	    return idio_fixnum_primitive_ ## cname (args);		\

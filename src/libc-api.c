@@ -5701,7 +5701,7 @@ void idio_init_libc_api ()
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_utsname_ref);
     struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-utsname");
-    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_utsname, fgvi);
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), libc_struct_utsname, fgvi);
 
     /* /usr/include/sys/times.h */
     struct_fields = idio_S_nil;
@@ -5712,7 +5712,7 @@ void idio_init_libc_api ()
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tms_ref);
     struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-tms");
-    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_tms, fgvi);
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), libc_struct_tms, fgvi);
 
     /* /usr/include/bits/termios-struct.h */
     struct_fields = idio_S_nil;
@@ -5730,7 +5730,7 @@ void idio_init_libc_api ()
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_termios_ref);
     struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-termios");
-    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_termios, fgvi);
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), libc_struct_termios, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_termios_set);
 
     /* /usr/include/bits/types/struct_tm.h */
@@ -5752,7 +5752,7 @@ void idio_init_libc_api ()
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tm_ref);
     struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-tm");
-    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_tm, fgvi);
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), libc_struct_tm, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tm_set);
 
     /* /usr/include/bits/struct_stat.h */
@@ -5781,7 +5781,7 @@ void idio_init_libc_api ()
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_stat_ref);
     struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-stat");
-    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_stat, fgvi);
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), libc_struct_stat, fgvi);
 
     /* /usr/include/bits/types/struct_timespec.h */
     struct_fields = idio_S_nil;
@@ -5790,7 +5790,7 @@ void idio_init_libc_api ()
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timespec_ref);
     struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-timespec");
-    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_timespec, fgvi);
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), libc_struct_timespec, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timespec_set);
 
     /* /usr/include/bits/resource.h */
@@ -5800,7 +5800,7 @@ void idio_init_libc_api ()
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rlimit_ref);
     struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-rlimit");
-    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_rlimit, fgvi);
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), libc_struct_rlimit, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rlimit_set);
 
     /* /usr/include/bits/types/struct_timeval.h */
@@ -5811,7 +5811,7 @@ void idio_init_libc_api ()
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timeval_ref);
     struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-timeval");
-    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_timeval, fgvi);
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), libc_struct_timeval, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timeval_set);
 
     /* /usr/include/bits/types/struct_rusage.h */
@@ -5821,5 +5821,5 @@ void idio_init_libc_api ()
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rusage_ref);
     struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-rusage");
-    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_reverse (struct_fields), libc_struct_rusage, fgvi);
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), libc_struct_rusage, fgvi);
 }

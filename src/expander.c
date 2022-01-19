@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2018, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -324,9 +324,9 @@ poor man's let	\n\
 	 *
 	 * ((function (a1 a2) ...) v1 v2)
 	 */
-	fn = IDIO_LIST3 (idio_S_function, idio_list_reverse (vars), e);
+	fn = IDIO_LIST3 (idio_S_function, idio_list_nreverse (vars), e);
 
-	IDIO appl = idio_list_append2 (IDIO_LIST1 (fn), idio_list_reverse (vals));
+	IDIO appl = idio_list_append2 (IDIO_LIST1 (fn), idio_list_nreverse (vals));
 	idio_meaning_copy_src_properties (src, appl);
 
 	return appl;
@@ -350,9 +350,9 @@ poor man's let	\n\
 	 *
 	 * Those Schemers, eh?
 	 */
-	fn = IDIO_LIST3 (idio_S_function, idio_list_reverse (vars), e);
+	fn = IDIO_LIST3 (idio_S_function, idio_list_nreverse (vars), e);
 
-	IDIO appl = idio_list_append2 (IDIO_LIST1 (name), idio_list_reverse (vals));
+	IDIO appl = idio_list_append2 (IDIO_LIST1 (name), idio_list_nreverse (vals));
 
 	IDIO letrec = IDIO_LIST3 (idio_S_letrec,
 				  IDIO_LIST1 (IDIO_LIST2 (name, fn)),
@@ -424,7 +424,7 @@ poor man's let*	\n\
      *
      * Therefore {let} will do the validation of each {binding}.
      */
-    bindings = idio_list_reverse (bindings);
+    bindings = idio_list_nreverse (bindings);
 
     e = IDIO_PAIR_T (e);
     /*
@@ -552,9 +552,9 @@ poor man's letrec				\n\
      * e is now (body)
      */
 
-    vars = idio_list_reverse (vars);
-    tmps = idio_list_reverse (tmps);
-    vals = idio_list_reverse (vals);
+    vars = idio_list_nreverse (vars);
+    tmps = idio_list_nreverse (tmps);
+    vals = idio_list_nreverse (vals);
 
     IDIO ri = idio_S_nil;	/* init vars to #f */
     IDIO rt = idio_S_nil;	/* set tmps (in context of vars) */
@@ -571,10 +571,10 @@ poor man's letrec				\n\
 	ts = IDIO_PAIR_T (ts);
 	vs = IDIO_PAIR_T (vs);
     }
-    ri = idio_list_reverse (ri);
-    rt = idio_list_reverse (rt);
-    rs = idio_list_reverse (rs);
-    IDIO r = idio_list_append2 (idio_list_reverse (rs), e);
+    ri = idio_list_nreverse (ri);
+    rt = idio_list_nreverse (rt);
+    rs = idio_list_nreverse (rs);
+    IDIO r = idio_list_append2 (idio_list_nreverse (rs), e);
 
     IDIO rs_body = idio_list_append2 (IDIO_LIST1 (idio_S_begin),
 				      idio_list_append2 (rs, e));

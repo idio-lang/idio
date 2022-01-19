@@ -1272,7 +1272,7 @@ A short signal name would be ``QUIT`` or ``INT``.		\n\
 	r = idio_pair (idio_pair (idio_C_int (i), idio_string_C (idio_libc_sig_name (i))), r);
     }
 
-    return idio_list_reverse (r);
+    return idio_list_nreverse (r);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("signal-name", libc_signal_name, (IDIO isignum), "signum", "\
@@ -1318,7 +1318,7 @@ A long signal name would be ``SIGQUIT`` or ``SIGINT``.		\n\
 	r = idio_pair (idio_pair (idio_C_int (i), idio_string_C (idio_libc_signal_name (i))), r);
     }
 
-    return idio_list_reverse (r);
+    return idio_list_nreverse (r);
 }
 
 /*
@@ -2270,7 +2270,7 @@ return a list of :samp:`({number} & {name})` pairs of known errno numbers	\n\
 	r = idio_pair (idio_pair (idio_C_int (i), idio_string_C (idio_libc_errno_name (i))), r);
     }
 
-    return idio_list_reverse (r);
+    return idio_list_nreverse (r);
 }
 
 /*
@@ -2518,7 +2518,7 @@ of the macro					\n\
 	r = idio_pair (idio_pair (idio_C_int (i), idio_string_C (idio_libc_rlimit_name (i))), r);
     }
 
-    return idio_list_reverse (r);
+    return idio_list_nreverse (r);
 }
 
 static void idio_libc_set_open_flag_names ()

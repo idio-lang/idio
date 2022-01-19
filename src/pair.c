@@ -610,7 +610,7 @@ IDIO idio_list_map_ph (IDIO l)
 	IDIO_TYPE_ASSERT (list, l);
     }
 
-    return idio_list_reverse (r);
+    return idio_list_nreverse (r);
 }
 
 IDIO idio_list_map_pt (IDIO l)
@@ -631,7 +631,7 @@ IDIO idio_list_map_pt (IDIO l)
 	IDIO_TYPE_ASSERT (list, l);
     }
 
-    return idio_list_reverse (r);
+    return idio_list_nreverse (r);
 }
 
 IDIO idio_list_memq (IDIO k, IDIO l)

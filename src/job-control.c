@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1996,7 +1996,7 @@ launch a pipeline of `job_controls`			\n\
 	cmds = IDIO_PAIR_T (cmds);
     }
 
-    procs = idio_list_reverse (procs);
+    procs = idio_list_nreverse (procs);
 
     IDIO job_stdin = idio_C_int (STDIN_FILENO);
     IDIO job_stdout = idio_C_int (STDOUT_FILENO);

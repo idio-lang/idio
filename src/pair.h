@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -32,6 +32,7 @@ IDIO idio_list_tail (IDIO p);
 
 IDIO idio_improper_list_reverse (IDIO l, IDIO last);
 IDIO idio_list_reverse (IDIO l);
+IDIO idio_list_nreverse (IDIO l);
 IDIO idio_list_to_array (IDIO l);
 size_t idio_list_length (IDIO l);
 IDIO idio_copy_pair (IDIO p, int depth);

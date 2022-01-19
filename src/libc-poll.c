@@ -676,7 +676,7 @@ of the macro					\n\
 	keys = IDIO_PAIR_T (keys);
     }
 
-    return idio_list_reverse (r);
+    return idio_list_nreverse (r);
 }
 
 /*
@@ -1023,13 +1023,13 @@ IDIO idio_libc_poll_select (IDIO rlist, IDIO wlist, IDIO elist, IDIO timeout)
 
 	switch (i) {
 	case 0:
-	    rr = idio_list_reverse (rl);
+	    rr = idio_list_nreverse (rl);
 	    break;
 	case 1:
-	    wr = idio_list_reverse (rl);
+	    wr = idio_list_nreverse (rl);
 	    break;
 	case 2:
-	    er = idio_list_reverse (rl);
+	    er = idio_list_nreverse (rl);
 	    break;
 	}
     }

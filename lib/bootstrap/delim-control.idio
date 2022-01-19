@@ -161,7 +161,7 @@ define (reset* thunk) {
 
 define (control-shift-at* shift? tag f) {
   call/cc (function (control-k) {
-    holes-prefix := reverse (unwind-till-marked!)
+    holes-prefix := reverse! (unwind-till-marked!)
     invoke-subcont := function (v) {
       call/cc (function (return-k) {
 	vm/hole-push! (vm/make-hole tag shift? return-k)
@@ -213,7 +213,7 @@ define (unwind-to* tag v) {
     }
   }
 
-  loop (reverse holes-prefix)
+  loop (reverse! holes-prefix)
 
   abort-top! v
 }
