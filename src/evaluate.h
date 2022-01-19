@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -57,7 +57,7 @@
 
 extern IDIO idio_evaluate_module;
 
-void idio_meaning_dump_src_properties (char const *prefix, char const *name, IDIO e);
+void idio_meaning_warning (char const *prefix, char const *msg, IDIO e);
 void idio_meaning_error_param_type (IDIO src, IDIO c_location, char const *msg, IDIO expr);
 void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char const *msg, IDIO expr);
 void idio_meaning_error_static_redefine (IDIO lo, IDIO c_location, char const *msg, IDIO name, IDIO cv, IDIO new);

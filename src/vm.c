@@ -6192,7 +6192,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		if (idio_S_nil != sl) {
 		    size = 0;
 		    ids = idio_as_string_safe (sl, &size, 1, 1);
-		    IDIO_VM_DASM ("\n%s", ids);
+		    IDIO_VM_DASM (" src=%s", ids);
 		    IDIO_GC_FREE (ids, size);
 		}
 	    }
@@ -7911,7 +7911,7 @@ IDIO idio_vm_source_location ()
 	}
 
 	if (idio_S_nil == lo) {
-	    idio_display_C ("<no lexobj for ", lsh);
+	    idio_display_C ("<VM: no lexobj for ", lsh);
 	    idio_display (expr, lsh);
 	    idio_display_C (">", lsh);
 	} else {

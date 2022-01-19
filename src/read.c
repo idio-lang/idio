@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2939,17 +2939,16 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
      */
     if (idio_S_nil == IDIO_PAIR_TT (e)) {
 	IDIO r = IDIO_LIST2 (idio_S_quasiquote, IDIO_PAIR_HT (e));
-	idio_meaning_copy_src_properties (IDIO_PAIR_HT (e), r);
+	idio_meaning_copy_src_properties (e, r);
 
 	return r;
     } else {
 	IDIO ep = idio_list_append2 (IDIO_LIST1 (idio_S_begin),
 				     IDIO_PAIR_T (e));
-	idio_meaning_copy_src_properties (IDIO_PAIR_HT (e), ep);
 
 	IDIO r = IDIO_LIST2 (idio_S_quasiquote,
 			     ep);
-	idio_meaning_copy_src_properties (IDIO_PAIR_HT (e), r);
+	idio_meaning_copy_src_properties (e, r);
 
 	return r;
     }
@@ -4170,6 +4169,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, idio_unicode_t *ic,
 	} else if (closedel == expr) {
 	    if (idio_S_nil != re) {
 		re = idio_list_reverse (re);
+		idio_hash_put (idio_src_properties, re, lo);
 		if (idio_S_nil == IDIO_PAIR_T (re)) {
 		    re = IDIO_PAIR_H (re);
 		} else {
@@ -4300,13 +4300,28 @@ static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, idio_unicode_t
 
 	if (closedel == reason) {
 	    r = idio_list_reverse (r);
+
+	    /*
+	     * A few places will have used us to read a block in but
+	     * not want the leading (block ...) so tag the result
+	     * theyre looking for with line_lo.
+	     */
+	    if (idio_S_nil != r) {
+		idio_hash_put (idio_src_properties, r, line_lo);
+	    }
+
 	    if (depth) {
 		if (idio_S_nil == r) {
-		    fprintf (stderr, "empty body for block => void\n");
-		    idio_debug ("line_lo=%s\n", line_lo);
-		    return idio_list_append2 (IDIO_LIST1 (idio_S_block), r);
+#ifdef IDIO_DEBUG
+		    idio_debug ("NOTICE: idio_read_block: %s", idio_struct_instance_ref_direct (line_lo, IDIO_LEXOBJ_NAME));
+		    idio_debug (":line %s", idio_struct_instance_ref_direct (line_lo, IDIO_LEXOBJ_LINE));
+		    fprintf (stderr, ": empty body for block => void\n");
+#endif
+		    return idio_pair (idio_S_block, r);
 		} else {
-		    return idio_list_append2 (IDIO_LIST1 (idio_S_block), r);
+		    r = idio_list_append2 (IDIO_LIST1 (idio_S_block), r);
+		    idio_hash_put (idio_src_properties, r, line_lo);
+		    return r;
 		}
 	    } else {
 		/*
@@ -4316,7 +4331,9 @@ static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, idio_unicode_t
 		 * Given that both clauses do the same thing...what
 		 * was I thinking?
 		 */
-		return idio_list_append2 (IDIO_LIST1 (idio_S_block), r);
+		idio_list_append2 (IDIO_LIST1 (idio_S_block), r);
+		idio_hash_put (idio_src_properties, r, line_lo);
+		return r;
 	    }
 	}
     }

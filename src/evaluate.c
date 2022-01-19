@@ -154,22 +154,23 @@ static IDIO idio_meaning_define_gvi0_string = idio_S_nil;
 static IDIO idio_meaning_define_infix_operator_string = idio_S_nil;
 static IDIO idio_meaning_define_postfix_operator_string = idio_S_nil;
 
-void idio_meaning_dump_src_properties (char const *prefix, char const *name, IDIO e)
+void idio_meaning_warning (char const *prefix, char const *msg, IDIO e)
 {
     IDIO_ASSERT (e);
 
-    fprintf (stderr, "SRC %-10s %-14s=", prefix, name);
-    idio_debug ("%s\n", e);
+    fprintf (stderr, "WARNING: %s: %s:", prefix, msg);
 
     if (idio_isa_pair (e)) {
 	IDIO lo = idio_hash_ref (idio_src_properties, e);
 	if (idio_S_unspec == lo){
-	    idio_debug ("                              %s\n", lo);
+	    fprintf (stderr, "<no lexobj>");
 	} else {
-	    idio_debug ("                              %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
-	    idio_debug (": line % 3s\n", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
+	    idio_debug ("%s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
+	    idio_debug (":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
 	}
     }
+
+    idio_debug (": %s\n", e);
 }
 
 IDIO idio_meaning_src_location (IDIO e)
@@ -228,6 +229,30 @@ static void idio_meaning_base_error (IDIO src, IDIO c_location, IDIO msg, IDIO e
 
     IDIO_TYPE_ASSERT (string, c_location);
     IDIO_TYPE_ASSERT (string, msg);
+
+    /*
+     * Dirty hack!
+     *
+     * idio_error_init is going to figure out a normal function and
+     * location using *func* and idio_vm_source_location() which is
+     * fine for normal things.  This is an evaluation error,
+     * ie. before the byte code has been generated for the VM to have
+     * a sensible *expr* register (and we'll have whatever was left in
+     * *func*).
+     *
+     * So, let's give the error subsystem a clue by copying what the
+     * code generator does for normal calls.
+     */
+    idio_ai_t mci = idio_codegen_extend_constants (idio_vm_constants, src);
+    IDIO thr = idio_thread_current_thread ();
+    IDIO_THREAD_EXPR (thr) = idio_fixnum (mci);
+
+    /*
+     * We need to set *func* so that we don't have the last VM
+     * function call indicated and it must be a valid invocable entity
+     * so idio_vm_restore_all_state() doesn't complain.
+     */
+    IDIO_THREAD_FUNC (thr) = idio_symbols_C_intern (IDIO_STATIC_STR_LEN ("evaluate"));
 
     IDIO lsh;
     IDIO dsh;
@@ -644,11 +669,8 @@ IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO cs, IDIO cm)
 #ifdef IDIO_EVALUATE_DEBUG
     if (idio_S_toplevel == scope &&
 	0 == IDIO_MEANING_IS_DEFINE (flags)) {
-	idio_debug ("C/toplevel-extend: forward reference to %s at ", name);
-	idio_debug ("%s\n", idio_meaning_error_location (src));
-	if (idio_S_unspec == idio_hash_ref (idio_src_properties, src)) {
-	    idio_debug ("src=%s\n", src);
-	}
+	idio_meaning_warning ("toplevel-extend", "forward reference", src);
+	idio_debug ("name=%s\n", name);
     }
 #endif
 
@@ -1436,6 +1458,8 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
 	r = e;
     }
 
+    idio_meaning_copy_src_properties (src, r);
+
     return r;
 }
 
@@ -1453,9 +1477,18 @@ static IDIO idio_meaning_quasiquotation (IDIO src, IDIO e, IDIO nametree, IDIO e
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
+    /*
+     * Regarding source properties, {src} and {e} have the correct
+     * source properties for the template *expansion* so we can use
+     * those -- and subsequently {dq}'s -- within this expansion.
+     *
+     * However, our caller won't know any better and we'll be left
+     * with the original {src} source properties, the call site for
+     * when the code is *applied*.
+     */
     IDIO dq = idio_meaning_dequasiquote (src, e, 0, 0);
 
-    return idio_meaning (src, dq, nametree, escapes, flags, cs, cm);
+    return idio_meaning (dq, dq, nametree, escapes, flags, cs, cm);
 }
 
 static IDIO idio_meaning_alternative (IDIO src, IDIO e1, IDIO e2, IDIO e3, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm)
@@ -1734,7 +1767,16 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	}
     } else if (idio_S_toplevel == scope) {
 	IDIO fgvi = IDIO_PAIR_HTT (si);
-	if (0 == IDIO_FIXNUM_VAL (fgvi)) {
+
+	/*
+	 * Grr.  idio_meaning_define() has given us a gvi which means
+	 * (define (foo) 1) would get a GLOBAL-VAL-SET which doesn't
+	 * set the function name.  We can force the slower but more
+	 * useful GLOBAL-SYM-SET by checking for (function ...) in e.
+	 */
+	if (0 == IDIO_FIXNUM_VAL (fgvi) ||
+	    (idio_isa_pair (e) &&
+	     idio_S_function == IDIO_PAIR_H (e))) {
 	    assign = IDIO_LIST3 (IDIO_I_GLOBAL_SYM_SET, fmci, m);
 	} else {
 	    assign = IDIO_LIST3 (IDIO_I_GLOBAL_VAL_SET, fgvi, m);
@@ -2803,10 +2845,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 		/*
 		 * What if {value-expr} has side-effects?
 		 */
-		fprintf (stderr, "imrb :=	OPT: empty body for let/functionp => no eval of {value-expr}\n");
-		idio_debug ("src=%s\n", src);
-		IDIO location = idio_vm_source_location ();
-		idio_debug ("loc=%s\n", location);
+		idio_meaning_warning ("rewrite-body", "empty body for let/function+", cur);
 
 		return idio_list_reverse (r);
 	    }
@@ -2841,7 +2880,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 	    }
 
 	    if (idio_S_nil == body) {
-		fprintf (stderr, "imrb :*	OPT: empty body for environ-let => no eval of {value-expr}\n");
+		idio_meaning_warning ("rewrite-body", "empty body for environ-let", cur);
 		return r;
 	    }
 
@@ -2869,7 +2908,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 	    }
 
 	    if (idio_S_nil == body) {
-		fprintf (stderr, "imrb !*	OPT: empty body for environ-unset\n");
+		idio_meaning_warning ("rewrite-body", "empty body for environ-unset", cur);
 		return r;
 	    }
 
@@ -2895,7 +2934,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 	    }
 
 	    if (idio_S_nil == body) {
-		fprintf (stderr, "imrb :~	OPT: empty body for dynamic-let => no eval of {value-expr}\n");
+		idio_meaning_warning ("rewrite-body", "empty body for dynamic-let", cur);
 		return r;
 	    }
 
@@ -2923,7 +2962,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 	    }
 
 	    if (idio_S_nil == body) {
-		fprintf (stderr, "imrb !~	OPT: empty body for dynamic-unset => no eval of {value-expr}\n");
+		idio_meaning_warning ("rewrite-body", "empty body for dynamic-unset", cur);
 		return r;
 	    }
 
@@ -3006,11 +3045,11 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
 	     * the value-expression has no side-effects, etc.).
 	     */
 	    if (idio_isa_pair (src)) {
-		idio_meaning_evaluation_error (IDIO_PAIR_H (src), IDIO_C_FUNC_LOCATION (), "letrec: empty body", l);
+		idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "empty body after definition", src);
 
 		return idio_S_notreached;
 	    } else {
-		idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "letrec: empty body", l);
+		idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "empty body after definition", src);
 
 		return idio_S_notreached;
 	    }
@@ -3020,6 +3059,7 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
 		   idio_isa_pair (IDIO_PAIR_H (l)) &&
 		   idio_S_false != idio_expanderp (IDIO_PAIR_HH (l))) {
 	    cur = idio_template_expands (IDIO_PAIR_H (l));
+	    idio_meaning_copy_src_properties (src, cur);
 	} else {
 	    cur = IDIO_PAIR_H (l);
 	}
@@ -3029,6 +3069,7 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
 	    idio_S_begin == IDIO_PAIR_H (cur)) {
 	    /*  redundant begin */
 	    l = idio_list_append2 (IDIO_PAIR_T (cur), IDIO_PAIR_T (l));
+	    idio_meaning_copy_src_properties (cur, l);
 	    continue;
 	} else if (idio_isa_pair (cur) &&
 		   (idio_S_define == IDIO_PAIR_H (cur) ||
@@ -4408,7 +4449,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 		 *
 		 * (function+)
 		 */
-		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("functionp"), "no arguments", eh);
+		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("function+"), "no arguments", eh);
 
 		return idio_S_notreached;
 	    }
@@ -4773,9 +4814,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 	    if (idio_isa_pair (et)) {
 		return idio_meaning_block (src, et, nametree, escapes, flags, cs, cm);
 	    } else {
-		fprintf (stderr, "empty body for block => void\n");
-		idio_debug ("src=%s\n", src);
-		idio_meaning_dump_src_properties ("idio_meaning", "block", src);
+		idio_meaning_warning ("idio_meaning", "empty body for block => void", src);
 		return idio_meaning (src, idio_S_void, nametree, escapes, flags, cs, cm);
 	    }
 	} else if (idio_S_dynamic == eh) {

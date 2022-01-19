@@ -1,6 +1,6 @@
 #*
 
-Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -48,6 +48,10 @@ define (meaning-error-location src) {
   } {
     sprintf "<no lexobj>"
   }
+}
+
+define (meaning-warning prefix msg e) {
+  eprintf "WARNING: %s: %s: %s: %s" prefix msg (meaning-error-location e) e
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -152,9 +156,6 @@ define (meaning-toplevel-extend src name flags cs cm) {
     if (and (eq? flag-scope 'toplevel)
 	    (not (eval-flags-define flags))) {
       eprintf "toplevel-extend: forward reference: %s at %s\n" name (meaning-error-location src)
-      if (not (hash-ref %idio-src-properties src #f)) {
-	eprintf "src=%s\n" src
-      }
     }
     ci := codegen-constants-lookup-or-extend cs name
 
@@ -794,7 +795,14 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
       })
       ((toplevel) {
 	vi := phtt si
-	if (0 eq vi) {
+
+	;; Grr.  meaning-define has given us a gvi which means (define
+	;; (foo) 1) would get a GLOBAL-VAL-SET which doesn't set the
+	;; function name.  We can force the slower but more useful
+	;; GLOBAL-SYM-SET by checking for (function ...) in e.
+	if (or (0 eq vi)
+	       (and (pair? e)
+		    (eq? (ph e) 'function))) {
 	  assign = list I-GLOBAL-SYM-SET ci m
 	} {
 	  assign = list I-GLOBAL-VAL-SET vi m
@@ -1323,7 +1331,9 @@ define (meaning-rewrite-body src e nametree) {
      ((and (pair? cur)
 	   (eq? 'begin (ph cur))) {
        ;; redundant begin
-       loop (append (pt cur) (pt l)) r
+       new-l := append (pt cur) (pt l)
+       meaning-copy-src-properties cur new-l
+       loop new-l r
      })
 
      ((and (pair? cur)
@@ -1360,8 +1370,7 @@ define (meaning-rewrite-body src e nametree) {
 
        if (null? body) {
 	 ;; what if value-expr has side-effects?
-	 eprintf "mrb :=	OPT: empty body for let* => no eval of value-expr\n"
-	 eprintf "src=%s\n" src
+	 meaning-warning "rewrite-body" "empty body for let/function+" cur
 	 reverse r
        } {
 
@@ -1400,8 +1409,7 @@ define (meaning-rewrite-body src e nametree) {
 
        if (null? body) {
 	 ;; what if value-expr has side-effects?
-	 eprintf "mrb :=	OPT: empty body for %s => no eval of value-expr\n" op
-	 eprintf "src=%s\n" src
+	 meaning-warning "rewrite-body" (sprintf "empty body for %s" op) cur
 	 reverse r
        } {
 
@@ -1469,13 +1477,14 @@ define (meaning-rewrite-body-letrec src e nametree) {
 	      the value-expression has no side-effects, etc.).
 
 	      *#
-	      meaning-evaluation-error src "letrec: empty body" l
+	      meaning-evaluation-error src "empty body after defintion" src
 	    })
 
 	    ((and (pair? l)
 		  (pair? (ph l))
 		  (expander? (phh l))) {
 	      te := template-expand* (ph l)
+	      meaning-copy-src-properties src te
 	      te
 	    })
 
@@ -1495,7 +1504,9 @@ define (meaning-rewrite-body-letrec src e nametree) {
      ((and (pair? cur)
 	   (eq? 'begin (ph cur))) {
        ;; redundant begin
-       loop (append (pt cur) (pt l)) defs r
+       new-l := append (pt cur) (pt l)
+       meaning-copy-src-properties src new-l
+       loop new-l defs r
      })
 
      ((and (pair? cur)
@@ -2553,7 +2564,7 @@ define (meaning src e nametree escapes flags cs cm) {
        if (pair? te) {
 	 meaning-block src te nametree escapes flags cs cm
        } {
-	 eprintf "empty body for block => void\n"
+	 meaning-warning "meaning" "empty body for block => void" src
 	 meaning src (void) nametree escapes flags cs cm
        }
      })

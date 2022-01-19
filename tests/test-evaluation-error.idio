@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -78,7 +78,7 @@ evaluation-error-load "evaluation-errors/postfix-op-negative-priority.idio" "pos
 evaluation-error-load "evaluation-errors/postfix-op-not-an-operator.idio" "not an operator"
 evaluation-error-load "evaluation-errors/define-computed-no-args.idio" "define-computed: no getter/setter"
 evaluation-error-load "evaluation-errors/internal-define-template.idio" "internal define-template"
-evaluation-error-load "evaluation-errors/letrec-empty-body.idio" "letrec: empty body"
+evaluation-error-load "evaluation-errors/letrec-empty-body.idio" "empty body after definition"
 
 ;; I can't trigger the error
 ;evaluation-error-load "evaluation-errors/letrec-internal-define-template.idio" "letrec: internal define-template"
