@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -54,15 +54,15 @@ define-template (regex-case e & clauses) {
   ;; regex-strings want to extract the regex strings
   regex-strings :+ function (c* r) {
     (cond
-     ((null? c*) (reverse r))
+     ((null? c*) (reverse! r))
      ((or (not (pair? c*))
 	  (not (pair? (ph c*)))
 	  (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'regex-case "invalid syntax" c*))
      ((null? (pt c*)) {
        if (eq? 'else (phh c*)) {
-	 reverse r
+	 reverse! r
        } {
-	 reverse (pair (phh c*) r)
+	 reverse! (pair (phh c*) r)
        }
      })
      (else {
@@ -247,15 +247,15 @@ define-template (pattern-case e & clauses) {
   ;; regex-strings want to extract the regex strings
   regex-strings :+ function (c* r) {
     (cond
-     ((null? c*) (reverse r))
+     ((null? c*) (reverse! r))
      ((or (not (pair? c*))
 	  (not (pair? (ph c*)))
 	  (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'pattern-case "invalid syntax" c*))
      ((null? (pt c*)) {
        if (eq? 'else (phh c*)) {
-	 reverse r
+	 reverse! r
        } {
-	 reverse (pair (phh c*) r)
+	 reverse! (pair (phh c*) r)
        }
      })
      (else {

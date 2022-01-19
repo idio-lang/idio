@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -335,6 +335,56 @@ reverse the list `l`				\n\
     IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_reverse (l);
+}
+
+IDIO idio_list_nreverse (IDIO l)
+{
+    IDIO_ASSERT (l);
+
+    IDIO r = idio_S_nil;
+
+    while (idio_S_nil != l) {
+	IDIO_TYPE_ASSERT (pair, l);
+
+	IDIO t = IDIO_PAIR_T (l);
+	IDIO_PAIR_T (l) = r;
+	r = l;
+	l = t;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("reverse!", list_nreverse, (IDIO l), "l", "\
+reverse the list `l` destructively		\n\
+						\n\
+:param l: list to reverse			\n\
+:type l: list					\n\
+:return: reversed list				\n\
+						\n\
+Calling ``reverse!`` on a list that others are	\n\
+referencing may have undesired effects:		\n\
+						\n\
+.. code-block:: idio-console			\n\
+						\n\
+   Idio> lst := '(1 2 3)			\n\
+   (1 2 3)					\n\
+   Idio> reverse! lst				\n\
+   (3 2 1)					\n\
+   Idio> lst					\n\
+   (1)						\n\
+")
+{
+    IDIO_ASSERT (l);
+
+    /*
+     * Test Case: pair-errors/nreverse-bad-type.idio
+     *
+     * reverse! #t
+     */
+    IDIO_USER_TYPE_ASSERT (list, l);
+
+    return idio_list_nreverse (l);
 }
 
 IDIO idio_list_to_array (IDIO l)
@@ -967,6 +1017,7 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (set_pair_tail);
 
     IDIO_ADD_PRIMITIVE (list_reverse);
+    IDIO_ADD_PRIMITIVE (list_nreverse);
     IDIO_ADD_PRIMITIVE (list_length);
     IDIO_ADD_PRIMITIVE (list);
     IDIO_ADD_PRIMITIVE (append);

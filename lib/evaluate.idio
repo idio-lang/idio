@@ -330,7 +330,7 @@ define (meaning-nametree-extend-locals nametree name*) {
   i-loop nametree
 
   loop :+ function (ns r) {
-    if (null? ns) (reverse r) {
+    if (null? ns) (reverse! r) {
       i = i + 1
       loop (pt ns) (pair (list (ph ns) 'local i) r)
     }
@@ -1306,7 +1306,7 @@ define (meaning-rewrite-body src e nametree) {
   loop :+ function (l r) {
     cur := (cond
 	    ((null? l) {
-	      reverse r
+	      reverse! r
 	    })
 
 	    ((and (pair? l)
@@ -1340,7 +1340,7 @@ define (meaning-rewrite-body src e nametree) {
 	   (or (eq? 'define (ph cur))
 	       (eq? ':+ (ph cur)))) {
        ;; :+ or define ==> letrec
-       reverse (pair (meaning-rewrite-body-letrec (mpp l src) l nametree) r)
+       reverse! (pair (meaning-rewrite-body-letrec (mpp l src) l nametree) r)
      })
 
      ((and (pair? cur)
@@ -1371,7 +1371,7 @@ define (meaning-rewrite-body src e nametree) {
        if (null? body) {
 	 ;; what if value-expr has side-effects?
 	 meaning-warning "rewrite-body" "empty body for let/function+" cur
-	 reverse r
+	 reverse! r
        } {
 
 	 body-seq := append (list 'begin) body
@@ -1389,7 +1389,7 @@ define (meaning-rewrite-body src e nametree) {
 	 meaning-copy-src-properties (mpp cur src) r-cur
 
 	 r = append (list r-cur) r
-	 reverse r
+	 reverse! r
        }
      })
 
@@ -1410,7 +1410,7 @@ define (meaning-rewrite-body src e nametree) {
        if (null? body) {
 	 ;; what if value-expr has side-effects?
 	 meaning-warning "rewrite-body" (sprintf "empty body for %s" op) cur
-	 reverse r
+	 reverse! r
        } {
 
 	 body-seq := append (list 'begin) body
@@ -1424,7 +1424,7 @@ define (meaning-rewrite-body src e nametree) {
 
 	 meaning-copy-src-properties (mpp cur src) r-cur
 
-	 append (reverse r) (list r-cur)
+	 append (reverse! r) (list r-cur)
        }
      })
 
@@ -1498,7 +1498,7 @@ define (meaning-rewrite-body-letrec src e nametree) {
 
     (cond
      ((null? l) {
-       reverse r
+       reverse! r
      })
 
      ((and (pair? cur)
@@ -1643,7 +1643,7 @@ define (meaning-abstraction src formal* docstr e+ nametree escapes flags cs cm) 
     (cond
      ((pair? f*) (formals-loop (pt f*) (pair (ph f*) regular)))
      ((null? f*) (meaning-fix-abstraction src formal* formal* docstr e+ nametree escapes flags cs cm))
-     (else (meaning-dotted-abstraction src (reverse regular) f* formal* docstr e+ nametree escapes flags cs cm)))
+     (else (meaning-dotted-abstraction src (reverse! regular) f* formal* docstr e+ nametree escapes flags cs cm)))
   }
 
   formals-loop formal* #n
@@ -1786,7 +1786,7 @@ define (meaning-closed-application src fe ae* nametree escapes flags cs cm) {
 	 meaning-evaluation-error src "closed application: too many arguments" (list formal* ae*)
        }
      })
-     (else (meaning-dotted-closed-application fe (reverse fixed-args) f* (ptt fe) ae* nametree escapes flags cs cm)))
+     (else (meaning-dotted-closed-application fe (reverse! fixed-args) f* (ptt fe) ae* nametree escapes flags cs cm)))
   }
 
   formals-loop formal* ae* #n

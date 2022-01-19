@@ -107,7 +107,7 @@ The `:test` flag might be one of the standard predicates, :ref:`d?
 	nval = pair e nval
       }
     }) new-dirs
-    new-dirs = reverse nval
+    new-dirs = reverse! nval
   }
 
   ok := #t
@@ -160,7 +160,7 @@ The `:test` flag might be one of the standard predicates, :ref:`d?
 	   r = pair e r
 	 }
        }) orig-dirs
-       reverse r
+       reverse! r
      })
      (else {
        orig-dirs
@@ -389,7 +389,7 @@ Returns a path value with duplicate elements removed after the first.
     }
   }) (split-string-exactly val sep)
 
-  join-string sep (reverse seen)
+  join-string sep (reverse! seen)
 }
 
 IDIOLIB = trim-path IDIOLIB
@@ -612,7 +612,7 @@ Normalize pathname `val` by:
      }))
   }) (split-string-exactly val sep)
 
-  r = reverse r
+  r = reverse! r
 
   if (null? r) {
     "/"

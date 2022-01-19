@@ -53,6 +53,7 @@
 
 (rst "pair-functions" 0)
 (document Idio reverse)
+(document Idio reverse!)
 (document Idio length)
 
 (document Idio append)

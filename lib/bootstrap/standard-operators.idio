@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -151,11 +151,11 @@ define-infix-operator and 1000 {
     (cond
      ((null? after) (error/type ^rt-parameter-value-error 'operator-and "not enough args after" op (reverse op-args)))
      ((not (pair? after)) (error/type ^rt-syntax-error 'operator-and "bad syntax" op (reverse op-args) after))
-     ((null? (pt after)) (list (reverse (pair (ph after) op-args)) #n))
+     ((null? (pt after)) (list (reverse! (pair (ph after) op-args)) #n))
      ((and (pair? after)
 	   (pair? (pt after))
 	   (eq? op (ph (pt after)))) (split op (pair (ph after) op-args) (pt (pt after))))
-     (else (list (reverse op-args) after)))
+     (else (list (reverse! op-args) after)))
   }
 
   dis := split op before after
@@ -365,11 +365,11 @@ define-infix-operator . 1200 {
     (cond
      ((null? after) (error/type ^rt-parameter-type-error 'operator-dot "not enough args after" op (reverse indices)))
      ((not (pair? after)) (error/type ^rt-syntax-error 'operator-dot "bad syntax" op (reverse indices) after))
-     ((null? (pt after)) (list (reverse (pair (ph after) indices)) #n))
+     ((null? (pt after)) (list (reverse! (pair (ph after) indices)) #n))
      ((and (pair? after)
 	   (pair? (pt after))
 	   (eq? op (ph (pt after)))) (split op (pair (ph after) indices) (pt (pt after))))
-     (else (list (reverse (pair (ph after) indices)) (pt after))))
+     (else (list (reverse! (pair (ph after) indices)) (pt after))))
   }
 
   dis := split op #n after
