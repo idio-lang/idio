@@ -6112,7 +6112,9 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		    idio_debug_FILE (idio_dasm_FILE, " %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
 		    idio_debug_FILE (idio_dasm_FILE, ":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
 		}
-		idio_debug_FILE (idio_dasm_FILE, " %s", e);
+#ifdef IDIO_DEBUG
+		idio_debug_FILE (idio_dasm_FILE, "\n  %s", e);
+#endif
 	    }
 	    break;
 	case IDIO_A_POP_FUNCTION:
@@ -6161,7 +6163,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		}
 		size_t size = 0;
 		char *ids = idio_display_string (ss, &size);
-		IDIO_VM_DASM (" args=%s", ids);
+		IDIO_VM_DASM ("\n  sigstr %s", ids);
 		IDIO_GC_FREE (ids, size);
 
 		/* docstr lookup */
@@ -6176,7 +6178,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		if (idio_S_nil != ds) {
 		    size = 0;
 		    ids = idio_as_string_safe (ds, &size, 1, 1);
-		    IDIO_VM_DASM ("\n%s", ids);
+		    IDIO_VM_DASM ("\n  docstr %s", ids);
 		    IDIO_GC_FREE (ids, size);
 		}
 
@@ -6192,7 +6194,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		if (idio_S_nil != sl) {
 		    size = 0;
 		    ids = idio_as_string_safe (sl, &size, 1, 1);
-		    IDIO_VM_DASM (" src=%s", ids);
+		    IDIO_VM_DASM ("\n  srcloc %s", ids);
 		    IDIO_GC_FREE (ids, size);
 		}
 	    }

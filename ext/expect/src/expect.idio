@@ -52,6 +52,10 @@ export (
 	 exp-case-set-timeout
 	 exp-case-before
 	 exp-case-after
+
+	 exp-continue
+	 exp-case-poll
+	 exp-case-select
 	 exp-case
 
 	 exp-send
@@ -923,6 +927,258 @@ define-template (exp-case-after & clauses) {
   }
 }
 
+;; put exp-continue in scope of the behaviour clauses
+exp-continue := #f
+
+define (exp-case-poll) "
+
+``exp-case-poll`` is a helper function for :ref:`exp-case
+<expect/exp-case>`
+
+" {
+  ;; normalize the poll-timeout noting that Mac OS X says poll
+  ;; doesn't like a timeout less than -1
+  poll-timeout := (cond
+		   ((exp-timeout gt 0) (exp-timeout * 1000))
+		   ((exp-timeout lt 0) -1)
+		   (else               0))
+
+  poller := #f
+
+  ;; poller only uses mfd so we need a hash table to get us back
+  ;; to spawn-ids
+  poller-map := #f
+
+  ;; always deal with a list of spawn-ids
+  sid+ := #n
+  if (struct-spawn? spawn-id) {
+    sid+ = list spawn-id
+  } {
+    ;; ensure we operate on a copy of the list
+    sid+ = copy-value spawn-id
+  }
+
+  exp-continue = function #n {
+    ; reset all flags (otherwise if you match a timeout and then
+    ; exp-continue you'll loop matching timeout)
+    exp-case-reset sid+ #t
+
+    ;; anything to do -- clearly there is the first time through
+    ;; but calls to (exp-continue) after End of File indications
+    ;; will have reduced the list
+    n := (fold-left (function (c sid) {
+      if sid {
+	;; also exclude (the first time through) people who've
+	;; managed to call exp-close before exp-case...
+	if (struct-spawn-mfd sid) (c + 1) c
+      } c
+    }) 0 sid+)
+
+    if (n gt 0) {
+      ;; search existing buffer
+      r := expect/exp-match-all sid+
+
+      if (exp-case-matched sid+) r {
+	exp-case-reset sid+
+
+	if (not poller) {
+	  poller-map = make-hash #n #n 4
+	  poller = apply libc/make-poller (fold-left (function (r sid) {
+	    if sid {
+	      mfd := struct-spawn-mfd sid
+	      if mfd {
+		hash-set! poller-map mfd sid
+		pair (list mfd libc/POLLIN) r
+	      } r
+	    } r
+	  }) #n sid+)
+	}
+
+	poll-results := libc/poller-poll poller poll-timeout
+
+	(cond
+	 ((null? poll-results) {
+	   exp-case-set-timeout sid+
+	 })
+	 (else {
+	   for p-r in poll-results {
+	     poll-fd := ph p-r
+	     poll-revents := pht p-r
+	     sid := hash-ref poller-map poll-fd
+	     (cond
+	      ((libc/POLLIN? poll-revents) {
+		data := libc/read poll-fd 1024
+		if data {
+		  if (eof-object? data) {
+		    libc/poller-deregister poller poll-fd
+		    expect/exp-close :spawn-id sid
+		    set-struct-spawn-eof! sid #t
+		    expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLIN EOF\n" (struct-spawn-argv sid) poll-fd)
+		  } {
+		    set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
+		    expect/exp-log sid #t data
+		  }
+		}
+	      })
+	      ((libc/POLLHUP? poll-revents) {
+		libc/poller-deregister poller poll-fd
+		expect/exp-close :spawn-id sid
+		set-struct-spawn-eof! sid #t
+		expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLHUP EOF\n" (struct-spawn-argv sid) poll-fd)
+	      })
+	      ((libc/POLLERR? poll-revents) {
+		libc/poller-deregister poller poll-fd
+		expect/exp-close :spawn-id sid
+		set-struct-spawn-eof! sid #t
+		expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLERR EOF\n" (struct-spawn-argv sid) poll-fd)
+	      })
+	      ((libc/POLLNVAL? poll-revents) {
+		libc/poller-deregister poller poll-fd
+		expect/exp-close :spawn-id sid
+		set-struct-spawn-eof! sid #t
+		expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): invalid request\n" (struct-spawn-argv sid) poll-fd)
+	      }))
+	   }
+	 }))
+
+	;; search buffer + new data
+	r = expect/exp-match-all sid+
+
+	if (exp-case-matched sid+) r {
+	  for-each (function (sid) {
+	    if sid {
+	      if ((string-length (struct-spawn-buffer sid)) gt exp-match-max) {
+		set-struct-spawn-buffer! sid (substring (struct-spawn-buffer sid) (- exp-match-max))
+	      }
+	    }
+	  }) sid+
+
+	  (and (exp-case-remaining? sid+)
+	       (exp-continue))
+	}
+      }
+    } {
+      #f
+    }
+  }
+
+  (exp-continue)
+}
+
+define (exp-case-select) "
+
+``exp-case-select`` is a helper function for :ref:`exp-case
+<expect/exp-case>`
+
+" {
+  ;; Mac OS 10.5.8 does have poll(2) but it reports POLLNVAL
+  ;; for (pseudo-terminal) devices.  It does mention devices in
+  ;; the BUGS section in the man page.
+
+  ;; Of interest, Mac OS 10.15.7 also has the same BUGS section
+  ;; but does work for (pseudo-terminal) devices.
+
+  ;; In the meanwhile, and for anything else in the same boat,
+  ;; we'll fall back to select with attendant issues.
+
+  ;; normalize the select-timeout
+  select-timeout := (cond
+		     ((exp-timeout gt 0) (exp-timeout * 1000000))
+		     ((exp-timeout lt 0) #n)
+		     (else               0))
+
+  ;; select only uses mfd so we need a hash table to get us back
+  ;; to spawn-ids
+  select-map := make-hash #n #n 4
+
+  ;; always deal with a list of spawn-ids
+  sid+ := #n
+  if (struct-spawn? spawn-id) {
+    sid+ = list spawn-id
+  } {
+    ;; ensure we operate on a copy of the list
+    sid+ = copy-value spawn-id
+  }
+
+  exp-continue = function #n {
+    ; reset all flags (otherwise if you match a timeout and then
+    ; exp-continue you'll loop matching timeout)
+    exp-case-reset sid+ #t
+
+    ;; anything to do -- clearly there is the first time through
+    ;; but calls to (exp-continue) after End of File indications
+    ;; will have reduced the list
+    n := (fold-left (function (c sid) {
+      if sid {
+	;; also exclude (the first time through) people who've
+	;; managed to call exp-close before exp-case...
+	if (struct-spawn-mfd sid) (c + 1) c
+      } c
+    }) 0 sid+)
+
+    if (n gt 0) {
+      ;; search existing buffer
+      r := expect/exp-match-all sid+
+
+      if (exp-case-matched sid+) r {
+	exp-case-reset sid+
+
+	select-results := libc/select (fold-left (function (r sid) {
+	  if sid {
+	    mfd := struct-spawn-mfd sid
+	    if mfd {
+	      hash-set! select-map mfd sid
+	      pair mfd r
+	    } r
+	  } r
+	}) #n sid+) #n #n select-timeout
+	rlist := ph select-results
+
+	(cond
+	 ((null? rlist) {
+	   exp-case-set-timeout sid+
+	 })
+	 (else {
+	   ;; we know it is mfd but let's go through the motions
+	   for fd in rlist {
+	     sid := hash-ref select-map fd
+	     data := libc/read fd 1024
+	     if data {
+	       if (eof-object? data) {
+		 set-struct-spawn-eof! sid #t
+		 expect/exp-log sid #t (sprintf "exp-case: %@: select (fd=%d): EOF\n" (struct-spawn-argv sid) fd)
+	       } {
+		 set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
+		 expect/exp-log sid #t data
+	       }
+	     }
+	   }
+	 }))
+
+	;; search buffer + new data
+	r = expect/exp-match-all sid+
+
+	if (exp-case-matched sid+) r {
+	  for-each (function (sid) {
+	    if sid {
+	      if ((string-length (struct-spawn-buffer sid)) gt exp-match-max) {
+		set-struct-spawn-buffer! sid (substring (struct-spawn-buffer sid) (- exp-match-max))
+	      }
+	    }
+	  }) sid+
+
+	  (and (exp-case-remaining? sid+)
+	       (exp-continue))
+	}
+      }
+    } {
+      #f
+    }
+  }
+
+  (exp-continue)
+}
+
 define-template (exp-case & clauses) {
   ;; #[ <regcomp> ]
   exp-regcomps := gensym 'e-r
@@ -935,9 +1191,6 @@ define-template (exp-case & clauses) {
   sid* := gensym 'sid*
 
   #T{
-    ;; put exp-continue in scope of the behaviour clauses
-    exp-continue := #f
-
     ;; exp-case needs to behave slightly differently in the face of no
     ;; clauses as there could be exp-case-before and/or exp-case-after
     ;; clauses to process
@@ -977,241 +1230,10 @@ define-template (exp-case & clauses) {
 
     (cond-expand
      (IDIO_CAN_POLL_DEVICE {
-       ;; normalize the poll-timeout noting that Mac OS X says poll
-       ;; doesn't like a timeout less than -1
-       poll-timeout := (cond
-			((exp-timeout gt 0) (exp-timeout * 1000))
-			((exp-timeout lt 0) -1)
-			(else               0))
-
-       poller := #f
-
-       ;; poller only uses mfd so we need a hash table to get us back
-       ;; to spawn-ids
-       poller-map := #f
-
-       ;; always deal with a list of spawn-ids
-       sid+ := #n
-       if (struct-spawn? spawn-id) {
-	 sid+ = list spawn-id
-       } {
-	 ;; ensure we operate on a copy of the list
-	 sid+ = copy-value spawn-id
-       }
-
-       exp-continue = function #n {
-	 ; reset all flags (otherwise if you match a timeout and then
-	 ; exp-continue you'll loop matching timeout)
-	 exp-case-reset sid+ #t
-
-	 ;; anything to do -- clearly there is the first time through
-	 ;; but calls to (exp-continue) after End of File indications
-	 ;; will have reduced the list
-	 n := (fold-left (function (c sid) {
-	   if sid {
-	     ;; also exclude (the first time through) people who've
-	     ;; managed to call exp-close before exp-case...
-	     if (struct-spawn-mfd sid) (c + 1) c
-	   } c
-	 }) 0 sid+)
-
-	 if (n gt 0) {
-	   ;; search existing buffer
-	   r := expect/exp-match-all sid+
-
-	   if (exp-case-matched sid+) r {
-	     exp-case-reset sid+
-
-	     if (not poller) {
-	       poller-map = make-hash #n #n 4
-	       poller = apply libc/make-poller (fold-left (function (r sid) {
-		 if sid {
-		   mfd := struct-spawn-mfd sid
-		   if mfd {
-		     hash-set! poller-map mfd sid
-		     pair (list mfd libc/POLLIN) r
-		   } r
-		 } r
-	       }) #n sid+)
-	     }
-
-	     poll-results := libc/poller-poll poller poll-timeout
-
-	     (cond
-	      ((null? poll-results) {
-		exp-case-set-timeout sid+
-	      })
-	      (else {
-		for p-r in poll-results {
-		  poll-fd := ph p-r
-		  poll-revents := pht p-r
-		  sid := hash-ref poller-map poll-fd
-		  (cond
-		   ((libc/POLLIN? poll-revents) {
-		     data := libc/read poll-fd 1024
-		     if data {
-		       if (eof-object? data) {
-			 libc/poller-deregister poller poll-fd
-			 expect/exp-close :spawn-id sid
-			 set-struct-spawn-eof! sid #t
-			 expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLIN EOF\n" (struct-spawn-argv sid) poll-fd)
-		       } {
-			 set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
-			 expect/exp-log sid #t data
-		       }
-		     }
-		   })
-		   ((libc/POLLHUP? poll-revents) {
-		     libc/poller-deregister poller poll-fd
-		     expect/exp-close :spawn-id sid
-		     set-struct-spawn-eof! sid #t
-		     expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLHUP EOF\n" (struct-spawn-argv sid) poll-fd)
-		   })
-		   ((libc/POLLERR? poll-revents) {
-		     libc/poller-deregister poller poll-fd
-		     expect/exp-close :spawn-id sid
-		     set-struct-spawn-eof! sid #t
-		     expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLERR EOF\n" (struct-spawn-argv sid) poll-fd)
-		   })
-		   ((libc/POLLNVAL? poll-revents) {
-		     libc/poller-deregister poller poll-fd
-		     expect/exp-close :spawn-id sid
-		     set-struct-spawn-eof! sid #t
-		     expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): invalid request\n" (struct-spawn-argv sid) poll-fd)
-		   }))
-		}
-	      }))
-
-	     ;; search buffer + new data
-	     r = expect/exp-match-all sid+
-
-	     if (exp-case-matched sid+) r {
-	       for-each (function (sid) {
-		 if sid {
-		   if ((string-length (struct-spawn-buffer sid)) gt exp-match-max) {
-		     set-struct-spawn-buffer! sid (substring (struct-spawn-buffer sid) (- exp-match-max))
-		   }
-		 }
-	       }) sid+
-
-	       (and (exp-case-remaining? sid+)
-		    (exp-continue))
-	     }
-	   }
-	 } {
-	   #f
-	 }
-       }
-
-       (exp-continue)
+       (exp-case-poll)
      })
      (else {
-       ;; Mac OS 10.5.8 does have poll(2) but it reports POLLNVAL
-       ;; for (pseudo-terminal) devices.  It does mention devices in
-       ;; the BUGS section in the man page.
-
-       ;; Of interest, Mac OS 10.15.7 also has the same BUGS section
-       ;; but does work for (pseudo-terminal) devices.
-
-       ;; In the meanwhile, and for anything else in the same boat,
-       ;; we'll fall back to select with attendant issues.
-
-       ;; normalize the select-timeout
-       select-timeout := (cond
-			  ((exp-timeout gt 0) (exp-timeout * 1000000))
-			  ((exp-timeout lt 0) #n)
-			  (else               0))
-
-       ;; select only uses mfd so we need a hash table to get us back
-       ;; to spawn-ids
-       select-map := make-hash #n #n 4
-
-       ;; always deal with a list of spawn-ids
-       sid+ := #n
-       if (struct-spawn? spawn-id) {
-	 sid+ = list spawn-id
-       } {
-	 ;; ensure we operate on a copy of the list
-	 sid+ = copy-value spawn-id
-       }
-
-       exp-continue = function #n {
-	 ; reset all flags (otherwise if you match a timeout and then
-	 ; exp-continue you'll loop matching timeout)
-	 exp-case-reset sid+ #t
-
-	 ;; anything to do -- clearly there is the first time through
-	 ;; but calls to (exp-continue) after End of File indications
-	 ;; will have reduced the list
-	 n := (fold-left (function (c sid) {
-	   if sid {
-	     ;; also exclude (the first time through) people who've
-	     ;; managed to call exp-close before exp-case...
-	     if (struct-spawn-mfd sid) (c + 1) c
-	   } c
-	 }) 0 sid+)
-
-	 if (n gt 0) {
-	   ;; search existing buffer
-	   r := expect/exp-match-all sid+
-
-	   if (exp-case-matched sid+) r {
-	     exp-case-reset sid+
-
-	     select-results := libc/select (fold-left (function (r sid) {
-	       if sid {
-		 mfd := struct-spawn-mfd sid
-		 if mfd {
-		   hash-set! select-map mfd sid
-		   pair mfd r
-		 } r
-	       } r
-	     }) #n sid+) #n #n select-timeout
-	     rlist := ph select-results
-
-	     (cond
-	      ((null? rlist) {
-		exp-case-set-timeout sid+
-	      })
-	      (else {
-		;; we know it is mfd but let's go through the motions
-		for fd in rlist {
-		  sid := hash-ref select-map fd
-		  data := libc/read fd 1024
-		  if data {
-		    if (eof-object? data) {
-		      set-struct-spawn-eof! sid #t
-		      expect/exp-log sid #t (sprintf "exp-case: %@: select (fd=%d): EOF\n" (struct-spawn-argv sid) fd)
-		    } {
-		      set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
-		      expect/exp-log sid #t data
-		    }
-		  }
-		}
-	      }))
-
-	     ;; search buffer + new data
-	     r = expect/exp-match-all sid+
-
-	     if (exp-case-matched sid+) r {
-	       for-each (function (sid) {
-		 if sid {
-		   if ((string-length (struct-spawn-buffer sid)) gt exp-match-max) {
-		     set-struct-spawn-buffer! sid (substring (struct-spawn-buffer sid) (- exp-match-max))
-		   }
-		 }
-	       }) sid+
-
-	       (and (exp-case-remaining? sid+)
-		    (exp-continue))
-	     }
-	   }
-	 } {
-	   #f
-	 }
-       }
-
-       (exp-continue)
+       (exp-case-select)
      }))
   }
 }
