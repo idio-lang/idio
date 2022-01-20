@@ -15,6 +15,14 @@ they are all ``C/int`` types:
 
    O_ODDNUMBER := C/integer-> 37
 
+A complete list of exported ``libc`` *names* (not necessarily
+*values*) can be seen with:
+
+.. code-block:: idio-console
+
+   Idio> module-exports libc
+   (...)
+
 Signal Values
 ^^^^^^^^^^^^^
 

@@ -1,6 +1,8 @@
 (rst "values-intro" 0)
 
 (document expect spawn-id)
+(document expect user-spawn-id)
+(document expect tty-spawn-id)
 (document expect exp-timeout)
 (document expect exp-match-max)
 (document expect exp-slow)

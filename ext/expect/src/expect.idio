@@ -22,6 +22,8 @@ module expect
 export (
 	 ;; vars
 	 spawn-id
+	 user-spawn-id
+	 tty-spawn-id
 	 exp-timeout
 	 exp-match-max
 	 exp-slow
@@ -100,11 +102,26 @@ and the remaining attributes initialised to ``#f``.
 }
 
 spawn-id         :~ #f
+user-spawn-id    :~ make-struct-spawn #n #f libc/STDIN_FILENO (libc/tcgetattr libc/STDIN_FILENO)
+tty-spawn-id     :~ #f
 exp-timeout      :~ -1
 exp-match-max    :~ 2000
 exp-match-before :~ #f
 exp-match        :~ #f
 exp-match-after  :~ #f
+
+dev-tty-name     := %P"/dev/tty"
+
+if (c? dev-tty-name) {
+  ;; nominally it should be just ENXIO (or ENODEV) however if *any*
+  ;; system error occurs then we're not going to have a tty-spawn-id
+  trap ^system-error (function (c) {
+    trap-return #f
+  }) {
+    fd := libc/open dev-tty-name libc/O_RDWR
+    tty-spawn-id = make-struct-spawn #n #f fd (libc/tcgetattr fd)
+  }
+}
 
 #*
 
@@ -118,11 +135,11 @@ after.
 
 A 9600 baud modem is roughly a byte per millisecond.  Twelve per
 millisecond is roughly a 115200 baud modem (a bit more "modern") and
-therefore (120 10) means we don't make systems calls through
+therefore (600 50) means we don't make systems calls through
 libc/poller-poll to implement the timeout too often.
 
 *#
-exp-slow      :~ '(120 10)
+exp-slow      :~ '(600 50)
 
 #*
 
@@ -131,8 +148,8 @@ human_write() in exp_command.c) a Weibull
 distribution (https://en.wikipedia.org/wiki/Weibull_distribution) to
 describe the average rate at which characters appear when a human is
 typing.  Further, he differentiated between the average rate of
-characters in a word and the average rate of characters outside of a
-word (whitespace and punctuation).
+characters in a word and extra time taken to transition to characters
+outside of a word (whitespace and punctuation).
 
 In particular, the cumulative distribution function (CDF) is the
 result of the characters appearing so we need the inverse cumulative
@@ -157,7 +174,7 @@ Expect drives the algorithm with a 5-tuple:
 
 Professional typists are reckoned to be around 60 wpm (close enough to
 make the maths easy), that is a word per second.  Four letter words
-and a space might be, say 190ms per in-word character and 240ms
+and a space might be, say 180ms per in-word character and 240ms
 transitioning from an in-word character to a non-word character with a
 K of 1.  Roughly a 50 baud modem!
 
@@ -171,10 +188,12 @@ two-finger" typists.
 In the meanwhile, "tiredness" might be represented by a K < 1 and
 preternaturally good typing by a K > 1.
 
-min and max obviously clip the generated distribution values.
+min and max obviously clip the generated distribution values.  Here,
+you can get up to 4x quicker and twice as slow as the nominal in-word
+gap.
 
 *#
-exp-human     :~ '(190 240 1 10 400)
+exp-human     :~ '(180 240 1 45 360)
 
 log-user      := #t
 
@@ -1285,8 +1304,8 @@ send `msg` to the spawned process
 
 `:slow` says to use the value of :ref:`exp-slow <expect/exp-slow>`
 which is a tuple of the number of code points in a burst prefixed by a
-delay of a number of milliseconds.  The default is ``(120 10)`` -- 120
-code points and a 10 ms delay -- roughly equivalent to a 115200 baud
+delay of a number of milliseconds.  The default is ``(600 50)`` -- 600
+code points and a 50 ms delay -- roughly equivalent to a 115200 baud
 modem (if the code points were ASCII).
 
 `:human` says to use the value of :ref:`exp-human <expect/exp-human>`
@@ -1306,7 +1325,7 @@ which is a tuple of:
 
 * the maximum inter-code point gap
 
-The default is ``(190 240 1 10 400)`` roughly equivalent to a 60 wpm
+The default is ``(180 240 1 45 360)`` roughly equivalent to a 60 wpm
 typist.
 
 The algorithm used to calculate the inter-code point gap is the
@@ -1464,7 +1483,8 @@ returned will be a list of individual result lists.
     }
 
     r := struct-spawn-status sid
-    if (not r) {
+    if (and (not r)
+	    (struct-spawn-pid sid)) {
       wr := libc/waitpid (struct-spawn-pid sid)
       pid := ph wr
       status := pht wr

@@ -1,4 +1,4 @@
-:default: ``(190 240 1 10 400)``
+:default: ``(180 240 1 45 360)``
 
 ``exp-human`` is a tuple of:
 
@@ -12,9 +12,11 @@
   "tiredness" might be represented by a K < 1 and preternaturally
   consistent typing by a K > 1
 
-* the minimum inter-code point gap
+* the minimum inter-code point gap, defaulting to a quarter of the
+  in-word gap
 
-* the maximum inter-code point gap
+* the maximum inter-code point gap, defaulting to twice the in-word
+  gap
 
 The default is roughly equivalent to a 60 wpm typist.
 
