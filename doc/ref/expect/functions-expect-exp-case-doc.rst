@@ -75,10 +75,14 @@ the following arguments:
   <regexec>`, and ``prefix``, the contents of the `spawn-id`'s buffer
   before the match
 
-* for a successful terminal match the argument is ``spawn-id``
+* for a successful terminal match, excluding ``:all``, the argument is
+  ``spawn-id``
 
 :samp:`{body}` can invoke the function ``(exp-continue)`` to loop
 around again.
+
+:samp:`{body}` can invoke the function :samp:`(exp-break [{value}])`
+to exit the loop immediately.
 
 Passing no clauses will still attempt to match using any existing
 clauses from :ref:`exp-case-before <expect/exp-case-before>` or

@@ -1,6 +1,6 @@
 ``continue`` stops processing the current :ref:`C/for <C/for>` or
 :ref:`while <while>` `body` and starts the next iteration of the loop.
-`value` is ignored.
+`value` is ignored and set to ``#<void>`` if not supplied.
 
 .. warning::
    

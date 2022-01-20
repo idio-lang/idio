@@ -28,6 +28,8 @@ expect-0 := Tests
 exp-log-user #f
 exp-timeout = 10
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; EOF in clauses
 spawn auto-exit
 
@@ -66,6 +68,8 @@ spawn auto-exit
 
 ;; XXX leave :eof in exp-case-after for a "free" test when the spawned
 ;; process exits -- assuming we can exp-continue
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; read from program
 spawn auto-exit -o 1
@@ -123,6 +127,8 @@ exp-timeout = 10
  }))
 
 (exp-wait)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; write to a program: here, -v will report the line back to us
 spawn auto-exit -r 3 -v
@@ -230,6 +236,12 @@ test (exp-case
 test (exp-case) 'match-after
 
 (exp-wait)
+
+;; revert exp-case-after to its "free" test
+(exp-case-after
+ (:eof {
+   test #t #t
+ }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -395,6 +407,8 @@ spawn echo "bar"
 
 (exp-wait)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; What if the spawned processes do not, conveniently, end at the same
 ;; time?
 spawn-id = #n
@@ -422,6 +436,9 @@ spawn-id = #f
 
 ;; all done?
 Tests? (expect-0 + 46)
+
+(exp-case-before)
+(exp-case-after)
 
 ;Local Variables:
 ;mode: Idio
