@@ -207,7 +207,7 @@ cppcheck:
 env.d file-handle.d idio.d vars.d : idio-system.h
 libc-api.d libc-wrap.d : idio-config.h
 
-idio-system.h Makefile.system $(LIBDIR)/system.idio : $(UTILSDIR)/bin/gen-idio-system $(sources) $(filter-out $(LIBDIR)/system.idio,$(isources))
+idio-system.h Makefile.system $(LIBDIR)/system.idio : $(UTILSDIR)/bin/gen-idio-system $(sources) $(filter-out $(LIBDIR)/system.idio,$(isources)) $(SRCDIR)/version
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(LIBDIR)/system.idio
 
 idio-config.h : $(UTILSDIR)/bin/gen-idio-config
