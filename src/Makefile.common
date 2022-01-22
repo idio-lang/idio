@@ -118,10 +118,20 @@ LD_SONAME_FLAGS	:= -Wl,--soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
 
 CFLAGS		:= -DIDIO_DEV_FD
 
+else ifeq ($(OS),NetBSD)
+
+CC		:= gcc
+
+LDFLAGS		:= -Xlinker --export-dynamic -L/usr/local/lib
+LD_SONAME_FLAGS	:= -Wl,--soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
+
+CFLAGS		:= -DIDIO_DEV_FD
+
 endif
 
 ifndef LIBFFI_INCDIR
-$(error LIBFFI_INCDIR is unset)
+$(warning WARNING: LIBFFI_INCDIR is unset)
+LIBFFI_INC	:=
 else
 ifeq "$(LIBFFI_INCDIR)" ""
 LIBFFI_INC	:=

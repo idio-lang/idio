@@ -187,6 +187,13 @@ if (not testdir) {
 
 printf "[%s/%d] %3ds test.idio using IDIOLIB=%s\n" (getpid) PID SECONDS IDIOLIB
 
+;; NetBSD puts lsof in /usr/pkg/sbin which we want infront of
+;; .../utils/bin (our hooky lsof for SunOS and OpenBSD)
+(cond-expand
+ ("uname/sysname/NetBSD" {
+   path-append 'PATH "/usr/pkg/sbin"
+ }))
+
 ;; put the testing utilities on the PATH
 if topdir {
   IDIO-UTILS-BIN = append-string topdir "/utils/bin"
@@ -365,7 +372,7 @@ test-load "test-job-control.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? (7490 - Skipped)
+Tests? (7524 - Skipped)
 
 if (e? testfile) (delete-file testfile)
 

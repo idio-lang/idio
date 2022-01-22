@@ -512,6 +512,48 @@ T? (stdin-fileno)
 
 rm -f linkfile
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; passwd
+
+pw1 := getpwuid UID
+if pw1 {
+  pw1-name := pw1.pw_name
+  if ((string-length pw1-name) gt 0) {
+    pw2 := getpwnam pw1-name
+    if pw2 {
+      test pw2.pw_uid UID
+      test pw2.pw_name pw1-name
+    } {
+      eprintf "WARNING: no passwd entry for pw1 name %s?\n" pw1-name
+    }
+  } {
+    eprintf "WARNING: no passwd.pw_name for UID %d: %s\n" UID pw1
+  }
+} {
+  eprintf "WARNING: no passwd entry for UID %d?\n" UID
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; group
+
+gr1 := getgrgid GID
+if gr1 {
+  gr1-name := gr1.gr_name
+  if ((string-length gr1-name) gt 0) {
+    gr2 := getgrnam gr1-name
+    if gr2 {
+      test gr2.gr_gid GID
+      test gr2.gr_name gr1-name
+    } {
+      eprintf "WARNING: no group entry for gr1 name %s?\n" gr1-name
+    }
+  } {
+    eprintf "WARNING: no group.gr_name for GID %d: %s\n" GID gr1
+  }
+} {
+  eprintf "WARNING: no group entry for GID %d?\n" GID
+}
+
 ;; STDIN/STDOUT/STDERR are computed values in libc (not exported)
 module libc
 
@@ -523,4 +565,4 @@ test STDERR (current-error-handle)
 module tests/libc-wrap
 
 ;; all done?
-Tests? (libc-wrap0 + 121)
+Tests? (libc-wrap0 + 125)

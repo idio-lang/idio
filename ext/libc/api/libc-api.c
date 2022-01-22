@@ -54,6 +54,8 @@ typedef __suseconds_t seconds_t;
  */
 #elif defined (_SUSECONDS_T_DECLARED)
 typedef        __suseconds_t   suseconds_t;
+#elif defined (__NetBSD__)
+/* NetBSD does typedef suseconds_t but does not #define __suseconds_t_defined */
 #else
 
 /*
@@ -151,6 +153,16 @@ int main (int argc, char **argv)
 	char *getcwd_r = getcwd (buf, PATH_MAX);
     }
 
+    /* getgrnam(3) */
+    {
+	struct group *getgrnam_r = getgrnam ("root");
+    }
+
+    /* getgrgid(3) */
+    {
+	struct group *getgrgid_r = getgrgid (0);
+    }
+
     /* getpgrp(2) */
     {
 	pid_t getpgrp_r = getpgrp ();
@@ -164,6 +176,16 @@ int main (int argc, char **argv)
     /* getppid(2) */
     {
 	pid_t getppid_r = getppid ();
+    }
+
+    /* getpwnam(3) */
+    {
+	struct passwd *getpwnam_r = getpwnam ("root");
+    }
+
+    /* getpwuid(3) */
+    {
+	struct passwd *getpwuid_r = getpwuid (0);
     }
 
     /* getrlimit(2) */

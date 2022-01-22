@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -72,6 +72,7 @@ posix-regex-error-load "posix-regex-errors/regcomp-bad-flag-type.idio" "bad para
  ((or "uname/sysname/SunOS"
       "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"
+      "uname/sysname/NetBSD"
       "uname/sysname/Darwin") {
    posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: repetition-operator operand invalid"
  })

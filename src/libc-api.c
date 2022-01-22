@@ -22,8 +22,10 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <grp.h>
 #include <limits.h>
 #include <poll.h>
+#include <pwd.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -2276,6 +2278,335 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-rusage-as-string", libc_struct_rusage_as_stri
     }
 
     return idio_libc_struct_rusage_as_string (IDIO_C_TYPE_POINTER_P (rusage));
+}
+
+/*
+	/usr/include/pwd.h
+
+	struct passwd
+	{
+	  char*                pw_name;
+	  char*                pw_passwd;
+	  uid_t                pw_uid;
+	  gid_t                pw_gid;
+	  char*                pw_gecos;
+	  char*                pw_dir;
+	  char*                pw_shell;
+	};
+*/
+
+IDIO_C_STRUCT_IDENT_DECL (libc_struct_passwd);
+IDIO_SYMBOL_DECL (pw_name);
+IDIO_SYMBOL_DECL (pw_passwd);
+IDIO_SYMBOL_DECL (pw_uid);
+IDIO_SYMBOL_DECL (pw_gid);
+IDIO_SYMBOL_DECL (pw_gecos);
+IDIO_SYMBOL_DECL (pw_dir);
+IDIO_SYMBOL_DECL (pw_shell);
+
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-passwd-ref", libc_struct_passwd_ref, (IDIO passwd, IDIO member), "passwd member", "\
+in C, :samp:`{passwd}->{member}`			\n\
+					\n\
+:param passwd: :ref:`struct-passwd <libc/struct-passwd>`	\n\
+:type passwd: C/pointer		\n\
+:param member: member name		\n\
+:type member: symbol			\n\
+:return: `passwd` -> `member`		\n\
+:rtype:	varies on `member`		\n\
+")
+{
+    IDIO_ASSERT (passwd);
+    IDIO_ASSERT (member);
+
+    /*
+     * Test Case: libc-errors/struct-passwd-ref-bad-pointer-type.idio
+     *
+     * struct-passwd-ref #t #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, passwd);
+    if (idio_CSI_libc_struct_passwd != IDIO_C_TYPE_POINTER_PTYPE (passwd)) {
+	/*
+	 * Test Case: libc-errors/struct-passwd-ref-invalid-pointer-type.idio
+	 *
+	 * struct-passwd-ref libc/NULL #t
+	 */
+	idio_error_param_value_exp ("struct-passwd-ref", "passwd", passwd, "C struct passwd", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/struct-passwd-ref-bad-member-type.idio
+     *
+     * struct-passwd-ref v #t
+     */
+    IDIO_USER_TYPE_ASSERT (symbol, member);
+
+    struct passwd *passwdp = IDIO_C_TYPE_POINTER_P (passwd);
+    if (idio_S_pw_name == member) {
+	return idio_string_C (passwdp->pw_name);
+    } else if (idio_S_pw_passwd == member) {
+	return idio_string_C (passwdp->pw_passwd);
+    } else if (idio_S_pw_uid == member) {
+        return idio_libc_uid_t (passwdp->pw_uid);
+    } else if (idio_S_pw_gid == member) {
+        return idio_libc_gid_t (passwdp->pw_gid);
+    } else if (idio_S_pw_gecos == member) {
+	return idio_string_C (passwdp->pw_gecos);
+    } else if (idio_S_pw_dir == member) {
+	return idio_string_C (passwdp->pw_dir);
+    } else if (idio_S_pw_shell == member) {
+	return idio_string_C (passwdp->pw_shell);
+    } else {
+	/*
+	 * Test Case: libc-errors/struct-passwd-ref-invalid-member.idio
+	 *
+	 * struct-passwd-ref v 'not-likely
+	 */
+        idio_error_param_value_exp ("struct-passwd-ref", "member", member, "C struct passwd member", IDIO_C_FUNC_LOCATION());
+
+        return idio_S_notreached;
+    }
+
+    return idio_S_notreached;
+}
+
+IDIO idio_libc_struct_passwd_as_string (struct passwd *passwdp)
+{
+    IDIO_C_ASSERT (passwdp);
+
+    IDIO CSI_sh = idio_open_output_string_handle_C ();
+    idio_display_C ("#<CSI libc/struct-passwd", CSI_sh);
+
+    char buf[BUFSIZ];
+    char *fmt;
+
+    idio_display_C (" ", CSI_sh);
+
+    idio_display_C (passwdp->pw_name, CSI_sh);
+
+    idio_display_C (":", CSI_sh);
+
+    idio_display_C (passwdp->pw_passwd, CSI_sh);
+
+    idio_display_C (":", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_uid_t);
+    idio_snprintf (buf, BUFSIZ, fmt, passwdp->pw_uid);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    idio_display_C (":", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_gid_t);
+    idio_snprintf (buf, BUFSIZ, fmt, passwdp->pw_gid);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    idio_display_C (":", CSI_sh);
+
+    idio_display_C (passwdp->pw_gecos, CSI_sh);
+
+    idio_display_C (":", CSI_sh);
+
+    idio_display_C (passwdp->pw_dir, CSI_sh);
+
+    idio_display_C (":", CSI_sh);
+
+    idio_display_C (passwdp->pw_shell, CSI_sh);
+
+    idio_display_C (">", CSI_sh);
+
+    return idio_get_output_string (CSI_sh);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("struct-passwd-as-string", libc_struct_passwd_as_string, (IDIO passwd), "passwd", "\
+:param passwd: :ref:`struct-passwd <libc/struct-passwd>`	\n\
+:type passwd: C/pointer			\n\
+:return: string				\n\
+:rtype:	string				\n\
+")
+{
+    IDIO_ASSERT (passwd);
+
+    /*
+     * Test Case: libc-errors/struct-passwd-as-string-bad-pointer-type.idio
+     *
+     * struct-passwd-as-string #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, passwd);
+    if (idio_CSI_libc_struct_passwd != IDIO_C_TYPE_POINTER_PTYPE (passwd)) {
+	/*
+	 * Test Case: libc-errors/struct-passwd-as-string-invalid-pointer-type.idio
+	 *
+	 * struct-passwd-as-string libc/NULL
+	 */
+	idio_error_param_value_exp ("struct-passwd-as-string", "passwd", passwd, "C struct passwd", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_libc_struct_passwd_as_string (IDIO_C_TYPE_POINTER_P (passwd));
+}
+
+/*
+	/usr/include/grp.h
+
+	struct group
+	{
+	  char*                gr_name;
+	  char*                gr_passwd;
+	  gid_t                gr_gid;
+	  char**               gr_mem;
+	};
+*/
+
+IDIO_C_STRUCT_IDENT_DECL (libc_struct_group);
+IDIO_SYMBOL_DECL (gr_name);
+IDIO_SYMBOL_DECL (gr_passwd);
+IDIO_SYMBOL_DECL (gr_gid);
+IDIO_SYMBOL_DECL (gr_mem);
+
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-group-ref", libc_struct_group_ref, (IDIO group, IDIO member), "group member", "\
+in C, :samp:`{group}->{member}`			\n\
+					\n\
+:param group: :ref:`struct-group <libc/struct-group>`	\n\
+:type group: C/pointer		\n\
+:param member: member name		\n\
+:type member: symbol			\n\
+:return: `group` -> `member`		\n\
+:rtype:	varies on `member`		\n\
+					\n\
+Accessing `gr_mem` will return a list of strings.	\n\
+")
+{
+    IDIO_ASSERT (group);
+    IDIO_ASSERT (member);
+
+    /*
+     * Test Case: libc-errors/struct-group-ref-bad-pointer-type.idio
+     *
+     * struct-group-ref #t #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, group);
+    if (idio_CSI_libc_struct_group != IDIO_C_TYPE_POINTER_PTYPE (group)) {
+	/*
+	 * Test Case: libc-errors/struct-group-ref-invalid-pointer-type.idio
+	 *
+	 * struct-group-ref libc/NULL #t
+	 */
+	idio_error_param_value_exp ("struct-group-ref", "group", group, "C struct group", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/struct-group-ref-bad-member-type.idio
+     *
+     * struct-group-ref v #t
+     */
+    IDIO_USER_TYPE_ASSERT (symbol, member);
+
+    struct group *groupp = IDIO_C_TYPE_POINTER_P (group);
+    if (idio_S_gr_name == member) {
+	return idio_string_C (groupp->gr_name);
+    } else if (idio_S_gr_passwd == member) {
+	return idio_string_C (groupp->gr_passwd);
+    } else if (idio_S_gr_gid == member) {
+        return idio_libc_gid_t (groupp->gr_gid);
+    } else if (idio_S_gr_mem == member) {
+	IDIO r = idio_S_nil;
+	char **mem = groupp->gr_mem;
+	while (NULL != *mem) {
+	    r = idio_pair (idio_string_C (*mem), r);
+	    mem++;
+	}
+	return r;
+    } else {
+	/*
+	 * Test Case: libc-errors/struct-group-ref-invalid-member.idio
+	 *
+	 * struct-group-ref v 'not-likely
+	 */
+        idio_error_param_value_exp ("struct-group-ref", "member", member, "C struct group member", IDIO_C_FUNC_LOCATION());
+
+        return idio_S_notreached;
+    }
+
+    return idio_S_notreached;
+}
+
+IDIO idio_libc_struct_group_as_string (struct group *groupp)
+{
+    IDIO_C_ASSERT (groupp);
+
+    IDIO CSI_sh = idio_open_output_string_handle_C ();
+    idio_display_C ("#<CSI libc/struct-group", CSI_sh);
+
+    char buf[BUFSIZ];
+    char *fmt;
+
+    idio_display_C (" ", CSI_sh);
+
+    idio_display_C (groupp->gr_name, CSI_sh);
+
+    idio_display_C (":", CSI_sh);
+
+    idio_display_C (groupp->gr_passwd, CSI_sh);
+
+    idio_display_C (":", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_gid_t);
+    idio_snprintf (buf, BUFSIZ, fmt, groupp->gr_gid);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    char **mem = groupp->gr_mem;
+    int first = 1;
+    while (NULL != *mem) {
+	if (first) {
+	    first = 0;
+	    idio_display_C (":", CSI_sh);
+	} else {
+	    idio_display_C (",", CSI_sh);
+	}
+
+	idio_display_C (*mem, CSI_sh);
+	mem++;
+    }
+
+    idio_display_C (">", CSI_sh);
+
+    return idio_get_output_string (CSI_sh);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("struct-group-as-string", libc_struct_group_as_string, (IDIO group), "group", "\
+:param group: :ref:`struct-group <libc/struct-group>`	\n\
+:type group: C/pointer			\n\
+:return: string				\n\
+:rtype:	string				\n\
+")
+{
+    IDIO_ASSERT (group);
+
+    /*
+     * Test Case: libc-errors/struct-group-as-string-bad-pointer-type.idio
+     *
+     * struct-group-as-string #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, group);
+    if (idio_CSI_libc_struct_group != IDIO_C_TYPE_POINTER_PTYPE (group)) {
+	/*
+	 * Test Case: libc-errors/struct-group-as-string-invalid-pointer-type.idio
+	 *
+	 * struct-group-as-string libc/NULL
+	 */
+	idio_error_param_value_exp ("struct-group-as-string", "group", group, "C struct group", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_libc_struct_group_as_string (IDIO_C_TYPE_POINTER_P (group));
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("write", libc_write, (IDIO fd, IDIO str), "fd str", "\
@@ -4726,6 +5057,186 @@ The resource names follow C conventions such as			\n\
     return idio_C_pointer_type (idio_CSI_libc_struct_rlimit, rlimp);
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("getpwuid", libc_getpwuid, (IDIO uid), "uid", "\
+in C: getpwuid (uid)			\n\
+a wrapper to libc getpwuid(3)		\n\
+					\n\
+:param uid: 				\n\
+:type uid: unsigned fixnum or libc/uid_t	\n\
+:return: :ref:`struct-passwd <libc/struct-passwd>` or ``#f``	\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (uid);
+
+    uid_t C_uid = 0;
+    if (idio_isa_fixnum (uid) &&
+	IDIO_FIXNUM_VAL (uid) >= 0) {
+	C_uid = IDIO_FIXNUM_VAL (uid);
+    } else if (idio_isa_C_uint (uid)) {
+	C_uid = IDIO_C_TYPE_uint (uid);
+    } else {
+	/*
+	 * Test Case: libc-errors/getpwuid-bad-uid-type.idio
+	 *
+	 * getpwuid #t
+	 */
+	idio_error_param_type ("unsigned fixnum|libc/uid_t", uid, IDIO_C_FUNC_LOCATION ());
+    }
+
+    /*
+     * From getpwuid(3) on CentOS
+     *
+     * Note that as we want to save pwd we can't use an automatic
+     * variable and pwd is really prefixed to pwd_buf
+     */
+
+    struct passwd *pwd;
+    struct passwd *pwd_result;
+    char *pwd_buf;
+    size_t pwd_bufsize;
+
+    pwd_bufsize = sysconf (_SC_GETPW_R_SIZE_MAX);
+    if (pwd_bufsize == -1) {
+	pwd_bufsize = 16384;
+    }
+
+    pwd = idio_alloc (sizeof (struct passwd) + pwd_bufsize);
+    pwd_buf = (char *) pwd + sizeof (struct passwd);
+
+    int pwd_exists = 1;
+#if defined (__sun) && defined (__SVR4)
+    errno = 0;
+    pwd_result = getpwuid_r (C_uid, pwd, pwd_buf, pwd_bufsize);
+    if (pwd_result == NULL) {
+	if (errno) {
+	    /*
+	     * Test Case: ??
+	     */
+	    idio_error_system_errno ("getpwuid", uid, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	pwd_exists = 0;
+    }
+#else
+    int pwd_s = getpwuid_r (C_uid, pwd, pwd_buf, pwd_bufsize, &pwd_result);
+    if (pwd_result == NULL) {
+	if (pwd_s) {
+	    errno = pwd_s;
+
+	    /*
+	     * Test Case: ??
+	     */
+	    idio_error_system_errno ("getpwuid", uid, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	pwd_exists = 0;
+    }
+#endif
+
+    IDIO r = idio_S_false;
+    if (pwd_exists) {
+	r = idio_C_pointer_type (idio_CSI_libc_struct_passwd, pwd);
+    } else {
+	idio_free (pwd);
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("getpwnam", libc_getpwnam, (IDIO name), "name", "\
+in C: getpwnam (name)			\n\
+a wrapper to libc getpwnam(3)		\n\
+					\n\
+:param name: 				\n\
+:type name: C/pointer			\n\
+:return: :ref:`struct-passwd <libc/struct-passwd>` or ``#f``	\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (name);
+
+   /*
+    * Test Case: libc-errors/getpwnam-bad-name-type.idio
+    *
+    * getpwnam #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, name);
+
+    size_t free_name_C = 0;
+    /*
+     * Test Case: libc-wrap-errors/getpwnam-bad-name-format.idio
+     *
+     * getpwnam "ro\x0ot"
+     */
+    char *C_name = idio_libc_string_C (name, "getpwnam", &free_name_C, IDIO_C_FUNC_LOCATION ());
+
+    /*
+     * From getpwnam(3) on CentOS
+     *
+     * Note that as we want to save pwd we can't use an automatic
+     * variable and pwd is really prefixed to pwd_buf
+     */
+
+    struct passwd *pwd;
+    struct passwd *pwd_result;
+    char *pwd_buf;
+    size_t pwd_bufsize;
+
+    pwd_bufsize = sysconf (_SC_GETPW_R_SIZE_MAX);
+    if (pwd_bufsize == -1) {
+	pwd_bufsize = 16384;
+    }
+
+    pwd = idio_alloc (sizeof (struct passwd) + pwd_bufsize);
+    pwd_buf = (char *) pwd + sizeof (struct passwd);
+
+    int pwd_exists = 1;
+#if defined (__sun) && defined (__SVR4)
+    errno = 0;
+    pwd_result = getpwnam_r (C_name, pwd, pwd_buf, pwd_bufsize);
+    if (pwd_result == NULL) {
+	if (errno) {
+	    /*
+	     * Test Case: ??
+	     */
+	    idio_error_system_errno ("getpwnam", name, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	pwd_exists = 0;
+    }
+#else
+    int pwd_s = getpwnam_r (C_name, pwd, pwd_buf, pwd_bufsize, &pwd_result);
+    if (pwd_result == NULL) {
+	if (pwd_s) {
+	    errno = pwd_s;
+
+	    /*
+	     * Test Case: ??
+	     */
+	    idio_error_system_errno ("getpwnam", name, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	pwd_exists = 0;
+    }
+#endif
+
+    IDIO r = idio_S_false;
+    if (pwd_exists) {
+	r = idio_C_pointer_type (idio_CSI_libc_struct_passwd, pwd);
+    } else {
+	idio_free (pwd);
+    }
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE0_DS ("getppid", libc_getppid, (void), "", "\
 in C, :samp:`getppid ()`					\n\
 a wrapper to libc :manpage:`getppid(2)`				\n\
@@ -4780,6 +5291,187 @@ a wrapper to libc :manpage:`getpgrp(2)`				\n\
     }
 
     return idio_libc_pid_t (pid);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("getgrgid", libc_getgrgid, (IDIO gid), "gid", "\
+in C: getgrgid (gid)			\n\
+a wrapper to libc getgrgid(3)		\n\
+					\n\
+:param gid: 				\n\
+:type gid: libc/gid_t			\n\
+:return: :ref:`struct-group <libc/struct-group>` or ``#f``	\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (gid);
+
+   /*
+    * Test Case: libc-errors/getgrgid-bad-gid-type.idio
+    *
+    * getgrgid #t
+    */
+    gid_t C_gid = 0;
+    if (idio_isa_fixnum (gid) &&
+	IDIO_FIXNUM_VAL (gid) >= 0) {
+	C_gid = IDIO_FIXNUM_VAL (gid);
+    } else if (idio_isa_C_uint (gid)) {
+	C_gid = IDIO_C_TYPE_uint (gid);
+    } else {
+	/*
+	 * Test Case: libc-errors/getgrgid-bad-gid-type.idio
+	 *
+	 * getgrgid #t
+	 */
+	idio_error_param_type ("unsigned fixnum|libc/gid_t", gid, IDIO_C_FUNC_LOCATION ());
+    }
+
+    /*
+     * Note that as we want to save grp we can't use an automatic
+     * variable and grp is really prefixed to grp_buf
+     */
+
+    struct group *grp;
+    struct group *grp_result;
+    char *grp_buf;
+    size_t grp_bufsize;
+
+    grp_bufsize = sysconf (_SC_GETGR_R_SIZE_MAX);
+    if (grp_bufsize == -1) {
+	grp_bufsize = 16384;
+    }
+
+    grp = idio_alloc (sizeof (struct group) + grp_bufsize);
+    grp_buf = (char *) grp + sizeof (struct group);
+
+    int grp_exists = 1;
+#if defined (__sun) && defined (__SVR4)
+    errno = 0;
+    grp_result = getgrgid_r (C_gid, grp, grp_buf, grp_bufsize);
+    if (grp_result == NULL) {
+	if (errno) {
+	    /*
+	     * Test Case: ??
+	     */
+	    idio_error_system_errno ("getgrgid", gid, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	grp_exists = 0;
+    }
+#else
+    int grp_s = getgrgid_r (C_gid, grp, grp_buf, grp_bufsize, &grp_result);
+    if (grp_result == NULL) {
+	if (grp_s) {
+	    errno = grp_s;
+
+	    /*
+	     * Test Case: ??
+	     */
+	    idio_error_system_errno ("getgrgid", gid, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	grp_exists = 0;
+    }
+#endif
+
+    IDIO r = idio_S_false;
+    if (grp_exists) {
+	r = idio_C_pointer_type (idio_CSI_libc_struct_group, grp);
+    } else {
+	idio_free (grp);
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("getgrnam", libc_getgrnam, (IDIO name), "name", "\
+in C: getgrnam (name)			\n\
+a wrapper to libc getgrnam(3)		\n\
+					\n\
+:param name: 				\n\
+:type name: C/pointer			\n\
+:return: :ref:`struct-group <libc/struct-group>` or ``#f``	\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (name);
+
+   /*
+    * Test Case: libc-errors/getgrnam-bad-name-type.idio
+    *
+    * getgrnam #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, name);
+
+    size_t free_name_C = 0;
+    /*
+     * Test Case: libc-wrap-errors/getgrnam-bad-name-format.idio
+     *
+     * getgrnam "ro\x0ot"
+     */
+    char *C_name = idio_libc_string_C (name, "getgrnam", &free_name_C, IDIO_C_FUNC_LOCATION ());
+
+    /*
+     * Note that as we want to save grp we can't use an automatic
+     * variable and grp is really prefixed to grp_buf
+     */
+
+    struct group *grp;
+    struct group *grp_result;
+    char *grp_buf;
+    size_t grp_bufsize;
+
+    grp_bufsize = sysconf (_SC_GETGR_R_SIZE_MAX);
+    if (grp_bufsize == -1) {
+	grp_bufsize = 16384;
+    }
+
+    grp = idio_alloc (sizeof (struct group) + grp_bufsize);
+    grp_buf = (char *) grp + sizeof (struct group);
+
+    int grp_exists = 1;
+#if defined (__sun) && defined (__SVR4)
+    errno = 0;
+    grp_result = getgrnam_r (C_name, grp, grp_buf, grp_bufsize);
+    if (grp_result == NULL) {
+	if (errno) {
+	    /*
+	     * Test Case: ??
+	     */
+	    idio_error_system_errno ("getgrnam", name, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	grp_exists = 0;
+    }
+#else
+    int grp_s = getgrnam_r (C_name, grp, grp_buf, grp_bufsize, &grp_result);
+    if (grp_result == NULL) {
+	if (grp_s) {
+	    errno = grp_s;
+
+	    /*
+	     * Test Case: ??
+	     */
+	    idio_error_system_errno ("getgrnam", name, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	grp_exists = 0;
+    }
+#endif
+
+    IDIO r = idio_S_false;
+    if (grp_exists) {
+	r = idio_C_pointer_type (idio_CSI_libc_struct_group, grp);
+    } else {
+	idio_free (grp);
+    }
+
+    return r;
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getcwd", libc_getcwd, (void), "", "\
@@ -5580,6 +6272,21 @@ void idio_libc_api_add_primitives ()
 		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-rusage-as-string"),
 								   idio_libc_module,
 								   idio_S_nil));
+
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_passwd_as_string);
+    idio_hash_put (iuvas,
+		   idio_CSI_libc_struct_passwd,
+		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-passwd-as-string"),
+								   idio_libc_module,
+								   idio_S_nil));
+
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_group_as_string);
+    idio_hash_put (iuvas,
+		   idio_CSI_libc_struct_group,
+		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-group-as-string"),
+								   idio_libc_module,
+								   idio_S_nil));
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_write);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_waitpid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlink);
@@ -5624,9 +6331,13 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getsid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getrusage);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getrlimit);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpwuid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpwnam);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getppid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgrp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrgid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrnam);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getcwd);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fork);
@@ -5822,4 +6533,29 @@ void idio_init_libc_api ()
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rusage_ref);
     struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-rusage");
     IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), libc_struct_rusage, fgvi);
+
+    /* /usr/include/pwd.h */
+    struct_fields = idio_S_nil;
+    IDIO_SYMBOL_DEF ("pw_name", pw_name);
+    IDIO_SYMBOL_DEF ("pw_passwd", pw_passwd);
+    IDIO_SYMBOL_DEF ("pw_uid", pw_uid);
+    IDIO_SYMBOL_DEF ("pw_gid", pw_gid);
+    IDIO_SYMBOL_DEF ("pw_gecos", pw_gecos);
+    IDIO_SYMBOL_DEF ("pw_dir", pw_dir);
+    IDIO_SYMBOL_DEF ("pw_shell", pw_shell);
+
+    fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_passwd_ref);
+    struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-passwd");
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), libc_struct_passwd, fgvi);
+
+    /* /usr/include/grp.h */
+    struct_fields = idio_S_nil;
+    IDIO_SYMBOL_DEF ("gr_name", gr_name);
+    IDIO_SYMBOL_DEF ("gr_passwd", gr_passwd);
+    IDIO_SYMBOL_DEF ("gr_gid", gr_gid);
+    IDIO_SYMBOL_DEF ("gr_mem", gr_mem);
+
+    fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_group_ref);
+    struct_name = IDIO_SYMBOLS_C_INTERN ("libc/struct-group");
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), libc_struct_group, fgvi);
 }

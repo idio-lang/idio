@@ -16,7 +16,7 @@
 #
 #
 
-# 
+#
 # gen-idio-system -- create a system-specific header/Makefile
 #
 
@@ -44,7 +44,7 @@ note ()
     :
 }
 
-usage () 
+usage ()
 {
     cat << EOF >&2
 
@@ -166,6 +166,10 @@ if type -p systemd-path >/dev/null 2>&1 ; then
     libdir=$(systemd-path system-library-arch)
 else
     case "${uname_a[0]}" in
+    NetBSD)
+	bindir=/usr/pkg/bin
+	libdir=/usr/pkg/lib
+	;;
     *BSD|Darwin)
 	bindir=/usr/local/bin
 	libdir=/usr/local/lib

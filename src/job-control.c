@@ -41,7 +41,9 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <grp.h>
 #include <poll.h>
+#include <pwd.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>

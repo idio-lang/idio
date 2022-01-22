@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -32,8 +32,10 @@
 #include <assert.h>
 #include <errno.h>
 #include <glob.h>
+#include <grp.h>
 #include <limits.h>
 #include <poll.h>
+#include <pwd.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>

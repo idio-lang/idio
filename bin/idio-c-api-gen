@@ -607,7 +607,8 @@ for-each (function (lib-n) {
 	   libc/chdir lib-dn
 	   (cond-expand
 	    ((or "uname/sysname/FreeBSD"
-		 "uname/sysname/OpenBSD") {
+		 "uname/sysname/OpenBSD"
+		 "uname/sysname/NetBSD") {
 	      gmake -C api-dn api-o-fn
 	      objdump-flags = "-W"
 	    })
@@ -1664,7 +1665,43 @@ ${i-module-name}-error-load := \{
 	printf "no subprograms\n"
       }
 
-      ;; we walk over arrays several times to convert to a list once
+      ;; XXX NetBSD and/or gcc-10 weirdness.  pid_t p is partially
+      ;; resolved in the source to __pid_t p, check gcc -E, meaning we
+      ;; lose the pid_t typedef.
+      (cond-expand
+       ("uname/sysname/NetBSD" {
+	 used-types := array->list used-types-a
+	 define (find-DIE-by-name name) {
+	   fold-left (function (r DIE) {
+	     if r r {
+	       DIE-name := hash-ref DIE 'name #f
+	       if (equal? DIE-name name) {
+		 DIE
+	       } r
+	     }
+	   }) #f used-types
+	 }
+
+	 for name in '("pid_t" "mode_t" "uid_t" "gid_t" "off_t") {
+	   base-name := append-string "__" name
+	   if (not (find-DIE-by-name name)) {
+	     base-DIE := find-DIE-by-name base-name
+	     id := append-string "dummy-" name
+	     missing-DIE := #{}
+	     for k in (hash-keys base-DIE) {
+	       hash-set! missing-DIE k (hash-ref base-DIE k)
+	     }
+	     hash-set! missing-DIE 'type (hash-ref base-DIE 'id)
+	     hash-set! missing-DIE 'id id
+	     hash-set! missing-DIE 'name name
+	     hash-set! missing-DIE '__parent base-DIE
+	     hash-set! all-ids id missing-DIE
+	     add-DIE id
+	   }
+	 }
+       }))
+
+      ;; we walk over arrays several times so convert to a list once
       used-types := array->list used-types-a
       used-enumeration-types := array->list used-enumeration-types-a
 
@@ -1976,7 +2013,7 @@ ${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-ref ${struct-na
 	 *
 	 * ${tc-test}
 	 */
-	idio_error_param_value_msg ("struct-${struct-idio-id}-ref", "${struct-name}", ${var}, "C struct ${struct-name}", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-${struct-idio-id}-ref", "${struct-name}", ${var}, "C struct ${struct-name}", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     \}}
@@ -1992,7 +2029,7 @@ ${tc-test}
 	      close-handle tc-fh
 
 	      hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "member should be a symbol"}
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a symbol"}
 
 	      hprintf api-c-fh #S{
 
@@ -2099,7 +2136,7 @@ ${tc-test}
 	      close-handle tc-fh
 
 	      hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-ref member='notlikely': should be a C struct ${struct-name} member"}
+${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-ref member='not-likely' a symbol is not a C struct ${struct-name} member"}
 
 	      hprintf api-c-fh #S{ else \{
 	/*
@@ -2107,7 +2144,7 @@ ${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-ref member='not
 	 *
 	 * ${tc-test}
 	 */
-        idio_error_param_value_msg ("struct-${struct-idio-id}-ref", "member", member, "C struct ${struct-name} member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-${struct-idio-id}-ref", "member", member, "C struct ${struct-name} member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     \}}
@@ -2196,7 +2233,7 @@ ${tc-test}
 	      close-handle tc-fh
 
 	      hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "member should be a symbol"}
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is not a symbol"}
 
 	      hprintf api-c-fh #S{
     /*
@@ -2340,7 +2377,7 @@ ${tc-test}
 	      close-handle tc-fh
 
 	      hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-set! member='notlikely': should be a C struct ${struct-name} member"}
+${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-set! member='not-likely' a symbol is not a C struct ${struct-name} member"}
 
 	      hprintf api-c-fh #S{ else \{
 	/*
@@ -2464,7 +2501,7 @@ IDIO idio_${struct-c-id}_as_string (struct ${struct-name} *${varp})
     fmt = idio_C_type_format_string (${member-idio-c-macro-type});
     idio_snprintf (buf, BUFSIZ, fmt, ${varp}->${member-name});
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
+    idio_free (fmt);
 }
 		       }))
 		    }
@@ -2791,7 +2828,7 @@ void idio_${c-module-name}_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_as_string);
     idio_hash_put (iuvas,
 		   idio_CSI_${c-module-name}_struct_${struct-name},
-		   idio_module_symbol_value (idio_symbols_C_intern ("struct-${struct-name}-as-string"),
+		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-${struct-name}-as-string"),
 								   idio_${c-module-name}_module,
 								   idio_S_nil));
 }
@@ -2869,6 +2906,7 @@ void idio_init_${c-module-name}_api ()
 	      if decl-file {
 		hprintf api-c-fh "\n    /* %s */\n" (filename decl-file)
 	      }
+	      hprintf api-c-fh "    struct_fields = idio_S_nil;\n"
 	      for-each (function (member) {
 		member-name := hash-ref member 'name #f
 		if member-name {
@@ -2883,7 +2921,8 @@ void idio_init_${c-module-name}_api ()
 	    }
 	    hprintf api-c-fh #S{
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_ref);
-    IDIO_C_STRUCT_IDENT_DEF ("struct ${struct-name}", ${c-module-name}_struct_${struct-name}, fgvi);
+    struct_name = IDIO_SYMBOLS_C_INTERN ("${c-module-name}/struct-${struct-name}");
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), ${c-module-name}_struct_${struct-name}, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_set);
 }
 	  }
