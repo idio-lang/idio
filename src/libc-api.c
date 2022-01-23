@@ -186,7 +186,7 @@ IDIO idio_libc_struct_utsname_as_string (struct utsname *utsnamep)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-utsname-as-string", libc_struct_utsname_as_string, (IDIO utsname), "utsname", "\
-:param utsname: C struct utsname	\n\
+:param utsname: :ref:`struct-utsname <libc/struct-utsname>`	\n\
 :type utsname: C/pointer		\n\
 :return: string				\n\
 :rtype:	string				\n\
@@ -337,7 +337,7 @@ IDIO idio_libc_struct_tms_as_string (struct tms *tmsp)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-tms-as-string", libc_struct_tms_as_string, (IDIO tms), "tms", "\
-:param tms: C struct tms	\n\
+:param tms: :ref:`struct-tms <libc/struct-tms>`	\n\
 :type tms: C/pointer		\n\
 :return: string			\n\
 :rtype:	string			\n\
@@ -679,7 +679,7 @@ IDIO idio_libc_struct_termios_as_string (struct termios *termiosp)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-termios-as-string", libc_struct_termios_as_string, (IDIO termios), "termios", "\
-:param termios: C struct termios	\n\
+:param termios: :ref:`struct-termios <libc/struct-termios>`	\n\
 :type termios: C/pointer		\n\
 :return: string				\n\
 :rtype:	string				\n\
@@ -1111,7 +1111,7 @@ IDIO idio_libc_struct_tm_as_string (struct tm *tmp)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-tm-as-string", libc_struct_tm_as_string, (IDIO tm), "tm", "\
-:param tm: C struct tm			\n\
+:param tm: :ref:`struct-tm <libc/struct-tm>`	\n\
 :type tm: C/pointer			\n\
 :return: string				\n\
 :rtype:	string				\n\
@@ -1407,7 +1407,7 @@ IDIO idio_libc_struct_stat_as_string (struct stat *statp)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-stat-as-string", libc_struct_stat_as_string, (IDIO stat), "stat", "\
-:param stat: C struct stat	\n\
+:param stat: :ref:`struct-stat <libc/struct-stat>`	\n\
 :type stat: C/pointer		\n\
 :return: string			\n\
 :rtype:	string			\n\
@@ -1657,7 +1657,7 @@ IDIO idio_libc_struct_timespec_as_string (struct timespec *timespecp)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-timespec-as-string", libc_struct_timespec_as_string, (IDIO timespec), "timespec", "\
-:param timespec: C struct timespec	\n\
+:param timespec: :ref:`struct-timespec <libc/struct-timespec>`	\n\
 :type timespec: C/pointer		\n\
 :return: string				\n\
 :rtype:	string				\n\
@@ -1861,7 +1861,7 @@ IDIO idio_libc_struct_rlimit_as_string (struct rlimit *rlimitp)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-rlimit-as-string", libc_struct_rlimit_as_string, (IDIO rlimit), "rlimit", "\
-:param rlimit: C struct rlimit	\n\
+:param rlimit: :ref:`struct-rlimit <libc/struct-rlimit>`	\n\
 :type rlimit: C/pointer		\n\
 :return: string			\n\
 :rtype:	string			\n\
@@ -2110,7 +2110,7 @@ IDIO idio_libc_struct_timeval_as_string (struct timeval *timevalp)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-timeval-as-string", libc_struct_timeval_as_string, (IDIO timeval), "timeval", "\
-:param timeval: C struct timeval	\n\
+:param timeval: :ref:`struct-timeval <libc/struct-timeval>`	\n\
 :type timeval: C/pointer		\n\
 :return: string				\n\
 :rtype:	string				\n\
@@ -2252,7 +2252,7 @@ IDIO idio_libc_struct_rusage_as_string (struct rusage *rusagep)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-rusage-as-string", libc_struct_rusage_as_string, (IDIO rusage), "rusage", "\
-:param rusage: C struct rusage	\n\
+:param rusage: :ref:`struct-rusage <libc/struct-rusage>`	\n\
 :type rusage: C/pointer		\n\
 :return: string			\n\
 :rtype:	string			\n\
@@ -5176,7 +5176,7 @@ in C: getpwnam (name)			\n\
 a wrapper to libc getpwnam(3)		\n\
 					\n\
 :param name: 				\n\
-:type name: C/pointer			\n\
+:type name: string			\n\
 :return: :ref:`struct-passwd <libc/struct-passwd>` or ``#f``	\n\
 :rtype: C/pointer			\n\
 :raises ^system-error:			\n\
@@ -5346,7 +5346,7 @@ in C: getgrgid (gid)			\n\
 a wrapper to libc getgrgid(3)		\n\
 					\n\
 :param gid: 				\n\
-:type gid: libc/gid_t			\n\
+:type gid: unsigned fixnum or libc/gid_t	\n\
 :return: :ref:`struct-group <libc/struct-group>` or ``#f``	\n\
 :rtype: C/pointer			\n\
 :raises ^system-error:			\n\
@@ -5463,7 +5463,7 @@ in C: getgrnam (name)			\n\
 a wrapper to libc getgrnam(3)		\n\
 					\n\
 :param name: 				\n\
-:type name: C/pointer			\n\
+:type name: string			\n\
 :return: :ref:`struct-group <libc/struct-group>` or ``#f``	\n\
 :rtype: C/pointer			\n\
 :raises ^system-error:			\n\
