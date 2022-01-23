@@ -5106,36 +5106,60 @@ a wrapper to libc getpwuid(3)		\n\
     pwd_buf = (char *) pwd + sizeof (struct passwd);
 
     int pwd_exists = 1;
+    int done = 0;
+    for (int tries = 0; 0 == done && tries < 3; tries++) {
 #if defined (__sun) && defined (__SVR4)
-    errno = 0;
-    pwd_result = getpwuid_r (C_uid, pwd, pwd_buf, pwd_bufsize);
-    if (pwd_result == NULL) {
-	if (errno) {
-	    /*
-	     * Test Case: ??
-	     */
-	    idio_error_system_errno ("getpwuid", uid, IDIO_C_FUNC_LOCATION ());
+	errno = 0;
+	pwd_result = getpwuid_r (C_uid, pwd, pwd_buf, pwd_bufsize);
+	if (pwd_result == NULL) {
+	    if (errno) {
+		switch (errno) {
+		case EMFILE:
+		case ENFILE:
+		    idio_gc_collect_all ("getpwuid");
+		    break;
+		default:
+		    /*
+		     * Test Case: ??
+		     */
+		    idio_error_system_errno ("getpwuid", uid, IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
+		    return idio_S_notreached;
+		}
+	    } else {
+		done = 1;
+		pwd_exists = 0;
+	    }
+	} else {
+	    done = 1;
 	}
-	pwd_exists = 0;
-    }
 #else
-    int pwd_s = getpwuid_r (C_uid, pwd, pwd_buf, pwd_bufsize, &pwd_result);
-    if (pwd_result == NULL) {
-	if (pwd_s) {
-	    errno = pwd_s;
+	int pwd_s = getpwuid_r (C_uid, pwd, pwd_buf, pwd_bufsize, &pwd_result);
+	if (pwd_result == NULL) {
+	    if (pwd_s) {
+		errno = pwd_s;
+		switch (errno) {
+		case EMFILE:
+		case ENFILE:
+		    idio_gc_collect_all ("getpwuid");
+		    break;
+		default:
+		    /*
+		     * Test Case: ??
+		     */
+		    idio_error_system_errno ("getpwuid", uid, IDIO_C_FUNC_LOCATION ());
 
-	    /*
-	     * Test Case: ??
-	     */
-	    idio_error_system_errno ("getpwuid", uid, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
+		    return idio_S_notreached;
+		}
+	    } else {
+		done = 1;
+		pwd_exists = 0;
+	    }
+	} else {
+	    done = 1;
 	}
-	pwd_exists = 0;
-    }
 #endif
+    }
 
     IDIO r = idio_S_false;
     if (pwd_exists) {
@@ -5160,11 +5184,11 @@ a wrapper to libc getpwnam(3)		\n\
 {
     IDIO_ASSERT (name);
 
-   /*
-    * Test Case: libc-errors/getpwnam-bad-name-type.idio
-    *
-    * getpwnam #t
-    */
+    /*
+     * Test Case: libc-errors/getpwnam-bad-name-type.idio
+     *
+     * getpwnam #t
+     */
     IDIO_USER_TYPE_ASSERT (string, name);
 
     size_t free_name_C = 0;
@@ -5196,36 +5220,60 @@ a wrapper to libc getpwnam(3)		\n\
     pwd_buf = (char *) pwd + sizeof (struct passwd);
 
     int pwd_exists = 1;
+    int done = 0;
+    for (int tries = 0; 0 == done && tries < 3; tries++) {
 #if defined (__sun) && defined (__SVR4)
-    errno = 0;
-    pwd_result = getpwnam_r (C_name, pwd, pwd_buf, pwd_bufsize);
-    if (pwd_result == NULL) {
-	if (errno) {
-	    /*
-	     * Test Case: ??
-	     */
-	    idio_error_system_errno ("getpwnam", name, IDIO_C_FUNC_LOCATION ());
+	errno = 0;
+	pwd_result = getpwnam_r (C_name, pwd, pwd_buf, pwd_bufsize);
+	if (pwd_result == NULL) {
+	    if (errno) {
+		switch (errno) {
+		case EMFILE:
+		case ENFILE:
+		    idio_gc_collect_all ("getpwnam");
+		    break;
+		default:
+		    /*
+		     * Test Case: ??
+		     */
+		    idio_error_system_errno ("getpwnam", name, IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
+		    return idio_S_notreached;
+		}
+	    } else {
+		done = 1;
+		pwd_exists = 0;
+	    }
+	} else {
+	    done = 1;
 	}
-	pwd_exists = 0;
-    }
 #else
-    int pwd_s = getpwnam_r (C_name, pwd, pwd_buf, pwd_bufsize, &pwd_result);
-    if (pwd_result == NULL) {
-	if (pwd_s) {
-	    errno = pwd_s;
+	int pwd_s = getpwnam_r (C_name, pwd, pwd_buf, pwd_bufsize, &pwd_result);
+	if (pwd_result == NULL) {
+	    if (pwd_s) {
+		errno = pwd_s;
+		switch (errno) {
+		case EMFILE:
+		case ENFILE:
+		    idio_gc_collect_all ("getpwnam");
+		    break;
+		default:
+		    /*
+		     * Test Case: ??
+		     */
+		    idio_error_system_errno ("getpwnam", name, IDIO_C_FUNC_LOCATION ());
 
-	    /*
-	     * Test Case: ??
-	     */
-	    idio_error_system_errno ("getpwnam", name, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
+		    return idio_S_notreached;
+		}
+	    } else {
+		done = 1;
+		pwd_exists = 0;
+	    }
+	} else {
+	    done = 1;
 	}
-	pwd_exists = 0;
-    }
 #endif
+    }
 
     IDIO r = idio_S_false;
     if (pwd_exists) {
@@ -5306,11 +5354,11 @@ a wrapper to libc getgrgid(3)		\n\
 {
     IDIO_ASSERT (gid);
 
-   /*
-    * Test Case: libc-errors/getgrgid-bad-gid-type.idio
-    *
-    * getgrgid #t
-    */
+    /*
+     * Test Case: libc-errors/getgrgid-bad-gid-type.idio
+     *
+     * getgrgid #t
+     */
     gid_t C_gid = 0;
     if (idio_isa_fixnum (gid) &&
 	IDIO_FIXNUM_VAL (gid) >= 0) {
@@ -5345,36 +5393,60 @@ a wrapper to libc getgrgid(3)		\n\
     grp_buf = (char *) grp + sizeof (struct group);
 
     int grp_exists = 1;
+    int done = 0;
+    for (int tries = 0; 0 == done && tries < 3; tries++) {
 #if defined (__sun) && defined (__SVR4)
-    errno = 0;
-    grp_result = getgrgid_r (C_gid, grp, grp_buf, grp_bufsize);
-    if (grp_result == NULL) {
-	if (errno) {
-	    /*
-	     * Test Case: ??
-	     */
-	    idio_error_system_errno ("getgrgid", gid, IDIO_C_FUNC_LOCATION ());
+	errno = 0;
+	grp_result = getgrgid_r (C_gid, grp, grp_buf, grp_bufsize);
+	if (grp_result == NULL) {
+	    if (errno) {
+		switch (errno) {
+		case EMFILE:
+		case ENFILE:
+		    idio_gc_collect_all ("getgrgid");
+		    break;
+		default:
+		    /*
+		     * Test Case: ??
+		     */
+		    idio_error_system_errno ("getgrgid", gid, IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
+		    return idio_S_notreached;
+		}
+	    } else {
+		done = 1;
+		grp_exists = 0;
+	    }
+	} else {
+	    done = 1;
 	}
-	grp_exists = 0;
-    }
 #else
-    int grp_s = getgrgid_r (C_gid, grp, grp_buf, grp_bufsize, &grp_result);
-    if (grp_result == NULL) {
-	if (grp_s) {
-	    errno = grp_s;
+	int grp_s = getgrgid_r (C_gid, grp, grp_buf, grp_bufsize, &grp_result);
+	if (grp_result == NULL) {
+	    if (grp_s) {
+		errno = grp_s;
+		switch (errno) {
+		case EMFILE:
+		case ENFILE:
+		    idio_gc_collect_all ("getgrgid");
+		    break;
+		default:
+		    /*
+		     * Test Case: ??
+		     */
+		    idio_error_system_errno ("getgrgid", gid, IDIO_C_FUNC_LOCATION ());
 
-	    /*
-	     * Test Case: ??
-	     */
-	    idio_error_system_errno ("getgrgid", gid, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
+		    return idio_S_notreached;
+		}
+	    } else {
+		done = 1;
+		grp_exists = 0;
+	    }
+	} else {
+	    done = 1;
 	}
-	grp_exists = 0;
-    }
 #endif
+    }
 
     IDIO r = idio_S_false;
     if (grp_exists) {
@@ -5399,11 +5471,11 @@ a wrapper to libc getgrnam(3)		\n\
 {
     IDIO_ASSERT (name);
 
-   /*
-    * Test Case: libc-errors/getgrnam-bad-name-type.idio
-    *
-    * getgrnam #t
-    */
+    /*
+     * Test Case: libc-errors/getgrnam-bad-name-type.idio
+     *
+     * getgrnam #t
+     */
     IDIO_USER_TYPE_ASSERT (string, name);
 
     size_t free_name_C = 0;
@@ -5433,36 +5505,60 @@ a wrapper to libc getgrnam(3)		\n\
     grp_buf = (char *) grp + sizeof (struct group);
 
     int grp_exists = 1;
+    int done = 0;
+    for (int tries = 0; 0 == done && tries < 3; tries++) {
 #if defined (__sun) && defined (__SVR4)
-    errno = 0;
-    grp_result = getgrnam_r (C_name, grp, grp_buf, grp_bufsize);
-    if (grp_result == NULL) {
-	if (errno) {
-	    /*
-	     * Test Case: ??
-	     */
-	    idio_error_system_errno ("getgrnam", name, IDIO_C_FUNC_LOCATION ());
+	errno = 0;
+	grp_result = getgrnam_r (C_name, grp, grp_buf, grp_bufsize);
+	if (grp_result == NULL) {
+	    if (errno) {
+		switch (errno) {
+		case EMFILE:
+		case ENFILE:
+		    idio_gc_collect_all ("getgrnam");
+		    break;
+		default:
+		    /*
+		     * Test Case: ??
+		     */
+		    idio_error_system_errno ("getgrnam", name, IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
+		    return idio_S_notreached;
+		}
+	    } else {
+		done = 1;
+		grp_exists = 0;
+	    }
+	} else {
+	    done = 1;
 	}
-	grp_exists = 0;
-    }
 #else
-    int grp_s = getgrnam_r (C_name, grp, grp_buf, grp_bufsize, &grp_result);
-    if (grp_result == NULL) {
-	if (grp_s) {
-	    errno = grp_s;
+	int grp_s = getgrnam_r (C_name, grp, grp_buf, grp_bufsize, &grp_result);
+	if (grp_result == NULL) {
+	    if (grp_s) {
+		errno = grp_s;
+		switch (errno) {
+		case EMFILE:
+		case ENFILE:
+		    idio_gc_collect_all ("getgrnam");
+		    break;
+		default:
+		    /*
+		     * Test Case: ??
+		     */
+		    idio_error_system_errno ("getgrnam", name, IDIO_C_FUNC_LOCATION ());
 
-	    /*
-	     * Test Case: ??
-	     */
-	    idio_error_system_errno ("getgrnam", name, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
+		    return idio_S_notreached;
+		}
+	    } else {
+		done = 1;
+		grp_exists = 0;
+	    }
+	} else {
+	    done = 1;
 	}
-	grp_exists = 0;
-    }
 #endif
+    }
 
     IDIO r = idio_S_false;
     if (grp_exists) {
