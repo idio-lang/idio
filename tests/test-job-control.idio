@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -218,7 +218,8 @@ There's several issues with asynchronous commands.
    Once we have our pair of PIDs back, that of the sub-Idio and its
    child asynchronous command, we can run "ps -p <pids> -o pid=" which
    should give us a simple, unadulterated, list of those PIDs still
-   going.  On all platforms (probably).
+   going.  On all platforms (probably...oh, hello, NetBSD, who only
+   takes a single PID as an argument).
 
    *Any* still going is a bad thing.
 
@@ -286,7 +287,16 @@ job-control-async-load := {
       ;; ps(1) will exit non-zero if the pids do not exist
       sacr := suppress-async-command-report!
       suppress-async-command-report! = #t
-      running-pids := collect-output ps -p pids -o pid=
+      running-pids := ""
+      (cond-expand
+       ("uname/sysname/NetBSD" {
+	 for pid in (split-string pids ",") {
+	   running-pids = append-string running-pids (collect-output ps -p pid -o pid=)
+	 }
+       })
+       (else {
+	 running-pids = collect-output ps -p pids -o pid=
+       }))
       suppress-async-command-report! = sacr
 
       t0 := Tests
@@ -296,7 +306,15 @@ job-control-async-load := {
 	printf "can still see %s of %s\n" running-pids pids
 	oseoe := suppress-exit-on-error!
 	suppress-exit-on-error! = #t
-	ps -p running-pids
+	(cond-expand
+	 ("uname/sysname/NetBSD" {
+	   for pid in (split-string pids ",") {
+	     ps -p pid
+	   }
+	 })
+	 (else {
+	   ps -p running-pids
+	 }))
 	suppress-exit-on-error! = oseoe
       }
 

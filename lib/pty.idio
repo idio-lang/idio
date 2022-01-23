@@ -267,7 +267,14 @@ sub-process.
   pid := ph fpty
   mfd := pht fpty
 
+  ;; Bah!  NetBSD triggered the fork/exec race condition requiring the
+  ;; synchronising pipe -- see note in spawn, below
+  lock := (libc/pipe)
+
   if (C/== pid 0pid_t) {
+    libc/close (libc/pipe-reader lock)
+    fcntl (libc/pipe-writer lock) F_SETFD FD_CLOEXEC
+
     apply command/%exec argv
 
     ;; just in case!
@@ -279,6 +286,11 @@ sub-process.
        libc/exit 0
      }))
   }
+
+  libc/select #n #n #n 10000
+  libc/close (libc/pipe-writer lock)
+  libc/read (libc/pipe-reader lock) 1
+  libc/close (libc/pipe-reader lock)
 
   mode := tcgetattr STDIN_FILENO
 
@@ -320,7 +332,33 @@ The parent's return value is a list of:
   pid := ph fpty
   mfd := pht fpty
 
+  ;; Bah!  NetBSD triggered the fork/exec race condition requiring the
+  ;; synchronising pipe.
+
+  ;; However, this only works about 50% of the time.  It *seems*
+  ;; execve() will run and close the write end of the pipe, from
+  ;; FD_CLOEXEC, then the scheduler will kick in allowing the
+  ;; problematic tests, calling exp-close/exp-wait immediately after
+  ;; spawn, to continue and then when the scheduler continues the
+  ;; child, the child is stuck with a closed tty and *spins*.
+
+  ;; That happens whether the child is idio, still, or the execve()'d
+  ;; process which suggests the problem is with the operating system.
+  ;; (For which we might read, my understanding of the operating
+  ;; system.)
+
+  ;; It appears to be a small gap, immediately post-execve(), where
+  ;; closing the tty causes pain.  If the child can get past that then
+  ;; all is well.
+
+  ;; In the meanwhile, we can delay the parent by a fraction of a
+  ;; second, say, 10ms, which seems to be enough.  YMMV.
+  lock := (libc/pipe)
+
   if (C/== pid 0pid_t) {
+    libc/close (libc/pipe-reader lock)
+    fcntl (libc/pipe-writer lock) F_SETFD FD_CLOEXEC
+
     apply command/%exec argv
 
     ;; just in case!
@@ -332,6 +370,20 @@ The parent's return value is a list of:
        libc/exit 0
      }))
   }
+
+  ;; XXX delay parent by a fraction of a second, say, 10ms, which is
+  ;; enough for NetBSD's execve() to stagger the child process into
+  ;; life enough that it won't spin immediately should the parent
+  ;; close mfd.  Which we deliberately do in the tests.
+
+  ;; A 10ms delay spawning a process shouldn't hurt anyone...
+  libc/select #n #n #n 10000
+
+  ;; In the meanwhile, formally block on then close the synchronising
+  ;; pipe.
+  libc/close (libc/pipe-writer lock)
+  libc/read (libc/pipe-reader lock) 1
+  libc/close (libc/pipe-reader lock)
 
   mode := tcgetattr STDIN_FILENO
 
