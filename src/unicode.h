@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2017-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -55,6 +55,8 @@ idio_unicode_t idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, i
 void idio_utf8_code_point (idio_unicode_t c, char *buf, int *sizep);
 char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int use_prec);
 IDIO idio_unicode_lookup (char const *name);
+
+char *idio_constant_unicode_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_unicode ();
 

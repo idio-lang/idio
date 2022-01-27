@@ -2872,6 +2872,151 @@ Generate the code for `m` using `cs` in `thr`	\n\
     return idio_fixnum (PC0);
 }
 
+char *idio_constant_i_code_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    char *r = NULL;
+    char *t;
+
+    intptr_t C_v = IDIO_CONSTANT_I_CODE_VAL (v);
+
+    char m[BUFSIZ];
+
+    switch (C_v) {
+
+    case IDIO_I_CODE_SHALLOW_ARGUMENT_REF:		t = "I-SHALLOW-ARGUMENT-REF";		break;
+    case IDIO_I_CODE_DEEP_ARGUMENT_REF:			t = "I-DEEP-ARGUMENT-REF";		break;
+
+    case IDIO_I_CODE_SHALLOW_ARGUMENT_SET:		t = "I-SHALLOW-ARGUMENT-SET";		break;
+    case IDIO_I_CODE_DEEP_ARGUMENT_SET:			t = "I-DEEP-ARGUMENT-SET";		break;
+
+    case IDIO_I_CODE_GLOBAL_SYM_REF:			t = "I-GLOBAL-SYM-REF";			break;
+    case IDIO_I_CODE_CHECKED_GLOBAL_SYM_REF:		t = "I-CHECKED-GLOBAL-SYM-REF";		break;
+    case IDIO_I_CODE_GLOBAL_FUNCTION_SYM_REF:		t = "I-GLOBAL-FUNCTION-SYM-REF";	break;
+    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_SYM_REF:	t = "I-CHECKED-GLOBAL-FUNCTION-SYM-REF";break;
+    case IDIO_I_CODE_CONSTANT_SYM_REF:			t = "I-CONSTANT";			break;
+    case IDIO_I_CODE_COMPUTED_SYM_REF:			t = "I-COMPUTED-SYM-REF";		break;
+
+    case IDIO_I_CODE_GLOBAL_SYM_DEF:			t = "I-GLOBAL-SYM-DEF";			break;
+    case IDIO_I_CODE_GLOBAL_SYM_SET:			t = "I-GLOBAL-SYM-SET";			break;
+    case IDIO_I_CODE_COMPUTED_SYM_SET:			t = "I-COMPUTED-SYM-SET";		break;
+    case IDIO_I_CODE_COMPUTED_SYM_DEF:			t = "I-COMPUTED-SYM-DEF";		break;
+
+    case IDIO_I_CODE_GLOBAL_VAL_REF:			t = "I-GLOBAL-VAL-REF";			break;
+    case IDIO_I_CODE_CHECKED_GLOBAL_VAL_REF:		t = "I-CHECKED-GLOBAL-VAL-REF";		break;
+    case IDIO_I_CODE_GLOBAL_FUNCTION_VAL_REF:		t = "I-GLOBAL-FUNCTION-VAL-REF";	break;
+    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_VAL_REF:	t = "I-CHECKED-GLOBAL-FUNCTION-VAL-REF";break;
+    case IDIO_I_CODE_CONSTANT_VAL_REF:			t = "I-CONSTANT";			break;
+    case IDIO_I_CODE_COMPUTED_VAL_REF:			t = "I-COMPUTED-VAL-REF";		break;
+
+    case IDIO_I_CODE_GLOBAL_VAL_DEF:			t = "I-GLOBAL-VAL-DEF";			break;
+    case IDIO_I_CODE_GLOBAL_VAL_SET:			t = "I-GLOBAL-VAL-SET";			break;
+    case IDIO_I_CODE_COMPUTED_VAL_SET:			t = "I-COMPUTED-VAL-SET";		break;
+    case IDIO_I_CODE_COMPUTED_VAL_DEF:			t = "I-COMPUTED-VAL-DEF";		break;
+
+    case IDIO_I_CODE_PREDEFINED:			t = "I-PREDEFINED";			break;
+    case IDIO_I_CODE_ALTERNATIVE:			t = "I-ALTERNATIVE";			break;
+    case IDIO_I_CODE_SEQUENCE:				t = "I-SEQUENCE";			break;
+    case IDIO_I_CODE_TR_FIX_LET:			t = "I-TR-FIX-LET";			break;
+    case IDIO_I_CODE_FIX_LET:				t = "I-FIX-LET";			break;
+
+    case IDIO_I_CODE_PRIMCALL0:				t = "I-PRIMCALL0";			break;
+    case IDIO_I_CODE_PRIMCALL1:				t = "I-PRIMCALL1";			break;
+    case IDIO_I_CODE_PRIMCALL2:				t = "I-PRIMCALL2";			break;
+    case IDIO_I_CODE_PRIMCALL3:				t = "I-PRIMCALL3";			break;
+    case IDIO_I_CODE_TR_REGULAR_CALL:			t = "I-TR-REGULAR-CALL";		break;
+    case IDIO_I_CODE_REGULAR_CALL:			t = "I-REGULAR-CALL";			break;
+
+    case IDIO_I_CODE_FIX_CLOSURE:			t = "I-FIX-CLOSURE";			break;
+    case IDIO_I_CODE_NARY_CLOSURE:			t = "I-NARY-CLOSURE";			break;
+
+    case IDIO_I_CODE_STORE_ARGUMENT:			t = "I-STORE-ARGUMENT";			break;
+    case IDIO_I_CODE_LIST_ARGUMENT:			t = "I-LIST-ARGUMENT";			break;
+
+    case IDIO_I_CODE_ALLOCATE_FRAME:			t = "I-ALLOCATE-FRAME";			break;
+    case IDIO_I_CODE_ALLOCATE_DOTTED_FRAME:		t = "I-ALLOCATE-DOTTED-FRAME";		break;
+    case IDIO_I_CODE_REUSE_FRAME:			t = "I-REUSE-FRAME";			break;
+
+    case IDIO_I_CODE_DYNAMIC_SYM_REF:			t = "I-DYNAMIC-SYM-REF";		break;
+    case IDIO_I_CODE_DYNAMIC_FUNCTION_SYM_REF:		t = "I-DYNAMIC-FUNCTION-SYM-REF";	break;
+    case IDIO_I_CODE_PUSH_DYNAMIC:			t = "I-PUSH-DYNAMIC";			break;
+    case IDIO_I_CODE_POP_DYNAMIC:			t = "I-POP-DYNAMIC";			break;
+
+    case IDIO_I_CODE_ENVIRON_SYM_REF:			t = "I-ENVIRON-SYM-REF";		break;
+    case IDIO_I_CODE_PUSH_ENVIRON:			t = "I-PUSH-ENVIRON";			break;
+    case IDIO_I_CODE_POP_ENVIRON:			t = "I-POP-ENVIRON";			break;
+
+    case IDIO_I_CODE_PUSH_TRAP:				t = "I-PUSH-TRAP";			break;
+    case IDIO_I_CODE_POP_TRAP:				t = "I-POP-TRAP";			break;
+    case IDIO_I_CODE_PUSH_ESCAPER:			t = "I-PUSH-ESCAPER";			break;
+    case IDIO_I_CODE_POP_ESCAPER:			t = "I-POP-ESCAPER";			break;
+    case IDIO_I_CODE_ESCAPER_LABEL_REF:			t = "I-ESCAPER-LABEL-REF";		break;
+
+    case IDIO_I_CODE_AND:				t = "I-AND";				break;
+    case IDIO_I_CODE_OR:				t = "I-OR";				break;
+    case IDIO_I_CODE_BEGIN:				t = "I-BEGIN";				break;
+
+    case IDIO_I_CODE_EXPANDER:				t = "I-EXPANDER";			break;
+    case IDIO_I_CODE_INFIX_OPERATOR:			t = "I-INFIX-OPERATOR";			break;
+    case IDIO_I_CODE_POSTFIX_OPERATOR:			t = "I-POSTFIX-OPERATOR";		break;
+
+    case IDIO_I_CODE_RETURN:				t = "I-RETURN";				break;
+    case IDIO_I_CODE_FINISH:				t = "I-FINISH";				break;
+    case IDIO_I_CODE_PUSH_ABORT:			t = "I-PUSH-ABORT";			break;
+    case IDIO_I_CODE_POP_ABORT:				t = "I-POP-ABORT";			break;
+    case IDIO_I_CODE_NOP:				t = "I-NOP";				break;
+
+    default:
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.  There should be a case
+	 * clause above.
+	 */
+	idio_snprintf (m, BUFSIZ, "#<type/constant/vm_code?? o=%10p v=%tx>", v, C_v);
+	t = m;
+	break;
+    }
+
+    if (NULL == t) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.  There should be a case
+	 * clause above.
+	 */
+	*sizep = idio_asprintf (&r, "#<I-CODE? %10p>", v);
+    } else {
+	*sizep = idio_asprintf (&r, "%s", t);
+    }
+
+    return r;
+}
+
+IDIO idio_constant_i_code_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    /*
+     * We only need sizep for a constant
+     */
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    va_end (ap);
+
+    char *C_r = idio_constant_i_code_as_C_string (v, sizep, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 typedef struct idio_codegen_symbol_s {
     char const *name;
     IDIO value;
@@ -2998,5 +3143,5 @@ void idio_init_codegen ()
 
     idio_vtable_add_method (idio_constant_i_code_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_constant_i_code_method_2string));
 }

@@ -57,6 +57,8 @@ IDIO idio_string_ref (IDIO s, IDIO index);
 IDIO idio_string_set (IDIO s, IDIO index, IDIO c);
 int idio_string_equal (IDIO s1, IDIO s2);
 
+char *idio_string_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
+
 void idio_init_string ();
 
 #endif

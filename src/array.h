@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020, 2021, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -46,6 +46,8 @@ IDIO idio_array_to_list_from (IDIO a, idio_ai_t index);
 IDIO idio_array_to_list (IDIO a);
 IDIO idio_array_ref (IDIO a, IDIO index);
 IDIO idio_array_set (IDIO a, IDIO index, IDIO v);
+
+char *idio_array_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_array ();
 

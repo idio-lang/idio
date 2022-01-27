@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -35,6 +35,8 @@ IDIO idio_bitset_ref (IDIO bs, size_t bit);
 IDIO idio_copy_bitset (IDIO obs);
 IDIO idio_not_bitset (IDIO bs);
 int idio_equal_bitsetp (IDIO args);
+
+char *idio_bitset_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_bitset ();
 

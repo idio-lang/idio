@@ -1985,6 +1985,79 @@ print the internal details of `module`		\n\
 }
 #endif
 
+char *idio_module_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (module, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#<MOD ");
+
+    if (idio_S_nil == IDIO_MODULE_NAME (v)) {
+	/*
+	 * Code coverage:
+	 *
+	 * Coding error?
+	 */
+	IDIO_STRCAT (r, sizep, "(nil)");
+    } else {
+	size_t mn_size = 0;
+	char *mn = idio_as_string (IDIO_MODULE_NAME (v), &mn_size, depth - 1, seen, 0);
+	IDIO_STRCAT_FREE (r, sizep, mn, mn_size);
+    }
+    if (0 && depth > 0) {
+	IDIO_STRCAT (r, sizep, " exports=");
+	if (idio_S_nil == IDIO_MODULE_EXPORTS (v)) {
+	    IDIO_STRCAT (r, sizep, "(nil)");
+	} else {
+	    size_t e_size = 0;
+	    char *es = idio_as_string (IDIO_MODULE_EXPORTS (v), &e_size, depth - 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, es, e_size);
+	}
+	IDIO_STRCAT (r, sizep, " imports=");
+	if (idio_S_nil == IDIO_MODULE_IMPORTS (v)) {
+	    IDIO_STRCAT (r, sizep, "(nil)");
+	} else {
+	    size_t i_size = 0;
+	    char *is = idio_as_string (IDIO_MODULE_IMPORTS (v), &i_size, 0, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, is, i_size);
+	}
+	IDIO_STRCAT (r, sizep, " symbols=");
+	if (idio_S_nil == IDIO_MODULE_SYMBOLS (v)) {
+	    IDIO_STRCAT (r, sizep, "(nil)");
+	} else {
+	    size_t s_size = 0;
+	    char *ss = idio_as_string (IDIO_MODULE_SYMBOLS (v), &s_size, depth - 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, ss, s_size);
+	}
+    }
+    IDIO_STRCAT (r, sizep, ">");
+
+    return r;
+}
+
+IDIO idio_module_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    va_end (ap);
+
+    char *C_r = idio_module_as_C_string (v, sizep, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_module_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (find_or_create_module);
@@ -2118,7 +2191,7 @@ void idio_init_module ()
 
     idio_vtable_add_method (idio_module_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_module_method_2string));
 
     /*
      * We need to pre-seed the Idio module with the names of these

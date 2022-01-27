@@ -1340,6 +1340,121 @@ convert integer `i` to a Unicode code point	\n\
     return u;
 }
 
+char *idio_fixnum_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (fixnum, v);
+
+    switch (format) {
+    case IDIO_PRINT_CONVERSION_FORMAT_X:
+    case IDIO_PRINT_CONVERSION_FORMAT_b:
+    case IDIO_PRINT_CONVERSION_FORMAT_d:
+    case IDIO_PRINT_CONVERSION_FORMAT_o:
+    case IDIO_PRINT_CONVERSION_FORMAT_x:
+	break;
+    case IDIO_PRINT_CONVERSION_FORMAT_s:
+	/*
+	 * A generic: printf "%s" v
+	 */
+	format = IDIO_PRINT_CONVERSION_FORMAT_d;
+	break;
+    default:
+	/*
+	 * Code coverage:
+	 *
+	 * format "%4q" 10		; "  10"
+	 */
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "fixnum-as-string: unexpected conversion format: '%c' (%#x).  Using 'd' for %" PRIdPTR " @%d.\n", (int) format, (int) format, IDIO_FIXNUM_VAL (v), depth);
+#endif
+	format = IDIO_PRINT_CONVERSION_FORMAT_d;
+	break;
+    }
+
+    char *r = NULL;
+
+    switch (format) {
+    case IDIO_PRINT_CONVERSION_FORMAT_X:
+	*sizep = idio_asprintf (&r, "%" PRIXPTR, (uintptr_t) IDIO_FIXNUM_VAL (v));
+	break;
+    case IDIO_PRINT_CONVERSION_FORMAT_b:
+	{
+	    unsigned long ul = (unsigned long) IDIO_FIXNUM_VAL (v);
+	    int j = sizeof (unsigned long)* CHAR_BIT;
+	    char bits[j+1];
+	    int seen_bit = 0;
+	    for (int i = 0; i < j; i++) {
+		if (ul & (1UL << (j - 1 - i))) {
+		    bits[i] = '1';
+		    if (0 == seen_bit) {
+			seen_bit = i;
+		    }
+		} else {
+		    bits[i] = '0';
+		}
+	    }
+	    bits[j] = '\0';
+	    *sizep = idio_asprintf (&r, "%s", bits + seen_bit);
+	}
+	break;
+    case IDIO_PRINT_CONVERSION_FORMAT_d:
+	*sizep = idio_asprintf (&r, "%" PRIdPTR, IDIO_FIXNUM_VAL (v));
+	break;
+    case IDIO_PRINT_CONVERSION_FORMAT_o:
+	*sizep = idio_asprintf (&r, "%" PRIoPTR, (uintptr_t) IDIO_FIXNUM_VAL (v));
+	break;
+    case IDIO_PRINT_CONVERSION_FORMAT_x:
+	*sizep = idio_asprintf (&r, "%" PRIxPTR, (uintptr_t) IDIO_FIXNUM_VAL (v));
+	break;
+    default:
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.  We should have limited the available
+	 * options above.
+	 */
+	{
+	    fprintf (stderr, "fixnum-as-string: unimplemented conversion format: %c (%#x)\n", (int) format, (int) format);
+	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "fixnum-as-string unimplemented conversion format");
+
+	    /* notreached */
+	    return NULL;
+	}
+	break;
+    }
+
+    return r;
+}
+
+IDIO idio_fixnum_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    IDIO seen = va_arg (ap, IDIO);
+    int depth = va_arg (ap, int);
+    int first = va_arg (ap, int);
+    va_end (ap);
+
+    idio_unicode_t format = IDIO_PRINT_CONVERSION_FORMAT_d;
+    if (first) {
+	format = idio_util_string_format (format);
+    }
+
+    char *C_r = idio_fixnum_as_C_string (v, sizep, format, seen, depth);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_fixnum_add_primitives ()
 {
     idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("FIXNUM-MAX"), idio_fixnum (IDIO_FIXNUM_MAX), idio_Idio_module_instance ());
@@ -1392,6 +1507,6 @@ void idio_init_fixnum ()
 
     idio_vtable_add_method (idio_fixnum_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_fixnum_method_2string));
 }
 

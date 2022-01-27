@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -94,6 +94,9 @@ IDIO idio_struct_instance_ref (IDIO si, IDIO field);
 IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index);
 IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v);
 IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v);
+
+char *idio_struct_type_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
+char *idio_struct_instance_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_struct ();
 

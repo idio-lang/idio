@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -198,6 +198,10 @@ int idio_C_double_C_eq_ULP (double o1, double o2, unsigned int max);
 int idio_C_double_C_ne_ULP (double o1, double o2, unsigned int max);
 int idio_C_longdouble_C_eq_ULP (long double o1, long double o2, unsigned int max);
 int idio_C_longdouble_C_ne_ULP (long double o1, long double o2, unsigned int max);
+
+char *idio_C_char_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
+char *idio_C_number_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
+char *idio_C_pointer_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_c_type ();
 

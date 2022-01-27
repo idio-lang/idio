@@ -43,11 +43,15 @@
 #include "evaluate.h"
 #include "fixnum.h"
 #include "handle.h"
+#include "hash.h"
 #include "idio-string.h"
+#include "module.h"
 #include "pair.h"
 #include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
+#include "thread.h"
+#include "unicode.h"
 #include "util.h"
 #include "vm.h"
 #include "vtable.h"
@@ -1033,6 +1037,149 @@ of struct type `st`				\n\
     return r;
 }
 
+char *idio_struct_type_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (struct_type, v);
+
+    char *r = NULL;
+
+#ifdef IDIO_DEBUG
+    *sizep = idio_asprintf (&r, "#<ST %10p ", v);
+#else
+    *sizep = idio_asprintf (&r, "#<ST ");
+#endif
+
+    size_t stn_size = 0;
+    char *stn = idio_as_string (IDIO_STRUCT_TYPE_NAME (v), &stn_size, 1, seen, 0);
+    IDIO_STRCAT_FREE (r, sizep, stn, stn_size);
+    IDIO_STRCAT (r, sizep, " ");
+
+    size_t stp_size = 0;
+    char *stp = idio_as_string (IDIO_STRUCT_TYPE_PARENT (v), &stp_size, 1, seen, 0);
+    IDIO_STRCAT_FREE (r, sizep, stp, stp_size);
+
+    size_t size = IDIO_STRUCT_TYPE_SIZE (v);
+    size_t i;
+    for (i = 0; i < size; i++) {
+	IDIO_STRCAT (r, sizep, " ");
+	size_t f_size = 0;
+	char *fs = idio_as_string (IDIO_STRUCT_TYPE_FIELDS (v, i), &f_size, 1, seen, 0);
+	IDIO_STRCAT_FREE (r, sizep, fs, f_size);
+    }
+
+    IDIO_STRCAT (r, sizep, ">");
+
+    return r;
+}
+
+IDIO idio_struct_type_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    va_end (ap);
+
+    char *C_r = idio_struct_type_as_C_string (v, sizep, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
+char *idio_struct_instance_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (struct_instance, v);
+
+    char *r = NULL;
+
+    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (v);
+    IDIO value_as_string = idio_module_symbol_value (idio_util_value_as_string, idio_Idio_module, idio_S_nil);
+
+    if (idio_S_nil != value_as_string) {
+	IDIO s = idio_S_nil;
+	IDIO l = idio_hash_ref (value_as_string, sit);
+	if (idio_S_unspec != l) {
+	    IDIO thr = idio_thread_current_thread ();
+
+	    IDIO cmd = IDIO_LIST3 (l, v, idio_S_nil);
+
+	    s = idio_vm_invoke_C (thr, cmd);
+	}
+
+	if (idio_S_nil != s) {
+	    if (idio_isa_string (s)) {
+		return idio_utf8_string (s, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_NOPREC);
+	    } else if (0 == idio_vm_reporting) {
+		/*
+		 * Test Case: util-errors/struct-instance-printer-bad-return-type.idio
+		 *
+		 * ... return #t
+		 */
+#ifdef IDIO_DEBUG
+		idio_debug ("bad printer for SI type %s\n", sit);
+#endif
+		idio_error_param_value_msg ("idio_as_string", "struct instance printer", s, "should return a string", IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
+	}
+    }
+
+    *sizep = idio_asprintf (&r, "#<SI ");
+
+    size_t n_size = 0;
+    char *ns = idio_as_string (IDIO_STRUCT_TYPE_NAME (sit), &n_size, 1, seen, 0);
+    IDIO_STRCAT_FREE (r, sizep, ns, n_size);
+
+    size_t size = IDIO_STRUCT_TYPE_SIZE (sit);
+    size_t i;
+    for (i = 0; i < size; i++) {
+	IDIO_STRCAT (r, sizep, " ");
+	size_t fn_size = 0;
+	char *fns = idio_as_string (IDIO_STRUCT_TYPE_FIELDS (sit, i), &fn_size, 1, seen, 0);
+	IDIO_STRCAT_FREE (r, sizep, fns, fn_size);
+	IDIO_STRCAT (r, sizep, ":");
+	size_t fv_size = 0;
+	char *fvs = idio_as_string (IDIO_STRUCT_INSTANCE_FIELDS (v, i), &fv_size, depth - 1, seen, 0);
+	IDIO_STRCAT_FREE (r, sizep, fvs, fv_size);
+    }
+
+    IDIO_STRCAT (r, sizep, ">");
+
+    return r;
+}
+
+IDIO idio_struct_instance_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    va_end (ap);
+
+    char *C_r = idio_struct_instance_as_C_string (v, sizep, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_struct_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (make_struct_type);
@@ -1072,9 +1219,9 @@ void idio_init_struct ()
 
     idio_vtable_add_method (idio_struct_type_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_struct_type_method_2string));
 
     idio_vtable_add_method (idio_struct_instance_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_struct_instance_method_2string));
 }

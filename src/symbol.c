@@ -934,6 +934,35 @@ set the property `kw` for `o` to `v`		\n\
     return idio_S_unspec;
 }
 
+char *idio_symbol_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (symbol, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "%s", IDIO_SYMBOL_S (v));
+
+    return r;
+}
+
+IDIO idio_symbol_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    size_t size = 0;
+    char *C_r = idio_symbol_as_C_string (v, &size, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, size);
+
+    IDIO_GC_FREE (C_r, size);
+
+    return r;
+}
+
 void idio_symbol_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (symbol_p);
@@ -1145,5 +1174,5 @@ void idio_init_symbol ()
 
     idio_vtable_add_method (idio_symbol_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_symbol_method_2string));
 }

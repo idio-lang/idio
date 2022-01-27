@@ -432,6 +432,35 @@ set the index of `kw` in keyword table `kt` to `v`	\n\
     return idio_keyword_set (kt, kw, v);
 }
 
+char *idio_keyword_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (keyword, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, ":%s", IDIO_KEYWORD_S (v));
+
+    return r;
+}
+
+IDIO idio_keyword_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    size_t size = 0;
+    char *C_r = idio_keyword_as_C_string (v, &size, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, size);
+
+    IDIO_GC_FREE (C_r, size);
+
+    return r;
+}
+
 void idio_keyword_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (make_keyword);
@@ -469,5 +498,5 @@ void idio_init_keyword ()
 
     idio_vtable_add_method (idio_keyword_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_keyword_method_2string));
 }

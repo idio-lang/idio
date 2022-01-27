@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -207,6 +207,8 @@ idio_ai_t idio_codegen_constants_lookup (IDIO cs, IDIO v);
 idio_ai_t idio_codegen_constants_lookup_or_extend (IDIO cs, IDIO v);
 void idio_codegen_code_prologue (IDIO_IA_T ia);
 idio_ai_t idio_codegen (IDIO thr, IDIO m, IDIO cs);
+
+char *idio_constant_i_code_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_codegen ();
 

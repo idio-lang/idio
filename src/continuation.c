@@ -43,6 +43,7 @@
 #include "error.h"
 #include "evaluate.h"
 #include "fixnum.h"
+#include "idio-string.h"
 #include "pair.h"
 #include "symbol.h"
 #include "thread.h"
@@ -129,6 +130,53 @@ void idio_free_continuation (IDIO k)
     IDIO_GC_FREE (k->u.continuation, sizeof (idio_continuation_t));
 }
 
+char *idio_continuation_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (continuation, v);
+
+    char *r = NULL;
+
+    IDIO ks = IDIO_CONTINUATION_STACK (v);
+    idio_ai_t kss;
+    char *kind = "";
+    if (IDIO_CONTINUATION_FLAGS (v) & IDIO_CONTINUATION_FLAG_DELIMITED) {
+	kind = "D";
+	kss = IDIO_FIXNUM_VAL (ks);
+    } else {
+	kss = idio_array_size (ks);
+    }
+
+#ifdef IDIO_DEBUG
+    *sizep = idio_asprintf (&r, "#<K%s %10p ss=%zu PC=%td>", kind, v, kss, IDIO_CONTINUATION_PC (v));
+#else
+    *sizep = idio_asprintf (&r, "#<K%s ss=%zu PC=%td>", kind, kss, IDIO_CONTINUATION_PC (v));
+#endif
+
+    return r;
+}
+
+IDIO idio_continuation_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    va_end (ap);
+
+    char *C_r = idio_continuation_as_C_string (v, sizep, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_continuation_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (continuation_p);
@@ -147,6 +195,6 @@ void idio_init_continuation ()
 
     idio_vtable_add_method (idio_continuation_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_continuation_method_2string));
 }
 

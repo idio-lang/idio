@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <setjmp.h>
 #include <stdarg.h>
@@ -4468,6 +4469,79 @@ normal hexadecimal digits are extended to all ASCII	\n\
     return idio_read_bignum_radix (handle, lo, '?', radix);
 }
 
+char *idio_constant_token_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    char *r = NULL;
+    char *t;
+
+    intptr_t C_v = IDIO_CONSTANT_TOKEN_VAL (v);
+
+    char m[BUFSIZ];
+
+    switch (C_v) {
+
+    case IDIO_TOKEN_DOT:                           t = "T/.";                         break;
+    case IDIO_TOKEN_LPAREN:                        t = "T/(";                         break;
+    case IDIO_TOKEN_RPAREN:                        t = "T/)";                         break;
+    case IDIO_TOKEN_LBRACE:                        t = "T/{";                         break;
+    case IDIO_TOKEN_RBRACE:                        t = "T/}";                         break;
+    case IDIO_TOKEN_LBRACKET:                      t = "T/[";                         break;
+    case IDIO_TOKEN_RBRACKET:                      t = "T/]";                         break;
+    case IDIO_TOKEN_LANGLE:                        t = "T/<";                         break;
+    case IDIO_TOKEN_RANGLE:                        t = "T/>";                         break;
+    case IDIO_TOKEN_EOL:                           t = "T/EOL";                       break;
+    case IDIO_TOKEN_PAIR_SEPARATOR:                t = "&";                           break;
+
+    default:
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.  There should be a case clause above.
+	 */
+	idio_snprintf (m, BUFSIZ, "#<type/constant/token?? %10p>", v);
+	t = m;
+	break;
+    }
+
+    if (NULL == t) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.  There should be a case clause above.
+	 */
+	*sizep = idio_asprintf (&r, "#<TOKEN=%" PRIdPTR ">", v);
+    } else {
+	*sizep = idio_asprintf (&r, "%s", t);
+    }
+
+    return r;
+}
+
+IDIO idio_constant_token_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    /*
+     * We only need sizep for a constant
+     */
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    va_end (ap);
+
+    char *C_r = idio_constant_token_as_C_string (v, sizep, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_read_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (read_number);
@@ -4522,6 +4596,6 @@ void idio_init_read ()
 
     idio_vtable_add_method (idio_constant_token_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_constant_token_method_2string));
 }
 

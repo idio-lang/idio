@@ -47,6 +47,8 @@ IDIO idio_list_assv (IDIO k, IDIO l);
 IDIO idio_list_assoc (IDIO k, IDIO l);
 IDIO idio_list_nth (IDIO l, IDIO I_n, IDIO args);
 
+char *idio_pair_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
+
 void idio_init_pair ();
 
 #define IDIO_LIST1(e1)		idio_pair (e1, idio_S_nil)

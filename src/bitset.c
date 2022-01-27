@@ -1129,6 +1129,176 @@ subsequently set to the result of `f`.		\n\
     return v;
 }
 
+char *idio_bitset_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (bitset, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#B{ %zu ", IDIO_BITSET_SIZE (v));
+
+    size_t bs_size = IDIO_BITSET_SIZE (v);
+    size_t count = 0;
+    int print_lead = 0;
+    int in_range = 0;
+    size_t range_start = 0;
+    size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD + 1;
+    for (size_t i = 0; i < n_ul; i++) {
+	/*
+	 * Native format is chunked into
+	 * idio_bitset_word_t
+	 */
+	idio_bitset_word_t ul_bits = IDIO_BITSET_WORDS (v, i);
+
+	if (ul_bits) {
+	    int b;
+	    for (b = 0; count < bs_size &&
+		     b < sizeof (idio_bitset_word_t); b++) {
+		/*
+		 * Portable format is chunked into bytes
+		 */
+		/*
+		 * XXX can we rely on UCHAR_MAX
+		 * (255 if CHAR_BIT is 8) meaning
+		 * all bits are set?  Does it
+		 * assume two's complement?
+		 */
+		size_t offset = b * CHAR_BIT;
+		idio_bitset_word_t mask = UCHAR_MAX;
+		mask <<= offset;
+		idio_bitset_word_t byte_bits = ul_bits & mask;
+
+		if (byte_bits) {
+		    if (byte_bits == mask) {
+			if (0 == in_range) {
+			    in_range = 1;
+			    range_start = count;
+			}
+			count += CHAR_BIT;
+			print_lead = 1;
+			continue;
+		    }
+		    if (print_lead) {
+			print_lead = 0;
+			char *lead;
+			if (in_range) {
+			    /*
+			     * Code coverage:
+			     *
+			     * We get here if a byte
+			     * was partially set after
+			     * one or more entire
+			     * bytes being set.
+			     */
+			    in_range = 0;
+			    size_t lead_size = idio_asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT);
+			    IDIO_STRCAT_FREE (r, sizep, lead, lead_size);
+			} else {
+			    size_t lead_size = idio_asprintf (&lead, "%zx:", count);
+			    IDIO_STRCAT_FREE (r, sizep, lead, lead_size);
+			}
+		    }
+		    char bits[CHAR_BIT + 1];
+		    unsigned int j;
+		    for (j = 0; j < CHAR_BIT; j++) {
+			if (ul_bits & (1UL << (offset + j))) {
+			    bits[j] = '1';
+			} else {
+			    bits[j] = '0';
+			}
+			count++;
+			if (count > bs_size){
+			    /*
+			     * Code coverage:
+			     *
+			     * This is run if the last
+			     * byte has some bits set.
+			     */
+			    break;
+			}
+		    }
+		    bits[j] = '\0';
+
+		    r = idio_strcat (r, sizep, bits, j);
+		    IDIO_STRCAT (r, sizep, " ");
+		} else {
+		    char *lead;
+		    if (in_range) {
+			/*
+			 * Code coverage:
+			 *
+			 * We get here if an entire
+			 * byte was unset after one or
+			 * more entire bytes being
+			 * set.
+			 */
+			in_range = 0;
+			size_t lead_size = idio_asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT);
+			IDIO_STRCAT_FREE (r, sizep, lead, lead_size);
+		    }
+
+		    count += CHAR_BIT;
+		    print_lead = 1;
+		}
+	    }
+	} else {
+	    if (in_range) {
+		/*
+		 * Code coverage:
+		 *
+		 * We get here if an entire word was
+		 * unset after one or more entire
+		 * bytes being set up to the end of a
+		 * word.
+		 */
+		in_range = 0;
+		char *lead;
+		size_t lead_size = idio_asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT);
+		IDIO_STRCAT_FREE (r, sizep, lead, lead_size);
+	    }
+
+	    count += IDIO_BITSET_BITS_PER_WORD;
+	    print_lead = 1;
+	}
+    }
+    if (in_range) {
+	/*
+	 * Code coverage:
+	 *
+	 * A range left hanging in the last word.
+	 */
+	in_range = 0;
+	char *lead;
+	size_t lead_size = idio_asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT);
+	IDIO_STRCAT_FREE (r, sizep, lead, lead_size);
+    }
+    IDIO_STRCAT (r, sizep, "}");
+
+    return r;
+}
+
+IDIO idio_bitset_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    va_end (ap);
+
+    char *C_r = idio_bitset_as_C_string (v, sizep, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_bitset_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (bitset_p);
@@ -1162,5 +1332,5 @@ void idio_init_bitset ()
 
     idio_vtable_add_method (idio_bitset_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_bitset_method_2string));
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -43,6 +43,8 @@ IDIO idio_keywords_C_intern (char const *s, size_t slen);
 IDIO idio_hash_make_keyword_table (IDIO args);
 IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args);
 IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v);
+
+char *idio_keyword_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_keyword (void);
 

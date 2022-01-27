@@ -42,6 +42,7 @@
 #include "error.h"
 #include "evaluate.h"
 #include "expander.h"
+#include "fixnum.h"
 #include "file-handle.h"
 #include "handle.h"
 #include "idio-string.h"
@@ -253,6 +254,160 @@ void idio_thread_set_current_module (IDIO m)
     IDIO_THREAD_ENV (thr) = m;
 }
 
+char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (thread, v);
+
+    char *r = NULL;
+
+    /*
+     * Code coverage:
+     *
+     * Not usually user-visible.
+     */
+    seen = idio_pair (v, seen);
+    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (v));
+    *sizep = idio_asprintf (&r, "#<THR %10p\n  pc=%6zd\n  sp/top=%2zd/",
+			    v,
+			    IDIO_THREAD_PC (v),
+			    sp - 1);
+
+    size_t t_size = 0;
+    char *t = idio_as_string (idio_array_top (IDIO_THREAD_STACK (v)), &t_size, 1, seen, 0);
+    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+    IDIO_STRCAT (r, sizep, "\n  val=");
+    t_size = 0;
+    t = idio_as_string (IDIO_THREAD_VAL (v), &t_size, 2, seen, 0);
+    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+    IDIO_STRCAT (r, sizep, "\n  func=");
+    t_size = 0;
+    t = idio_as_string (IDIO_THREAD_FUNC (v), &t_size, 1, seen, 0);
+    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+    if (1 == depth) {
+	IDIO frame = IDIO_THREAD_FRAME (v);
+
+	if (idio_S_nil == frame) {
+	    IDIO_STRCAT (r, sizep, "\n  fr=nil");
+	} else {
+	    char *es;
+	    size_t es_size = idio_asprintf (&es, "\n  fr=%10p n=%td ", frame, IDIO_FRAME_NPARAMS (frame));
+	    IDIO_STRCAT_FREE (r, sizep, es, es_size);
+
+	    size_t f_size = 0;
+	    char *fs = idio_as_string (frame, &f_size, 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, fs, f_size);
+	}
+    }
+
+    IDIO_STRCAT (r, sizep, "\n  env=");
+    t_size = 0;
+    t = idio_as_string (IDIO_THREAD_ENV (v), &t_size, 1, seen, 0);
+    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+#ifdef IDIO_VM_DYNAMIC_REGISTERS
+    IDIO_STRCAT (r, sizep, "\n  t/sp=");
+    t_size = 0;
+    t = idio_as_string (IDIO_THREAD_TRAP_SP (v), &t_size, 1, seen, 0);
+    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+    IDIO_STRCAT (r, sizep, "\n  d/sp=");
+    t_size = 0;
+    t = idio_as_string (IDIO_THREAD_DYNAMIC_SP (v), &t_size, 1, seen, 0);
+    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+    IDIO_STRCAT (r, sizep, "\n  e/sp=");
+    t_size = 0;
+    t = idio_as_string (IDIO_THREAD_ENVIRON_SP (v), &t_size, 1, seen, 0);
+    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+#endif
+    if (depth > 1) {
+	IDIO_STRCAT (r, sizep, "\n  fr=");
+	t_size = 0;
+	t = idio_as_string (IDIO_THREAD_FRAME (v), &t_size, 1, seen, 0);
+	IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+	if (depth > 2) {
+	    IDIO_STRCAT (r, sizep, "\n  reg1=");
+	    t_size = 0;
+	    t = idio_as_string (IDIO_THREAD_REG1 (v), &t_size, 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+	    IDIO_STRCAT (r, sizep, "\n  reg2=");
+	    t_size = 0;
+	    t = idio_as_string (IDIO_THREAD_REG2 (v), &t_size, 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+	    IDIO_STRCAT (r, sizep, "\n  expr=");
+	    IDIO fmci = IDIO_THREAD_EXPR (v);
+	    if (idio_isa_fixnum (fmci)) {
+		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
+		idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
+
+		IDIO src = idio_vm_constants_ref (gci);
+
+		t_size = 0;
+		t = idio_as_string (src, &t_size, 1, seen, 0);
+		IDIO_STRCAT_FREE (r, sizep, t, t_size);
+	    }
+
+	    IDIO_STRCAT (r, sizep, "\n  input_handle=");
+	    t_size = 0;
+	    t = idio_as_string (IDIO_THREAD_INPUT_HANDLE (v), &t_size, 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+	    IDIO_STRCAT (r, sizep, "\n  output_handle=");
+	    t_size = 0;
+	    t = idio_as_string (IDIO_THREAD_OUTPUT_HANDLE (v), &t_size, 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+	    IDIO_STRCAT (r, sizep, "\n  error_handle=");
+	    t_size = 0;
+	    t = idio_as_string (IDIO_THREAD_ERROR_HANDLE (v), &t_size, 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+	    IDIO_STRCAT (r, sizep, "\n  module=");
+	    t_size = 0;
+	    t = idio_as_string (IDIO_THREAD_MODULE (v), &t_size, 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+	    char *hs;
+	    size_t hs_size = idio_asprintf (&hs, "\n  holes=%zd ", idio_list_length (IDIO_THREAD_HOLES (v)));
+	    IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
+
+	    t_size = 0;
+	    t = idio_as_string (IDIO_THREAD_HOLES (v), &t_size, 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+	}
+    }
+    IDIO_STRCAT (r, sizep, ">");
+
+    return r;
+}
+
+IDIO idio_thread_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    va_end (ap);
+
+    char *C_r = idio_thread_as_C_string (v, sizep, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_thread_add_primitives ()
 {
     /*
@@ -298,5 +453,5 @@ void idio_init_first_thread ()
 
     idio_vtable_add_method (idio_thread_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_thread_method_2string));
 }

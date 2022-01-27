@@ -44,6 +44,7 @@
 #include "idio-string.h"
 #include "keyword.h"
 #include "module.h"
+#include "pair.h"
 #include "primitive.h"
 #include "string-handle.h"
 #include "symbol.h"
@@ -222,6 +223,62 @@ return the setter of `p`			\n\
     return setter;
 }
 
+char *idio_closure_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (closure, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#<CLOS ");
+
+    IDIO name = idio_ref_property (v, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+    if (idio_S_nil != name) {
+	char *name_C;
+	size_t name_size = idio_asprintf (&name_C, "%s ", IDIO_SYMBOL_S (name));
+	IDIO_STRCAT_FREE (r, sizep, name_C, name_size);
+    } else {
+	IDIO_STRCAT (r, sizep, "- ");
+    }
+
+    char *t;
+    size_t t_size = idio_asprintf (&t, "@%zd/%p/", IDIO_CLOSURE_CODE_PC (v), IDIO_CLOSURE_FRAME (v));
+    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+    size_t mn_size = 0;
+    char *mn = idio_as_string (IDIO_MODULE_NAME (IDIO_CLOSURE_ENV (v)), &mn_size, depth - 1, seen, 0);
+    IDIO_STRCAT_FREE (r, sizep, mn, mn_size);
+
+    IDIO_STRCAT (r, sizep, ">");
+
+    return r;
+}
+
+IDIO idio_closure_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    IDIO seen = va_arg (ap, IDIO);
+    int depth = va_arg (ap, int);
+    va_end (ap);
+
+    IDIO_ASSERT (seen);
+
+    char *C_r = idio_closure_as_C_string (v, sizep, 0, seen, depth);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_closure_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (functionp);
@@ -248,5 +305,5 @@ void idio_init_closure ()
 
     idio_vtable_add_method (idio_closure_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_closure_method_2string));
 }

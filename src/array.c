@@ -1446,6 +1446,83 @@ The final value of `val` is returned.				\n\
     return val;
 }
 
+char *idio_array_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (array, v);
+
+    char *r = NULL;
+
+    /*
+     * XXX This 40 element break should be revisited.  I guess I'm
+     * less likely to be printing huge internal arrays as the code
+     * matures.
+     */
+    seen = idio_pair (v, seen);
+    *sizep = idio_asprintf (&r, "#[ ");
+    if (depth > 0) {
+	if (IDIO_ARRAY_USIZE (v) <= 40) {
+	    for (idio_ai_t i = 0; i < IDIO_ARRAY_USIZE (v); i++) {
+		size_t t_size = 0;
+		char *t = idio_as_string (IDIO_ARRAY_AE (v, i), &t_size, depth - 1, seen, 0);
+		IDIO_STRCAT_FREE (r, sizep, t, t_size);
+		IDIO_STRCAT (r, sizep, " ");
+	    }
+	} else {
+	    for (idio_ai_t i = 0; i < 20; i++) {
+		size_t t_size = 0;
+		char *t = idio_as_string (IDIO_ARRAY_AE (v, i), &t_size, depth - 1, seen, 0);
+		IDIO_STRCAT_FREE (r, sizep, t, t_size);
+		IDIO_STRCAT (r, sizep, " ");
+	    }
+	    char *aei;
+	    size_t aei_size = idio_asprintf (&aei, "..[%zd] ", IDIO_ARRAY_USIZE (v) - 20);
+	    IDIO_STRCAT_FREE (r, sizep, aei, aei_size);
+	    for (idio_ai_t i = IDIO_ARRAY_USIZE (v) - 20; i < IDIO_ARRAY_USIZE (v); i++) {
+		size_t t_size = 0;
+		char *t = idio_as_string (IDIO_ARRAY_AE (v, i), &t_size, depth - 1, seen, 0);
+		IDIO_STRCAT_FREE (r, sizep, t, t_size);
+		IDIO_STRCAT (r, sizep, " ");
+	    }
+	}
+    } else {
+	/*
+	 * Code coverage:
+	 *
+	 * Complicated structures are contracted.
+	 */
+	IDIO_STRCAT (r, sizep, ".. ");
+    }
+    IDIO_STRCAT (r, sizep, "]");
+
+    return r;
+}
+
+IDIO idio_array_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    IDIO seen = va_arg (ap, IDIO);
+    int depth = va_arg (ap, int);
+    va_end (ap);
+
+    IDIO_ASSERT (seen);
+
+    char *C_r = idio_array_as_C_string (v, sizep, 0, seen, depth);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_array_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (arrayp);
@@ -1477,5 +1554,5 @@ void idio_init_array ()
 
     idio_vtable_add_method (idio_array_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_array_method_2string));
 }

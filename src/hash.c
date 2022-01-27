@@ -2125,6 +2125,105 @@ duplicate keys in `ht2` will overwrite keys in `ht1`		\n\
     return idio_merge_hash (ht1, ht2);
 }
 
+char *idio_hash_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (hash, v);
+
+    char *r = NULL;
+
+    seen = idio_pair (v, seen);
+    *sizep = idio_asprintf (&r, "#{ ");
+
+    if (depth > 0) {
+	for (idio_hi_t i = 0; i < IDIO_HASH_SIZE (v); i++) {
+	    idio_hash_entry_t *he = IDIO_HASH_HA (v, i);
+	    for (; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
+		if (idio_S_nil != IDIO_HASH_HE_KEY (he)) {
+		    /*
+		     * We're looking to generate:
+		     *
+		     * (k & v)
+		     *
+		     */
+		    IDIO_STRCAT (r, sizep, "(");
+
+		    size_t t_size = 0;
+		    char *t;
+		    if (IDIO_HASH_FLAGS (v) & IDIO_HASH_FLAG_STRING_KEYS) {
+			/*
+			 * Code coverage:
+			 *
+			 * No user-facing string keys
+			 * tables.
+			 */
+			t_size = idio_asprintf (&t, "%s", (char *) IDIO_HASH_HE_KEY (he));
+			t = (char *) IDIO_HASH_HE_KEY (he);
+		    } else {
+			t = idio_as_string (IDIO_HASH_HE_KEY (he), &t_size, depth - 1, seen, 0);
+		    }
+		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+		    char *hes;
+		    size_t hes_size = idio_asprintf (&hes, " %c ", IDIO_PAIR_SEPARATOR);
+		    IDIO_STRCAT_FREE (r, sizep, hes, hes_size);
+
+		    if (IDIO_HASH_HE_VALUE (he)) {
+			t_size = 0;
+			t = idio_as_string (IDIO_HASH_HE_VALUE (he), &t_size, depth - 1, seen, 0);
+			IDIO_STRCAT_FREE (r, sizep, t, t_size);
+		    } else {
+			/*
+			 * Code coverage:
+			 *
+			 * Probably shouldn't happen.  It
+			 * requires we have a NULL for
+			 * IDIO_HASH_KEY_VALUE().
+			 */
+			IDIO_STRCAT (r, sizep, "-");
+		    }
+		    IDIO_STRCAT (r, sizep, ")");
+		}
+	    }
+	}
+    } else {
+	/*
+	 * Code coverage:
+	 *
+	 * Complicated structures are contracted.
+	 */
+	IDIO_STRCAT (r, sizep, "..");
+    }
+    IDIO_STRCAT (r, sizep, "}");
+
+    return r;
+}
+
+IDIO idio_hash_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    IDIO seen = va_arg (ap, IDIO);
+    int depth = va_arg (ap, int);
+    va_end (ap);
+
+    IDIO_ASSERT (seen);
+
+    char *C_r = idio_hash_as_C_string (v, sizep, 0, seen, depth);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 #ifdef IDIO_DEBUG
 /*
  * Referencing
@@ -2317,5 +2416,5 @@ void idio_init_hash ()
 
     idio_vtable_add_method (idio_hash_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_hash_method_2string));
 }

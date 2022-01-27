@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -77,6 +77,8 @@ IDIO idio_read (IDIO handle);
 IDIO idio_read_expr (IDIO handle);
 idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind);
 IDIO idio_read_character (IDIO handle, IDIO lo, int kind);
+
+char *idio_constant_token_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_read ();
 

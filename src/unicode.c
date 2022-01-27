@@ -707,6 +707,47 @@ IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode=?", eq, ==)
 
 #define IDIO_UNICODE_INTERN_C(name,c)	(idio_unicode_C_intern (name, sizeof (name) - 1, IDIO_UNICODE (c)))
 
+char *idio_constant_unicode_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    char *r = NULL;
+
+    intptr_t C_v = IDIO_UNICODE_VAL (v);
+
+    if (C_v <= 0x7f &&
+	isgraph (C_v)) {
+	*sizep = idio_asprintf (&r, "#\\%c", C_v);
+    } else {
+	*sizep = idio_asprintf (&r, "#U+%04X", C_v);
+    }
+
+    return r;
+}
+
+IDIO idio_constant_unicode_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    /*
+     * We only need sizep for a constant
+     */
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    va_end (ap);
+
+    char *C_r = idio_constant_unicode_as_C_string (v, sizep, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_unicode_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (unicode_p);
@@ -816,6 +857,6 @@ void idio_init_unicode ()
 
     idio_vtable_add_method (idio_constant_unicode_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_constant_unicode_method_2string));
 }
 

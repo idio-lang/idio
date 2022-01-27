@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -39,6 +39,8 @@ void idio_thread_set_current_error_handle (IDIO h);
 IDIO idio_thread_env_module ();
 IDIO idio_thread_current_module ();
 void idio_thread_set_current_module (IDIO h);
+
+char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_thread ();
 void idio_init_first_thread ();

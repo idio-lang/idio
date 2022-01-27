@@ -282,6 +282,43 @@ Return ``#t`` if `p` is varargs			\n\
     return r;
 }
 
+char *idio_primitive_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (primitive, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#<PRIM %s>", IDIO_PRIMITIVE_NAME (v));
+
+    return r;
+}
+
+IDIO idio_primitive_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    IDIO seen = va_arg (ap, IDIO);
+    int depth = va_arg (ap, int);
+    va_end (ap);
+
+    IDIO_ASSERT (seen);
+
+    char *C_r = idio_primitive_as_C_string (v, sizep, 0, seen, depth);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_primitive_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (primitivep);
@@ -307,5 +344,5 @@ void idio_init_primitive ()
 
     idio_vtable_add_method (idio_primitive_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_primitive_method_2string));
 }

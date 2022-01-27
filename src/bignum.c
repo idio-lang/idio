@@ -4288,6 +4288,35 @@ dump the bignum structure of `n` to	\n\
     return idio_S_unspec;
 }
 
+char *idio_bignum_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (bignum, v);
+
+    return idio_bignum_as_string (v, sizep);
+}
+
+IDIO idio_bignum_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    va_end (ap);
+
+    char *C_r = idio_bignum_as_C_string (v, sizep, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_bignum_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (bignump);
@@ -4332,5 +4361,5 @@ void idio_init_bignum ()
 
     idio_vtable_add_method (idio_bignum_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_bignum_method_2string));
 }

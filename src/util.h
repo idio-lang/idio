@@ -58,7 +58,7 @@ int idio_eqvp (void const *o1, void const *o2);
 int idio_equalp (void const *o1, void const *o2);
 int idio_equal (IDIO o1, IDIO o2, int eqp);
 IDIO idio_value (IDIO o);
-idio_unicode_t idio_util_string_format (IDIO o, int use_ipcf);
+idio_unicode_t idio_util_string_format (idio_unicode_t format);
 char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first);
 char *idio_as_string_safe (IDIO o, size_t *sizep, int depth, int first);
 IDIO idio_util_method_2string (idio_vtable_method_t *m, IDIO v, ...);
@@ -83,6 +83,8 @@ void *memrchr (void const *s, int c, size_t n);
 
 size_t idio_strnlen (char const *s, size_t maxlen);
 int idio_snprintf (char *str, size_t size, char const *format, ...);
+
+char *idio_constant_idio_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_util ();
 

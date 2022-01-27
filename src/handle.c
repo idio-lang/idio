@@ -2368,6 +2368,95 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
     return idio_S_unspec;
 }
 
+char *idio_handle_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (handle, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#<H ");
+
+    IDIO_FLAGS_T h_flags = IDIO_HANDLE_FLAGS (v);
+    if (h_flags & IDIO_HANDLE_FLAG_CLOSED) {
+	IDIO_STRCAT (r, sizep, "c");
+    } else {
+	IDIO_STRCAT (r, sizep, "o");
+    }
+    if (h_flags & IDIO_HANDLE_FLAG_STRING) {
+	IDIO_STRCAT (r, sizep, "S"); /* s? is for S_ISSOCK */
+    } else if (h_flags & IDIO_HANDLE_FLAG_FILE) {
+	IDIO_STRCAT (r, sizep, "f"); /* cf. f? */
+    } else if (h_flags & IDIO_HANDLE_FLAG_PIPE) {
+	IDIO_STRCAT (r, sizep, "p"); /* cf. p? */
+    }
+
+    if (h_flags & IDIO_HANDLE_FLAG_READ) {
+	IDIO_STRCAT (r, sizep, "r");
+    }
+    if (h_flags & IDIO_HANDLE_FLAG_WRITE) {
+	IDIO_STRCAT (r, sizep, "w");
+    }
+    if (h_flags & IDIO_HANDLE_FLAG_FILE ||
+	h_flags & IDIO_HANDLE_FLAG_PIPE) {
+
+	IDIO_FLAGS_T s_flags = IDIO_FILE_HANDLE_FLAGS (v);
+	if (s_flags & IDIO_FILE_HANDLE_FLAG_CLOEXEC) {
+	    IDIO_STRCAT (r, sizep, "e"); /* same as mode string */
+	} else {
+	    IDIO_STRCAT (r, sizep, "!");
+	}
+	if (s_flags & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+	    IDIO_STRCAT (r, sizep, "i");
+	}
+	if (s_flags & IDIO_FILE_HANDLE_FLAG_STDIO) {
+	    IDIO_STRCAT (r, sizep, "F"); /* F for FILE* */
+	}
+	if (s_flags & IDIO_FILE_HANDLE_FLAG_EOF) {
+	    IDIO_STRCAT (r, sizep, "E");
+	}
+
+	char *fds;
+	size_t fds_size = idio_asprintf (&fds, "%4d", IDIO_FILE_HANDLE_FD (v));
+	IDIO_STRCAT_FREE (r, sizep, fds, fds_size);
+    }
+
+    /*
+     * XXX can a handle name contain a NUL?
+     */
+    size_t size = 0;
+    char *sname = idio_handle_name_as_C (v, &size);
+    char *info;
+    size_t info_size = idio_asprintf (&info, ":\"%s\":%jd:%jd>", sname, (intmax_t) IDIO_HANDLE_LINE (v), (intmax_t) IDIO_HANDLE_POS (v));
+
+    idio_gc_free (sname, size);
+
+    IDIO_STRCAT_FREE (r, sizep, info, info_size);
+
+    return r;
+}
+
+IDIO idio_handle_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    va_end (ap);
+
+    char *C_r = idio_handle_as_C_string (v, sizep, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_handle_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (handlep);
@@ -2422,7 +2511,7 @@ void idio_init_handle ()
 
     idio_vtable_add_method (idio_handle_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_handle_method_2string));
 }
 
 /* Local Variables: */

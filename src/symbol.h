@@ -210,6 +210,8 @@ void idio_delete_properties (IDIO o);
 IDIO idio_ref_property (IDIO o, IDIO property, IDIO args);
 void idio_set_property (IDIO o, IDIO property, IDIO value);
 
+char *idio_symbol_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
+
 void idio_init_symbol (void);
 
 #endif

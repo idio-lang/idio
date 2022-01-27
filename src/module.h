@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -60,6 +60,8 @@ IDIO idio_module_env_set_symbol_value (IDIO symbol, IDIO value);
 IDIO idio_module_toplevel_set_symbol_value (IDIO symbol, IDIO value);
 IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO module);
 IDIO idio_module_export_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO module);
+
+char *idio_module_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_module (void);
 

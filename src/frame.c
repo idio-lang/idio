@@ -304,6 +304,59 @@ IDIO idio_frame_params_as_list (IDIO frame)
     return r;
 }
 
+char *idio_frame_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (frame, v);
+
+    char *r = NULL;
+
+    /*
+     * Code coverage:
+     *
+     * Not user-visible.
+     */
+    *sizep = idio_asprintf (&r, "#<FRAME %p n=%d/%d [ ", v, IDIO_FRAME_NPARAMS (v), IDIO_FRAME_NALLOC (v));
+
+    for (idio_frame_args_t i = 0; i < IDIO_FRAME_NALLOC (v); i++) {
+	size_t t_size = 0;
+	char *t = idio_as_string (IDIO_FRAME_ARGS (v, i), &t_size, depth - 1, seen, 0);
+	IDIO_STRCAT_FREE (r, sizep, t, t_size);
+	IDIO_STRCAT (r, sizep, " ");
+    }
+
+    if (idio_S_nil != IDIO_FRAME_NAMES (v)) {
+	size_t n_size = 0;
+	char *n = idio_as_string (IDIO_FRAME_NAMES (v), &n_size, depth - 1, seen, 0);
+	IDIO_STRCAT_FREE (r, sizep, n, n_size);
+    }
+
+    IDIO_STRCAT (r, sizep, "]>");
+
+    return r;
+}
+
+IDIO idio_frame_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    va_end (ap);
+
+    char *C_r = idio_frame_as_C_string (v, sizep, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
 void idio_init_frame ()
 {
     /*
@@ -320,5 +373,5 @@ void idio_init_frame ()
 
     idio_vtable_add_method (idio_frame_vtable,
 			    idio_S_2string,
-			    idio_vtable_create_method_simple (idio_util_method_2string));
+			    idio_vtable_create_method_simple (idio_frame_method_2string));
 }

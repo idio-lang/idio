@@ -3528,6 +3528,31 @@ of `str`					\n\
     return idio_strip_string (str, discard, ends);
 }
 
+char *idio_string_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (string, v);
+
+    return idio_utf8_string (v, sizep, IDIO_UTF8_STRING_ESCAPES, IDIO_UTF8_STRING_QUOTED, IDIO_UTF8_STRING_USEPREC);
+}
+
+IDIO idio_string_method_string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    size_t size = 0;
+    char *C_r = idio_string_as_C_string (v, &size, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, size);
+
+    IDIO_GC_FREE (C_r, size);
+
+    return r;
+}
+
 IDIO idio_string_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 {
     IDIO_C_ASSERT (m);

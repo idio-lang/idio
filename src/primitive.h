@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -28,6 +28,8 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc);
 void idio_primitive_set_property_C (IDIO p, IDIO kw, char const *str_C, size_t str_C_len);
 int idio_isa_primitive (IDIO o);
 void idio_free_primitive (IDIO o);
+
+char *idio_primitive_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_primitive ();
 
