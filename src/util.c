@@ -65,6 +65,7 @@
 #include "unicode.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
 
 IDIO idio_util_value_as_string;
 IDIO idio_print_conversion_format_sym = idio_S_nil;
@@ -228,6 +229,39 @@ return the type of `o` as a string		\n\
     IDIO_ASSERT (o);
 
     return idio_string_C (idio_type2string (o));
+}
+
+IDIO idio_util_method_typename (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    /*
+     * We are assuming someone has put a valid symbol into data.
+     */
+    IDIO data = (IDIO) IDIO_VTABLE_METHOD_DATA (m);
+
+    if (idio_isa_symbol (data) == 0) {
+	idio_error_param_value_msg_only ("typename", "method->data", "should be a symbol", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return data;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("typename", typename, (IDIO o), "o", "\
+return the type of `o` as a string		\n\
+						\n\
+:param o: object				\n\
+:return: a string representation of the type of `o`	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    idio_vtable_method_t *m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_typename);
+
+    return IDIO_VTABLE_METHOD_FUNC (m) (m, o);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("zero?", zerop, (IDIO o), "o", "\
@@ -1075,6 +1109,80 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
     }
 
     return 1;
+}
+
+/*
+ * A significant annoyance is that printing functions recurse which
+ * means that any idio-print-conversion-format which was valid for the
+ * initial call is now invalid for the recursed variants -- which
+ * should use a default (%s, usually or %d %u %g %p as below).
+ *
+ * We can toggle ipcf with a flag.
+ */
+idio_unicode_t idio_util_string_format (IDIO o, int use_ipcf)
+{
+    IDIO_ASSERT (o);
+
+    idio_unicode_t format = IDIO_PRINT_CONVERSION_FORMAT_s;
+    switch (idio_type (o)) {
+    case IDIO_TYPE_FIXNUM:		format = IDIO_PRINT_CONVERSION_FORMAT_d; break;
+    case IDIO_TYPE_C_CHAR:		format = IDIO_PRINT_CONVERSION_FORMAT_d; break;
+    case IDIO_TYPE_C_SCHAR:		format = IDIO_PRINT_CONVERSION_FORMAT_d; break;
+    case IDIO_TYPE_C_UCHAR:		format = IDIO_PRINT_CONVERSION_FORMAT_u; break;
+    case IDIO_TYPE_C_SHORT:		format = IDIO_PRINT_CONVERSION_FORMAT_d; break;
+    case IDIO_TYPE_C_USHORT:		format = IDIO_PRINT_CONVERSION_FORMAT_u; break;
+    case IDIO_TYPE_C_INT:		format = IDIO_PRINT_CONVERSION_FORMAT_d; break;
+    case IDIO_TYPE_C_UINT:		format = IDIO_PRINT_CONVERSION_FORMAT_u; break;
+    case IDIO_TYPE_C_LONG:		format = IDIO_PRINT_CONVERSION_FORMAT_d; break;
+    case IDIO_TYPE_C_ULONG:		format = IDIO_PRINT_CONVERSION_FORMAT_u; break;
+    case IDIO_TYPE_C_LONGLONG:		format = IDIO_PRINT_CONVERSION_FORMAT_d; break;
+    case IDIO_TYPE_C_ULONGLONG:		format = IDIO_PRINT_CONVERSION_FORMAT_u; break;
+    case IDIO_TYPE_C_FLOAT:		format = IDIO_PRINT_CONVERSION_FORMAT_g; break;
+    case IDIO_TYPE_C_DOUBLE:		format = IDIO_PRINT_CONVERSION_FORMAT_g; break;
+    case IDIO_TYPE_C_LONGDOUBLE:	format = IDIO_PRINT_CONVERSION_FORMAT_g; break;
+    case IDIO_TYPE_C_POINTER:		format = IDIO_PRINT_CONVERSION_FORMAT_p; break;
+    }
+
+    IDIO ipcf = idio_S_false;
+
+    if (use_ipcf &&
+	idio_S_nil != idio_print_conversion_format_sym) {
+	ipcf = idio_module_symbol_value (idio_print_conversion_format_sym,
+					 idio_Idio_module,
+					 IDIO_LIST1 (idio_S_false));
+
+	if (idio_S_false != ipcf) {
+	    if (! idio_isa_unicode (ipcf)) {
+		/*
+		 * Test Case: ??
+		 *
+		 * %format should have set
+		 * idio-print-conversion-format to the results
+		 * of a string-ref of the format string.
+		 * string-ref returns a unicode type.
+		 *
+		 * That leaves someone forcing
+		 * idio-print-conversion-format which is very
+		 * hard to test.
+		 *
+		 * Coding error.
+		 */
+		size_t size = 0;
+		char *ipcf_C = idio_as_string (ipcf, &size, 1, idio_S_nil, 0);
+		fprintf (stderr, "ipcf isa %s %s\n", idio_type2string (ipcf), ipcf_C);
+		idio_gc_free (ipcf_C, size);
+
+		idio_error_param_value_msg_only ("idio_util_string_format", "idio-print-conversion-format", "should be unicode", IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return -1;
+	    }
+
+	    format = IDIO_UNICODE_VAL (ipcf);
+	}
+    }
+
+    return format;
 }
 
 /*
@@ -2952,11 +3060,17 @@ in that it won't stringify a string!		\n\
 {
     IDIO_ASSERT (o);
 
-    if (idio_isa_string (o)) {
-	return o;
-    } else {
-	return idio_util_string (o);
-    }
+    idio_vtable_method_t *m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_2string);
+
+    return IDIO_VTABLE_METHOD_FUNC (m) (m, o);
+}
+
+IDIO idio_util_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    return idio_util_string (v);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("display-string", display_string, (IDIO o), "o", "\
@@ -3961,6 +4075,7 @@ int idio_snprintf (char *str, size_t const size, char const *format, ...)
 void idio_util_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (type_string);
+    IDIO_ADD_PRIMITIVE (typename);
     IDIO_ADD_PRIMITIVE (zerop);
     IDIO_ADD_PRIMITIVE (nullp);
     IDIO_ADD_PRIMITIVE (void);
@@ -4023,6 +4138,20 @@ void idio_init_util ()
 	idio_equal_stats[i].mixed = 0;
     }
 #endif
+
+    /*
+     * IDIO_TYPE_CONSTANT_IDIO isn't handled anywhere
+     */
+    idio_constant_idio_vtable    = idio_vtable (IDIO_TYPE_CONSTANT_IDIO);
+
+    idio_vtable_add_method (idio_constant_idio_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_constant_idio));
+
+    idio_vtable_add_method (idio_constant_idio_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
 }
 
 /* Local Variables: */

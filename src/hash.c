@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -60,6 +60,9 @@
 #include "thread.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
+
+static idio_vtable_t *idio_hash_vtable;
 
 void idio_hash_error (char const *msg, IDIO c_location)
 {
@@ -226,6 +229,7 @@ IDIO idio_hash (idio_hi_t size, int (*comp_C) (void const *k1, void const *k2), 
     }
 
     IDIO h = idio_gc_get (IDIO_TYPE_HASH);
+    h->vtable = idio_hash_vtable;
     IDIO_GC_ALLOC (h->u.hash, sizeof (idio_hash_t));
     IDIO_HASH_GREY (h) = NULL;
     IDIO_HASH_COUNT (h) = 0;
@@ -246,6 +250,7 @@ IDIO idio_copy_hash (IDIO orig, int depth)
     IDIO_TYPE_ASSERT (hash, orig);
 
     IDIO new = idio_gc_get (IDIO_TYPE_HASH);
+    new->vtable = idio_hash_vtable;
     IDIO_GC_ALLOC (new->u.hash, sizeof (idio_hash_t));
     IDIO_HASH_GREY (new) = NULL;
     IDIO_HASH_COMP_C (new) = IDIO_HASH_COMP_C (orig);
@@ -2302,5 +2307,15 @@ void idio_hash_add_primitives ()
 void idio_init_hash ()
 {
     idio_module_table_register (idio_hash_add_primitives, NULL, NULL);
-}
 
+    idio_hash_vtable = idio_vtable (IDIO_TYPE_HASH);
+
+    idio_vtable_add_method (idio_hash_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_hash));
+
+    idio_vtable_add_method (idio_hash_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
+}

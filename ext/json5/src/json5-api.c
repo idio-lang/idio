@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -72,6 +72,7 @@ IDIO idio_json5_string_value_to_idio (json5_unicode_string_t *js)
     IDIO_C_ASSERT (js);
 
     IDIO so = idio_gc_get (IDIO_TYPE_STRING);
+    so->vtable = idio_string_vtable;
     IDIO_STRING_LEN (so) = js->len;
 
     size_t reqd_bytes = js->len;

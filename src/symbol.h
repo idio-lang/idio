@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -25,6 +25,47 @@
 
 #define IDIO_SYMBOL_DECL(n)		IDIO idio_S_ ## n
 #define IDIO_SYMBOL_DEF(iname,cname)	idio_S_ ## cname = idio_symbols_C_intern (iname, sizeof (iname) - 1);
+
+/* types */
+extern IDIO_SYMBOL_DECL (fixnum);
+extern IDIO_SYMBOL_DECL (constant_idio);
+extern IDIO_SYMBOL_DECL (constant_token);
+extern IDIO_SYMBOL_DECL (constant_i_code);
+extern IDIO_SYMBOL_DECL (constant_unicode);
+extern IDIO_SYMBOL_DECL (string);
+extern IDIO_SYMBOL_DECL (substring);
+extern IDIO_SYMBOL_DECL (symbol);
+extern IDIO_SYMBOL_DECL (keyword);
+extern IDIO_SYMBOL_DECL (pair);
+extern IDIO_SYMBOL_DECL (array);
+extern IDIO_SYMBOL_DECL (hash);
+extern IDIO_SYMBOL_DECL (closure);
+extern IDIO_SYMBOL_DECL (primitive);
+extern IDIO_SYMBOL_DECL (bignum);
+extern IDIO_SYMBOL_DECL (module);
+extern IDIO_SYMBOL_DECL (frame);
+extern IDIO_SYMBOL_DECL (handle);
+extern IDIO_SYMBOL_DECL (struct_type);
+extern IDIO_SYMBOL_DECL (struct_instance);
+extern IDIO_SYMBOL_DECL (thread);
+extern IDIO_SYMBOL_DECL (continuation);
+extern IDIO_SYMBOL_DECL (bitset);
+extern IDIO_SYMBOL_DECL (c_char);
+extern IDIO_SYMBOL_DECL (c_schar);
+extern IDIO_SYMBOL_DECL (c_uchar);
+extern IDIO_SYMBOL_DECL (c_short);
+extern IDIO_SYMBOL_DECL (c_ushort);
+extern IDIO_SYMBOL_DECL (c_int);
+extern IDIO_SYMBOL_DECL (c_uint);
+extern IDIO_SYMBOL_DECL (c_long);
+extern IDIO_SYMBOL_DECL (c_ulong);
+extern IDIO_SYMBOL_DECL (c_longlong);
+extern IDIO_SYMBOL_DECL (c_ulonglong);
+extern IDIO_SYMBOL_DECL (c_float);
+extern IDIO_SYMBOL_DECL (c_double);
+extern IDIO_SYMBOL_DECL (c_longdouble);
+extern IDIO_SYMBOL_DECL (c_pointer);
+extern IDIO_SYMBOL_DECL (c_void);
 
 extern IDIO_SYMBOL_DECL (2string);
 extern IDIO_SYMBOL_DECL (C_struct);
@@ -126,6 +167,7 @@ extern IDIO_SYMBOL_DECL (template_expand);
 extern IDIO_SYMBOL_DECL (this);
 extern IDIO_SYMBOL_DECL (toplevel);
 extern IDIO_SYMBOL_DECL (trap);
+extern IDIO_SYMBOL_DECL (typename);
 extern IDIO_SYMBOL_DECL (unquote);
 extern IDIO_SYMBOL_DECL (unquotesplicing);
 extern IDIO_SYMBOL_DECL (virtualisation_WSL);

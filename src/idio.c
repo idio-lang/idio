@@ -83,6 +83,7 @@
 #include "util.h"
 #include "vars.h"
 #include "vm.h"
+#include "vtable.h"
 
 pid_t idio_pid = 0;
 int idio_state = IDIO_STATE_BOOTSTRAP;
@@ -236,6 +237,7 @@ void idio_init (void)
 
     /* GC first then symbol for the symbol table then modules */
     idio_init_gc ();
+    idio_init_vtable ();
     idio_init_vm_values ();
 
     idio_init_symbol ();

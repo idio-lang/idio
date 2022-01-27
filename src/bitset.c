@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -51,10 +51,14 @@
 #include "pair.h"
 #include "string-handle.h"
 #include "struct.h"
+#include "symbol.h"
 #include "thread.h"
 #include "unicode.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
+
+static idio_vtable_t *idio_bitset_vtable;
 
 static void idio_bitset_bounds_error (size_t const bit, size_t const size, IDIO c_location)
 {
@@ -106,6 +110,7 @@ static void idio_bitset_size_mismatch_error (size_t const s1, size_t const s2, I
 IDIO idio_bitset (size_t const size)
 {
     IDIO bs = idio_gc_get (IDIO_TYPE_BITSET);
+    bs->vtable = idio_bitset_vtable;
 
     IDIO_BITSET_SIZE (bs) = size;
     bs->u.bitset.words = NULL;
@@ -1147,5 +1152,15 @@ void idio_bitset_add_primitives ()
 void idio_init_bitset ()
 {
     idio_module_table_register (idio_bitset_add_primitives, NULL, NULL);
-}
 
+    idio_bitset_vtable = idio_vtable (IDIO_TYPE_BITSET);
+
+    idio_vtable_add_method (idio_bitset_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_bitset));
+
+    idio_vtable_add_method (idio_bitset_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
+}

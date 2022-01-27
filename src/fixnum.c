@@ -56,6 +56,7 @@
 #include "unicode.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
 
 static void idio_fixnum_divide_by_zero_error (IDIO nums, IDIO c_location)
 {
@@ -1381,5 +1382,16 @@ void idio_fixnum_add_primitives ()
 void idio_init_fixnum ()
 {
     idio_module_table_register (idio_fixnum_add_primitives, NULL, NULL);
+
+    idio_fixnum_vtable = idio_vtable (IDIO_TYPE_FIXNUM);
+
+    idio_vtable_add_method (idio_fixnum_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_fixnum));
+
+    idio_vtable_add_method (idio_fixnum_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
 }
 

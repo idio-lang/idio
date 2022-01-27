@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -51,14 +51,17 @@ extern IDIO idio_print_conversion_precision_sym;
 int idio_type (IDIO o);
 char const *idio_type2string (IDIO o);
 char const *idio_type_enum2string (idio_type_e type);
+IDIO idio_util_method_typename (idio_vtable_method_t *m, IDIO v, ...);
 int idio_isa_boolean (IDIO o);
 int idio_eqp (void const *o1, void const *o2);
 int idio_eqvp (void const *o1, void const *o2);
 int idio_equalp (void const *o1, void const *o2);
 int idio_equal (IDIO o1, IDIO o2, int eqp);
 IDIO idio_value (IDIO o);
+idio_unicode_t idio_util_string_format (IDIO o, int use_ipcf);
 char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first);
 char *idio_as_string_safe (IDIO o, size_t *sizep, int depth, int first);
+IDIO idio_util_method_2string (idio_vtable_method_t *m, IDIO v, ...);
 char *idio_display_string (IDIO o, size_t *sizep);
 char const *idio_vm_bytecode2string (int code);
 void idio_as_flat_string (IDIO o, char **argv, int *i);

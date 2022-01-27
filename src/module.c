@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -55,6 +55,9 @@
 #include "thread.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
+
+static idio_vtable_t *idio_module_vtable;
 
 static IDIO idio_modules_hash = idio_S_nil;
 
@@ -199,6 +202,7 @@ IDIO idio_module (IDIO name)
     }
 
     IDIO mo = idio_gc_get (IDIO_TYPE_MODULE);
+    mo->vtable = idio_module_vtable;
 
     IDIO_GC_ALLOC (mo->u.module, sizeof (idio_module_t));
 
@@ -2102,6 +2106,21 @@ void idio_init_module ()
     IDIO_MODULE_STRING (init, "idio-module-init");
 
     /*
+     * XXX Create the module vtable before creating any modules,
+     * eg. Idio, otherwise the Idio->vtable will be NULL.
+     */
+    idio_module_vtable = idio_vtable (IDIO_TYPE_MODULE);
+
+    idio_vtable_add_method (idio_module_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_module));
+
+    idio_vtable_add_method (idio_module_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
+
+    /*
      * We need to pre-seed the Idio module with the names of these
      * modules.
      *
@@ -2127,4 +2146,3 @@ void idio_init_module ()
 
     idio_module_set_symbol (dname, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (dm_gci), idio_fixnum (dm_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
 }
-

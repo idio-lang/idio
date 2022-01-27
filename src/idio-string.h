@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -32,6 +32,8 @@
 #define IDIO_STRING_TOKEN_EXACT(f)		((f) & IDIO_STRING_TOKEN_FLAG_EXACT)
 #define IDIO_STRING_TOKEN_INEXACT(f)		(IDIO_STRING_TOKEN_EXACT (f) == 0)
 #define IDIO_STRING_TOKEN_ARRAY(f)		((f) & IDIO_STRING_TOKEN_FLAG_ARRAY)
+
+extern idio_vtable_t *idio_string_vtable;
 
 void idio_string_error_C (char const *msg, IDIO detail, IDIO c_location);
 size_t idio_string_storage_size (IDIO s);

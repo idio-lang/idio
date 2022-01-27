@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -41,9 +41,13 @@
 #include "frame.h"
 #include "idio-string.h"
 #include "pair.h"
+#include "symbol.h"
 #include "thread.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
+
+static idio_vtable_t *idio_frame_vtable;
 
 IDIO idio_G_frame;
 
@@ -67,6 +71,7 @@ IDIO idio_frame_allocate (idio_ai_t arityp1)
     IDIO_C_ASSERT (arityp1);
 
     IDIO fo = idio_gc_get (IDIO_TYPE_FRAME);
+    fo->vtable = idio_frame_vtable;
 
     IDIO_GC_ALLOC (fo->u.frame, sizeof (idio_frame_t));
     IDIO_GC_ALLOC (fo->u.frame->args, arityp1 * sizeof (IDIO));
@@ -305,5 +310,15 @@ void idio_init_frame ()
      * XXX nothing to do here
      */
     idio_module_table_register (NULL, NULL, NULL);
-}
 
+    idio_frame_vtable = idio_vtable (IDIO_TYPE_FRAME);
+
+    idio_vtable_add_method (idio_frame_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_frame));
+
+    idio_vtable_add_method (idio_frame_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
+}

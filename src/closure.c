@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -47,7 +47,11 @@
 #include "primitive.h"
 #include "string-handle.h"
 #include "symbol.h"
+#include "util.h"
 #include "vm.h"
+#include "vtable.h"
+
+static idio_vtable_t *idio_closure_vtable;
 
 /**
  * idio_array() - closure constructor
@@ -75,6 +79,7 @@ IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO
     IDIO_TYPE_ASSERT (module, env);
 
     IDIO c = idio_gc_get (IDIO_TYPE_CLOSURE);
+    c->vtable = idio_closure_vtable;
 
     IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
 
@@ -233,5 +238,15 @@ void idio_closure_add_primitives ()
 void idio_init_closure ()
 {
     idio_module_table_register (idio_closure_add_primitives, NULL, NULL);
-}
 
+    idio_closure_vtable = idio_vtable (IDIO_TYPE_CLOSURE);
+
+    idio_vtable_add_method (idio_closure_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_closure));
+
+    idio_vtable_add_method (idio_closure_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
+}

@@ -140,6 +140,7 @@ IDIO idio_pathname_C_len (char const *s_C, size_t const blen)
     IDIO_C_ASSERT (s_C);
 
     IDIO so = idio_gc_get (IDIO_TYPE_STRING);
+    so->vtable = idio_string_vtable;
 
     IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
     IDIO_STRING_BLEN (so) = blen;

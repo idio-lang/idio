@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -60,6 +60,9 @@
 #include "unicode.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
+
+static idio_vtable_t *idio_bignum_vtable;
 
 size_t idio_bignums = 0;
 size_t idio_bignums_max = 0;
@@ -360,6 +363,7 @@ void idio_bignum_dump (IDIO bn)
 IDIO idio_bignum (int flags, IDIO_BE_T exp, IDIO_BSA sig_a)
 {
     IDIO o = idio_gc_get (IDIO_TYPE_BIGNUM);
+    o->vtable = idio_bignum_vtable;
 
     IDIO_BIGNUM_FLAGS (o) = flags;
     IDIO_BIGNUM_EXP (o) = exp;
@@ -4318,5 +4322,15 @@ void idio_init_bignum ()
     idio_bsa_set (sig_a, 1, 0);
     IDIO epsilon = idio_bignum_real (IDIO_BIGNUM_FLAG_REAL, - IDIO_BIGNUM_SIG_MAX_DIGITS, sig_a);
     idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("*epsilon*"), epsilon, idio_Idio_module);
-}
 
+    idio_bignum_vtable = idio_vtable (IDIO_TYPE_BIGNUM);
+
+    idio_vtable_add_method (idio_bignum_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_bignum));
+
+    idio_vtable_add_method (idio_bignum_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
+}

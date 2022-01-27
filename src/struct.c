@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -50,6 +50,10 @@
 #include "symbol.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
+
+static idio_vtable_t *idio_struct_type_vtable;
+static idio_vtable_t *idio_struct_instance_vtable;
 
 static void idio_struct_error (IDIO msg, IDIO st, IDIO args, IDIO c_location)
 {
@@ -158,6 +162,19 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
     size_t size = pfields + nfields;
 
     IDIO st = idio_gc_get (IDIO_TYPE_STRUCT_TYPE);
+
+    /*
+     * struct-types need some vtable management:
+     *
+     * * a per-type vtable for a start
+     */
+    idio_vtable_t *vt = idio_vtable (0);
+    st->vtable = vt;
+    if (idio_S_nil == parent) {
+	IDIO_VTABLE_PARENT (vt) = idio_struct_type_vtable;
+    } else {
+	IDIO_VTABLE_PARENT (vt) = parent->vtable;
+    }
 
     IDIO_GC_ALLOC (st->u.struct_type, sizeof (idio_struct_type_t));
 
@@ -399,6 +416,7 @@ IDIO idio_allocate_struct_instance (IDIO st, int fill)
     IDIO_TYPE_ASSERT (struct_type, st);
 
     IDIO si = idio_gc_get (IDIO_TYPE_STRUCT_INSTANCE);
+    si->vtable = idio_struct_instance_vtable;
 
     IDIO_STRUCT_INSTANCE_GREY (si) = NULL;
     IDIO_STRUCT_INSTANCE_TYPE (si) = st;
@@ -1038,4 +1056,25 @@ void idio_struct_add_primitives ()
 void idio_init_struct ()
 {
     idio_module_table_register (idio_struct_add_primitives, NULL, NULL);
+
+    idio_struct_type_vtable = idio_vtable (IDIO_TYPE_STRUCT_TYPE);
+    idio_struct_instance_vtable = idio_vtable (IDIO_TYPE_STRUCT_INSTANCE);
+
+    idio_vtable_add_method (idio_struct_type_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_struct_type));
+
+    idio_vtable_add_method (idio_struct_instance_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_struct_instance));
+
+    idio_vtable_add_method (idio_struct_type_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
+
+    idio_vtable_add_method (idio_struct_instance_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
 }

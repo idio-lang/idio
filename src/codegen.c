@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -50,6 +50,7 @@
 #include "thread.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
 
 static IDIO idio_codegen_module = idio_S_nil;
 
@@ -2987,5 +2988,15 @@ void idio_init_codegen ()
 	IDIO sym = idio_symbols_C_intern (cs->name, strnlen (cs->name, 40));
 	idio_module_export_symbol_value (sym, cs->value, idio_codegen_module);
     }
-}
 
+    idio_constant_i_code_vtable  = idio_vtable (IDIO_TYPE_CONSTANT_I_CODE);
+
+    idio_vtable_add_method (idio_constant_i_code_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_constant_i_code));
+
+    idio_vtable_add_method (idio_constant_i_code_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
+}

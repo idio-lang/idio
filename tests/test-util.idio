@@ -57,6 +57,26 @@ test (type->string #B{ 3 })			"bitset"
 test (type->string libc/INT_MAX)		"C/int"
 test (type->string libc/UINT_MAX)		"C/uint"
 
+test (typename 0)				'fixnum
+test (typename #t)				'constant
+test (typename #\a)				'unicode
+test (typename "a")				'string
+test (typename 'a)				'symbol
+test (typename :a)				'keyword
+test (typename (pair 1 2))			'pair
+test (typename #[])				'array
+test (typename #{})				'hash
+test (typename (function #n #n))		'closure
+test (typename pair)				'primitive
+test (typename 1.0)				'bignum
+test (typename (find-module 'Idio))		'module
+test (typename (current-input-handle))		'handle
+test (typename ^error)				'struct-type
+test (typename char-set:letter)			'struct-instance
+test (typename #B{ 3 })				'bitset
+test (typename libc/INT_MAX)			'C/int
+test (typename libc/UINT_MAX)			'C/uint
+
 test (zero? 0)				#t ; FIXNUM
 test (zero? #t)				#f ; CONSTANT
 test (zero? #\a)			#f ; UNICODE
@@ -1260,7 +1280,7 @@ test (%format 'keyed "%4.3f" h)		" 010"
 test (%format 'keyed "%10.2b" h)	"    123.45"
 
 ;; all done?
-Tests? (format0 + 660)
+Tests? (format0 + 679)
 
 ;Local Variables:
 ;mode: Idio

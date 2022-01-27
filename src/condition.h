@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -190,6 +190,8 @@ extern IDIO idio_condition_rt_regex_error_type;
 extern IDIO idio_condition_rt_struct_error_type;
 extern IDIO idio_condition_rt_symbol_error_type;
 extern IDIO idio_condition_rt_load_error_type;
+extern IDIO idio_condition_rt_vtable_unbound_error_type;
+extern IDIO idio_condition_rt_vtable_method_unbound_error_type;
 
 extern IDIO idio_condition_rt_signal_type;
 

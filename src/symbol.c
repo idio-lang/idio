@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -53,9 +53,53 @@
 #include "symbol.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
+
+static idio_vtable_t *idio_symbol_vtable;
 
 static IDIO idio_symbols_hash = idio_S_nil;
 IDIO idio_properties_hash = idio_S_nil;
+
+/* types */
+IDIO_SYMBOL_DECL (fixnum);
+IDIO_SYMBOL_DECL (constant_idio);
+IDIO_SYMBOL_DECL (constant_token);
+IDIO_SYMBOL_DECL (constant_i_code);
+IDIO_SYMBOL_DECL (constant_unicode);
+IDIO_SYMBOL_DECL (string);
+IDIO_SYMBOL_DECL (substring);
+IDIO_SYMBOL_DECL (symbol);
+IDIO_SYMBOL_DECL (keyword);
+IDIO_SYMBOL_DECL (pair);
+IDIO_SYMBOL_DECL (array);
+IDIO_SYMBOL_DECL (hash);
+IDIO_SYMBOL_DECL (closure);
+IDIO_SYMBOL_DECL (primitive);
+IDIO_SYMBOL_DECL (bignum);
+IDIO_SYMBOL_DECL (module);
+IDIO_SYMBOL_DECL (frame);
+IDIO_SYMBOL_DECL (handle);
+IDIO_SYMBOL_DECL (struct_type);
+IDIO_SYMBOL_DECL (struct_instance);
+IDIO_SYMBOL_DECL (thread);
+IDIO_SYMBOL_DECL (continuation);
+IDIO_SYMBOL_DECL (bitset);
+IDIO_SYMBOL_DECL (c_char);
+IDIO_SYMBOL_DECL (c_schar);
+IDIO_SYMBOL_DECL (c_uchar);
+IDIO_SYMBOL_DECL (c_short);
+IDIO_SYMBOL_DECL (c_ushort);
+IDIO_SYMBOL_DECL (c_int);
+IDIO_SYMBOL_DECL (c_uint);
+IDIO_SYMBOL_DECL (c_long);
+IDIO_SYMBOL_DECL (c_ulong);
+IDIO_SYMBOL_DECL (c_longlong);
+IDIO_SYMBOL_DECL (c_ulonglong);
+IDIO_SYMBOL_DECL (c_float);
+IDIO_SYMBOL_DECL (c_double);
+IDIO_SYMBOL_DECL (c_longdouble);
+IDIO_SYMBOL_DECL (c_pointer);
+IDIO_SYMBOL_DECL (c_void);
 
 IDIO_SYMBOL_DECL (2string);
 IDIO_SYMBOL_DECL (C_struct);
@@ -157,6 +201,7 @@ IDIO_SYMBOL_DECL (template_expand);
 IDIO_SYMBOL_DECL (this);
 IDIO_SYMBOL_DECL (toplevel);
 IDIO_SYMBOL_DECL (trap);
+IDIO_SYMBOL_DECL (typename);
 IDIO_SYMBOL_DECL (unquote);
 IDIO_SYMBOL_DECL (unquotesplicing);
 IDIO_SYMBOL_DECL (virtualisation_WSL);
@@ -326,6 +371,7 @@ static IDIO idio_symbol_C (char const *s_C, size_t const blen)
     IDIO_C_ASSERT (s_C);
 
     IDIO o = idio_gc_get (IDIO_TYPE_SYMBOL);
+    o->vtable = idio_symbol_vtable;
 
     IDIO_GC_ALLOC (IDIO_SYMBOL_S (o), blen + 1);
     memcpy (IDIO_SYMBOL_S (o), s_C, blen);
@@ -913,6 +959,47 @@ void idio_init_symbol ()
     idio_gc_protect_auto (idio_symbols_hash);
     IDIO_HASH_FLAGS (idio_symbols_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
 
+    /* types */
+    IDIO_SYMBOL_DEF ("fixnum", fixnum);
+    IDIO_SYMBOL_DEF ("constant", constant_idio);
+    IDIO_SYMBOL_DEF ("constant_TOKEN", constant_token);
+    IDIO_SYMBOL_DEF ("constant_I_CODE", constant_i_code);
+    IDIO_SYMBOL_DEF ("unicode", constant_unicode);
+    IDIO_SYMBOL_DEF ("string", string);
+    IDIO_SYMBOL_DEF ("substring", substring);
+    IDIO_SYMBOL_DEF ("symbol", symbol);
+    IDIO_SYMBOL_DEF ("keyword", keyword);
+    IDIO_SYMBOL_DEF ("pair", pair);
+    IDIO_SYMBOL_DEF ("array", array);
+    IDIO_SYMBOL_DEF ("hash", hash);
+    IDIO_SYMBOL_DEF ("closure", closure);
+    IDIO_SYMBOL_DEF ("primitive", primitive);
+    IDIO_SYMBOL_DEF ("bignum", bignum);
+    IDIO_SYMBOL_DEF ("module", module);
+    IDIO_SYMBOL_DEF ("frame", frame);
+    IDIO_SYMBOL_DEF ("handle", handle);
+    IDIO_SYMBOL_DEF ("struct-type", struct_type);
+    IDIO_SYMBOL_DEF ("struct-instance", struct_instance);
+    IDIO_SYMBOL_DEF ("thread", thread);
+    IDIO_SYMBOL_DEF ("continuation", continuation);
+    IDIO_SYMBOL_DEF ("bitset", bitset);
+    IDIO_SYMBOL_DEF ("C/char", c_char);
+    IDIO_SYMBOL_DEF ("C/schar", c_schar);
+    IDIO_SYMBOL_DEF ("C/uchar", c_uchar);
+    IDIO_SYMBOL_DEF ("C/short", c_short);
+    IDIO_SYMBOL_DEF ("C/ushort", c_ushort);
+    IDIO_SYMBOL_DEF ("C/int", c_int);
+    IDIO_SYMBOL_DEF ("C/uint", c_uint);
+    IDIO_SYMBOL_DEF ("C/long", c_long);
+    IDIO_SYMBOL_DEF ("C/ulong", c_ulong);
+    IDIO_SYMBOL_DEF ("C/longlong", c_longlong);
+    IDIO_SYMBOL_DEF ("C/ulonglong", c_ulonglong);
+    IDIO_SYMBOL_DEF ("C/float", c_float);
+    IDIO_SYMBOL_DEF ("C/double", c_double);
+    IDIO_SYMBOL_DEF ("C/longdouble", c_longdouble);
+    IDIO_SYMBOL_DEF ("C/pointer", c_pointer);
+    IDIO_SYMBOL_DEF ("C/void", c_void);
+
     IDIO_SYMBOL_DEF ("->string", 2string);
     IDIO_SYMBOL_DEF ("c_struct", C_struct);
     IDIO_SYMBOL_DEF ("after", after);
@@ -1017,6 +1104,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("this", this);
     IDIO_SYMBOL_DEF ("toplevel", toplevel);
     IDIO_SYMBOL_DEF ("%trap", trap);
+    IDIO_SYMBOL_DEF ("typename", typename);
     IDIO_SYMBOL_DEF ("unquote", unquote);
     IDIO_SYMBOL_DEF ("unquotesplicing", unquotesplicing);
     IDIO_SYMBOL_DEF ("virtualisation/WSL", virtualisation_WSL);
@@ -1047,5 +1135,15 @@ void idio_init_symbol ()
     idio_properties_hash = IDIO_HASH_EQP (4 * 1024);
     idio_gc_add_weak_object (idio_properties_hash);
     idio_gc_protect_auto (idio_properties_hash);
-}
 
+    idio_symbol_vtable = idio_vtable (IDIO_TYPE_SYMBOL);
+
+    idio_vtable_add_method (idio_symbol_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_symbol));
+
+    idio_vtable_add_method (idio_symbol_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
+}

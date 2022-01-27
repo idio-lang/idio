@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -44,9 +44,13 @@
 #include "evaluate.h"
 #include "fixnum.h"
 #include "pair.h"
+#include "symbol.h"
 #include "thread.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
+
+static idio_vtable_t *idio_continuation_vtable;
 
 IDIO idio_continuation (IDIO thr, int kind)
 {
@@ -54,6 +58,7 @@ IDIO idio_continuation (IDIO thr, int kind)
     IDIO_TYPE_ASSERT (thread, thr);
 
     IDIO k = idio_gc_get (IDIO_TYPE_CONTINUATION);
+    k->vtable = idio_continuation_vtable;
 
     IDIO_GC_ALLOC (k->u.continuation, sizeof (idio_continuation_t));
 
@@ -132,5 +137,16 @@ void idio_continuation_add_primitives ()
 void idio_init_continuation ()
 {
     idio_module_table_register (idio_continuation_add_primitives, NULL, NULL);
+
+    idio_continuation_vtable = idio_vtable (IDIO_TYPE_CONTINUATION);
+
+    idio_vtable_add_method (idio_continuation_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_continuation));
+
+    idio_vtable_add_method (idio_continuation_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
 }
 

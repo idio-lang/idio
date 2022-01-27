@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -138,58 +138,60 @@
  *
  * This is regardless of implementation, eg. multiple constant types
  */
-#define IDIO_TYPE_NONE			0
-#define IDIO_TYPE_FIXNUM		1
-#define IDIO_TYPE_CONSTANT_IDIO		2
-#define IDIO_TYPE_CONSTANT_TOKEN	3
-#define IDIO_TYPE_CONSTANT_I_CODE	4
-#define IDIO_TYPE_CONSTANT_UNICODE	5
+typedef enum {
+	IDIO_TYPE_NONE,
+	IDIO_TYPE_FIXNUM,
+	IDIO_TYPE_CONSTANT_IDIO,
+	IDIO_TYPE_CONSTANT_TOKEN,
+	IDIO_TYPE_CONSTANT_I_CODE,
+	IDIO_TYPE_CONSTANT_UNICODE,
 /*
-#define IDIO_TYPE_CONSTANT_6		6
-#define IDIO_TYPE_CONSTANT_6		7
-#define IDIO_TYPE_CONSTANT_7		8
-#define IDIO_TYPE_CONSTANT_8		9
+	IDIO_TYPE_CONSTANT_6,
+	IDIO_TYPE_CONSTANT_6,
+	IDIO_TYPE_CONSTANT_7,
+	IDIO_TYPE_CONSTANT_8,
 */
-#define IDIO_TYPE_PLACEHOLDER		10
+	IDIO_TYPE_PLACEHOLDER,
 
-#define IDIO_TYPE_STRING		11
-#define IDIO_TYPE_SUBSTRING		12
-#define IDIO_TYPE_SYMBOL		13
-#define IDIO_TYPE_KEYWORD		14
-#define IDIO_TYPE_PAIR			15
-#define IDIO_TYPE_ARRAY			16
-#define IDIO_TYPE_HASH			17
-#define IDIO_TYPE_CLOSURE		18
-#define IDIO_TYPE_PRIMITIVE		19
-#define IDIO_TYPE_BIGNUM		20
+	IDIO_TYPE_STRING,
+	IDIO_TYPE_SUBSTRING,
+	IDIO_TYPE_SYMBOL,
+	IDIO_TYPE_KEYWORD,
+	IDIO_TYPE_PAIR,
+	IDIO_TYPE_ARRAY,
+	IDIO_TYPE_HASH,
+	IDIO_TYPE_CLOSURE,
+	IDIO_TYPE_PRIMITIVE,
+	IDIO_TYPE_BIGNUM,
 
-#define IDIO_TYPE_MODULE		21
-#define IDIO_TYPE_FRAME			22
-#define IDIO_TYPE_HANDLE		23
-#define IDIO_TYPE_STRUCT_TYPE		24
-#define IDIO_TYPE_STRUCT_INSTANCE	25
-#define IDIO_TYPE_THREAD		26
-#define IDIO_TYPE_CONTINUATION		27
-#define IDIO_TYPE_BITSET		28
+	IDIO_TYPE_MODULE,
+	IDIO_TYPE_FRAME,
+	IDIO_TYPE_HANDLE,
+	IDIO_TYPE_STRUCT_TYPE,
+	IDIO_TYPE_STRUCT_INSTANCE,
+	IDIO_TYPE_THREAD,
+	IDIO_TYPE_CONTINUATION,
+	IDIO_TYPE_BITSET,
 
-#define IDIO_TYPE_C_CHAR        	29
-#define IDIO_TYPE_C_SCHAR       	30
-#define IDIO_TYPE_C_UCHAR       	31
-#define IDIO_TYPE_C_SHORT       	32
-#define IDIO_TYPE_C_USHORT      	33
-#define IDIO_TYPE_C_INT         	34
-#define IDIO_TYPE_C_UINT        	35
-#define IDIO_TYPE_C_LONG         	36
-#define IDIO_TYPE_C_ULONG        	37
-#define IDIO_TYPE_C_LONGLONG         	38
-#define IDIO_TYPE_C_ULONGLONG        	39
-#define IDIO_TYPE_C_FLOAT       	40
-#define IDIO_TYPE_C_DOUBLE      	41
-#define IDIO_TYPE_C_LONGDOUBLE      	42
-#define IDIO_TYPE_C_POINTER     	43
-#define IDIO_TYPE_C_VOID        	44
+	IDIO_TYPE_C_CHAR,
+	IDIO_TYPE_C_SCHAR,
+	IDIO_TYPE_C_UCHAR,
+	IDIO_TYPE_C_SHORT,
+	IDIO_TYPE_C_USHORT,
+	IDIO_TYPE_C_INT,
+	IDIO_TYPE_C_UINT,
+	IDIO_TYPE_C_LONG,
+	IDIO_TYPE_C_ULONG,
+	IDIO_TYPE_C_LONGLONG,
+	IDIO_TYPE_C_ULONGLONG,
+	IDIO_TYPE_C_FLOAT,
+	IDIO_TYPE_C_DOUBLE,
+	IDIO_TYPE_C_LONGDOUBLE,
+	IDIO_TYPE_C_POINTER,
+	IDIO_TYPE_C_VOID,
 
-#define IDIO_TYPE_MAX           	45
+	IDIO_TYPE_MAX
+} idio_type_enum;
 
 /**
  * typedef idio_type_e - Idio type discriminator
@@ -236,6 +238,96 @@ typedef uint8_t IDIO_I;
 #define IDIO_GC_FLAG_FINALIZER_UMASK	(~ IDIO_GC_FLAG_FINALIZER_MASK)
 #define IDIO_GC_FLAG_NOFINALIZER	(0 << IDIO_GC_FLAG_FINALIZER_SHIFT)
 #define IDIO_GC_FLAG_FINALIZER		(1 << IDIO_GC_FLAG_FINALIZER_SHIFT)
+
+/*
+ * A vtable method is a C function and a block of data for the
+ * function, if required.
+ *
+ * The C function is passed this structure as its first argument, the
+ * original Idio value as its second and any further arguments as
+ * necessary, eg. an Idio struct or C structure member name.
+ */
+struct idio_vtable_method_s {
+    struct idio_s *(*func) (struct idio_vtable_method_s *method, struct idio_s *value, ...);
+    size_t size;
+    void *data;
+};
+
+typedef struct idio_vtable_method_s idio_vtable_method_t;
+
+#define IDIO_VTABLE_METHOD_FUNC(VTM)	((VTM)->func)
+#define IDIO_VTABLE_METHOD_SIZE(VTM)	((VTM)->size)
+#define IDIO_VTABLE_METHOD_DATA(VTM)	((VTM)->data)
+
+/*
+ * A vtable entry is the mapping from a vtable function name to a
+ * vtable method.
+ *
+ * In addition we store:
+ *
+ * * whether the method was inherited from an ancestor, ie. has been
+ *   cached and might need clearing
+ *
+ * * a count of usage which we can use to slowly bubble sort methods
+ *   closer to the start of the array of vtable methods
+ *
+ *   What happens if count wraps?  2^31-1 calls?  Dunno.  It sits at
+ *   UINT_MAX?
+ *
+ * XXX name, an IDIO, is at risk of being GC'd unless it is kept in a
+ * global table, idio_vtable_names.  Obviously, that global table has
+ * to live until we've done any final reporting on vtables.
+ */
+struct idio_vtable_entry_s {
+    struct idio_s *name;
+    unsigned int inherited:1;
+    unsigned int count:31;
+    idio_vtable_method_t *method;
+};
+
+typedef struct idio_vtable_entry_s idio_vtable_entry_t;
+
+#define IDIO_VTABLE_ENTRY_NAME(VTE)      ((VTE)->name)
+#define IDIO_VTABLE_ENTRY_INHERITED(VTE) ((VTE)->inherited)
+#define IDIO_VTABLE_ENTRY_COUNT(VTE)     ((VTE)->count)
+#define IDIO_VTABLE_ENTRY_METHOD(VTE)    ((VTE)->method)
+
+#define IDIO_VTABLE_FLAG_NONE		0
+#define IDIO_VTABLE_FLAG_BASE		(1<<0)
+#define IDIO_VTABLE_FLAG_DERIVED	(1<<0)
+
+/*
+ * A vtable is attached to all types -- including user-defined
+ * (struct) types.  Idio values will reference their type-specific
+ * vtable including bespoke ones for C/pointer types.  Fixnums,
+ * constants etc. are obviously handled separately.
+ *
+ * Vtables are chained through a parent and are tagged with a
+ * generation which is bumped whenever a modification is made
+ * *anywhere* in the vtable tree.
+ *
+ * If this vtable's generation does not match the VM's generation then
+ * we need to validate not just our own but our ancestor's methods.
+ * There's a "quick" trick, here.  If none of my ancestor's
+ * generations are newer than me then the vtable modification did not
+ * affect this part of the tree and we can simply bump all the
+ * generations (of this part of the tree) to the global value.
+ */
+struct idio_vtable_s {
+    unsigned int flags;
+    struct idio_vtable_s *parent;
+    int gen;		/* generation */
+    size_t size;	/* # entries, ie. methods */
+    idio_vtable_entry_t **vte; /* array of size methods */
+};
+
+typedef struct idio_vtable_s idio_vtable_t;
+
+#define IDIO_VTABLE_FLAGS(VT)	((VT)->flags)
+#define IDIO_VTABLE_PARENT(VT)	((VT)->parent)
+#define IDIO_VTABLE_GEN(VT)	((VT)->gen)
+#define IDIO_VTABLE_SIZE(VT)	((VT)->size)
+#define IDIO_VTABLE_VTE(VT,i)	((VT)->vte[i])
 
 /**
  * struct idio_string_s - Idio ``string`` structure
@@ -1087,6 +1179,7 @@ typedef unsigned char IDIO_FLAGS_T;
  */
 struct idio_s {
     struct idio_s *next;
+    idio_vtable_t *vtable;
 
     /*
      * The union will be word-aligned (or larger) so we have 4 or 8

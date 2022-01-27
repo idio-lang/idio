@@ -427,6 +427,15 @@ define-template (condition type & field-bindings) {
 				      rt-load-error?
 				      (filename rt-load-error-filename))
 
+(define-condition-type-accessors-only ^rt-vtable-unbound-error
+				      ^runtime-error
+				      rt-vtable-unbound-error?)
+
+(define-condition-type-accessors-only ^rt-vtable-method-unbound-error
+				      ^runtime-error
+				      rt-vtable-method-unbound-error?
+				      (name rt-vtable-method-unbound-error-name))
+
 (define-condition-type-accessors-only ^rt-signal
 				      ^error
 				      rt-signal?
@@ -745,6 +754,17 @@ multiple lines.
      ((rt-load-error? c) {
        iem c
        cr-printf ": filename %s" (rt-load-error-filename c)
+     })
+
+     ;; ^rt-vtable-unbound-error
+     ((rt-vtable-unbound-error? c) {
+       iem c
+     })
+
+     ;; ^rt-vtable-method-unbound-error
+     ((rt-vtable-method-unbound-error? c) {
+       iem c
+       cr-printf ": name %s" (rt-vtable-method-unbound-error-name c)
      })
 
      ;; ^rt-signal

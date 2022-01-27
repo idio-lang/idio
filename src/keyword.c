@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -51,6 +51,9 @@
 #include "symbol.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
+
+static idio_vtable_t *idio_keyword_vtable;
 
 static IDIO idio_keywords_hash = idio_S_nil;
 
@@ -140,6 +143,7 @@ IDIO idio_keyword_C_len (char const *s_C, size_t const blen)
     IDIO_C_ASSERT (s_C);
 
     IDIO o = idio_gc_get (IDIO_TYPE_KEYWORD);
+    o->vtable = idio_keyword_vtable;
 
     IDIO_GC_ALLOC (IDIO_KEYWORD_S (o), blen + 1);
 
@@ -455,5 +459,15 @@ void idio_init_keyword ()
     IDIO_KEYWORD_DEF ("setter", setter);
     IDIO_KEYWORD_DEF ("sigstr", sigstr);
     IDIO_KEYWORD_DEF ("source", source);
-}
 
+    idio_keyword_vtable = idio_vtable (IDIO_TYPE_KEYWORD);
+
+    idio_vtable_add_method (idio_keyword_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_keyword));
+
+    idio_vtable_add_method (idio_keyword_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
+}

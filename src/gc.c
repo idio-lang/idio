@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2018, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -63,6 +63,7 @@
 #include "thread.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
 
 static idio_gc_t *idio_gc;
 static IDIO idio_gc_finalizer_hash = idio_S_nil;
@@ -224,6 +225,7 @@ IDIO idio_gc_get (idio_type_e type)
 
     /* assign type late in case we've re-used a previous object */
     o->type = type;
+    o->vtable = NULL;
     o->gc_flags = IDIO_GC_FLAG_NONE;
     o->flags = IDIO_FLAG_NONE;
     o->tflags = 0;

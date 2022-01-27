@@ -61,6 +61,7 @@
 #include "unicode.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
 
 IDIO idio_lexobj_type;
 IDIO idio_src_properties;
@@ -4511,5 +4512,16 @@ void idio_init_read ()
     idio_gc_protect_auto (idio_read_bitset_offset_sh);
     idio_read_bitset_end_sh = idio_open_input_string_handle_C ("", 0);
     idio_gc_protect_auto (idio_read_bitset_end_sh);
+
+    idio_constant_token_vtable   = idio_vtable (IDIO_TYPE_CONSTANT_TOKEN);
+
+    idio_vtable_add_method (idio_constant_token_vtable,
+			    idio_S_typename,
+			    idio_vtable_create_method_value (idio_util_method_typename,
+							     idio_S_constant_token));
+
+    idio_vtable_add_method (idio_constant_token_vtable,
+			    idio_S_2string,
+			    idio_vtable_create_method_simple (idio_util_method_2string));
 }
 
