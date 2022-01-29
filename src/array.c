@@ -1530,8 +1530,18 @@ void idio_array_add_primitives ()
     IDIO_ADD_PRIMITIVE (copy_array);
     IDIO_ADD_PRIMITIVE (array_fill);
     IDIO_ADD_PRIMITIVE (array_length);
-    IDIO_ADD_PRIMITIVE (array_ref);
-    IDIO_ADD_PRIMITIVE (array_set);
+    IDIO ref = IDIO_ADD_PRIMITIVE (array_ref);
+    idio_vtable_add_method (idio_array_vtable,
+			    idio_S_value_index,
+			    idio_vtable_create_method_value (idio_util_method_value_index,
+							     idio_vm_values_ref (IDIO_FIXNUM_VAL (ref))));
+
+    IDIO set = IDIO_ADD_PRIMITIVE (array_set);
+    idio_vtable_add_method (idio_array_vtable,
+			    idio_S_set_value_index,
+			    idio_vtable_create_method_value (idio_util_method_set_value_index,
+							     idio_vm_values_ref (IDIO_FIXNUM_VAL (set))));
+
     IDIO_ADD_PRIMITIVE (array_push);
     IDIO_ADD_PRIMITIVE (array_pop);
     IDIO_ADD_PRIMITIVE (array_unshift);

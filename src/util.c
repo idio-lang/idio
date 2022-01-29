@@ -259,9 +259,58 @@ return the type of `o` as a string		\n\
 {
     IDIO_ASSERT (o);
 
-    idio_vtable_method_t *m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_typename);
+    idio_vtable_method_t *m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_typename, 1);
 
     return IDIO_VTABLE_METHOD_FUNC (m) (m, o);
+}
+
+IDIO idio_util_method_members (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    IDIO data = (IDIO) IDIO_VTABLE_METHOD_DATA (m);
+
+    if (idio_isa_list (data) == 0) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_param_value_msg_only ("members", "method->data", "should be a list", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return data;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("members", members, (IDIO o), "o", "\
+return the members of `o` as a list		\n\
+						\n\
+:param o: object				\n\
+:return: a list of the members of `o`		\n\
+						\n\
+`o` should be an object with members such as a	\n\
+:ref:`struct-instance <struct-type>` or		\n\
+:ref:`C/pointer <c module types>`.		\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    /*
+     * The nominal type
+     */
+    IDIO t = o;
+
+    int type = idio_type (o);
+    switch (type) {
+    case IDIO_TYPE_STRUCT_INSTANCE:
+	t = IDIO_STRUCT_INSTANCE_TYPE (o);
+	break;
+    }
+
+    idio_vtable_method_t *m = idio_vtable_lookup_method (t, idio_value_vtable (t), idio_S_members, 1);
+
+    return IDIO_VTABLE_METHOD_FUNC (m) (m, t);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("zero?", zerop, (IDIO o), "o", "\
@@ -1435,16 +1484,16 @@ char *idio_as_string_safe (IDIO o, size_t *sizep, int depth, int first)
 }
 
 /*
-  Scheme-ish display -- no internal representation (where
-  appropriate).  Unsuitable for (read).  Primarily:
-
-  UNICODE #\a:		a
-  UNICODE #U+FFFD	�
-  STRING "foo":		foo
-
-  Most non-data types will still come out as some internal
-  representation.  (Still unsuitable for (read) as it doesn't know
-  about them.)
+ * Scheme-ish display -- no internal representation (where
+ * appropriate).  Unsuitable for (read).  Primarily:
+ *
+ * UNICODE #\a:		a
+ * UNICODE #U+FFFD	�
+ * STRING "foo":	foo
+ *
+ * Most non-data types will still come out as some internal
+ * representation.  (Still unsuitable for (read) as it doesn't know
+ * about them.)
  */
 char *idio_display_string (IDIO o, size_t *sizep)
 {
@@ -1538,6 +1587,121 @@ char *idio_display_string (IDIO o, size_t *sizep)
     return r;
 }
 
+IDIO idio_util_string (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    size_t size = 0;
+    char *str = idio_as_string_safe (o, &size, 40, 1);
+    IDIO r = idio_string_C_len (str, size);
+
+    idio_gc_free (str, size);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("string", string, (IDIO o), "o", "\
+convert `o` to a string				\n\
+						\n\
+:param o: object to convert			\n\
+:return: a string representation of `o`		\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    return idio_util_string (o);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("->string", 2string, (IDIO o), "o", "\
+convert `o` to a string unless it already is	\n\
+a string					\n\
+						\n\
+:param o: object to convert			\n\
+:return: a string representation of `o`		\n\
+						\n\
+``->string`` differs from :ref:`string <string>`	\n\
+in that it won't stringify a string!		\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    idio_vtable_method_t *m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_2string, 1);
+
+    size_t size = 0;
+
+    return IDIO_VTABLE_METHOD_FUNC (m) (m, o, &size, idio_S_nil, 40, 1);
+}
+
+/*
+ * The generic ->string vtable method simply calls the old
+ * idio_util_string() function.
+ */
+IDIO idio_util_method_2string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    return idio_util_string (v);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("display-string-orig", display_string, (IDIO o), "o", "\
+convert `o` to a display string			\n\
+						\n\
+:param o: object to convert			\n\
+:return: a string representation of `o`	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    size_t size = 0;
+    char *str = idio_display_string (o, &size);
+    IDIO r = idio_string_C_len (str, size);
+
+    idio_gc_free (str, size);
+
+    return r;
+}
+
+/*
+ * NB %format calls display-string
+ */
+IDIO_DEFINE_PRIMITIVE1_DS ("display-string", 2display_string, (IDIO o), "o", "\
+convert `o` to a display string			\n\
+						\n\
+:param o: object to convert			\n\
+:return: a string representation of `o`		\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    /*
+     * lookup ->display-string or ->string as a fallback
+     */
+    idio_vtable_method_t *m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_2display_string, 0);
+
+    if (NULL == m) {
+	/* fprintf (stderr, "->display-string -> ->string\n"); */
+	m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_2string, 0);
+
+	if (NULL == m) {
+	    /*
+	     * Test Case: how did we lose ->string??
+	     */
+
+	    /*
+	     * NB raise the condition for the original method name, ->display-string
+	     */
+	    idio_vtable_method_unbound_error (o, idio_S_2display_string, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
+    size_t size = 0;
+
+    return IDIO_VTABLE_METHOD_FUNC (m) (m, o, &size, idio_S_nil, 40, 1);
+}
+
 IDIO_DEFINE_PRIMITIVE2_DS ("%%add-as-string", add_as_string, (IDIO o, IDIO f), "o f", "\
 add `f` as a printer for `o`			\n\
 						\n\
@@ -1587,81 +1751,6 @@ C/pointer (with CSI)				\n\
     }
 
     return idio_S_unspec;
-}
-
-IDIO idio_util_string (IDIO o)
-{
-    IDIO_ASSERT (o);
-
-    size_t size = 0;
-    char *str = idio_as_string_safe (o, &size, 40, 1);
-    IDIO r = idio_string_C_len (str, size);
-
-    idio_gc_free (str, size);
-
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("string", string, (IDIO o), "o", "\
-convert `o` to a string				\n\
-						\n\
-:param o: object to convert			\n\
-:return: a string representation of `o`		\n\
-")
-{
-    IDIO_ASSERT (o);
-
-    return idio_util_string (o);
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("->string", 2string, (IDIO o), "o", "\
-convert `o` to a string unless it already is	\n\
-a string					\n\
-						\n\
-:param o: object to convert			\n\
-:return: a string representation of `o`		\n\
-						\n\
-``->string`` differs from :ref:`string <string>`	\n\
-in that it won't stringify a string!		\n\
-")
-{
-    IDIO_ASSERT (o);
-
-    idio_vtable_method_t *m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_2string);
-
-    size_t size = 0;
-
-    return IDIO_VTABLE_METHOD_FUNC (m) (m, o, &size, idio_S_nil, 40, 1);
-}
-
-/*
- * The generic ->string vtable method simply calls the old
- * idio_util_string() function.
- */
-IDIO idio_util_method_2string (idio_vtable_method_t *m, IDIO v, ...)
-{
-    IDIO_C_ASSERT (m);
-    IDIO_ASSERT (v);
-
-    return idio_util_string (v);
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("display-string", display_string, (IDIO o), "o", "\
-convert `o` to a display string			\n\
-						\n\
-:param o: object to convert			\n\
-:return: a string representation of `o`	\n\
-")
-{
-    IDIO_ASSERT (o);
-
-    size_t size = 0;
-    char *str = idio_display_string (o, &size);
-    IDIO r = idio_string_C_len (str, size);
-
-    idio_gc_free (str, size);
-
-    return r;
 }
 
 /*
@@ -1832,6 +1921,36 @@ char const *idio_vm_bytecode2string (int code)
     return r;
 }
 
+IDIO idio_util_method_value_index (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    IDIO member = va_arg (ap, IDIO);
+    va_end (ap);
+
+    IDIO_ASSERT (member);
+
+    IDIO func = (IDIO) IDIO_VTABLE_METHOD_DATA (m);
+
+    if (idio_isa_function (func) == 0) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_param_value_msg_only ("value-index", "method->data", "should be a function", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO cmd = IDIO_LIST3 (func, v, member);
+
+    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE2_DS ("value-index", value_index, (IDIO o, IDIO i), "o i", "\
 if `i` is a function then invoke (`i` `o`)	\n\
 						\n\
@@ -1855,54 +1974,63 @@ otherwise index the object `o` by `i`		\n\
 	return r;
     }
 
-    switch ((intptr_t) o & IDIO_TYPE_MASK) {
-    case IDIO_TYPE_FIXNUM_MARK:
-    case IDIO_TYPE_CONSTANT_MARK:
-    case IDIO_TYPE_PLACEHOLDER_MARK:
-	break;
-    case IDIO_TYPE_POINTER_MARK:
-	{
-	    switch (o->type) {
-	    case IDIO_TYPE_PAIR:
-		return idio_list_nth (o, i, idio_S_nil);
-	    case IDIO_TYPE_SUBSTRING:
-	    case IDIO_TYPE_STRING:
-		return idio_string_ref (o, i);
-	    case IDIO_TYPE_ARRAY:
-		return idio_array_ref (o, i);
-	    case IDIO_TYPE_HASH:
-		return idio_hash_reference (o, i, idio_S_nil);
-	    case IDIO_TYPE_STRUCT_INSTANCE:
-		return idio_struct_instance_ref (o, i);
-	    case IDIO_TYPE_C_POINTER:
-		{
-		    IDIO t = IDIO_C_TYPE_POINTER_PTYPE (o);
-		    if (idio_isa_pair (t) &&
-			idio_list_length (t) > 2) {
-			IDIO cmd = IDIO_LIST3 (IDIO_PAIR_HTT (t), o, i);
+    /*
+     * The nominal type
+     */
+    IDIO t = o;
 
-			IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
-
-			return r;
-		    }
-		}
-		break;
-	    default:
-		break;
-	    }
-	}
-    default:
+    int type = idio_type (o);
+    switch (type) {
+    case IDIO_TYPE_STRUCT_INSTANCE:
+	t = IDIO_STRUCT_INSTANCE_TYPE (o);
 	break;
     }
 
-    /*
-     * Test Case: util-errors/value-index-bad-type.idio
-     *
-     * 1 . 2
-     */
-    idio_error_param_value_msg ("value-index", "value", o, "is non-indexable", IDIO_C_FUNC_LOCATION ());
+    idio_vtable_method_t *m = idio_vtable_lookup_method (t, idio_value_vtable (t), idio_S_value_index, 0);
 
-    return idio_S_notreached;
+    if (NULL == m) {
+	/*
+	 * Test Case: util-errors/value-index-bad-type.idio
+	 *
+	 * 1 . 2
+	 */
+	idio_error_param_value_msg ("value-index", "value", o, "is non-indexable", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return IDIO_VTABLE_METHOD_FUNC (m) (m, o, i);
+}
+
+IDIO idio_util_method_set_value_index (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    IDIO member = va_arg (ap, IDIO);
+    IDIO value = va_arg (ap, IDIO);
+    va_end (ap);
+
+    IDIO_ASSERT (member);
+
+    IDIO func = (IDIO) IDIO_VTABLE_METHOD_DATA (m);
+
+    if (idio_isa_function (func) == 0) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_param_value_msg_only ("set_value-index!", "method->data", "should be a function", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO cmd = IDIO_LIST4 (func, v, member, value);
+
+    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+
+    return r;
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("set-value-index!", set_value_index, (IDIO o, IDIO i, IDIO v), "o i v", "\
@@ -1921,69 +2049,80 @@ set value of the object `o` indexed by `i` to `v`	\n\
     IDIO_ASSERT (i);
     IDIO_ASSERT (v);
 
-    switch ((intptr_t) o & IDIO_TYPE_MASK) {
-    case IDIO_TYPE_FIXNUM_MARK:
-    case IDIO_TYPE_CONSTANT_MARK:
-    case IDIO_TYPE_PLACEHOLDER_MARK:
-	break;
-    case IDIO_TYPE_POINTER_MARK:
-	{
-	    switch (o->type) {
-	    case IDIO_TYPE_SUBSTRING:
-	    case IDIO_TYPE_STRING:
-		return idio_string_set (o, i, v);
-	    case IDIO_TYPE_ARRAY:
-		return idio_array_set (o, i, v);
-	    case IDIO_TYPE_HASH:
-		return idio_hash_set (o, i, v);
-	    case IDIO_TYPE_STRUCT_INSTANCE:
-		return idio_struct_instance_set (o, i, v);
-	    case IDIO_TYPE_C_POINTER:
-		{
-		    IDIO t = IDIO_C_TYPE_POINTER_PTYPE (o);
-		    if (idio_isa_pair (t) &&
-			idio_list_length (t) > 2) {
-			/*
-			 * We want: (setter ref) o i v
-			 *
-			 * but we have to invoke by stage:
-			 */
-			IDIO setter_cmd = IDIO_LIST2 (idio_module_symbol_value (idio_S_setter,
-										idio_Idio_module,
-										idio_S_nil),
-						      IDIO_PAIR_HTT (t));
+    /*
+     * Strictly speaking we should be looking up the setter of the
+     * getter but we can fall back to the set-value-index! method (if
+     * defined).
+     */
 
-			IDIO setter_r = idio_vm_invoke_C (idio_thread_current_thread (), setter_cmd);
+    /*
+     * The nominal type
+     */
+    IDIO t = o;
 
-			if (! idio_isa_function (setter_r)) {
-			    idio_debug ("(setter %s) did not yield a function\n", IDIO_PAIR_HT (t));
-			    break;
-			}
-
-			IDIO set_cmd = IDIO_LIST4 (setter_r, o, i, v);
-
-			IDIO set_r = idio_vm_invoke_C (idio_thread_current_thread (), set_cmd);
-
-			return set_r;
-		    }
-		}
-		break;
-	    default:
-		break;
-	    }
-	}
-    default:
+    int type = idio_type (o);
+    switch (type) {
+    case IDIO_TYPE_STRUCT_INSTANCE:
+	t = IDIO_STRUCT_INSTANCE_TYPE (o);
 	break;
     }
 
-    /*
-     * Test Case: util-errors/set-value-index-bad-type.idio
-     *
-     * 1 . 2 = 3
-     */
-    idio_error_param_value_msg ("set-value-index", "value", o, "is non-indexable", IDIO_C_FUNC_LOCATION ());
+    idio_vtable_method_t *get_m = idio_vtable_lookup_method (t, idio_value_vtable (t), idio_S_value_index, 0);
 
-    return idio_S_notreached;
+    if (NULL != get_m) {
+	IDIO get_func = (IDIO) IDIO_VTABLE_METHOD_DATA (get_m);
+
+	/*
+	 * We want: (setter get_func) o i v
+	 *
+	 * but we have to invoke by stage:
+	 *
+	 * XXX dirty hack alert!
+	 *
+	 * If we call (setter get_func) and get_func doesn't have a
+	 * setter then we'll get a condition raised.  We don't want
+	 * that because we have a fallback position.
+	 *
+	 * It transpires that the implementation of (setter get_func)
+	 * is idio_ref_property (get_func, idio_KW_setter, [def]) for
+	 * which the default {def} isn't set, hence the condition.
+	 *
+	 * So, we can pass a {def} and not get an error.
+	 *
+	 * Let's hope no-one redefines (setter X)...
+	 */
+	IDIO setter_func = idio_ref_property (get_func, idio_KW_setter, IDIO_LIST1 (idio_S_false));
+
+	if (idio_isa_function (setter_func)) {
+	    IDIO set_cmd = IDIO_LIST4 (setter_func, o, i, v);
+
+	    IDIO set_r = idio_vm_invoke_C (idio_thread_current_thread (), set_cmd);
+
+	    return set_r;
+	}
+
+#ifdef IDIO_DEBUG
+	idio_debug ("NOTICE: set-value-index! (setter %s) did not yield a function\n", get_func);
+#endif
+    }
+
+    /*
+     * Fallback position for values with no setter
+     */
+    idio_vtable_method_t *set_m = idio_vtable_lookup_method (t, idio_value_vtable (t), idio_S_set_value_index, 0);
+
+    if (NULL == set_m) {
+	/*
+	 * Test Case: util-errors/set-value-index-bad-type.idio
+	 *
+	 * 1 . 2 = 3
+	 */
+	idio_error_param_value_msg ("set-value-index!", "value", o, "is non-indexable", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return IDIO_VTABLE_METHOD_FUNC (set_m) (set_m, o, i, v);
 }
 
 IDIO idio_copy (IDIO o, int depth)
@@ -2737,9 +2876,6 @@ IDIO idio_constant_idio_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (v);
 
-    /*
-     * We only need sizep for a constant
-     */
     va_list ap;
     va_start (ap, v);
     size_t *sizep = va_arg (ap, size_t *);
@@ -2754,10 +2890,34 @@ IDIO idio_constant_idio_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     return r;
 }
 
+IDIO idio_util_method_run0 (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    IDIO func = (IDIO) IDIO_VTABLE_METHOD_DATA (m);
+
+    if (idio_isa_function (func) == 0) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_param_value_msg_only ("method-run0", "method->data", "should be a function", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO cmd = IDIO_LIST2 (func, v);
+
+    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+
+    return r;
+}
+
 void idio_util_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (type_string);
     IDIO_ADD_PRIMITIVE (typename);
+    IDIO_ADD_PRIMITIVE (members);
     IDIO_ADD_PRIMITIVE (zerop);
     IDIO_ADD_PRIMITIVE (nullp);
     IDIO_ADD_PRIMITIVE (void);
@@ -2772,6 +2932,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (string);
     IDIO_ADD_PRIMITIVE (2string);
     IDIO_ADD_PRIMITIVE (display_string);
+    IDIO_ADD_PRIMITIVE (2display_string);
     IDIO_ADD_PRIMITIVE (value_index);
     IDIO_ADD_PRIMITIVE (set_value_index);
     IDIO_ADD_PRIMITIVE (copy_value);

@@ -52,6 +52,7 @@ int idio_type (IDIO o);
 char const *idio_type2string (IDIO o);
 char const *idio_type_enum2string (idio_type_e type);
 IDIO idio_util_method_typename (idio_vtable_method_t *m, IDIO v, ...);
+IDIO idio_util_method_members (idio_vtable_method_t *m, IDIO v, ...);
 int idio_isa_boolean (IDIO o);
 int idio_eqp (void const *o1, void const *o2);
 int idio_eqvp (void const *o1, void const *o2);
@@ -64,6 +65,8 @@ char *idio_as_string_safe (IDIO o, size_t *sizep, int depth, int first);
 IDIO idio_util_method_2string (idio_vtable_method_t *m, IDIO v, ...);
 char *idio_display_string (IDIO o, size_t *sizep);
 char const *idio_vm_bytecode2string (int code);
+IDIO idio_util_method_value_index (idio_vtable_method_t *m, IDIO v, ...);
+IDIO idio_util_method_set_value_index (idio_vtable_method_t *m, IDIO v, ...);
 void idio_as_flat_string (IDIO o, char **argv, int *i);
 IDIO idio_copy (IDIO o, int depth);
 void idio_dump (IDIO o, int detail);
@@ -85,6 +88,7 @@ size_t idio_strnlen (char const *s, size_t maxlen);
 int idio_snprintf (char *str, size_t size, char const *format, ...);
 
 char *idio_constant_idio_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
+IDIO idio_util_method_run0 (idio_vtable_method_t *m, IDIO v, ...);
 
 void idio_init_util ();
 

@@ -1156,7 +1156,11 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (assv);
     IDIO_ADD_PRIMITIVE (assoc);
     IDIO_ADD_PRIMITIVE (list2array);
-    IDIO_ADD_PRIMITIVE (nth);
+    IDIO ref = IDIO_ADD_PRIMITIVE (nth);
+    idio_vtable_add_method (idio_pair_vtable,
+			    idio_S_value_index,
+			    idio_vtable_create_method_value (idio_util_method_value_index,
+							     idio_vm_values_ref (IDIO_FIXNUM_VAL (ref))));
 }
 
 void idio_init_pair ()

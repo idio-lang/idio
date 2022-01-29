@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
@@ -131,6 +131,7 @@ IDIO_SYMBOL_DECL (define);
 IDIO_SYMBOL_DECL (define_infix_operator);
 IDIO_SYMBOL_DECL (define_postfix_operator);
 IDIO_SYMBOL_DECL (define_template);
+IDIO_SYMBOL_DECL (2display_string);
 IDIO_SYMBOL_DECL (dloads);
 IDIO_SYMBOL_DECL (dot);
 IDIO_SYMBOL_DECL (dynamic);
@@ -169,6 +170,7 @@ IDIO_SYMBOL_DECL (load_handle);
 IDIO_SYMBOL_DECL (local);
 IDIO_SYMBOL_DECL (lt);
 IDIO_SYMBOL_DECL (map);
+IDIO_SYMBOL_DECL (members);
 IDIO_SYMBOL_DECL (module);
 IDIO_SYMBOL_DECL (none);
 IDIO_SYMBOL_DECL (not);
@@ -192,6 +194,7 @@ IDIO_SYMBOL_DECL (return);
 IDIO_SYMBOL_DECL (right);
 IDIO_SYMBOL_DECL (root);
 IDIO_SYMBOL_DECL (set);
+IDIO_SYMBOL_DECL (set_value_index);
 IDIO_SYMBOL_DECL (setter);
 IDIO_SYMBOL_DECL (shallow);
 IDIO_SYMBOL_DECL (subshell);
@@ -204,6 +207,7 @@ IDIO_SYMBOL_DECL (trap);
 IDIO_SYMBOL_DECL (typename);
 IDIO_SYMBOL_DECL (unquote);
 IDIO_SYMBOL_DECL (unquotesplicing);
+IDIO_SYMBOL_DECL (value_index);
 IDIO_SYMBOL_DECL (virtualisation_WSL);
 
 IDIO_SYMBOL_DECL (char);
@@ -1059,6 +1063,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("define-infix-operator", define_infix_operator);
     IDIO_SYMBOL_DEF ("define-postfix-operator", define_postfix_operator);
     IDIO_SYMBOL_DEF ("define-template", define_template);
+    IDIO_SYMBOL_DEF ("->display-string", 2display_string);
     IDIO_SYMBOL_DEF ("dloads", dloads);
     IDIO_SYMBOL_DEF (".", dot);
     IDIO_SYMBOL_DEF ("dynamic", dynamic);
@@ -1097,6 +1102,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("local", local);
     IDIO_SYMBOL_DEF ("<", lt);
     IDIO_SYMBOL_DEF ("map", map);
+    IDIO_SYMBOL_DEF ("members", members);
     IDIO_SYMBOL_DEF ("module", module);
     IDIO_SYMBOL_DEF ("none", none);
     IDIO_SYMBOL_DEF ("not", not);
@@ -1124,6 +1130,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("right", right);
     IDIO_SYMBOL_DEF ("root", root);
     IDIO_SYMBOL_DEF ("set!", set);
+    IDIO_SYMBOL_DEF ("set-value-index!", set_value_index);
     IDIO_SYMBOL_DEF ("setter", setter);
     IDIO_SYMBOL_DEF ("shallow", shallow);
     IDIO_SYMBOL_DEF ("subshell", subshell);
@@ -1136,6 +1143,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("typename", typename);
     IDIO_SYMBOL_DEF ("unquote", unquote);
     IDIO_SYMBOL_DEF ("unquotesplicing", unquotesplicing);
+    IDIO_SYMBOL_DEF ("value-index", value_index);
     IDIO_SYMBOL_DEF ("virtualisation/WSL", virtualisation_WSL);
 
     IDIO_SYMBOL_DEF ("char", char);

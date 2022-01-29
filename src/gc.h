@@ -245,7 +245,7 @@ typedef uint8_t IDIO_I;
  *
  * The C function is passed this structure as its first argument, the
  * original Idio value as its second and any further arguments as
- * necessary, eg. an Idio struct or C structure member name.
+ * necessary, eg. an Idio struct field or C structure member name.
  */
 struct idio_vtable_method_s {
     struct idio_s *(*func) (struct idio_vtable_method_s *method, struct idio_s *value, ...);
@@ -272,7 +272,7 @@ typedef struct idio_vtable_method_s idio_vtable_method_t;
  *   closer to the start of the array of vtable methods
  *
  *   What happens if count wraps?  2^31-1 calls?  Dunno.  It sits at
- *   UINT_MAX?
+ *   (approximately) UINT_MAX?
  *
  * XXX name, an IDIO, is at risk of being GC'd unless it is kept in a
  * global table, idio_vtable_names.  Obviously, that global table has
@@ -863,7 +863,7 @@ typedef struct idio_struct_type_s {
     struct idio_s *name;	/* a symbol */
     struct idio_s *parent;	/* a struct-type */
     size_t size;		/* number of fields *including parents* */
-    struct idio_s* *fields;	/* an array of strings */
+    struct idio_s* *fields;	/* an array of symbols */
 } idio_struct_type_t;
 
 #define IDIO_STRUCT_TYPE_GREY(ST)	((ST)->u.struct_type->grey)
@@ -875,7 +875,7 @@ typedef struct idio_struct_type_s {
 typedef struct idio_struct_instance_s {
     struct idio_s *grey;
     struct idio_s *type;	/* a struct-type */
-    struct idio_s* *fields;	/* an array */
+    struct idio_s* *fields;	/* an array of values */
 } idio_struct_instance_t;
 
 #define IDIO_STRUCT_INSTANCE_GREY(SI)		((SI)->u.struct_instance.grey)

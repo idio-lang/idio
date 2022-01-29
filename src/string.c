@@ -3566,6 +3566,31 @@ IDIO idio_string_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     return v;
 }
 
+char *idio_string_as_C_display_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (string, v);
+
+    return idio_utf8_string (v, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_USEPREC);
+}
+
+IDIO idio_string_method_2display_string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    size_t size = 0;
+    char *C_r = idio_string_as_C_display_string (v, &size, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, size);
+
+    IDIO_GC_FREE (C_r, size);
+
+    return r;
+}
+
 void idio_string_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (string_p);
@@ -3579,8 +3604,30 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (append_string);
     IDIO_ADD_PRIMITIVE (copy_string);
     IDIO_ADD_PRIMITIVE (string_length);
-    IDIO_ADD_PRIMITIVE (string_ref);
-    IDIO_ADD_PRIMITIVE (string_set);
+    IDIO ref = IDIO_ADD_PRIMITIVE (string_ref);
+    IDIO ref_func = idio_vm_values_ref (IDIO_FIXNUM_VAL (ref));
+    idio_vtable_add_method (idio_string_vtable,
+			    idio_S_value_index,
+			    idio_vtable_create_method_value (idio_util_method_value_index,
+							     ref_func));
+
+    idio_vtable_add_method (idio_substring_vtable,
+			    idio_S_value_index,
+			    idio_vtable_create_method_value (idio_util_method_value_index,
+							     ref_func));
+
+    IDIO set = IDIO_ADD_PRIMITIVE (string_set);
+    IDIO set_func = idio_vm_values_ref (IDIO_FIXNUM_VAL (set));
+    idio_vtable_add_method (idio_string_vtable,
+			    idio_S_set_value_index,
+			    idio_vtable_create_method_value (idio_util_method_set_value_index,
+							     set_func));
+
+    idio_vtable_add_method (idio_substring_vtable,
+			    idio_S_set_value_index,
+			    idio_vtable_create_method_value (idio_util_method_set_value_index,
+							     set_func));
+
     IDIO_ADD_PRIMITIVE (string_fill);
     IDIO_ADD_PRIMITIVE (substring);
     IDIO_ADD_PRIMITIVE (string_index);
@@ -3631,4 +3678,12 @@ void idio_init_string ()
     idio_vtable_add_method (idio_substring_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_string_method_2string));
+
+    idio_vtable_add_method (idio_string_vtable,
+			    idio_S_2display_string,
+			    idio_vtable_create_method_simple (idio_string_method_2display_string));
+
+    idio_vtable_add_method (idio_substring_vtable,
+			    idio_S_2display_string,
+			    idio_vtable_create_method_simple (idio_string_method_2display_string));
 }

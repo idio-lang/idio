@@ -3000,9 +3000,6 @@ IDIO idio_constant_i_code_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (v);
 
-    /*
-     * We only need sizep for a constant
-     */
     va_list ap;
     va_start (ap, v);
     size_t *sizep = va_arg (ap, size_t *);

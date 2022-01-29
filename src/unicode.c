@@ -731,15 +731,78 @@ IDIO idio_constant_unicode_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (v);
 
-    /*
-     * We only need sizep for a constant
-     */
     va_list ap;
     va_start (ap, v);
     size_t *sizep = va_arg (ap, size_t *);
     va_end (ap);
 
     char *C_r = idio_constant_unicode_as_C_string (v, sizep, 0, idio_S_nil, 0);
+
+    IDIO r = idio_string_C_len (C_r, *sizep);
+
+    IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
+char *idio_constant_unicode_as_C_display_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    char *r = NULL;
+
+    idio_unicode_t u = IDIO_UNICODE_VAL (v);
+    if (idio_unicode_valid_code_point (u)) {
+	if (u >= 0x10000) {
+	    *sizep = idio_asprintf (&r, "%c%c%c%c",
+				    0xf0 | ((u & (0x07 << 18)) >> 18),
+				    0x80 | ((u & (0x3f << 12)) >> 12),
+				    0x80 | ((u & (0x3f << 6)) >> 6),
+				    0x80 | ((u & (0x3f << 0)) >> 0));
+	} else if (u >= 0x0800) {
+	    *sizep = idio_asprintf (&r, "%c%c%c",
+				    0xe0 | ((u & (0x0f << 12)) >> 12),
+				    0x80 | ((u & (0x3f << 6)) >> 6),
+				    0x80 | ((u & (0x3f << 0)) >> 0));
+	} else if (u >= 0x0080) {
+	    *sizep = idio_asprintf (&r, "%c%c",
+				    0xc0 | ((u & (0x1f << 6)) >> 6),
+				    0x80 | ((u & (0x3f << 0)) >> 0));
+	} else {
+	    *sizep = idio_asprintf (&r, "%c",
+				    u & 0x7f);
+	}
+    } else {
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.
+	 */
+	/*
+	 * Hopefully, this is guarded against elsewhere
+	 */
+	fprintf (stderr, "unicode ->display-string: oops u=%x is invalid\n", u);
+	idio_error_param_value_msg ("unicode->display-string", "codepoint", v, "out of bounds", IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return NULL;
+    }
+
+    return r;
+}
+
+IDIO idio_constant_unicode_method_2display_string (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    size_t *sizep = va_arg (ap, size_t *);
+    va_end (ap);
+
+    char *C_r = idio_constant_unicode_as_C_display_string (v, sizep, 0, idio_S_nil, 0);
 
     IDIO r = idio_string_C_len (C_r, *sizep);
 
@@ -858,5 +921,9 @@ void idio_init_unicode ()
     idio_vtable_add_method (idio_constant_unicode_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_constant_unicode_method_2string));
+
+    idio_vtable_add_method (idio_constant_unicode_vtable,
+			    idio_S_2display_string,
+			    idio_vtable_create_method_simple (idio_constant_unicode_method_2display_string));
 }
 
