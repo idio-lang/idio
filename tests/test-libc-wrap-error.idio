@@ -559,7 +559,13 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
    libc-wrap-error-load "libc-wrap-errors/EGID-set-invalid-gid.idio" "Invalid argument" EINVAL "setegid"
  })
 )
-libc-wrap-error-load "libc-wrap-errors/EGID-set-unused-gid.idio" "Operation not permitted" EPERM "setegid"
+(cond-expand
+ ("uname/sysname/SunOS" {
+   libc-wrap-error-load "libc-wrap-errors/EGID-set-unused-gid.idio" "Not owner" EPERM "setegid"
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/EGID-set-unused-gid.idio" "Operation not permitted" EPERM "setegid"
+ }))
 
 libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
 (cond-expand
@@ -576,7 +582,13 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
    libc-wrap-error-load "libc-wrap-errors/EUID-set-invalid-uid.idio" "Invalid argument" EINVAL "seteuid"
  })
 )
-libc-wrap-error-load "libc-wrap-errors/EUID-set-unused-uid.idio" "Operation not permitted" EPERM "seteuid"
+(cond-expand
+ ("uname/sysname/SunOS" {
+   libc-wrap-error-load "libc-wrap-errors/EUID-set-unused-uid.idio" "Not owner" EPERM "seteuid"
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/EUID-set-unused-uid.idio" "Operation not permitted" EPERM "seteuid"
+ }))
 
 libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
 (cond-expand
@@ -600,7 +612,13 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
    libc-wrap-error-load "libc-wrap-errors/GID-set-invalid-gid.idio" "Invalid argument" EINVAL "setgid"
  })
 )
-libc-wrap-error-load "libc-wrap-errors/GID-set-unused-gid.idio" "Operation not permitted" EPERM "setgid"
+(cond-expand
+ ("uname/sysname/SunOS" {
+   libc-wrap-error-load "libc-wrap-errors/GID-set-unused-gid.idio" "Not owner" EPERM "setgid"
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/GID-set-unused-gid.idio" "Operation not permitted" EPERM "setgid"
+ }))
 
 libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
 (cond-expand
@@ -624,7 +642,13 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
    libc-wrap-error-load "libc-wrap-errors/UID-set-invalid-uid.idio" "Invalid argument" EINVAL "setuid"
  })
 )
-libc-wrap-error-load "libc-wrap-errors/UID-set-unused-uid.idio" "Operation not permitted" EPERM "setuid"
+(cond-expand
+ ("uname/sysname/SunOS" {
+   libc-wrap-error-load "libc-wrap-errors/UID-set-unused-uid.idio" "Not owner" EPERM "setuid"
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/UID-set-unused-uid.idio" "Operation not permitted" EPERM "setuid"
+ }))
 
 libc-wrap-error-load "libc-wrap-errors/b-bad-type.idio" "bad parameter type: '#t' a constant is not a symbol|string"
 libc-wrap-error-load "libc-wrap-errors/b-bad-format.idio" "b?: contains an ASCII NUL"
