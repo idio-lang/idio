@@ -44,7 +44,6 @@
 
 #define IDIO_PRINT_CONVERSION_FORMAT_s		0x73
 
-extern IDIO idio_util_value_as_string;
 extern IDIO idio_print_conversion_format_sym;
 extern IDIO idio_print_conversion_precision_sym;
 
@@ -89,6 +88,7 @@ int idio_snprintf (char *str, size_t size, char const *format, ...);
 
 char *idio_constant_idio_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 IDIO idio_util_method_run0 (idio_vtable_method_t *m, IDIO v, ...);
+IDIO idio_util_method_run (idio_vtable_method_t *m, IDIO v, ...);
 
 void idio_init_util ();
 

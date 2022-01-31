@@ -3672,8 +3672,6 @@ void idio_init_libc_wrap ()
 	/* notreached */
 	return;
     }
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("idio-uname"), idio_C_pointer_type (idio_CSI_libc_struct_utsname, up), idio_libc_module);
-
 
     if (getenv ("HOSTNAME") == NULL) {
 	idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("HOSTNAME"), idio_string_C (up->nodename), main_module);

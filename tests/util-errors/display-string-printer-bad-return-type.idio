@@ -6,9 +6,7 @@ define (bad-printer o s) {
   #t
 }
 
-;; struct-timeval uses libc/struct-timeval-as-string
-
 tv := (libc/gettimeofday)
 
 add-as-string tv bad-printer
-display tv
+format "%s" tv

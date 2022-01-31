@@ -1479,9 +1479,11 @@ ${i-module-name}-error-load := \{
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <ffi.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <stdarg.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1489,6 +1491,9 @@ ${i-module-name}-error-load := \{
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
+
+#include "idio-system.h"
+#include "idio-config.h"
 
 #include "gc.h"
 #include "idio.h"
@@ -1509,6 +1514,7 @@ ${i-module-name}-error-load := \{
 #include "symbol.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
 
 #include "libc-api.h"
 
@@ -2814,9 +2820,26 @@ void idio_${c-module-name}_api_add_primitives ()
 }
 
 	if used-structure-types {
-	  hprintf api-c-fh #S{    IDIO iuvas = idio_module_symbol_value (idio_util_value_as_string,
-					   idio_Idio_module,
-					   idio_S_nil);
+	  hprintf api-c-fh #S{    IDIO struct_fields;
+
+#define IDIO_FIELD_DEF(iname,cname)		\\
+    IDIO_SYMBOL_DEF(iname,cname);		\\
+    struct_fields = idio_pair (idio_S_ ## cname, struct_fields);
+
+#define IDIO_ADD_STRUCT(iname,cname,mname)				\\
+    \{									\\
+	IDIO fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_ ## mname ## _module, cname ## _ref); \\
+	IDIO struct_name = IDIO_SYMBOLS_C_INTERN (iname);		\\
+	IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), cname, fgvi); \\
+	IDIO I_vt = idio_C_pointer_type_add_vtable (idio_CSI_ ## cname); \\
+	IDIO printer = IDIO_EXPORT_MODULE_PRIMITIVE (idio_ ## mname ## _module, cname ## _as_string); \\
+	IDIO printer_func = idio_vm_values_ref (IDIO_FIXNUM_VAL (printer)); \\
+	idio_vtable_add_method (IDIO_C_TYPE_POINTER_P (I_vt),		\\
+				idio_S_2string,				\\
+				idio_vtable_create_method_value (idio_util_method_run, \\
+								 IDIO_LIST2 (printer_func, idio_S_nil))); \\
+    \}
+
 }
 
 	  for-each (function (struct) {
@@ -2824,13 +2847,33 @@ void idio_${c-module-name}_api_add_primitives ()
 
 	    struct-name := hash-ref struct 'name #f
 	    if struct-name {
+	    struct-c-id := sprintf "%s_struct_%s" c-module-name struct-name
+	    members := hash-ref struct 'member #f
+	    if members {
+	      decl-file := hash-ref struct 'decl_file #f
+	      if decl-file {
+		hprintf api-c-fh "    /* %s struct %s is defined in %s */\n" c-module-name struct-name (filename decl-file)
+	      }
+	      hprintf api-c-fh "    struct_fields = idio_S_nil;\n"
+	      for-each (function (member) {
+		member-name := hash-ref member 'name #f
+		if member-name {
+		  if (not (hash-ref used-symbols member-name #t)) {
+		    hash-set! used-symbols member-name #t
+		    hprintf api-c-fh "    IDIO_FIELD_DEF (\"%s\", %s);\n" member-name member-name
+		  } {
+		    hprintf api-c-fh "    /* %s already declared */\n" member-name
+		    hprintf api-c-fh "    struct_fields = idio_pair (idio_S_%s, struct_fields);\n" member-name
+		  }
+		}
+	      }) (array->list members)
+	    }
 	      hprintf api-c-fh #S{
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_as_string);
-    idio_hash_put (iuvas,
-		   idio_CSI_${c-module-name}_struct_${struct-name},
-		   idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("struct-${struct-name}-as-string"),
-								   idio_${c-module-name}_module,
-								   idio_S_nil));
+    IDIO_ADD_STRUCT ("${c-module-name}/struct-${struct-name}", ${c-module-name}_struct_${struct-name}, ${c-module-name})
+
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_set);
+}
+	      hprintf api-c-fh #S{
 }
 	    }
 	  }) (array->list used-structure-types)
@@ -2878,7 +2921,7 @@ void idio_init_${c-module-name}_api ()
 	    for-each (function (etor) {
 	      etor-name := hash-ref etor 'name #f
 	      ;; C name export
-	      hprintf api-c-fh #S{    idio_module_export_symbol_value (idio_symbols_C_intern ("${etor-name}"), idio_C_${enum-type-name} (${etor-name}), idio_${c-module-name}_module);
+	      hprintf api-c-fh #S{    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("${etor-name}"), idio_C_${enum-type-name} (${etor-name}), idio_${c-module-name}_module);
 }
 	    }) (hash-ref enum 'enumerators #n)
 
@@ -2891,44 +2934,6 @@ void idio_init_${c-module-name}_api ()
 
       } {
 	printf "no enumeration_types\n"
-      }
-
-      if used-structure-types {
-	hprintf api-c-fh "\n    IDIO fgvi;\n" struct-c-id
-	for-each (function (struct) {
-	  struct-name := hash-ref struct 'name #f
-
-	  if struct-name {
-	    struct-c-id := sprintf "%s_struct_%s" c-module-name struct-name
-	    members := hash-ref struct 'member #f
-	    if members {
-	      decl-file := hash-ref struct 'decl_file #f
-	      if decl-file {
-		hprintf api-c-fh "\n    /* %s */\n" (filename decl-file)
-	      }
-	      hprintf api-c-fh "    struct_fields = idio_S_nil;\n"
-	      for-each (function (member) {
-		member-name := hash-ref member 'name #f
-		if member-name {
-		  if (not (hash-ref used-symbols member-name #t)) {
-		    hash-set! used-symbols member-name #t
-		    hprintf api-c-fh "    IDIO_SYMBOL_DEF (\"%s\", %s);\n" member-name member-name
-		  } {
-		    hprintf api-c-fh "    /* %s already declared */\n" member-name
-		  }
-		}
-	      }) (array->list members)
-	    }
-	    hprintf api-c-fh #S{
-    fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_ref);
-    struct_name = IDIO_SYMBOLS_C_INTERN ("${c-module-name}/struct-${struct-name}");
-    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), ${c-module-name}_struct_${struct-name}, fgvi);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_set);
-}
-	  }
-	}) (array->list used-structure-types)
-      } {
-	printf "no structure_types\n"
       }
 
       hprintf api-c-fh #S{

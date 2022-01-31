@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -21,13 +21,17 @@
 
 module libc
 
-export (make-tmp-file
-	make-tmp-fd
-	make-tmp-file-handle
-	make-tmp-dir
-	stdin-fileno
-	stdout-fileno
-	stderr-fileno)
+export (
+	 make-tmp-file
+	 make-tmp-fd
+	 make-tmp-file-handle
+	 make-tmp-dir
+	 stdin-fileno
+	 stdout-fileno
+	 stderr-fileno
+
+	 idio-uname
+)
 
 include "libc-api.idio"
 
@@ -461,5 +465,7 @@ The resource names follow C conventions such as ``libc/RLIMIT_AS`` and
     orig-setrlimit resource rlim
   }
 }
+
+idio-uname := (libc/uname)
 
 provide libc

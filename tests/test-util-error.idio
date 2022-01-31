@@ -66,10 +66,12 @@ util-error-load "util-errors/defined-bad-type.idio" "bad parameter type: '#t' a 
 
 util-error-load "util-errors/equal-c-long-double.idio" "equality for C long double is not supported"
 
+util-error-load "util-errors/display-string-printer-bad-return-type.idio" "display-string method printer='#t': should return a string"
+
 util-error-load "util-errors/C-pointer-printer-bad-return-type.idio" "C/pointer-as-string C/pointer printer='#t': should return a string"
 add-as-string (libc/gettimeofday) libc/struct-timeval-as-string
 
-util-error-load "util-errors/struct-instance-printer-bad-return-type.idio" "idio_as_string struct instance printer='#t': should return a string"
+util-error-load "util-errors/struct-instance-printer-bad-return-type.idio" "struct-instance-as-string struct-instance printer='#t': should return a string"
 
 util-error-load "util-errors/value-index-bad-type.idio" "value-index value='1': is non-indexable"
 
@@ -87,4 +89,4 @@ util-error-load "util-errors/idio-debug-format.idio" "idio-debug fmt='hello\x00%
 util-error-load "util-errors/add-feature-bad-type.idio" "bad parameter type: '#t' a constant is not a symbol|string"
 
 ;; all done?
-Tests? (util-error0 + 13)
+Tests? (util-error0 + 14)

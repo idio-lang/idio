@@ -70,7 +70,6 @@
 #include "vm.h"
 #include "vtable.h"
 
-IDIO idio_util_value_as_string;
 IDIO idio_print_conversion_format_sym = idio_S_nil;
 IDIO idio_print_conversion_precision_sym = idio_S_nil;
 static IDIO idio_features;
@@ -1699,11 +1698,30 @@ convert `o` to a display string			\n\
 
     size_t size = 0;
 
-    return IDIO_VTABLE_METHOD_FUNC (m) (m, o, &size, idio_S_nil, 40, 1);
+    IDIO s = IDIO_VTABLE_METHOD_FUNC (m) (m, o, &size, idio_S_nil, 40, 1);
+
+    if (idio_isa_string (s)) {
+	return s;
+    } else if (0 == idio_vm_reporting) {
+	/*
+	 * Test Case: util-errors/C-pointer-printer-bad-return-type.idio
+	 *
+	 * ... return #t
+	 */
+#ifdef IDIO_DEBUG
+	idio_debug ("method printer => %s (not a STRING)\n", s);
+#endif
+	idio_error_param_value_msg ("display-string", "method printer", s, "should return a string", IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return NULL;
+    }
+
+    return s;
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("%%add-as-string", add_as_string, (IDIO o, IDIO f), "o f", "\
-add `f` as a printer for `o`			\n\
+add `f` as a printer for instances of `o`	\n\
 						\n\
 :param o: object (type) to be printed		\n\
 :param f: printer				\n\
@@ -1723,32 +1741,27 @@ C/pointer (with CSI)				\n\
 
     IDIO_USER_TYPE_ASSERT (function, f);
 
-    IDIO value_as_string = idio_module_symbol_value (idio_util_value_as_string, idio_Idio_module, idio_S_nil);
+    /*
+     * The nominal type and method
+     */
+    IDIO t = o;
+    IDIO m_name = idio_S_2string;
 
-    if (idio_S_nil != value_as_string) {
-	int type = idio_type (o);
-
-	switch (type) {
-	case IDIO_TYPE_C_POINTER:
-	    {
-		IDIO pt = IDIO_C_TYPE_POINTER_PTYPE (o);
-		if (idio_S_nil != pt) {
-		    idio_hash_put (value_as_string, pt, f);
-		} else {
-		    fprintf (stderr, "C/pointer has no structure identification\n");
-		}
-	    }
-	    break;
-	case IDIO_TYPE_STRUCT_TYPE:
-	    idio_hash_put (value_as_string, o, f);
-	    break;
-	case IDIO_TYPE_STRUCT_INSTANCE:
-	    idio_hash_put (value_as_string, IDIO_STRUCT_INSTANCE_TYPE (o), f);
-	    break;
-	}
-    } else {
-	fprintf (stderr, "%%value-as-string is unset\n");
+    int type = idio_type (o);
+    switch (type) {
+    case IDIO_TYPE_STRUCT_INSTANCE:
+	t = IDIO_STRUCT_INSTANCE_TYPE (o);
+	m_name = idio_S_struct_instance_2string;
+	break;
+    case IDIO_TYPE_STRUCT_TYPE:
+	m_name = idio_S_struct_instance_2string;
+	break;
     }
+
+    idio_vtable_add_method (idio_value_vtable (t),
+			    m_name,
+			    idio_vtable_create_method_value (idio_util_method_run,
+							     IDIO_LIST2 (f, idio_S_nil)));
 
     return idio_S_unspec;
 }
@@ -2790,7 +2803,7 @@ char *idio_constant_idio_as_C_string (IDIO v, size_t *sizep, idio_unicode_t form
     IDIO_ASSERT (seen);
 
     char *r = NULL;
-    char *t;
+    char *t = NULL;
 
     intptr_t C_v = IDIO_CONSTANT_IDIO_VAL (v);
 
@@ -2913,6 +2926,41 @@ IDIO idio_util_method_run0 (idio_vtable_method_t *m, IDIO v, ...)
     return r;
 }
 
+IDIO idio_util_method_run (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    IDIO data = (IDIO) IDIO_VTABLE_METHOD_DATA (m);
+
+    if (idio_isa_pair (data) == 0) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_param_value_msg_only ("method-run", "method->data", "should be a tuple of (function arg ...)", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO func = IDIO_PAIR_H (data);
+    IDIO args = IDIO_PAIR_T (data);
+
+    if (idio_isa_function (func) == 0) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_param_value_msg_only ("method-run", "method->data", "should be a tuple of (function arg ...)", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO cmd = idio_list_append2 (IDIO_LIST2 (func, v), args);
+
+    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+
+    return r;
+}
+
 void idio_util_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (type_string);
@@ -2955,9 +3003,6 @@ void idio_final_util ()
 void idio_init_util ()
 {
     idio_module_table_register (idio_util_add_primitives, idio_final_util, NULL);
-
-    idio_util_value_as_string = IDIO_SYMBOLS_C_INTERN ("%%value-as-string");
-    idio_module_set_symbol_value (idio_util_value_as_string, IDIO_HASH_EQP (32), idio_Idio_module);
 
     idio_print_conversion_format_sym = IDIO_SYMBOLS_C_INTERN ("idio-print-conversion-format");
     idio_print_conversion_precision_sym = IDIO_SYMBOLS_C_INTERN ("idio-print-conversion-precision");

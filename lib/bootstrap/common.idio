@@ -204,17 +204,21 @@ return a string of `args` interspersed with `delim`
 
 #*
 
-%%value-as-string is a nominally generic mechanism to associate a
+add-as-string is a nominally generic mechanism to associate a
 user-defined printer with a value.
 
-In practice it is only used for struct instances where the struct type
-is associated with a printer and when we come to print a struct
-instance we check to see if a printer exists for its type.
+In practice it is only used for:
 
-The printer will be invoked with the value to be printed and an inital
-#n.  The second argument can be used for any subsequent purpose but
-might normally be used to maintain a set of previously seen values to
-handle circular data structures.
+* struct instances where the struct type is associated with a printer
+  and when we come to print a struct instance we check to see if a
+  printer exists for its type.
+
+* C/pointers associated with a type (idio_CSI_X)
+
+The printer will be invoked with the value to be printed and an
+initial #n.  The second argument can be used for any subsequent
+purpose but might normally be used to maintain a set of previously
+seen values to handle circular data structures.
 
 *#
 
@@ -233,8 +237,8 @@ This is currently only used for:
   When we come to print a struct instance we check to see if a printer
   exists for its type.
 
-- C pointer types where an IDIO_C_STRUCT_IDENT has been set up and
-  assigned to the pointer
+- C/pointer types where an IDIO_C_STRUCT_IDENT has been set up and
+  assigned to the C/pointer
 
 " {
   %%add-as-string o f

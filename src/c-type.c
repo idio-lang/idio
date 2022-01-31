@@ -93,22 +93,24 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_vtable_t *idio_c_char_vtable;
-static idio_vtable_t *idio_c_schar_vtable;
-static idio_vtable_t *idio_c_uchar_vtable;
-static idio_vtable_t *idio_c_short_vtable;
-static idio_vtable_t *idio_c_ushort_vtable;
-static idio_vtable_t *idio_c_int_vtable;
-static idio_vtable_t *idio_c_uint_vtable;
-static idio_vtable_t *idio_c_long_vtable;
-static idio_vtable_t *idio_c_ulong_vtable;
-static idio_vtable_t *idio_c_longlong_vtable;
-static idio_vtable_t *idio_c_ulonglong_vtable;
-static idio_vtable_t *idio_c_float_vtable;
-static idio_vtable_t *idio_c_double_vtable;
-static idio_vtable_t *idio_c_longdouble_vtable;
-static idio_vtable_t *idio_c_pointer_vtable;
-static idio_vtable_t *idio_c_void_vtable;
+static idio_vtable_t *idio_C_char_vtable;
+static idio_vtable_t *idio_C_schar_vtable;
+static idio_vtable_t *idio_C_uchar_vtable;
+static idio_vtable_t *idio_C_short_vtable;
+static idio_vtable_t *idio_C_ushort_vtable;
+static idio_vtable_t *idio_C_int_vtable;
+static idio_vtable_t *idio_C_uint_vtable;
+static idio_vtable_t *idio_C_long_vtable;
+static idio_vtable_t *idio_C_ulong_vtable;
+static idio_vtable_t *idio_C_longlong_vtable;
+static idio_vtable_t *idio_C_ulonglong_vtable;
+static idio_vtable_t *idio_C_float_vtable;
+static idio_vtable_t *idio_C_double_vtable;
+static idio_vtable_t *idio_C_longdouble_vtable;
+static idio_vtable_t *idio_C_pointer_vtable;
+static idio_vtable_t *idio_C_void_vtable;
+
+static IDIO idio_C_pointer_type_vtables;
 
 static IDIO idio_C_module = idio_S_nil;
 
@@ -139,7 +141,7 @@ static void idio_C_conversion_error (char const *msg, IDIO n, IDIO c_location)
 IDIO idio_C_char (char const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_CHAR);
-    co->vtable = idio_c_char_vtable;
+    co->vtable = idio_C_char_vtable;
 
     IDIO_C_TYPE_char (co) = v;
 
@@ -174,7 +176,7 @@ test if `o` is a C/char				\n\
 IDIO idio_C_schar (signed char const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_SCHAR);
-    co->vtable = idio_c_schar_vtable;
+    co->vtable = idio_C_schar_vtable;
 
     IDIO_C_TYPE_schar (co) = v;
 
@@ -209,7 +211,7 @@ test if `o` is a C/schar				\n\
 IDIO idio_C_uchar (unsigned char const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_UCHAR);
-    co->vtable = idio_c_uchar_vtable;
+    co->vtable = idio_C_uchar_vtable;
 
     IDIO_C_TYPE_uchar (co) = v;
 
@@ -244,7 +246,7 @@ test if `o` is a C/uchar				\n\
 IDIO idio_C_short (short const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_SHORT);
-    co->vtable = idio_c_short_vtable;
+    co->vtable = idio_C_short_vtable;
 
     IDIO_C_TYPE_short (co) = v;
 
@@ -279,7 +281,7 @@ test if `o` is a C/short				\n\
 IDIO idio_C_ushort (unsigned short const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_USHORT);
-    co->vtable = idio_c_ushort_vtable;
+    co->vtable = idio_C_ushort_vtable;
 
     IDIO_C_TYPE_ushort (co) = v;
 
@@ -314,7 +316,7 @@ test if `o` is a C/ushort			\n\
 IDIO idio_C_int (int const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_INT);
-    co->vtable = idio_c_int_vtable;
+    co->vtable = idio_C_int_vtable;
 
     IDIO_C_TYPE_int (co) = v;
 
@@ -349,7 +351,7 @@ test if `o` is a C/int				\n\
 IDIO idio_C_uint (unsigned int const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_UINT);
-    co->vtable = idio_c_uint_vtable;
+    co->vtable = idio_C_uint_vtable;
 
     IDIO_C_TYPE_uint (co) = v;
 
@@ -384,7 +386,7 @@ test if `o` is a C/uint			\n\
 IDIO idio_C_long (long const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_LONG);
-    co->vtable = idio_c_long_vtable;
+    co->vtable = idio_C_long_vtable;
 
     IDIO_C_TYPE_long (co) = v;
 
@@ -419,7 +421,7 @@ test if `o` is a C/long				\n\
 IDIO idio_C_ulong (unsigned long const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_ULONG);
-    co->vtable = idio_c_ulong_vtable;
+    co->vtable = idio_C_ulong_vtable;
 
     IDIO_C_TYPE_ulong (co) = v;
 
@@ -454,7 +456,7 @@ test if `o` is a C/ulong			\n\
 IDIO idio_C_longlong (long long const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_LONGLONG);
-    co->vtable = idio_c_longlong_vtable;
+    co->vtable = idio_C_longlong_vtable;
 
     IDIO_C_TYPE_longlong (co) = v;
 
@@ -489,7 +491,7 @@ test if `o` is a C/longlong				\n\
 IDIO idio_C_ulonglong (unsigned long long const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_ULONGLONG);
-    co->vtable = idio_c_ulonglong_vtable;
+    co->vtable = idio_C_ulonglong_vtable;
 
     IDIO_C_TYPE_ulonglong (co) = v;
 
@@ -524,7 +526,7 @@ test if `o` is a C/ulonglong			\n\
 IDIO idio_C_float (float const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_FLOAT);
-    co->vtable = idio_c_float_vtable;
+    co->vtable = idio_C_float_vtable;
 
     IDIO_C_TYPE_float (co) = v;
 
@@ -559,7 +561,7 @@ test if `o` is a C/float			\n\
 IDIO idio_C_double (double const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_DOUBLE);
-    co->vtable = idio_c_double_vtable;
+    co->vtable = idio_C_double_vtable;
 
     IDIO_C_TYPE_double (co) = v;
 
@@ -594,7 +596,7 @@ test if `o` is a C/double			\n\
 IDIO idio_C_longdouble (long double const v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_LONGDOUBLE);
-    co->vtable = idio_c_longdouble_vtable;
+    co->vtable = idio_C_longdouble_vtable;
 
     IDIO_C_TYPE_longdouble (co) = v;
 
@@ -634,14 +636,7 @@ IDIO idio_C_pointer (void * v)
      */
 
     IDIO co = idio_gc_get (IDIO_TYPE_C_POINTER);
-    /*
-     * C/pointers need some vtable management:
-     *
-     * * a per-pointer vtable for a start
-     */
-    idio_vtable_t *vt = idio_vtable (0);
-    co->vtable = vt;
-    IDIO_VTABLE_PARENT (vt) = idio_c_pointer_vtable;
+    co->vtable = idio_C_pointer_vtable;
 
     IDIO_GC_ALLOC (co->u.C_type.u.C_pointer, sizeof (idio_C_pointer_t));
 
@@ -666,20 +661,20 @@ IDIO idio_C_pointer_free_me (void * v)
     return co;
 }
 
-IDIO idio_C_pointer_type (IDIO t, void * v)
+IDIO idio_C_pointer_type_add_vtable (IDIO t)
 {
     IDIO_ASSERT (t);
 
-    IDIO_TYPE_ASSERT (list, t);
+    IDIO_TYPE_ASSERT (pair, t);
+
     /*
-     * NB We must IDIO_C_ASSERT (v) as we will be trying to free v
+     * The type, usually an idio_CSI_X, should be a tuple of
+     * (typename, members, value-index-function)
      */
-    IDIO_C_ASSERT (v);
+    idio_vtable_t *vt = idio_vtable (0);
+    IDIO_VTABLE_PARENT (vt) = idio_C_pointer_vtable;
 
-    IDIO co = idio_C_pointer_free_me (v);
-    idio_vtable_t *vt = co->vtable;
 
-    IDIO_C_TYPE_POINTER_PTYPE (co) = t;
 
     idio_vtable_add_method (vt,
 			    idio_S_typename,
@@ -692,17 +687,57 @@ IDIO idio_C_pointer_type (IDIO t, void * v)
 				idio_vtable_create_method_value (idio_util_method_members,
 								 IDIO_PAIR_HT (t)));
 
-	if (idio_isa_pair (IDIO_PAIR_TT (t))) {
+	if (idio_isa_pair (IDIO_PAIR_TT (t)) &&
+	    idio_S_nil != IDIO_PAIR_HTT (t)) {
 	    idio_vtable_add_method (vt,
 				    idio_S_value_index,
 				    idio_vtable_create_method_value (idio_util_method_value_index,
 								     IDIO_PAIR_HTT (t)));
 
 	    /*
-	     * Any struct-X-set! will be arranged as a setter.
+	     * Any [mod/]struct-X-set! will be arranged as a setter.
 	     */
 	}
     }
+
+    /*
+     * {vt} is already on the idio_vtables array, no need to mark
+     * it to be freed.
+     */
+    IDIO I_vt = idio_C_pointer (vt);
+    idio_hash_set (idio_C_pointer_type_vtables, t, I_vt);
+
+    return I_vt;
+}
+
+IDIO idio_C_pointer_type (IDIO t, void * v)
+{
+    IDIO_ASSERT (t);
+
+    IDIO_TYPE_ASSERT (list, t);
+    /*
+     * NB We must IDIO_C_ASSERT (v) as we will be trying to free v
+     */
+    IDIO_C_ASSERT (v);
+
+    IDIO co = idio_C_pointer_free_me (v);
+
+    /*
+     * C/pointers with a type need some vtable management:
+     *
+     * Find any existing vtable for pointer-type {t} or create a new
+     * one.
+     *
+     * The new one should refer, in turn, to the generic C/pointer
+     * vtable.
+     */
+    IDIO I_vt = idio_hash_reference (idio_C_pointer_type_vtables, t, IDIO_LIST1 (idio_S_false));
+    if (idio_S_false == I_vt) {
+	I_vt = idio_C_pointer_type_add_vtable (t);
+    }
+    co->vtable = IDIO_C_TYPE_POINTER_P (I_vt);
+
+    IDIO_C_TYPE_POINTER_PTYPE (co) = t;
 
     return co;
 }
@@ -3065,6 +3100,8 @@ IDIO idio_C_number_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     return r;
 }
 
+IDIO idio_C_pointer_method_2string (idio_vtable_method_t *m, IDIO v, ...);
+
 char *idio_C_pointer_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);
@@ -3072,52 +3109,43 @@ char *idio_C_pointer_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, 
 
     IDIO_TYPE_ASSERT (C_pointer, v);
 
-    char *r = NULL;
+    /*
+     * Prefer a ->string method
+     */
+    idio_vtable_method_t *m = idio_vtable_flat_lookup_method (v, idio_value_vtable (v), idio_S_2string, 0);
 
-    IDIO pt = IDIO_C_TYPE_POINTER_PTYPE (v);
-    if (idio_S_nil != pt) {
-	IDIO value_as_string = idio_module_symbol_value (idio_util_value_as_string, idio_Idio_module, idio_S_nil);
+    /*
+     * We can be called from idio_util_string (from almost anywhere in
+     * the C code base) and by the generic ->string method,
+     * idio_C_pointer_method_2string(), below.
+     *
+     * We want to avoid recursing if it is the latter.
+     */
+    if (NULL != m &&
+	idio_C_pointer_method_2string != IDIO_VTABLE_METHOD_FUNC (m)) {
+	IDIO s = IDIO_VTABLE_METHOD_FUNC (m) (m, v);
 
-	if (idio_S_nil != value_as_string) {
-	    IDIO s = idio_S_nil;
-	    IDIO pr = idio_hash_ref (value_as_string, pt);
-	    if (idio_S_unspec != pr) {
-		IDIO thr = idio_thread_current_thread ();
-
-		IDIO cmd = IDIO_LIST3 (pr, v, idio_S_nil);
-
-		s = idio_vm_invoke_C (thr, cmd);
-	    }
-
-	    if (idio_S_nil != s) {
-		if (idio_isa_string (s)) {
-		    return idio_utf8_string (s, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_NOPREC);
-		} else if (0 == idio_vm_reporting) {
-		    /*
-		     * Test Case: util-errors/C-pointer-printer-bad-return-type.idio
-		     *
-		     * ... return #t
-		     */
+	if (idio_isa_string (s)) {
+	    return idio_utf8_string (s, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_NOPREC);
+	} else if (0 == idio_vm_reporting) {
+	    /*
+	     * Test Case: util-errors/C-pointer-printer-bad-return-type.idio
+	     *
+	     * ... return #t
+	     */
 #ifdef IDIO_DEBUG
-		    idio_debug ("C/pointer printer => %s (not a STRING)\n", s);
+	    idio_debug ("C/pointer printer => %s (not a STRING)\n", s);
 #endif
-		    idio_error_param_value_msg ("C/pointer-as-string", "C/pointer printer", s, "should return a string", IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_value_msg ("C/pointer-as-string", "C/pointer printer", s, "should return a string", IDIO_C_FUNC_LOCATION ());
 
-		    /* notreached */
-		    return NULL;
-		}
-	    }
+	    /* notreached */
+	    return NULL;
 	}
     }
+    
+    char *r = NULL;
 
     *sizep = idio_asprintf (&r, "#<C/*");
-
-    if (idio_S_nil != pt) {
-	size_t n_size = 0;
-	char *n = idio_as_string (IDIO_PAIR_H (pt), &n_size, depth - 1, seen, 0);
-	IDIO_STRCAT (r, sizep, " ");
-	IDIO_STRCAT_FREE (r, sizep, n, n_size);
-    }
 
     IDIO_STRCAT (r, sizep, IDIO_C_TYPE_POINTER_FREEP (v) ? " free" : "");
 
@@ -3204,164 +3232,167 @@ void idio_init_c_type ()
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("0u"), idio_C_uint (0U), idio_C_module);
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("0i"), idio_C_int (0), idio_C_module);
 
-    idio_c_char_vtable        = idio_vtable (IDIO_TYPE_C_CHAR);
-    idio_c_schar_vtable       = idio_vtable (IDIO_TYPE_C_SCHAR);
-    idio_c_uchar_vtable       = idio_vtable (IDIO_TYPE_C_UCHAR);
-    idio_c_short_vtable       = idio_vtable (IDIO_TYPE_C_SHORT);
-    idio_c_ushort_vtable      = idio_vtable (IDIO_TYPE_C_USHORT);
-    idio_c_int_vtable         = idio_vtable (IDIO_TYPE_C_INT);
-    idio_c_uint_vtable        = idio_vtable (IDIO_TYPE_C_UINT);
-    idio_c_long_vtable        = idio_vtable (IDIO_TYPE_C_LONG);
-    idio_c_ulong_vtable       = idio_vtable (IDIO_TYPE_C_ULONG);
-    idio_c_longlong_vtable    = idio_vtable (IDIO_TYPE_C_LONGLONG);
-    idio_c_ulonglong_vtable   = idio_vtable (IDIO_TYPE_C_ULONGLONG);
-    idio_c_float_vtable       = idio_vtable (IDIO_TYPE_C_FLOAT);
-    idio_c_double_vtable      = idio_vtable (IDIO_TYPE_C_DOUBLE);
-    idio_c_longdouble_vtable  = idio_vtable (IDIO_TYPE_C_LONGDOUBLE);
-    idio_c_pointer_vtable     = idio_vtable (IDIO_TYPE_C_POINTER);
-    idio_c_void_vtable        = idio_vtable (IDIO_TYPE_C_VOID);
+    idio_C_char_vtable        = idio_vtable (IDIO_TYPE_C_CHAR);
+    idio_C_schar_vtable       = idio_vtable (IDIO_TYPE_C_SCHAR);
+    idio_C_uchar_vtable       = idio_vtable (IDIO_TYPE_C_UCHAR);
+    idio_C_short_vtable       = idio_vtable (IDIO_TYPE_C_SHORT);
+    idio_C_ushort_vtable      = idio_vtable (IDIO_TYPE_C_USHORT);
+    idio_C_int_vtable         = idio_vtable (IDIO_TYPE_C_INT);
+    idio_C_uint_vtable        = idio_vtable (IDIO_TYPE_C_UINT);
+    idio_C_long_vtable        = idio_vtable (IDIO_TYPE_C_LONG);
+    idio_C_ulong_vtable       = idio_vtable (IDIO_TYPE_C_ULONG);
+    idio_C_longlong_vtable    = idio_vtable (IDIO_TYPE_C_LONGLONG);
+    idio_C_ulonglong_vtable   = idio_vtable (IDIO_TYPE_C_ULONGLONG);
+    idio_C_float_vtable       = idio_vtable (IDIO_TYPE_C_FLOAT);
+    idio_C_double_vtable      = idio_vtable (IDIO_TYPE_C_DOUBLE);
+    idio_C_longdouble_vtable  = idio_vtable (IDIO_TYPE_C_LONGDOUBLE);
+    idio_C_pointer_vtable     = idio_vtable (IDIO_TYPE_C_POINTER);
+    idio_C_void_vtable        = idio_vtable (IDIO_TYPE_C_VOID);
 
-    idio_vtable_add_method (idio_c_char_vtable,
+    idio_vtable_add_method (idio_C_char_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_char));
 
-    idio_vtable_add_method (idio_c_char_vtable,
+    idio_vtable_add_method (idio_C_char_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_char_method_2string));
 
-    idio_vtable_add_method (idio_c_schar_vtable,
+    idio_vtable_add_method (idio_C_schar_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_schar));
 
-    idio_vtable_add_method (idio_c_schar_vtable,
+    idio_vtable_add_method (idio_C_schar_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_number_method_2string));
 
-    idio_vtable_add_method (idio_c_uchar_vtable,
+    idio_vtable_add_method (idio_C_uchar_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_uchar));
 
-    idio_vtable_add_method (idio_c_uchar_vtable,
+    idio_vtable_add_method (idio_C_uchar_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_number_method_2string));
 
-    idio_vtable_add_method (idio_c_short_vtable,
+    idio_vtable_add_method (idio_C_short_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_short));
 
-    idio_vtable_add_method (idio_c_short_vtable,
+    idio_vtable_add_method (idio_C_short_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_number_method_2string));
 
-    idio_vtable_add_method (idio_c_ushort_vtable,
+    idio_vtable_add_method (idio_C_ushort_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_ushort));
 
-    idio_vtable_add_method (idio_c_ushort_vtable,
+    idio_vtable_add_method (idio_C_ushort_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_number_method_2string));
 
-    idio_vtable_add_method (idio_c_int_vtable,
+    idio_vtable_add_method (idio_C_int_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_int));
 
-    idio_vtable_add_method (idio_c_int_vtable,
+    idio_vtable_add_method (idio_C_int_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_number_method_2string));
 
-    idio_vtable_add_method (idio_c_uint_vtable,
+    idio_vtable_add_method (idio_C_uint_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_uint));
 
-    idio_vtable_add_method (idio_c_uint_vtable,
+    idio_vtable_add_method (idio_C_uint_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_number_method_2string));
 
-    idio_vtable_add_method (idio_c_long_vtable,
+    idio_vtable_add_method (idio_C_long_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_long));
 
-    idio_vtable_add_method (idio_c_long_vtable,
+    idio_vtable_add_method (idio_C_long_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_number_method_2string));
 
-    idio_vtable_add_method (idio_c_ulong_vtable,
+    idio_vtable_add_method (idio_C_ulong_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_ulong));
 
-    idio_vtable_add_method (idio_c_ulong_vtable,
+    idio_vtable_add_method (idio_C_ulong_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_number_method_2string));
 
-    idio_vtable_add_method (idio_c_longlong_vtable,
+    idio_vtable_add_method (idio_C_longlong_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_longlong));
 
-    idio_vtable_add_method (idio_c_longlong_vtable,
+    idio_vtable_add_method (idio_C_longlong_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_number_method_2string));
 
-    idio_vtable_add_method (idio_c_ulonglong_vtable,
+    idio_vtable_add_method (idio_C_ulonglong_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_ulonglong));
 
-    idio_vtable_add_method (idio_c_ulonglong_vtable,
+    idio_vtable_add_method (idio_C_ulonglong_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_number_method_2string));
 
-    idio_vtable_add_method (idio_c_float_vtable,
+    idio_vtable_add_method (idio_C_float_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_float));
 
-    idio_vtable_add_method (idio_c_float_vtable,
+    idio_vtable_add_method (idio_C_float_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_number_method_2string));
 
-    idio_vtable_add_method (idio_c_double_vtable,
+    idio_vtable_add_method (idio_C_double_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_double));
 
-    idio_vtable_add_method (idio_c_double_vtable,
+    idio_vtable_add_method (idio_C_double_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_number_method_2string));
 
-    idio_vtable_add_method (idio_c_longdouble_vtable,
+    idio_vtable_add_method (idio_C_longdouble_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_longdouble));
 
-    idio_vtable_add_method (idio_c_longdouble_vtable,
+    idio_vtable_add_method (idio_C_longdouble_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_number_method_2string));
 
-    idio_vtable_add_method (idio_c_pointer_vtable,
+    idio_vtable_add_method (idio_C_pointer_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_pointer));
 
-    idio_vtable_add_method (idio_c_pointer_vtable,
+    idio_vtable_add_method (idio_C_pointer_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_pointer_method_2string));
 
-    idio_vtable_add_method (idio_c_void_vtable,
+    idio_C_pointer_type_vtables = IDIO_HASH_EQP (10);
+    idio_gc_protect_auto (idio_C_pointer_type_vtables);
+
+    idio_vtable_add_method (idio_C_void_vtable,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_c_void));
 
-    idio_vtable_add_method (idio_c_void_vtable,
+    idio_vtable_add_method (idio_C_void_vtable,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_util_method_2string));
 }

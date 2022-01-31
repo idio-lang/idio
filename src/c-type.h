@@ -175,6 +175,7 @@ IDIO idio_C_pointer (void * v);
 int idio_isa_C_pointer (IDIO co);
 
 IDIO idio_C_pointer_free_me (void * v);
+IDIO idio_C_pointer_type_add_vtable (IDIO t);
 IDIO idio_C_pointer_type (IDIO t, void * v);
 void idio_free_C_pointer (IDIO co);
 

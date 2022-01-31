@@ -197,6 +197,7 @@ IDIO_SYMBOL_DECL (set);
 IDIO_SYMBOL_DECL (set_value_index);
 IDIO_SYMBOL_DECL (setter);
 IDIO_SYMBOL_DECL (shallow);
+IDIO_SYMBOL_DECL (struct_instance_2string);
 IDIO_SYMBOL_DECL (subshell);
 IDIO_SYMBOL_DECL (super);
 IDIO_SYMBOL_DECL (template);
@@ -1133,6 +1134,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("set-value-index!", set_value_index);
     IDIO_SYMBOL_DEF ("setter", setter);
     IDIO_SYMBOL_DEF ("shallow", shallow);
+    IDIO_SYMBOL_DEF ("struct-instance->string", struct_instance_2string);
     IDIO_SYMBOL_DEF ("subshell", subshell);
     IDIO_SYMBOL_DEF ("super", super);
     IDIO_SYMBOL_DEF ("template", template);

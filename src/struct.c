@@ -185,11 +185,6 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     name));
 
-    idio_vtable_add_method (vt,
-			    idio_S_members,
-			    idio_vtable_create_method_value (idio_util_method_members,
-							     fields));
-
     IDIO_GC_ALLOC (st->u.struct_type, sizeof (idio_struct_type_t));
 
     IDIO_STRUCT_TYPE_GREY (st) = NULL;
@@ -199,15 +194,24 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
     IDIO_STRUCT_TYPE_SIZE (st) = size;
     IDIO_GC_ALLOC (st->u.struct_type->fields, size * sizeof (IDIO));
 
+    IDIO all_fields = idio_S_nil;
+
     size_t i;
     for (i = 0; i < pfields; i++) {
+	all_fields = idio_pair (IDIO_STRUCT_TYPE_FIELDS (parent, i), all_fields);
 	IDIO_STRUCT_TYPE_FIELDS (st, i) = IDIO_STRUCT_TYPE_FIELDS (parent, i);
     }
     fs = fields;
     while (idio_S_nil != fs) {
+	all_fields = idio_pair (IDIO_PAIR_H (fs), all_fields);
 	IDIO_STRUCT_TYPE_FIELDS (st, i++) = IDIO_PAIR_H (fs);
 	fs = IDIO_PAIR_T (fs);
     }
+
+    idio_vtable_add_method (vt,
+			    idio_S_members,
+			    idio_vtable_create_method_value (idio_util_method_members,
+							     idio_list_nreverse (all_fields)));
 
     return st;
 }
@@ -1111,54 +1115,50 @@ char *idio_struct_instance_as_C_string (IDIO v, size_t *sizep, idio_unicode_t fo
 
     IDIO_TYPE_ASSERT (struct_instance, v);
 
-    char *r = NULL;
+    /*
+     * Prefer a struct-instance->string method in our immediate struct
+     * type (ie. don't recurse for a method as it won't be for us).
+     */
+    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (v);
+    idio_vtable_method_t *st_m = idio_vtable_flat_lookup_method (st, idio_value_vtable (st), idio_S_struct_instance_2string, 0);
 
-    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (v);
-    IDIO value_as_string = idio_module_symbol_value (idio_util_value_as_string, idio_Idio_module, idio_S_nil);
+    if (NULL != st_m) {
+	IDIO s = IDIO_VTABLE_METHOD_FUNC (st_m) (st_m, v);
 
-    if (idio_S_nil != value_as_string) {
-	IDIO s = idio_S_nil;
-	IDIO l = idio_hash_ref (value_as_string, sit);
-	if (idio_S_unspec != l) {
-	    IDIO thr = idio_thread_current_thread ();
-
-	    IDIO cmd = IDIO_LIST3 (l, v, idio_S_nil);
-
-	    s = idio_vm_invoke_C (thr, cmd);
-	}
-
-	if (idio_S_nil != s) {
-	    if (idio_isa_string (s)) {
-		return idio_utf8_string (s, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_NOPREC);
-	    } else if (0 == idio_vm_reporting) {
-		/*
-		 * Test Case: util-errors/struct-instance-printer-bad-return-type.idio
-		 *
-		 * ... return #t
-		 */
+	if (idio_isa_string (s)) {
+	    return idio_utf8_string (s, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_NOPREC);
+	} else if (0 == idio_vm_reporting) {
+	    /*
+	     * Test Case: util-errors/struct-instance-printer-bad-return-type.idio
+	     *
+	     * ... return #t
+	     */
 #ifdef IDIO_DEBUG
-		idio_debug ("bad printer for SI type %s\n", sit);
+	    idio_debug ("struct-instance printer => %s (not a STRING)\n", s);
 #endif
-		idio_error_param_value_msg ("idio_as_string", "struct instance printer", s, "should return a string", IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_value_msg ("struct-instance-as-string", "struct-instance printer", s, "should return a string", IDIO_C_FUNC_LOCATION ());
 
-		/* notreached */
-		return NULL;
-	    }
+	    /* notreached */
+	    return NULL;
 	}
     }
-
+    
+    /*
+     * Otherwise, a basic printer
+     */
+    char *r = NULL;
     *sizep = idio_asprintf (&r, "#<SI ");
 
     size_t n_size = 0;
-    char *ns = idio_as_string (IDIO_STRUCT_TYPE_NAME (sit), &n_size, 1, seen, 0);
+    char *ns = idio_as_string (IDIO_STRUCT_TYPE_NAME (st), &n_size, 1, seen, 0);
     IDIO_STRCAT_FREE (r, sizep, ns, n_size);
 
-    size_t size = IDIO_STRUCT_TYPE_SIZE (sit);
+    size_t size = IDIO_STRUCT_TYPE_SIZE (st);
     size_t i;
     for (i = 0; i < size; i++) {
 	IDIO_STRCAT (r, sizep, " ");
 	size_t fn_size = 0;
-	char *fns = idio_as_string (IDIO_STRUCT_TYPE_FIELDS (sit, i), &fn_size, 1, seen, 0);
+	char *fns = idio_as_string (IDIO_STRUCT_TYPE_FIELDS (st, i), &fn_size, 1, seen, 0);
 	IDIO_STRCAT_FREE (r, sizep, fns, fn_size);
 	IDIO_STRCAT (r, sizep, ":");
 	size_t fv_size = 0;
@@ -1175,6 +1175,18 @@ IDIO idio_struct_instance_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 {
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (v);
+
+    IDIO_TYPE_ASSERT (struct_instance, v);
+
+    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (v);
+
+    idio_vtable_method_t *st_m = idio_vtable_lookup_method (v, idio_value_vtable (st), idio_S_struct_instance_2string, 0);
+
+    if (NULL != st_m) {
+	IDIO r = IDIO_VTABLE_METHOD_FUNC (st_m) (st_m, v);
+
+	return r;
+    }
 
     va_list ap;
     va_start (ap, v);
