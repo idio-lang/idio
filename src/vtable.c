@@ -420,6 +420,11 @@ idio_vtable_method_t *idio_vtable_lookup_method_base (IDIO v, idio_vtable_t *vt,
 	idio_vtable_entry_t *vte = IDIO_VTABLE_VTE (vt, i);
 	if (idio_eqp (name, IDIO_VTABLE_ENTRY_NAME (vte))) {
 	    IDIO_VTABLE_ENTRY_COUNT (vte)++;
+
+	    /*
+	     * Bump the more popular methods up the table to be found
+	     * faster next time
+	     */
 	    if (i &&
 		IDIO_VTABLE_ENTRY_COUNT (vte) > IDIO_VTABLE_ENTRY_COUNT (vte_prev)) {
 		IDIO_VTABLE_VTE (vt, i - 1) = vte;
@@ -503,8 +508,28 @@ dump the vtable of `o`				\n\
 
     idio_vtable_t *vt = idio_value_vtable (o);
 
-    fprintf (stderr, "The vtable for this %s is:\n", idio_type2string (o));
+    int type = idio_type (o);
+    fprintf (stderr, "The vtable for this %s", idio_type_enum2string (type));
+    switch (type) {
+    case IDIO_TYPE_STRUCT_INSTANCE:
+	{
+	    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (o);
+	    idio_debug (" of %s", IDIO_STRUCT_TYPE_NAME (st));
+	}
+	break;
+    }
+    fprintf (stderr, " is:\n");
     idio_dump_vtable (vt);
+
+    switch (type) {
+    case IDIO_TYPE_STRUCT_INSTANCE:
+	{
+	    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (o);
+	    idio_debug ("\nThe vtable for a %s is:\n", IDIO_STRUCT_TYPE_NAME (st));
+	    idio_dump_vtable (idio_value_vtable (st));
+	}
+	break;
+    }
 
     return idio_S_unspec;
 }

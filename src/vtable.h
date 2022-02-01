@@ -44,6 +44,8 @@ void idio_vtable_add_method (idio_vtable_t *vt, IDIO name, idio_vtable_method_t 
 idio_vtable_method_t *idio_vtable_lookup_method (IDIO v, idio_vtable_t *vt, IDIO name, int throw);
 idio_vtable_method_t *idio_vtable_flat_lookup_method (IDIO v, idio_vtable_t *vt, IDIO name, int throw);
 
+void idio_dump_vtable (idio_vtable_t *vt);
+
 void idio_final_vtable ();
 void idio_init_vtable ();
 

@@ -1,0 +1,219 @@
+;;
+;; Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-vtable.idio
+;;
+
+module tests/vtable
+
+import SRFI-14
+
+vtable0 := Tests
+
+test (typename 0)				'fixnum
+test (typename #t)				'constant
+test (typename #\a)				'unicode
+test (typename "a")				'string
+test (typename 'a)				'symbol
+test (typename :a)				'keyword
+test (typename (pair 1 2))			'pair
+test (typename #[])				'array
+test (typename #{})				'hash
+test (typename (function #n #n))		'closure
+test (typename pair)				'primitive
+test (typename 1.0)				'bignum
+test (typename (find-module 'Idio))		'module
+test (typename (current-input-handle))		'handle
+test (typename char-set:letter)			'struct-instance
+test (typename #B{ 3 })				'bitset
+test (typename libc/INT_MAX)			'C/int
+test (typename libc/UINT_MAX)			'C/uint
+test (typename libc/NULL)			'C/pointer
+
+;; some things we know have a bespoke name
+test (typename ^error)				'^error ; XXX not struct-type
+test (typename (libc/gettimeofday))		'libc/struct-timeval
+
+;; members of structures and "typed" C/pointers
+;; ^error has no members
+test (members ^error)				#n
+;; ^idio-error has only its own members
+test (members ^idio-error)			'(message location detail)
+;; ^system-error has its own members and those of its parent
+test (members ^system-error)			'(message location detail errno function)
+;; C/pointer libc/struct-timeval
+test (members (libc/gettimeofday))		'(tv_sec tv_usec)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; printing
+
+;; Careful, here, as {display-string} tries to find a ->display-string
+;; method or falls back to ->string.  FWIW {format} calls
+;; {display-string}.
+
+;; We also want to ensure that we try both variants (where possible).
+
+;; The ->string method for an (actual) string is the identify
+;; function.
+
+;; Ultimately, the only useful difference is for the unicode type.
+
+test (->string 0)				"0"
+test (->string #t)				"#t"
+test (->string #\a)				"#\\a"
+test (->string "a")				"a"
+test (->string 'a)				"a"
+test (->string :a)				":a"
+test (->string (pair 1 2))			"(1 & 2)"
+test (->string #[])				"#[ ]"
+test (->string #{})				"#{ }"
+;test (->string (function #n #n))		"#<CLOS - @121009/0x2/Idio>"	; tricky to predict
+test (->string pair)				"#<PRIM pair>"
+test (->string 1.0)				"1.0e+0"
+test (->string (find-module 'Idio))		"#<MOD Idio>"
+;test (->string (current-input-handle))		"#<H ofr!iF   0:\"*stdin*\":3:61>"	; tricky to predict
+test (->string %char-set:letter)		"#<SI sparse-char-set size=1114112 planes=#[ #B{ 65536 40:01111111 48-50 11100000 01111111 68-70 11100000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]>"
+test (->string #B{ 3 })				"#B{ 3 }"
+test (->string libc/INT_MAX)			"2147483647"
+test (->string libc/NULL)			"#<C/*>"
+
+;; ->string for debug builds prints out the internal pointer
+;test (->string ^error)				"#<ST ^error #<ST ^condition #n>>"
+
+test (display-string 0)				"0"
+test (display-string #t)			"#t"
+test (display-string #\a)			"a" ; the only real difference with ->string
+test (display-string "a")			"a"
+test (display-string 'a)			"a"
+test (display-string :a)			":a"
+test (display-string (pair 1 2))		"(1 & 2)"
+test (display-string #[])			"#[ ]"
+test (display-string #{})			"#{ }"
+;test (display-string (function #n #n))		"#<CLOS - @121009/0x2/Idio>"	; tricky to predict
+test (display-string pair)			"#<PRIM pair>"
+test (display-string 1.0)			"1.0e+0"
+test (display-string (find-module 'Idio))	"#<MOD Idio>"
+;test (display-string (current-input-handle))	"#<H ofr!iF   0:\"*stdin*\":3:61>"	; tricky to predict
+test (display-string %char-set:letter)		"#<SI sparse-char-set size=1114112 planes=#[ #B{ 65536 40:01111111 48-50 11100000 01111111 68-70 11100000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]>"
+test (display-string #B{ 3 })			"#B{ 3 }"
+test (display-string libc/INT_MAX)		"2147483647"
+test (display-string libc/NULL)			"#<C/*>"
+
+;; ->string for debug builds prints out the internal pointer
+;test (display-string ^error)			"#<ST ^error #<ST ^condition #n>>"
+
+;; figure out a known libc/struct-timeval for testing
+tv := (libc/gettimeofday)
+tv.tv_sec = (C/integer-> 123 libc/time_t)
+tv.tv_usec = (C/integer-> 456789 libc/suseconds_t)
+test (->string tv)				"123.456789"
+test (display-string tv)			"123.456789"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Other methods:
+
+;; The set-value-index! method might be difficult to spot -- the
+;; function set-value-index! (util.c) prefers a setter to a vtable
+;; method.  We should be OK by defining a new struct type without a
+;; setter.
+
+define-struct st st-f1 st-f2
+si := make-st 1 2
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; struct-instance's ->string method
+test (format "%s" si)				"#<SI st st-f1:1 st-f2:2>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; inherit value-index / set-value-index!
+
+si.st-f1
+si.st-f2 = 3
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; struct-instance->string requires a printer
+
+define (st-printer v seen) {
+  sprintf "%s and %s" v.st-f1 v.st-f2
+}
+
+add-as-string st st-printer
+
+test (format "%s" si)				"1 and 3"
+
+#*
+
+Identifying that the right thing has happened is a bit tricky.
+Ultimately you need to persuade yourself that a dump-vtable is
+reporting the right thing.  At the time of writing:
+
+dump-vtable si
+
+The vtable for this struct-instance of st is:
+Gen 711:
+  0: ->string                  -    6 lookups: 0x4ba816 uses 0B
+  1: typename                  -    1 lookups: 0x4c38cb uses 0B struct-instance
+
+The vtable for a st is:
+Gen 711:
+  0: value-index               i    4 lookups: 0x4c65bf uses 0B
+  1: typename                  -    0 lookups: 0x4c38cb uses 0B st
+  2: members                   -    0 lookups: 0x4c39f0 uses 0B
+  3: set-value-index!          i    1 lookups: 0x4c68a8 uses 0B
+  4: struct-instance->string   -    1 lookups: 0x4c8363 uses 0B
+
+Gen 711:
+  0: value-index               -    3 lookups: 0x4c65bf uses 0B
+  1: ->string                  -    3 lookups: 0x4ba393 uses 0B
+  2: set-value-index!          -    2 lookups: 0x4c68a8 uses 0B
+  3: typename                  -    0 lookups: 0x4c38cb uses 0B struct-type
+
+
+Here, the 6 lookups for si's ->string method are one from here and 5
+other calls in previous tests.  The 1 typename lookup is the (typename
+char-set:letter) at the top of this file.
+
+The immediate st vtable should be just us:
+
+* the 4 value-index lookups are the inherit statement, the implied
+  value-index in the inherit set-value-index! statement and the two
+  uses in the printer
+
+* we don't call either of the typename or members methods for st
+
+* the 1 set-value-index! lookup is the inherit statement
+
+* the 1 struct-instance->string is the printer
+
+The lookups in the (base) struct-type vtable are from us and previous
+tests.
+
+*#
+
+;; all done?
+Tests? (vtable0 + 61)
+
+;Local Variables:
+;mode: Idio
+;coding: utf-8-unix
+;End:

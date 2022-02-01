@@ -1643,28 +1643,10 @@ IDIO idio_util_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     return idio_util_string (v);
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("display-string-orig", display_string, (IDIO o), "o", "\
-convert `o` to a display string			\n\
-						\n\
-:param o: object to convert			\n\
-:return: a string representation of `o`	\n\
-")
-{
-    IDIO_ASSERT (o);
-
-    size_t size = 0;
-    char *str = idio_display_string (o, &size);
-    IDIO r = idio_string_C_len (str, size);
-
-    idio_gc_free (str, size);
-
-    return r;
-}
-
 /*
  * NB %format calls display-string
  */
-IDIO_DEFINE_PRIMITIVE1_DS ("display-string", 2display_string, (IDIO o), "o", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("display-string", display_string, (IDIO o), "o", "\
 convert `o` to a display string			\n\
 						\n\
 :param o: object to convert			\n\
@@ -2113,10 +2095,6 @@ set value of the object `o` indexed by `i` to `v`	\n\
 
 	    return set_r;
 	}
-
-#ifdef IDIO_DEBUG
-	idio_debug ("NOTICE: set-value-index! (setter %s) did not yield a function\n", get_func);
-#endif
     }
 
     /*
@@ -2980,7 +2958,6 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (string);
     IDIO_ADD_PRIMITIVE (2string);
     IDIO_ADD_PRIMITIVE (display_string);
-    IDIO_ADD_PRIMITIVE (2display_string);
     IDIO_ADD_PRIMITIVE (value_index);
     IDIO_ADD_PRIMITIVE (set_value_index);
     IDIO_ADD_PRIMITIVE (copy_value);

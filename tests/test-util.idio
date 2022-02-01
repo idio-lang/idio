@@ -35,7 +35,7 @@ rounding.
 
 module tests/util
 
-format0 := Tests
+util0 := Tests
 
 test (type->string 0)				"fixnum"
 test (type->string #t)				"constant"
@@ -56,40 +56,6 @@ test (type->string char-set:letter)		"struct-instance"
 test (type->string #B{ 3 })			"bitset"
 test (type->string libc/INT_MAX)		"C/int"
 test (type->string libc/UINT_MAX)		"C/uint"
-
-test (typename 0)				'fixnum
-test (typename #t)				'constant
-test (typename #\a)				'unicode
-test (typename "a")				'string
-test (typename 'a)				'symbol
-test (typename :a)				'keyword
-test (typename (pair 1 2))			'pair
-test (typename #[])				'array
-test (typename #{})				'hash
-test (typename (function #n #n))		'closure
-test (typename pair)				'primitive
-test (typename 1.0)				'bignum
-test (typename (find-module 'Idio))		'module
-test (typename (current-input-handle))		'handle
-test (typename char-set:letter)			'struct-instance
-test (typename #B{ 3 })				'bitset
-test (typename libc/INT_MAX)			'C/int
-test (typename libc/UINT_MAX)			'C/uint
-test (typename libc/NULL)			'C/pointer
-
-;; some things we know have a bespoke name
-test (typename ^error)				'^error ; XXX not struct-type
-test (typename (libc/gettimeofday))		'libc/struct-timeval
-
-;; members of structures and "typed" C/pointers
-;; ^error has no members
-test (members ^error)				#n
-;; ^idio-error has only its own members
-test (members ^idio-error)			'(message location detail)
-;; ^system-error has its own members and those of its parent
-test (members ^system-error)			'(message location detail errno function)
-test (members (libc/gettimeofday))		'(tv_sec tv_usec)
-
 
 test (zero? 0)				#t ; FIXNUM
 test (zero? #t)				#f ; CONSTANT
@@ -1294,7 +1260,7 @@ test (%format 'keyed "%4.3f" h)		" 010"
 test (%format 'keyed "%10.2b" h)	"    123.45"
 
 ;; all done?
-Tests? (format0 + 685)
+Tests? (util0 + 660)
 
 ;Local Variables:
 ;mode: Idio

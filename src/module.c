@@ -2005,7 +2005,7 @@ char *idio_module_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	IDIO_STRCAT (r, sizep, "(nil)");
     } else {
 	size_t mn_size = 0;
-	char *mn = idio_as_string (IDIO_MODULE_NAME (v), &mn_size, depth - 1, seen, 0);
+	char *mn = idio_as_string (IDIO_MODULE_NAME (v), &mn_size, 1, seen, 0);
 	IDIO_STRCAT_FREE (r, sizep, mn, mn_size);
     }
     if (0 && depth > 0) {

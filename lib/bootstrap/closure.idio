@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015-2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -102,11 +102,8 @@
 ;; standard setters
 set! (setter ph)				set-ph!
 set! (setter pt)				set-pt!
-set! (setter array-ref)				array-set!
-set! (setter hash-ref)				hash-set!
-set! (setter string-ref)			string-set!
-set! (setter struct-instance-ref)		struct-instance-set!
-set! (setter %struct-instance-ref-direct)	%struct-instance-set-direct!
 
-;; the . operator uses value-index so it needs a setter
+;; the . operator uses value-index so it needs a setter which, as a
+;; side-effect, will call the set-value-index! methods for arrays,
+;; hashes, strings and struct-instances.
 set! (setter value-index)			set-value-index!

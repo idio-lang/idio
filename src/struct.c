@@ -1215,6 +1215,12 @@ void idio_struct_add_primitives ()
     IDIO_ADD_PRIMITIVE (struct_instancep);
     IDIO_ADD_PRIMITIVE (struct_instance_type);
     IDIO_ADD_PRIMITIVE (struct_instance_fields);
+
+    /*
+     * XXX set the struct *type's* vtable value-index and
+     * set-value-index! methods to be the struct-instance-{ref,set!}
+     * functions.
+     */
     IDIO ref = IDIO_ADD_PRIMITIVE (struct_instance_ref);
     idio_vtable_add_method (idio_struct_type_vtable,
 			    idio_S_value_index,
