@@ -620,11 +620,11 @@ IDIO idio_bignum_copy_to_integer (IDIO bn)
 	return (T) idio_bsa_get (sig_a, al - 1);			\
     }
 
-IDIO_BIGNUM_C_TYPE_VALUE (int64_t, PRId64, INT64_MAX)
-IDIO_BIGNUM_C_TYPE_UVALUE (uint64_t, PRIu64, UINT64_MAX)
-IDIO_BIGNUM_C_TYPE_VALUE (ptrdiff_t, PRIdPTR, PTRDIFF_MAX)
-IDIO_BIGNUM_C_TYPE_VALUE (intptr_t, PRIdPTR, INTPTR_MAX)
-IDIO_BIGNUM_C_TYPE_VALUE (intmax_t, PRIdMAX, INTMAX_MAX)
+IDIO_BIGNUM_C_TYPE_VALUE  (int64_t,   PRId64,  INT64_MAX)
+IDIO_BIGNUM_C_TYPE_UVALUE (uint64_t,  PRIu64,  UINT64_MAX)
+IDIO_BIGNUM_C_TYPE_VALUE  (ptrdiff_t, PRIdPTR, PTRDIFF_MAX)
+IDIO_BIGNUM_C_TYPE_VALUE  (intptr_t,  PRIdPTR, INTPTR_MAX)
+IDIO_BIGNUM_C_TYPE_VALUE  (intmax_t,  PRIdMAX, INTMAX_MAX)
 IDIO_BIGNUM_C_TYPE_UVALUE (uintmax_t, PRIuMAX, UINTMAX_MAX)
 
 /*
@@ -961,24 +961,56 @@ IDIO idio_bignum_to_fixnum (IDIO bn)
 
     IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
     size_t al = IDIO_BSA_SIZE (sig_a);
+    intptr_t ai;
 
-    if (al * IDIO_BIGNUM_DPW > IDIO_BIGNUM_MDPW) {
-	return idio_S_nil;
+    IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
+
+    if (al > 1) {
+	if (al > IDIO_BIGNUM_fixnum_WORDS) {
+	    return idio_S_nil;
+	} else if (al == IDIO_BIGNUM_fixnum_WORDS) {
+	    if (a1 > IDIO_BIGNUM_fixnum_FIRST ||
+		a1 < -IDIO_BIGNUM_fixnum_FIRST) {
+		return idio_S_nil;
+	    }
+	}
     }
 
+    /*
+     * Around the loop, iv is treated as positive and will be negated,
+     * if required, afterwards.
+     *
+     * That means we can use the previous value, piv, to check if the
+     * addition of the segment value, sv, has overflowed.
+     */
     intptr_t iv = 0;
+    int ivnz = 0;
+    intptr_t piv = 0;
     int neg = 0;
 
-    intptr_t ai;
     for (ai = al -1 ; ai >= 0 ; ai--) {
 	iv *= IDIO_BIGNUM_INT_SEG_LIMIT;
-	IDIO_BS_T v = idio_bsa_get (sig_a, ai);
-	if (v < 0) {
+	piv = iv;
+	IDIO_BS_T sv = idio_bsa_get (sig_a, ai);
+	if (sv < 0) {
 	    IDIO_C_ASSERT (ai == al - 1);
-	    iv += -v;
+	    iv += -sv;
 	    neg = 1;
 	} else {
-	    iv += v;
+	    iv += sv;
+	}
+
+	if (iv < piv) {
+	    return idio_S_nil;
+	}
+
+	if (ivnz &&
+	    0 == iv) {
+	    return idio_S_nil;
+	}
+
+	if (iv) {
+	    ivnz = 1;
 	}
     }
 

@@ -61,46 +61,24 @@ number-cmp intmax-max-1 INTMAX_MAX
 intmax-min+1 := C/integer-> ((C/->integer INTMAX_MIN) + 1) intmax_t
 number-cmp INTMAX_MIN intmax-min+1
 
-;; overflow conversion tests -- one beyond the C MAX/MIN
+;; overflow conversion tests
 trap ^rt-bignum-conversion-error (function (c) {
-				    ;; eprintf "bignum INTMAX_MAX+1 conversion error: %s\n" c
 				    test (rt-bignum-conversion-error? c) #t
-				    #f
+				    'bignum-conversion-error
 }) {
+  ;; one beyond the C MAX/MIN
   INTMAX_MAX+1 := (C/integer-> ((C/->integer INTMAX_MAX) + 1))
-  test INTMAX_MAX+1 #f
-  ;; printf "INTMAX_MAX+1 %s %s\n" INTMAX_MAX INTMAX_MAX+1
-}
+  test INTMAX_MAX+1 'bignum-conversion-error
 
-trap ^rt-bignum-conversion-error (function (c) {
-				    ;; eprintf "bignum INTMAX_MIN-1 conversion error: %s\n" c
-				    test (rt-bignum-conversion-error? c) #t
-				    #f
-}) {
   INTMAX_MIN-1 := (C/integer-> ((C/->integer INTMAX_MIN) - 1))
-  test INTMAX_MIN-1 #f
-  ;; printf "INTMAX_MIN-1 %s %s\n" INTMAX_MIN INTMAX_MIN-1
-}
+  test INTMAX_MIN-1 'bignum-conversion-error
 
-;; overflow conversion tests -- many beyond the C MAX/MIN
-trap ^rt-bignum-conversion-error (function (c) {
-				    ;; eprintf "bignum INTMAX_MAX+1 conversion error: %s\n" c
-				    test (rt-bignum-conversion-error? c) #t
-				    #f
-}) {
-  INTMAX_MAX+1 := (C/integer-> ((C/->integer INTMAX_MAX) * 100000))
-  test INTMAX_MAX+1 #f
-  ;; printf "INTMAX_MAX+1 %s %s\n" INTMAX_MAX INTMAX_MAX+1
-}
+  ;; many beyond the C MAX/MIN
+  INTMAX_MAX*100000 := (C/integer-> ((C/->integer INTMAX_MAX) * 100000))
+  test INTMAX_MAX*100000 'bignum-conversion-error
 
-trap ^rt-bignum-conversion-error (function (c) {
-				    ;; eprintf "bignum INTMAX_MIN-1 conversion error: %s\n" c
-				    test (rt-bignum-conversion-error? c) #t
-				    #f
-}) {
-  INTMAX_MIN-1 := (C/integer-> ((C/->integer INTMAX_MIN) * 100000))
-  test INTMAX_MIN-1 #f
-  ;; printf "INTMAX_MIN-1 %s %s\n" INTMAX_MIN INTMAX_MIN-1
+  INTMAX_MIN*100000 := (C/integer-> ((C/->integer INTMAX_MIN) * 100000))
+  test INTMAX_MIN*100000 'bignum-conversion-error
 }
 
 ;; struct uts: code coverage

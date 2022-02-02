@@ -136,12 +136,8 @@
  */
 
 #ifdef __LP64__
+
 #define IDIO_BIGNUM_MDPW          18
-/*
-#define IDIO_BIGNUM_DPW           18
-#define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000000000000LL
-#define IDIO_BIGNUM_SIG_SEGMENTS  5
-*/
 
 #define IDIO_BIGNUM_DPW           18
 #define IDIO_BIGNUM_DPW_FMT       "%018zd"
@@ -151,13 +147,11 @@
 #define IDIO_BIGNUM_WORD_OFFSET	  1
 #define IDIO_BIGNUM_INT64_WORDS   2
 #define IDIO_BIGNUM_int64_t_WORDS 2
-/*
-#define IDIO_BIGNUM_DPW           1
-#define IDIO_BIGNUM_INT_SEG_LIMIT 10LL
-#define IDIO_BIGNUM_SIG_SEGMENTS  18
-*/
+
 #else
+
 #define IDIO_BIGNUM_MDPW          9
+
 #define IDIO_BIGNUM_DPW           9
 #define IDIO_BIGNUM_DPW_FMT       "%09zd"
 #define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000L
@@ -166,6 +160,7 @@
 #define IDIO_BIGNUM_WORD_OFFSET	  2
 #define IDIO_BIGNUM_INT64_WORDS   3
 #define IDIO_BIGNUM_int64_t_WORDS 3
+
 #endif
 
 #define IDIO_BIGNUM_SIG_MAX_DIGITS	  (IDIO_BIGNUM_SIG_SEGMENTS * IDIO_BIGNUM_DPW)
@@ -211,10 +206,16 @@
 #if INTPTR_MAX == 9223372036854775807LL
 #define IDIO_BIGNUM_intptr_t_WORDS 2
 #define IDIO_BIGNUM_intptr_t_FIRST 9  /*  9 223372036854775807 */
+
+#define IDIO_BIGNUM_fixnum_WORDS   2
+#define IDIO_BIGNUM_fixnum_FIRST   2  /*  2 305843009213693951 */
 #else
 #if INTPTR_MAX == 2147483647L
 #define IDIO_BIGNUM_intptr_t_WORDS 2
 #define IDIO_BIGNUM_intptr_t_FIRST 2 /* 2 147483647 */
+
+#define IDIO_BIGNUM_fixnum_WORDS   1
+#define IDIO_BIGNUM_fixnum_FIRST   536870911 /* 536870911 */
 #else
 #error unexpected INTPTR_MAX
 #endif
@@ -241,10 +242,10 @@
 #endif
 #endif
 
-#define IDIO_BIGNUM_int64_t_FIRST	9  /*  9 223372036854775807 */
+#define IDIO_BIGNUM_int64_t_FIRST   9  /*  9 223372036854775807 */
 
-#define IDIO_BIGNUM_uint64_t_WORDS	IDIO_BIGNUM_int64_t_WORDS
-#define IDIO_BIGNUM_uint64_t_FIRST	18 /* 18 446744073709551615 */
+#define IDIO_BIGNUM_uint64_t_WORDS  IDIO_BIGNUM_int64_t_WORDS
+#define IDIO_BIGNUM_uint64_t_FIRST  18 /* 18 446744073709551615 */
 
 #define IDIO_BIGNUM_EXP_CHAR(c)	('d' == c || 'D' == c ||	 \
 				 'e' == c || 'E' == c ||	 \
