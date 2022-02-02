@@ -1191,9 +1191,11 @@ IDIO idio_struct_instance_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     va_list ap;
     va_start (ap, v);
     size_t *sizep = va_arg (ap, size_t *);
+    IDIO seen = va_arg (ap, IDIO);
+    int depth = va_arg (ap, int);
     va_end (ap);
 
-    char *C_r = idio_struct_instance_as_C_string (v, sizep, 0, idio_S_nil, 0);
+    char *C_r = idio_struct_instance_as_C_string (v, sizep, 0, seen, depth);
 
     IDIO r = idio_string_C_len (C_r, *sizep);
 

@@ -1367,7 +1367,7 @@ char *idio_fixnum_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	 * format "%4q" 10		; "  10"
 	 */
 #ifdef IDIO_DEBUG
-	fprintf (stderr, "fixnum-as-string: unexpected conversion format: '%c' (%#x).  Using 'd' for %" PRIdPTR " @%d.\n", (int) format, (int) format, IDIO_FIXNUM_VAL (v), depth);
+	fprintf (stderr, "fixnum-as-string: unexpected conversion format: '%c' (%#x).  Using 'd'.\n", (int) format, (int) format);
 #endif
 	format = IDIO_PRINT_CONVERSION_FORMAT_d;
 	break;

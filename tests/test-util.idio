@@ -946,7 +946,7 @@ test (format "%-15.2f" n)	"3.14           "
 ;; muchness for each type.  We can test one (of each) thoroughly and
 ;; waft some interest at their siblings to show willing.
 
-;; Unlike printf(2) we mandate that the "unsigned int" conversion
+;; Unlike printf(3) we mandate that the "unsigned int" conversion
 ;; specifiers, o u x X, must be unsigned (char, short, int, long or
 ;; long long) and are not available for signed integrals.
 

@@ -2824,7 +2824,9 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 		     *
 		     * printf "%d" pi
 		     */
+#ifdef IDIO_DEBUG
 		    fprintf (stderr, "bignum-as-string: unexpected conversion format: %c (%#x).  Using 'e'.\n", (int) f, (int) f);
+#endif
 		    format = IDIO_BIGNUM_CONVERSION_FORMAT_e;
 		    break;
 		}
@@ -3082,7 +3084,11 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 
 		    for (i--; i >= 0; i--) {
 			/*
-			 * Code coverage: ??
+			 * Code coverage: issues/1-209.idio
+			 *
+			 * Only applies for systems which have
+			 * IDIO_BIGNUM_SIG_SEGMENTS > 1.  In our case
+			 * 32-bit systems.
 			 */
 			v = idio_bsa_get (sig_a, i);
 			vs_size = idio_snprintf (vs, vs_len, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
@@ -3091,7 +3097,14 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 			    vs_size = prec;
 			}
 			s = idio_strcat (s, sizep, vs, vs_size);
+
+			/*
+			 * A casual scan suggests this test should be
+			 * (prec <= vs_size) except we reset vs_size
+			 * in the (prec < vs_size) clause just above.
+			 */
 			if (prec == vs_size) {
+			    prec = 0;
 			    break;
 			}
 			prec -= vs_size;
