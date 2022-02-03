@@ -1864,6 +1864,12 @@ IDIO idio_bignum_normalize (IDIO bn)
 	IDIO_BE_T exp0 = exp;
 	exp++;
 	if (exp < exp0) {
+#ifdef IDIO_DEBUG
+	    /*
+	    idio_debug ("bn-norm sd %35s", bn);
+	    fprintf (stderr, " exp=%" IDIO_BE_FMT " < exp0=%" IDIO_BE_FMT " digits=%zu\n", exp, exp0, digits);
+	    */
+#endif
 	    /*
 	     * Test Case: bignum-errors/bignum-normalise-digits-overflow.idio
 	     *
@@ -1872,10 +1878,6 @@ IDIO idio_bignum_normalize (IDIO bn)
 	     * NB Here, it is because there are more digits than
 	     * IDIO_BIGNUM_SIG_MAX_DIGITS that trigger the overflow
 	     */
-#ifdef IDIO_DEBUG
-	    idio_debug ("bnn %s", bn);
-	    fprintf (stderr, " exp0=%d exp=%d digits=%zu\n", exp0, exp, digits);
-#endif
 	    idio_bignum_conversion_error ("exponent overflow", bn, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -1893,6 +1895,12 @@ IDIO idio_bignum_normalize (IDIO bn)
 	IDIO_BE_T exp0 = exp;
 	exp++;
 	if (exp < exp0) {
+#ifdef IDIO_DEBUG
+	    /*
+	    idio_debug ("bn-norm tz %35s", bn);
+	    fprintf (stderr, " exp=%" IDIO_BE_FMT " < exp0=%" IDIO_BE_FMT "\n", exp, exp0);
+	    */
+#endif
 	    /*
 	     * Test Case: bignum-errors/bignum-normalise-overflow.idio
 	     *
@@ -1926,7 +1934,7 @@ IDIO idio_bignum_to_real (IDIO bn)
     IDIO_ASSERT (bn);
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    IDIO_BS_T exp = 0;
+    IDIO_BE_T exp = 0;
 
     IDIO bnc = idio_bignum_copy (bn);
     IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bnc);
@@ -3452,27 +3460,31 @@ IDIO idio_bignum_real_C (char const *nums, size_t const nums_len)
 	exp += exp_v;
 	if (exp_v < 0 &&
 	    exp > exp0) {
+#ifdef IDIO_DEBUG
+	    /*
+	    fprintf (stderr, "bn-real-C %35s exp_v=%" PRId64 " < 0 && exp=%" IDIO_BE_FMT " > exp0=%" IDIO_BE_FMT "\n", nums, exp_v, exp, exp0);
+	    */
+#endif
 	    /*
 	     * Test Case: bignum-errors/read-bignum-underflow.idio
 	     *
 	     * 1e-2147483649
 	     */
-#ifdef IDIO_DEBUG
-	    fprintf (stderr, "bn: %s exp0=%d exp=%d exp_v=%" PRId64 "\n", nums, exp0, exp, exp_v);
-#endif
 	    idio_bignum_conversion_error ("exponent underflow", n, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	} else if (exp_v >= 0 &&
 		   exp < exp0) {
+#ifdef IDIO_DEBUG
+	    /*
+	    fprintf (stderr, "bn-real-C %35s exp_v=%" PRId64 " >= 0 && exp=%" IDIO_BE_FMT " < exp0=%" IDIO_BE_FMT "\n", nums, exp_v, exp, exp0);
+	    */
+#endif
 	    /*
 	     * Test Case: bignum-errors/read-bignum-overflow.idio
 	     *
 	     * 1e2147483648
 	     */
-#ifdef IDIO_DEBUG
-	    fprintf (stderr, "bn: %s exp0=%d exp=%d exp_v=%" PRId64 "\n", nums, exp0, exp, exp_v);
-#endif
 	    idio_bignum_conversion_error ("exponent overflow", n, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;

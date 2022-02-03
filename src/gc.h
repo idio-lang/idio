@@ -770,11 +770,14 @@ typedef struct idio_frame_s {
 typedef intptr_t IDIO_BS_T;
 
 /*
- * int8_t is too small for the exponent for calls into expt!
- *
- * Not sure why.
+ * An int8_t exponent will work but five tests explicitly use an
+ * exponent greater than 8 bits.  Things like asin won't generate
+ * enough accuracy for the tests with 8 bit exponents.
  */
 typedef int32_t IDIO_BE_T;
+#define IDIO_BE_MAX INT32_MAX
+#define IDIO_BE_MIN INT32_MIN
+#define IDIO_BE_FMT PRId32
 
 typedef struct idio_bsa_s {
     size_t refs;
