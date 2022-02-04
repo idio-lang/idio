@@ -327,7 +327,9 @@ void idio_vtable_add_method_base (idio_vtable_t *vt, IDIO name, idio_vtable_meth
 
     IDIO_TYPE_ASSERT (symbol, name);
 
-    idio_vtable_add_method_name (name);
+    if (0 == inherit) {
+	idio_vtable_add_method_name (name);
+    }
 
     int done = 0;
     size_t vt_size = IDIO_VTABLE_SIZE (vt);
@@ -352,7 +354,9 @@ void idio_vtable_add_method_base (idio_vtable_t *vt, IDIO name, idio_vtable_meth
 	IDIO_VTABLE_ENTRY_METHOD (vte) = m;
     }
 
-    idio_vtable_generation++;
+    if (0 == inherit) {
+	idio_vtable_generation++;
+    }
 }
 
 void idio_vtable_add_method (idio_vtable_t *vt, IDIO name, idio_vtable_method_t *m)

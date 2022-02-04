@@ -36,6 +36,8 @@
 
 
 (document Idio type->string)
+(document Idio typename)
+(document Idio members)
 
 (document Idio gc/collect)
 (document Idio idio-debug)

@@ -250,10 +250,10 @@ IDIO idio_util_method_typename (idio_vtable_method_t *m, IDIO v, ...)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("typename", typename, (IDIO o), "o", "\
-return the type of `o` as a string		\n\
-						\n\
-:param o: object				\n\
-:return: a string representation of the type of `o`	\n\
+return the type name of `o`	\n\
+				\n\
+:param o: object		\n\
+:return: the type of `o`	\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -289,7 +289,7 @@ return the members of `o` as a list		\n\
 :return: a list of the members of `o`		\n\
 						\n\
 `o` should be an object with members such as a	\n\
-:ref:`struct-instance <struct-type>` or		\n\
+:ref:`struct-instance <struct type>` or		\n\
 :ref:`C/pointer <c module types>`.		\n\
 ")
 {
@@ -1661,10 +1661,18 @@ convert `o` to a display string			\n\
     idio_vtable_method_t *m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_2display_string, 0);
 
     if (NULL == m) {
-	/* fprintf (stderr, "->display-string -> ->string\n"); */
+	/*
+	 * NB don't throw on the lookup of ->string as, technically,
+	 * this is a call for ->display-string
+	 *
+	 * Although the error is still confusing.
+	 */
 	m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_2string, 0);
 
 	if (NULL == m) {
+	    idio_debug ("o ->string from ->display-string for %s\n", o);
+	    fprintf (stderr, "which is a %s with vtable %p\n", idio_type2string (o), idio_value_vtable (o));
+	    idio_dump_vtable (idio_value_vtable (o));
 	    /*
 	     * Test Case: how did we lose ->string??
 	     */

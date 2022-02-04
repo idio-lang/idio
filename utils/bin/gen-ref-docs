@@ -209,7 +209,8 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 	   sym-fn = nth p 4
 	 }
 
-	 mod-sym := mod-name mod sym
+	 mod-str := mod-name mod sym
+	 mod-sym := string->symbol mod-str
 
 	 ;eprintf "documenting %s/%s\n" mod sym
 
@@ -237,7 +238,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 
 	   (cond
 	    ((void? val) {
-	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
+	      hprintf out-fh ".. _`%s`:\n\n" mod-str
 
 	      insert-file out-fh 1 dfn
 
@@ -254,9 +255,9 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 		sigstr = strip-string (cat-file sfn) "\n"
 	      }
 
-	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
+	      hprintf out-fh ".. _`%s`:\n\n" mod-str
 
-	      if (expander? (string->symbol mod-sym)) {
+	      if (expander? mod-sym) {
 		;; with a template the thing we have in our hands is
 		;; the expander function, not the underlying template
 		;; so all our facts are wrong.
@@ -268,10 +269,10 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 		  sigstr = strip-string (cat-file sfn) "\n"
 		}
 
-		hprintf out-fh ".. idio:template:: %s %s\n\n" mod-sym sigstr
+		hprintf out-fh ".. idio:template:: %s %s\n\n" mod-str sigstr
 		hprintf out-fh "\n"
 	      } {
-		hprintf out-fh ".. idio:function:: %s %s\n\n" mod-sym sigstr
+		hprintf out-fh ".. idio:function:: %s %s\n\n" mod-str sigstr
 		hprintf out-fh "\n"
 
 		leader := "   "
@@ -291,7 +292,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 	      hash-set! mod-ht sym #t
 	    })
 	    ((struct-type? val) {
-	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
+	      hprintf out-fh ".. _`%s`:\n\n" mod-str
 
 	      if (struct-type-isa? val ^condition) {
 		hprintf out-fh ".. idio:condition:: %s\n\n" sym
@@ -325,7 +326,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 		}
 		loop (struct-type-fields val)
 
-		hprintf out-fh "   :canonical: %s\n" mod-sym
+		hprintf out-fh "   :canonical: %s\n" mod-str
 	      }
 	      hprintf out-fh "\n"
 
@@ -336,11 +337,11 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 	      hash-set! mod-ht sym #t
 	    })
 	    ((struct-instance? val) {
-	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
+	      hprintf out-fh ".. _`%s`:\n\n" mod-str
 
 	      hprintf out-fh ".. idio:value:: %s\n\n" sym
 	      hprintf out-fh "   :type: %s\n" (type->string val)
-	      hprintf out-fh "   :canonical: %s\n" mod-sym
+	      hprintf out-fh "   :canonical: %s\n" mod-str
 	      hprintf out-fh "\n"
 
 	      insert-file out-fh 1 dfn
@@ -351,11 +352,11 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 	    })
 	    ((or (array? val)
 		 (hash? val)) {
-	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
+	      hprintf out-fh ".. _`%s`:\n\n" mod-str
 
 	      hprintf out-fh ".. idio:value:: %s\n\n" sym
 	      hprintf out-fh "   :type: %s\n" (type->string val)
-	      hprintf out-fh "   :canonical: %s\n" mod-sym
+	      hprintf out-fh "   :canonical: %s\n" mod-str
 	      hprintf out-fh "\n"
 
 	      insert-file out-fh 1 dfn
@@ -385,9 +386,9 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 		 (C/float? val)
 		 (C/pointer? val)
 
-		 (dynamic? (string->symbol mod-sym))
-		 (computed? (string->symbol mod-sym))) {
-	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
+		 (dynamic? mod-sym)
+		 (computed? mod-sym)) {
+	      hprintf out-fh ".. _`%s`:\n\n" mod-str
 
 	      hprintf out-fh ".. idio:value:: %s\n\n" sym
 
@@ -407,14 +408,14 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 		 }))
 	      }
 	      if (not (eq? mod 'Idio)) {
-		hprintf out-fh "   :canonical: %s\n" mod-sym
+		hprintf out-fh "   :canonical: %s\n" mod-str
 	      }
 
 	      (cond
-	       ((dynamic? (string->symbol mod-sym)) {
+	       ((dynamic? mod-sym) {
 		 hprintf out-fh "   :scope: dynamic\n"
 	       })
-	       ((computed? (string->symbol mod-sym)) {
+	       ((computed? mod-sym) {
 		 hprintf out-fh "   :computed:\n"
 	       }))
 	      hprintf out-fh "\n"
@@ -426,19 +427,19 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 	      hash-set! mod-ht sym #t
 	    })
 	    ((or (boolean? val)) {
-	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
+	      hprintf out-fh ".. _`%s`:\n\n" mod-str
 
 	      hprintf out-fh ".. idio:value:: %s\n\n" sym
 
 	      if (not (eq? mod 'Idio)) {
-		hprintf out-fh "   :canonical: %s\n" mod-sym
+		hprintf out-fh "   :canonical: %s\n" mod-str
 	      }
 
 	      (cond
-	       ((dynamic? (string->symbol mod-sym)) {
+	       ((dynamic? mod-sym) {
 		 hprintf out-fh "   :scope: dynamic\n"
 	       })
-	       ((computed? (string->symbol mod-sym)) {
+	       ((computed? mod-sym) {
 		 hprintf out-fh "   :computed:\n"
 	       }))
 	      hprintf out-fh "\n"
@@ -450,7 +451,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 	      hash-set! mod-ht sym #t
 	    })
 	    ((symbol? val) {
-	      hprintf out-fh ".. _`%s`:\n\n" mod-sym
+	      hprintf out-fh ".. _`%s`:\n\n" mod-str
 
 	      ; Hmm, there are symbols floating around but we'll also
 	      ; get symbols from the act of running this program which
@@ -462,7 +463,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 		hprintf out-fh ".. idio:value:: %s\n\n" sym
 		hprintf out-fh "   :type: symbol\n"
 		hprintf out-fh "   :value: '%s\n" val
-		hprintf out-fh "   :canonical: %s\n" mod-sym
+		hprintf out-fh "   :canonical: %s\n" mod-str
 		hprintf out-fh "\n"
 	      }
 

@@ -166,6 +166,10 @@ specific condition types.
 
 	* ``^rt-symbol-error``
 
+	* ``^rt-vtable-unbound-error``
+
+	* ``^rt-vtable-method-unbound-error`` (``name``)
+
 	* ``^rt-signal`` (``signal``)
 
 Defining Condition Types

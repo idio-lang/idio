@@ -13,4 +13,5 @@
 (toc-file path-functions)
 (toc-file timing)
 (toc-file properties)
+(toc-file vtables)
 (toc-file thread-state)

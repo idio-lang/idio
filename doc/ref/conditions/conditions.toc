@@ -281,6 +281,13 @@
 (document Idio rt-signal?)
 (document Idio rt-signal-signal)
 
+(document Idio ^rt-vtable-unbound-error)
+(document Idio rt-vtable-unbound-error?)
+
+(document Idio ^rt-vtable-method-unbound-error)
+(document Idio rt-vtable-method-unbound-error?)
+(document Idio rt-vtable-method-unbound-error-name)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ; condition instances
