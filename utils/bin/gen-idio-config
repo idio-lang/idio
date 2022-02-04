@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# Copyright (c) 2021 Ian Fitchet <idf@idio-lang.org>
+# Copyright (c) 2021-2022 Ian Fitchet <idf@idio-lang.org>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License.  You
@@ -88,6 +88,50 @@ Darwin)
 esac
 
 names=()
+
+##############################
+
+# Mac OS 10.5.8 doesn't have strnlen(3)
+
+names+=(IDIO_HAVE_STRNLEN)
+cat <<EOF > ${tmpdir}/test.c
+#define _GNU_SOURCE
+#include <stdlib.h>
+#include <string.h>
+
+int main (int argc, char **argv)
+{
+    size_t strnlen_r = strnlen ("hello", 2);
+    return 0;
+}
+EOF
+
+IDIO_HAVE_STRNLEN=1
+if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
+    IDIO_HAVE_STRNLEN=0
+fi
+
+##############################
+
+# SunOS (OpenIndiana) and Mac OS don't have memrchr(3)
+
+names+=(IDIO_HAVE_MEMRCHR)
+cat <<EOF > ${tmpdir}/test.c
+#define _GNU_SOURCE
+#include <stdlib.h>
+#include <string.h>
+
+int main (int argc, char **argv)
+{
+    char *memrchr_r = memrchr ("hello", 'h', 5);
+    return 0;
+}
+EOF
+
+IDIO_HAVE_MEMRCHR=1
+if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
+    IDIO_HAVE_MEMRCHR=0
+fi
 
 ##############################
 

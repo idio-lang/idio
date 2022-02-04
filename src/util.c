@@ -2657,18 +2657,7 @@ IDIO idio_add_feature_pi (char const *p, size_t const plen, size_t const size)
     return r;
 }
 
-#if defined (__APPLE__) && defined (__MACH__)
-#if ! defined (strnlen)
-#define IDIO_UTIL_STRNLEN	1
-#endif
-#define IDIO_UTIL_MEMRCHR	1
-#endif
-
-#if defined (__sun) && defined (__SVR4)
-#define IDIO_UTIL_MEMRCHR	1
-#endif
-
-#ifdef IDIO_UTIL_STRNLEN
+#ifndef IDIO_HAVE_STRNLEN
 /*
  * strnlen is missing up to at least Mac OS X 10.5.8 -- at some later
  * point strnlen was added
@@ -2685,7 +2674,7 @@ size_t strnlen (char const *s, size_t maxlen)
 }
 #endif
 
-#ifdef IDIO_UTIL_MEMRCHR
+#ifndef IDIO_HAVE_MEMRCHR
 /*
  * SunOS / Mac OS X
  */
