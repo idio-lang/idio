@@ -989,6 +989,8 @@ void idio_init_symbol ()
 {
     idio_module_table_register (idio_symbol_add_primitives, idio_final_symbol, NULL);
 
+    idio_symbol_vtable = idio_vtable (IDIO_TYPE_SYMBOL);
+
     idio_symbols_hash = idio_hash (1<<7, idio_symbol_C_eqp, idio_symbol_C_hash, idio_S_nil, idio_S_nil);
     idio_gc_protect_auto (idio_symbols_hash);
     IDIO_HASH_FLAGS (idio_symbols_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
@@ -1174,8 +1176,6 @@ void idio_init_symbol ()
     idio_properties_hash = IDIO_HASH_EQP (4 * 1024);
     idio_gc_add_weak_object (idio_properties_hash);
     idio_gc_protect_auto (idio_properties_hash);
-
-    idio_symbol_vtable = idio_vtable (IDIO_TYPE_SYMBOL);
 
     idio_vtable_add_method (idio_symbol_vtable,
 			    idio_S_typename,
