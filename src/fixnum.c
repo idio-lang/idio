@@ -721,10 +721,7 @@ return the remainder of `a` less `floor (b)`	\n\
     }
 
     /* convert to a fixnum if possible */
-    IDIO fn = idio_bignum_to_fixnum (num);
-    if (idio_S_nil != fn) {
-	num = fn;
-    }
+    num = idio_bignum_to_fixnum (num);
 
     return num;
 }
@@ -810,10 +807,7 @@ return the quotient `a / b`			\n\
     }
 
     /* convert to a fixnum if possible */
-    IDIO fn = idio_bignum_to_fixnum (num);
-    if (idio_S_nil != fn) {
-	num = fn;
-    }
+    num = idio_bignum_to_fixnum (num);
 
     return num;
 }
@@ -900,10 +894,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    IDIO num = idio_bignum_primitive_ ## cname (bn_args);	\
 									\
 	    /* convert to a fixnum if possible */			\
-	    IDIO fn = idio_bignum_to_fixnum (num);			\
-	    if (idio_S_nil != fn) {					\
-		num = fn;						\
-	    }								\
+	    num = idio_bignum_to_fixnum (num);				\
 									\
 	    return num;							\
 	} else {							\
@@ -968,10 +959,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    IDIO num = idio_bignum_primitive_ ## cname (bn_args);	\
 									\
 	    /* convert to a fixnum if possible */			\
-	    IDIO fn = idio_bignum_to_fixnum (num);			\
-	    if (idio_S_nil != fn) {					\
-		num = fn;						\
-	    }								\
+	    num = idio_bignum_to_fixnum (num);				\
 	    								\
 	    return num;							\
 	} else {							\
@@ -1012,10 +1000,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	IDIO num = idio_bignum_primitive_ ## cname (bn_args);		\
 									\
 	/* convert to a fixnum if possible */				\
-	IDIO fn = idio_bignum_to_fixnum (num);				\
-	if (idio_S_nil != fn) {						\
-	    num = fn;							\
-	}								\
+	num = idio_bignum_to_fixnum (num);				\
 									\
 	return num;							\
     }
@@ -1149,10 +1134,7 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 	    IDIO num = idio_bignum_primitive_ ## icname (args);		\
 									\
 	    /* convert to a fixnum if possible */			\
-	    IDIO fn = idio_bignum_to_fixnum (num);			\
-	    if (idio_S_nil != fn) {					\
-		num = fn;						\
-	    }								\
+	    num = idio_bignum_to_fixnum (num);				\
 									\
 	    return num;							\
 	} else {							\
@@ -1200,10 +1182,7 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 	IDIO num = idio_bignum_primitive_ ## icname (bn_args);		\
 									\
 	/* convert to a fixnum if possible */				\
-	IDIO fn = idio_bignum_to_fixnum (num);				\
-	if (idio_S_nil != fn) {						\
-	    num = fn;							\
-	}								\
+	num = idio_bignum_to_fixnum (num);				\
 									\
 	return num;							\
     }

@@ -539,7 +539,7 @@ IDIO idio_bignum_copy_to_integer (IDIO bn)
 	size_t al = IDIO_BSA_SIZE (sig_a);				\
 	if (al > 1) {							\
 	    IDIO fn = idio_bignum_to_fixnum (bn_i);			\
-	    if (idio_S_nil == fn) {					\
+	    if (bn_i == fn) {						\
 		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);		\
 		if (al < IDIO_BIGNUM_ ## T ## _WORDS ||			\
 		    (al == IDIO_BIGNUM_ ## T ## _WORDS &&		\
@@ -592,7 +592,7 @@ IDIO idio_bignum_copy_to_integer (IDIO bn)
 	size_t al = IDIO_BSA_SIZE (sig_a);				\
 	if (al > 1) {							\
 	    IDIO fn = idio_bignum_to_fixnum (bn_i);			\
-	    if (idio_S_nil == fn) {					\
+	    if (bn_i == fn) {						\
 		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);		\
 		if (al < IDIO_BIGNUM_ ## T ## _WORDS ||			\
 		    (al == IDIO_BIGNUM_ ## T ## _WORDS &&		\
@@ -942,13 +942,22 @@ long double idio_bignum_longdouble_value (IDIO bn)
     return r * idio_bignum_pow (10, exp);
 }
 
+
+/*
+ * The original interface returned #n on failure but as most uses
+ * promptly tested for #n and then used the original {bn} parameter
+ * let's pivot to do that by default.
+ *
+ * Those that do care can use an identity check to see if the returned
+ * value is the original and do whatever.
+ */
 IDIO idio_bignum_to_fixnum (IDIO bn)
 {
     IDIO_ASSERT (bn);
     IDIO_TYPE_ASSERT (bignum, bn);
 
     if (! IDIO_BIGNUM_INTEGER_P (bn)) {
-	return idio_S_nil;
+	return bn;
     }
 
     IDIO bn_i = idio_bignum_integer_argument (bn);
@@ -956,7 +965,7 @@ IDIO idio_bignum_to_fixnum (IDIO bn)
 	/*
 	 * Code coverage: C unit test??
 	 */
-	return idio_S_nil;
+	return bn;
     }
 
     IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
@@ -967,11 +976,11 @@ IDIO idio_bignum_to_fixnum (IDIO bn)
 
     if (al > 1) {
 	if (al > IDIO_BIGNUM_fixnum_WORDS) {
-	    return idio_S_nil;
+	    return bn;
 	} else if (al == IDIO_BIGNUM_fixnum_WORDS) {
 	    if (a1 > IDIO_BIGNUM_fixnum_FIRST ||
 		a1 < -IDIO_BIGNUM_fixnum_FIRST) {
-		return idio_S_nil;
+		return bn;
 	    }
 	}
     }
@@ -1001,12 +1010,12 @@ IDIO idio_bignum_to_fixnum (IDIO bn)
 	}
 
 	if (iv < piv) {
-	    return idio_S_nil;
+	    return bn;
 	}
 
 	if (ivnz &&
 	    0 == iv) {
-	    return idio_S_nil;
+	    return bn;
 	}
 
 	if (iv) {
@@ -1027,7 +1036,7 @@ IDIO idio_bignum_to_fixnum (IDIO bn)
     /*
      * Code coverage: C unit test??
      */
-    return idio_S_nil;
+    return bn;
 }
 
 IDIO idio_bignum_abs (IDIO bn)
@@ -4244,10 +4253,7 @@ return an exact version of `n`			\n\
 	}
     }
 
-    IDIO fn = idio_bignum_to_fixnum (r);
-    if (idio_S_nil != fn) {
-	r = fn;
-    }
+    r = idio_bignum_to_fixnum (r);
 
     return r;
 }
@@ -4285,10 +4291,7 @@ return the mantissa of `n`			\n\
 	}
     }
 
-    IDIO fn = idio_bignum_to_fixnum (r);
-    if (idio_S_nil != fn) {
-	r = fn;
-    }
+    r = idio_bignum_to_fixnum (r);
 
     return r;
 }

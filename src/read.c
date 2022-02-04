@@ -3171,10 +3171,7 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
     }
 
     /* convert to a fixnum if possible */
-    IDIO fn = idio_bignum_to_fixnum (bn);
-    if (idio_S_nil != fn) {
-	bn = fn;
-    }
+    bn = idio_bignum_to_fixnum (bn);
 
     return bn;
 }
@@ -3294,17 +3291,7 @@ static IDIO idio_read_number_C (IDIO handle, char const *str)
 	    num = idio_bignum_C (str, i);
 
 	    /* convert to a fixnum if possible */
-	    IDIO fn = idio_bignum_to_fixnum (num);
-	    if (idio_S_nil != fn) {
-		/*
-		 * Test Case: read-coverage/numbers.idio
-		 *
-		 * 64 / 32 bit bignum segment max digits
-		 *
-		 * 100000000000000000 / 100000000
-		 */
-		num = fn;
-	    }
+	    num = idio_bignum_to_fixnum (num);
 	}
     }
 
