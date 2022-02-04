@@ -1120,7 +1120,7 @@ char *idio_struct_instance_as_C_string (IDIO v, size_t *sizep, idio_unicode_t fo
      * type (ie. don't recurse for a method as it won't be for us).
      */
     IDIO st = IDIO_STRUCT_INSTANCE_TYPE (v);
-    idio_vtable_method_t *st_m = idio_vtable_flat_lookup_method (st, idio_value_vtable (st), idio_S_struct_instance_2string, 0);
+    idio_vtable_method_t *st_m = idio_vtable_flat_lookup_method (idio_value_vtable (st), st, idio_S_struct_instance_2string, 0);
 
     if (NULL != st_m) {
 	IDIO s = IDIO_VTABLE_METHOD_FUNC (st_m) (st_m, v);
@@ -1180,7 +1180,7 @@ IDIO idio_struct_instance_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 
     IDIO st = IDIO_STRUCT_INSTANCE_TYPE (v);
 
-    idio_vtable_method_t *st_m = idio_vtable_lookup_method (v, idio_value_vtable (st), idio_S_struct_instance_2string, 0);
+    idio_vtable_method_t *st_m = idio_vtable_lookup_method (idio_value_vtable (st), v, idio_S_struct_instance_2string, 0);
 
     if (NULL != st_m) {
 	IDIO r = IDIO_VTABLE_METHOD_FUNC (st_m) (st_m, v);

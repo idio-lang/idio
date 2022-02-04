@@ -3112,7 +3112,7 @@ char *idio_C_pointer_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, 
     /*
      * Prefer a ->string method
      */
-    idio_vtable_method_t *m = idio_vtable_flat_lookup_method (v, idio_value_vtable (v), idio_S_2string, 0);
+    idio_vtable_method_t *m = idio_vtable_flat_lookup_method (idio_value_vtable (v), v, idio_S_2string, 0);
 
     /*
      * We can be called from idio_util_string (from almost anywhere in

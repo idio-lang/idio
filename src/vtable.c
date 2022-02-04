@@ -397,7 +397,7 @@ add `func` as the `name` method to `o`		\n\
     return idio_S_unspec;
 }
 
-idio_vtable_method_t *idio_vtable_lookup_method_base (IDIO v, idio_vtable_t *vt, IDIO name, int recurse, int throw)
+idio_vtable_method_t *idio_vtable_lookup_method_base (idio_vtable_t *vt, IDIO v, IDIO name, int recurse, int throw)
 {
     IDIO_ASSERT (name);
 
@@ -439,10 +439,10 @@ idio_vtable_method_t *idio_vtable_lookup_method_base (IDIO v, idio_vtable_t *vt,
 	vte_prev = vte;
     }
 
-    idio_vtable_t *parent = IDIO_VTABLE_PARENT (vt);
+    idio_vtable_t *pvt = IDIO_VTABLE_PARENT (vt);
     if (recurse &&
-	NULL != parent) {
-	idio_vtable_method_t *m = idio_vtable_lookup_method (v, parent, name, throw);
+	NULL != pvt) {
+	idio_vtable_method_t *m = idio_vtable_lookup_method (pvt, v, name, throw);
 
 	idio_vtable_inherit_method (vt, name, m);
 
@@ -459,14 +459,14 @@ idio_vtable_method_t *idio_vtable_lookup_method_base (IDIO v, idio_vtable_t *vt,
     return NULL;
 }
 
-idio_vtable_method_t *idio_vtable_lookup_method (IDIO v, idio_vtable_t *vt, IDIO name, int throw)
+idio_vtable_method_t *idio_vtable_lookup_method (idio_vtable_t *vt, IDIO v, IDIO name, int throw)
 {
-    return idio_vtable_lookup_method_base (v, vt, name, 1, throw);
+    return idio_vtable_lookup_method_base (vt, v, name, 1, throw);
 }
 
-idio_vtable_method_t *idio_vtable_flat_lookup_method (IDIO v, idio_vtable_t *vt, IDIO name, int throw)
+idio_vtable_method_t *idio_vtable_flat_lookup_method (idio_vtable_t *vt, IDIO v, IDIO name, int throw)
 {
-    return idio_vtable_lookup_method_base (v, vt, name, 0, throw);
+    return idio_vtable_lookup_method_base (vt, v, name, 0, throw);
 }
 
 void idio_dump_vtable (idio_vtable_t *vt)

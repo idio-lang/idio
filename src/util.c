@@ -258,7 +258,7 @@ return the type name of `o`	\n\
 {
     IDIO_ASSERT (o);
 
-    idio_vtable_method_t *m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_typename, 1);
+    idio_vtable_method_t *m = idio_vtable_lookup_method (idio_value_vtable (o), o, idio_S_typename, 1);
 
     return IDIO_VTABLE_METHOD_FUNC (m) (m, o);
 }
@@ -307,7 +307,7 @@ return the members of `o` as a list		\n\
 	break;
     }
 
-    idio_vtable_method_t *m = idio_vtable_lookup_method (t, idio_value_vtable (t), idio_S_members, 1);
+    idio_vtable_method_t *m = idio_vtable_lookup_method (idio_value_vtable (t), t, idio_S_members, 1);
 
     return IDIO_VTABLE_METHOD_FUNC (m) (m, t);
 }
@@ -1624,7 +1624,7 @@ in that it won't stringify a string!		\n\
 {
     IDIO_ASSERT (o);
 
-    idio_vtable_method_t *m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_2string, 1);
+    idio_vtable_method_t *m = idio_vtable_lookup_method (idio_value_vtable (o), o, idio_S_2string, 1);
 
     size_t size = 0;
 
@@ -1658,7 +1658,7 @@ convert `o` to a display string			\n\
     /*
      * lookup ->display-string or ->string as a fallback
      */
-    idio_vtable_method_t *m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_2display_string, 0);
+    idio_vtable_method_t *m = idio_vtable_lookup_method (idio_value_vtable (o), o, idio_S_2display_string, 0);
 
     if (NULL == m) {
 	/*
@@ -1667,7 +1667,7 @@ convert `o` to a display string			\n\
 	 *
 	 * Although the error is still confusing.
 	 */
-	m = idio_vtable_lookup_method (o, idio_value_vtable (o), idio_S_2string, 0);
+	m = idio_vtable_lookup_method (idio_value_vtable (o), o, idio_S_2string, 0);
 
 	if (NULL == m) {
 	    idio_debug ("o ->string from ->display-string for %s\n", o);
@@ -1989,7 +1989,7 @@ otherwise index the object `o` by `i`		\n\
 	break;
     }
 
-    idio_vtable_method_t *m = idio_vtable_lookup_method (t, idio_value_vtable (t), idio_S_value_index, 0);
+    idio_vtable_method_t *m = idio_vtable_lookup_method (idio_value_vtable (t), t, idio_S_value_index, 0);
 
     if (NULL == m) {
 	/*
@@ -2070,7 +2070,7 @@ set value of the object `o` indexed by `i` to `v`	\n\
 	break;
     }
 
-    idio_vtable_method_t *get_m = idio_vtable_lookup_method (t, idio_value_vtable (t), idio_S_value_index, 0);
+    idio_vtable_method_t *get_m = idio_vtable_lookup_method (idio_value_vtable (t), t, idio_S_value_index, 0);
 
     if (NULL != get_m) {
 	IDIO get_func = (IDIO) IDIO_VTABLE_METHOD_DATA (get_m);
@@ -2108,7 +2108,7 @@ set value of the object `o` indexed by `i` to `v`	\n\
     /*
      * Fallback position for values with no setter
      */
-    idio_vtable_method_t *set_m = idio_vtable_lookup_method (t, idio_value_vtable (t), idio_S_set_value_index, 0);
+    idio_vtable_method_t *set_m = idio_vtable_lookup_method (idio_value_vtable (t), t, idio_S_set_value_index, 0);
 
     if (NULL == set_m) {
 	/*
