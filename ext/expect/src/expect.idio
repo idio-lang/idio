@@ -102,7 +102,12 @@ and the remaining attributes initialised to ``#f``.
 }
 
 spawn-id         :~ #f
-user-spawn-id    :~ make-struct-spawn #n #f libc/STDIN_FILENO (libc/tcgetattr libc/STDIN_FILENO)
+user-spawn-id    :~ #f
+trap ^system-error (function (c) {
+  trap-return #f
+  }) {
+  user-spawn-id  = make-struct-spawn #n #f libc/STDIN_FILENO (libc/tcgetattr libc/STDIN_FILENO)
+}
 tty-spawn-id     :~ #f
 exp-timeout      :~ -1
 exp-match-max    :~ 2000
