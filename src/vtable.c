@@ -514,26 +514,8 @@ dump the vtable of `o`				\n\
 
     int type = idio_type (o);
     fprintf (stderr, "The vtable for this %s", idio_type_enum2string (type));
-    switch (type) {
-    case IDIO_TYPE_STRUCT_INSTANCE:
-	{
-	    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (o);
-	    idio_debug (" of %s", IDIO_STRUCT_TYPE_NAME (st));
-	}
-	break;
-    }
     fprintf (stderr, " is:\n");
     idio_dump_vtable (vt);
-
-    switch (type) {
-    case IDIO_TYPE_STRUCT_INSTANCE:
-	{
-	    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (o);
-	    idio_debug ("\nThe vtable for a %s is:\n", IDIO_STRUCT_TYPE_NAME (st));
-	    idio_dump_vtable (idio_value_vtable (st));
-	}
-	break;
-    }
 
     return idio_S_unspec;
 }

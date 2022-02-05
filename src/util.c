@@ -295,21 +295,9 @@ return the members of `o` as a list		\n\
 {
     IDIO_ASSERT (o);
 
-    /*
-     * The nominal type
-     */
-    IDIO t = o;
+    idio_vtable_method_t *m = idio_vtable_lookup_method (idio_value_vtable (o), o, idio_S_members, 1);
 
-    int type = idio_type (o);
-    switch (type) {
-    case IDIO_TYPE_STRUCT_INSTANCE:
-	t = IDIO_STRUCT_INSTANCE_TYPE (o);
-	break;
-    }
-
-    idio_vtable_method_t *m = idio_vtable_lookup_method (idio_value_vtable (t), t, idio_S_members, 1);
-
-    return IDIO_VTABLE_METHOD_FUNC (m) (m, t);
+    return IDIO_VTABLE_METHOD_FUNC (m) (m, o);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("zero?", zerop, (IDIO o), "o", "\
@@ -1977,19 +1965,7 @@ otherwise index the object `o` by `i`		\n\
 	return r;
     }
 
-    /*
-     * The nominal type
-     */
-    IDIO t = o;
-
-    int type = idio_type (o);
-    switch (type) {
-    case IDIO_TYPE_STRUCT_INSTANCE:
-	t = IDIO_STRUCT_INSTANCE_TYPE (o);
-	break;
-    }
-
-    idio_vtable_method_t *m = idio_vtable_lookup_method (idio_value_vtable (t), t, idio_S_value_index, 0);
+    idio_vtable_method_t *m = idio_vtable_lookup_method (idio_value_vtable (o), o, idio_S_value_index, 0);
 
     if (NULL == m) {
 	/*
@@ -2058,19 +2034,7 @@ set value of the object `o` indexed by `i` to `v`	\n\
      * defined).
      */
 
-    /*
-     * The nominal type
-     */
-    IDIO t = o;
-
-    int type = idio_type (o);
-    switch (type) {
-    case IDIO_TYPE_STRUCT_INSTANCE:
-	t = IDIO_STRUCT_INSTANCE_TYPE (o);
-	break;
-    }
-
-    idio_vtable_method_t *get_m = idio_vtable_lookup_method (idio_value_vtable (t), t, idio_S_value_index, 0);
+    idio_vtable_method_t *get_m = idio_vtable_lookup_method (idio_value_vtable (o), o, idio_S_value_index, 0);
 
     if (NULL != get_m) {
 	IDIO get_func = (IDIO) IDIO_VTABLE_METHOD_DATA (get_m);
@@ -2108,7 +2072,7 @@ set value of the object `o` indexed by `i` to `v`	\n\
     /*
      * Fallback position for values with no setter
      */
-    idio_vtable_method_t *set_m = idio_vtable_lookup_method (idio_value_vtable (t), t, idio_S_set_value_index, 0);
+    idio_vtable_method_t *set_m = idio_vtable_lookup_method (idio_value_vtable (o), o, idio_S_set_value_index, 0);
 
     if (NULL == set_m) {
 	/*

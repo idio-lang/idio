@@ -239,7 +239,7 @@ close nfd
    close nfd
  })
  (else {
-   printf "no F_DUPFD_CLOEXEC on this system, skipping\n"
+   printf "no F_DUPFD_CLOEXEC on this system, skipping code coverage\n"
  }))
 
 ;; get the file descriptor flags -- CLOEXEC?
@@ -301,7 +301,7 @@ close-handle ifh
 ;; should be safe...except if running under, say, rlwrap which has
 ;; made us a session leader and so we'll get an EPERM from setpgid
 if (C/== (getsid (C/integer-> 0 libc/pid_t)) (getpid)) {
-  eprintf "WARNING: I am a session leader?: skipping setpgid test\n"
+  eprintf "WARNING: I am a session leader?: skipping setpgid code coverage\n"
 } {
   setpgid (getpid) (getpgrp)
 }
@@ -330,7 +330,7 @@ strsignal SIGHUP
 ;; should be safe to set the termios of stdin to stdin...
 (cond-expand
  ("uname/sysname/SunOS" {
-   eprintf "SunOS: skipping tcsetattr *stdin* test\n"
+   eprintf "SunOS: skipping tcsetattr *stdin* code coverage\n"
  })
  (else {
    tcsetattr C/0i C/0i (tcgetattr C/0i)

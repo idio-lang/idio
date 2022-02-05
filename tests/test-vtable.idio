@@ -39,7 +39,7 @@ test (typename pair)				'primitive
 test (typename 1.0)				'bignum
 test (typename (find-module 'Idio))		'module
 test (typename (current-input-handle))		'handle
-test (typename char-set:letter)			'struct-instance
+test (typename char-set:letter)			'sparse-char-set
 test (typename #B{ 3 })				'bitset
 test (typename libc/INT_MAX)			'C/int
 test (typename libc/UINT_MAX)			'C/uint
