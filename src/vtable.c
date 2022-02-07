@@ -273,6 +273,7 @@ int idio_validate_vtable (idio_vtable_t *vt)
 
     int gen = IDIO_VTABLE_GEN (vt);
 
+    int cleared = 0;
     idio_vtable_t *parent = IDIO_VTABLE_PARENT (vt);
     if (NULL != parent) {
 	int pgen = idio_validate_vtable (parent);
@@ -290,7 +291,31 @@ int idio_validate_vtable (idio_vtable_t *vt)
 		    IDIO_VTABLE_SIZE (vt)--;
 		}
 	    }
-	    
+	    cleared = 1;
+	}
+    }
+
+    /*
+     * Bah!
+     *
+     * If we have had cause to be validating and we didn't invalidate
+     * anything because none of our ancestors have changed then run
+     * through looking for an inherited ->display-string method and
+     * invalidate it.
+     */
+    if (0 == cleared) {
+	size_t vt_size = IDIO_VTABLE_SIZE (vt);
+	for (size_t i = 0; i < vt_size; i++) {
+	    idio_vtable_entry_t *vte = IDIO_VTABLE_VTE (vt, i);
+	    if (IDIO_VTABLE_ENTRY_INHERITED (vte) &&
+		IDIO_VTABLE_ENTRY_NAME (vte) == idio_S_2display_string) {
+		for (size_t j = i + 1; j < vt_size; j++) {
+		    IDIO_VTABLE_VTE (vt, j - 1) = IDIO_VTABLE_VTE (vt, j);
+		}
+		i++;
+		IDIO_VTABLE_SIZE (vt)--;
+		break;
+	    }
 	}
     }
 

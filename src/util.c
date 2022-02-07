@@ -1646,8 +1646,10 @@ convert `o` to a display string			\n\
     /*
      * lookup ->display-string or ->string as a fallback
      */
-    idio_vtable_method_t *m = idio_vtable_lookup_method (idio_value_vtable (o), o, idio_S_2display_string, 0);
+    idio_vtable_t *vt = idio_value_vtable (o);
+    idio_vtable_method_t *m = idio_vtable_lookup_method (vt, o, idio_S_2display_string, 0);
 
+    int inherit = 0;
     if (NULL == m) {
 	/*
 	 * NB don't throw on the lookup of ->string as, technically,
@@ -1655,12 +1657,12 @@ convert `o` to a display string			\n\
 	 *
 	 * Although the error is still confusing.
 	 */
-	m = idio_vtable_lookup_method (idio_value_vtable (o), o, idio_S_2string, 0);
+	m = idio_vtable_lookup_method (vt, o, idio_S_2string, 0);
 
 	if (NULL == m) {
 	    idio_debug ("o ->string from ->display-string for %s\n", o);
-	    fprintf (stderr, "which is a %s with vtable %p\n", idio_type2string (o), idio_value_vtable (o));
-	    idio_dump_vtable (idio_value_vtable (o));
+	    fprintf (stderr, "which is a %s with vtable %p\n", idio_type2string (o), vt);
+	    idio_dump_vtable (vt);
 	    /*
 	     * Test Case: how did we lose ->string??
 	     */
@@ -1672,6 +1674,8 @@ convert `o` to a display string			\n\
 
 	    return idio_S_notreached;
 	}
+
+	inherit = 1;
     }
 
     size_t size = 0;
@@ -1679,6 +1683,19 @@ convert `o` to a display string			\n\
     IDIO s = IDIO_VTABLE_METHOD_FUNC (m) (m, o, &size, idio_S_nil, 40, 1);
 
     if (idio_isa_string (s)) {
+	if (inherit) {
+	    /*
+	     * Don't "inherit" the ->string method as our ->display-string
+	     * method (avoiding a missed lookup for ->display-string next
+	     * time) until we're sure the method is sound.
+	     *
+	     * Otherwise we'll have mistakenly inherited a broken method
+	     * under a different name that won't be changed until a
+	     * generational change occurs.
+	     */
+	    idio_vtable_inherit_method (vt, idio_S_2display_string, m);
+	}
+
 	return s;
     } else if (0 == idio_vm_reporting) {
 	/*
@@ -1720,23 +1737,19 @@ C/pointer (with CSI)				\n\
     IDIO_USER_TYPE_ASSERT (function, f);
 
     /*
-     * The nominal type and method
+     * The nominal method
      */
-    IDIO t = o;
     IDIO m_name = idio_S_2string;
 
     int type = idio_type (o);
     switch (type) {
-    case IDIO_TYPE_STRUCT_INSTANCE:
-	t = IDIO_STRUCT_INSTANCE_TYPE (o);
-	m_name = idio_S_struct_instance_2string;
-	break;
     case IDIO_TYPE_STRUCT_TYPE:
+    case IDIO_TYPE_STRUCT_INSTANCE:
 	m_name = idio_S_struct_instance_2string;
 	break;
     }
 
-    idio_vtable_add_method (idio_value_vtable (t),
+    idio_vtable_add_method (idio_value_vtable (o),
 			    m_name,
 			    idio_vtable_create_method_value (idio_util_method_run,
 							     IDIO_LIST2 (f, idio_S_nil)));
