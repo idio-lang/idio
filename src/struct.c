@@ -1064,7 +1064,8 @@ char *idio_struct_instance_as_C_string (IDIO v, size_t *sizep, idio_unicode_t fo
     IDIO st = IDIO_STRUCT_INSTANCE_TYPE (v);
     idio_vtable_method_t *st_m = idio_vtable_flat_lookup_method (idio_value_vtable (st), st, idio_S_struct_instance_2string, 0);
 
-    if (NULL != st_m) {
+    if (NULL != st_m &&
+	idio_struct_instance_method_2string != IDIO_VTABLE_METHOD_FUNC (st_m)) {
 	IDIO s = IDIO_VTABLE_METHOD_FUNC (st_m) (st_m, v);
 
 	if (idio_isa_string (s)) {
@@ -1153,7 +1154,7 @@ char *idio_struct_type_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format
 
     /*
      * struct-instances are anomalous because they are a true Idio
-     * type yet don't have an idio_struct_istance_vtable catering for
+     * type yet don't have an idio_struct_instance_vtable catering for
      * them (anymore).  That's because the vast majority of uses are
      * actually those of the struct-type.
      *
