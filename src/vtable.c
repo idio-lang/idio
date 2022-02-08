@@ -511,9 +511,20 @@ void idio_dump_vtable (idio_vtable_t *vt)
 	idio_vtable_method_t *m = IDIO_VTABLE_ENTRY_METHOD (vte);
 	fprintf (stderr, "%p ", IDIO_VTABLE_METHOD_FUNC (m));
 	fprintf (stderr, "uses %zdB", IDIO_VTABLE_METHOD_SIZE (m));
+
+	/*
+	 * For some know, useful methods we can invoke the method to
+	 * retrieve the informative data.
+	 *
+	 * Note that we invoke the method in case someone has added a
+	 * bespoke method.
+	 */
 	if (idio_eqp (IDIO_VTABLE_ENTRY_NAME (vte), idio_S_typename)) {
 	    idio_debug (" %s", IDIO_VTABLE_METHOD_FUNC (m) (m, idio_S_nil));
+	} else if (idio_eqp (IDIO_VTABLE_ENTRY_NAME (vte), idio_S_members)) {
+	    idio_debug (" %s", IDIO_VTABLE_METHOD_FUNC (m) (m, idio_S_nil));
 	}
+
 	fprintf (stderr, "\n");
     }
 

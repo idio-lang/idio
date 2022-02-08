@@ -1207,7 +1207,7 @@ IDIO idio_struct_type_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     size_t *sizep = va_arg (ap, size_t *);
     va_end (ap);
 
-    char *C_r = idio_struct_type_as_C_string (v, sizep, 0, idio_S_nil, 0);
+    char *C_r = idio_struct_type_as_C_string (v, sizep, 0, idio_S_nil, 40);
 
     IDIO r = idio_string_C_len (C_r, *sizep);
 
