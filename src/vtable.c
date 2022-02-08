@@ -280,14 +280,19 @@ int idio_validate_vtable (idio_vtable_t *vt)
 	if (pgen > gen) {
 	    gen = pgen;
 
-	    size_t vt_size = IDIO_VTABLE_SIZE (vt);
-	    for (size_t i = 0; i < vt_size; i++) {
+	    for (size_t i = 0; i < IDIO_VTABLE_SIZE (vt); i++) {
 		idio_vtable_entry_t *vte = IDIO_VTABLE_VTE (vt, i);
 		if (IDIO_VTABLE_ENTRY_INHERITED (vte)) {
-		    for (size_t j = i + 1; j < vt_size; j++) {
+		    for (size_t j = i + 1; j < IDIO_VTABLE_SIZE (vt); j++) {
 			IDIO_VTABLE_VTE (vt, j - 1) = IDIO_VTABLE_VTE (vt, j);
 		    }
-		    i++;
+		    /*
+		     * Careful.  We've just bubbled up i+1 over the
+		     * top of i and yet we're about to i++ around the
+		     * top of the loop.  That means we'll have skipped
+		     * the current i+1 (which is now i).
+		     */
+		    i--;
 		    IDIO_VTABLE_SIZE (vt)--;
 		}
 	    }
@@ -308,11 +313,10 @@ int idio_validate_vtable (idio_vtable_t *vt)
 	for (size_t i = 0; i < vt_size; i++) {
 	    idio_vtable_entry_t *vte = IDIO_VTABLE_VTE (vt, i);
 	    if (IDIO_VTABLE_ENTRY_INHERITED (vte) &&
-		IDIO_VTABLE_ENTRY_NAME (vte) == idio_S_2display_string) {
+		idio_S_2display_string == IDIO_VTABLE_ENTRY_NAME (vte)) {
 		for (size_t j = i + 1; j < vt_size; j++) {
 		    IDIO_VTABLE_VTE (vt, j - 1) = IDIO_VTABLE_VTE (vt, j);
 		}
-		i++;
 		IDIO_VTABLE_SIZE (vt)--;
 		break;
 	    }
@@ -320,6 +324,7 @@ int idio_validate_vtable (idio_vtable_t *vt)
     }
 
     IDIO_VTABLE_GEN (vt) = idio_vtable_generation;
+
     return gen;
 }
 

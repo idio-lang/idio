@@ -1194,11 +1194,15 @@ char *idio_struct_type_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format
     size_t stn_size = 0;
     char *stn = idio_as_string (IDIO_STRUCT_TYPE_NAME (v), &stn_size, 1, seen, 0);
     IDIO_STRCAT_FREE (r, sizep, stn, stn_size);
-    IDIO_STRCAT (r, sizep, " ");
 
-    size_t stp_size = 0;
-    char *stp = idio_as_string (IDIO_STRUCT_TYPE_PARENT (v), &stp_size, 1, seen, 0);
-    IDIO_STRCAT_FREE (r, sizep, stp, stp_size);
+    IDIO_STRCAT (r, sizep, " [");
+    IDIO p = IDIO_STRUCT_TYPE_PARENT (v);
+    if (idio_S_nil != p) {
+	size_t stp_size = 0;
+	char *stp = idio_as_string (IDIO_STRUCT_TYPE_NAME (p), &stp_size, 1, seen, 0);
+	IDIO_STRCAT_FREE (r, sizep, stp, stp_size);
+    }
+    IDIO_STRCAT (r, sizep, "]");
 
     size_t size = IDIO_STRUCT_TYPE_SIZE (v);
     size_t i;
