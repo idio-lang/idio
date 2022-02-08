@@ -813,20 +813,37 @@ instance of struct type `st`			\n\
     IDIO_USER_TYPE_ASSERT (fixnum, index);
 
     if (st != IDIO_STRUCT_INSTANCE_TYPE (si)) {
-	/*
-	 * Test Case: struct-errors/struct-instance-ref-direct-wrong-type.idio
-	 *
-	 * define-struct foo x y
-	 * f := make-struct-instance foo 1 2
-	 * %struct-instance-ref-direct f ^error 0
-	 */
 	IDIO msh = idio_open_output_string_handle_C ();
 	idio_display_C ("%struct-instance-ref-direct: a '", msh);
 	idio_display (IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (si)), msh);
 	idio_display_C ("' is not a '", msh);
 	idio_display (IDIO_STRUCT_TYPE_NAME (st), msh);
 	idio_display_C ("'", msh);
-	idio_struct_error (idio_get_output_string (msh), st, IDIO_LIST2 (si, index), IDIO_C_FUNC_LOCATION ());
+
+	IDIO args = IDIO_LIST1 (index);
+
+	if (idio_eqp (IDIO_STRUCT_TYPE_NAME (st), IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (si)))) {
+	    /*
+	     * Test Case: struct-errors/struct-type-duplicate-name.idio
+	     *
+	     * define-struct foo a b
+	     * bar := make-foo 1 2
+	     * define-struct foo x y
+	     * %struct-instance-ref-direct foo bar 0
+	     */
+	    idio_display_C (" did you redefine it?", msh);
+	} else {
+	    /*
+	     * Test Case: struct-errors/struct-instance-ref-direct-wrong-type.idio
+	     *
+	     * define-struct foo x y
+	     * f := make-struct-instance foo 1 2
+	     * %struct-instance-ref-direct f ^error 0
+	     */
+	    args = idio_pair (si, args);
+	}
+
+	idio_struct_error (idio_get_output_string (msh), st, args, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

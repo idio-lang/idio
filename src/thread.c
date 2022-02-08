@@ -276,12 +276,12 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 			    sp - 1);
 
     size_t t_size = 0;
-    char *t = idio_as_string (idio_array_top (IDIO_THREAD_STACK (v)), &t_size, 1, seen, 0);
+    char *t = idio_as_string (idio_array_top (IDIO_THREAD_STACK (v)), &t_size, 4, seen, 0);
     IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
     IDIO_STRCAT (r, sizep, "\n  val=");
     t_size = 0;
-    t = idio_as_string (IDIO_THREAD_VAL (v), &t_size, 2, seen, 0);
+    t = idio_as_string (IDIO_THREAD_VAL (v), &t_size, 4, seen, 0);
     IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
     IDIO_STRCAT (r, sizep, "\n  func=");
@@ -299,7 +299,7 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	    IDIO_STRCAT_FREE (r, sizep, es, es_size);
 
 	    size_t f_size = 0;
-	    char *fs = idio_as_string (frame, &f_size, 1, seen, 0);
+	    char *fs = idio_as_string (frame, &f_size, 4, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, fs, f_size);
 	}
     }
@@ -351,7 +351,7 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 		IDIO src = idio_vm_constants_ref (gci);
 
 		t_size = 0;
-		t = idio_as_string (src, &t_size, 1, seen, 0);
+		t = idio_as_string (src, &t_size, 4, seen, 0);
 		IDIO_STRCAT_FREE (r, sizep, t, t_size);
 	    }
 
@@ -380,7 +380,7 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	    IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
 
 	    t_size = 0;
-	    t = idio_as_string (IDIO_THREAD_HOLES (v), &t_size, 1, seen, 0);
+	    t = idio_as_string (IDIO_THREAD_HOLES (v), &t_size, 2, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 	}
     }

@@ -1,0 +1,7 @@
+
+module tests/struct/make-struct-type
+
+define-struct st1 a
+si1 := make-st1 1
+define-struct st1 b
+%struct-instance-ref-direct si1 st1 0
