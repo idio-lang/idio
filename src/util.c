@@ -1965,6 +1965,7 @@ otherwise index the object `o` by `i`		\n\
 :param i: index					\n\
 :type i: any					\n\
 :return: the indexed value			\n\
+:raises ^rt-parameter-value-error:		\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -2035,6 +2036,7 @@ set value of the object `o` indexed by `i` to `v`	\n\
 :param v: value					\n\
 :type v: any					\n\
 :return: the indexed value			\n\
+:raises ^rt-parameter-value-error:		\n\
 ")
 {
     IDIO_ASSERT (o);

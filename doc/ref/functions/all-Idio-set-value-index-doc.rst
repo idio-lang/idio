@@ -1,4 +1,6 @@
-indexable object types are:
+Indexable object types are those with a defined setter or with a
+``set-value-index!`` vtable method associated with them.  Standard
+vtable methods and setters are:
 
 .. csv-table::
    :widths: auto
