@@ -23,13 +23,9 @@
 #ifndef VTABLE_H
 #define VTABLE_H
 
+extern size_t idio_vtables_size;
+extern idio_vtable_t **idio_vtables;
 extern int idio_vtable_generation;
-extern idio_vtable_t *idio_fixnum_vtable;
-extern idio_vtable_t *idio_constant_idio_vtable;
-extern idio_vtable_t *idio_constant_token_vtable;
-extern idio_vtable_t *idio_constant_i_code_vtable;
-extern idio_vtable_t *idio_constant_unicode_vtable;
-extern idio_vtable_t *idio_placeholder_vtable;
 
 void idio_vtable_method_unbound_error (IDIO v, IDIO name, IDIO c_location);
 

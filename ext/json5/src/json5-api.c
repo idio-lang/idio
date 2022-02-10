@@ -57,6 +57,7 @@
 #include "unicode.h"
 #include "util.h"
 #include "vm.h"
+#include "vtable.h"
 
 #include "json5-module.h"
 #include "json5-token.h"
@@ -72,7 +73,7 @@ IDIO idio_json5_string_value_to_idio (json5_unicode_string_t *js)
     IDIO_C_ASSERT (js);
 
     IDIO so = idio_gc_get (IDIO_TYPE_STRING);
-    so->vtable = idio_string_vtable;
+    so->vtable = idio_vtable (IDIO_TYPE_STRING);
     IDIO_STRING_LEN (so) = js->len;
 
     size_t reqd_bytes = js->len;

@@ -58,9 +58,6 @@
 #include "vm.h"
 #include "vtable.h"
 
-idio_vtable_t *idio_string_vtable;
-static idio_vtable_t *idio_substring_vtable;
-
 static void idio_string_error (IDIO msg, IDIO detail, IDIO c_location)
 {
     IDIO_ASSERT (msg);
@@ -331,7 +328,7 @@ IDIO idio_string_C_len (char const *s_C, size_t const blen)
     IDIO_C_ASSERT (s_C);
 
     IDIO so = idio_gc_get (IDIO_TYPE_STRING);
-    so->vtable = idio_string_vtable;
+    so->vtable = idio_vtable (IDIO_TYPE_STRING);
 
     IDIO_FLAGS_T flags = IDIO_STRING_FLAG_1BYTE;
 
@@ -469,7 +466,7 @@ IDIO idio_octet_string_C_len (char const *s_C, size_t const blen)
     IDIO_C_ASSERT (s_C);
 
     IDIO so = idio_gc_get (IDIO_TYPE_STRING);
-    so->vtable = idio_string_vtable;
+    so->vtable = idio_vtable (IDIO_TYPE_STRING);
 
     IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
     IDIO_STRING_BLEN (so) = blen;
@@ -522,7 +519,7 @@ IDIO idio_string_C_array_lens (size_t const ns, char const *a_C[], size_t const 
     IDIO_C_ASSERT (lens);
 
     IDIO so = idio_gc_get (IDIO_TYPE_STRING);
-    so->vtable = idio_string_vtable;
+    so->vtable = idio_vtable (IDIO_TYPE_STRING);
 
     size_t ai;
 
@@ -699,7 +696,7 @@ IDIO idio_copy_string (IDIO string)
     case IDIO_TYPE_STRING:
 	{
 	    copy = idio_gc_get (IDIO_TYPE_STRING);
-	    copy->vtable = idio_string_vtable;
+	    copy->vtable = idio_vtable (IDIO_TYPE_STRING);
 
 	    size_t blen = IDIO_STRING_BLEN (string);
 	    IDIO_GC_ALLOC (IDIO_STRING_S (copy), blen + 1);
@@ -860,7 +857,7 @@ IDIO idio_substring_offset_len (IDIO str, size_t const offset, size_t const len)
     }
 
     IDIO so = idio_gc_get (IDIO_TYPE_SUBSTRING);
-    so->vtable = idio_substring_vtable;
+    so->vtable = idio_vtable (IDIO_TYPE_SUBSTRING);
     IDIO_SUBSTRING_LEN (so) = len;
 
     if (idio_isa (str, IDIO_TYPE_SUBSTRING)) {
@@ -1054,7 +1051,7 @@ create a string with an initial length of `size`\n\
     }
 
     IDIO so = idio_gc_get (IDIO_TYPE_STRING);
-    so->vtable = idio_string_vtable;
+    so->vtable = idio_vtable (IDIO_TYPE_STRING);
 
     IDIO_GC_ALLOC (IDIO_STRING_S (so), reqd_bytes + 1);
     IDIO_STRING_BLEN (so) = reqd_bytes;
@@ -1309,7 +1306,7 @@ IDIO idio_list_list2string (IDIO l)
     }
 
     IDIO so = idio_gc_get (IDIO_TYPE_STRING);
-    so->vtable = idio_string_vtable;
+    so->vtable = idio_vtable (IDIO_TYPE_STRING);
 
     IDIO_GC_ALLOC (IDIO_STRING_S (so), reqd_bytes + 1);
     IDIO_STRING_BLEN (so) = reqd_bytes;
@@ -1617,7 +1614,7 @@ a string.								\n\
 	}
 
 	IDIO so = idio_gc_get (IDIO_TYPE_STRING);
-	so->vtable = idio_string_vtable;
+	so->vtable = idio_vtable (IDIO_TYPE_STRING);
 
 	IDIO_GC_ALLOC (IDIO_STRING_S (so), reqd_bytes + 1);
 	IDIO_STRING_BLEN (so) = reqd_bytes;
@@ -3604,26 +3601,29 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (append_string);
     IDIO_ADD_PRIMITIVE (copy_string);
     IDIO_ADD_PRIMITIVE (string_length);
+
     IDIO ref = IDIO_ADD_PRIMITIVE (string_ref);
     IDIO ref_func = idio_vm_values_ref (IDIO_FIXNUM_VAL (ref));
-    idio_vtable_add_method (idio_string_vtable,
+    idio_vtable_t *s_vt = idio_vtable (IDIO_TYPE_STRING);
+    idio_vtable_t *ss_vt = idio_vtable (IDIO_TYPE_SUBSTRING);
+    idio_vtable_add_method (s_vt,
 			    idio_S_value_index,
 			    idio_vtable_create_method_value (idio_util_method_value_index,
 							     ref_func));
 
-    idio_vtable_add_method (idio_substring_vtable,
+    idio_vtable_add_method (ss_vt,
 			    idio_S_value_index,
 			    idio_vtable_create_method_value (idio_util_method_value_index,
 							     ref_func));
 
     IDIO set = IDIO_ADD_PRIMITIVE (string_set);
     IDIO set_func = idio_vm_values_ref (IDIO_FIXNUM_VAL (set));
-    idio_vtable_add_method (idio_string_vtable,
+    idio_vtable_add_method (s_vt,
 			    idio_S_set_value_index,
 			    idio_vtable_create_method_value (idio_util_method_set_value_index,
 							     set_func));
 
-    idio_vtable_add_method (idio_substring_vtable,
+    idio_vtable_add_method (ss_vt,
 			    idio_S_set_value_index,
 			    idio_vtable_create_method_value (idio_util_method_set_value_index,
 							     set_func));
@@ -3658,32 +3658,32 @@ void idio_init_string ()
 {
     idio_module_table_register (idio_string_add_primitives, idio_final_string, NULL);
 
-    idio_string_vtable = idio_vtable (IDIO_TYPE_STRING);
-    idio_substring_vtable = idio_vtable (IDIO_TYPE_SUBSTRING);
+    idio_vtable_t *s_vt = idio_vtable (IDIO_TYPE_STRING);
+    idio_vtable_t *ss_vt = idio_vtable (IDIO_TYPE_SUBSTRING);
 
-    idio_vtable_add_method (idio_string_vtable,
+    idio_vtable_add_method (s_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_string));
 
-    idio_vtable_add_method (idio_substring_vtable,
+    idio_vtable_add_method (ss_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_substring));
 
-    idio_vtable_add_method (idio_string_vtable,
+    idio_vtable_add_method (s_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_string_method_2string));
 
-    idio_vtable_add_method (idio_substring_vtable,
+    idio_vtable_add_method (ss_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_string_method_2string));
 
-    idio_vtable_add_method (idio_string_vtable,
+    idio_vtable_add_method (s_vt,
 			    idio_S_2display_string,
 			    idio_vtable_create_method_simple (idio_string_method_2display_string));
 
-    idio_vtable_add_method (idio_substring_vtable,
+    idio_vtable_add_method (ss_vt,
 			    idio_S_2display_string,
 			    idio_vtable_create_method_simple (idio_string_method_2display_string));
 }

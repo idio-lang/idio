@@ -53,8 +53,6 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_vtable_t *idio_keyword_vtable;
-
 static IDIO idio_keywords_hash = idio_S_nil;
 
 IDIO_KEYWORD_DECL (docstr);
@@ -143,7 +141,7 @@ IDIO idio_keyword_C_len (char const *s_C, size_t const blen)
     IDIO_C_ASSERT (s_C);
 
     IDIO o = idio_gc_get (IDIO_TYPE_KEYWORD);
-    o->vtable = idio_keyword_vtable;
+    o->vtable = idio_vtable (IDIO_TYPE_KEYWORD);
 
     IDIO_GC_ALLOC (IDIO_KEYWORD_S (o), blen + 1);
 
@@ -489,14 +487,14 @@ void idio_init_keyword ()
     IDIO_KEYWORD_DEF ("sigstr", sigstr);
     IDIO_KEYWORD_DEF ("source", source);
 
-    idio_keyword_vtable = idio_vtable (IDIO_TYPE_KEYWORD);
+    idio_vtable_t *k_vt = idio_vtable (IDIO_TYPE_KEYWORD);
 
-    idio_vtable_add_method (idio_keyword_vtable,
+    idio_vtable_add_method (k_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_keyword));
 
-    idio_vtable_add_method (idio_keyword_vtable,
+    idio_vtable_add_method (k_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_keyword_method_2string));
 }

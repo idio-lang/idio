@@ -55,8 +55,6 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_vtable_t *idio_symbol_vtable;
-
 static IDIO idio_symbols_hash = idio_S_nil;
 IDIO idio_properties_hash = idio_S_nil;
 
@@ -376,7 +374,7 @@ static IDIO idio_symbol_C (char const *s_C, size_t const blen)
     IDIO_C_ASSERT (s_C);
 
     IDIO o = idio_gc_get (IDIO_TYPE_SYMBOL);
-    o->vtable = idio_symbol_vtable;
+    o->vtable = idio_vtable (IDIO_TYPE_SYMBOL);
 
     IDIO_GC_ALLOC (IDIO_SYMBOL_S (o), blen + 1);
     memcpy (IDIO_SYMBOL_S (o), s_C, blen);
@@ -989,8 +987,6 @@ void idio_init_symbol ()
 {
     idio_module_table_register (idio_symbol_add_primitives, idio_final_symbol, NULL);
 
-    idio_symbol_vtable = idio_vtable (IDIO_TYPE_SYMBOL);
-
     idio_symbols_hash = idio_hash (1<<7, idio_symbol_C_eqp, idio_symbol_C_hash, idio_S_nil, idio_S_nil);
     idio_gc_protect_auto (idio_symbols_hash);
     IDIO_HASH_FLAGS (idio_symbols_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
@@ -1177,12 +1173,14 @@ void idio_init_symbol ()
     idio_gc_add_weak_object (idio_properties_hash);
     idio_gc_protect_auto (idio_properties_hash);
 
-    idio_vtable_add_method (idio_symbol_vtable,
+    idio_vtable_t *s_vt = idio_vtable (IDIO_TYPE_SYMBOL);
+
+    idio_vtable_add_method (s_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_symbol));
 
-    idio_vtable_add_method (idio_symbol_vtable,
+    idio_vtable_add_method (s_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_symbol_method_2string));
 }

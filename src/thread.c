@@ -54,8 +54,6 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_vtable_t *idio_thread_vtable;
-
 static IDIO idio_running_threads;
 static IDIO idio_running_thread = idio_S_nil;
 IDIO idio_threading_module = idio_S_nil;
@@ -63,7 +61,7 @@ IDIO idio_threading_module = idio_S_nil;
 IDIO idio_thread_base (idio_ai_t stack_size)
 {
     IDIO t = idio_gc_get (IDIO_TYPE_THREAD);
-    t->vtable = idio_thread_vtable;
+    t->vtable = idio_vtable (IDIO_TYPE_THREAD);
 
     IDIO_GC_ALLOC (t->u.thread, sizeof (idio_thread_t));
 
@@ -446,14 +444,14 @@ void idio_init_first_thread ()
     IDIO ethr = IDIO_SYMBOLS_C_INTERN ("*expander-thread*");
     idio_module_set_symbol_value (ethr, idio_expander_thread, idio_expander_module);
 
-    idio_thread_vtable = idio_vtable (IDIO_TYPE_THREAD);
+    idio_vtable_t *t_vt = idio_vtable (IDIO_TYPE_THREAD);
 
-    idio_vtable_add_method (idio_thread_vtable,
+    idio_vtable_add_method (t_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_thread));
 
-    idio_vtable_add_method (idio_thread_vtable,
+    idio_vtable_add_method (t_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_thread_method_2string));
 }

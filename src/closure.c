@@ -52,8 +52,6 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_vtable_t *idio_closure_vtable;
-
 /**
  * idio_array() - closure constructor
  * @code: byte code
@@ -80,7 +78,7 @@ IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO
     IDIO_TYPE_ASSERT (module, env);
 
     IDIO c = idio_gc_get (IDIO_TYPE_CLOSURE);
-    c->vtable = idio_closure_vtable;
+    c->vtable = idio_vtable (IDIO_TYPE_CLOSURE);
 
     IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
 
@@ -296,14 +294,14 @@ void idio_init_closure ()
 {
     idio_module_table_register (idio_closure_add_primitives, NULL, NULL);
 
-    idio_closure_vtable = idio_vtable (IDIO_TYPE_CLOSURE);
+    idio_vtable_t *c_vt = idio_vtable (IDIO_TYPE_CLOSURE);
 
-    idio_vtable_add_method (idio_closure_vtable,
+    idio_vtable_add_method (c_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_closure));
 
-    idio_vtable_add_method (idio_closure_vtable,
+    idio_vtable_add_method (c_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_closure_method_2string));
 }

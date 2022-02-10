@@ -56,8 +56,6 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_vtable_t *idio_struct_type_vtable;
-
 static void idio_struct_error (IDIO msg, IDIO st, IDIO args, IDIO c_location)
 {
     IDIO_ASSERT (msg);
@@ -174,7 +172,7 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
     idio_vtable_t *vt = idio_vtable (0);
     st->vtable = vt;
     if (idio_S_nil == parent) {
-	IDIO_VTABLE_PARENT (vt) = idio_struct_type_vtable;
+	IDIO_VTABLE_PARENT (vt) = idio_vtable (IDIO_TYPE_STRUCT_TYPE);
     } else {
 	IDIO_VTABLE_PARENT (vt) = parent->vtable;
     }
@@ -1257,7 +1255,8 @@ void idio_struct_add_primitives ()
      * functions.
      */
     IDIO ref = IDIO_ADD_PRIMITIVE (struct_instance_ref);
-    idio_vtable_add_method (idio_struct_type_vtable,
+    idio_vtable_t *st_vt = idio_vtable (IDIO_TYPE_STRUCT_TYPE);
+    idio_vtable_add_method (st_vt,
 			    idio_S_value_index,
 			    idio_vtable_create_method_value (idio_util_method_value_index,
 							     idio_vm_values_ref (IDIO_FIXNUM_VAL (ref))));
@@ -1265,7 +1264,7 @@ void idio_struct_add_primitives ()
     IDIO_ADD_PRIMITIVE (struct_instance_ref_direct);
 
     IDIO set = IDIO_ADD_PRIMITIVE (struct_instance_set);
-    idio_vtable_add_method (idio_struct_type_vtable,
+    idio_vtable_add_method (st_vt,
 			    idio_S_set_value_index,
 			    idio_vtable_create_method_value (idio_util_method_set_value_index,
 							     idio_vm_values_ref (IDIO_FIXNUM_VAL (set))));
@@ -1279,18 +1278,18 @@ void idio_init_struct ()
 {
     idio_module_table_register (idio_struct_add_primitives, NULL, NULL);
 
-    idio_struct_type_vtable = idio_vtable (IDIO_TYPE_STRUCT_TYPE);
+    idio_vtable_t *st_vt = idio_vtable (IDIO_TYPE_STRUCT_TYPE);
 
-    idio_vtable_add_method (idio_struct_type_vtable,
+    idio_vtable_add_method (st_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_struct_type));
 
-    idio_vtable_add_method (idio_struct_type_vtable,
+    idio_vtable_add_method (st_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_struct_type_method_2string));
 
-    idio_vtable_add_method (idio_struct_type_vtable,
+    idio_vtable_add_method (st_vt,
 			    idio_S_struct_instance_2string,
 			    idio_vtable_create_method_simple (idio_struct_instance_method_2string));
 }

@@ -1477,14 +1477,14 @@ void idio_init_fixnum ()
 {
     idio_module_table_register (idio_fixnum_add_primitives, NULL, NULL);
 
-    idio_fixnum_vtable = idio_vtable (IDIO_TYPE_FIXNUM);
+    idio_vtable_t *f_vt = idio_vtable (IDIO_TYPE_FIXNUM);
 
-    idio_vtable_add_method (idio_fixnum_vtable,
+    idio_vtable_add_method (f_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_fixnum));
 
-    idio_vtable_add_method (idio_fixnum_vtable,
+    idio_vtable_add_method (f_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_fixnum_method_2string));
 }

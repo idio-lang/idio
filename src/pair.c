@@ -53,15 +53,13 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_vtable_t *idio_pair_vtable;
-
 IDIO idio_pair (IDIO h, IDIO t)
 {
     IDIO_ASSERT (h);
     IDIO_ASSERT (t);
 
     IDIO p = idio_gc_get (IDIO_TYPE_PAIR);
-    p->vtable = idio_pair_vtable;
+    p->vtable = idio_vtable (IDIO_TYPE_PAIR);
 
     IDIO_PAIR_GREY (p) = NULL;
     IDIO_PAIR_H (p) = h;
@@ -1156,8 +1154,10 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (assv);
     IDIO_ADD_PRIMITIVE (assoc);
     IDIO_ADD_PRIMITIVE (list2array);
+
     IDIO ref = IDIO_ADD_PRIMITIVE (nth);
-    idio_vtable_add_method (idio_pair_vtable,
+    idio_vtable_t *p_vt = idio_vtable (IDIO_TYPE_PAIR);
+    idio_vtable_add_method (p_vt,
 			    idio_S_value_index,
 			    idio_vtable_create_method_value (idio_util_method_value_index,
 							     idio_vm_values_ref (IDIO_FIXNUM_VAL (ref))));
@@ -1167,14 +1167,14 @@ void idio_init_pair ()
 {
     idio_module_table_register (idio_pair_add_primitives, NULL, NULL);
 
-    idio_pair_vtable = idio_vtable (IDIO_TYPE_PAIR);
+    idio_vtable_t *p_vt = idio_vtable (IDIO_TYPE_PAIR);
 
-    idio_vtable_add_method (idio_pair_vtable,
+    idio_vtable_add_method (p_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_pair));
 
-    idio_vtable_add_method (idio_pair_vtable,
+    idio_vtable_add_method (p_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_pair_method_2string));
 }

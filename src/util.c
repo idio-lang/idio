@@ -2983,14 +2983,14 @@ void idio_init_util ()
     /*
      * IDIO_TYPE_CONSTANT_IDIO isn't handled anywhere
      */
-    idio_constant_idio_vtable    = idio_vtable (IDIO_TYPE_CONSTANT_IDIO);
+    idio_vtable_t *ci_vt = idio_vtable (IDIO_TYPE_CONSTANT_IDIO);
 
-    idio_vtable_add_method (idio_constant_idio_vtable,
+    idio_vtable_add_method (ci_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_constant_idio));
 
-    idio_vtable_add_method (idio_constant_idio_vtable,
+    idio_vtable_add_method (ci_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_constant_idio_method_2string));
 }

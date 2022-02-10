@@ -51,15 +51,13 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_vtable_t *idio_continuation_vtable;
-
 IDIO idio_continuation (IDIO thr, int kind)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
     IDIO k = idio_gc_get (IDIO_TYPE_CONTINUATION);
-    k->vtable = idio_continuation_vtable;
+    k->vtable = idio_vtable (IDIO_TYPE_CONTINUATION);
 
     IDIO_GC_ALLOC (k->u.continuation, sizeof (idio_continuation_t));
 
@@ -186,14 +184,14 @@ void idio_init_continuation ()
 {
     idio_module_table_register (idio_continuation_add_primitives, NULL, NULL);
 
-    idio_continuation_vtable = idio_vtable (IDIO_TYPE_CONTINUATION);
+    idio_vtable_t *c_vt = idio_vtable (IDIO_TYPE_CONTINUATION);
 
-    idio_vtable_add_method (idio_continuation_vtable,
+    idio_vtable_add_method (c_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_continuation));
 
-    idio_vtable_add_method (idio_continuation_vtable,
+    idio_vtable_add_method (c_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_continuation_method_2string));
 }

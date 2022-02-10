@@ -49,8 +49,6 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_vtable_t *idio_primitive_vtable;
-
 /*
  * idio_primitive() exists in case anyone wants to create a primitive
  * dynamically -- as opposed to via the usual C macro methods.
@@ -61,7 +59,7 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), char const *name_C, size_t const 
     IDIO_C_ASSERT (name_C);
 
     IDIO o = idio_gc_get (IDIO_TYPE_PRIMITIVE);
-    o->vtable = idio_primitive_vtable;
+    o->vtable = idio_vtable (IDIO_TYPE_PRIMITIVE);
 
     IDIO_GC_ALLOC (o->u.primitive, sizeof (idio_primitive_t));
 
@@ -102,7 +100,7 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
     IDIO_C_ASSERT (desc);
 
     IDIO o = idio_gc_get (IDIO_TYPE_PRIMITIVE);
-    o->vtable = idio_primitive_vtable;
+    o->vtable = idio_vtable (IDIO_TYPE_PRIMITIVE);
 
     IDIO_GC_ALLOC (o->u.primitive, sizeof (idio_primitive_t));
 
@@ -335,14 +333,14 @@ void idio_init_primitive ()
 {
     idio_module_table_register (idio_primitive_add_primitives, NULL, NULL);
 
-    idio_primitive_vtable = idio_vtable (IDIO_TYPE_PRIMITIVE);
+    idio_vtable_t *p_vt = idio_vtable (IDIO_TYPE_PRIMITIVE);
 
-    idio_vtable_add_method (idio_primitive_vtable,
+    idio_vtable_add_method (p_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_primitive));
 
-    idio_vtable_add_method (idio_primitive_vtable,
+    idio_vtable_add_method (p_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_primitive_method_2string));
 }

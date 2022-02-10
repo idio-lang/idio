@@ -62,8 +62,6 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_vtable_t *idio_hash_vtable;
-
 void idio_hash_error (char const *msg, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
@@ -229,7 +227,7 @@ IDIO idio_hash (idio_hi_t size, int (*comp_C) (void const *k1, void const *k2), 
     }
 
     IDIO h = idio_gc_get (IDIO_TYPE_HASH);
-    h->vtable = idio_hash_vtable;
+    h->vtable = idio_vtable (IDIO_TYPE_HASH);
     IDIO_GC_ALLOC (h->u.hash, sizeof (idio_hash_t));
     IDIO_HASH_GREY (h) = NULL;
     IDIO_HASH_COUNT (h) = 0;
@@ -250,7 +248,7 @@ IDIO idio_copy_hash (IDIO orig, int depth)
     IDIO_TYPE_ASSERT (hash, orig);
 
     IDIO new = idio_gc_get (IDIO_TYPE_HASH);
-    new->vtable = idio_hash_vtable;
+    new->vtable = idio_vtable (IDIO_TYPE_HASH);
     IDIO_GC_ALLOC (new->u.hash, sizeof (idio_hash_t));
     IDIO_HASH_GREY (new) = NULL;
     IDIO_HASH_COMP_C (new) = IDIO_HASH_COMP_C (orig);
@@ -2387,14 +2385,16 @@ void idio_hash_add_primitives ()
     IDIO_ADD_PRIMITIVE (hash_size);
     IDIO_ADD_PRIMITIVE (hash_equivalence_function);
     IDIO_ADD_PRIMITIVE (hash_hash_function);
+
     IDIO ref = IDIO_ADD_PRIMITIVE (hash_ref);
-    idio_vtable_add_method (idio_hash_vtable,
+    idio_vtable_t *h_vt = idio_vtable (IDIO_TYPE_HASH);
+    idio_vtable_add_method (h_vt,
 			    idio_S_value_index,
 			    idio_vtable_create_method_value (idio_util_method_value_index,
 							     idio_vm_values_ref (IDIO_FIXNUM_VAL (ref))));
 
     IDIO set = IDIO_ADD_PRIMITIVE (hash_set);
-    idio_vtable_add_method (idio_hash_vtable,
+    idio_vtable_add_method (h_vt,
 			    idio_S_set_value_index,
 			    idio_vtable_create_method_value (idio_util_method_set_value_index,
 							     idio_vm_values_ref (IDIO_FIXNUM_VAL (set))));
@@ -2417,14 +2417,14 @@ void idio_init_hash ()
 {
     idio_module_table_register (idio_hash_add_primitives, NULL, NULL);
 
-    idio_hash_vtable = idio_vtable (IDIO_TYPE_HASH);
+    idio_vtable_t *h_vt = idio_vtable (IDIO_TYPE_HASH);
 
-    idio_vtable_add_method (idio_hash_vtable,
+    idio_vtable_add_method (h_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_hash));
 
-    idio_vtable_add_method (idio_hash_vtable,
+    idio_vtable_add_method (h_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_hash_method_2string));
 }

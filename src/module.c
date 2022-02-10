@@ -57,8 +57,6 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_vtable_t *idio_module_vtable;
-
 static IDIO idio_modules_hash = idio_S_nil;
 
 /*
@@ -202,7 +200,7 @@ IDIO idio_module (IDIO name)
     }
 
     IDIO mo = idio_gc_get (IDIO_TYPE_MODULE);
-    mo->vtable = idio_module_vtable;
+    mo->vtable = idio_vtable (IDIO_TYPE_MODULE);
 
     IDIO_GC_ALLOC (mo->u.module, sizeof (idio_module_t));
 
@@ -2184,14 +2182,14 @@ void idio_init_module ()
      * XXX Create the module vtable before creating any modules,
      * eg. Idio, otherwise the Idio->vtable will be NULL.
      */
-    idio_module_vtable = idio_vtable (IDIO_TYPE_MODULE);
+    idio_vtable_t *m_vt = idio_vtable (IDIO_TYPE_MODULE);
 
-    idio_vtable_add_method (idio_module_vtable,
+    idio_vtable_add_method (m_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_module));
 
-    idio_vtable_add_method (idio_module_vtable,
+    idio_vtable_add_method (m_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_module_method_2string));
 

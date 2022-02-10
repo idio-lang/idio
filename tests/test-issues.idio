@@ -45,6 +45,7 @@ issues-load "issues/1-173.idio"
 issues-load "issues/1-178.idio"
 issues-load "issues/2-2.idio"
 issues-load "issues/1-209.idio"
+issues-load "issues/1-229.idio"
 
 ;; all done?
-Tests? (issues0 + 18)
+Tests? (issues0 + 19)

@@ -81,8 +81,6 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_vtable_t *idio_array_vtable;
-
 static IDIO idio_array_default_value = idio_S_false;
 
 static void idio_array_length_error (char const *msg, idio_ai_t size, IDIO c_location)
@@ -186,7 +184,7 @@ IDIO idio_array_dv (idio_ai_t size0, IDIO dv)
     }
 
     IDIO a = idio_gc_get (IDIO_TYPE_ARRAY);
-    a->vtable = idio_array_vtable;
+    a->vtable = idio_vtable (IDIO_TYPE_ARRAY);
     idio_assign_array (a, size, dv);
 
     return a;
@@ -1530,14 +1528,16 @@ void idio_array_add_primitives ()
     IDIO_ADD_PRIMITIVE (copy_array);
     IDIO_ADD_PRIMITIVE (array_fill);
     IDIO_ADD_PRIMITIVE (array_length);
+
     IDIO ref = IDIO_ADD_PRIMITIVE (array_ref);
-    idio_vtable_add_method (idio_array_vtable,
+    idio_vtable_t *a_vt = idio_vtable (IDIO_TYPE_ARRAY);
+    idio_vtable_add_method (a_vt,
 			    idio_S_value_index,
 			    idio_vtable_create_method_value (idio_util_method_value_index,
 							     idio_vm_values_ref (IDIO_FIXNUM_VAL (ref))));
 
     IDIO set = IDIO_ADD_PRIMITIVE (array_set);
-    idio_vtable_add_method (idio_array_vtable,
+    idio_vtable_add_method (a_vt,
 			    idio_S_set_value_index,
 			    idio_vtable_create_method_value (idio_util_method_set_value_index,
 							     idio_vm_values_ref (IDIO_FIXNUM_VAL (set))));
@@ -1555,14 +1555,14 @@ void idio_init_array ()
 {
     idio_module_table_register (idio_array_add_primitives, NULL, NULL);
 
-    idio_array_vtable = idio_vtable (IDIO_TYPE_ARRAY);
+    idio_vtable_t *a_vt = idio_vtable (IDIO_TYPE_ARRAY);
 
-    idio_vtable_add_method (idio_array_vtable,
+    idio_vtable_add_method (a_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_array));
 
-    idio_vtable_add_method (idio_array_vtable,
+    idio_vtable_add_method (a_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_array_method_2string));
 }

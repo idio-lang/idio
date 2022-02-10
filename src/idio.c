@@ -235,6 +235,14 @@ void idio_init (void)
 
     idio_pid = getpid ();
 
+    /*
+     * idio_init_gc() calls idio_pair() which means the idio_vtables
+     * array must exist first.
+     */
+    idio_vtables_size = IDIO_TYPE_MAX;
+    idio_vtables = idio_alloc (idio_vtables_size * sizeof (idio_vtable_t *));
+    memset (idio_vtables, 0, idio_vtables_size * sizeof (idio_vtable_t *));
+
     /* GC first then symbol for the symbol table then modules */
     idio_init_gc ();
     idio_init_vtable ();
@@ -312,6 +320,7 @@ void idio_final ()
     idio_state = IDIO_STATE_SHUTDOWN;
 
     idio_module_table_final ();
+    idio_final_vtable ();
 
 #ifdef IDIO_VM_PROF
     if (fclose (idio_vm_perf_FILE)) {

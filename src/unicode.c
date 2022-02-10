@@ -911,18 +911,18 @@ void idio_init_unicode ()
 
     /* Unicode code points... */
 
-    idio_constant_unicode_vtable = idio_vtable (IDIO_TYPE_CONSTANT_UNICODE);
+    idio_vtable_t *cu_vt = idio_vtable (IDIO_TYPE_CONSTANT_UNICODE);
 
-    idio_vtable_add_method (idio_constant_unicode_vtable,
+    idio_vtable_add_method (cu_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_constant_unicode));
 
-    idio_vtable_add_method (idio_constant_unicode_vtable,
+    idio_vtable_add_method (cu_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_constant_unicode_method_2string));
 
-    idio_vtable_add_method (idio_constant_unicode_vtable,
+    idio_vtable_add_method (cu_vt,
 			    idio_S_2display_string,
 			    idio_vtable_create_method_simple (idio_constant_unicode_method_2display_string));
 }

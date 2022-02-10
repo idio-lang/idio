@@ -4571,14 +4571,14 @@ void idio_init_read ()
     idio_read_bitset_end_sh = idio_open_input_string_handle_C ("", 0);
     idio_gc_protect_auto (idio_read_bitset_end_sh);
 
-    idio_constant_token_vtable   = idio_vtable (IDIO_TYPE_CONSTANT_TOKEN);
+    idio_vtable_t *ct_vt = idio_vtable (IDIO_TYPE_CONSTANT_TOKEN);
 
-    idio_vtable_add_method (idio_constant_token_vtable,
+    idio_vtable_add_method (ct_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_constant_token));
 
-    idio_vtable_add_method (idio_constant_token_vtable,
+    idio_vtable_add_method (ct_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_constant_token_method_2string));
 }

@@ -57,12 +57,7 @@
 int idio_vtable_generation = 0;
 size_t idio_vtables_size;
 idio_vtable_t **idio_vtables;
-idio_vtable_t *idio_fixnum_vtable;
-idio_vtable_t *idio_constant_idio_vtable;
-idio_vtable_t *idio_constant_token_vtable;
-idio_vtable_t *idio_constant_i_code_vtable;
-idio_vtable_t *idio_constant_unicode_vtable;
-idio_vtable_t *idio_placeholder_vtable;
+
 static IDIO idio_vtable_method_names;
 static IDIO idio_vtable_method_values;
 
@@ -177,24 +172,35 @@ idio_vtable_method_t *idio_vtable_create_method_value (IDIO (*func) (idio_vtable
 
 idio_vtable_t *idio_vtable (int type)
 {
-    idio_vtable_t *vt = NULL;
-    IDIO_GC_ALLOC (vt, sizeof (idio_vtable_t));
-    vt->vte = NULL;
-    /* IDIO_GC_ALLOC (vt->vte, size * sizeof (idio_vtable_entry_t *)); */
+    idio_vtable_t *vt = idio_vtables[type];
+    if (0 == type ||
+	NULL == vt) {
+	IDIO_GC_ALLOC (vt, sizeof (idio_vtable_t));
+	vt->vte = NULL;
 
-    IDIO_VTABLE_FLAGS (vt) = IDIO_VTABLE_FLAG_NONE;
-    IDIO_VTABLE_PARENT (vt) = NULL;
-    IDIO_VTABLE_GEN (vt) = idio_vtable_generation;
-    IDIO_VTABLE_SIZE (vt) = 0;
+	IDIO_VTABLE_FLAGS (vt) = IDIO_VTABLE_FLAG_NONE;
+	IDIO_VTABLE_PARENT (vt) = NULL;
+	IDIO_VTABLE_GEN (vt) = idio_vtable_generation;
+	IDIO_VTABLE_SIZE (vt) = 0;
 
-    idio_vtables = idio_realloc (idio_vtables, (idio_vtables_size + 1) * sizeof (idio_vtable_t));
-    idio_vtables[idio_vtables_size++] = vt;
+	if (type) {
+	    idio_vtables[type] = vt;
+	} else {
+	    idio_vtables = idio_realloc (idio_vtables, (idio_vtables_size + 1) * sizeof (idio_vtable_t *));
+	    idio_vtables[idio_vtables_size++] = vt;
+	}
+    }
 
     return vt;
 }
 
 void idio_free_vtable (idio_vtable_t *vt)
 {
+    if (NULL == vt) {
+	/* IDIO_TYPE_NONE (probably) */
+	return;
+    }
+
     size_t vt_size = IDIO_VTABLE_SIZE (vt);
     for (size_t i = 0; i < vt_size; i++) {
 	idio_vtable_entry_t *vte = IDIO_VTABLE_VTE (vt, i);
@@ -223,21 +229,21 @@ idio_vtable_t *idio_value_vtable (IDIO o)
 
     switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
-	vt = idio_fixnum_vtable;
+	vt = idio_vtable (IDIO_TYPE_FIXNUM);
 	break;
     case IDIO_TYPE_CONSTANT_MARK:
 	switch ((intptr_t) o & IDIO_TYPE_CONSTANT_MASK) {
 	case IDIO_TYPE_CONSTANT_IDIO_MARK:
-	    vt = idio_constant_idio_vtable;
+	    vt = idio_vtable (IDIO_TYPE_CONSTANT_IDIO);
 	    break;
 	case IDIO_TYPE_CONSTANT_TOKEN_MARK:
-	    vt = idio_constant_token_vtable;
+	    vt = idio_vtable (IDIO_TYPE_CONSTANT_TOKEN);
 	    break;
 	case IDIO_TYPE_CONSTANT_I_CODE_MARK:
-	    vt = idio_constant_i_code_vtable;
+	    vt = idio_vtable (IDIO_TYPE_CONSTANT_I_CODE);
 	    break;
 	case IDIO_TYPE_CONSTANT_UNICODE_MARK:
-	    vt = idio_constant_unicode_vtable;
+	    vt = idio_vtable (IDIO_TYPE_CONSTANT_UNICODE);
 	    break;
 	default:
 	    /* inconceivable! */
@@ -249,7 +255,7 @@ idio_vtable_t *idio_value_vtable (IDIO o)
 	break;
     case IDIO_TYPE_PLACEHOLDER_MARK:
 	/* inconceivable! */
-	vt = idio_placeholder_vtable;
+	vt = idio_vtable (IDIO_TYPE_PLACEHOLDER);
 	break;
     case IDIO_TYPE_POINTER_MARK:
 	vt = o->vtable;
@@ -580,16 +586,18 @@ void idio_vtable_add_primitives ()
 
 void idio_init_vtable ()
 {
-    idio_module_table_register (idio_vtable_add_primitives, idio_final_vtable, NULL);
-
-    idio_vtables_size = 0;
-    idio_vtables = NULL;
+    /*
+     * XXX don't add idio_final_vtable() to
+     * idio_module_table_register() as the GC continues to use pairs
+     * after it would have been called during shutdown.
+     *
+     * idio_final_vtable() is now called explicitly in idio_final().
+     */
+    idio_module_table_register (idio_vtable_add_primitives, NULL, NULL);
 
     idio_vtable_method_names = idio_array (20);
     idio_gc_protect_auto (idio_vtable_method_names);
 
     idio_vtable_method_values = IDIO_HASH_EQP (20);
     idio_gc_protect_auto (idio_vtable_method_values);
-
-    idio_placeholder_vtable      = idio_vtable (IDIO_TYPE_PLACEHOLDER);
 }

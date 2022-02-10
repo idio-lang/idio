@@ -64,8 +64,6 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_vtable_t *idio_handle_vtable;
-
 void idio_handle_read_error (IDIO h, IDIO c_location)
 {
     IDIO_ASSERT (h);
@@ -236,7 +234,7 @@ static void idio_handle_method_error (char const *func, char const *msg, IDIO c_
 IDIO idio_handle ()
 {
     IDIO h = idio_gc_get (IDIO_TYPE_HANDLE);
-    h->vtable = idio_handle_vtable;
+    h->vtable = idio_vtable (IDIO_TYPE_HANDLE);
 
     IDIO_GC_ALLOC (h->u.handle, sizeof (idio_handle_t));
 
@@ -2502,14 +2500,14 @@ void idio_init_handle ()
 {
     idio_module_table_register (idio_handle_add_primitives, NULL, NULL);
 
-    idio_handle_vtable = idio_vtable (IDIO_TYPE_HANDLE);
+    idio_vtable_t *h_vt = idio_vtable (IDIO_TYPE_HANDLE);
 
-    idio_vtable_add_method (idio_handle_vtable,
+    idio_vtable_add_method (h_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
 							     idio_S_handle));
 
-    idio_vtable_add_method (idio_handle_vtable,
+    idio_vtable_add_method (h_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_handle_method_2string));
 }
