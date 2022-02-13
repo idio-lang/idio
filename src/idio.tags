@@ -13,6 +13,6 @@
  -- define-macro
  -- define-conditional
  -- define-something-or-other
-{none}/define\(-[^ \t]+\)?[ \t]+\((\([^ \t)]+\)\|\([^ \t]+\)\)/\3/
+{none}/define\*?\(-[^ \t]+\)?[ \t]+\((\([^ \t)]+\)\|\([^ \t]+\)\)/\3/
 
  -- 

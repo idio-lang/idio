@@ -1308,7 +1308,8 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		 *
 		 * Coding error.  There should be a case clause above.
 		 */
-		*sizep = idio_asprintf (&r, "#<type/constant?? %10p>", o);
+		*sizep = idio_asprintf (&r, "#<type/constant/?? %10p v=%#x>", o, IDIO_CONSTANT_IDIO_VAL (o));
+		idio_error_warning_message ("unhandled constant type: %s\n", r);
 		break;
 	    }
 	}
@@ -1531,8 +1532,14 @@ char *idio_display_string (IDIO o, size_t *sizep)
 			/*
 			 * Hopefully, this is guarded against elsewhere
 			 */
-			fprintf (stderr, "display-string: oops u=%x is invalid\n", u);
-			idio_error_param_value_msg ("idio_display_string", "codepoint", o, "out of bounds", IDIO_C_FUNC_LOCATION ());
+			/*
+			 * XXX do not pass {o} to idio_error_*(),
+			 * here, as the engine will try to print out
+			 * its value which will bring us back here...
+			 */
+			char em[30];
+			snprintf (em, 30, "code point #U+%X", u);
+			idio_error_param_value_msg ("idio_display_string", em, idio_S_nil, "invalid", IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
 			return NULL;
@@ -2819,7 +2826,8 @@ char *idio_constant_idio_as_C_string (IDIO v, size_t *sizep, idio_unicode_t form
 	 * Coding error.  There should be a case
 	 * clause above.
 	 */
-	*sizep = idio_asprintf (&r, "#<type/constant/idio?? %10p>", v);
+	*sizep = idio_asprintf (&r, "#<type/constant/idio %10p %#x>", v, C_v);
+	idio_error_warning_message ("unhandled Idio constant: %s\n", r);
 	break;
     }
 

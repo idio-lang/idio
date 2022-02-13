@@ -187,6 +187,8 @@ if (not testdir) {
 
 printf "[%s/%d] %3ds test.idio using IDIOLIB=%s\n" (getpid) PID SECONDS IDIOLIB
 
+OPATH := PATH
+
 ;; NetBSD puts lsof in /usr/pkg/sbin which we want infront of
 ;; .../utils/bin (our hooky lsof for SunOS and OpenBSD)
 (cond-expand
@@ -241,6 +243,12 @@ test-load := {
   n := 0
 
   function (filename) {
+    ;; forking hell!
+    if (not (eqv? PID IDIO_PID)) {
+      eprintf "\n\n**** %s: PID %d != IDIO_PID %d: kill -TERM\n\n" filename PID IDIO_PID
+      libc/kill PID libc/SIGTERM
+    }
+
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "not a string" filename)
 
     tests0 := Tests
@@ -343,9 +351,10 @@ if (null? extension-tests) {
   eprintf "No extension tests\n"
 } {
 
+  CPATH := PATH
   for-each (function (etf) {
     IDIOLIB = OIDIOLIB
-    PATH = OPATH
+    PATH = CPATH
 
     td := #f
     (regex-case

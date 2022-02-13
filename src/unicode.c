@@ -782,8 +782,14 @@ char *idio_constant_unicode_as_C_display_string (IDIO v, size_t *sizep, idio_uni
 	/*
 	 * Hopefully, this is guarded against elsewhere
 	 */
-	fprintf (stderr, "unicode ->display-string: oops u=%x is invalid\n", u);
-	idio_error_param_value_msg ("unicode->display-string", "codepoint", v, "out of bounds", IDIO_C_FUNC_LOCATION ());
+	/*
+	 * XXX do not pass {v} to idio_error_*(), here, as the engine
+	 * will try to print out its value which may bring us back
+	 * here...
+	 */
+	char em[30];
+	snprintf (em, 30, "code point #U+%X", u);
+	idio_error_param_value_msg ("unicode->display-string", em, idio_S_nil, "invalid", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return NULL;

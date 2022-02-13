@@ -414,6 +414,9 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_debug ("\nWARNING: codegen: not a CONSTANT|pair: unexpected intermediate code: %s\n", mh);
 	    idio_debug ("%s\n\n", m);
 	    idio_dump (mh, 1);
+	    idio_codegen_error_param_args ("unknown I-code", m, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
 	    return;
 	}
     }
@@ -2921,6 +2924,7 @@ char *idio_constant_i_code_as_C_string (IDIO v, size_t *sizep, idio_unicode_t fo
     case IDIO_I_CODE_SEQUENCE:				t = "I-SEQUENCE";			break;
     case IDIO_I_CODE_TR_FIX_LET:			t = "I-TR-FIX-LET";			break;
     case IDIO_I_CODE_FIX_LET:				t = "I-FIX-LET";			break;
+    case IDIO_I_CODE_LOCAL:				t = "I-LOCAL";				break;
 
     case IDIO_I_CODE_PRIMCALL0:				t = "I-PRIMCALL0";			break;
     case IDIO_I_CODE_PRIMCALL1:				t = "I-PRIMCALL1";			break;
@@ -2975,7 +2979,8 @@ char *idio_constant_i_code_as_C_string (IDIO v, size_t *sizep, idio_unicode_t fo
 	 * Coding error.  There should be a case
 	 * clause above.
 	 */
-	idio_snprintf (m, BUFSIZ, "#<type/constant/vm_code?? o=%10p v=%tx>", v, C_v);
+	idio_snprintf (m, BUFSIZ, "#<type/constant/i_code?? o=%10p v=%td>", v, C_v);
+	idio_error_warning_message ("unhandled I-CODE: %s\n", m);
 	t = m;
 	break;
     }

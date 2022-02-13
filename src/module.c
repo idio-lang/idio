@@ -1322,7 +1322,7 @@ IDIO idio_module_find_symbol (IDIO symbol, IDIO m_or_n)
     return idio_module_find_symbol_recurse (symbol, m_or_n, 0);
 }
 
-IDIO_DEFINE_PRIMITIVE1V_DS ("find-symbol", find_symbol, (IDIO sym, IDIO args), "sym [[mod] recurse]", "\
+IDIO_DEFINE_PRIMITIVE1V_DS ("find-symbol", find_symbol, (IDIO sym, IDIO args), "sym [mod [recurse]]", "\
 find evaluator details for symbol `sym` in module `mod`		\n\
 or the current environment if no `mod` supplied			\n\
 								\n\

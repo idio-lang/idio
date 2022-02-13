@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -156,10 +156,10 @@ test (i/o-filename-error-filename c10) test_filename
 ;; ^i/o-read-error
 ;;
 trap ^i/o-read-error (function (c) {
-			test (i/o-read-error? c) #t
-			handle := i/o-handle-error-handle c
+  test (i/o-read-error? c) #t
+  handle := i/o-handle-error-handle c
 
-			'caught-a-read-error
+  'caught-a-read-error
 }) {
   ;; printf "read handle condition\n"
 
@@ -172,10 +172,10 @@ trap ^i/o-read-error (function (c) {
 ;; ^i/o-write-error
 ;;
 trap ^i/o-write-error (function (c) {
-			 test (i/o-write-error? c) #t
-			 handle := i/o-handle-error-handle c
+  test (i/o-write-error? c) #t
+  handle := i/o-handle-error-handle c
 
-			 'caught-a-write-error
+  'caught-a-write-error
 }) {
   ;; printf "write handle condition\n"
 
@@ -190,10 +190,10 @@ trap ^i/o-write-error (function (c) {
 ;;
 ;; only file-handles generate this
 trap ^i/o-closed-error (function (c) {
-			  test (i/o-closed-error? c) #t
-			  handle := i/o-handle-error-handle c
+  test (i/o-closed-error? c) #t
+  handle := i/o-handle-error-handle c
 
-			  #t
+  #t
 }) {
   touch test_filename
   chmod +r test_filename
@@ -205,8 +205,8 @@ trap ^i/o-closed-error (function (c) {
 
 ;; discovered in s9-test.idio after adding the SRFI-36 conditions:
 trap ^i/o-closed-error (function (c) {
-			  test (i/o-closed-error? c) #t
-			  #t
+  test (i/o-closed-error? c) #t
+  #t
 }) {
   ;; printf "closed handle condition\n"
   test {
@@ -242,7 +242,7 @@ test (condition-isa? (make-condition ^error) ^rt-command-status-error) #f
 ;; these two tease out some code coverage when users "accidentally"
 ;; use system handlers
 trap ^rt-divide-by-zero-error (function (c) {
-				 test #t #t
+  test #t #t
 }) {
   trap ^rt-divide-by-zero-error default-SIGCHLD-handler {
     1 / 0
@@ -250,7 +250,7 @@ trap ^rt-divide-by-zero-error (function (c) {
 }
 
 trap ^rt-divide-by-zero-error (function (c) {
-				 test #t #t
+  test #t #t
 }) {
   trap ^rt-divide-by-zero-error default-rcse-handler {
     1 / 0

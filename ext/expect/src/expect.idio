@@ -1358,6 +1358,9 @@ well-known English `pangram <https://en.wikipedia.org/wiki/Pangram>`_:
   (cond
    ((struct-spawn? spawn-id) {
      mfd = struct-spawn-mfd spawn-id
+     if (not mfd) {
+       error/type ^rt-parameter-value-error 'exp-send "mfd is #f" spawn-id
+     }
    })
    ((C/int? spawn-id) {
      mfd = spawn-id

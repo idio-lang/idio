@@ -1016,7 +1016,11 @@ create a string with an initial length of `size`\n\
 	    /*
 	     * Hopefully, this is guarded against elsewhere
 	     */
-	    fprintf (stderr, "make-string: oops fillc=%#x is invalid\n", fillc);
+	    char em[30];
+	    snprintf (em, 30, "code point #U+%X", fillc);
+	    idio_error_param_value_msg ("make-string", em, idio_S_nil, "invalid", IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
     }
 
@@ -2058,7 +2062,11 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 	/*
 	 * Hopefully, this is guarded against elsewhere
 	 */
-	fprintf (stderr, "string-set: oops c=%#x is invalid\n", uc);
+	char em[30];
+	snprintf (em, 30, "code point #U+%X", uc);
+	idio_error_param_value_msg ("string-set!", em, idio_S_nil, "invalid", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     uint8_t *s8 = NULL;

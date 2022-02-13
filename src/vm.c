@@ -6682,6 +6682,16 @@ void idio_vm_thread_init (IDIO thr)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
+    /*
+     * Hmm.  Switching the loader to idio_invoke_C
+     * (idio_module_symbol_value ("evaluate/evaluate"), ...) seems to
+     * prise out an idio_vm_restore_all_state() verification fail.
+     *
+     * Hence preset *func* and *expr* to values that are restorable
+     */
+    IDIO_THREAD_FUNC (thr) = idio_S_load;
+    IDIO_THREAD_EXPR (thr) = idio_fixnum (0);
+
     idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
 
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
@@ -7683,20 +7693,17 @@ time_t idio_vm_elapsed (void)
     return (time ((time_t *) NULL) - idio_vm_t0);
 }
 
-IDIO_DEFINE_PRIMITIVE2_DS ("run-in-thread", run_in_thread, (IDIO thr, IDIO func, IDIO args), "thr func [args]", "\
-Run `func [args]` in thread `thr`.				\n\
-								\n\
-:param thr: the thread						\n\
-:type thr: thread						\n\
-:param func: a function	or ``#n``				\n\
-:type func: function						\n\
-:param args: (optional) arguments to `func`			\n\
-:type args: list						\n\
+IDIO_DEFINE_PRIMITIVE2_DS ("run-in-thread", run_in_thread, (IDIO thr, IDIO thunk), "thr thunk", "\
+Run `thunk` in thread `thr`.			\n\
+						\n\
+:param thr: the thread				\n\
+:type thr: thread				\n\
+:param thunk: a thunk				\n\
+:type thunk: function				\n\
 ")
 {
     IDIO_ASSERT (thr);
-    IDIO_ASSERT (func);
-    IDIO_ASSERT (args);
+    IDIO_ASSERT (thunk);
 
     /*
      * Test Case: vm-errors/run-in-thread-bad-thread-type.idio
@@ -7709,7 +7716,7 @@ Run `func [args]` in thread `thr`.				\n\
      *
      * run-in-thread (threading/current-thread) #t
      */
-    IDIO_USER_TYPE_ASSERT (function, func);
+    IDIO_USER_TYPE_ASSERT (function, thunk);
 
     IDIO cthr = idio_thread_current_thread ();
 
@@ -7718,7 +7725,7 @@ Run `func [args]` in thread `thr`.				\n\
     idio_ai_t pc0 = IDIO_THREAD_PC (thr);
     idio_vm_default_pc (thr);
 
-    IDIO r = idio_apply (func, args);
+    IDIO r = idio_vm_invoke_C (thr, thunk);
 
     if (IDIO_THREAD_PC (thr) != pc0) {
 	IDIO_THREAD_STACK_PUSH (idio_fixnum (idio_vm_FINISH_pc));
@@ -7747,7 +7754,13 @@ IDIO idio_vm_frame_tree (IDIO args)
 
     int depth = 0;
 
+    int first = 1;
     while (idio_S_nil != frame) {
+	if (first) {
+	    first = 0;
+	    fprintf (stderr, "  %2.2s %2.2s  %20.20s   %s\n", "frame", "#", "var", "val");
+	}
+
 	IDIO faci = IDIO_FRAME_NAMES (frame);
 	idio_ai_t aci = IDIO_FIXNUM_VAL (faci);
 	IDIO names = idio_S_nil;
@@ -7765,10 +7778,10 @@ IDIO idio_vm_frame_tree (IDIO args)
 	for (i = 0; i < al; i++) {
 	    fprintf (stderr, "  %2d %2td* ", depth, i);
 	    if (idio_S_nil != names) {
-		idio_debug ("%15s = ", IDIO_PAIR_H (names));
+		idio_debug ("%20s = ", IDIO_PAIR_H (names));
 		names = IDIO_PAIR_T (names);
 	    } else {
-		fprintf (stderr, "%15s = ", "?");
+		fprintf (stderr, "%20s = ", "?");
 	    }
 	    idio_debug ("%s\n", IDIO_FRAME_ARGS (frame, i));
 	}
@@ -7779,13 +7792,13 @@ IDIO idio_vm_frame_tree (IDIO args)
 	fprintf (stderr, "  %2d %2td  ", depth, i);
 	if (idio_S_nil != names) {
 	    if (idio_S_false == IDIO_PAIR_H (names)) {
-		fprintf (stderr, "%15s = ", "*");
+		fprintf (stderr, "%20s = ", "-");
 	    } else {
-		idio_debug ("%15s = ", IDIO_PAIR_H (names));
+		idio_debug ("%20s = ", IDIO_PAIR_H (names));
 	    }
 	    names = IDIO_PAIR_T (names);
 	} else {
-	    fprintf (stderr, "%15s = ", "?");
+	    fprintf (stderr, "%20s = ", "?");
 	}
 	idio_debug ("%s\n", IDIO_FRAME_ARGS (frame, i));
 
@@ -7796,10 +7809,10 @@ IDIO idio_vm_frame_tree (IDIO args)
 	for (i++; i < al; i++) {
 	    fprintf (stderr, "  %2d %2td  ", depth, i);
 	    if (idio_S_nil != names) {
-		idio_debug ("%15s = ", IDIO_PAIR_H (names));
+		idio_debug ("%20s = ", IDIO_PAIR_H (names));
 		names = IDIO_PAIR_T (names);
 	    } else {
-		fprintf (stderr, "%15s = ", "?");
+		fprintf (stderr, "%20s = ", "?");
 	    }
 	    idio_debug ("%s\n", IDIO_FRAME_ARGS (frame, i));
 	}
@@ -7807,6 +7820,9 @@ IDIO idio_vm_frame_tree (IDIO args)
 
 	depth++;
 	frame = IDIO_FRAME_NEXT (frame);
+    }
+    if (0 == first) {
+	fprintf (stderr, "      #* is a formal arg    - is the varargs arg\n");
     }
 
     return idio_S_unspec;

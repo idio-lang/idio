@@ -2,4 +2,4 @@
 module command
 
 PATH = "foo:"
-%find-exe (string->symbol (make-string (C/->integer PATH_MAX) #\A))
+%find-exe (string->symbol (make-string (C/->integer libc/PATH_MAX) #\A))

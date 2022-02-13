@@ -50,7 +50,7 @@ file-handle-error-load := {
 	    if (system-error? c) {
 	      tested := #f
 	      if (pair? args) {
-		test c.function (ph args)
+		test (system-error-function c) (ph args)
 		tested = #t
 	      }
 
@@ -309,7 +309,7 @@ extension-error-load := {
 			     if (system-error? c) {
 			       tested := #f
 			       if (pair? args) {
-				 test c.function (ph args)
+				 test (system-error-function c) (ph args)
 				 tested = #t
 			       }
 

@@ -364,10 +364,10 @@ The parent's return value is a list of:
     ;; just in case!
     (cond-expand
      (__SANITIZE_ADDRESS__ {
-       Idio/exit 0
+       Idio/exit 1
      })
      (else {
-       libc/exit 0
+       libc/exit 1
      }))
   }
 
