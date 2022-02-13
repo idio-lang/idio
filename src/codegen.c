@@ -2961,6 +2961,7 @@ char *idio_constant_i_code_as_C_string (IDIO v, size_t *sizep, idio_unicode_t fo
     case IDIO_I_CODE_AND:				t = "I-AND";				break;
     case IDIO_I_CODE_OR:				t = "I-OR";				break;
     case IDIO_I_CODE_BEGIN:				t = "I-BEGIN";				break;
+    case IDIO_I_CODE_NOT:				t = "I-NOT";				break;
 
     case IDIO_I_CODE_EXPANDER:				t = "I-EXPANDER";			break;
     case IDIO_I_CODE_INFIX_OPERATOR:			t = "I-INFIX-OPERATOR";			break;
