@@ -64,6 +64,8 @@
 #include "vm.h"
 #include "vtable.h"
 
+IDIO idio_read_module;
+IDIO idio_read_reader_sym;
 IDIO idio_lexobj_type;
 IDIO idio_src_properties;
 
@@ -4488,7 +4490,8 @@ char *idio_constant_token_as_C_string (IDIO v, size_t *sizep, idio_unicode_t for
 	 *
 	 * Coding error.  There should be a case clause above.
 	 */
-	idio_snprintf (m, BUFSIZ, "#<type/constant/token?? %10p>", v);
+	idio_snprintf (m, BUFSIZ, "#<type/constant/token %10p %#x>", v, C_v);
+	idio_error_warning_message ("unhandled reader TOKEN: %s\n", m);
 	t = m;
 	break;
     }
@@ -4548,6 +4551,9 @@ void idio_final_read ()
 void idio_init_read ()
 {
     idio_module_table_register (idio_read_add_primitives, idio_final_read, NULL);
+
+    idio_read_reader_sym = IDIO_SYMBOLS_C_INTERN ("reader");
+    idio_read_module = idio_module (idio_read_reader_sym);
 
     IDIO name = IDIO_SYMBOLS_C_INTERN ("%idio-lexical-object");
     idio_lexobj_type = idio_struct_type (name,

@@ -937,7 +937,7 @@ int main (int argc, char **argv, char **envp)
 
 	    if (import_debugger) {
 		IDIO lsh = idio_open_input_string_handle_C (IDIO_STATIC_STR_LEN ("import debugger"));
-		idio_load_handle_C (lsh, idio_read, idio_evaluate, idio_vm_constants);
+		idio_load_handle_C (lsh, idio_read, idio_evaluate_func, idio_vm_constants);
 	    }
 	}
 
@@ -980,7 +980,7 @@ int main (int argc, char **argv, char **envp)
 	thr = v_thr;
 
 	/* repl */
-	idio_load_handle_C (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);
+	idio_load_handle_C (idio_thread_current_input_handle (), idio_read, idio_evaluate_func, idio_vm_constants);
     }
 
     idio_free (sargv);

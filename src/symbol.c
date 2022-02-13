@@ -202,7 +202,7 @@ IDIO_SYMBOL_DECL (template);
 IDIO_SYMBOL_DECL (template_expand);
 IDIO_SYMBOL_DECL (this);
 IDIO_SYMBOL_DECL (toplevel);
-IDIO_SYMBOL_DECL (trap);
+IDIO_SYMBOL_DECL (pct_trap);
 IDIO_SYMBOL_DECL (typename);
 IDIO_SYMBOL_DECL (unquote);
 IDIO_SYMBOL_DECL (unquotesplicing);
@@ -1139,7 +1139,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("template-expand", template_expand);
     IDIO_SYMBOL_DEF ("this", this);
     IDIO_SYMBOL_DEF ("toplevel", toplevel);
-    IDIO_SYMBOL_DEF ("%trap", trap);
+    IDIO_SYMBOL_DEF ("%trap", pct_trap);
     IDIO_SYMBOL_DEF ("typename", typename);
     IDIO_SYMBOL_DEF ("unquote", unquote);
     IDIO_SYMBOL_DEF ("unquotesplicing", unquotesplicing);

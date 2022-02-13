@@ -90,6 +90,7 @@ IDIO idio_postfix_operator_expand (IDIO e, int depth);
 IDIO idio_operator_expand (IDIO e, int depth);
 
 IDIO idio_evaluate (IDIO e, IDIO cs);
+IDIO idio_evaluate_func (IDIO src, IDIO cs);
 
 void idio_init_evaluate ();
 

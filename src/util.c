@@ -373,6 +373,39 @@ test if `o` is void (``#<void>``)		\n\
 }
 
 /*
+ * Hmm, an (undef) primitive is ripe to abuse but evaluate.idio needs
+ * to give dynamic and environ values #<undef> to mark them as
+ * non-existent.
+ */
+IDIO_DEFINE_PRIMITIVE0_DS ("undef", undef, (void), "", "\
+:return: ``#<undef>``			\n\
+					\n\
+The use of ``undef`` may result in	\n\
+unexpected errors.			\n\
+")
+{
+    return idio_S_undef;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("undef?", undefp, (IDIO o), "o", "\
+test if `o` is undef (``#<undef>``)		\n\
+						\n\
+:param o: object to test			\n\
+:return: ``#t`` if `o` is ``#<undef>``, ``#f`` otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_S_undef == o) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+/*
  * Unrelated to undef?, %undefined? tests whether a non-local symbol
  * is defined in this environment.
  */
@@ -2932,6 +2965,8 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (nullp);
     IDIO_ADD_PRIMITIVE (void);
     IDIO_ADD_PRIMITIVE (voidp);
+    IDIO_ADD_PRIMITIVE (undef);
+    IDIO_ADD_PRIMITIVE (undefp);
     IDIO_ADD_PRIMITIVE (definedp);
     IDIO_ADD_PRIMITIVE (booleanp);
     IDIO_ADD_PRIMITIVE (identity);

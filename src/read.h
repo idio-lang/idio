@@ -23,6 +23,8 @@
 #ifndef READ_H
 #define READ_H
 
+extern IDIO idio_read_module;
+extern IDIO idio_read_reader_sym;
 extern IDIO idio_lexobj_type;
 extern IDIO idio_src_properties;
 

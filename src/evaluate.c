@@ -146,6 +146,7 @@
  */
 
 IDIO idio_evaluate_module = idio_S_nil;
+static IDIO idio_evaluate_evaluate_sym = idio_S_nil;
 static IDIO idio_meaning_predef_extend_string = idio_S_nil;
 static IDIO idio_meaning_toplevel_extend_string = idio_S_nil;
 static IDIO idio_meaning_dynamic_extend_string = idio_S_nil;
@@ -1393,7 +1394,7 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
 		}
 
 		r = IDIO_LIST3 (idio_S_pair,
-				idio_meaning_dequasiquote (src_h, ph,level, indent + 1),
+				idio_meaning_dequasiquote (src_h, ph, level, indent + 1),
 				idio_meaning_dequasiquote (src_t, pt, level, indent + 1));
 	    } else {
 		/* ('list ''unquotesplicing (de-qq (pht e) (- level 1))) */
@@ -3010,7 +3011,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
  * {letrec} with "anything else" and subsequent expressions as the
  * body of the {letrec}.
  *
- * Each element of {defs] is the (name value-expr) tuple we would
+ * Each element of {defs} is the (name value-expr) tuple we would
  * expect.
  */
 static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
@@ -4891,7 +4892,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 		 *
 		 * (dynamic-unset)
 		 */
-		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("dynamic-unset"), "no argument", eh);
+		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("dynamic-unset"), "no arguments", eh);
 
 		return idio_S_notreached;
 	    }
@@ -4955,14 +4956,19 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 		 *
 		 * (environ-unset)
 		 */
-		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("environ-unset"), "no argument", eh);
+		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("environ-unset"), "no arguments", eh);
 
 		return idio_S_notreached;
 	    }
-	} else if (idio_S_trap == eh) {
+	} else if (idio_S_pct_trap == eh) {
 	    /*
-	     * (trap condition       handler body ...)
-	     * (trap (condition ...) handler body ...)
+	     * (%trap condition       handler body ...)
+	     * (%trap (condition ...) handler body ...)
+	     *
+	     * NB {trap}, itself, is a syntax transformer, partly to
+	     * allow (trap ...) to be wrapped in a prompt-at giving us
+	     * trap-return.  All of that means that we need a distinct
+	     * symbol, %trap, to be the special form.
 	     */
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
@@ -5230,6 +5236,46 @@ IDIO idio_evaluate (IDIO src, IDIO cs)
 		       IDIO_LIST1 (IDIO_I_POP_ABORT));
 }
 
+IDIO_DEFINE_PRIMITIVE1V_DS ("evaluate", evaluate, (IDIO src, IDIO args), "src [constants]", "\
+evaluate Idio source code `src` in the context of	\n\
+`constants` and return intermediate code for the	\n\
+code generator						\n\
+							\n\
+:param src: Idio source code				\n\
+:type src: Abstract Syntax Tree				\n\
+:param constants: context, defaults to the VM's constants table	\n\
+:type constants: array					\n\
+")
+{
+    IDIO_ASSERT (src);
+    IDIO_ASSERT (args);
+
+    IDIO cs = idio_vm_constants;
+
+    if (idio_isa_pair (args)) {
+	cs = IDIO_PAIR_H (args);
+    }
+
+    return idio_evaluate (src, cs);
+}
+
+/*
+ * At some point we will switch from the C "evaluate" to the Idio
+ * "evaluate" and this function, called from, say, idio_load_handle(),
+ * figures out which.
+ */
+IDIO idio_evaluate_func (IDIO src, IDIO cs)
+{
+    IDIO_ASSERT (src);
+    IDIO_ASSERT (cs);
+
+    IDIO ev_func = idio_module_symbol_value (idio_evaluate_evaluate_sym,
+					     idio_evaluate_module,
+					     IDIO_LIST1 (idio_S_false));
+
+    return idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (ev_func, src, cs));
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("environ?", environp, (IDIO o), "o", "\
 test if `o` is an environ variable		\n\
 						\n\
@@ -5309,6 +5355,7 @@ test if `o` is a computed variable		\n\
 
 void idio_evaluate_add_primitives ()
 {
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_evaluate_module, evaluate);
     IDIO_ADD_PRIMITIVE (environp);
     IDIO_ADD_PRIMITIVE (dynamicp);
     IDIO_ADD_PRIMITIVE (computedp);
@@ -5318,7 +5365,8 @@ void idio_init_evaluate ()
 {
     idio_module_table_register (idio_evaluate_add_primitives, NULL, NULL);
 
-    idio_evaluate_module = idio_module (IDIO_SYMBOLS_C_INTERN ("evaluate"));
+    idio_evaluate_evaluate_sym = IDIO_SYMBOLS_C_INTERN ("evaluate");
+    idio_evaluate_module = idio_module (idio_evaluate_evaluate_sym);
 
 #define IDIO_MEANING_STRING(c,s) idio_meaning_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_meaning_ ## c ## _string);
 

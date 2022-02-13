@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2746,13 +2746,13 @@ typedef struct idio_file_extension_s {
 } idio_file_extension_t;
 
 static idio_file_extension_t idio_file_extensions[] = {
-    { NULL,  NULL, IDIO_IDIO_EXT, idio_read, idio_evaluate, idio_Idio_module_instance },
-    { "lib", NULL, ".so",   idio_dl_read, idio_evaluate, idio_Idio_module_instance },
+    { NULL,  NULL, IDIO_IDIO_EXT, idio_read, idio_evaluate_func, idio_Idio_module_instance },
+    { "lib", NULL, ".so",   idio_dl_read, idio_evaluate_func, idio_Idio_module_instance },
 
     /*
      * ext==NULL => check for file ~ ".idio$"
      */
-    { NULL,  NULL, NULL, idio_read, idio_evaluate, idio_Idio_module_instance },
+    { NULL,  NULL, NULL, idio_read, idio_evaluate_func, idio_Idio_module_instance },
     /* { ".scm", idio_scm_read, idio_scm_evaluate, idio_main_scm_module_instance }, */
     { NULL, NULL, NULL }
 };
@@ -2977,7 +2977,7 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 
 	idio_file_extension_t *fe = idio_file_extensions;
 	IDIO (*reader) (IDIO h) = idio_read;
-	IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate;
+	IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate_func;
 
 	for (;NULL != fe->reader;fe++) {
 	    if (NULL != fe->ext) {
@@ -3794,7 +3794,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     char *lfn_dot = memrchr (lfn_slash, '.', lfn_len - (lfn_slash - lfn));
 
     IDIO (*reader) (IDIO h) = idio_read;
-    IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate;
+    IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate_func;
 
     idio_file_extension_t *fe = idio_file_extensions;
     IDIO filename_ext = filename;

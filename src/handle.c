@@ -2234,7 +2234,7 @@ This is the `load-handle` primitive.				\n\
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t pc0 = IDIO_THREAD_PC (thr);
 
-    IDIO r = idio_load_handle (h, idio_read, idio_evaluate, idio_vm_constants, 0);
+    IDIO r = idio_load_handle (h, idio_read, idio_evaluate_func, idio_vm_constants, 0);
 
     idio_ai_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {

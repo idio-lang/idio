@@ -170,7 +170,7 @@ extern IDIO_SYMBOL_DECL (template);
 extern IDIO_SYMBOL_DECL (template_expand);
 extern IDIO_SYMBOL_DECL (this);
 extern IDIO_SYMBOL_DECL (toplevel);
-extern IDIO_SYMBOL_DECL (trap);
+extern IDIO_SYMBOL_DECL (pct_trap);
 extern IDIO_SYMBOL_DECL (typename);
 extern IDIO_SYMBOL_DECL (unquote);
 extern IDIO_SYMBOL_DECL (unquotesplicing);
