@@ -95,7 +95,7 @@ void idio_ia_free (IDIO_IA_T ia)
 	idio_free (ia->ae);
 	idio_free (ia);
     } else {
-	fprintf (stderr, "already freed ia?\n");
+	fprintf (stderr, "idio_ia_free: already freed ia %10p?\n", ia);
     }
 }
 
@@ -118,6 +118,9 @@ void idio_ia_append (IDIO_IA_T ia1, IDIO_IA_T ia2)
     if (NULL == ia2) {
 	return;
     }
+
+    IDIO_C_ASSERT (IDIO_IA_USIZE (ia1) <= IDIO_IA_ASIZE (ia1));
+    IDIO_C_ASSERT (IDIO_IA_USIZE (ia2) <= IDIO_IA_ASIZE (ia2));
 
     if ((IDIO_IA_ASIZE (ia1) - IDIO_IA_USIZE (ia1)) < IDIO_IA_USIZE (ia2)) {
 	idio_ia_resize_by (ia1, IDIO_IA_USIZE (ia2));
@@ -226,38 +229,43 @@ IDIO_IA_T idio_ia_compute_varuint (uint64_t offset)
     return ia;
 }
 
-IDIO_IA_T idio_ia_compute_fixuint (int n, uint64_t offset)
+IDIO_IA_T idio_ia_compute_fixuint (const int n, const uint64_t offset)
 {
     IDIO_C_ASSERT (n < 9 && n > 0);
 
     IDIO_IA_T ia = idio_ia (n);
 
     IDIO_IA_USIZE (ia) = n;
-    for (n--; n >= 0; n--) {
-	IDIO_IA_AE (ia, n) = offset & 0xff;
-	offset >>= 8;
+    int i = n;
+    uint64_t off = offset;
+    for (i--; i >= 0; i--) {
+	IDIO_IA_AE (ia, i) = off & 0xff;
+	off >>= 8;
     }
 
     /*
      * Check there's nothing left!
      */
-    IDIO_C_ASSERT (0 == offset);
+    IDIO_C_ASSERT (0 == off);
 
     return ia;
 }
 
 IDIO_IA_T idio_ia_compute_8uint (uint64_t offset)
 {
+    IDIO_C_ASSERT (offset <= 0xff);
     return idio_ia_compute_fixuint (1, offset);
 }
 
 IDIO_IA_T idio_ia_compute_16uint (uint64_t offset)
 {
+    IDIO_C_ASSERT (offset <= 0xffff);
     return idio_ia_compute_fixuint (2, offset);
 }
 
 IDIO_IA_T idio_ia_compute_32uint (uint64_t offset)
 {
+    IDIO_C_ASSERT (offset <= 0xffffffff);
     return idio_ia_compute_fixuint (4, offset);
 }
 
@@ -266,21 +274,34 @@ IDIO_IA_T idio_ia_compute_64uint (uint64_t offset)
     return idio_ia_compute_fixuint (8, offset);
 }
 
-#define IDIO_IA_PUSH_VARUINT_BC(bc, n)   { IDIO_IA_T ia2 = idio_ia_compute_varuint (n); idio_ia_append ((bc), ia2); idio_ia_free (ia2); }
+#define IDIO_IA_PUSH_VARUINT_BC(bc, n)				\
+    {								\
+	IDIO_IA_T ia_pv = idio_ia_compute_varuint (n);	\
+	idio_ia_append ((bc), ia_pv);				\
+	idio_ia_free (ia_pv);					\
+    }
+
 /*
  * These macros assume {ia} is an accessible value
  */
 #define IDIO_IA_PUSH_VARUINT(n)   { IDIO_IA_PUSH_VARUINT_BC (ia, n); }
-#define IDIO_IA_PUSH_8UINT(n)     { IDIO_IA_T ia2 = idio_ia_compute_8uint (n);   idio_ia_append (ia, ia2); idio_ia_free (ia2); }
-#define IDIO_IA_PUSH_16UINT(n)    { IDIO_IA_T ia2 = idio_ia_compute_16uint (n);  idio_ia_append (ia, ia2); idio_ia_free (ia2); }
-#define IDIO_IA_PUSH_32UINT(n)    { IDIO_IA_T ia2 = idio_ia_compute_32uint (n);  idio_ia_append (ia, ia2); idio_ia_free (ia2); }
-#define IDIO_IA_PUSH_64UINT(n)    { IDIO_IA_T ia2 = idio_ia_compute_64uint (n);  idio_ia_append (ia, ia2); idio_ia_free (ia2); }
+#define IDIO_IA_PUSH_8UINT(n)     { IDIO_IA_T ia_p8 = idio_ia_compute_8uint (n);   idio_ia_append (ia, ia_p8); idio_ia_free (ia_p8); }
+#define IDIO_IA_PUSH_16UINT(n)    { IDIO_IA_T ia_p16 = idio_ia_compute_16uint (n);  idio_ia_append (ia, ia_p16); idio_ia_free (ia_p16); }
+#define IDIO_IA_PUSH_32UINT(n)    { IDIO_IA_T ia_p32 = idio_ia_compute_32uint (n);  idio_ia_append (ia, ia_p32); idio_ia_free (ia_p32); }
+#define IDIO_IA_PUSH_64UINT(n)    { IDIO_IA_T ia_p64 = idio_ia_compute_64uint (n);  idio_ia_append (ia, ia_p64); idio_ia_free (ia_p64); }
 
 /*
  * Check this aligns with IDIO_VM_FETCH_REF
  *
- * At the time of writing the tests used around 2000 symbols in a
- * couple of modules
+ * At the time of r0.1 the tests used around 19000 symbols, so
+ * uint16_t.
+ *
+ * uint32_t adds a second or two to the test duration.  Maybe.
+ *
+ * The question comes up because adding more SRC_EXPR byte code
+ * statements was producing 55k additional constants which bumped us
+ * over the uint16_t limit.  SRC_EXPR constants can live in another
+ * table.
  */
 #define IDIO_IA_PUSH_REF(n)	IDIO_IA_PUSH_16UINT (n)
 
@@ -360,6 +381,43 @@ Find `v` in `cs` or extend `cs`			\n\
     return idio_integer (gci);
 }
 
+idio_ai_t idio_codegen_extend_src_constants (IDIO cs, IDIO v)
+{
+    IDIO_ASSERT (cs);
+    IDIO_ASSERT (v);
+    IDIO_TYPE_ASSERT (array, cs);
+
+    idio_ai_t gci = idio_array_size (cs);
+    idio_array_push (cs, v);
+    return gci;
+}
+
+/*
+ * By and large we want to generate the source code expr describing
+ * *this* function call after the code describing the argument
+ * function calls (if any).  Otherwise (+ 1 (length foo)) means that
+ * the source code EXPR for the argument expression (length foo) will
+ * be the outstanding declaration when we come to make the + function
+ * call.
+ *
+ * That won't always work as there's no sensible place for an {if}
+ * expression where even the {condition} expression can be arbitrarily
+ * complex.
+ *
+ * Also, ensure the mci is unique: the source properties of this (+ 1
+ * 1) are different to the source properties of the next (+ 1 1)
+ */
+#define IDIO_CODEGEN_SRC_EXPR(iat,e)					\
+    if (idio_isa_pair (e)) {						\
+	IDIO_FLAGS (e) |= IDIO_FLAG_CONST;				\
+	idio_ai_t mci = idio_codegen_extend_src_constants (idio_vm_src_constants, e);	\
+	IDIO fmci = idio_fixnum (mci);					\
+	idio_module_set_vci (idio_thread_current_env (), fmci, fmci);	\
+	idio_ia_push (iat, IDIO_A_SRC_EXPR);				\
+	IDIO_IA_PUSH_VARUINT_BC (iat, mci);				\
+    }
+
+
 /*
  * Compiling
  *
@@ -374,6 +432,7 @@ Find `v` in `cs` or extend `cs`			\n\
  * The flip side of that is more C code dedicated to compilation and
  * interpretation of the resultant byte code.
  */
+
 void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 {
     IDIO_ASSERT (cs);
@@ -843,14 +902,15 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_GLOBAL_SYM_SET:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("GLOBAL-SYM-SET mci m1", mt, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SYM-SET"));
+		idio_list_length (mt) != 3) {
+		idio_codegen_error_param_args ("GLOBAL-SYM-SET e mci m1", mt, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SYM-SET"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO mci = IDIO_PAIR_H (mt);
+	    IDIO e   = IDIO_PAIR_H (mt);
+	    IDIO mci = IDIO_PAIR_HT (mt);
 
 	    if (! idio_isa_fixnum (mci)) {
 		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SYM-SET"));
@@ -859,9 +919,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		return;
 	    }
 
-	    IDIO m1 = IDIO_PAIR_HT (mt);
+	    IDIO m1 = IDIO_PAIR_HTT (mt);
 
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+
+	    IDIO_CODEGEN_SRC_EXPR (ia, e);
 
 	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_SYM_SET);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
@@ -1206,14 +1268,15 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_GLOBAL_VAL_SET:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("GLOBAL-VAL-SET gvi m1", mt, IDIO_C_FUNC_LOCATION_S ("GLOBAL-VAL-SET"));
+		idio_list_length (mt) != 3) {
+		idio_codegen_error_param_args ("GLOBAL-VAL-SET e gvi m1", mt, IDIO_C_FUNC_LOCATION_S ("GLOBAL-VAL-SET"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO gvi = IDIO_PAIR_H (mt);
+	    IDIO e   = IDIO_PAIR_H (mt);
+	    IDIO gvi = IDIO_PAIR_HT (mt);
 
 	    if (! idio_isa_fixnum (gvi)) {
 		idio_codegen_error_param_type ("fixnum", gvi, IDIO_C_FUNC_LOCATION_S ("GLOBAL-VAL-SET"));
@@ -1222,9 +1285,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		return;
 	    }
 
-	    IDIO m1 = IDIO_PAIR_HT (mt);
+	    IDIO m1 = IDIO_PAIR_HTT (mt);
 
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+
+	    IDIO_CODEGEN_SRC_EXPR (ia, e);
 
 	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_VAL_SET);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (gvi));
@@ -1355,13 +1420,17 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_ALTERNATIVE:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 3) {
-		idio_codegen_error_param_args ("ALTERNATIVE m1 m2 m3", mt, IDIO_C_FUNC_LOCATION_S ("ALTERNATIVE"));
+		idio_list_length (mt) != 6) {
+		idio_codegen_error_param_args ("ALTERNATIVE e1 e2 e3 m1 m2 m3", mt, IDIO_C_FUNC_LOCATION_S ("ALTERNATIVE"));
 
 		/* notreached */
 		return;
 	    }
 
+	    IDIO e1  = IDIO_PAIR_H (mt);
+	    IDIO e2  = IDIO_PAIR_HT (mt);
+	    IDIO e3  = IDIO_PAIR_HTT (mt);
+	    mt = IDIO_PAIR_TTT (mt);
 	    IDIO m1 = IDIO_PAIR_H (mt);
 	    IDIO m2 = IDIO_PAIR_HT (mt);
 	    IDIO m3 = IDIO_PAIR_HTT (mt);
@@ -1381,19 +1450,23 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	      7: ...
 
 	     * Slightly complicated by our choosing to use either a
-	     * SHORT-JUMP-FALSE with one byte of offset of a
+	     * SHORT-JUMP-FALSE with one byte of offset or a
 	     * LONG-JUMP-FALSE with 2+ bytes of offset.
 	     */
 
 	    /* 2: */
+	    IDIO_CODEGEN_SRC_EXPR (ia, e1);
+
 	    IDIO_IA_PUSH1 (IDIO_A_SUPPRESS_RCSE);
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_POP_RCSE);
 
 	    IDIO_IA_T ia2 = idio_ia (100);
+	    IDIO_CODEGEN_SRC_EXPR (ia2, e2);
 	    idio_codegen_compile (thr, ia2, cs, m2, depth + 1);
 
 	    IDIO_IA_T ia3 = idio_ia (100);
+	    IDIO_CODEGEN_SRC_EXPR (ia3, e3);
 	    idio_codegen_compile (thr, ia3, cs, m3, depth + 1);
 
 	    IDIO_IA_T g7 = NULL;
@@ -1511,17 +1584,18 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_LOCAL:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 4) {
-		idio_codegen_error_param_args ("LOCAL i m m+ formal*", mt, IDIO_C_FUNC_LOCATION_S ("LOCAL"));
+		idio_list_length (mt) != 5) {
+		idio_codegen_error_param_args ("LOCAL e i m m+ formal*", mt, IDIO_C_FUNC_LOCATION_S ("LOCAL"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO i = IDIO_PAIR_H (mt);
-	    IDIO m = IDIO_PAIR_HT (mt);
-	    IDIO mp = IDIO_PAIR_HTT (mt);
-	    IDIO formals = IDIO_PAIR_HTTT (mt);
+	    IDIO e       = IDIO_PAIR_H (mt);
+	    IDIO i       = IDIO_PAIR_HT (mt);
+	    IDIO m       = IDIO_PAIR_HTT (mt);
+	    IDIO mp      = IDIO_PAIR_HTTT (mt);
+	    IDIO formals = IDIO_PAIR_HTTTT (mt);
 
 	    idio_ai_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
 
@@ -1530,6 +1604,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_ia_push (ia, IDIO_A_EXTEND_FRAME);
 	    IDIO_IA_PUSH_VARUINT (idio_list_length (formals));
 	    IDIO_IA_PUSH_VARUINT (fci);
+
+	    IDIO_CODEGEN_SRC_EXPR (ia, e);
 
 	    IDIO_IA_PUSH1 (IDIO_A_SHALLOW_ARGUMENT_SET);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (i));
@@ -1540,15 +1616,18 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_PRIMCALL0:
 	{
 	    if (! idio_isa_pair (mt) ||
-		(idio_list_length (mt) != 2)) {
-		idio_codegen_error_param_args ("CALL0 ins pd", mt, IDIO_C_FUNC_LOCATION_S ("CALL0"));
+		(idio_list_length (mt) != 3)) {
+		idio_codegen_error_param_args ("CALL0 e ins pd", mt, IDIO_C_FUNC_LOCATION_S ("CALL0"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO ins = IDIO_PAIR_H (mt);
-	    IDIO pd = IDIO_PAIR_HT (mt);
+	    IDIO e   = IDIO_PAIR_H (mt);
+	    IDIO ins = IDIO_PAIR_HT (mt);
+	    IDIO pd  = IDIO_PAIR_HTT (mt);
+
+	    IDIO_CODEGEN_SRC_EXPR (ia, e);
 
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (pd));
@@ -1557,18 +1636,22 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_PRIMCALL1:
 	{
 	    if (! idio_isa_pair (mt) ||
-		(idio_list_length (mt) != 3)) {
-		idio_codegen_error_param_args ("CALL1 ins m1 pd", mt, IDIO_C_FUNC_LOCATION_S ("CALL1"));
+		(idio_list_length (mt) != 4)) {
+		idio_codegen_error_param_args ("CALL1 e ins m1 pd", mt, IDIO_C_FUNC_LOCATION_S ("CALL1"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO ins = IDIO_PAIR_H (mt);
-	    IDIO m1 = IDIO_PAIR_HT (mt);
-	    IDIO pd = IDIO_PAIR_HTT (mt);
+	    IDIO e   = IDIO_PAIR_H (mt);
+	    IDIO ins = IDIO_PAIR_HT (mt);
+	    IDIO m1  = IDIO_PAIR_HTT (mt);
+	    IDIO pd  = IDIO_PAIR_HTTT (mt);
 
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+
+	    IDIO_CODEGEN_SRC_EXPR (ia, e);
+
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (pd));
 	}
@@ -1576,23 +1659,26 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_PRIMCALL2:
 	{
 	    if (! idio_isa_pair (mt) ||
-		(idio_list_length (mt) != 4)) {
-		idio_codegen_error_param_args ("CALL2 ins m1 m2 pd", mt, IDIO_C_FUNC_LOCATION_S ("CALL2"));
+		(idio_list_length (mt) != 5)) {
+		idio_codegen_error_param_args ("CALL2 e ins m1 m2 pd", mt, IDIO_C_FUNC_LOCATION_S ("CALL2"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO ins = IDIO_PAIR_H (mt);
-
-	    IDIO m1 = IDIO_PAIR_HT (mt);
-	    IDIO m2 = IDIO_PAIR_HTT (mt);
-	    IDIO pd = IDIO_PAIR_HTTT (mt);
+	    IDIO e   = IDIO_PAIR_H (mt);
+	    IDIO ins = IDIO_PAIR_HT (mt);
+	    IDIO m1  = IDIO_PAIR_HTT (mt);
+	    IDIO m2  = IDIO_PAIR_HTTT (mt);
+	    IDIO pd  = IDIO_PAIR_HTTTT (mt);
 
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
 	    idio_codegen_compile (thr, ia, cs, m2, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_POP_REG1);
+
+	    IDIO_CODEGEN_SRC_EXPR (ia, e);
+
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (pd));
 	}
@@ -1603,24 +1689,27 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     * XXX not implemented
 	     */
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 4) {
-		idio_codegen_error_param_args ("CALL3 ins m1 m2 m3", mt, IDIO_C_FUNC_LOCATION_S ("CALL3"));
+		idio_list_length (mt) != 6) {
+		idio_codegen_error_param_args ("CALL3 e ins m1 m2 m3", mt, IDIO_C_FUNC_LOCATION_S ("CALL3"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO ins = IDIO_PAIR_H (mt);
-
-	    IDIO m1 = IDIO_PAIR_HT (mt);
-	    IDIO m2 = IDIO_PAIR_HTT (mt);
-	    IDIO m3 = IDIO_PAIR_HTTT (mt);
+	    IDIO e   = IDIO_PAIR_H (mt);
+	    IDIO ins = IDIO_PAIR_HT (mt);
+	    IDIO m1  = IDIO_PAIR_HTT (mt);
+	    IDIO m2  = IDIO_PAIR_HTTT (mt);
+	    IDIO m3  = IDIO_PAIR_HTTTT (mt);
 
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
 	    idio_codegen_compile (thr, ia, cs, m2, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
 	    idio_codegen_compile (thr, ia, cs, m3, depth + 1);
+
+	    IDIO_CODEGEN_SRC_EXPR (ia, e);
+
 	    IDIO_IA_PUSH2 (IDIO_A_POP_REG2, IDIO_A_POP_REG1);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
 	}
@@ -1643,26 +1732,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
 	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
 
-	    /*
-	     * NB generate the source code expr describing *this*
-	     * function call after the code describing the argument
-	     * function calls (if any).  Otherwise (+ 1 (length foo))
-	     * means that the source code EXPR for the argument
-	     * expression (length foo) will be the outstanding
-	     * declaration when we come to make *this* function call.
-	     */
-	    IDIO_FLAGS (e) |= IDIO_FLAG_CONST;
-
-	    /*
-	     * XXX must be unique, this (+ 1 1) is different to the
-	     * next (+ 1 1)
-	     */
-	    idio_ai_t mci = idio_codegen_extend_constants (cs, e);
-	    IDIO fmci = idio_fixnum (mci);
-	    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
-
-	    IDIO_IA_PUSH1 (IDIO_A_SRC_EXPR);
-	    IDIO_IA_PUSH_VARUINT (mci);
+	    IDIO_CODEGEN_SRC_EXPR (ia, e);
 
 	    IDIO_IA_PUSH2 (IDIO_A_POP_FUNCTION, IDIO_A_FUNCTION_GOTO);
 	}
@@ -1685,26 +1755,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
 	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
 
-	    /*
-	     * NB generate the source code expr describing *this*
-	     * function call after the code describing the argument
-	     * function calls (if any).  Otherwise (+ 1 (length foo))
-	     * means that the source code EXPR for the argument
-	     * expression (length foo) will be the outstanding
-	     * declaration when we come to make *this* function call.
-	     */
-	    IDIO_FLAGS (e) |= IDIO_FLAG_CONST;
-
-	    /*
-	     * XXX must be unique, this (+ 1 1) is different to the
-	     * next (+ 1 1)
-	     */
-	    idio_ai_t mci = idio_codegen_extend_constants (cs, e);
-	    IDIO fmci = idio_fixnum (mci);
-	    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
-
-	    IDIO_IA_PUSH1 (IDIO_A_SRC_EXPR);
-	    IDIO_IA_PUSH_VARUINT (mci);
+	    IDIO_CODEGEN_SRC_EXPR (ia, e);
 
 	    IDIO_IA_PUSH4 (IDIO_A_POP_FUNCTION, IDIO_A_PRESERVE_STATE, IDIO_A_FUNCTION_INVOKE, IDIO_A_RESTORE_STATE);
 	}
@@ -2980,7 +3031,7 @@ char *idio_constant_i_code_as_C_string (IDIO v, size_t *sizep, idio_unicode_t fo
 	 * Coding error.  There should be a case
 	 * clause above.
 	 */
-	idio_snprintf (m, BUFSIZ, "#<type/constant/i_code?? o=%10p v=%td>", v, C_v);
+	idio_snprintf (m, BUFSIZ, "#<type/constant/i_code?? o=%10p VAL(o)=%td>", v, C_v);
 	idio_error_warning_message ("unhandled I-CODE: %s\n", m);
 	t = m;
 	break;

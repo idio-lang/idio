@@ -304,6 +304,7 @@ int idio_vm_virtualisation_WSL = 0;
  */
 IDIO idio_vm_constants;
 IDIO idio_vm_constants_hash;
+IDIO idio_vm_src_constants;
 static IDIO idio_vm_values;
 IDIO idio_vm_krun;
 
@@ -763,7 +764,7 @@ void idio_vm_debug (IDIO thr, char const *prefix, idio_ai_t stack_start)
 	IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 	idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-	IDIO src = idio_vm_constants_ref (gci);
+	IDIO src = idio_vm_src_constants_ref (gci);
 	idio_debug ("   expr=%s", src);
 	idio_debug ("   %s\n", idio_vm_source_location ());
     } else {
@@ -3437,7 +3438,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 	IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 	idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-	IDIO src = idio_vm_constants_ref (gci);
+	IDIO src = idio_vm_src_constants_ref (gci);
 
 	if (idio_isa_pair (src)) {
 	    IDIO lo = idio_hash_ref (idio_src_properties, src);
@@ -5298,7 +5299,7 @@ int idio_vm_run1 (IDIO thr)
 	     * for setting *func*
 	     */
 	    IDIO_THREAD_FUNC (thr) = primdata;
-	    IDIO_VM_RUN_DIS ("PRIMITIVE0 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
+	    IDIO_VM_RUN_DIS ("PRIMITIVE/0 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 0);
 	    }
@@ -5328,7 +5329,7 @@ int idio_vm_run1 (IDIO thr)
 	     * for setting *func*
 	     */
 	    IDIO_THREAD_FUNC (thr) = primdata;
-	    IDIO_VM_RUN_DIS ("PRIMITIVE1 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
+	    IDIO_VM_RUN_DIS ("PRIMITIVE/1 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 1);
 	    }
@@ -5358,7 +5359,7 @@ int idio_vm_run1 (IDIO thr)
 	     * for setting *func*
 	     */
 	    IDIO_THREAD_FUNC (thr) = primdata;
-	    IDIO_VM_RUN_DIS ("PRIMITIVE2 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
+	    IDIO_VM_RUN_DIS ("PRIMITIVE/2 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 2);
 	    }
@@ -5714,7 +5715,9 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
+#ifdef IDIO_DEBUG
     fprintf (stderr, "dasm: ia=%10p pc0=%td pce=%td\n", bc, pc0, pce);
+#endif
 
     if (pc0 < 0) {
 	pc0 = IDIO_THREAD_PC (thr);
@@ -6102,7 +6105,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 		idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-		IDIO e = idio_vm_constants_ref (gci);
+		IDIO e = idio_vm_src_constants_ref (gci);
 		IDIO lo = idio_hash_ref (idio_src_properties, e);
 
 		IDIO_VM_DASM ("SRC-EXPR %td", mci);
@@ -6112,9 +6115,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		    idio_debug_FILE (idio_dasm_FILE, " %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
 		    idio_debug_FILE (idio_dasm_FILE, ":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
 		}
-#ifdef IDIO_DEBUG
 		idio_debug_FILE (idio_dasm_FILE, "\n  %s", e);
-#endif
 	    }
 	    break;
 	case IDIO_A_POP_FUNCTION:
@@ -6445,21 +6446,21 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 	    {
 		uint64_t vi = idio_vm_get_varuint (bc, pcp);
 		IDIO primdata = idio_vm_values_ref (vi);
-		IDIO_VM_DASM ("PRIMITIVE0 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
+		IDIO_VM_DASM ("PRIMITIVE/0 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    }
 	    break;
 	case IDIO_A_PRIMCALL1:
 	    {
 		uint64_t vi = idio_vm_get_varuint (bc, pcp);
 		IDIO primdata = idio_vm_values_ref (vi);
-		IDIO_VM_DASM ("PRIMITIVE1 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
+		IDIO_VM_DASM ("PRIMITIVE/1 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    }
 	    break;
 	case IDIO_A_PRIMCALL2:
 	    {
 		uint64_t vi = idio_vm_get_varuint (bc, pcp);
 		IDIO primdata = idio_vm_values_ref (vi);
-		IDIO_VM_DASM ("PRIMITIVE2 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
+		IDIO_VM_DASM ("PRIMITIVE/2 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    }
 	    break;
 	case IDIO_A_SUPPRESS_RCSE:
@@ -7298,6 +7299,7 @@ idio_ai_t idio_vm_extend_constants (IDIO v)
 IDIO idio_vm_constants_ref (idio_ai_t gci)
 {
     if (gci > idio_array_size (idio_vm_constants)) {
+	fprintf (stderr, "vm-constants-ref: %td > %zu\n", gci, idio_array_size (idio_vm_constants));
 	IDIO_C_ASSERT (0);
     }
     return idio_array_ref_index (idio_vm_constants, gci);
@@ -7369,6 +7371,60 @@ Return the current vm constants array.		\n\
 ")
 {
     return idio_vm_constants;
+}
+
+idio_ai_t idio_vm_extend_src_constants (IDIO v)
+{
+    IDIO_ASSERT (v);
+
+    idio_ai_t gci = idio_array_size (idio_vm_src_constants);
+    idio_array_push (idio_vm_src_constants, v);
+    return gci;
+}
+
+IDIO idio_vm_src_constants_ref (idio_ai_t gci)
+{
+    if (gci > idio_array_size (idio_vm_src_constants)) {
+	fprintf (stderr, "vm-src-constants-ref: %td > %zu\n", gci, idio_array_size (idio_vm_src_constants));
+	IDIO_C_ASSERT (0);
+    }
+    return idio_array_ref_index (idio_vm_src_constants, gci);
+}
+
+void idio_vm_dump_src_constants ()
+{
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "vm-src-constants ");
+#endif
+    FILE *fp = fopen ("vm-src-constants", "w");
+    if (NULL == fp) {
+	perror ("fopen (vm-src-constants, w)");
+	return;
+    }
+
+    idio_ai_t al = idio_array_size (idio_vm_src_constants);
+    fprintf (fp, "idio_vm_src_constants: %td\n", al);
+    idio_ai_t i;
+    for (i = 0 ; i < al; i++) {
+	IDIO c = idio_array_ref_index (idio_vm_src_constants, i);
+	fprintf (fp, "%6td: ", i);
+	size_t size = 0;
+	char *cs = idio_as_string_safe (c, &size, 40, 1);
+	fprintf (fp, "%-20s %s\n", idio_type2string (c), cs);
+	IDIO_GC_FREE (cs, size);
+    }
+
+    fclose (fp);
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("vm-src-constants", vm_src_constants, (void), "", "\
+Return the current vm source constants array.	\n\
+						\n\
+:return: vm source constants			\n\
+:type args: array				\n\
+")
+{
+    return idio_vm_src_constants;
 }
 
 idio_ai_t idio_vm_extend_values ()
@@ -7525,6 +7581,10 @@ void idio_vm_thread_state (IDIO thr)
     idio_vm_debug (thr, "vm-thread-state", 0);
     fprintf (stderr, "\n");
 
+    idio_vm_frame_tree (idio_S_nil);
+    fprintf (stderr, "\n");
+
+#ifdef IDIO_DEBUG
     IDIO frame = IDIO_THREAD_FRAME (thr);
     while (idio_S_nil != frame) {
 	IDIO faci = IDIO_FRAME_NAMES (frame);
@@ -7536,8 +7596,8 @@ void idio_vm_thread_state (IDIO thr)
 	idio_debug ("%s\n", idio_frame_args_as_list (frame));
 	frame = IDIO_FRAME_NEXT (frame);
     }
-
     fprintf (stderr, "\n");
+#endif
 
     idio_vm_trap_state (thr);
 
@@ -7776,7 +7836,7 @@ IDIO idio_vm_frame_tree (IDIO args)
 	idio_ai_t al = IDIO_FRAME_NPARAMS (frame);
 	idio_ai_t i;
 	for (i = 0; i < al; i++) {
-	    fprintf (stderr, "  %2d %2td* ", depth, i);
+	    fprintf (stderr, "  %2d %2tdp ", depth, i);
 	    if (idio_S_nil != names) {
 		idio_debug ("%20s = ", IDIO_PAIR_H (names));
 		names = IDIO_PAIR_T (names);
@@ -7789,7 +7849,7 @@ IDIO idio_vm_frame_tree (IDIO args)
 	/*
 	 * varargs element -- probably named #f
 	 */
-	fprintf (stderr, "  %2d %2td  ", depth, i);
+	fprintf (stderr, "  %2d %2td* ", depth, i);
 	if (idio_S_nil != names) {
 	    if (idio_S_false == IDIO_PAIR_H (names)) {
 		fprintf (stderr, "%20s = ", "-");
@@ -7807,7 +7867,7 @@ IDIO idio_vm_frame_tree (IDIO args)
 	 */
 	al = IDIO_FRAME_NALLOC (frame);
 	for (i++; i < al; i++) {
-	    fprintf (stderr, "  %2d %2td  ", depth, i);
+	    fprintf (stderr, "  %2d %2tdl ", depth, i);
 	    if (idio_S_nil != names) {
 		idio_debug ("%20s = ", IDIO_PAIR_H (names));
 		names = IDIO_PAIR_T (names);
@@ -7822,7 +7882,9 @@ IDIO idio_vm_frame_tree (IDIO args)
 	frame = IDIO_FRAME_NEXT (frame);
     }
     if (0 == first) {
-	fprintf (stderr, "      #* is a formal arg    - is the varargs arg\n");
+	fprintf (stderr, "      #p is a parameter\n");
+	fprintf (stderr, "      #* is the varargs arg - is the name (if no name given)\n");
+	fprintf (stderr, "      #l is a local var\n");
     }
 
     return idio_S_unspec;
@@ -7918,7 +7980,7 @@ IDIO idio_vm_source_location ()
 	IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 	idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-	IDIO expr = idio_vm_constants_ref (gci);
+	IDIO expr = idio_vm_src_constants_ref (gci);
 
 	IDIO lo = idio_S_nil;
 	if (idio_S_nil != expr) {
@@ -7952,7 +8014,7 @@ IDIO idio_vm_source_expr ()
 	IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 	idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-	return idio_vm_constants_ref (gci);
+	return idio_vm_src_constants_ref (gci);
     }
 
     return idio_S_nil;
@@ -8179,6 +8241,9 @@ void idio_init_vm_values ()
     idio_vm_values = idio_array (3000);
     idio_gc_protect_auto (idio_vm_values);
 
+    idio_vm_src_constants = idio_array (24000);
+    idio_gc_protect_auto (idio_vm_src_constants);
+
     idio_vm_krun = idio_array (4);
     idio_gc_protect_auto (idio_vm_krun);
 
@@ -8240,6 +8305,7 @@ void idio_vm_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_run);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_constants);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_extend_values);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_src_constants);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_values_ref);
 
     IDIO_ADD_PRIMITIVE (idio_thread_state);
@@ -8305,6 +8371,7 @@ void idio_final_vm ()
 	     */
 	    idio_vm_reporting = 1;
 	    idio_vm_dump_constants ();
+	    idio_vm_dump_src_constants ();
 	    idio_vm_dump_values ();
 
 #ifdef IDIO_VM_PROF

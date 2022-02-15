@@ -56,6 +56,7 @@ void idio_init_pair ();
 #define IDIO_LIST3(e1,e2,e3)	idio_pair (e1, idio_pair (e2, idio_pair (e3, idio_S_nil)))
 #define IDIO_LIST4(e1,e2,e3,e4)	idio_pair (e1, idio_pair (e2, idio_pair (e3, idio_pair (e4, idio_S_nil))))
 #define IDIO_LIST5(e1,e2,e3,e4,e5)	idio_pair (e1, idio_pair (e2, idio_pair (e3, idio_pair (e4, idio_pair (e5, idio_S_nil)))))
+#define IDIO_LIST6(e1,e2,e3,e4,e5,e6)	idio_pair (e1, idio_pair (e2, idio_pair (e3, idio_pair (e4, idio_pair (e5, idio_pair (e6, idio_S_nil))))))
 
 #endif
 

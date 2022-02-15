@@ -4490,7 +4490,7 @@ char *idio_constant_token_as_C_string (IDIO v, size_t *sizep, idio_unicode_t for
 	 *
 	 * Coding error.  There should be a case clause above.
 	 */
-	idio_snprintf (m, BUFSIZ, "#<type/constant/token %10p %#x>", v, C_v);
+	idio_snprintf (m, BUFSIZ, "#<type/constant/token v=%10p VAL(v)=%#x>", v, C_v);
 	idio_error_warning_message ("unhandled reader TOKEN: %s\n", m);
 	t = m;
 	break;
@@ -4502,7 +4502,7 @@ char *idio_constant_token_as_C_string (IDIO v, size_t *sizep, idio_unicode_t for
 	 *
 	 * Coding error.  There should be a case clause above.
 	 */
-	*sizep = idio_asprintf (&r, "#<TOKEN=%" PRIdPTR ">", v);
+	*sizep = idio_asprintf (&r, "#<TOKEN? %10p>", v);
     } else {
 	*sizep = idio_asprintf (&r, "%s", t);
     }

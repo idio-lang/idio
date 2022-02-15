@@ -458,6 +458,9 @@ typedef struct idio_pair_s {
 #define IDIO_PAIR_TTT(P)	IDIO_PAIR_T (IDIO_PAIR_TT (P))
 #define IDIO_PAIR_HTTT(P)	IDIO_PAIR_H (IDIO_PAIR_TTT (P))
 
+#define IDIO_PAIR_TTTT(P)	IDIO_PAIR_T (IDIO_PAIR_TTT (P))
+#define IDIO_PAIR_HTTTT(P)	IDIO_PAIR_H (IDIO_PAIR_TTTT (P))
+
 /*
  * This character is used by util.c and read.c
  */

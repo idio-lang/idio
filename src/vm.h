@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -209,6 +209,7 @@
 extern IDIO idio_vm_module;
 extern IDIO idio_vm_constants;
 extern IDIO idio_vm_constants_hash;
+extern IDIO idio_vm_src_constants;
 extern IDIO idio_vm_krun;
 extern int idio_vm_reports;
 extern int idio_vm_reporting;
@@ -246,6 +247,7 @@ idio_ai_t idio_vm_extend_constants (IDIO v);
 IDIO idio_vm_constants_ref (idio_ai_t gci);
 idio_ai_t idio_vm_constants_lookup (IDIO v);
 idio_ai_t idio_vm_constants_lookup_or_extend (IDIO v);
+IDIO idio_vm_src_constants_ref (idio_ai_t gci);
 idio_ai_t idio_vm_extend_values ();
 IDIO idio_vm_values_ref (idio_ai_t gvi);
 void idio_vm_values_set (idio_ai_t gvi, IDIO v);

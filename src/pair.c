@@ -439,6 +439,7 @@ size_t idio_list_length (IDIO l)
 	return 0;
     }
 
+    if (idio_isa_pair (l) == 0) IDIO_C_ASSERT (0);
     IDIO_TYPE_ASSERT (pair, l);
 
     size_t len = 0;

@@ -1341,7 +1341,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		 *
 		 * Coding error.  There should be a case clause above.
 		 */
-		*sizep = idio_asprintf (&r, "#<type/constant/?? %10p v=%#x>", o, IDIO_CONSTANT_IDIO_VAL (o));
+		*sizep = idio_asprintf (&r, "#<type/constant/?? o=%10p VAL(o)=%#x>", o, IDIO_CONSTANT_IDIO_VAL (o));
 		idio_error_warning_message ("unhandled constant type: %s\n", r);
 		break;
 	    }
@@ -2859,7 +2859,7 @@ char *idio_constant_idio_as_C_string (IDIO v, size_t *sizep, idio_unicode_t form
 	 * Coding error.  There should be a case
 	 * clause above.
 	 */
-	*sizep = idio_asprintf (&r, "#<type/constant/idio %10p %#x>", v, C_v);
+	*sizep = idio_asprintf (&r, "#<type/constant/idio v=%10p VAL(v)=%#x>", v, C_v);
 	idio_error_warning_message ("unhandled Idio constant: %s\n", r);
 	break;
     }
@@ -2871,7 +2871,7 @@ char *idio_constant_idio_as_C_string (IDIO v, size_t *sizep, idio_unicode_t form
 	 * Coding error.  There should be a case
 	 * clause above.
 	 */
-	*sizep = idio_asprintf (&r, "#<CONST? %10p>", v);
+	*sizep = idio_asprintf (&r, "#<CONSTANT? %10p>", v);
     } else {
 	*sizep = idio_asprintf (&r, "%s", t);
     }

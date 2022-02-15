@@ -604,7 +604,7 @@ define (meaning-alternative src e1 e2 e3 nametree escapes flags cs cm) {
   m2 := meaning (mpp e2 src) e2 nametree escapes flags cs cm
   m3 := meaning (mpp e3 src) e3 nametree escapes flags cs cm
 
-  list I-ALTERNATIVE m1 m2 m3
+  list I-ALTERNATIVE e1 e2 e3 m1 m2 m3
 }
 
 #*
@@ -827,13 +827,13 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
 	if (or (0 eq vi)
 	       (and (pair? e)
 		    (eq? (ph e) 'function))) {
-	  assign = list I-GLOBAL-SYM-SET ci m
+	  assign = list I-GLOBAL-SYM-SET src ci m
 	} {
-	  assign = list I-GLOBAL-VAL-SET vi m
+	  assign = list I-GLOBAL-VAL-SET src vi m
 	}
       })
       ((dynamic environ) {
-	assign = list I-GLOBAL-SYM-SET ci m
+	assign = list I-GLOBAL-SYM-SET src ci m
       })
       ((computed) {
 	if (eval-flags-define flags) {
@@ -848,7 +848,7 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
 
 	vi := phtt si
 	set-symbol-value! name (vm-values-ref vi) cm
-	assign = list I-GLOBAL-SYM-SET new-ci m
+	assign = list I-GLOBAL-SYM-SET src new-ci m
 	ci = new-ci
       })
       (else {
@@ -1854,7 +1854,7 @@ define (meaning-local-application src n ae body nametree escapes flags cs cm) {
 
   ll := meaning-lexical-lookup src nt+ n
 
-  list I-LOCAL (phtt ll) am mbody (meaning-nametree->list nt+)
+  list I-LOCAL src (phtt ll) am mbody (meaning-nametree->list nt+)
 }
 
 #*
@@ -1900,19 +1900,19 @@ define (meaning-primitive-application src fe ae* nametree escapes flags arity vi
 
     (case arity
      ((0) {
-       i-code = list I-PRIMCALL0 A-PRIMCALL0 vi
+       i-code = list I-PRIMCALL0 src A-PRIMCALL0 vi
      })
      ((1) {
        m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree escapes (clear-tailp flags) cs cm
 
-       i-code = list I-PRIMCALL1 A-PRIMCALL1 m1 vi
+       i-code = list I-PRIMCALL1 src A-PRIMCALL1 m1 vi
      })
      ((2) {
        m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree escapes (clear-tailp flags) cs cm
        m2 := meaning (mpp (pht ae*) src) (pht ae*) nametree escapes (clear-tailp flags) cs cm
 
        ;; XXX run-in-thread?
-       i-code = list I-PRIMCALL2 A-PRIMCALL2 m1 m2 vi
+       i-code = list I-PRIMCALL2 src A-PRIMCALL2 m1 m2 vi
      }))
 
     if i-code i-code {
