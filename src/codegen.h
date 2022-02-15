@@ -205,6 +205,7 @@ void idio_ia_push (IDIO_IA_T ia, IDIO_I ins);
 idio_ai_t idio_codegen_extend_constants (IDIO cs, IDIO v);
 idio_ai_t idio_codegen_constants_lookup (IDIO cs, IDIO v);
 idio_ai_t idio_codegen_constants_lookup_or_extend (IDIO cs, IDIO v);
+idio_ai_t idio_codegen_extend_src_constants (IDIO cs, IDIO v);
 void idio_codegen_code_prologue (IDIO_IA_T ia);
 idio_ai_t idio_codegen (IDIO thr, IDIO m, IDIO cs);
 

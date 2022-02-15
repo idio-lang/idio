@@ -94,7 +94,7 @@ IDIO idio_thread_base (idio_ai_t stack_size)
     IDIO_THREAD_FUNC (t) = idio_S_unspec;
     IDIO_THREAD_REG1 (t) = idio_S_unspec;
     IDIO_THREAD_REG2 (t) = idio_S_unspec;
-    IDIO_THREAD_EXPR (t) = idio_S_nil;
+    IDIO_THREAD_EXPR (t) = idio_fixnum (0);
     IDIO_THREAD_INPUT_HANDLE (t) = idio_stdin_file_handle ();
     IDIO_THREAD_OUTPUT_HANDLE (t) = idio_stdout_file_handle ();
     IDIO_THREAD_ERROR_HANDLE (t) = idio_stderr_file_handle ();
@@ -346,7 +346,7 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 		idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-		IDIO src = idio_vm_constants_ref (gci);
+		IDIO src = idio_vm_src_constants_ref (gci);
 
 		t_size = 0;
 		t = idio_as_string (src, &t_size, 4, seen, 0);

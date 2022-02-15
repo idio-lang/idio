@@ -7373,15 +7373,6 @@ Return the current vm constants array.		\n\
     return idio_vm_constants;
 }
 
-idio_ai_t idio_vm_extend_src_constants (IDIO v)
-{
-    IDIO_ASSERT (v);
-
-    idio_ai_t gci = idio_array_size (idio_vm_src_constants);
-    idio_array_push (idio_vm_src_constants, v);
-    return gci;
-}
-
 IDIO idio_vm_src_constants_ref (idio_ai_t gci)
 {
     if (gci > idio_array_size (idio_vm_src_constants)) {
@@ -7406,12 +7397,20 @@ void idio_vm_dump_src_constants ()
     fprintf (fp, "idio_vm_src_constants: %td\n", al);
     idio_ai_t i;
     for (i = 0 ; i < al; i++) {
-	IDIO c = idio_array_ref_index (idio_vm_src_constants, i);
+	IDIO src = idio_array_ref_index (idio_vm_src_constants, i);
 	fprintf (fp, "%6td: ", i);
-	size_t size = 0;
-	char *cs = idio_as_string_safe (c, &size, 40, 1);
-	fprintf (fp, "%-20s %s\n", idio_type2string (c), cs);
-	IDIO_GC_FREE (cs, size);
+	IDIO lo = idio_hash_ref (idio_src_properties, src);
+	if (idio_S_unspec == lo) {
+	    fprintf (fp, "%50s", "<no src props>");
+	    idio_debug_FILE (fp, " - %s\n", src);
+	} else if (idio_isa_struct_instance (lo)) {
+	    idio_debug_FILE (fp, "%40s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
+	    idio_debug_FILE (fp, ":line %4s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
+	    idio_debug_FILE (fp, " - %s\n", src);
+	} else {
+	    fprintf (fp, "%50s", "<que?>");
+	    idio_debug_FILE (fp, " - %s\n", src);
+	}
     }
 
     fclose (fp);

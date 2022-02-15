@@ -244,7 +244,7 @@ static void idio_meaning_base_error (IDIO src, IDIO c_location, IDIO msg, IDIO e
      * So, let's give the error subsystem a clue by copying what the
      * code generator does for normal calls.
      */
-    idio_ai_t mci = idio_codegen_extend_constants (idio_vm_constants, src);
+    idio_ai_t mci = idio_codegen_extend_src_constants (idio_vm_src_constants, src);
     IDIO thr = idio_thread_current_thread ();
     IDIO_THREAD_EXPR (thr) = idio_fixnum (mci);
 
