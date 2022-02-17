@@ -26,7 +26,7 @@ import read expander operator codegen threading vm
 
 define (meaning-src-location e) {
   lo := #f
-  if (not (null? src)) {
+  if (pair? src) {
     lo = hash-ref %idio-src-properties src #f
   }
 
@@ -38,16 +38,7 @@ define (meaning-src-location e) {
 }
 
 define (meaning-error-location src) {
-  lo := #f
-  if (not (null? src)) {
-    lo = hash-ref %idio-src-properties src #f
-  }
-
-  if lo {
-    sprintf "%s:line %d" (%idio-lexical-object-name lo) (%idio-lexical-object-line lo)
-  } {
-    sprintf "<no lexobj>"
-  }
+  (or (meaning-src-location src) "<no lexobj>")
 }
 
 define (meaning-warning prefix msg e) {
@@ -384,7 +375,7 @@ define* (meaning-variable-info src nametree name flags cs cm (recurse? #t)) {
 
 define (meaning-prefer-properties e src) {
   if (and (pair? e)
-	  (not (hash-ref %idio-src-properties src #f))) {
+	  (hash-ref %idio-src-properties src #f)) {
     e
   } {
     src
@@ -1403,7 +1394,7 @@ define (meaning-rewrite-body src e nametree) {
 
 	  binding := pt cur
 
-	  assign := 'let
+	  assign := 'function
 	  if (not (null? nametree)) {
 	    assign = 'function+
 	  }
@@ -1420,13 +1411,20 @@ define (meaning-rewrite-body src e nametree) {
 
 	    r-cur := false
 
-	    if (eq? 'let assign) {
-	      r-cur = (list assign
-			    (list binding)
-			    body-seq)
-	    } {
-	      r-cur = list assign (ph binding) (pht binding) body-seq
-	    }
+	    (cond
+	     ((eq? 'let assign) {
+	       r-cur = (list assign
+			     (list binding)
+			     body-seq)
+	     })
+	     ((eq? 'function assign) {
+	       r-cur = (list (list assign (list (ph binding))
+					  body-seq)
+			     (pht binding))
+	     })
+	     ((eq? 'function+ assign) {
+	       r-cur = list assign (ph binding) (pht binding) body-seq
+	     }))
 
 	    meaning-copy-src-properties (mpp cur src) r-cur
 
@@ -1703,7 +1701,7 @@ define (meaning-block src e* nametree escapes flags cs cm) {
   e* = meaning-rewrite-body (mpp e* src) e* nametree
   meaning-copy-src-properties src e*
 
-  meaning-sequence (mpp e* src) e* nametree escapes flags 'begin cs cm
+  meaning-sequence e* e* nametree escapes flags 'begin cs cm
 }
 
 define (meaning-some-arguments src ae ae* nametree escapes arity flags cs cm) {
@@ -1728,13 +1726,14 @@ define (meaning-arguments src ae* nametree escapes arity flags cs cm) {
 }
 
 define (meaning-fix-closed-application src formal* body ae* nametree escapes flags cs cm) {
-  body = meaning-rewrite-body (mpp body src) body nametree
+  props := mpp body src
+  body = meaning-rewrite-body props body nametree
   meaning-copy-src-properties src body
 
   am* := meaning-arguments src ae* nametree escapes (length ae*) (clear-tailp flags) cs cm
   nt+ := meaning-nametree-extend-params nametree formal*
 
-  mbody := meaning-sequence (mpp body src) body nt+ escapes flags 'begin cs cm
+  mbody := meaning-sequence props body nt+ escapes flags 'begin cs cm
 
   if (eval-flags-tailp flags) {
     list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+)
@@ -1768,7 +1767,8 @@ define (meaning-dotted-arguments src ae* nametree escapes nargs arity flags cs c
 }
 
 define (meaning-dotted-closed-application src formal* vararg body ae* nametree escapes flags cs cm) {
-  body = meaning-rewrite-body (mpp body src) body nametree
+  props := mpp body src
+  body = meaning-rewrite-body props body nametree
   meaning-copy-src-properties src body
 
   am* := meaning-dotted-arguments src ae* nametree escapes (length ae*) (length formal*) (clear-tailp flags) cs cm
@@ -1776,7 +1776,7 @@ define (meaning-dotted-closed-application src formal* vararg body ae* nametree e
   fix-formal* := append formal* (list vararg)
   nt+ := meaning-nametree-extend-vparams nametree fix-formal*
 
-  mbody := meaning-sequence (mpp body src) body nt+ escapes flags 'begin cs cm
+  mbody := meaning-sequence props body nt+ escapes flags 'begin cs cm
 
   if (eval-flags-tailp flags) {
     list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+)
@@ -1843,14 +1843,15 @@ define (meaning-closed-application src fe ae* nametree escapes flags cs cm) {
 }
 
 define (meaning-local-application src n ae body nametree escapes flags cs cm) {
-  body = meaning-rewrite-body (mpp body src) body nametree
+  body-props := mpp body src
+  body = meaning-rewrite-body body-props body nametree
   meaning-copy-src-properties src body
 
   am := meaning (mpp ae src) ae nametree escapes (clear-tailp flags) cs cm
 
   nt+ := meaning-nametree-extend-locals nametree (list n)
 
-  mbody := meaning-sequence (mpp body src) body nt+ escapes flags 'begin cs cm
+  mbody := meaning-sequence body-props body nt+ escapes flags 'begin cs cm
 
   ll := meaning-lexical-lookup src nt+ n
 
@@ -2072,10 +2073,11 @@ define (meaning-computed-reference src name nametree escapes flags cs cm) {
 ;; the handler in *val* then the body code then a matching sequence of
 ;; POP-TRAP statements.
 define (meaning-trap src ce he be nametree escapes flags cs cm) {
-  he = meaning-rewrite-body (mpp he src) he nametree
+  he-props := mpp he src
+  he = meaning-rewrite-body he-props he nametree
   meaning-copy-src-properties src he
 
-  hm := meaning (mpp he src) he nametree escapes (clear-tailp flags) cs cm
+  hm := meaning he-props he nametree escapes (clear-tailp flags) cs cm
 
   ;; if the condition expression is not a list then make it one
   if (not (pair? ce)) {
@@ -2113,10 +2115,11 @@ define (meaning-trap src ce he be nametree escapes flags cs cm) {
 
   c-loop ce
 
-  be = meaning-rewrite-body (mpp be src) be nametree
+  be-props := mpp be src
+  be = meaning-rewrite-body be-props be nametree
   meaning-copy-src-properties src be
 
-  bm := meaning-sequence (mpp be src) be nametree escapes (clear-tailp flags) 'begin cs cm
+  bm := meaning-sequence be-props be nametree escapes (clear-tailp flags) 'begin cs cm
 
   append (list hm) pushs (list bm) pops
 }
@@ -2124,12 +2127,13 @@ define (meaning-trap src ce he be nametree escapes flags cs cm) {
 define (meaning-escape-block src label be nametree escapes flags cs cm) {
   ci := codegen-constants-lookup-or-extend cs label
 
-  be = meaning-rewrite-body (mpp be src) be nametree
+  be-props := mpp be src
+  be = meaning-rewrite-body be-props be nametree
   meaning-copy-src-properties src be
 
   ee := pair label escapes
 
-  bm := meaning-sequence (mpp be src) be nametree ee (clear-tailp flags) 'begin cs cm
+  bm := meaning-sequence be-props be nametree ee (clear-tailp flags) 'begin cs cm
 
   (list (list I-PUSH-ESCAPER ci bm)
 	(list I-POP-ESCAPER))
@@ -2910,6 +2914,7 @@ return intermediate code for the code generator
   } {
     c* = (vm-constants)
   }
+
   m := meaning src src #n #n no-flags c* (current-module)
 
   list (list I-PUSH-ABORT m) (list I-POP-ABORT)

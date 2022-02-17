@@ -158,11 +158,21 @@ define (initial-expander x e) {
        ;; apply the template
 
        ;; ((pt (assq f *expander-list*)) x e)
-       (pt expander) x e
+       (cond
+	((primitive? (pt expander)) {
+	  (pt expander) x
+	})
+	(else {
+	  (pt expander) x e
+	}))
      } {
        application-expander x e
      }
    }))
+}
+
+define (single-expander x e) {
+  x
 }
 
 define (install-expander! id proc) {
@@ -211,13 +221,11 @@ define (evaluate-expander m cs) {
 }
 
 define (evaluate-expander-source x e) {
-  run-in-thread *expander-thread* (function () {
-    initial-expander x e
-  })
+  initial-expander x e
 }
 
 define (template-expand e) {
-  initial-expander e initial-expander
+  initial-expander e single-expander
 }
 
 define (template-expand* e) {

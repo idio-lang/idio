@@ -672,6 +672,9 @@ static IDIO idio_application_expander (IDIO x, IDIO e)
 	IDIO mph = idio_list_map_ph (x);
 	IDIO mpt = idio_list_map_pt (x);
 
+	/*
+	 * idio_template_expand() calls us with e == #f
+	 */
 	if (idio_S_false == e) {
 	    r = idio_pair (mph,
 			   idio_application_expander (mpt, e));

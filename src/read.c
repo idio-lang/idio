@@ -4536,15 +4536,6 @@ void idio_read_add_primitives ()
 
 void idio_final_read ()
 {
-#ifdef IDIO_DEBUG
-    FILE *fh = stderr;
-
-#ifdef IDIO_VM_PROF
-    fh = idio_vm_perf_FILE;
-#endif
-
-    fprintf (fh, "src-properties: %zu/%zu\n", IDIO_HASH_COUNT (idio_src_properties), IDIO_HASH_SIZE (idio_src_properties));
-#endif
     idio_gc_remove_weak_object (idio_src_properties);
 }
 

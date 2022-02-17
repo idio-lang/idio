@@ -641,10 +641,7 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	idio_gc_gcc_mark (gc, IDIO_THREAD_FUNC (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_THREAD_REG1 (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_THREAD_REG2 (o), colour);
-	/*
-	 * Don't mark the expr as it is in a weak keyed hash
-	 */
-	/* idio_gc_gcc_mark (gc, IDIO_THREAD_EXPR (o), colour); */
+	idio_gc_gcc_mark (gc, IDIO_THREAD_EXPR (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_THREAD_INPUT_HANDLE (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_THREAD_OUTPUT_HANDLE (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_THREAD_ERROR_HANDLE (o), colour);
@@ -1569,8 +1566,8 @@ void idio_gc_possibly_collect ()
      * list.
      */
     if (idio_gc->pause == 0 &&
-	(IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) &&
-	idio_gc->stats.igets) {
+	((IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) ||
+	 idio_gc->stats.igets > 1024000)) {
 #ifdef IDIO_GC_DEBUG
 	fprintf (stderr, "possibly-collect: reqd=%d %6llu igets %7llu allocs %6lld free\n",
 		 (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) ? 1 : 0,
@@ -1752,7 +1749,7 @@ void idio_gc_closure_stats (IDIO c)
 
 	    ru_t /= IDIO_VM_US;
 
-	    fprintf (idio_vm_perf_FILE, " %9.6f", ru_t);
+	    fprintf (idio_vm_perf_FILE, " %11.6f", ru_t);
 
 	    idio_gc_all_closure_ru += ru_t;
 

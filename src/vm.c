@@ -7113,7 +7113,10 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 #ifdef IDIO_VM_PROF
 	fh = idio_vm_perf_FILE;
 #endif
-	fprintf (fh, "vm_run: %10" PRIdPTR " ins in time %3ld.%03ld => %6" PRIdPTR " i/ms\n", loops, td.tv_sec, (long) td.tv_usec / 1000, ipms);
+	fprintf (fh, "[%d]vm_run: %10" PRIdPTR " ins in time %4ld.%03ld => %6" PRIdPTR " i/ms\n", getpid(), loops, td.tv_sec, (long) td.tv_usec / 1000, ipms);
+	if (td.tv_sec > 10) {
+	    fprintf (fh, "[%d>%d] %lds: slow call to v_PC0 = %td\n", getppid (), getpid (), td.tv_sec, v_PC0);
+	}
     }
 #endif
 

@@ -2847,6 +2847,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 	    }
 
 	    IDIO body = idio_meaning_rewrite_body (IDIO_MPP (cur, src), IDIO_PAIR_T (l), nametree);
+	    idio_meaning_copy_src_properties (cur, body);
 
 	    if (idio_S_nil == body) {
 		/*
@@ -2858,6 +2859,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 	    }
 
 	    IDIO body_sequence = idio_list_append2 (IDIO_LIST1 (idio_S_begin), body);
+	    idio_meaning_copy_src_properties (cur, body_sequence);
 
 	    IDIO r_cur = idio_S_false;
 	    if (idio_S_let == assign) {
