@@ -1127,6 +1127,20 @@ subsequently set to the result of `f`.		\n\
     return v;
 }
 
+char *idio_bitset_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (bitset, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#B{ /%zu }", IDIO_BITSET_SIZE (v));
+
+    return r;
+}
+
 char *idio_bitset_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);

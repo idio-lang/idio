@@ -1065,6 +1065,42 @@ of struct type `st`				\n\
     return r;
 }
 
+char *idio_struct_instance_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (struct_instance, v);
+
+    char *r = NULL;
+    *sizep = idio_asprintf (&r, "#<SI ");
+
+    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (v);
+
+    size_t n_size = 0;
+    char *ns = idio_as_string (IDIO_STRUCT_TYPE_NAME (st), &n_size, 1, seen, 0);
+    IDIO_STRCAT_FREE (r, sizep, ns, n_size);
+
+#ifdef IDIO_DEBUG
+    size_t size = IDIO_STRUCT_TYPE_SIZE (st);
+    size_t i;
+    for (i = 0; i < size; i++) {
+	IDIO_STRCAT (r, sizep, " ");
+	size_t fn_size = 0;
+	char *fns = idio_as_string (IDIO_STRUCT_TYPE_FIELDS (st, i), &fn_size, 1, seen, 0);
+	IDIO_STRCAT_FREE (r, sizep, fns, fn_size);
+	IDIO_STRCAT (r, sizep, ":");
+	size_t fv_size = 0;
+	char *fvs = idio_report_string (IDIO_STRUCT_INSTANCE_FIELDS (v, i), &fv_size, depth - 1, seen, 0);
+	IDIO_STRCAT_FREE (r, sizep, fvs, fv_size);
+    }
+#endif
+
+    IDIO_STRCAT (r, sizep, ">");
+
+    return r;
+}
+
 char *idio_struct_instance_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);
@@ -1158,6 +1194,26 @@ IDIO idio_struct_instance_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     IDIO r = idio_string_C_len (C_r, *sizep);
 
     IDIO_GC_FREE (C_r, *sizep);
+
+    return r;
+}
+
+char *idio_struct_type_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (struct_type, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#<ST ");
+
+    size_t stn_size = 0;
+    char *stn = idio_as_string (IDIO_STRUCT_TYPE_NAME (v), &stn_size, 1, seen, 0);
+    IDIO_STRCAT_FREE (r, sizep, stn, stn_size);
+
+    IDIO_STRCAT (r, sizep, ">");
 
     return r;
 }

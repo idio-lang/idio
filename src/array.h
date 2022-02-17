@@ -47,6 +47,7 @@ IDIO idio_array_to_list (IDIO a);
 IDIO idio_array_ref (IDIO a, IDIO index);
 IDIO idio_array_set (IDIO a, IDIO index, IDIO v);
 
+char *idio_array_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_array_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_array ();

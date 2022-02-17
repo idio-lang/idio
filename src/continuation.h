@@ -30,6 +30,7 @@ IDIO idio_continuation (IDIO thr, int kind);
 int idio_isa_continuation (IDIO o);
 void idio_free_continuation (IDIO k);
 
+char *idio_continuation_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_continuation_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_continuation ();

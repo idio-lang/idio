@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -331,7 +331,7 @@ print the Unicode attributes of `o`		\n\
 }
 
 #define IDIO_USI_PREDICATE(name)					\
-    IDIO_DEFINE_PRIMITIVE1 (#name "?",  usi_ ## name ## _p, (IDIO o))	\
+    IDIO_DEFINE_PRIMITIVE1_DS (#name "?",  usi_ ## name ## _p, (IDIO o), "o", "") \
     {									\
     IDIO_ASSERT (o);							\
     IDIO r = idio_S_false;						\

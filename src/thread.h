@@ -40,6 +40,7 @@ IDIO idio_thread_env_module ();
 IDIO idio_thread_current_module ();
 void idio_thread_set_current_module (IDIO h);
 
+char *idio_thread_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_thread ();

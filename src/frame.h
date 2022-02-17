@@ -39,6 +39,7 @@ IDIO idio_frame_args_as_list_from (IDIO frame, idio_ai_t from);
 IDIO idio_frame_args_as_list (IDIO frame);
 IDIO idio_frame_params_as_list (IDIO frame);
 
+char *idio_frame_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_frame_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_frame (void);

@@ -95,8 +95,10 @@ IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index);
 IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v);
 IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v);
 
+char *idio_struct_instance_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_struct_instance_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 IDIO idio_struct_instance_method_2string (idio_vtable_method_t *m, IDIO v, ...);
+char *idio_struct_type_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_struct_type_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_struct ();

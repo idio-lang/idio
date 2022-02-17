@@ -2366,6 +2366,41 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
     return idio_S_unspec;
 }
 
+char *idio_handle_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (handle, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#<H ");
+
+    IDIO_FLAGS_T h_flags = IDIO_HANDLE_FLAGS (v);
+    if (h_flags & IDIO_HANDLE_FLAG_FILE ||
+	h_flags & IDIO_HANDLE_FLAG_PIPE) {
+
+	char *fds;
+	size_t fds_size = idio_asprintf (&fds, "%d", IDIO_FILE_HANDLE_FD (v));
+	IDIO_STRCAT_FREE (r, sizep, fds, fds_size);
+    }
+
+    /*
+     * XXX can a handle name contain a NUL?
+     */
+    size_t size = 0;
+    char *sname = idio_handle_name_as_C (v, &size);
+    char *info;
+    size_t info_size = idio_asprintf (&info, " \"%s\">", sname);
+
+    idio_gc_free (sname, size);
+
+    IDIO_STRCAT_FREE (r, sizep, info, info_size);
+
+    return r;
+}
+
 char *idio_handle_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);

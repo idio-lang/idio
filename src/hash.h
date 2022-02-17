@@ -54,6 +54,7 @@ IDIO idio_hash_make_hash (IDIO args);
 IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args);
 IDIO idio_hash_set (IDIO ht, IDIO key, IDIO v);
 
+char *idio_hash_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_hash_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_hash ();

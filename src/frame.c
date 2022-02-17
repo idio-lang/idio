@@ -302,6 +302,20 @@ IDIO idio_frame_params_as_list (IDIO frame)
     return r;
 }
 
+char *idio_frame_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (frame, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#<FRAME n=%d/%d>", IDIO_FRAME_NPARAMS (v), IDIO_FRAME_NALLOC (v));
+
+    return r;
+}
+
 char *idio_frame_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);

@@ -1011,6 +1011,106 @@ return the nth (`n`) element from list `l`		\n\
     return idio_list_nth (l, I_n, args);
 }
 
+char *idio_pair_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (pair, v);
+
+    char *r = NULL;
+
+    /*
+     * Technically a list (of pairs) should look like:
+     *
+     * "(a . (b . (c . (d . nil))))"
+     *
+     * but tradition dictates that we should flatten the list to:
+     *
+     * "(a b c d)"
+     *
+     * hence the while loop which continues if the tail is itself a
+     * pair
+    */
+    {
+	seen = idio_pair (v, seen);
+	if (idio_isa_symbol (IDIO_PAIR_H (v))) {
+	    int special = 0;
+	    char *trail = NULL;
+	    size_t tlen = 0;
+
+	    if (idio_S_quote == IDIO_PAIR_H (v)) {
+		special = 1;
+		*sizep = idio_asprintf (&r, "'");
+	    } else if (idio_S_unquote == IDIO_PAIR_H (v)) {
+		special = 1;
+		*sizep = idio_asprintf (&r, "$");
+	    } else if (idio_S_unquotesplicing == IDIO_PAIR_H (v)) {
+		special = 1;
+		*sizep = idio_asprintf (&r, "$@");
+	    } else if (idio_S_quasiquote == IDIO_PAIR_H (v)) {
+		special = 1;
+		trail = " }";
+		tlen = 2;
+		*sizep = idio_asprintf (&r, "#T{ ");
+	    }
+
+	    if (special) {
+		if (idio_isa_pair (IDIO_PAIR_T (v))) {
+		    size_t hs_size = 0;
+		    char *hs = idio_report_string (idio_list_head (IDIO_PAIR_T (v)), &hs_size, depth - 1, seen, 0);
+		    IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
+		} else {
+		    /*
+		     * Code coverage:
+		     *
+		     * Probably shouldn't be called.  It
+		     * would require an improper list in a
+		     * template.  Coding error?
+		     */
+		    size_t ts_size = 0;
+		    char *ts = idio_report_string (IDIO_PAIR_T (v), &ts_size, depth - 1, seen, 0);
+		    IDIO_STRCAT_FREE (r, sizep, ts, ts_size);
+		}
+
+		if (NULL != trail) {
+		    r = idio_strcat (r, sizep, trail, tlen);
+		}
+
+		return r;
+	    }
+	}
+
+	*sizep = idio_asprintf (&r, "(");
+
+	while (1) {
+	    size_t hs_size = 0;
+	    char *hs = idio_report_string (IDIO_PAIR_H (v), &hs_size, depth - 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
+
+	    v = IDIO_PAIR_T (v);
+	    if (idio_type (v) != IDIO_TYPE_PAIR) {
+		if (idio_S_nil != v) {
+		    char *ps;
+		    size_t ps_size = idio_asprintf (&ps, " %c ", IDIO_PAIR_SEPARATOR);
+		    /* assumming IDIO_PAIR_SEPARATOR is 1 byte */
+		    IDIO_STRCAT_FREE (r, sizep, ps, ps_size);
+
+		    size_t t_size = 0;
+		    char *t = idio_report_string (v, &t_size, depth - 1, seen, 0);
+		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+		}
+		break;
+	    } else {
+		IDIO_STRCAT (r, sizep, " ");
+	    }
+	}
+	IDIO_STRCAT (r, sizep, ")");
+    }
+
+    return r;
+}
+
 char *idio_pair_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);

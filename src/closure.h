@@ -28,6 +28,7 @@ int idio_isa_closure (IDIO o);
 int idio_isa_function (IDIO o);
 void idio_free_closure (IDIO c);
 
+char *idio_closure_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_closure_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_closure ();

@@ -694,7 +694,7 @@ of the macro					\n\
  * not universal and we have to ifdef them all.
  */
 #define IDIO_DEFINE_LIBC_POLL_PRIMITIVE(pollmask)			\
-    IDIO_DEFINE_PRIMITIVE1 (#pollmask "?", libc_poll_ ## pollmask ## _p, (IDIO eventmask)) \
+    IDIO_DEFINE_PRIMITIVE1_DS (#pollmask "?", libc_poll_ ## pollmask ## _p, (IDIO eventmask), "eventmask", "") \
     {									\
 	IDIO_ASSERT (eventmask);					\
 	IDIO_USER_C_TYPE_ASSERT (short, eventmask);			\

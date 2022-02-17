@@ -61,6 +61,7 @@ IDIO idio_module_toplevel_set_symbol_value (IDIO symbol, IDIO value);
 IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO module);
 IDIO idio_module_export_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO module);
 
+char *idio_module_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_module_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_module (void);

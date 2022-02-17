@@ -1444,6 +1444,40 @@ The final value of `val` is returned.				\n\
     return val;
 }
 
+char *idio_array_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (array, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#[");
+
+#ifdef IDIO_DEBUG
+    int printed = 0;
+    for (idio_ai_t i = 0; i < IDIO_ARRAY_USIZE (v); i++) {
+	IDIO_STRCAT (r, sizep, " ");
+	size_t t_size = 0;
+	char *t = idio_report_string (IDIO_ARRAY_AE (v, i), &t_size, depth - 1, seen, 0);
+	IDIO_STRCAT_FREE (r, sizep, t, t_size);
+	printed = 1;
+    }
+    if (printed) {
+	IDIO_STRCAT (r, sizep, " ");
+    }
+#else
+    char *t;
+    size_t t_size = idio_asprintf (&t, " /%td ", IDIO_ARRAY_USIZE (v));
+    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+#endif
+
+    IDIO_STRCAT (r, sizep, "]");
+
+    return r;
+}
+
 char *idio_array_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);

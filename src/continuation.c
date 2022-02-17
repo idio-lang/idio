@@ -128,6 +128,20 @@ void idio_free_continuation (IDIO k)
     IDIO_GC_FREE (k->u.continuation, sizeof (idio_continuation_t));
 }
 
+char *idio_continuation_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (continuation, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#<K>");
+
+    return r;
+}
+
 char *idio_continuation_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);

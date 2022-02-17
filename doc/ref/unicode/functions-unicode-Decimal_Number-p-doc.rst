@@ -1,6 +1,6 @@
-Is `cp` in the Unicode Category ``Nd``?
+Is `o` in the Unicode Category ``Nd``?
 
-:param cp: code point to test
-:type cp: unicode
+:param o: object to test
+:type o: unicode|string
 :return: boolean
 

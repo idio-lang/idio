@@ -1616,7 +1616,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
  * For < and > the comparison operators work for all types
  */
 #define IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE(name,cname,cmp)		\
-    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
+    IDIO_DEFINE_PRIMITIVE2_DS (name, cname, (IDIO n1, IDIO n2), "n1 n2", "") \
     {									\
 	IDIO_ASSERT (n1);						\
 	IDIO_ASSERT (n2);						\
@@ -1695,7 +1695,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
  * point types
  */
 #define IDIO_DEFINE_C_ARITHMETIC_EQ_PRIMITIVE(name,cname,cmp)		\
-    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
+    IDIO_DEFINE_PRIMITIVE2_DS (name, cname, (IDIO n1, IDIO n2), "n1 n2", "") \
     {									\
 	IDIO_ASSERT (n1);						\
 	IDIO_ASSERT (n2);						\
@@ -1775,7 +1775,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
  * operator so we can distinguish the tests
  */
 #define IDIO_DEFINE_C_ARITHMETIC_CMP_EQ_PRIMITIVE(name,cname,cmp,op1)	\
-    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
+    IDIO_DEFINE_PRIMITIVE2_DS (name, cname, (IDIO n1, IDIO n2), "n1 n2", "") \
     {									\
 	IDIO_ASSERT (n1);						\
 	IDIO_ASSERT (n2);						\
@@ -3083,6 +3083,32 @@ IDIO idio_C_number_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 
 IDIO idio_C_pointer_method_2string (idio_vtable_method_t *m, IDIO v, ...);
 
+char *idio_C_pointer_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (C_pointer, v);
+
+    idio_vtable_method_t *m = idio_vtable_lookup_method (idio_value_vtable (v), v, idio_S_typename, 1);
+
+    IDIO typename = IDIO_VTABLE_METHOD_FUNC (m) (m, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#<C/*");
+
+    if (idio_isa_symbol (typename)) {
+	char *t;
+	size_t t_size = idio_asprintf (&t, " %s", IDIO_SYMBOL_S (typename));
+	IDIO_STRCAT_FREE (r, sizep, t, t_size);
+    }
+
+    IDIO_STRCAT (r, sizep, ">");
+
+    return r;
+}
+
 char *idio_C_pointer_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);
@@ -3123,16 +3149,8 @@ char *idio_C_pointer_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, 
 	    return NULL;
 	}
     }
-    
-    char *r = NULL;
 
-    *sizep = idio_asprintf (&r, "#<C/*");
-
-    IDIO_STRCAT (r, sizep, IDIO_C_TYPE_POINTER_FREEP (v) ? " free" : "");
-
-    IDIO_STRCAT (r, sizep, ">");
-
-    return r;
+    return idio_C_pointer_report_string (v, sizep, format, seen, depth);
 }
 
 IDIO idio_C_pointer_method_2string (idio_vtable_method_t *m, IDIO v, ...)

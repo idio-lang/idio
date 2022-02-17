@@ -109,10 +109,10 @@ IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO
 	     */
 	    if (idio_S_nil == IDIO_PAIR_T (sigstr)) {
 		if (idio_S_false != pname) {
+
 		    if (printed) {
 			idio_display_C (" ", osh);
 		    }
-
 		    idio_display_C ("[", osh);
 		    idio_display (pname, osh);
 		    idio_display_C ("]", osh);
@@ -125,9 +125,7 @@ IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO
 	    } else {
 		printed = 1;
 	    }
-
 	    idio_display (pname, osh);
-
 	    sigstr = IDIO_PAIR_T (sigstr);
 	}
 	idio_set_property (c, idio_KW_sigstr, idio_get_output_string (osh));
@@ -219,6 +217,37 @@ return the setter of `p`			\n\
     IDIO setter = idio_ref_property (p, idio_KW_setter, idio_S_nil);
 
     return setter;
+}
+
+char *idio_closure_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (closure, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "");
+
+    if (idio_Idio_module != IDIO_CLOSURE_ENV (v)) {
+	size_t mn_size = 0;
+	char *mn = idio_as_string (IDIO_MODULE_NAME (IDIO_CLOSURE_ENV (v)), &mn_size, 1, seen, 0);
+	IDIO_STRCAT_FREE (r, sizep, mn, mn_size);
+
+	IDIO_STRCAT (r, sizep, "/");
+    }
+
+    IDIO name = idio_ref_property (v, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+    if (idio_S_nil != name) {
+	char *name_C;
+	size_t name_size = idio_asprintf (&name_C, "%s", IDIO_SYMBOL_S (name));
+	IDIO_STRCAT_FREE (r, sizep, name_C, name_size);
+    } else {
+	IDIO_STRCAT (r, sizep, "-anon-");
+    }
+
+    return r;
 }
 
 char *idio_closure_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)

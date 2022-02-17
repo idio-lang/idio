@@ -248,6 +248,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 	    })
 	    ((function? val) {
 	      sigstr := %property val :sigstr #f
+	      orig-sigstr := sigstr
 
 	      ;; try ".../{fixnum}-{mod}-{sym}-sig.rst"
 	      sfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-sig.rst"
@@ -272,6 +273,13 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 		hprintf out-fh ".. idio:template:: %s %s\n\n" mod-str sigstr
 		hprintf out-fh "\n"
 	      } {
+		(cond-expand
+		 (IDIO_DEBUG {
+		   if (and orig-sigstr
+			   (not (eq? orig-sigstr sigstr))) {
+		     eprintf "%s/%s: overridding '%s' with '%s'\n" mod sym orig-sigstr sigstr
+		   }
+		 }))
 		hprintf out-fh ".. idio:function:: %s %s\n\n" mod-str sigstr
 		hprintf out-fh "\n"
 

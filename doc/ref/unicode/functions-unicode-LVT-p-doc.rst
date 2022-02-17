@@ -1,6 +1,6 @@
-Does `cp` have the Unicode Property ``LVT``?
+Does `o` have the Unicode Property ``LVT``?
 
-:param cp: code point to test
-:type cp: unicode
+:param o: object to test
+:type o: unicode|string
 :return: boolean
 

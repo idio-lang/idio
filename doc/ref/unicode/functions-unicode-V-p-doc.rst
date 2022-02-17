@@ -1,6 +1,6 @@
-Does `cp` have the Unicode Property ``V``?
+Does `o` have the Unicode Property ``V``?
 
-:param cp: code point to test
-:type cp: unicode
+:param o: object to test
+:type o: unicode|string
 :return: boolean
 

@@ -641,13 +641,6 @@ idio_hi_t idio_idio_hash_default_hash_C_primitive (IDIO h)
     return idio_hash_default_hash_C_void (IDIO_PRIMITIVE_F (h));
 }
 
-idio_hi_t idio_idio_hash_default_hash_C_module (IDIO h)
-{
-    IDIO_ASSERT (h);
-
-    return idio_hash_default_hash_C_void (IDIO_MODULE_NAME (h));
-}
-
 idio_hi_t idio_idio_hash_default_hash_C_bignum (IDIO h)
 {
     IDIO_ASSERT (h);
@@ -655,18 +648,18 @@ idio_hi_t idio_idio_hash_default_hash_C_bignum (IDIO h)
     return idio_hash_default_hash_C_void (IDIO_BIGNUM_SIG (h));
 }
 
+idio_hi_t idio_idio_hash_default_hash_C_module (IDIO h)
+{
+    IDIO_ASSERT (h);
+
+    return idio_hash_default_hash_C_void (IDIO_MODULE_NAME (h));
+}
+
 idio_hi_t idio_idio_hash_default_hash_C_handle (IDIO h)
 {
     IDIO_ASSERT (h);
 
     return idio_hash_default_hash_C_void (IDIO_HANDLE_STREAM (h));
-}
-
-idio_hi_t idio_hash_default_hash_C_bitset (IDIO h)
-{
-    IDIO_ASSERT (h);
-
-    return idio_hash_default_hash_C_void (h->u.bitset.words);
 }
 
 idio_hi_t idio_idio_hash_default_hash_C_struct_type (IDIO h)
@@ -681,6 +674,20 @@ idio_hi_t idio_idio_hash_default_hash_C_struct_instance (IDIO h)
     IDIO_ASSERT (h);
 
     return idio_hash_default_hash_C_void (h->u.struct_instance.fields);
+}
+
+idio_hi_t idio_hash_default_hash_C_continuation (IDIO h)
+{
+    IDIO_ASSERT (h);
+
+    return idio_hash_default_hash_C_void (h->u.continuation->stack);
+}
+
+idio_hi_t idio_hash_default_hash_C_bitset (IDIO h)
+{
+    IDIO_ASSERT (h);
+
+    return idio_hash_default_hash_C_void (h->u.bitset.words);
 }
 
 /*
@@ -822,23 +829,26 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void const *kv)
     case IDIO_TYPE_PRIMITIVE:
 	hv = idio_idio_hash_default_hash_C_primitive (k);
 	break;
-    case IDIO_TYPE_MODULE:
-	hv = idio_idio_hash_default_hash_C_module (k);
-	break;
     case IDIO_TYPE_BIGNUM:
 	hv = idio_idio_hash_default_hash_C_bignum (k);
 	break;
+    case IDIO_TYPE_MODULE:
+	hv = idio_idio_hash_default_hash_C_module (k);
+	break;
     case IDIO_TYPE_HANDLE:
 	hv = idio_idio_hash_default_hash_C_handle (k);
-	break;
-    case IDIO_TYPE_BITSET:
-	hv = idio_hash_default_hash_C_bitset (k);
 	break;
     case IDIO_TYPE_STRUCT_TYPE:
 	hv = idio_idio_hash_default_hash_C_struct_type (k);
 	break;
     case IDIO_TYPE_STRUCT_INSTANCE:
 	hv = idio_idio_hash_default_hash_C_struct_instance (k);
+	break;
+    case IDIO_TYPE_CONTINUATION:
+	hv = idio_hash_default_hash_C_continuation (k);
+	break;
+    case IDIO_TYPE_BITSET:
+	hv = idio_hash_default_hash_C_bitset (k);
 	break;
     case IDIO_TYPE_C_CHAR:
 	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_char (k));
@@ -2121,6 +2131,85 @@ duplicate keys in `ht2` will overwrite keys in `ht1`		\n\
     IDIO_USER_TYPE_ASSERT (hash, ht2);
 
     return idio_merge_hash (ht1, ht2);
+}
+
+char *idio_hash_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (hash, v);
+
+    char *r = NULL;
+
+    seen = idio_pair (v, seen);
+    *sizep = idio_asprintf (&r, "#{", IDIO_HASH_COUNT (v));
+
+#ifdef IDIO_DEBUG
+    int printed = 0;
+    for (idio_hi_t i = 0; i < IDIO_HASH_SIZE (v); i++) {
+	idio_hash_entry_t *he = IDIO_HASH_HA (v, i);
+	for (; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
+	    if (idio_S_nil != IDIO_HASH_HE_KEY (he)) {
+		/*
+		 * We're looking to generate:
+		 *
+		 * (k & v)
+		 *
+		 */
+		IDIO_STRCAT (r, sizep, " (");
+
+		size_t t_size = 0;
+		char *t;
+		if (IDIO_HASH_FLAGS (v) & IDIO_HASH_FLAG_STRING_KEYS) {
+		    /*
+		     * Code coverage:
+		     *
+		     * No user-facing string keys
+		     * tables.
+		     */
+		    t_size = idio_asprintf (&t, "%s", (char *) IDIO_HASH_HE_KEY (he));
+		    t = (char *) IDIO_HASH_HE_KEY (he);
+		} else {
+		    t = idio_report_string (IDIO_HASH_HE_KEY (he), &t_size, depth - 1, seen, 0);
+		}
+		IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+		char *hes;
+		size_t hes_size = idio_asprintf (&hes, " %c ", IDIO_PAIR_SEPARATOR);
+		IDIO_STRCAT_FREE (r, sizep, hes, hes_size);
+
+		if (IDIO_HASH_HE_VALUE (he)) {
+		    t_size = 0;
+		    t = idio_report_string (IDIO_HASH_HE_VALUE (he), &t_size, depth - 1, seen, 0);
+		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+		} else {
+		    /*
+		     * Code coverage:
+		     *
+		     * Probably shouldn't happen.  It
+		     * requires we have a NULL for
+		     * IDIO_HASH_KEY_VALUE().
+		     */
+		    IDIO_STRCAT (r, sizep, "-");
+		}
+		IDIO_STRCAT (r, sizep, ")");
+		printed = 1;
+	    }
+	}
+    }
+    if (printed) {
+	IDIO_STRCAT (r, sizep, " ");
+    }
+#else
+    char *t;
+    size_t t_size = idio_asprintf (&t, " /%td ", IDIO_HASH_COUNT (v));
+    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+#endif
+
+    IDIO_STRCAT (r, sizep, "}");
+
+    return r;
 }
 
 char *idio_hash_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)

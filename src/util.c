@@ -1241,7 +1241,7 @@ idio_unicode_t idio_util_string_format (idio_unicode_t format)
 
   A significant annoyance is that this function recurses which means
   that any idio-print-conversion-format which was valid for the
-  initial call is now invalid for the recursed varaints.
+  initial call is now invalid for the recursed variants.
 
   We can escape that with a first tag.
  */
@@ -1608,6 +1608,206 @@ char *idio_display_string (IDIO o, size_t *sizep)
 	 * Coding error.
 	 */
 	*sizep = idio_asprintf (&r, "type %d n/k", o->type);
+	break;
+    }
+
+    return r;
+}
+
+/*
+ * reporting string for use in, uh, reports
+ *
+ * here we want to use the default string of "simple" values and a
+ * reduced string for complex values that might call a printer (which
+ * messes up any report)
+ */
+char *idio_report_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
+{
+    char *r = NULL;
+
+    IDIO_C_ASSERT (depth >= -10000);
+
+    idio_unicode_t format = IDIO_PRINT_CONVERSION_FORMAT_s;
+
+    switch ((intptr_t) o & IDIO_TYPE_MASK) {
+    case IDIO_TYPE_FIXNUM_MARK:
+	{
+	    r = idio_fixnum_as_C_string (o, sizep, format, seen, depth);
+	    break;
+	}
+    case IDIO_TYPE_CONSTANT_MARK:
+	{
+	    switch ((intptr_t) o & IDIO_TYPE_CONSTANT_MASK) {
+	    case IDIO_TYPE_CONSTANT_IDIO_MARK:
+		/* util.c */
+		r = idio_constant_idio_as_C_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:
+		/* read.c */
+		r = idio_constant_token_as_C_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
+		/* codegen.c */
+		r = idio_constant_i_code_as_C_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
+		/* unicode.c */
+		r = idio_constant_unicode_as_C_string (o, sizep, format, seen, depth);
+		break;
+	    default:
+		/*
+		 * Test Case: ??
+		 *
+		 * Coding error.  There should be a case clause above.
+		 */
+		*sizep = idio_asprintf (&r, "#<type/constant/?? o=%10p VAL(o)=%#x>", o, IDIO_CONSTANT_IDIO_VAL (o));
+		idio_error_warning_message ("unhandled constant type: %s\n", r);
+		break;
+	    }
+	}
+	break;
+    case IDIO_TYPE_PLACEHOLDER_MARK:
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.
+	 */
+	*sizep = idio_asprintf (&r, "#<type/placecholder?? %10p>", o);
+	break;
+    case IDIO_TYPE_POINTER_MARK:
+	{
+	    idio_type_e type = idio_type (o);
+
+	    if (depth <= 0) {
+		*sizep = idio_asprintf (&r, "..");
+		return r;
+	    }
+
+	    if (idio_S_false != idio_list_memq (o, seen)) {
+		*sizep = idio_asprintf (&r, "#<^{%s@%p}>", idio_type2string (o), o);
+		return r;
+	    }
+
+	    switch (type) {
+	    case IDIO_TYPE_NONE:
+		/*
+		 * Test Case: ??
+		 *
+		 * Coding error.
+		 */
+		fprintf (stderr, "TYPE_NONE in flight :(\n");
+		*sizep = idio_asprintf (&r, "#<NONE!! -none- %10p>", o);
+		break;
+	    case IDIO_TYPE_STRING:
+	    case IDIO_TYPE_SUBSTRING:
+		r = idio_string_as_C_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_SYMBOL:
+		r = idio_symbol_as_C_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_KEYWORD:
+		r = idio_keyword_as_C_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_PAIR:
+		r = idio_pair_report_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_ARRAY:
+		r = idio_array_report_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_HASH:
+		r = idio_hash_report_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_CLOSURE:
+		r = idio_closure_report_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_PRIMITIVE:
+		r = idio_primitive_as_C_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_BIGNUM:
+		r = idio_bignum_as_C_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_MODULE:
+		r = idio_module_report_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_FRAME:
+		r = idio_frame_report_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_HANDLE:
+		r = idio_handle_report_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_C_CHAR:
+		r = idio_C_char_as_C_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_C_SCHAR:
+	    case IDIO_TYPE_C_UCHAR:
+	    case IDIO_TYPE_C_SHORT:
+	    case IDIO_TYPE_C_USHORT:
+	    case IDIO_TYPE_C_INT:
+	    case IDIO_TYPE_C_UINT:
+	    case IDIO_TYPE_C_LONG:
+	    case IDIO_TYPE_C_ULONG:
+	    case IDIO_TYPE_C_LONGLONG:
+	    case IDIO_TYPE_C_ULONGLONG:
+	    case IDIO_TYPE_C_FLOAT:
+	    case IDIO_TYPE_C_DOUBLE:
+	    case IDIO_TYPE_C_LONGDOUBLE:
+		r = idio_C_number_as_C_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_C_POINTER:
+		r = idio_C_pointer_report_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_STRUCT_TYPE:
+		r = idio_struct_type_report_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_STRUCT_INSTANCE:
+		r = idio_struct_instance_report_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_THREAD:
+		r = idio_thread_report_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_CONTINUATION:
+		r = idio_continuation_report_string (o, sizep, format, seen, depth);
+		break;
+	    case IDIO_TYPE_BITSET:
+		r = idio_bitset_report_string (o, sizep, format, seen, depth);
+		break;
+	    default:
+		{
+		    fprintf (stderr, "idio_as_string: unexpected type %d\n", type);
+		    /*
+		     * Oh dear, bad data.  Can we dump any clues?
+		     *
+		     * If it's a short enough string then its length
+		     * will be less than 40 chars, otherwise we can
+		     * only dump out a C pointer.
+		     *
+		     * Of course the string can still be gobbledegook
+		     * but it's something to go on if we've trampled
+		     * on a hash's string key.
+		     *
+		     * strnlen rather than idio_strnlen as we're
+		     * already teetering and don't need a distracting
+		     * (virtually certain) condition being raised.
+		     */
+		    size_t n = strnlen ((char *) o, 40);
+		    if (40 == n) {
+			*sizep = idio_asprintf (&r, "#<void?? %10p>", o);
+		    } else {
+			*sizep = idio_asprintf (&r, "#<string?? \"%s\">", (char *) o);
+		    }
+		    IDIO_C_ASSERT (0);
+		}
+		break;
+	    }
+	}
+	break;
+    default:
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.
+	 */
+	*sizep = idio_asprintf (&r, "#<type?? %10p>", o);
 	break;
     }
 

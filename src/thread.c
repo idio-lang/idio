@@ -252,6 +252,20 @@ void idio_thread_set_current_module (IDIO m)
     IDIO_THREAD_ENV (thr) = m;
 }
 
+char *idio_thread_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (thread, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#<THR pc=%6zd>", IDIO_THREAD_PC (v));
+
+    return r;
+}
+
 char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);

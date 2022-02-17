@@ -2627,7 +2627,7 @@ int idio_string_equal (IDIO s1, IDIO s2)
  * string=? "hello" "hello" #t
  */
 #define IDIO_DEFINE_STRING_PRIMITIVE2V(name,cname,cmp,scmp)		\
-    IDIO_DEFINE_PRIMITIVE2V (name, cname, (IDIO s1, IDIO s2, IDIO args)) \
+    IDIO_DEFINE_PRIMITIVE2V_DS (name, cname, (IDIO s1, IDIO s2, IDIO args), "s1 s2 [...]", "") \
     {									\
 	IDIO_ASSERT (s1);						\
 	IDIO_ASSERT (s2);						\

@@ -851,7 +851,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
  * C type arguments
  */
 #define IDIO_DEFINE_ARITHMETIC_PRIMITIVE0V(name,cname)			\
-    IDIO_DEFINE_PRIMITIVE0V (name, cname, (IDIO args))			\
+    IDIO_DEFINE_PRIMITIVE0V_DS (name, cname, (IDIO args), "[n ...]", "")	\
     {									\
 	IDIO_ASSERT (args);						\
 									\
@@ -903,7 +903,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
     }
 
 #define IDIO_DEFINE_ARITHMETIC_PRIMITIVE1V(name,cname)			\
-    IDIO_DEFINE_PRIMITIVE1V (name, cname, (IDIO n1, IDIO args))		\
+    IDIO_DEFINE_PRIMITIVE1V_DS (name, cname, (IDIO n1, IDIO args), "n1 [n2 ...]", "") \
     {									\
 	IDIO_ASSERT (n1);						\
 	IDIO_ASSERT (args);						\
@@ -972,7 +972,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
  * 9 / 2 is 4 in fixnums; 10 / 2 will be converted back to a fixnum.
  */
 #define IDIO_DEFINE_ARITHMETIC_BIGNUM_PRIMITIVE1V(name,cname)		\
-    IDIO_DEFINE_PRIMITIVE1V (name, cname, (IDIO n1, IDIO args))		\
+    IDIO_DEFINE_PRIMITIVE1V_DS (name, cname, (IDIO n1, IDIO args), "n1 [n2 ...]", "") \
     {									\
 	IDIO_ASSERT (n1);						\
 	IDIO_ASSERT (args);						\
@@ -1006,7 +1006,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
     }
 
 #define IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V(name,cname)		\
-    IDIO_DEFINE_PRIMITIVE1V (name, cname, (IDIO n1, IDIO args))		\
+    IDIO_DEFINE_PRIMITIVE1V_DS (name, cname, (IDIO n1, IDIO args), "n1 [n2 ...]", "") \
     {									\
 	IDIO_ASSERT (n1);						\
 	IDIO_ASSERT (args);						\
@@ -1093,7 +1093,7 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
  */
 
 #define IDIO_DEFINE_ARITHMETIC_BINARY_PRIMITIVE(name,cname,icname)	\
-    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
+    IDIO_DEFINE_PRIMITIVE2_DS (name, cname, (IDIO n1, IDIO n2), "n1 n2", "") \
     {									\
 	IDIO_ASSERT (n1);						\
 	IDIO_ASSERT (n2);						\
@@ -1143,7 +1143,7 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
     }
 
 #define IDIO_DEFINE_ARITHMETIC_BINDIV_PRIMITIVE(name,cname,icname)	\
-    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
+    IDIO_DEFINE_PRIMITIVE2_DS (name, cname, (IDIO n1, IDIO n2), "n1 n2", "") \
     {									\
 	IDIO_ASSERT (n1);						\
 	IDIO_ASSERT (n2);						\
@@ -1188,7 +1188,7 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
     }
 
 #define IDIO_DEFINE_ARITHMETIC_BINARY_CMP_PRIMITIVE(name,cname,icname)	\
-    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
+    IDIO_DEFINE_PRIMITIVE2_DS (name, cname, (IDIO n1, IDIO n2), "n1 n2", "") \
     {									\
 	IDIO_ASSERT (n1);						\
 	IDIO_ASSERT (n2);						\

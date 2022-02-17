@@ -36,6 +36,7 @@ IDIO idio_copy_bitset (IDIO obs);
 IDIO idio_not_bitset (IDIO bs);
 int idio_equal_bitsetp (IDIO args);
 
+char *idio_bitset_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_bitset_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_bitset ();

@@ -672,7 +672,7 @@ IDIO idio_unicode_lookup (char const *s)
  * unicode=? #U+1 #U+1 '(#t)
  */
 #define IDIO_DEFINE_UNICODE_PRIMITIVE2V(name,cname,cmp,accessor)	\
-    IDIO_DEFINE_PRIMITIVE2V (name, cname, (IDIO c1, IDIO c2, IDIO args)) \
+    IDIO_DEFINE_PRIMITIVE2V_DS (name, cname, (IDIO c1, IDIO c2, IDIO args), "c1 c2 [c ...]", "") \
     {									\
 	IDIO_ASSERT (c1);						\
 	IDIO_ASSERT (c2);						\

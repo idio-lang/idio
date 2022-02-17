@@ -1983,6 +1983,34 @@ print the internal details of `module`		\n\
 }
 #endif
 
+char *idio_module_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (seen);
+
+    IDIO_TYPE_ASSERT (module, v);
+
+    char *r = NULL;
+
+    *sizep = idio_asprintf (&r, "#<MOD ");
+
+    if (idio_S_nil == IDIO_MODULE_NAME (v)) {
+	/*
+	 * Code coverage:
+	 *
+	 * Coding error?
+	 */
+	IDIO_STRCAT (r, sizep, "(nil)");
+    } else {
+	size_t mn_size = 0;
+	char *mn = idio_as_string (IDIO_MODULE_NAME (v), &mn_size, 1, seen, 0);
+	IDIO_STRCAT_FREE (r, sizep, mn, mn_size);
+    }
+    IDIO_STRCAT (r, sizep, ">");
+
+    return r;
+}
+
 char *idio_module_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);

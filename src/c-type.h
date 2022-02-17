@@ -202,6 +202,7 @@ int idio_C_longdouble_C_ne_ULP (long double o1, long double o2, unsigned int max
 
 char *idio_C_char_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_C_number_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
+char *idio_C_pointer_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_C_pointer_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 
 void idio_init_c_type ();

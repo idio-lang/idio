@@ -1,6 +1,6 @@
-Is `cp` in any of the Unicode Categories ``M*``?
+Is `o` in any of the Unicode Categories ``M*``?
 
-:param cp: code point to test
-:type cp: unicode
+:param o: object to test
+:type o: unicode|string
 :return: boolean
 
