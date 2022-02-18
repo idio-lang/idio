@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -57,6 +57,8 @@ typedef struct idio_file_handle_stream_s {
 #define IDIO_MODE_RE	"re"
 #define IDIO_MODE_W	"w"
 #define IDIO_MODE_WE	"we"
+
+void idio_file_handle_format_error (char const *circumstance, char const *kind, char const *msg, IDIO filename, IDIO c_location);
 
 IDIO idio_file_handle_open_file (char const *func, IDIO name, IDIO mode, char const *def_mode, size_t dm_len);
 int idio_isa_file_handle (IDIO fh);

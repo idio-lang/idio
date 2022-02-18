@@ -55,6 +55,7 @@
 (nodocument Idio %%call/dc)
 (nodocument Idio %%call/uc)
 (nodocument Idio %%vm-trace)
+(nodocument Idio %%vm-trace-all)
 (nodocument Idio %%idio-dasm)
 (nodocument Idio %add-feature)
 (nodocument Idio %idio-lexical-object)

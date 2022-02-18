@@ -53,6 +53,7 @@
 #include "error.h"
 #include "evaluate.h"
 #include "expander.h"
+#include "file-handle.h"
 #include "fixnum.h"
 #include "frame.h"
 #include "handle.h"
@@ -111,13 +112,15 @@ IDIO idio_vm_module = idio_S_nil;
  *
  * You need the compile flag -DIDIO_VM_DIS to use it.
  */
-static int idio_vm_tracing0 = 0;
+static int idio_vm_tracing_user = 0;
+static int idio_vm_tracing_all = 0;
 static int idio_vm_tracing = 0;
 static char *idio_vm_tracing_in = ">>>>>>>>>>>>>>>>>>>>>>>>>";
 static char *idio_vm_tracing_out = "<<<<<<<<<<<<<<<<<<<<<<<<<";
 #ifdef IDIO_VM_DIS
 static int idio_vm_dis = 0;
 #endif
+FILE *idio_tracing_FILE;
 FILE *idio_dasm_FILE;
 int idio_vm_reports = 0;
 int idio_vm_reporting = 0;
@@ -326,6 +329,7 @@ static IDIO idio_vm_POSTFIX_OPERATOR_string = idio_S_nil;
 
 static idio_ai_t idio_vm_get_or_create_vvi (idio_ai_t mci);
 
+static struct timespec idio_vm_ts0;
 #ifdef IDIO_VM_PROF
 static uint64_t idio_vm_ins_counters[IDIO_I_MAX];
 static struct timespec idio_vm_ins_call_time[IDIO_I_MAX];
@@ -3341,16 +3345,112 @@ The function does not return.					\n\
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("%%vm-trace", vm_trace, (IDIO level), "level", "\
-set VM tracing to `level`				\n\
+void idio_vm_stop_tracing ()
+{
+    idio_vm_tracing_user = 0;
+    idio_vm_tracing_all = 0;
+    idio_vm_tracing = 0;
+
+    if (idio_tracing_FILE != stderr) {
+	fclose (idio_tracing_FILE);
+    }
+
+    idio_tracing_FILE = stderr;
+}
+
+void idio_vm_set_tracing_file (IDIO args)
+{
+    IDIO_ASSERT (args);
+
+    IDIO_TYPE_ASSERT (pair, args);
+
+    IDIO file = IDIO_PAIR_H (args);
+    char *mode_C = IDIO_MODE_W;
+    int free_mode_C = 0;
+    size_t mode_size = 0;
+
+    if (idio_S_nil != IDIO_PAIR_T (args)) {
+	IDIO mode = IDIO_PAIR_HT (args);
+	mode_C = idio_string_as_C (mode, &mode_size);
+	free_mode_C = 1;
+
+	/*
+	 * Use mode_size + 1 to avoid a truncation warning -- we're
+	 * just seeing if mode_C includes a NUL
+	 */
+	size_t C_size = idio_strnlen (mode_C, mode_size + 1);
+	if (C_size != mode_size) {
+	    IDIO_GC_FREE (mode_C, mode_size);
+
+	    idio_file_handle_format_error ("%%vm-trace", "mode", "contains an ASCII NUL", mode, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return;
+	}
+    }
+
+    if (idio_tracing_FILE != stderr) {
+	fclose (idio_tracing_FILE);
+    }
+
+    if (idio_S_nil == file) {
+	idio_tracing_FILE = stderr;
+    } else if (idio_isa_string (file)) {
+	size_t file_size = 0;
+	char *file_C = idio_string_as_C (file, &file_size);
+
+	/*
+	 * Use file_size + 1 to avoid a truncation warning -- we're
+	 * just seeing if file_C includes a NUL
+	 */
+	size_t C_size = idio_strnlen (file_C, file_size + 1);
+	if (C_size != file_size) {
+	    IDIO_GC_FREE (file_C, file_size);
+	    if (free_mode_C) {
+		IDIO_GC_FREE (mode_C, mode_size);
+	    }
+
+	    idio_file_handle_format_error ("%%vm-trace", "filename", "contains an ASCII NUL", file, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return;
+	}
+
+	idio_tracing_FILE = fopen (file_C, mode_C);
+	IDIO_GC_FREE (file_C, file_size);
+
+	if (NULL == idio_tracing_FILE) {
+	    perror ("fdopen");
+	    idio_tracing_FILE = stderr;
+	}
+    } else if (idio_isa_fd_handle (file)) {
+	idio_tracing_FILE = fdopen (IDIO_FILE_HANDLE_FD (file), mode_C);
+
+	if (NULL == idio_tracing_FILE) {
+	    perror ("fdopen");
+	    idio_tracing_FILE = stderr;
+	}
+    }
+
+    if (free_mode_C) {
+	IDIO_GC_FREE (mode_C, mode_size);
+    }
+}
+
+IDIO_DEFINE_PRIMITIVE1V_DS ("%%vm-trace", vm_trace, (IDIO level, IDIO args), "level [file [mode]]", "\
+set VM tracing to `level` for user code			\n\
 							\n\
 :param level: new VM tracing level			\n\
 :type level: fixnum					\n\
-							\n\
+:param file: new VM tracing file, defaults to ``#n``	\n\
+:type file: string, FD handle or ``#n``, optional	\n\
+:param mode: file mode, defaults to ``\"w\"``		\n\
+:type mode: string, optional				\n\
 :return: ``#<unspec>``					\n\
 ")
 {
     IDIO_ASSERT (level);
+    IDIO_ASSERT (args);
 
     /*
      * Test Case: vm-errors/vm-trace-bad-type.idio
@@ -3359,7 +3459,49 @@ set VM tracing to `level`				\n\
      */
     IDIO_USER_TYPE_ASSERT (fixnum, level);
 
-    idio_vm_tracing0 = IDIO_FIXNUM_VAL (level);
+    idio_vm_tracing_user = IDIO_FIXNUM_VAL (level);
+
+    if (idio_S_nil != args) {
+	idio_vm_set_tracing_file (args);
+    }
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE1V_DS ("%%vm-trace-all", vm_trace_all, (IDIO level, IDIO args), "level [file [mode]]", "\
+set VM tracing to `level` for all code			\n\
+							\n\
+:param level: new VM tracing level			\n\
+:type level: fixnum					\n\
+:param file: new VM tracing file, defaults to ``#n``	\n\
+:type file: string, FD handle or ``#n``, optional	\n\
+:param mode: file mode, defaults to ``\"w\"``		\n\
+:type mode: string, optional				\n\
+:return: ``#<unspec>``					\n\
+")
+{
+    IDIO_ASSERT (level);
+    IDIO_ASSERT (args);
+
+    /*
+     * Test Case: vm-errors/vm-trace-bad-type.idio
+     *
+     * %%vm-trace #t
+     */
+    IDIO_USER_TYPE_ASSERT (fixnum, level);
+
+    idio_vm_tracing_user = IDIO_FIXNUM_VAL (level);
+    if (idio_vm_tracing_user) {
+	idio_vm_tracing_all = 1;
+	idio_vm_tracing = 1;
+    } else {
+	idio_vm_tracing_all = 0;
+	idio_vm_tracing = 0;
+    }
+
+    if (idio_S_nil != args) {
+	idio_vm_set_tracing_file (args);
+    }
 
     return idio_S_unspec;
 }
@@ -3388,7 +3530,7 @@ set VM live disassembly to to `dis`			\n\
     return idio_S_unspec;
 }
 
-#define IDIO_VM_RUN_DIS(...)	if (idio_vm_dis) { fprintf (stderr, __VA_ARGS__); }
+#define IDIO_VM_RUN_DIS(...)	if (idio_vm_dis) { fprintf (idio_tracing_FILE, __VA_ARGS__); }
 #else
 #define IDIO_VM_RUN_DIS(...)
 #endif
@@ -3411,10 +3553,38 @@ IDIO idio_vm_closure_name (IDIO c)
  *
  * Used by the tracer.
  */
+static struct timespec idio_vm_ts_cur = {0, 0};
+static struct timespec idio_vm_ts_delta = {0, 0};
+void idio_vm_time_delta ()
+{
+    struct timespec ts;
+    if (clock_gettime (CLOCK_MONOTONIC, &ts) < 0) {
+	perror ("clock_gettime (CLOCK_MONOTONIC, ts)");
+    }
+
+    if (idio_vm_ts_cur.tv_sec) {
+	idio_vm_ts_delta.tv_sec = ts.tv_sec - idio_vm_ts_cur.tv_sec;
+	idio_vm_ts_delta.tv_nsec = ts.tv_nsec - idio_vm_ts_cur.tv_nsec;
+
+	if (idio_vm_ts_delta.tv_nsec < 0) {
+	    idio_vm_ts_delta.tv_nsec += IDIO_VM_NS;
+	    idio_vm_ts_delta.tv_sec -= 1;
+	}
+    }
+
+    idio_vm_ts_cur.tv_sec = ts.tv_sec;
+    idio_vm_ts_cur.tv_nsec = ts.tv_nsec;
+}
+
+/*
+ * Code coverage:
+ *
+ * Used by the tracer.
+ */
 static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 {
     if (idio_vm_tracing < 1 ||
-	idio_vm_tracing > idio_vm_tracing0) {
+	idio_vm_tracing > idio_vm_tracing_user) {
 	return;
     }
 
@@ -3438,15 +3608,10 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
      * %s	- expression types
      */
 
-#ifdef IDIO_VM_PROF
-    struct timespec ts;
-    if (clock_gettime (CLOCK_MONOTONIC, &ts) < 0) {
-	perror ("clock_gettime (CLOCK_MONOTONIC, ts)");
-    }
-    fprintf (stderr, "%09ld ", ts.tv_nsec);
-#endif
-    fprintf (stderr, "%6d ", getpid ());
-    fprintf (stderr, "%7td ", IDIO_THREAD_PC (thr) - 1);
+    idio_vm_time_delta ();
+    fprintf (idio_tracing_FILE, "%09ld ", idio_vm_ts_delta.tv_nsec);
+    fprintf (idio_tracing_FILE, "%6d ", getpid ());
+    fprintf (idio_tracing_FILE, "%7td ", IDIO_THREAD_PC (thr) - 1);
 
     IDIO lo_sh = idio_open_output_string_handle_C ();
     IDIO fmci = IDIO_THREAD_EXPR (thr);
@@ -3472,18 +3637,18 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
     } else {
 	idio_display (fmci, lo_sh);
     }
-    idio_debug ("%-40s", idio_get_output_string (lo_sh));
+    idio_debug_FILE (idio_tracing_FILE, "%-40s", idio_get_output_string (lo_sh));
 
-    fprintf (stderr, "%.*s  ", idio_vm_tracing, idio_vm_tracing_in);
+    fprintf (idio_tracing_FILE, "%.*s  ", idio_vm_tracing, idio_vm_tracing_in);
 
     IDIO name = idio_ref_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
     if (idio_S_nil != name) {
 	size_t size = 0;
 	char *s = idio_display_string (name, &size);
-	fprintf (stderr, "(%s", s);
+	fprintf (idio_tracing_FILE, "(%s", s);
 	IDIO_GC_FREE (s, size);
     } else {
-	fprintf (stderr, "(-anon-");
+	fprintf (idio_tracing_FILE, "(-anon-");
     }
 
     IDIO sigstr = idio_ref_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
@@ -3491,35 +3656,33 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 	size_t size = 0;
 	char *s = idio_display_string (sigstr, &size);
 	if (size) {
-	    fprintf (stderr, " %s", s);
+	    fprintf (idio_tracing_FILE, " %s", s);
 	}
 	IDIO_GC_FREE (s, size);
     }
-    fprintf (stderr, ")");
+    fprintf (idio_tracing_FILE, ")");
 
-    fprintf (stderr, " was ");
+    fprintf (idio_tracing_FILE, " was ");
     switch (ins) {
     case IDIO_A_FUNCTION_GOTO:
-	fprintf (stderr, "tail-called as\n");
+	fprintf (idio_tracing_FILE, "tail-called as\n");
 	break;
     case IDIO_A_FUNCTION_INVOKE:
-	fprintf (stderr, "called as\n");
+	fprintf (idio_tracing_FILE, "called as\n");
 	break;
     }
 
     /*
      * indent back to same level...
      */
-#ifdef IDIO_VM_PROF
-    fprintf (stderr, "%9s ", "");
-#endif
-    fprintf (stderr, "%6s ", "");
-    fprintf (stderr, "%7s ", "");
-    fprintf (stderr, "%40s", "");
+    fprintf (idio_tracing_FILE, "%9s ", "");
+    fprintf (idio_tracing_FILE, "%6s ", "");
+    fprintf (idio_tracing_FILE, "%7s ", "");
+    fprintf (idio_tracing_FILE, "%40s", "");
 
-    fprintf (stderr, "%*s  ", idio_vm_tracing, "");
+    fprintf (idio_tracing_FILE, "%*s  ", idio_vm_tracing, "");
 
-    fprintf (stderr, "(");
+    fprintf (idio_tracing_FILE, "(");
     int first = 1;
     while (idio_S_nil != expr) {
 	IDIO e = IDIO_PAIR_H (expr);
@@ -3527,18 +3690,18 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 	if (first) {
 	    first = 0;
 	} else {
-	    fprintf (stderr, " ");
+	    fprintf (idio_tracing_FILE, " ");
 	}
 	size_t size = 0;
 	char *s = idio_report_string (e, &size, 4, idio_S_nil, 1);
-	fprintf (stderr, "%s", s);
+	fprintf (idio_tracing_FILE, "%s", s);
 	IDIO_GC_FREE (s, size);
 
 	expr = IDIO_PAIR_T (expr);
     }
-    fprintf (stderr, ")");
+    fprintf (idio_tracing_FILE, ")");
 
-    fprintf (stderr, "\n");
+    fprintf (idio_tracing_FILE, "\n");
 }
 
 /*
@@ -3549,7 +3712,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 static void idio_vm_primitive_call_trace (IDIO primdata, IDIO thr, int nargs)
 {
     if (idio_vm_tracing < 1 ||
-	idio_vm_tracing > idio_vm_tracing0) {
+	idio_vm_tracing > idio_vm_tracing_user) {
 	return;
     }
 
@@ -3564,15 +3727,10 @@ static void idio_vm_primitive_call_trace (IDIO primdata, IDIO thr, int nargs)
      * %.*s	- trace-depth indent (>= 1)
      * %s	- expression
      */
-#ifdef IDIO_VM_PROF
-    struct timespec ts;
-    if (clock_gettime (CLOCK_MONOTONIC, &ts) < 0) {
-	perror ("clock_gettime (CLOCK_MONOTONIC, ts)");
-    }
-    fprintf (stderr, "%09ld ", ts.tv_nsec);
-#endif
-    fprintf (stderr, "%6d ", getpid ());
-    fprintf (stderr, "%7td ", IDIO_THREAD_PC (thr) - 1);
+    idio_vm_time_delta ();
+    fprintf (idio_tracing_FILE, "%09ld ", idio_vm_ts_delta.tv_nsec);
+    fprintf (idio_tracing_FILE, "%6d ", getpid ());
+    fprintf (idio_tracing_FILE, "%7td ", IDIO_THREAD_PC (thr) - 1);
 
     IDIO lo_sh = idio_open_output_string_handle_C ();
     IDIO fmci = IDIO_THREAD_EXPR (thr);
@@ -3598,46 +3756,44 @@ static void idio_vm_primitive_call_trace (IDIO primdata, IDIO thr, int nargs)
     } else {
 	idio_display (fmci, lo_sh);
     }
-    idio_debug ("%-40s", idio_get_output_string (lo_sh));
+    idio_debug_FILE (idio_tracing_FILE, "%-40s", idio_get_output_string (lo_sh));
 
-    fprintf (stderr, "%.*s  ", idio_vm_tracing, idio_vm_tracing_in);
-    fprintf (stderr, "(%s", IDIO_PRIMITIVE_NAME (primdata));
+    fprintf (idio_tracing_FILE, "%.*s  ", idio_vm_tracing, idio_vm_tracing_in);
+    fprintf (idio_tracing_FILE, "(%s", IDIO_PRIMITIVE_NAME (primdata));
 
     IDIO sigstr = idio_ref_property (primdata, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
     if (idio_S_nil != sigstr) {
 	size_t size = 0;
 	char *s = idio_display_string (sigstr, &size);
-	fprintf (stderr, " %s", s);
+	fprintf (idio_tracing_FILE, " %s", s);
 	IDIO_GC_FREE (s, size);
     }
-    fprintf (stderr, ") primitive call as\n");
+    fprintf (idio_tracing_FILE, ") primitive call as\n");
 
     /*
      * indent back to same level...
      */
-#ifdef IDIO_VM_PROF
-    fprintf (stderr, "%9s ", "");
-#endif
-    fprintf (stderr, "%6s ", "");
-    fprintf (stderr, "%7s ", "");
-    fprintf (stderr, "%40s", "");
+    fprintf (idio_tracing_FILE, "%9s ", "");
+    fprintf (idio_tracing_FILE, "%6s ", "");
+    fprintf (idio_tracing_FILE, "%7s ", "");
+    fprintf (idio_tracing_FILE, "%40s", "");
 
-    fprintf (stderr, "%*s  ", idio_vm_tracing, "");
+    fprintf (idio_tracing_FILE, "%*s  ", idio_vm_tracing, "");
 
-    fprintf (stderr, "(%s", IDIO_PRIMITIVE_NAME (primdata));
+    fprintf (idio_tracing_FILE, "(%s", IDIO_PRIMITIVE_NAME (primdata));
     if (nargs > 1) {
 	size_t size = 0;
 	char *s = idio_report_string (IDIO_THREAD_REG1 (thr), &size, 4, idio_S_nil, 1);
-	fprintf (stderr, " %s", s);
+	fprintf (idio_tracing_FILE, " %s", s);
 	IDIO_GC_FREE (s, size);
     }
     if (nargs > 0) {
 	size_t size = 0;
 	char *s = idio_report_string (IDIO_THREAD_VAL (thr), &size, 4, idio_S_nil, 1);
-	fprintf (stderr, " %s", s);
+	fprintf (idio_tracing_FILE, " %s", s);
 	IDIO_GC_FREE (s, size);
     }
-    fprintf (stderr, ")\n");
+    fprintf (idio_tracing_FILE, ")\n");
 }
 
 /*
@@ -3648,7 +3804,7 @@ static void idio_vm_primitive_call_trace (IDIO primdata, IDIO thr, int nargs)
 static void idio_vm_primitive_result_trace (IDIO thr)
 {
     if (idio_vm_tracing < 1 ||
-	idio_vm_tracing > idio_vm_tracing0) {
+	idio_vm_tracing > idio_vm_tracing_user) {
 	return;
     }
 
@@ -3664,20 +3820,15 @@ static void idio_vm_primitive_result_trace (IDIO thr)
      * %s	- value
      */
 
-#ifdef IDIO_VM_PROF
-    struct timespec ts;
-    if (clock_gettime (CLOCK_MONOTONIC, &ts) < 0) {
-	perror ("clock_gettime (CLOCK_MONOTONIC, ts)");
-    }
-    fprintf (stderr, "%09ld ", ts.tv_nsec);
-#endif
-    fprintf (stderr, "%6d ", getpid ());
-    fprintf (stderr, "%7td ", IDIO_THREAD_PC (thr));
-    fprintf (stderr, "%40s", "");
-    fprintf (stderr, "%.*s  ", idio_vm_tracing, idio_vm_tracing_out);
+    idio_vm_time_delta ();
+    fprintf (idio_tracing_FILE, "%09ld ", idio_vm_ts_delta.tv_nsec);
+    fprintf (idio_tracing_FILE, "%6d ", getpid ());
+    fprintf (idio_tracing_FILE, "%7td ", IDIO_THREAD_PC (thr));
+    fprintf (idio_tracing_FILE, "%40s", "");
+    fprintf (idio_tracing_FILE, "%.*s  ", idio_vm_tracing, idio_vm_tracing_out);
     size_t size = 0;
     char *s = idio_report_string (IDIO_THREAD_VAL (thr), &size, 4, idio_S_nil, 1);
-    fprintf (stderr, "%s\n", s);
+    fprintf (idio_tracing_FILE, "%s\n", s);
     IDIO_GC_FREE (s, size);
 }
 
@@ -4909,14 +5060,14 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	    IDIO_VM_RUN_DIS ("RETURN to %" PRIdPTR, pc);
 	    IDIO_THREAD_PC (thr) = pc;
-	    if (idio_vm_tracing0 &&
+	    if (idio_vm_tracing_user &&
 		idio_vm_tracing <= 1) {
 		/* fprintf (stderr, "XXX RETURN to %td: tracing depth <= 1!\n", pc); */
 	    } else {
 		idio_vm_tracing--;
 	    }
 	    if (idio_vm_tracing > 0 &&
-		idio_vm_tracing < idio_vm_tracing0) {
+		idio_vm_tracing < idio_vm_tracing_user) {
 		/*
 		 * %9d	- clock ns
 		 * SPACE
@@ -4928,21 +5079,15 @@ int idio_vm_run1 (IDIO thr)
 		 * %.*s	- trace-depth indent
 		 * %s	- value
 		 */
-#ifdef IDIO_VM_PROF
-		struct timespec ts;
-		if (clock_gettime (CLOCK_MONOTONIC, &ts) < 0) {
-		    perror ("clock_gettime (CLOCK_MONOTONIC, ts)");
-		}
-		fprintf (stderr, "%09ld ", ts.tv_nsec);
-#endif
-
-		fprintf (stderr, "%6d ", getpid ());
-		fprintf (stderr, "%7td ", IDIO_THREAD_PC (thr));
-		fprintf (stderr, "%40s", "");
-		fprintf (stderr, "%.*s  ", idio_vm_tracing, idio_vm_tracing_out);
+		idio_vm_time_delta ();
+		fprintf (idio_tracing_FILE, "%09ld ", idio_vm_ts_delta.tv_nsec);
+		fprintf (idio_tracing_FILE, "%6d ", getpid ());
+		fprintf (idio_tracing_FILE, "%7td ", IDIO_THREAD_PC (thr));
+		fprintf (idio_tracing_FILE, "%40s", "");
+		fprintf (idio_tracing_FILE, "%.*s  ", idio_vm_tracing, idio_vm_tracing_out);
 		size_t size = 0;
 		char *s = idio_report_string (IDIO_THREAD_VAL (thr), &size, 4, idio_S_nil, 1);
-		fprintf (stderr, "%s\n", s);
+		fprintf (idio_tracing_FILE, "%s\n", s);
 		IDIO_GC_FREE (s, size);
 	    }
 #ifdef IDIO_VM_PROF
@@ -4980,7 +5125,7 @@ int idio_vm_run1 (IDIO thr)
 	    idio_array_push (idio_vm_krun, IDIO_LIST2 (k, idio_get_output_string (dosh)));
 	    idio_command_suppress_rcse = idio_S_false;
 
-	    if (idio_vm_tracing0) {
+	    if (idio_vm_tracing_user) {
 		idio_vm_tracing = 1;
 	    }
 	}
@@ -4990,7 +5135,9 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("POP-ABORT\n");
 
 	    idio_array_pop (idio_vm_krun);
-	    idio_vm_tracing = 0;
+	    if (0 == idio_vm_tracing_all) {
+		idio_vm_tracing = 0;
+	    }
 	}
 	break;
     case IDIO_A_ALLOCATE_FRAME1:
@@ -7101,8 +7248,26 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 
 		    IDIO signal_condition = idio_array_ref_index (idio_vm_signal_handler_conditions, (idio_ai_t) signum);
 		    if (idio_S_nil != signal_condition) {
-			if (idio_vm_tracing0) {
-			    fprintf (stderr, " ****** %s/%d - condition handler\n", idio_libc_signal_name (signum), signum);
+			if (idio_vm_tracing_user) {
+			    struct timespec ts;
+			    if (clock_gettime (CLOCK_MONOTONIC, &ts) < 0) {
+				perror ("clock_gettime (CLOCK_MONOTONIC, ts)");
+			    }
+
+			    struct timespec td;
+			    td.tv_sec = ts.tv_sec - idio_vm_ts0.tv_sec;
+			    td.tv_nsec = ts.tv_nsec - idio_vm_ts0.tv_nsec;
+			    if (td.tv_nsec < 0) {
+				td.tv_nsec += IDIO_VM_NS;
+				ts.tv_sec -= 1;
+			    }
+			    /*
+			     * Printing time_t portably?  Technically,
+			     * time_t is an arithmetic type which
+			     * could be signed, unsigned or a floating
+			     * point type.
+			     */
+			    fprintf (idio_tracing_FILE, "SIGNAL +%" PRIdMAX ".%09ld %s/%d -> condition handler\n", (intmax_t) td.tv_sec, td.tv_nsec, idio_libc_signal_name (signum), signum);
 			}
 			idio_vm_raise_condition (idio_S_true, signal_condition, 1, 1);
 
@@ -8433,6 +8598,7 @@ void idio_vm_add_primitives ()
     IDIO_ADD_PRIMITIVE (vm_continuations);
     IDIO_ADD_PRIMITIVE (vm_apply_continuation);
     IDIO_ADD_PRIMITIVE (vm_trace);
+    IDIO_ADD_PRIMITIVE (vm_trace_all);
 #ifdef IDIO_VM_DIS
     IDIO_ADD_PRIMITIVE (vm_dis);
 #endif
@@ -8581,6 +8747,7 @@ void idio_final_vm ()
 #endif
     }
 
+    fclose (idio_tracing_FILE);
     idio_ia_free (idio_all_code);
     idio_all_code = NULL;
 }
@@ -8667,6 +8834,7 @@ void idio_init_vm ()
     }
 #endif
     idio_dasm_FILE = stderr;
+    idio_tracing_FILE = stderr;
 
     idio_vm_symbol_t *cs = idio_vm_symbols;
     for (; cs->name != NULL; cs++) {
@@ -8682,5 +8850,9 @@ void idio_init_vm ()
     }
 
     idio_vm_prompt_tag_type = idio_struct_type (IDIO_SYMBOLS_C_INTERN ("prompt-tag"), idio_S_nil, IDIO_LIST1 (IDIO_SYMBOLS_C_INTERN ("name")));
+
+    if (clock_gettime (CLOCK_MONOTONIC, &idio_vm_ts0) < 0) {
+	perror ("clock_gettime (CLOCK_MONOTONIC, ts)");
+    }
 }
 

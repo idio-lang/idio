@@ -5720,6 +5720,7 @@ a wrapper to libc :manpage:`fork(2)`				\n\
     }
 
     if (0 == C_pid) {
+	idio_vm_stop_tracing ();
 	idio_job_control_cmd_pid = getpid ();
 	idio_job_control_interactive = 0;
 	idio_command_suppress_rcse = idio_S_false;

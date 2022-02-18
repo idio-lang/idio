@@ -287,6 +287,8 @@ void idio_vm_thread_state (IDIO thr);
 
 time_t idio_vm_elapsed (void);
 
+void idio_vm_stop_tracing ();
+
 void idio_init_vm_values ();
 void idio_init_vm ();
 
