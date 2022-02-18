@@ -91,7 +91,7 @@ test (->string (find-module 'Idio))		"#<MOD Idio>"
 test (->string %char-set:letter)		"#<SI sparse-char-set size=1114112 planes=#[ #B{ 65536 40:01111111 48-50 11100000 01111111 68-70 11100000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]>"
 test (->string #B{ 3 })				"#B{ 3 }"
 test (->string libc/INT_MAX)			"2147483647"
-test (->string libc/NULL)			"#<C/*>"
+test (->string libc/NULL)			"#<C/* C/pointer>"
 
 ;; ->string for debug builds prints out the internal pointer
 ;test (->string ^error)				"#<ST ^error #<ST ^condition #n>>"
@@ -113,7 +113,7 @@ test (display-string (find-module 'Idio))	"#<MOD Idio>"
 test (display-string %char-set:letter)		"#<SI sparse-char-set size=1114112 planes=#[ #B{ 65536 40:01111111 48-50 11100000 01111111 68-70 11100000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]>"
 test (display-string #B{ 3 })			"#B{ 3 }"
 test (display-string libc/INT_MAX)		"2147483647"
-test (display-string libc/NULL)			"#<C/*>"
+test (display-string libc/NULL)			"#<C/* C/pointer>"
 
 ;; ->string for debug builds prints out the internal pointer
 ;test (display-string ^error)			"#<ST ^error #<ST ^condition #n>>"

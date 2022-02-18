@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -89,17 +89,17 @@ libc-poll-error-load := {
 poller := (make-poller)
 
 libc-poll-error-load "libc-poll-errors/poller-register-bad-poller-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
-libc-poll-error-load "libc-poll-errors/poller-register-invalid-poller-pointer-type.idio" "poller-register poller='#<C/*>' a C/pointer is not a struct idio_libc_poller_s"
+libc-poll-error-load "libc-poll-errors/poller-register-invalid-poller-pointer-type.idio" "poller-register poller='#<C/* C/pointer>' a C/pointer is not a struct idio_libc_poller_s"
 libc-poll-error-load "libc-poll-errors/poller-register-bad-fdh-type.idio" "bad parameter type: '#t' a constant is not a fd-handle|C/int"
 libc-poll-error-load "libc-poll-errors/poller-register-bad-eventmask-list-type.idio" "bad parameter type: '#t' a constant is not a C_int"
 libc-poll-error-load "libc-poll-errors/poller-register-bad-eventmask-type.idio" "bad parameter type: '#t' a constant is not a C_int"
 
 libc-poll-error-load "libc-poll-errors/poller-deregister-bad-poller-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
-libc-poll-error-load "libc-poll-errors/poller-deregister-invalid-poller-pointer-type.idio" "poller-deregister poller='#<C/*>' a C/pointer is not a struct idio_libc_poller_s"
+libc-poll-error-load "libc-poll-errors/poller-deregister-invalid-poller-pointer-type.idio" "poller-deregister poller='#<C/* C/pointer>' a C/pointer is not a struct idio_libc_poller_s"
 libc-poll-error-load "libc-poll-errors/poller-deregister-bad-fdh-type.idio" "bad parameter type: '#t' a constant is not a fd-handle|C/int"
 
 libc-poll-error-load "libc-poll-errors/poller-poll-bad-poller-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
-libc-poll-error-load "libc-poll-errors/poller-poll-invalid-poller-pointer-type.idio" "poller-poll poller='#<C/*>' a C/pointer is not a struct idio_libc_poller_s"
+libc-poll-error-load "libc-poll-errors/poller-poll-invalid-poller-pointer-type.idio" "poller-poll poller='#<C/* C/pointer>' a C/pointer is not a struct idio_libc_poller_s"
 libc-poll-error-load "libc-poll-errors/poller-poll-bad-timeout-type.idio" "bad parameter type: '#t' a constant is not a fixnum|bignum|C/int"
 
 libc-poll-error-load "libc-poll-errors/poll-name-bad-type.idio" "bad parameter type: '#t' a constant is not a fixnum|C/int"
