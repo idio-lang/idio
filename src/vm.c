@@ -7414,9 +7414,9 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 #ifdef IDIO_VM_PROF
 	fh = idio_vm_perf_FILE;
 #endif
-	fprintf (fh, "[%d]vm_run: %10" PRIdPTR " ins in time %4ld.%03ld => %6" PRIdPTR " i/ms\n", getpid(), loops, td.tv_sec, (long) td.tv_usec / 1000, ipms);
+	fprintf (fh, "[%d]vm_run: %10" PRIdPTR " ins in time %4jd.%03ld => %6" PRIdPTR " i/ms\n", getpid(), loops, (intmax_t) td.tv_sec, (long) td.tv_usec / 1000, ipms);
 	if (td.tv_sec > 10) {
-	    fprintf (fh, "[%d>%d] %lds: slow call to v_PC0 = %td\n", getppid (), getpid (), td.tv_sec, v_PC0);
+	    fprintf (fh, "[%d>%d] %jds: slow call to v_PC0 = %td\n", getppid (), getpid (), (intmax_t) td.tv_sec, v_PC0);
 	}
     }
 #endif
@@ -7603,7 +7603,7 @@ idio_ai_t idio_vm_extend_constants (IDIO v)
 IDIO idio_vm_constants_ref (idio_ai_t gci)
 {
     if (gci > idio_array_size (idio_vm_constants)) {
-	fprintf (stderr, "vm-constants-ref: %td > %zu\n", gci, idio_array_size (idio_vm_constants));
+	fprintf (stderr, "vm-constants-ref: %td > %td\n", gci, idio_array_size (idio_vm_constants));
 	IDIO_C_ASSERT (0);
     }
     return idio_array_ref_index (idio_vm_constants, gci);
@@ -7680,7 +7680,7 @@ Return the current vm constants array.		\n\
 IDIO idio_vm_src_constants_ref (idio_ai_t gci)
 {
     if (gci > idio_array_size (idio_vm_src_constants)) {
-	fprintf (stderr, "vm-src-constants-ref: %td > %zu\n", gci, idio_array_size (idio_vm_src_constants));
+	fprintf (stderr, "vm-src-constants-ref: %td > %td\n", gci, idio_array_size (idio_vm_src_constants));
 	IDIO_C_ASSERT (0);
     }
     return idio_array_ref_index (idio_vm_src_constants, gci);
@@ -8723,12 +8723,12 @@ void idio_final_vm ()
 			float time_pct = i_time * 100 / t_time;
 			t_pct += time_pct;
 
-			fprintf (idio_vm_perf_FILE, "vm-ins:  %4" PRIu8 " %-40s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f",
+			fprintf (idio_vm_perf_FILE, "vm-ins:  %4" PRIu8 " %-40s %8" PRIu64 " %5.1f %5jd.%09ld %5.1f",
 				 i,
 				 bc_name,
 				 idio_vm_ins_counters[i],
 				 count_pct,
-				 idio_vm_ins_call_time[i].tv_sec,
+				 (intmax_t) idio_vm_ins_call_time[i].tv_sec,
 				 idio_vm_ins_call_time[i].tv_nsec,
 				 time_pct);
 			double call_time = 0;
@@ -8740,7 +8740,7 @@ void idio_final_vm ()
 		    }
 		}
 	    }
-	    fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-38s %10" PRIu64 " %5.1f %5ld.%09ld %5.1f\n", "", "total", c, c_pct, t.tv_sec, t.tv_nsec, t_pct);
+	    fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-38s %10" PRIu64 " %5.1f %5jd.%09ld %5.1f\n", "", "total", c, c_pct, (intmax_t) t.tv_sec, t.tv_nsec, t_pct);
 #endif
 	}
 

@@ -1715,7 +1715,7 @@ void idio_gc_closure_stats (IDIO c)
 	if (IDIO_CLOSURE_CALL_TIME (c).tv_sec ||
 	    IDIO_CLOSURE_CALL_TIME (c).tv_nsec ||
 	    idio_S_unspec != name) {
-	    fprintf (idio_vm_perf_FILE, "%+5lds gc_sweep_free Clos %6td %8" PRIu64, idio_vm_elapsed (), IDIO_CLOSURE_CODE_PC (c), IDIO_CLOSURE_CALLED (c));
+	    fprintf (idio_vm_perf_FILE, "%+5jds gc_sweep_free Clos %6zu %8" PRIu64, (intmax_t) idio_vm_elapsed (), IDIO_CLOSURE_CODE_PC (c), IDIO_CLOSURE_CALLED (c));
 
 	    /*
 	     * A little more complicated to get the closure's name
@@ -1726,7 +1726,7 @@ void idio_gc_closure_stats (IDIO c)
 		fprintf (idio_vm_perf_FILE, " %-40s", "--");
 	    }
 
-	    fprintf (idio_vm_perf_FILE, " %5ld.%09ld", IDIO_CLOSURE_CALL_TIME (c).tv_sec, IDIO_CLOSURE_CALL_TIME (c).tv_nsec);
+	    fprintf (idio_vm_perf_FILE, " %5jd.%09ld", (intmax_t) IDIO_CLOSURE_CALL_TIME (c).tv_sec, IDIO_CLOSURE_CALL_TIME (c).tv_nsec);
 
 	    double call_time = (IDIO_PRIMITIVE_CALL_TIME (c).tv_sec * IDIO_VM_NS + IDIO_PRIMITIVE_CALL_TIME (c).tv_nsec) / IDIO_PRIMITIVE_CALLED (c);
 	    fprintf (idio_vm_perf_FILE, " %11.f", call_time);
@@ -1763,7 +1763,7 @@ void idio_gc_closure_stats (IDIO c)
 void idio_gc_primitive_stats (IDIO p)
 {
     if (IDIO_PRIMITIVE_CALLED (p)) {
-	fprintf (idio_vm_perf_FILE, "%+5lds gc_sweep_free Prim %10p %8" PRIu64 " %-40s %5ld.%09ld", idio_vm_elapsed (), p, IDIO_PRIMITIVE_CALLED (p), IDIO_PRIMITIVE_NAME (p), IDIO_PRIMITIVE_CALL_TIME (p).tv_sec, IDIO_PRIMITIVE_CALL_TIME (p).tv_nsec);
+	fprintf (idio_vm_perf_FILE, "%+5jds gc_sweep_free Prim %10p %8" PRIu64 " %-40s %5jd.%09ld", (intmax_t) idio_vm_elapsed (), p, IDIO_PRIMITIVE_CALLED (p), IDIO_PRIMITIVE_NAME (p), (intmax_t) IDIO_PRIMITIVE_CALL_TIME (p).tv_sec, IDIO_PRIMITIVE_CALL_TIME (p).tv_nsec);
 
 	double call_time = (IDIO_PRIMITIVE_CALL_TIME (p).tv_sec * IDIO_VM_NS + IDIO_PRIMITIVE_CALL_TIME (p).tv_nsec) / IDIO_PRIMITIVE_CALLED (p);
 	fprintf (idio_vm_perf_FILE, " %11.f", call_time);
@@ -1989,8 +1989,8 @@ void idio_gc_stats ()
 	    gc->verbose--;
 
 #ifdef IDIO_VM_PROF
-	    fprintf (idio_gc_stats_FILE, "gc-stats: all closures   %4ld.%09ld %7.3f\n", idio_gc_all_closure_t.tv_sec, idio_gc_all_closure_t.tv_nsec, idio_gc_all_closure_ru);
-	    fprintf (idio_gc_stats_FILE, "gc-stats: all primitives %4ld.%09ld %7.3f\n", idio_gc_all_primitive_t.tv_sec, idio_gc_all_primitive_t.tv_nsec, idio_gc_all_primitive_ru);
+	    fprintf (idio_gc_stats_FILE, "gc-stats: all closures   %4jd.%09ld %7.3f\n", (intmax_t) idio_gc_all_closure_t.tv_sec, idio_gc_all_closure_t.tv_nsec, idio_gc_all_closure_ru);
+	    fprintf (idio_gc_stats_FILE, "gc-stats: all primitives %4jd.%09ld %7.3f\n", (intmax_t) idio_gc_all_primitive_t.tv_sec, idio_gc_all_primitive_t.tv_nsec, idio_gc_all_primitive_ru);
 #endif
 
 	    count = uc;

@@ -2426,7 +2426,7 @@ size_t idio_unit_test_hash_n (size_t const n, size_t const x0)
     }
 
     double pct = IDIO_HASH_COUNT (ht) * 100 / n;
-    fprintf (stderr, "%%unit-test-hash %8zu: %5ld.%06ld %8zu/%-8zu %5.1f\n", n, td.tv_sec, td.tv_usec, IDIO_HASH_COUNT (ht), IDIO_HASH_SIZE (ht), pct);
+    fprintf (stderr, "%%unit-test-hash %8zu: %5jd.%06ld %8zu/%-8zu %5.1f\n", n, (intmax_t) td.tv_sec, (long) td.tv_usec, IDIO_HASH_COUNT (ht), IDIO_HASH_SIZE (ht), pct);
 
     return IDIO_HASH_COUNT (ht);
 }

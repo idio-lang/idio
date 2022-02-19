@@ -31,6 +31,7 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <setjmp.h>
 #include <stdarg.h>
@@ -2336,7 +2337,7 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char const *s, size_t const slen)
 	} else {
 	     if (r != slen) {
 #ifdef IDIO_DEBUG
-		 fprintf (stderr, "write: %4td / %4zu\n", r, slen);
+		 fprintf (stderr, "write: %4zd / %4zu\n", r, slen);
 #endif
 	     }
 	}
@@ -2504,7 +2505,7 @@ int idio_flush_file_handle (IDIO fh)
 	      r = 0;
 	 } else {
 #ifdef IDIO_DEBUG
-	      fprintf (stderr, "write: %4td / %4d\n", n, IDIO_FILE_HANDLE_COUNT (fh));
+	      fprintf (stderr, "write: %4zd / %4d\n", n, IDIO_FILE_HANDLE_COUNT (fh));
 #endif
 	 }
     }
@@ -3420,7 +3421,7 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 
 			    if (sb.st_size > 10) {
 #ifdef IDIO_DEBUG
-				fprintf (stderr, "WARNING: find-lib: %s is %zd bytes (more than the estimated 10)\n", libname, sb.st_size);
+				fprintf (stderr, "WARNING: find-lib: %s is %lld bytes (more than the estimated 10)\n", libname, (long long) sb.st_size);
 #endif
 			    }
 
