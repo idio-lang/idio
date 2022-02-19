@@ -204,8 +204,8 @@ cppcheck:
 
 # the include $(deps) means that, in effect, *.d are the first things
 # built and some of them require idio-system.h -- and %.d doesn't work
-env.d file-handle.d idio.d vars.d : idio-system.h
-libc-api.d libc-wrap.d : idio-config.h
+env.d file-handle.d idio.d libc-api.d vars.d : idio-system.h
+$(deps) : idio-config.h
 
 idio-system.h Makefile.system $(LIBDIR)/system.idio : $(UTILSDIR)/bin/gen-idio-system $(sources) $(filter-out $(LIBDIR)/system.idio,$(isources)) $(SRCDIR)/version
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(LIBDIR)/system.idio

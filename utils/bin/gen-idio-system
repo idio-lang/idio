@@ -147,7 +147,7 @@ MULTIARCH=
 # gcc-8 on some systems
 case "${CC}" in
 gcc*)
-    if [[ ${CC} ]] && ! MULTIARCH=$(${CC} -print-multiarch) 2>/dev/null ; then
+    if [[ ${CC} ]] && ! MULTIARCH=$(${CC} -print-multiarch 2>/dev/null) ; then
 	:
     fi
     ;;

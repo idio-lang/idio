@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <setjmp.h>
 #include <stdarg.h>
@@ -39,7 +40,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <inttypes.h>
+#include "idio-config.h"
 
 #include "gc.h"
 #include "idio.h"

@@ -42,6 +42,7 @@
 #include <unistd.h>
 
 #include "idio-system.h"
+#include "idio-config.h"
 
 #include "gc.h"
 #include "idio.h"

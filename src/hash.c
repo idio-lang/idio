@@ -41,6 +41,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "idio-config.h"
+
 #include "gc.h"
 #include "idio.h"
 

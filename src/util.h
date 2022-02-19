@@ -76,12 +76,25 @@ IDIO idio_add_feature (IDIO f);
 IDIO idio_add_feature_ps (char const *p, size_t plen, char const *s, size_t slen);
 IDIO idio_add_feature_pi (char const *p, size_t plen, size_t size);
 
-#if ! defined (strnlen)
+#if ! defined (IDIO_HAVE_STRNLEN)
 size_t strnlen (char const *s, size_t maxlen);
 #endif
 
-#if ! defined (memrchr)
+#if ! defined (IDIO_HAVE_MEMRCHR)
 void *memrchr (void const *s, int c, size_t n);
+#endif
+
+#if ! defined (IDIO_HAVE_CLOCK_GETTIME)
+#ifdef __APPLE__
+typedef enum {
+    CLOCK_REALTIME,
+    CLOCK_MONOTONIC,
+    CLOCK_PROCESS_CPUTIME_ID,
+    CLOCK_THREAD_CPUTIME_ID
+} clockid_t;
+
+int clock_gettime (clockid_t clk_id, struct timespec *tp);
+#endif
 #endif
 
 size_t idio_strnlen (char const *s, size_t maxlen);

@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <setjmp.h>
@@ -37,6 +38,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "idio-config.h"
 
 #include "gc.h"
 #include "idio.h"
@@ -2884,7 +2887,7 @@ IDIO idio_add_feature_pi (char const *p, size_t const plen, size_t const size)
     return r;
 }
 
-#ifndef IDIO_HAVE_STRNLEN
+#if ! defined (IDIO_HAVE_STRNLEN)
 /*
  * strnlen is missing up to at least Mac OS X 10.5.8 -- at some later
  * point strnlen was added
@@ -2901,7 +2904,7 @@ size_t strnlen (char const *s, size_t maxlen)
 }
 #endif
 
-#ifndef IDIO_HAVE_MEMRCHR
+#if ! defined (IDIO_HAVE_MEMRCHR)
 /*
  * SunOS / Mac OS X
  */
@@ -2918,6 +2921,84 @@ void *memrchr (void const *s, int const c, size_t n)
 
     return NULL;
 }
+#endif
+
+#if ! defined (IDIO_HAVE_CLOCK_GETTIME)
+#ifdef __MACH__
+/*
+ * Originally https://gist.github.com/jbenet/1087739 from
+ * https://stackoverflow.com/questions/5167269/clock-gettime-alternative-in-mac-os-x
+ *
+ * Also https://dshil.github.io/blog/missed-os-x-clock-guide/ which
+ * leads to https://dshil.github.io/blog/missed-os-x-clock-guide/
+ *
+ * None of the functions have man pages...
+ */
+#include <mach/clock.h>
+#include <mach/mach.h>
+#include <mach/mach_time.h>
+#include <sched.h>
+
+static mach_timebase_info_data_t __clock_gettime_inf;
+
+int clock_gettime (clockid_t clk_id, struct timespec *tp)
+{
+    clock_serv_t cs;
+    mach_timespec_t mts;
+
+    clockid_t clk_serv_id;
+
+    uint64_t start, end, delta, nano;
+
+    int retval = -1;
+    int ret;
+
+    switch (clk_id) {
+    case CLOCK_REALTIME:
+    case CLOCK_MONOTONIC:
+	clk_serv_id = (clk_id == CLOCK_REALTIME ? CALENDAR_CLOCK : SYSTEM_CLOCK);
+	ret = host_get_clock_service (mach_host_self (), clk_serv_id, &cs);
+	if (0 == ret) {
+	    ret = clock_get_time (cs, &mts);
+	    if (0 == ret) {
+		tp->tv_sec = mts.tv_sec;
+		tp->tv_nsec = mts.tv_nsec;
+		retval = 0;
+	    }
+	}
+	mach_port_deallocate (mach_task_self (), cs);
+	if (ret) {
+	    errno = EINVAL;
+	}
+	break;
+
+    case CLOCK_PROCESS_CPUTIME_ID:
+    case CLOCK_THREAD_CPUTIME_ID:
+	start = mach_absolute_time ();
+	if (clk_id == CLOCK_PROCESS_CPUTIME_ID) {
+	    getpid ();
+	} else {
+	    sched_yield ();
+	}
+	end = mach_absolute_time ();
+	delta = end - start;
+	if (0 == __clock_gettime_inf.denom) {
+	    mach_timebase_info (&__clock_gettime_inf);
+	}
+	nano = delta * __clock_gettime_inf.numer / __clock_gettime_inf.denom;
+	tp->tv_sec = nano * 1e-9;
+	tp->tv_nsec = nano - (tp->tv_sec * 1e9);
+	retval = 0;
+	break;
+
+    default:
+	errno = EINVAL;
+	break;
+    }
+
+    return retval;
+}
+#endif
 #endif
 
 /*

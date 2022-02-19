@@ -243,6 +243,29 @@ elif ! ${tmpdir}/a.out >/dev/null 2>&1 ; then
     IDIO_CAN_POLL_DEVICE=0
 fi
 
+##############################
+
+# Mac OS 10.5.8 doesn't have clock_gettime(2) but there is a
+# workaround
+
+names+=(IDIO_HAVE_CLOCK_GETTIME)
+cat <<EOF > ${tmpdir}/test.c
+#define _GNU_SOURCE
+#include <time.h>
+
+int main (int argc, char **argv)
+{
+    struct timespec ts;
+    clock_gettime (CLOCK_MONOTONIC, &ts);
+    return 0;
+}
+EOF
+
+IDIO_HAVE_CLOCK_GETTIME=1
+if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
+    IDIO_HAVE_CLOCK_GETTIME=0
+fi
+
 ######################################################################
 
 var_MODULE=$( echo ${opt_module} | tr '[a-z]' '[A-Z]' )
@@ -258,8 +281,8 @@ cat <<EOF > ${var_header}
  *
  */
 
-#ifndef ${var_MODULE}_SYSTEM_H
-#define ${var_MODULE}_SYSTEM_H
+#ifndef ${var_MODULE}_CONFIG_H
+#define ${var_MODULE}_CONFIG_H
 
 EOF
 

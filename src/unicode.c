@@ -67,6 +67,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <string.h>
 #include <unistd.h>
 
+#include "idio-config.h"
+
 #include "gc.h"
 #include "idio.h"
 
