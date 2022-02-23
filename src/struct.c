@@ -1119,7 +1119,7 @@ char *idio_struct_instance_as_C_string (IDIO v, size_t *sizep, idio_unicode_t fo
 
     if (NULL != st_m &&
 	idio_struct_instance_method_2string != IDIO_VTABLE_METHOD_FUNC (st_m)) {
-	IDIO s = IDIO_VTABLE_METHOD_FUNC (st_m) (st_m, v);
+	IDIO s = IDIO_VTABLE_METHOD_FUNC (st_m) (st_m, v, sizep, seen, depth);
 
 	if (idio_isa_string (s)) {
 	    return idio_utf8_string (s, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_NOPREC);
@@ -1174,22 +1174,22 @@ IDIO idio_struct_instance_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 
     IDIO_TYPE_ASSERT (struct_instance, v);
 
-    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (v);
-
-    idio_vtable_method_t *st_m = idio_vtable_lookup_method (idio_value_vtable (st), v, idio_S_struct_instance_2string, 0);
-
-    if (NULL != st_m) {
-	IDIO r = IDIO_VTABLE_METHOD_FUNC (st_m) (st_m, v);
-
-	return r;
-    }
-
     va_list ap;
     va_start (ap, v);
     size_t *sizep = va_arg (ap, size_t *);
     IDIO seen = va_arg (ap, IDIO);
     int depth = va_arg (ap, int);
     va_end (ap);
+
+    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (v);
+
+    idio_vtable_method_t *st_m = idio_vtable_lookup_method (idio_value_vtable (st), v, idio_S_struct_instance_2string, 0);
+
+    if (NULL != st_m) {
+	IDIO r = IDIO_VTABLE_METHOD_FUNC (st_m) (st_m, v, sizep, seen, depth);
+
+	return r;
+    }
 
     char *C_r = idio_struct_instance_as_C_string (v, sizep, 0, seen, depth);
 

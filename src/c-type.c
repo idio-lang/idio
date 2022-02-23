@@ -3132,7 +3132,7 @@ char *idio_C_pointer_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, 
      */
     if (NULL != m &&
 	idio_C_pointer_method_2string != IDIO_VTABLE_METHOD_FUNC (m)) {
-	IDIO s = IDIO_VTABLE_METHOD_FUNC (m) (m, v);
+	IDIO s = IDIO_VTABLE_METHOD_FUNC (m) (m, v, sizep, seen, depth);
 
 	if (idio_isa_string (s)) {
 	    return idio_utf8_string (s, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_NOPREC);
