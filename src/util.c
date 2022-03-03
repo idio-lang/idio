@@ -61,6 +61,7 @@
 #include "idio-string.h"
 #include "keyword.h"
 #include "module.h"
+#include "object.h"
 #include "pair.h"
 #include "path.h"
 #include "primitive.h"
@@ -2384,7 +2385,9 @@ IDIO idio_copy (IDIO o, int depth)
 		return idio_copy_bitset (o);
 
 	    case IDIO_TYPE_STRUCT_INSTANCE:
-		if (idio_struct_instance_isa (o, idio_path_type) ||
+		if (idio_isa_instance (o)) {
+		    return o;
+		} else if (idio_struct_instance_isa (o, idio_path_type) ||
 		    idio_struct_instance_isa (o, idio_lexobj_type)) {
 		    return idio_struct_instance_copy (o);
 		} else {

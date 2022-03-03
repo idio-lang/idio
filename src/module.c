@@ -2112,7 +2112,7 @@ void idio_module_add_primitives ()
      */
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_evaluate_module, find_symbol);
     IDIO_ADD_PRIMITIVE (symbol_value);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluate_module, symbol_value_recurse);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_evaluate_module, symbol_value_recurse);
     IDIO_ADD_MODULE_PRIMITIVE (idio_evaluate_module, set_symbol);
 
     /*

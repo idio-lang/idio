@@ -1,0 +1,678 @@
+;;
+;; Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; object.idio
+;;
+
+;; IOS is derived from Gregor Kiczales' Tiny CLOS with ideas from
+;; Erick Gallesio's STklos and Eli Barzilay's Swindle.
+;;
+;; The Tiny CLOS copyright is:
+
+; **********************************************************************
+; Copyright (c) 1992 Xerox Corporation.
+; All Rights Reserved.
+;
+; Use, reproduction, and preparation of derivative works are permitted.
+; Any copy of this software or of any derivative work must include the
+; above copyright notice of Xerox Corporation, this paragraph and the
+; one after it.  Any distribution of this software or derivative works
+; must comply with all applicable United States export control laws.
+;
+; This software is made available AS IS, and XEROX CORPORATION DISCLAIMS
+; ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION THE
+; IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+; PURPOSE, AND NOTWITHSTANDING ANY OTHER PROVISION CONTAINED HEREIN, ANY
+; LIABILITY FOR DAMAGES RESULTING FROM THE SOFTWARE OR ITS USE IS
+; EXPRESSLY DISCLAIMED, WHETHER ARISING IN CONTRACT, TORT (INCLUDING
+; NEGLIGENCE) OR STRICT LIABILITY, EVEN IF XEROX CORPORATION IS ADVISED
+; OF THE POSSIBILITY OF SUCH DAMAGES.
+; **********************************************************************
+
+module object
+export (
+	 make-instance
+	 make-class define-class
+	 ensure-generic make-generic define-generic
+	 make-method define-method
+	 add-method!
+
+	 ;; generic methods
+
+	 ;; initialization protocol
+	 initialize
+
+	 ;; instance structure protocol
+	 allocate-instance compute-getter-and-setter
+
+	 ;; generic invocation protocol
+	 compute-apply-generic compute-methods compute-method-more-specific? compute-apply-methods
+
+	 compute-cpl compute-slots
+)
+
+define (class-inst name & args) "
+
+return the instance of the class `name`
+
+" {
+  cl := name
+  if (symbol? name) {
+    cl = evaluate/symbol-value-recurse name (current-module) #f
+  }
+
+  if (class? cl) cl {
+    if (pair? args) (ph args) {
+      error/type ^rt-instance-error 'class-inst (sprintf "'%s', a %s, is not a class" name (typename name))
+    }
+  }
+}
+
+;; This definition of make-instance is still only a bootstrap variant
+define* (make-instance class
+	      (:name name #f)
+	      (:direct-supers supers #f)
+	      (:direct-slots slots #f)
+
+	      ; :name is declared above
+	      (:documentation doc #n)
+
+	      (:generic-function gf #f)
+	      (:specializers spec #n)
+	      (:procedure proc #n)) "
+" {
+  (cond
+   ((eq? class <generic>) {
+     if name {
+       %make-instance class 'generic name doc
+     } {
+       error/type ^rt-parameter-value-error 'make-instance ":name is mandatory" class
+     }
+   })
+   ((eq? class <method>) {
+     if (and gf
+	     spec
+	     proc) {
+       %make-instance class 'method gf spec proc
+     } {
+       error/type ^rt-parameter-value-error 'make-instance ":generic-function :specializers :procedure are mandatory" class
+     }
+   })
+   ((eq? class <class>) {
+     if (and name
+	     supers
+	     slots) {
+       %make-instance class 'class name supers slots
+     } {
+       error/type ^rt-parameter-value-error 'make-instance ":name is mandatory" class
+     }
+   })
+   (else {
+     error/type ^rt-parameter-value-error 'make-instance "unexpected class" class
+   }))
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; class
+;;
+
+define (make-class name supers slots) {
+  make-instance <class> :name name :direct-supers supers :direct-slots slots
+}
+
+define-template (define-class name & args) {
+  supers := #n
+  slots := #n
+  if (pair? args) {
+    supers = ph args
+    slots = pt args
+  }
+  ;; As this is a template and therefore supers is a list of symbols,
+  ;; we need to map the given supers into class instances.
+  supers = (if (pair? supers) (map class-inst supers) (list <object>))
+  #T{
+    define $name (make-class '$name '$supers '$slots)
+  }
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; generic
+;;
+
+;; ensure-generic is from STklos allowing the user to blast away with
+;; define-method without bothering creating the (underlying) generic.
+;;
+;; Note that it will define {name} in the current module as a
+;; <generic> rather than, perhaps, the <method> you thought you were
+;; getting with define-method.
+
+define* (ensure-generic name
+			(:documentation doc #n)) {
+  old := evaluate/symbol-value-recurse name (current-module) #f
+  if (generic? old) old {
+    evaluate/set-symbol-value! name (make-instance <generic> :name name :documentation doc) (current-module)
+  }
+}
+
+;; there's still a need for make-generic in the bootstrap below
+define* (make-generic (:name name (gensym 'gf))
+		      (:documentation doc #n)) {
+  make-instance <generic> :name name :documentation doc
+}
+
+define-template (define-generic name & args) {
+  doc := #n
+  if (pair? args) {
+    doc = ph args
+  }
+
+  #T{
+    define $name (ensure-generic '$name :documentation $doc)
+  }
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; method
+;;
+
+define (compute-method-formals args) "
+
+Pick out the formal parameter names from some, possibly specialized,
+list of parameters.
+
+The formal parameter names will be prefixed with ``next-method``.
+" {
+  loop :+ function (a*) {
+    if (pair? a*) {
+      pair (if (pair? (ph a*)) (phh a*) (ph a*)) (loop (pt a*))
+    } a*
+  }
+
+  formals := loop args
+  append (list 'next-method) formals
+}
+
+define (compute-method-specializers args) "
+
+Pick out the specializers from some, possibly specialized, list of
+parameters.  The default specializer is ``<top>`` and the result is a
+list of specialisers.
+
+" {
+  (cond
+   ((null? args) #n)
+   ((pair? args) {
+     (pair (if (pair? (ph args)) (phth args) <top>)
+	   (compute-method-specializers (pt args)))
+   })
+   (else <top>))
+}
+
+define (%method-specializers-equal? gf m1 m2) {
+  equal? (method-specializers m1) (method-specializers m2)
+}
+
+
+;; Sneaky pre-method definition
+define (method-specializers-equal? gf m1 m2) {
+  %method-specializers-equal? gf m1 m2
+}
+
+define (compute-new-methods gf m) {
+  methods := generic-methods gf
+
+  ;; Tiny CLOS uses collect-if and every and some dynamic predicates.
+  ;; STklos hunts down the list for a match and stamps over it.
+  loop :+ function (m*) {
+    if (null? m*) {
+      ;; no duplicate specializers so prefix methods with m
+      pair m methods
+    } {
+      if (method-specializers-equal? gf (ph m*) m) {
+	;; overwrite the old
+	set-ph! m* m
+
+	;; return methods (with the now overwritten element)
+	methods
+      } {
+	loop (pt m*)
+      }
+    }
+  }
+
+  loop methods
+}
+
+define (add-method! gf m) {
+  slot-set! gf 'methods (compute-new-methods gf m)
+  set-instance-proc! gf (compute-apply-generic gf)
+}
+
+define (make-method gf specializers procedure) {
+  make-instance <method> :generic-function gf :specializers specializers :procedure procedure
+}
+
+define-template (define-method args & body) {
+  name := ph args
+  args = pt args
+  gf := gensym 'gf
+
+  ;; $gf is local to the block, below, although ensure-generic will
+  ;; define {name} in the current module (if not already defined as a
+  ;; <generic>) rather than the <method> that define-method suggests.
+  ;;
+  ;; The evaluator doesn't pick up the dynamically defined name so we
+  ;; need to assign to $gf here as well so that it is in scope for
+  ;; add-method! on the next line.
+  ;;
+  ;; Also, as this is a template and therefore args is a bunch of
+  ;; symbols, we need to map the specializers into class instances.
+
+  #T{
+    {
+      $gf := ensure-generic '$name
+      add-method! $gf (make-instance <method>
+			    :generic-function $gf
+			    :specializers     (map class-inst '$(compute-method-specializers args))
+			    :procedure        (function $(compute-method-formals args) $@body))
+    }
+  }
+}
+
+;; some Tiny CLOS utilities (from support.scm)
+
+define (TC/last l) {
+  loop :+ function (l) {
+    (cond
+     ((null? l)      #f)
+     ((null? (pt l)) (ph l))
+     (else           (loop (pt l))))
+  }
+
+  loop l
+}
+
+define (TC/every test & lists) {
+  scan :+ function (tails) {
+    if (member #t (map null? tails)) #t {
+      (and (apply test (map ph tails))
+	   (scan (map pt tails)))
+    }
+  }
+
+  scan lists
+}
+
+define (TC/collect-if test? list) {
+  (cond
+   ((null? list)      #n)
+   ((test? (ph list)) (pair (ph list) (TC/collect-if test? (pt list))))
+   (else              (TC/collect-if test? (pt list))))
+}
+
+;; initargs is (... :name val ...)
+define (TC/get-keyword-arg initargs name & args) {
+  scan :+ function (a*) {
+    (cond
+     ((null? a*) {
+       if (pair? args) (ph args) (error/type ^rt-parameter-value-error 'get-named-arg "not found" name)
+     })
+     ((eq? (ph a*) name) (pht a*))
+     (else               (scan (ptt a*))))
+  }
+
+  scan initargs
+}
+
+;; a couple of utility functions in tiny-clos.scm
+define (TC/applicable? c arg) {
+  memq c (class-cpl (class-of arg))
+}
+
+define (TC/more-specific? c1 c2 arg) {
+  memq c2 (memq c1 (class-cpl (class-of arg)))
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; declare some generic functions which we'll set up in a moment
+;;
+;; Technically, we only need to pre-define compute-apply-generic
+;; (because we're going to call set-instance-proc! with it below) as
+;; all the rest are auto-defined by define-method.
+
+;; initialization protocol
+initialize                    := (make-generic :name 'initialize)
+
+;; instance structure protocol
+allocate-instance             := (make-generic :name 'allocate-instance)
+compute-getter-and-setter     := (make-generic :name 'compute-getter-and-setter)
+
+;; generic invocation protocol
+compute-apply-generic         := (make-generic :name 'compute-apply-generic)
+compute-methods               := (make-generic :name 'compute-methods)
+compute-method-more-specific? := (make-generic :name 'compute-method-more-specific?)
+compute-apply-methods         := (make-generic :name 'compute-apply-methods)
+
+; From tiny-clos.scm:
+
+; Adding a method calls COMPUTE-APPLY-GENERIC, the result of which calls
+; the other generics in the generic invocation protocol.  Two, related,
+; problems come up.  A chicken and egg problem and a infinite regress
+; problem.
+;
+; In order to add our first method to COMPUTE-APPLY-GENERIC, we need
+; something sitting there, so it can be called.  The first definition
+; below does that.
+;
+; Then, the second definition solves both the infinite regress and the
+; not having enough of the protocol around to build itself problem the
+; same way: it special cases invocation of generics in the invocation
+; protocol.
+
+set-instance-proc! compute-apply-generic (function (gf) {
+  m := ph (generic-methods gf)
+  ;; func next-method args
+  (method-procedure m) #f gf
+})
+
+define-method (compute-apply-generic (gf <generic>)) {
+  ;; base-generics is a list of the generic functions above, not their
+  ;; names
+  base-generics := (list compute-apply-generic
+			 compute-methods
+			 compute-method-more-specific?
+			 compute-apply-methods)
+
+  (function args {
+    ;; catch circular references (and bootstrap)
+    if (and (memq gf base-generics)
+	    (memq (ph args) base-generics)) {
+      apply (method-procedure (TC/last (generic-methods gf))) (pair #f args)
+    } {
+      (compute-apply-methods gf) ((compute-methods gf) args) args
+    }
+  })
+}
+
+define-method (compute-methods (gf <generic>)) {
+  (function (args) {
+    applicable := TC/collect-if (function (m) {
+      TC/every TC/applicable? (method-specializers m) args
+    }) (generic-methods gf)
+
+    sort applicable (function (m1 m2) {
+      (compute-method-more-specific? gf) m1 m2 args
+    })
+  })
+}
+
+define-method (compute-method-more-specific? (gf <generic>)) {
+  (function (m1 m2 args) {
+    loop :+ function (ms1 ms2 a*) {
+      (cond
+       ((and (null? ms1)
+	     (null? ms2)) {
+	 error/type ^rt-instance-error 'compute-method-more-specific? "two methods are equally specific"
+       })
+       ((or (null? ms1)
+	    (null? ms2)) {
+	 error/type ^rt-instance-error 'compute-method-more-specific? "two methods have a different number of specializers"
+       })
+       ((null? args) {
+	 error/type ^rt-instance-error 'compute-method-more-specific? "fewer arguments than specializers"
+       })
+       (else {
+	 s1 := ph ms1
+	 s2 := ph ms2
+	 arg := ph a*
+	 if (eq? s1 s2) {
+	   loop (pt ms1) (pt ms2) (pt a*)
+	 } {
+	   TC/more-specific? s1 s2 arg
+	 }
+       }))
+    }
+
+    loop (method-specializers m1) (method-specializers m2) args
+  })
+}
+
+define-method (compute-apply-methods (gf <generic>)) {
+  (function (method* args) {
+    ;; one-step returns a thunk!
+    one-step :+ function (m*) {
+      (function a {
+	if (not (null? a)) {
+	  eprintf "WARNING: one-step thunk invoked with a=%@ args=%s\n" a args
+	}
+	if (null? m*) {
+	  error/type ^rt-instance-invocation-error 'compute-apply-methods "no applicable methods/next methods" gf method*
+	} {
+	  ;; apply func (pair next-method args)
+	  apply (method-procedure (ph m*)) (pair (one-step (pt m*)) args)
+	}
+      })
+    }
+
+    ;; we want to invoke the result of calling one-step
+    ((one-step method*))
+  })
+}
+
+define-method (initialize (obj <object>) initargs) {
+  obj
+}
+
+define-method (initialize (cl <class>) initargs) {
+  ;; call-next-method
+  (next-method)
+
+  slot-set! cl 'name (TC/get-keyword-arg initargs :name (gensym 'cl))
+
+  ;; pluck out direct-* arguments
+  slot-set! cl 'direct-supers (TC/get-keyword-arg initargs :direct-supers #n)
+  slot-set! cl 'direct-slots  (map (function (s) {
+    if (pair? s) s (list s)
+  }) (TC/get-keyword-arg initargs :direct-slots #n))
+
+  ;; call generic functions to calculate cpl and slots
+  slot-set! cl 'cpl   (compute-cpl cl)
+  slot-set! cl 'slots (compute-slots cl)
+
+  slots := class-slots cl
+  ;; set up slot initialization and accessors
+
+  gns := #n
+  fold-left (function (i slot) {
+    ;; slot is (name ...)
+    ;; gns is (... (name init-func getter) ...) and we want to apply
+    gns = pair (list (ph slot) default-slot-value i) gns
+    i + 1
+  }) 0 slots
+
+  slot-set! cl 'nfields (length slots)
+  slot-set! cl 'getters-n-setters (reverse! gns)
+}
+
+define-method (initialize (gf <generic>) initargs) {
+  ;; call-next-method
+  (next-method)
+
+  slot-set! gf 'methods #n
+  %set-instance-proc! gf (function args {
+    error/type ^rt-instance-invocation-error 'initialize "has no methods" gf
+  })
+}
+
+define-method (initialize (m <method>) initargs) {
+  ;; call-next-method
+  (next-method)
+
+  slot-set! gf 'specializers (TC/get-keyword-arg initargs :specializers #n)
+  slot-set! gf 'procedure    (TC/get-keyword-arg initargs :procedure #n)
+}
+
+define (allocate-helper cl allocator) {
+  gns* := class-getters-n-setters cl
+  inst := allocator cl (length gns*)
+
+  fold-left (function (i gns) {
+    if (pair? gns) {
+      ;; gns is (name init-func getter) and we want to apply
+      ;; init-func, ie. (init-func)
+      %slot-set-direct! inst i ((pht gns))
+    }
+    i + 1
+  }) 0 gns*
+
+  inst
+}
+
+define-method (allocate-instance (cl <class>)) {
+  allocate-helper cl %allocate-instance
+}
+
+define-method (allocate-instance (cl <entity-class>)) {
+  allocate-helper cl %allocate-entity
+}
+
+define-method (compute-cpl (cl <class>)) {
+  ;; Here we'll deviate from Tiny CLOS and use C3 Linearization
+  ;; https://en.wikipedia.org/wiki/C3_linearization to compute the cpl
+  ;; (as does Python 2.3+, Perl 5.10+ (not default), ...)
+  ;;
+  ;; The C3 Linearization algorithm is a mixture of Appendices A and B
+  ;; of https://opendylan.org/_static/c3-linearization.pdf
+
+  ;; We're looking for a deterministic Method Resolution Order (MRO)
+  ;; which, ultimately, defines our own behaviour.
+
+  ;; The broad thrust is to look at the list (of lists of) superclass
+  ;; CPLs and repeatedly ask which of the heads of these lists does
+  ;; not appear in the tail of the list of any other.  Add it to the
+  ;; result, remove it from the lists and loop round again.
+
+  ;; Easy!  The wikipedia has an example with useful commentary.
+
+  ;; any?/every? are Dylan functions and/or as any/every in SRFI-1
+  define (any? p? l) {
+    (and (pair? l)
+	 {
+	   loop :+ function (h t) {
+	     if (pair? t) {
+	       (or (p? h)
+		   (loop (ph t) (pt t)))
+	     } (p? h)
+	   }
+
+	   loop (ph l) (pt l)
+    })
+  }
+
+  define (every? p? l) {
+    (or (null? l)
+	 {
+	   loop :+ function (h t) {
+	     if (null? t) (p? h) {
+	       (and (p? h)
+		    (loop (ph t) (pt t)))
+	     }
+	   }
+
+	   loop (ph l) (pt l)
+    })
+  }
+
+  define (merge reversed-partial-result remaining-inputs) {
+    if (every? null? remaining-inputs) {
+      reverse! reversed-partial-result
+    } {
+      define (candidate c) {
+	define (tail? l) {
+	  (and (pair? l)
+	       (memq c (pt l)))
+	}
+
+	(and (not (any? tail? remaining-inputs))
+	     c)
+      }
+
+      define (candidate-at-head l) {
+	(and (pair? l)
+	     (candidate (ph l)))
+      }
+
+      next := any? candidate-at-head remaining-inputs
+
+      if next {
+	define (remove-next l) {
+	  (or (and (pair? l)
+		   (eq? (ph l) next)
+		   (pt l))
+	   l)
+	}
+
+	merge (pair next reversed-partial-result) (map remove-next remaining-inputs)
+      } {
+	error/type ^rt-instance-error 'compute-cpl "Inconsistent precedence graph"
+      }
+    }
+  }
+
+  supers := class-direct-supers cl
+  merge (list cl) (append (map class-cpl supers) (list supers))
+}
+
+define-method (compute-slots (cl <class>)) {
+  collect :+ function (to-do r) {
+    if (null? to-do) (reverse! r) {
+      current := ph to-do
+      name := ph current
+      others := #n
+      remaining-to-do := TC/collect-if (function (o) {
+	if (eq? (ph o) name) {
+	  others = pair o others
+	  #f
+	} #t
+      }) (pt to-do)
+
+      collect remaining-to-do (pair (append current (apply append (map pt others)))
+				    r)
+    }
+  }
+
+  ;; the initial to-do is the set of direct-slots of
+  ;; everything in our cpl
+  collect (apply append (map class-direct-slots (class-cpl cl))) #n
+}
+
+define-method (compute-getter-and-setter (cl <class>) slot allocator) {
+  #f
+}
+
+define (make-instance cl & initargs) {
+  inst := allocate-instance cl
+  initialize inst initargs
+  inst
+}
+
+provide object

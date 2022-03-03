@@ -675,7 +675,7 @@ idio_hi_t idio_idio_hash_default_hash_C_struct_instance (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hash_C_void (h->u.struct_instance.fields);
+    return idio_hash_default_hash_C_void (h->u.struct_instance->fields);
 }
 
 idio_hi_t idio_hash_default_hash_C_continuation (IDIO h)

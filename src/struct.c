@@ -426,7 +426,7 @@ of struct type `type`				\n\
     return r;
 }
 
-IDIO idio_allocate_struct_instance (IDIO st, int fill)
+IDIO idio_allocate_struct_instance_size (IDIO st, size_t size, int fill)
 {
     IDIO_ASSERT (st);
 
@@ -435,11 +435,13 @@ IDIO idio_allocate_struct_instance (IDIO st, int fill)
     IDIO si = idio_gc_get (IDIO_TYPE_STRUCT_INSTANCE);
     si->vtable = st->vtable;
 
+    IDIO_GC_ALLOC (si->u.struct_instance, sizeof (idio_struct_instance_t));
+
     IDIO_STRUCT_INSTANCE_GREY (si) = NULL;
     IDIO_STRUCT_INSTANCE_TYPE (si) = st;
+    IDIO_STRUCT_INSTANCE_SIZE (si) = size;
 
-    idio_ai_t size = IDIO_STRUCT_TYPE_SIZE (st);
-    IDIO_GC_ALLOC (si->u.struct_instance.fields, size * sizeof (struct idio_s));
+    IDIO_GC_ALLOC (si->u.struct_instance->fields, size * sizeof (struct idio_s));
 
     if (fill) {
 	idio_ai_t i = 0;
@@ -449,6 +451,15 @@ IDIO idio_allocate_struct_instance (IDIO st, int fill)
     }
 
     return si;
+}
+
+IDIO idio_allocate_struct_instance (IDIO st, int fill)
+{
+    IDIO_ASSERT (st);
+
+    IDIO_TYPE_ASSERT (struct_type, st);
+
+    return idio_allocate_struct_instance_size (st, IDIO_STRUCT_TYPE_SIZE (st), fill);
 }
 
 IDIO idio_struct_instance (IDIO st, IDIO values)
@@ -582,7 +593,7 @@ void idio_free_struct_instance (IDIO p)
 
     IDIO_TYPE_ASSERT (struct_instance, p);
 
-    IDIO_GC_FREE (p->u.struct_instance.fields, IDIO_STRUCT_INSTANCE_SIZE (p) * sizeof (IDIO));
+    IDIO_GC_FREE (p->u.struct_instance->fields, IDIO_STRUCT_INSTANCE_SIZE (p) * sizeof (IDIO));
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-instance-type", struct_instance_type, (IDIO si), "si", "\

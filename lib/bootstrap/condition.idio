@@ -436,6 +436,19 @@ define-template (condition type & field-bindings) {
 				      rt-vtable-method-unbound-error?
 				      (name rt-vtable-method-unbound-error-name))
 
+(define-condition-type-accessors-only ^rt-instance-error
+				      ^runtime-error
+				      rt-instance-error?)
+
+(define-condition-type-accessors-only ^rt-instance-invocation-error
+				      ^rt-instance-error
+				      rt-instance-invocation-error?)
+
+(define-condition-type-accessors-only ^rt-slot-not-found-error
+				      ^rt-instance-error
+				      rt-slot-not-found-error?
+				      (slot rt-slot-not-found-error-slot))
+
 (define-condition-type-accessors-only ^rt-signal
 				      ^error
 				      rt-signal?
@@ -765,6 +778,20 @@ multiple lines.
      ((rt-vtable-method-unbound-error? c) {
        iem c
        cr-printf ": name %s" (rt-vtable-method-unbound-error-name c)
+     })
+
+     ;; ^rt-slot-not-found-error
+     ((rt-slot-not-found-error? c) {
+       iem c
+       cr-printf ": slot %s" (rt-slot-not-found-error-slot c)
+     })
+     ;; ^rt-instance-invocation-error
+     ((rt-instance-invocation-error? c) {
+       iem c
+     })
+     ;; ^rt-instance-error
+     ((rt-instance-error? c) {
+       iem c
      })
 
      ;; ^rt-signal

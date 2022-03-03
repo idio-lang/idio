@@ -192,6 +192,9 @@ extern IDIO idio_condition_rt_symbol_error_type;
 extern IDIO idio_condition_rt_load_error_type;
 extern IDIO idio_condition_rt_vtable_unbound_error_type;
 extern IDIO idio_condition_rt_vtable_method_unbound_error_type;
+extern IDIO idio_condition_rt_instance_error_type;
+extern IDIO idio_condition_rt_instance_invocation_error_type;
+extern IDIO idio_condition_rt_slot_not_found_error_type;
 
 extern IDIO idio_condition_rt_signal_type;
 

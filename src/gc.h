@@ -881,14 +881,14 @@ typedef struct idio_struct_type_s {
 typedef struct idio_struct_instance_s {
     struct idio_s *grey;
     struct idio_s *type;	/* a struct-type */
+    size_t size;		/* number of fields *including parents* or number of slots */
     struct idio_s* *fields;	/* an array of values */
 } idio_struct_instance_t;
 
-#define IDIO_STRUCT_INSTANCE_GREY(SI)		((SI)->u.struct_instance.grey)
-#define IDIO_STRUCT_INSTANCE_TYPE(SI)		((SI)->u.struct_instance.type)
-#define IDIO_STRUCT_INSTANCE_FIELDS(SI,i)	((SI)->u.struct_instance.fields[i])
-
-#define IDIO_STRUCT_INSTANCE_SIZE(SI)		(IDIO_STRUCT_TYPE_SIZE(IDIO_STRUCT_INSTANCE_TYPE(SI)))
+#define IDIO_STRUCT_INSTANCE_GREY(SI)		((SI)->u.struct_instance->grey)
+#define IDIO_STRUCT_INSTANCE_TYPE(SI)		((SI)->u.struct_instance->type)
+#define IDIO_STRUCT_INSTANCE_SIZE(SI)		((SI)->u.struct_instance->size)
+#define IDIO_STRUCT_INSTANCE_FIELDS(SI,i)	((SI)->u.struct_instance->fields[i])
 
 typedef struct idio_thread_s {
     struct idio_s *grey;
@@ -1233,7 +1233,7 @@ struct idio_s {
 	idio_frame_t           *frame;
 	idio_handle_t          *handle;
 	idio_struct_type_t     *struct_type;
-	idio_struct_instance_t struct_instance;
+	idio_struct_instance_t *struct_instance;
 	idio_thread_t	       *thread;
 
 	idio_C_type_t          C_type;

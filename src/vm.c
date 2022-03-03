@@ -65,6 +65,7 @@
 #include "keyword.h"
 #include "libc-wrap.h"
 #include "module.h"
+#include "object.h"
 #include "pair.h"
 #include "path.h"
 #include "primitive.h"
@@ -1134,7 +1135,8 @@ static void idio_vm_restore_all_state (IDIO thr)
 	if (! (idio_isa_function (IDIO_THREAD_FUNC (thr)) ||
 	       idio_isa_string (IDIO_THREAD_FUNC (thr)) ||
 	       idio_isa_symbol (IDIO_THREAD_FUNC (thr)) ||
-	       idio_isa_continuation (IDIO_THREAD_FUNC (thr)))) {
+	       idio_isa_continuation (IDIO_THREAD_FUNC (thr)) ||
+	       idio_isa_generic (IDIO_THREAD_FUNC (thr)))) {
 	    /*
 	     * XXX what should we do here?
 	     *
@@ -1809,10 +1811,35 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    }
 	}
 	break;
+    case IDIO_TYPE_STRUCT_INSTANCE:
+	if (idio_isa_generic (func)) {
+	    /*
+	     * Here, we've already been primed with our args in *VAL*.
+	     * All we need to do is re-run this function with the
+	     * correct func which, in the case of a generic function,
+	     * is its instance-proc.
+	     */
+	    IDIO proc = idio_struct_instance_ref_direct (func, IDIO_CLASS_ST_PROC);
+
+	    idio_vm_invoke (thr, proc, tailp);
+	} else {
+	    /*
+	     * Test Case: vm-errors/idio_vm_invoke-bad-type-2.idio
+	     *
+	     * <class> 1 2
+	     */
+	    idio_vm_error_function_invoke ("cannot invoke struct-instance",
+					   idio_S_nil,
+					   IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return;
+	}
+	break;
     default:
 	{
 	    /*
-	     * Test Case: vm-errors/idio_vm_invoke-bad-type.idio
+	     * Test Case: vm-errors/idio_vm_invoke-bad-type-1.idio
 	     *
 	     * ^error 1 2
 	     */

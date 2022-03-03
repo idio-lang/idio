@@ -70,6 +70,7 @@
 #include "libc-poll.h"
 #include "libc-wrap.h"
 #include "module.h"
+#include "object.h"
 #include "pair.h"
 #include "path.h"
 #include "posix-regex.h"
@@ -283,6 +284,7 @@ void idio_init (void)
     idio_init_vm ();
     idio_init_codegen ();
     idio_init_continuation ();
+    idio_init_object ();
 
     idio_init_libc_wrap ();
     idio_init_libc_poll ();

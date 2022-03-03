@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -78,7 +78,8 @@ OPATH := PATH
 vm-error-load "vm-errors/idio_vm_invoke-command-not-found.idio" "external command not found (foo 1 2)" ^rt-command-error
 PATH = OPATH
 
-vm-error-load "vm-errors/idio_vm_invoke-bad-type.idio" "cannot invoke" ^rt-function-error
+vm-error-load "vm-errors/idio_vm_invoke-bad-type-1.idio" "cannot invoke" ^rt-function-error
+vm-error-load "vm-errors/idio_vm_invoke-bad-type-2.idio" "cannot invoke struct-instance" ^rt-function-error
 
 vm-error-load "vm-errors/idio_vm_dynamic_ref-unbound.idio" "no such dynamic binding" ^rt-dynamic-variable-unbound-error
 
@@ -134,4 +135,4 @@ vm-error-load "vm-errors/run-in-thread-bad-thread-type.idio" "bad parameter type
 vm-error-load "vm-errors/run-in-thread-bad-func-type.idio" "bad parameter type: '#t' a constant is not a function" ^rt-parameter-type-error
 
 ;; all done?
-Tests? (vm-error0 + 34)
+Tests? (vm-error0 + 35)

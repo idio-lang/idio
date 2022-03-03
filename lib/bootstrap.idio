@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -67,6 +67,7 @@ load "system.idio"
 import SRFI-0				; cond-expand
 import job-control			; override C primitives
 import unicode
+import object
 
 ;; don't create a core dump if there are no debug symbols
 (cond-expand

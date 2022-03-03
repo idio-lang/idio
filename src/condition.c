@@ -148,6 +148,9 @@ IDIO idio_condition_rt_symbol_error_type;
 IDIO idio_condition_rt_load_error_type;
 IDIO idio_condition_rt_vtable_unbound_error_type;
 IDIO idio_condition_rt_vtable_method_unbound_error_type;
+IDIO idio_condition_rt_instance_error_type;
+IDIO idio_condition_rt_instance_invocation_error_type;
+IDIO idio_condition_rt_slot_not_found_error_type;
 
 IDIO idio_condition_rt_command_error_type;
 IDIO idio_condition_rt_command_argv_type_error_type;
@@ -1342,6 +1345,12 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_vtable_unbound_error_type, "^rt-vtable-unbound-error", idio_condition_runtime_error_type);
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_vtable_method_unbound_error_type, "^rt-vtable-method-unbound-error", idio_condition_runtime_error_type, "name");
+
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_instance_error_type, "^rt-instance-error", idio_condition_runtime_error_type);
+
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_instance_invocation_error_type, "^rt-instance-invocation-error", idio_condition_rt_instance_error_type);
+
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_slot_not_found_error_type, "^rt-slot-not-found-error", idio_condition_rt_instance_error_type, "slot");
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_signal_type, IDIO_CONDITION_RT_SIGNAL_TYPE_NAME, idio_condition_error_type, "signum");
 }
