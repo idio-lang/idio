@@ -7,12 +7,15 @@
 
  -- definitions:
  -- define foo ...
+ -- define (foo) ...
  -- define (foo bar) ...
+ -- foo := ...
  -- 
  -- also:
  -- define-macro
  -- define-conditional
  -- define-something-or-other
-{none}/define\*?\(-[^ \t]+\)?[ \t]+\((\([^ \t)]+\)\|\([^ \t]+\)\)/\3/
+{none}/define\*?\(-[^ \t]+\)?[ \t]+(\([^ \t]+\)[^)]*)/\2/
+{none}/\([^ \t]+\)[ \t]+:[=*~]/\1/
 
  -- 
