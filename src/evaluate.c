@@ -2629,11 +2629,7 @@ static IDIO idio_meaning_sequence (IDIO src, IDIO ep, IDIO nametree, IDIO escape
 	    return idio_meanings_single_sequence (IDIO_MPP (eph, src), eph, nametree, escapes, flags, cs, cm);
 	}
     } else {
-	/*
-	 * Not sure we can get here as it requires developer coding
-	 * error.  The args were checked in idio_meaning().
-	 */
-	idio_meaning_evaluation_error (keyword, IDIO_C_FUNC_LOCATION (), "sequence: not a pair", ep);
+	idio_meaning_evaluation_error (keyword, IDIO_C_FUNC_LOCATION (), "sequence: not a pair", src);
 
 	return idio_S_notreached;
     }

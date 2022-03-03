@@ -1195,7 +1195,7 @@ char *idio_pair_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO 
 		if (idio_S_nil != v) {
 		    char *ps;
 		    size_t ps_size = idio_asprintf (&ps, " %c ", IDIO_PAIR_SEPARATOR);
-		    /* assumming IDIO_PAIR_SEPARATOR is 1 byte */
+		    /* assuming IDIO_PAIR_SEPARATOR is 1 byte */
 		    IDIO_STRCAT_FREE (r, sizep, ps, ps_size);
 
 		    size_t t_size = 0;
