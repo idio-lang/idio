@@ -1,0 +1,18 @@
+(rst "mop-generic-functions" 0)
+
+(rst "mop-initialize" 0)
+(document object initialize)
+
+(rst "mop-instance-structure" 0)
+(document object allocate-instance)
+(document object compute-getter-and-setter)
+
+(rst "mop-class-initialization" 0)
+(document object compute-cpl)
+(document object compute-slots)
+
+(rst "mop-generic-invocation" 0)
+(document object compute-apply-generic)
+(document object compute-methods)
+(document object compute-method-more-specific?)
+(document object compute-apply-methods)

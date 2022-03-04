@@ -1,0 +1,37 @@
+(rst "class-intro" 0)
+
+(rst "class-predicates" 0)
+(document object class?)
+(document object generic?)
+(document object method?)
+(document object instance?)
+
+(rst "class-constructors" 0)
+(document object define-class)
+(document object make-class)
+(document object define-generic)
+(document object make-generic)
+(document object define-method)
+(document object make-instance)
+
+(rst "class-accessors" 0)
+(document object class-name)
+(document object class-direct-supers)
+(document object class-direct-slots)
+(document object class-cpl)
+(document object class-slots)
+(document object class-nfields)
+(document object class-getters-n-setters)
+(document object class-of)
+
+(rst "generic-accessors" 0)
+(document object generic-name)
+(document object generic-documentation)
+(document object generic-methods)
+
+(rst "method-accessors" 0)
+(document object method-generic-function)
+(document object method-procedure)
+(document object method-specializers)
+
+(document object %set-instance-proc!)

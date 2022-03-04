@@ -41,6 +41,9 @@ Close enough, though.
 
 module documentation/reference
 
+;; we can call object/generic? after this
+require object
+
 seen := #{}
 
 ; libc/mkdir will get imported and clash so dig out mkdir now
@@ -291,6 +294,34 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 		  hprintf out-fh "\n"
 		}
 
+	      }
+
+	      insert-file out-fh 1 dfn
+
+	      hprintf out-fh "\n"
+
+	      hash-set! mod-ht sym #t
+	    })
+	    ((object/generic? val) {
+	      sigstr := "*args*"
+
+	      ;; try ".../{fixnum}-{mod}-{sym}-sig.rst"
+	      sfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-sig.rst"
+	      if (r? sfn) {
+		sigstr = strip-string (cat-file sfn) "\n"
+	      }
+
+	      hprintf out-fh ".. _`%s`:\n\n" mod-str
+
+	      hprintf out-fh ".. idio:function:: %s %s\n\n" mod-str sigstr
+	      hprintf out-fh "\n"
+
+	      leader := "   "
+
+	      docstr := object/generic-documentation val
+	      if (not (null? docstr)) {
+		hprintf out-fh "%s\n" (indent-text leader docstr)
+		hprintf out-fh "\n"
 	      }
 
 	      insert-file out-fh 1 dfn
@@ -701,6 +732,16 @@ for-each (function (mod) {
        (cond
 	((struct-type-isa? val ^rt-signal) r)
 	((struct-type-isa? val ^system-error) r)
+	(else (pair s r)))
+     })
+
+     ((class? val) {
+       ss := symbol->string s
+       sl := string-length ss
+       (cond
+	((and (gt sl 2)
+	      (equal? (substring ss 0 1) "<")
+	      (equal? (substring ss (sl - 1) sl) ">")) r)
 	(else (pair s r)))
      })
 

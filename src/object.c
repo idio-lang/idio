@@ -628,7 +628,7 @@ test if `o` is an instance of class `cl`	\n\
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE2_DS ("set-instance-proc!", set_instance_proc, (IDIO gf, IDIO proc), "gf proc", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("%set-instance-proc!", set_instance_proc, (IDIO gf, IDIO proc), "gf proc", "\
 set the instance procedure of `gf` to `proc`	\n\
 						\n\
 :param gf: generic function to modify		\n\
@@ -1200,16 +1200,22 @@ static void idio_dump_instance (IDIO o)
 
 	idio_debug (" name:          %s\n", idio_struct_instance_ref_direct (o, IDIO_GENERIC_SLOT_NAME));
 	idio_debug (" documentation: %s\n", idio_struct_instance_ref_direct (o, IDIO_GENERIC_SLOT_DOCUMENTATION));
-	idio_debug (" methods:       %s\n", idio_struct_instance_ref_direct (o, IDIO_GENERIC_SLOT_METHODS));
 	IDIO ilist = idio_struct_instance_ref_direct (o, IDIO_GENERIC_SLOT_METHODS);
-	if (idio_isa_pair (ilist)) {
+	if (idio_isa_pair (ilist) ||
+	    idio_S_nil == ilist) {
+	    int first = 1;
 	    while (idio_S_nil != ilist) {
-		idio_debug ("                %s\n", idio_struct_instance_ref_direct (IDIO_PAIR_H (ilist), IDIO_METHOD_SLOT_SPECIALIZERS));
+		if (first) {
+		    first = 0;
+		    idio_debug (" methods:       %s\n", idio_struct_instance_ref_direct (IDIO_PAIR_H (ilist), IDIO_METHOD_SLOT_SPECIALIZERS));
+		} else {
+		    idio_debug ("                %s\n", idio_struct_instance_ref_direct (IDIO_PAIR_H (ilist), IDIO_METHOD_SLOT_SPECIALIZERS));
+		}
 
 		ilist = IDIO_PAIR_T (ilist);
 	    }
 	} else {
-	    idio_debug ("                %s ??\n", ilist);
+	    idio_debug (" methods:       %s ??\n", ilist);
 	}
     } else if (idio_isa_class (o)) {
 	idio_debug ("class %s:\n", idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_NAME));
@@ -1219,7 +1225,8 @@ static void idio_dump_instance (IDIO o)
 
 	IDIO ilist = idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_DIRECT_SUPERS);
 	IDIO names = idio_S_nil;
-	if (idio_isa_pair (ilist)) {
+	if (idio_isa_pair (ilist) ||
+	    idio_S_nil == ilist) {
 	    while (idio_S_nil != ilist) {
 		names = idio_pair (idio_struct_instance_ref_direct (IDIO_PAIR_H (ilist), IDIO_CLASS_SLOT_NAME), names);
 
@@ -1359,7 +1366,6 @@ char *idio_instance_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, I
      * Otherwise, a basic printer
      */
     char *r = NULL;
-    *sizep = idio_asprintf (&r, "#<");
     size_t n_size = 0;
     char *ns;
 
@@ -1367,28 +1373,28 @@ char *idio_instance_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, I
 
     if (idio_isa_method (v)) {
 	cl = idio_object_class_of (v);
-	IDIO_STRCAT (r, sizep, "METHOD ");
+	IDIO_STRCAT (r, sizep, "#<METHOD ");
 	ns = idio_as_string (idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_NAME), &n_size, 1, seen, 0);
 	IDIO_STRCAT_FREE (r, sizep, ns, n_size);
+	IDIO_STRCAT (r, sizep, ">");
     } else if (idio_isa_generic (v)) {
 	cl = idio_object_class_of (v);
-	IDIO_STRCAT (r, sizep, "GENERIC ");
+	IDIO_STRCAT (r, sizep, "#<GENERIC ");
 	ns = idio_as_string (idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_NAME), &n_size, 1, seen, 0);
 	IDIO_STRCAT_FREE (r, sizep, ns, n_size);
+	IDIO_STRCAT (r, sizep, ">");
     } else if (idio_isa_class (v)) {
-	IDIO_STRCAT (r, sizep, "CLASS ");
 	ns = idio_as_string (idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_NAME), &n_size, 1, seen, 0);
 	IDIO_STRCAT_FREE (r, sizep, ns, n_size);
     } else if (idio_isa_instance (v)) {
 	cl = idio_object_class_of (v);
-	IDIO_STRCAT (r, sizep, "INSTANCE ");
+	IDIO_STRCAT (r, sizep, "#<INSTANCE ");
 	ns = idio_as_string (idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_NAME), &n_size, 1, seen, 0);
 	IDIO_STRCAT_FREE (r, sizep, ns, n_size);
+	IDIO_STRCAT (r, sizep, ">");
     } else {
-	*sizep = idio_asprintf (&r, "#<INSTANCE %10p", v);
+	*sizep = idio_asprintf (&r, "#<INSTANCE %10p>", v);
     }
-
-    IDIO_STRCAT (r, sizep, ">");
 
     return r;
 }

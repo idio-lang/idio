@@ -1,3 +1,14 @@
 (rst "functions-intro" 0)
 
-(document Idio %make make)
+(document object add-method! add-method)
+(document object instance-of? instance-of)
+(document object slot-ref)
+(document object slot-set! slot-set)
+
+(document object dump-instance)
+
+(nodocument object %allocate-instance)
+(nodocument object %allocate-entity)
+(nodocument object %slot-set-direct!)
+(nodocument object %make-instance)
+(nodocument object ensure-generic)

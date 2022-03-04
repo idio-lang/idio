@@ -170,6 +170,12 @@ specific condition types.
 
 	* ``^rt-vtable-method-unbound-error`` (``name``)
 
+	* ``^rt-instance-error``
+
+	* ``^rt-instance-invocation-error``
+
+	* ``^rt-slot-not-found-error`` (``slot``)
+
 	* ``^rt-signal`` (``signal``)
 
 Defining Condition Types

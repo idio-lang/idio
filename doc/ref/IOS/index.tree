@@ -1,3 +1,8 @@
+(import object)
+
 (rst "leader" 0)
 
+(toc-file terms)
+(toc-file class)
 (toc-file functions)
+(toc-file mop)

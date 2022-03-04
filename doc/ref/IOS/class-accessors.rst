@@ -1,4 +1,4 @@
 .. idio:currentmodule:: object
 
-IOS Functions
--------------
+Class Accessors
+---------------

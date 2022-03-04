@@ -288,6 +288,17 @@
 (document Idio rt-vtable-method-unbound-error?)
 (document Idio rt-vtable-method-unbound-error-name)
 
+(document Idio ^rt-instance-error)
+(document Idio rt-instance-error?)
+
+(document Idio ^rt-instance-invocation-error)
+(document Idio rt-instance-invocation-error?)
+
+
+(document Idio ^rt-slot-not-found-error)
+(document Idio rt-slot-not-found-error?)
+(document Idio rt-slot-not-found-error-slot)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ; condition instances

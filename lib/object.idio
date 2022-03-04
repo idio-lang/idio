@@ -48,11 +48,11 @@ module object
 export (
 	 make-instance
 	 make-class define-class
-	 ensure-generic make-generic define-generic
-	 make-method define-method
-	 add-method!
+	 ensure-generic define-generic
+	 define-method
 
-	 ;; generic methods
+	 %set-instance-proc!
+	 add-method!
 
 	 ;; initialization protocol
 	 initialize
@@ -60,10 +60,14 @@ export (
 	 ;; instance structure protocol
 	 allocate-instance compute-getter-and-setter
 
+	 ;; class initialization protocol
+	 compute-cpl compute-slots
+
 	 ;; generic invocation protocol
 	 compute-apply-generic compute-methods compute-method-more-specific? compute-apply-methods
 
-	 compute-cpl compute-slots
+	 ;; utilities
+	 class-inst
 )
 
 define (class-inst name & args) "
@@ -132,7 +136,24 @@ define* (make-instance class
 ;; class
 ;;
 
-define (make-class name supers slots) {
+define (make-class name supers slots) "
+
+create a new class, `name`, with super-classes and slots
+
+:param name: name of the class
+:type name: symbol
+:param supers: super-classes of the new class
+:type supers: list of class instances
+:param slots: slots of the new class
+:type slots: list of symbols
+:return: new class
+:rtype: instance
+
+``make-class`` would not normally be called by users.
+
+.. seealso:: :ref:`define-class <object/define-class>`
+
+" {
   make-instance <class> :name name :direct-supers supers :direct-slots slots
 }
 
@@ -145,7 +166,13 @@ define-template (define-class name & args) {
   }
   ;; As this is a template and therefore supers is a list of symbols,
   ;; we need to map the given supers into class instances.
-  supers = (if (pair? supers) (map class-inst supers) (list <object>))
+  supers = (cond
+	    ((pair? supers)   (map class-inst supers))
+	    ((symbol? supers) (list supers))
+	    ((null? supers)   (list <object>))
+	    (else	      (error/type ^rt-parameter-value-error
+					  'define-class
+					  (sprintf "'%s', a %s, is not a list|symbol" supers (typename supers)))))
   #T{
     define $name (make-class '$name '$supers '$slots)
   }
@@ -173,7 +200,26 @@ define* (ensure-generic name
 
 ;; there's still a need for make-generic in the bootstrap below
 define* (make-generic (:name name (gensym 'gf))
-		      (:documentation doc #n)) {
+		      (:documentation doc #n)) "
+
+create a new generic function, `name`, with optional documentation
+
+:param name: name of the generic function
+:type name: symbol
+:param doc: documentation string, defaults to ``#n``
+:type doc: string or ``#n``, optional
+:return: generic function
+:rtype: instance
+
+Additionally, the symbol `name` will be bound to the new generic function.
+
+``make-generic`` would not normally be called by users as generic
+functions are implicitly created through the use of
+:ref:`define-method <object/define-method>`.
+
+.. seealso:: :ref:`define-method <object/define-method>`
+
+" {
   make-instance <generic> :name name :documentation doc
 }
 
@@ -261,18 +307,39 @@ define (compute-new-methods gf m) {
   loop methods
 }
 
-define (add-method! gf m) {
-  slot-set! gf 'methods (compute-new-methods gf m)
-  set-instance-proc! gf (compute-apply-generic gf)
-}
+define (add-method! gf m) "
 
-define (make-method gf specializers procedure) {
-  make-instance <method> :generic-function gf :specializers specializers :procedure procedure
+add method `m` to generic function `gf`'s list of methods
+
+:param gf: generic function
+:type gf: instance
+:param m: method
+:type m: instance
+:return: ``#<unspec>``
+
+`m` will override any existing method with the same specializers
+
+``add-method!`` would not normally be called by users as methods are
+implicitly added through the use of :ref:`define-method
+<object/define-method>`.
+
+.. seealso:: :ref:`define-method <object/define-method>`
+
+" {
+  slot-set! gf 'methods (compute-new-methods gf m)
+  %set-instance-proc! gf (compute-apply-generic gf)
 }
 
 define-template (define-method args & body) {
   name := ph args
   args = pt args
+  doc := #n
+  if (and (pair? body)
+	  (string? (ph body))
+	  (pair? (pt body))) {
+    doc = ph body
+    body = pt body
+  }
   gf := gensym 'gf
 
   ;; $gf is local to the block, below, although ensure-generic will
@@ -288,7 +355,7 @@ define-template (define-method args & body) {
 
   #T{
     {
-      $gf := ensure-generic '$name
+      $gf := ensure-generic '$name :documentation $doc
       add-method! $gf (make-instance <method>
 			    :generic-function $gf
 			    :specializers     (map class-inst '$(compute-method-specializers args))
@@ -356,21 +423,119 @@ define (TC/more-specific? c1 c2 arg) {
 ;; declare some generic functions which we'll set up in a moment
 ;;
 ;; Technically, we only need to pre-define compute-apply-generic
-;; (because we're going to call set-instance-proc! with it below) as
+;; (because we're going to call %set-instance-proc! with it below) as
 ;; all the rest are auto-defined by define-method.
 
 ;; initialization protocol
-initialize                    := (make-generic :name 'initialize)
+initialize                    := (make-generic
+				  :name 'initialize
+				  :documentation "
+
+Initialize the instance `inst` from `initargs`.  ``initialize`` is
+called from :ref:`make-instance <object/make-instance>`.
+
+The following methods are defined:
+
+* ``(<method> <top>)``
+
+* ``(<generic> <top>)``
+
+* ``(<class> <top>)``
+
+* ``(<object> <top>)``
+
+")
 
 ;; instance structure protocol
-allocate-instance             := (make-generic :name 'allocate-instance)
-compute-getter-and-setter     := (make-generic :name 'compute-getter-and-setter)
+allocate-instance             := (make-generic
+				  :name 'allocate-instance
+				  :documentation "
+
+Allocate space for an instance of class `cl`.  ``allocate-instance``
+is called from :ref:`make-instance <object/make-instance>`.
+
+The following methods are defined:
+
+* ``(<entity-class>)``
+
+* ``(<class>)``
+
+")
+
+compute-getter-and-setter     := (make-generic
+				  :name 'compute-getter-and-setter
+				  :documentation "
+
+Compute the getter and setter information for slot `slot` in class
+`cl` using allocator `allocator`.
+
+The following method is defined:
+
+* ``(<class> <top> <top>)``
+
+")
 
 ;; generic invocation protocol
-compute-apply-generic         := (make-generic :name 'compute-apply-generic)
-compute-methods               := (make-generic :name 'compute-methods)
-compute-method-more-specific? := (make-generic :name 'compute-method-more-specific?)
-compute-apply-methods         := (make-generic :name 'compute-apply-methods)
+compute-apply-generic         := (make-generic
+				  :name 'compute-apply-generic
+				  :documentation "
+
+Return a function to be used as the instance proc for generic `gf`.
+
+The function takes any number of arguments and calls
+:ref:`compute-methods <object/compute-methods>` and
+:ref:`compute-apply-methods <object/compute-apply-methods>`.
+
+The following method is defined:
+
+* ``(<generic>)``
+
+")
+
+compute-methods               := (make-generic
+				  :name 'compute-methods
+				  :documentation "
+
+Return a function to be used to calculate the sorted list of methods
+given the generic function's arguments.
+
+The function calls :ref:`compute-method-more-specific?
+<object/compute-method-more-specific?>`.
+
+The following method is defined:
+
+* ``(<generic>)``
+
+")
+
+compute-method-more-specific? := (make-generic
+				  :name 'compute-method-more-specific?
+				  :documentation "
+
+Return a function to be used to sort methods by their specializers.
+
+The following method is defined:
+
+* ``(<generic>)``
+
+")
+
+compute-apply-methods         := (make-generic
+				  :name 'compute-apply-methods
+				  :documentation "
+
+Return a function to be used to call the :ref:`method-procedure
+<object/method-procedure>` for the sorted list of applicable methods
+determined previously.
+
+The function takes a list of methods and the generic function's
+arguments.
+
+The following method is defined:
+
+* ``(<generic>)``
+
+")
 
 ; From tiny-clos.scm:
 
@@ -388,7 +553,7 @@ compute-apply-methods         := (make-generic :name 'compute-apply-methods)
 ; same way: it special cases invocation of generics in the invocation
 ; protocol.
 
-set-instance-proc! compute-apply-generic (function (gf) {
+%set-instance-proc! compute-apply-generic (function (gf) {
   m := ph (generic-methods gf)
   ;; func next-method args
   (method-procedure m) #f gf
@@ -465,7 +630,7 @@ define-method (compute-apply-methods (gf <generic>)) {
 	  eprintf "WARNING: one-step thunk invoked with a=%@ args=%s\n" a args
 	}
 	if (null? m*) {
-	  error/type ^rt-instance-invocation-error 'compute-apply-methods "no applicable methods/next methods" gf method*
+	  error/type ^rt-instance-invocation-error 'compute-apply-methods (sprintf "no applicable methods/next methods for %s" (generic-name gf)) gf method*
 	} {
 	  ;; apply func (pair next-method args)
 	  apply (method-procedure (ph m*)) (pair (one-step (pt m*)) args)
@@ -527,8 +692,8 @@ define-method (initialize (m <method>) initargs) {
   ;; call-next-method
   (next-method)
 
-  slot-set! gf 'specializers (TC/get-keyword-arg initargs :specializers #n)
-  slot-set! gf 'procedure    (TC/get-keyword-arg initargs :procedure #n)
+  slot-set! m 'specializers (TC/get-keyword-arg initargs :specializers #n)
+  slot-set! m 'procedure    (TC/get-keyword-arg initargs :procedure #n)
 }
 
 define (allocate-helper cl allocator) {
@@ -555,7 +720,15 @@ define-method (allocate-instance (cl <entity-class>)) {
   allocate-helper cl %allocate-entity
 }
 
-define-method (compute-cpl (cl <class>)) {
+define-method (compute-cpl (cl <class>)) "
+
+Determine the class precedence list from the super-classes.
+
+The following method is defined:
+
+* ``(<class>)``
+
+" {
   ;; Here we'll deviate from Tiny CLOS and use C3 Linearization
   ;; https://en.wikipedia.org/wiki/C3_linearization to compute the cpl
   ;; (as does Python 2.3+, Perl 5.10+ (not default), ...)
@@ -642,7 +815,15 @@ define-method (compute-cpl (cl <class>)) {
   merge (list cl) (append (map class-cpl supers) (list supers))
 }
 
-define-method (compute-slots (cl <class>)) {
+define-method (compute-slots (cl <class>)) "
+
+Determine the actual class slots from the direct and inherited slots.
+
+The following method is defined:
+
+* ``(<class>)``
+
+" {
   collect :+ function (to-do r) {
     if (null? to-do) (reverse! r) {
       current := ph to-do
@@ -669,7 +850,18 @@ define-method (compute-getter-and-setter (cl <class>) slot allocator) {
   #f
 }
 
-define (make-instance cl & initargs) {
+define (make-instance cl & initargs) "
+
+create an instance of class `cl` using `initargs`
+
+:param cl: class
+:type cl: instance
+:param initargs: initialization arguments
+:type initargs: list
+:return: instance
+:rtype: instance
+
+" {
   inst := allocate-instance cl
   initialize inst initargs
   inst
