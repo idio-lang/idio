@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -37,8 +37,9 @@ test (struct-type? (current-input-handle))	#f ; HANDLE
 test (struct-type? ^error)			#t ; STRUCT_TYPE
 test (struct-type? char-set:letter)		#f ; STRUCT_INSTANCE
 test (struct-type? #B{ 3 })			#f ; BITSET
-test (struct-type? libc/INTMAX_MAX)		#f ; C_INT
-test (struct-type? libc/UINTMAX_MAX)		#f ; C_UINT
+test (struct-type? libc/INT_MAX)		#f ; C_INT
+test (struct-type? libc/UINT_MAX)		#f ; C_UINT
+test (struct-type? <class>)			#f ; instance
 
 test (struct-instance? 0)			#f ; FIXNUM
 test (struct-instance? #t)			#f ; CONSTANT
@@ -57,8 +58,9 @@ test (struct-instance? (current-input-handle))	#f ; HANDLE
 test (struct-instance? ^error)			#f ; STRUCT_TYPE
 test (struct-instance? char-set:letter)		#t ; STRUCT_INSTANCE
 test (struct-instance? #B{ 3 })			#f ; BITSET
-test (struct-instance? libc/INTMAX_MAX)		#f ; C_INT
-test (struct-instance? libc/UINTMAX_MAX)	#f ; C_UINT
+test (struct-instance? libc/INT_MAX)		#f ; C_INT
+test (struct-instance? libc/UINT_MAX)		#f ; C_UINT
+test (struct-instance? <class>)			#t ; instance (shh, don't tell anyone!)
 
 define-struct foo a b
 test (struct-type? foo) #t
@@ -95,4 +97,4 @@ test (fooi.sym) 30
 test (struct-type-isa? ^idio-error ^error) #t
 
 ;; all done?
-Tests? (struct0 + 57)
+Tests? (struct0 + 59)

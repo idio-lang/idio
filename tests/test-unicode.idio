@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -54,8 +54,9 @@ test (unicode? (current-input-handle))	#f ; HANDLE
 test (unicode? ^error)			#f ; STRUCT_TYPE
 test (unicode? char-set:letter)		#f ; STRUCT_INSTANCE
 test (unicode? #B{ 3 })			#f ; BITSET
-test (unicode? libc/INTMAX_MAX)		#f ; C_INT
-test (unicode? libc/UINTMAX_MAX)	#f ; C_UINT
+test (unicode? libc/INT_MAX)		#f ; C_INT
+test (unicode? libc/UINT_MAX)		#f ; C_UINT
+test (unicode? <class>)			#f ; instance
 
 test (unicode->plane #U+65)    0
 test (unicode->plane #U+fffd)  0
@@ -520,4 +521,4 @@ test (unicode-safe "foo") "foo"
 test (unicode-safe "ħ") "ħ"
 
 ;; all done?
-Tests? (unicode-test0 + 229)
+Tests? (unicode-test0 + 230)

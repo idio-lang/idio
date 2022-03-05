@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -37,8 +37,9 @@ test (module? (current-input-handle))	#f ; HANDLE
 test (module? ^error)			#f ; STRUCT_TYPE
 test (module? char-set:letter)		#f ; STRUCT_INSTANCE
 test (module? #B{ 3 })			#f ; BITSET
-test (module? libc/INTMAX_MAX)		#f ; C_INT
-test (module? libc/UINTMAX_MAX)		#f ; C_UINT
+test (module? libc/INT_MAX)		#f ; C_INT
+test (module? libc/UINT_MAX)		#f ; C_UINT
+test (module? <class>)			#f ; instance
 
 ;; code coverage
 (module-exports 'Idio)
@@ -47,4 +48,4 @@ test (module? libc/UINTMAX_MAX)		#f ; C_UINT
 (all-modules)
 
 ;; all done?
-Tests? (module0 + 19)
+Tests? (module0 + 20)

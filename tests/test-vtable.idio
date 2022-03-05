@@ -44,6 +44,7 @@ test (typename #B{ 3 })				'bitset
 test (typename libc/INT_MAX)			'C/int
 test (typename libc/UINT_MAX)			'C/uint
 test (typename libc/NULL)			'C/pointer
+test (typename <class>)				'<class>
 
 ;; some things we know have a bespoke name
 test (typename ^error)				'^error ; XXX not struct-type
@@ -92,6 +93,7 @@ test (->string %char-set:letter)		"#<SI sparse-char-set size=1114112 planes=#[ #
 test (->string #B{ 3 })				"#B{ 3 }"
 test (->string libc/INT_MAX)			"2147483647"
 test (->string libc/NULL)			"#<C/* C/pointer>"
+test (->string <class>)				"<class>"
 
 ;; ->string for debug builds prints out the internal pointer
 ;test (->string ^error)				"#<ST ^error #<ST ^condition #n>>"
@@ -114,6 +116,7 @@ test (display-string %char-set:letter)		"#<SI sparse-char-set size=1114112 plane
 test (display-string #B{ 3 })			"#B{ 3 }"
 test (display-string libc/INT_MAX)		"2147483647"
 test (display-string libc/NULL)			"#<C/* C/pointer>"
+test (display-string <class>)			"<class>"
 
 ;; ->string for debug builds prints out the internal pointer
 ;test (display-string ^error)			"#<ST ^error #<ST ^condition #n>>"
@@ -211,7 +214,7 @@ tests.
 *#
 
 ;; all done?
-Tests? (vtable0 + 61)
+Tests? (vtable0 + 64)
 
 ;Local Variables:
 ;mode: Idio

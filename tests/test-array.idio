@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -37,8 +37,9 @@ test (array? (current-input-handle))	#f ; HANDLE
 test (array? ^error)			#f ; STRUCT_TYPE
 test (array? char-set:letter)		#f ; STRUCT_INSTANCE
 test (array? #B{ 3 })			#f ; BITSET
-test (array? libc/INTMAX_MAX)		#f ; C_INT
-test (array? libc/UINTMAX_MAX)		#f ; C_UINT
+test (array? libc/INT_MAX)		#f ; C_INT
+test (array? libc/UINT_MAX)		#f ; C_UINT
+test (array? <class>)			#f ; instance
 
 a := (make-array 3)
 test (array? a) #t
@@ -303,4 +304,4 @@ for (x y z) in arrays {
 }
 
 ;; all done?
-Tests? (array0 + 107)
+Tests? (array0 + 108)

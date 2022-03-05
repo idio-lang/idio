@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -37,8 +37,9 @@ test (pair? (current-input-handle))	#f ; HANDLE
 test (pair? ^error)			#f ; STRUCT_TYPE
 test (pair? char-set:letter)		#f ; STRUCT_INSTANCE
 test (pair? #B{ 3 })			#f ; BITSET
-test (pair? libc/INTMAX_MAX)		#f ; C_INT
-test (pair? libc/UINTMAX_MAX)		#f ; C_UINT
+test (pair? libc/INT_MAX)		#f ; C_INT
+test (pair? libc/UINT_MAX)		#f ; C_UINT
+test (pair? <class>)			#f ; instance
 
 ;; code coverage
 test (copy-value '(1 2 3) 'shallow) '(1 2 3)
@@ -57,4 +58,4 @@ test (nth '(1 2 3) 1 #t) 1
 test (nth '(1 2 3) 4 #t) #t
 
 ;; all done?
-Tests? (pair0 + 32)
+Tests? (pair0 + 33)

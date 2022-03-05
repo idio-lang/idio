@@ -1,0 +1,7 @@
+
+module test/initialize-generic-no-methods
+import object
+
+gf := make-instance <generic> :name 'foo
+
+gf #t

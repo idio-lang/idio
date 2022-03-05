@@ -302,6 +302,8 @@ test-load "test-libc-poll-error.idio"
 test-load "test-libc-poll.idio"
 test-load "test-module-error.idio"
 test-load "test-module.idio"
+test-load "test-object-error.idio"
+test-load "test-object.idio"
 test-load "test-pair-error.idio"
 test-load "test-pair.idio"
 test-load "test-path-error.idio"
@@ -383,7 +385,7 @@ test-load "test-job-control.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? (7591 - Skipped)
+Tests? (7684 - Skipped)
 
 if (e? testfile) (delete-file testfile)
 

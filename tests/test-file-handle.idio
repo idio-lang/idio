@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -40,8 +40,9 @@ test (file-handle? (current-input-handle))	#t ; HANDLE
 test (file-handle? ^error)			#f ; STRUCT_TYPE
 test (file-handle? char-set:letter)		#f ; STRUCT_INSTANCE
 test (file-handle? #B{ 3 })			#f ; BITSET
-test (file-handle? libc/INTMAX_MAX)		#f ; C_INT
-test (file-handle? libc/UINTMAX_MAX)		#f ; C_UINT
+test (file-handle? libc/INT_MAX)		#f ; C_INT
+test (file-handle? libc/UINT_MAX)		#f ; C_UINT
+test (file-handle? <class>)			#f ; instance
 
 ; fd-handle is a subset of file-handle so identical
 test (fd-handle? 0)				#f ; FIXNUM
@@ -61,8 +62,9 @@ test (fd-handle? (current-input-handle))	#t ; HANDLE
 test (fd-handle? ^error)			#f ; STRUCT_TYPE
 test (fd-handle? char-set:letter)		#f ; STRUCT_INSTANCE
 test (fd-handle? #B{ 3 })			#f ; BITSET
-test (fd-handle? libc/INTMAX_MAX)		#f ; C_INT
-test (fd-handle? libc/UINTMAX_MAX)		#f ; C_UINT
+test (fd-handle? libc/INT_MAX)			#f ; C_INT
+test (fd-handle? libc/UINT_MAX)			#f ; C_UINT
+test (fd-handle? <class>)			#f ; instance
 
 ; pipe-handle != file-handle so none of the examples
 test (pipe-handle? 0)				#f ; FIXNUM
@@ -82,8 +84,9 @@ test (pipe-handle? (current-input-handle))	#f ; HANDLE
 test (pipe-handle? ^error)			#f ; STRUCT_TYPE
 test (pipe-handle? char-set:letter)		#f ; STRUCT_INSTANCE
 test (pipe-handle? #B{ 3 })			#f ; BITSET
-test (pipe-handle? libc/INTMAX_MAX)		#f ; C_INT
-test (pipe-handle? libc/UINTMAX_MAX)		#f ; C_UINT
+test (pipe-handle? libc/INT_MAX)		#f ; C_INT
+test (pipe-handle? libc/UINT_MAX)		#f ; C_UINT
+test (pipe-handle? <class>)			#f ; instance
 
 test-str := "foo"
 test (file-handle? test-str)		#f
@@ -456,4 +459,4 @@ if parts {
 IDIOLIB = OIDIOLIB
 
 ;; all done?
-Tests? (file-handle0 + 155)
+Tests? (file-handle0 + 158)

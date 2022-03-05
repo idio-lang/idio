@@ -40,8 +40,9 @@ test (C/uint? (current-input-handle))	#f ; HANDLE
 test (C/uint? ^error)			#f ; STRUCT_TYPE
 test (C/uint? char-set:letter)		#f ; STRUCT_INSTANCE
 test (C/uint? #B{ 3 })			#f ; BITSET
-test (C/uint? libc/INTMAX_MAX)		#f ; C_INT
-test (C/uint? libc/UINTMAX_MAX)		#f ; C_UINT	- probably!
+test (C/uint? libc/INT_MAX)		#f ; C_INT
+test (C/uint? libc/UINT_MAX)		#t ; C_UINT
+test (C/uint? <class>)			#f ; instance
 
 ;; cross test the fourteen (and pointer) base_types
 v := C/integer-> 0 'char
@@ -593,4 +594,4 @@ test (not (memq 'st_uid (C/pointer-members sb))) #f
 
 ;; all done?
 Skipped = Skipped + c-type-skipped
-Tests? (c-type0 + 920 - c-type-skipped)
+Tests? (c-type0 + 921 - c-type-skipped)

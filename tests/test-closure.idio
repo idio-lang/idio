@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -40,8 +40,9 @@ test (function? (current-input-handle))	#f ; HANDLE
 test (function? ^error)			#f ; STRUCT_TYPE
 test (function? char-set:letter)	#f ; STRUCT_INSTANCE
 test (function? #B{ 3 })		#f ; BITSET
-test (function? libc/INTMAX_MAX)	#f ; C_INT
-test (function? libc/UINTMAX_MAX)	#f ; C_UINT
+test (function? libc/INT_MAX)		#f ; C_INT
+test (function? libc/UINT_MAX)		#f ; C_UINT
+test (function? <class>)		#f ; instance
 
 ;; setters
 
@@ -56,4 +57,4 @@ test (ph l) 3
 test (ph l) 4
 
 ;; all done?
-Tests? (closure0 + 22)
+Tests? (closure0 + 23)

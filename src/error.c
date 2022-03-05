@@ -690,6 +690,72 @@ This does not return!				\n\
 	idio_error_param_type (em, args, loc_str);
 
 	return idio_S_notreached;
+    } else if (idio_eqp (ct, idio_condition_rt_parameter_value_error_type)) {
+	IDIO func = loc;
+	IDIO param = msg;
+	IDIO val = idio_S_nil;
+	msg = idio_S_nil;
+
+	size_t nargs = idio_list_length (args);
+	if (nargs > 2) {
+	    nargs = 2;
+	}
+	switch (nargs) {
+	case 2:
+	    msg = IDIO_PAIR_HT (args);
+	case 1:
+	    val = IDIO_PAIR_H (args);
+	}
+
+	IDIO msh;
+	IDIO lsh;
+	IDIO dsh;
+	idio_error_init (&msh, &lsh, &dsh, IDIO_C_FUNC_LOCATION ());
+
+	idio_display (func, msh);
+	idio_display_C (" ", msh);
+	idio_display (param, msh);
+	idio_display_C ("='", msh);
+	idio_display (val, msh);
+	idio_display_C ("': ", msh);
+	idio_display (msg, msh);
+
+	idio_error_raise_noncont (idio_condition_rt_parameter_value_error_type,
+				  IDIO_LIST3 (idio_get_output_string (msh),
+					      idio_get_output_string (lsh),
+					      idio_get_output_string (dsh)));
+
+	return idio_S_notreached;
+    } else if (idio_eqp (ct, idio_condition_rt_parameter_error_type)) {
+	IDIO func = loc;
+	IDIO param = idio_S_nil;
+
+	size_t nargs = idio_list_length (args);
+	if (nargs > 1) {
+	    nargs = 1;
+	}
+	switch (nargs) {
+	case 1:
+	    param = IDIO_PAIR_H (args);
+	}
+
+	IDIO msh;
+	IDIO lsh;
+	IDIO dsh;
+	idio_error_init (&msh, &lsh, &dsh, IDIO_C_FUNC_LOCATION ());
+
+	idio_display (func, msh);
+	idio_display_C (" ", msh);
+	idio_display (param, msh);
+	idio_display_C (" ", msh);
+	idio_display (msg, msh);
+
+	idio_error_raise_noncont (idio_condition_rt_parameter_value_error_type,
+				  IDIO_LIST3 (idio_get_output_string (msh),
+					      idio_get_output_string (lsh),
+					      idio_get_output_string (dsh)));
+
+	return idio_S_notreached;
     }
 
     IDIO msh;
@@ -697,15 +763,15 @@ This does not return!				\n\
     IDIO dsh;
     idio_error_init (&msh, &lsh, &dsh, loc);
 
+    if (idio_isa_symbol (loc)) {
+	idio_display (loc, msh);
+	idio_display_C (" ", msh);
+    }
+
     idio_display (msg, msh);
     if (idio_S_nil != args) {
 	idio_display_C (" ", msh);
 	idio_display (args, msh);
-    }
-
-    if (idio_isa_symbol (loc)) {
-	idio_display_C (" at ", msh);
-	idio_display (loc, msh);
     }
 
     /*

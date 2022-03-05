@@ -40,8 +40,9 @@ test (condition-type? (current-input-handle))	#f ; HANDLE
 test (condition-type? ^error)			#t ; STRUCT_TYPE
 test (condition-type? char-set:letter)		#f ; STRUCT_INSTANCE
 test (condition-type? #B{ 3 })			#f ; BITSET
-test (condition-type? libc/INTMAX_MAX)		#f ; C_INT
-test (condition-type? libc/UINTMAX_MAX)		#f ; C_UINT
+test (condition-type? libc/INT_MAX)		#f ; C_INT
+test (condition-type? libc/UINT_MAX)		#f ; C_UINT
+test (condition-type? <class>)			#f ; instance
 
 ;; there is no reader form for a condition so all these tests are #f
 
@@ -62,8 +63,9 @@ test (condition? (current-input-handle))	#f ; HANDLE
 test (condition? ^error)			#f ; STRUCT_TYPE
 test (condition? char-set:letter)		#f ; STRUCT_INSTANCE
 test (condition? #B{ 3 })			#f ; BITSET
-test (condition? libc/INTMAX_MAX)		#f ; C_INT
-test (condition? libc/UINTMAX_MAX)		#f ; C_UINT
+test (condition? libc/INT_MAX)			#f ; C_INT
+test (condition? libc/UINT_MAX)			#f ; C_UINT
+test (condition? <class>)			#f ; instance
 
 test (error? ^error) #f
 
@@ -258,4 +260,4 @@ trap ^rt-divide-by-zero-error (function (c) {
 }
 
 ;; all done?
-Tests? (condition0 + 97)
+Tests? (condition0 + 99)

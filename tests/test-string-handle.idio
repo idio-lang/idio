@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -38,8 +38,9 @@ test (string-handle? (current-input-handle))	#f ; HANDLE
 test (string-handle? ^error)			#f ; STRUCT_TYPE
 test (string-handle? char-set:letter)		#f ; STRUCT_INSTANCE
 test (string-handle? #B{ 3 })			#f ; BITSET
-test (string-handle? libc/INTMAX_MAX)		#f ; C_INT
-test (string-handle? libc/UINTMAX_MAX)		#f ; C_UINT
+test (string-handle? libc/INT_MAX)		#f ; C_INT
+test (string-handle? libc/UINT_MAX)		#f ; C_UINT
+test (string-handle? <class>)			#f ; instance
 
 ;; check predicates fail for non-string-handle
 test-str := "foo"
@@ -134,4 +135,4 @@ seek-handle ish 0 'cur
 seek-handle ish 20
 
 ;; all done?
-Tests? (string-handle0 + 49)
+Tests? (string-handle0 + 50)

@@ -40,8 +40,9 @@ test (fixnum? (current-input-handle))	#f ; HANDLE
 test (fixnum? ^error)			#f ; STRUCT_TYPE
 test (fixnum? char-set:letter)		#f ; STRUCT_INSTANCE
 test (fixnum? #B{ 3 })			#f ; BITSET
-test (fixnum? libc/INTMAX_MAX)		#f ; C_INT
-test (fixnum? libc/UINTMAX_MAX)		#f ; C_UINT
+test (fixnum? libc/INT_MAX)		#f ; C_INT
+test (fixnum? libc/UINT_MAX)		#f ; C_UINT
+test (fixnum? <class>)			#f ; instance
 
 #*
 
@@ -274,4 +275,4 @@ test (quotient  2.0 1)   2
 test (quotient  2.0 1.0) 2
 
 ;; all done?
-Tests? (fixnum0 + 207)
+Tests? (fixnum0 + 208)

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -42,8 +42,9 @@ test (continuation? (current-input-handle))	#f ; HANDLE
 test (continuation? ^error)			#f ; STRUCT_TYPE
 test (continuation? char-set:letter)		#f ; STRUCT_INSTANCE
 test (continuation? #B{ 3 })			#f ; BITSET
-test (continuation? libc/INTMAX_MAX)		#f ; C_INT
-test (continuation? libc/UINTMAX_MAX)		#f ; C_UINT
+test (continuation? libc/INT_MAX)		#f ; C_INT
+test (continuation? libc/UINT_MAX)		#f ; C_UINT
+test (continuation? <class>)			#f ; instance
 
 ; call/cc has been improved in call-cc.idio -- if we want an actual
 ; continuation object we need to go deeper.  Not recommended.
@@ -52,4 +53,4 @@ test (continuation? libc/UINTMAX_MAX)		#f ; C_UINT
 }))
 
 ;; all done?
-Tests? (continuation0 + 20)
+Tests? (continuation0 + 21)

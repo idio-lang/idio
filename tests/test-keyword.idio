@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -37,8 +37,9 @@ test (keyword? (current-input-handle))	#f ; HANDLE
 test (keyword? ^error)			#f ; STRUCT_TYPE
 test (keyword? char-set:letter)		#f ; STRUCT_INSTANCE
 test (keyword? #B{ 3 })			#f ; BITSET
-test (keyword? libc/INTMAX_MAX)		#f ; C_INT
-test (keyword? libc/UINTMAX_MAX)	#f ; C_UINT
+test (keyword? libc/INT_MAX)		#f ; C_INT
+test (keyword? libc/UINT_MAX)		#f ; C_UINT
+test (keyword? <class>)			#f ; instance
 
 test (symbol? :a) #f
 
@@ -73,4 +74,4 @@ test (keyword-ref kw-table :a) "apple"
 kw := (keywords)
 
 ;; all done?
-Tests? (keyword0 + 29)
+Tests? (keyword0 + 30)

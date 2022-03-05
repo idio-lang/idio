@@ -67,10 +67,10 @@ export (
 	 compute-apply-generic compute-methods compute-method-more-specific? compute-apply-methods
 
 	 ;; utilities
-	 class-inst
+	 class-instance
 )
 
-define (class-inst name & args) "
+define (class-instance name & args) "
 
 return the instance of the class `name`
 
@@ -82,7 +82,10 @@ return the instance of the class `name`
 
   if (class? cl) cl {
     if (pair? args) (ph args) {
-      error/type ^rt-instance-error 'class-inst (sprintf "'%s', a %s, is not a class" name (typename name))
+      ;; Test Case: object-errors/class-instance-bad-instance-type.idio
+      ;;
+      ;; class-instance #t
+      error/type ^rt-parameter-type-error 'class-instance "class or the name of a class" name
     }
   }
 }
@@ -105,6 +108,7 @@ define* (make-instance class
      if name {
        %make-instance class 'generic name doc
      } {
+       ;; Test Case: n/a -- function overridden
        error/type ^rt-parameter-value-error 'make-instance ":name is mandatory" class
      }
    })
@@ -114,6 +118,7 @@ define* (make-instance class
 	     proc) {
        %make-instance class 'method gf spec proc
      } {
+       ;; Test Case: n/a -- function overridden
        error/type ^rt-parameter-value-error 'make-instance ":generic-function :specializers :procedure are mandatory" class
      }
    })
@@ -123,10 +128,12 @@ define* (make-instance class
 	     slots) {
        %make-instance class 'class name supers slots
      } {
+       ;; Test Case: n/a -- function overridden
        error/type ^rt-parameter-value-error 'make-instance ":name is mandatory" class
      }
    })
    (else {
+     ;; Test Case: n/a -- function overridden
      error/type ^rt-parameter-value-error 'make-instance "unexpected class" class
    }))
 }
@@ -158,6 +165,11 @@ create a new class, `name`, with super-classes and slots
 }
 
 define-template (define-class name & args) {
+  if (not (symbol? name)) {
+    ;; Test Case: n/a - raised during template expansion
+    error/type ^rt-parameter-type-error 'define-class "symbol" name
+  }
+
   supers := #n
   slots := #n
   if (pair? args) {
@@ -167,12 +179,15 @@ define-template (define-class name & args) {
   ;; As this is a template and therefore supers is a list of symbols,
   ;; we need to map the given supers into class instances.
   supers = (cond
-	    ((pair? supers)   (map class-inst supers))
+	    ((pair? supers)   (map class-instance supers))
 	    ((symbol? supers) (list supers))
 	    ((null? supers)   (list <object>))
-	    (else	      (error/type ^rt-parameter-value-error
-					  'define-class
-					  (sprintf "'%s', a %s, is not a list|symbol" supers (typename supers)))))
+	    (else	      {
+	      ;; Test Case: n/a - raised during template expansion
+	      (error/type ^rt-parameter-value-error
+			  'define-class
+			  (sprintf "'%s', a %s, is not a list|symbol" supers (typename supers)))
+	    }))
   #T{
     define $name (make-class '$name '$supers '$slots)
   }
@@ -283,28 +298,28 @@ define (method-specializers-equal? gf m1 m2) {
 }
 
 define (compute-new-methods gf m) {
-  methods := generic-methods gf
+  method* := generic-methods gf
 
   ;; Tiny CLOS uses collect-if and every and some dynamic predicates.
   ;; STklos hunts down the list for a match and stamps over it.
   loop :+ function (m*) {
     if (null? m*) {
-      ;; no duplicate specializers so prefix methods with m
-      pair m methods
+      ;; no duplicate specializers so prefix method* with m
+      pair m method*
     } {
       if (method-specializers-equal? gf (ph m*) m) {
 	;; overwrite the old
 	set-ph! m* m
 
-	;; return methods (with the now overwritten element)
-	methods
+	;; return method* (with the now overwritten element)
+	method*
       } {
 	loop (pt m*)
       }
     }
   }
 
-  loop methods
+  loop method*
 }
 
 define (add-method! gf m) "
@@ -358,7 +373,7 @@ define-template (define-method args & body) {
       $gf := ensure-generic '$name :documentation $doc
       add-method! $gf (make-instance <method>
 			    :generic-function $gf
-			    :specializers     (map class-inst '$(compute-method-specializers args))
+			    :specializers     (map class-instance '$(compute-method-specializers args))
 			    :procedure        (function $(compute-method-formals args) $@body))
     }
   }
@@ -400,7 +415,12 @@ define (TC/get-keyword-arg initargs name & args) {
   scan :+ function (a*) {
     (cond
      ((null? a*) {
-       if (pair? args) (ph args) (error/type ^rt-parameter-value-error 'get-named-arg "not found" name)
+       if (pair? args) (ph args) {
+	 ;; Test Case: object-errors/TC-get-keyword-arg-not-found.idio
+	 ;;
+	 ;; TC/get-keyword-arg '(1 2 :foo 3 4 5) :bar
+	 error/type ^rt-parameter-error 'TC/get-keyword-arg "keyword not found" name
+       }
      })
      ((eq? (ph a*) name) (pht a*))
      (else               (scan (ptt a*))))
@@ -596,13 +616,20 @@ define-method (compute-method-more-specific? (gf <generic>)) {
       (cond
        ((and (null? ms1)
 	     (null? ms2)) {
+	 ;; Test Case: n/a -- compute-new-methods should prevent this
 	 error/type ^rt-instance-error 'compute-method-more-specific? "two methods are equally specific"
        })
        ((or (null? ms1)
 	    (null? ms2)) {
+	 ;; Test Case: object-errors/compute-method-more-specific-inconsistent-specializers-count.idio
+	 ;;
+	 ;; define-method (foo (f <fixnum>))   "fixnum"
+	 ;; define-method (foo (f <fixnum>) o) "fixnum other"
+	 ;; foo 1
 	 error/type ^rt-instance-error 'compute-method-more-specific? "two methods have a different number of specializers"
        })
        ((null? args) {
+	 ;; Test Case: n/a -- we get an arity error first
 	 error/type ^rt-instance-error 'compute-method-more-specific? "fewer arguments than specializers"
        })
        (else {
@@ -630,7 +657,11 @@ define-method (compute-apply-methods (gf <generic>)) {
 	  eprintf "WARNING: one-step thunk invoked with a=%@ args=%s\n" a args
 	}
 	if (null? m*) {
-	  error/type ^rt-instance-invocation-error 'compute-apply-methods (sprintf "no applicable methods/next methods for %s" (generic-name gf)) gf method*
+	  ;; Test Case: object-errors/compute-apply-methods-bad-type.idio
+	  ;;
+	  ;; define-method (foo (f <fixnum>))   "fixnum"
+	  ;; foo #t
+	  error/type ^rt-instance-invocation-error 'compute-apply-methods (sprintf "no applicable methods/next methods for (%s %@)" (generic-name gf) args)
 	} {
 	  ;; apply func (pair next-method args)
 	  apply (method-procedure (ph m*)) (pair (one-step (pt m*)) args)
@@ -674,7 +705,7 @@ define-method (initialize (cl <class>) initargs) {
     i + 1
   }) 0 slots
 
-  slot-set! cl 'nfields (length slots)
+  slot-set! cl 'nfields           (length slots)
   slot-set! cl 'getters-n-setters (reverse! gns)
 }
 
@@ -682,9 +713,15 @@ define-method (initialize (gf <generic>) initargs) {
   ;; call-next-method
   (next-method)
 
-  slot-set! gf 'methods #n
+  slot-set! gf 'name	      (TC/get-keyword-arg initargs :name (gensym 'gf))
+  slot-set! gf 'documentation (TC/get-keyword-arg initargs :documentation #n)
+  slot-set! gf 'methods       #n
   %set-instance-proc! gf (function args {
-    error/type ^rt-instance-invocation-error 'initialize "has no methods" gf
+    ;; Test Case: object-errors/initialize-generic-no-methods.idio
+    ;;
+    ;; gf := make-instance <generic> :name 'foo
+    ;; gf #t
+    error/type ^rt-instance-invocation-error 'initialize (sprintf "generic function %s has no methods" (generic-name gf))
   })
 }
 
@@ -806,6 +843,7 @@ The following method is defined:
 
 	merge (pair next reversed-partial-result) (map remove-next remaining-inputs)
       } {
+	;; Test Case: ??
 	error/type ^rt-instance-error 'compute-cpl "Inconsistent precedence graph"
       }
     }

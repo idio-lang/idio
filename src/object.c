@@ -204,11 +204,15 @@ static void idio_object_instance_invocation_error (char *msg, IDIO c_location)
     /* notreached */
 }
 
-static void idio_object_slot_not_found_error (IDIO slot, IDIO c_location)
+static void idio_object_slot_not_found_error (IDIO obj, IDIO cl, IDIO slot, IDIO c_location)
 {
+    IDIO_ASSERT (obj);
+    IDIO_ASSERT (cl);
     IDIO_ASSERT (slot);
     IDIO_ASSERT (c_location);
 
+    IDIO_TYPE_ASSERT (instance, obj);
+    IDIO_TYPE_ASSERT (class, cl);
     IDIO_TYPE_ASSERT (symbol, slot);
     IDIO_TYPE_ASSERT (string, c_location);
 
@@ -217,13 +221,16 @@ static void idio_object_slot_not_found_error (IDIO slot, IDIO c_location)
     IDIO dsh;
     idio_error_init (&msh, &lsh, &dsh, c_location);
 
-    idio_display_C ("slot not found", msh);
+    idio_display_C ("slot ", msh);
+    idio_display (slot, msh);
+    idio_display_C (" not found in class ", msh);
+    idio_display (cl, msh);
 
     idio_error_raise_cont (idio_condition_rt_slot_not_found_error_type,
 			   IDIO_LIST4 (idio_get_output_string (msh),
 				       idio_get_output_string (lsh),
 				       idio_get_output_string (dsh),
-				       slot));
+				       IDIO_LIST3 (obj, cl, slot)));
 
     /* notreached */
 }
@@ -242,6 +249,11 @@ raise an error condition			\n\
 {
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: ??
+     *
+     * I think we need a partially-constructed instance to get here.
+     */
     idio_object_instance_invocation_error ("an instance isn't a procedure -- can't apply it", IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
@@ -255,6 +267,11 @@ raise an error condition			\n\
 {
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: ??
+     *
+     * I think we need a partially-constructed instance to get here.
+     */
     idio_object_instance_invocation_error ("tried to call an entity before its proc is set", IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
@@ -278,6 +295,13 @@ static IDIO idio_allocate_instance (IDIO cl, size_t nfields)
     IDIO_ASSERT (cl);
 
     /*
+     * There should be a vanilla IDIO_TYPE_ASSERT (class, cl) but the
+     * bootstrap calls us with #f and then not quite right classes.
+     *
+     * IDIO_TYPE_ASSERT() is only useful with IDIO_DEBUG
+     */
+
+    /*
      * cl will be #f when bootstrapping <class>
      */
     IDIO inst = idio_allocate_struct_instance_size (idio_class_struct_type, IDIO_CLASS_ST_MAX + nfields, 1);
@@ -293,7 +317,7 @@ primitive allocator of an instance		\n\
 :param cl: class				\n\
 :type cl: instance				\n\
 :param nfields: number of fields		\n\
-:type nfields: integer				\n\
+:type nfields: non-negative integer		\n\
 :return: instance				\n\
 :rtype: instance				\n\
 ")
@@ -301,10 +325,21 @@ primitive allocator of an instance		\n\
     IDIO_ASSERT (cl);
     IDIO_ASSERT (nfields);
 
+    /*
+     * Test Case: object-errors/allocate-instance-bad-class-type.idio
+     *
+     * %allocate-instance #t #t
+     */
     IDIO_USER_TYPE_ASSERT (class, cl);
+
+    /*
+     * Test Case: object-errors/allocate-instance-bad-nfields-type.idio
+     *
+     * %allocate-instance <class> #t
+     */
     IDIO_USER_TYPE_ASSERT (integer, nfields);
 
-    size_t C_nfields = -1;
+    ssize_t C_nfields = -1;
     if (idio_isa_fixnum (nfields)) {
 	C_nfields = IDIO_FIXNUM_VAL (nfields);
     } else if (idio_isa_bignum (nfields)) {
@@ -318,6 +353,17 @@ primitive allocator of an instance		\n\
 	}
     }
 
+    /*
+     * Test Case: object-errors/allocate-instance-bad-nfields-value.idio
+     *
+     * %allocate-instance <class> -1
+     */
+    if (C_nfields < 0) {
+	idio_error_param_value_msg ("%allocate-instance", "nfields", nfields, "should be non-negative", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
     return idio_allocate_instance (cl, C_nfields);
 }
 
@@ -325,9 +371,8 @@ static IDIO idio_allocate_entity (IDIO cl, size_t nfields)
 {
     IDIO_ASSERT (cl);
 
-    /*
-     * cl could be #f
-     */
+    IDIO_TYPE_ASSERT (class, cl);
+
     IDIO ent = idio_allocate_struct_instance_size (idio_class_struct_type, IDIO_CLASS_ST_MAX + nfields, 1);
     idio_struct_instance_set_direct (ent, IDIO_CLASS_ST_CLASS, cl);
     idio_struct_instance_set_direct (ent, IDIO_CLASS_ST_PROC, idio_object_invoke_entity_in_error);
@@ -341,7 +386,7 @@ primitive allocator of an entity		\n\
 :param cl: class				\n\
 :type cl: instance				\n\
 :param nfields: number of fields		\n\
-:type nfields: integer				\n\
+:type nfields: non-negative integer		\n\
 :return: instance				\n\
 :rtype: instance				\n\
 ")
@@ -349,10 +394,21 @@ primitive allocator of an entity		\n\
     IDIO_ASSERT (cl);
     IDIO_ASSERT (nfields);
 
+    /*
+     * Test Case: object-errors/allocate-entity-bad-class-type.idio
+     *
+     * %allocate-entity #t #t
+     */
     IDIO_USER_TYPE_ASSERT (class, cl);
+
+    /*
+     * Test Case: object-errors/allocate-entity-bad-nfields-type.idio
+     *
+     * %allocate-entity <class> #t
+     */
     IDIO_USER_TYPE_ASSERT (integer, nfields);
 
-    size_t C_nfields = -1;
+    ssize_t C_nfields = -1;
     if (idio_isa_fixnum (nfields)) {
 	C_nfields = IDIO_FIXNUM_VAL (nfields);
     } else if (idio_isa_bignum (nfields)) {
@@ -364,6 +420,17 @@ primitive allocator of an entity		\n\
 		C_nfields = idio_bignum_ptrdiff_t_value (i);
 	    }
 	}
+    }
+
+    /*
+     * Test Case: object-errors/allocate-entity-bad-nfields-value.idio
+     *
+     * %allocate-entity <class> -1
+     */
+    if (C_nfields < 0) {
+	idio_error_param_value_msg ("%allocate-entity", "nfields", nfields, "should be non-negative", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_allocate_entity (cl, C_nfields);
@@ -559,6 +626,9 @@ IDIO idio_object_class_of (IDIO o)
     case IDIO_TYPE_C_POINTER:		return idio_C_pointer_inst;
 
     default:
+	/*
+	 * Test Case: coding error?
+	 */
 	idio_object_instance_error ("unknown type", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -617,6 +687,11 @@ test if `o` is an instance of class `cl`	\n\
     IDIO_ASSERT (o);
     IDIO_ASSERT (cl);
 
+    /*
+     * Test Case: object-errors/instance-of-bad-class-type.idio
+     *
+     * instance-of? #t #t
+     */
     IDIO_USER_TYPE_ASSERT (class, cl);
 
     IDIO r = idio_S_false;
@@ -641,7 +716,18 @@ set the instance procedure of `gf` to `proc`	\n\
     IDIO_ASSERT (gf);
     IDIO_ASSERT (proc);
 
+    /*
+     * Test Case: object-errors/set-instance-proc-bad-gf-type.idio
+     *
+     * %set-instance-proc! #t #t
+     */
     IDIO_USER_TYPE_ASSERT (generic, gf);
+
+    /*
+     * Test Case: object-errors/set-instance-proc-bad-proc-type.idio
+     *
+     * %set-instance-proc! initialize #t
+     */
     IDIO_USER_TYPE_ASSERT (function, proc);
 
     return idio_struct_instance_set_direct (gf, IDIO_CLASS_ST_PROC, proc);
@@ -754,6 +840,11 @@ return the name of class `cl`		\n\
 {
     IDIO_ASSERT (cl);
 
+    /*
+     * Test Case: object-errors/class-name-bad-class-type.idio
+     *
+     * class-name #t
+     */
     IDIO_USER_TYPE_ASSERT (class, cl);
 
     return idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_NAME);
@@ -769,6 +860,11 @@ return the direct-supers of class `cl`	\n\
 {
     IDIO_ASSERT (cl);
 
+    /*
+     * Test Case: object-errors/class-direct-supers-bad-class-type.idio
+     *
+     * class-direct-supers #t
+     */
     IDIO_USER_TYPE_ASSERT (class, cl);
 
     return idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_DIRECT_SUPERS);
@@ -784,6 +880,11 @@ return the direct-slots of class `cl`	\n\
 {
     IDIO_ASSERT (cl);
 
+    /*
+     * Test Case: object-errors/class-direct-slots-bad-class-type.idio
+     *
+     * class-direct-slots #t
+     */
     IDIO_USER_TYPE_ASSERT (class, cl);
 
     return idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_DIRECT_SLOTS);
@@ -799,6 +900,11 @@ return the cpl of class `cl`		\n\
 {
     IDIO_ASSERT (cl);
 
+    /*
+     * Test Case: object-errors/class-cpl-bad-class-type.idio
+     *
+     * class-cpl #t
+     */
     IDIO_USER_TYPE_ASSERT (class, cl);
 
     return idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_CPL);
@@ -814,6 +920,11 @@ return the slots of class `cl`		\n\
 {
     IDIO_ASSERT (cl);
 
+    /*
+     * Test Case: object-errors/class-slots-bad-class-type.idio
+     *
+     * class-slots #t
+     */
     IDIO_USER_TYPE_ASSERT (class, cl);
 
     return idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_SLOTS);
@@ -829,6 +940,11 @@ return the nfields of class `cl`	\n\
 {
     IDIO_ASSERT (cl);
 
+    /*
+     * Test Case: object-errors/class-nfields-bad-class-type.idio
+     *
+     * class-nfields #t
+     */
     IDIO_USER_TYPE_ASSERT (class, cl);
 
     return idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_NFIELDS);
@@ -844,6 +960,11 @@ return the getters-n-setters of class `cl`	\n\
 {
     IDIO_ASSERT (cl);
 
+    /*
+     * Test Case: object-errors/class-getters-n-setters-bad-class-type.idio
+     *
+     * class-getters-n-setters #t
+     */
     IDIO_USER_TYPE_ASSERT (class, cl);
 
     return idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_GETTERS_N_SETTERS);
@@ -859,6 +980,11 @@ return the name of generic function `gf`	\n\
 {
     IDIO_ASSERT (gf);
 
+    /*
+     * Test Case: object-errors/generic-name-bad-gf-type.idio
+     *
+     * generic-name #t
+     */
     IDIO_USER_TYPE_ASSERT (generic, gf);
 
     return idio_struct_instance_ref_direct (gf, IDIO_GENERIC_SLOT_NAME);
@@ -874,6 +1000,11 @@ return the documentation of generic function `gf`	\n\
 {
     IDIO_ASSERT (gf);
 
+    /*
+     * Test Case: object-errors/generic-documentation-bad-gf-type.idio
+     *
+     * generic-documentation #t
+     */
     IDIO_USER_TYPE_ASSERT (generic, gf);
 
     return idio_struct_instance_ref_direct (gf, IDIO_GENERIC_SLOT_DOCUMENTATION);
@@ -889,6 +1020,11 @@ return the methods of generic function `gf`	\n\
 {
     IDIO_ASSERT (gf);
 
+    /*
+     * Test Case: object-errors/generic-methods-bad-gf-type.idio
+     *
+     * generic-methods #t
+     */
     IDIO_USER_TYPE_ASSERT (generic, gf);
 
     return idio_struct_instance_ref_direct (gf, IDIO_GENERIC_SLOT_METHODS);
@@ -904,6 +1040,11 @@ return the generic function of method function `m`	\n\
 {
     IDIO_ASSERT (m);
 
+    /*
+     * Test Case: object-errors/method-generic-function-bad-m-type.idio
+     *
+     * method-generic-function #t
+     */
     IDIO_USER_TYPE_ASSERT (method, m);
 
     return idio_struct_instance_ref_direct (m, IDIO_METHOD_SLOT_GENERIC_FUNCTION);
@@ -919,6 +1060,11 @@ return the specializers of method function `m`	\n\
 {
     IDIO_ASSERT (m);
 
+    /*
+     * Test Case: object-errors/method-specializers-bad-m-type.idio
+     *
+     * method-specializers #t
+     */
     IDIO_USER_TYPE_ASSERT (method, m);
 
     return idio_struct_instance_ref_direct (m, IDIO_METHOD_SLOT_SPECIALIZERS);
@@ -934,6 +1080,11 @@ return the procedure of method function `m`	\n\
 {
     IDIO_ASSERT (m);
 
+    /*
+     * Test Case: object-errors/method-procedure-bad-m-type.idio
+     *
+     * method-procedure #t
+     */
     IDIO_USER_TYPE_ASSERT (method, m);
 
     return idio_struct_instance_ref_direct (m, IDIO_METHOD_SLOT_PROCEDURE);
@@ -990,15 +1141,32 @@ A primitive instance creator			\n\
     IDIO_ASSERT (kind);
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: object-errors/pct-make-instance-bad-class-type.idio
+     *
+     * %make-instance #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (class, cl);
+
+    /*
+     * Test Case: object-errors/pct-make-instance-bad-kind-type.idio
+     *
+     * %make-instance <class> #t #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, kind);
 
     if (idio_class_sym == kind) {
 	if (idio_list_length (args) < 3) {
-	    idio_error_param_value_exp ("%make-instance class", "args", args, "(name supers slots)", IDIO_C_FUNC_LOCATION ());
+	    /*
+	     * Test Case: object-errors/pct-make-instance-too-few-class-args.idio
+	     *
+	     * %make-instance <class> 'class #t
+	     */
+	    idio_error_param_value_exp ("%make-instance class", "args", args, "list of (name supers slots)", IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
+
 	IDIO name = IDIO_PAIR_H (args);
 	IDIO supers = IDIO_PAIR_HT (args);
 	IDIO dslots = IDIO_PAIR_HTT (args);
@@ -1006,10 +1174,16 @@ A primitive instance creator			\n\
 	return idio_simple_make_class (cl, name, supers, dslots);
     } else if (idio_generic_sym == kind) {
 	if (idio_list_length (args) < 1) {
-	    idio_error_param_value_exp ("%make-instance generic", "args", args, "(name [docstr])", IDIO_C_FUNC_LOCATION ());
+	    /*
+	     * Test Case: object-errors/pct-make-instance-too-few-generic-args.idio
+	     *
+	     * %make-instance <class> 'generic
+	     */
+	    idio_error_param_value_exp ("%make-instance generic", "args", args, "list of (name [docstr])", IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
+
 	IDIO name = IDIO_PAIR_H (args);
 	IDIO docstr = idio_S_nil;
 	if (idio_isa_pair (IDIO_PAIR_T (args))) {
@@ -1024,10 +1198,16 @@ A primitive instance creator			\n\
 	return ent;
     } else if (idio_method_sym == kind) {
 	if (idio_list_length (args) < 3) {
-	    idio_error_param_value_exp ("%make-instance method", "args", args, "(gf spec proc)", IDIO_C_FUNC_LOCATION ());
+	    /*
+	     * Test Case: object-errors/pct-make-instance-too-few-method-args.idio
+	     *
+	     * %make-instance <class> 'method #t
+	     */
+	    idio_error_param_value_exp ("%make-instance method", "args", args, "list of (gf spec proc)", IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
+
 	IDIO gf = IDIO_PAIR_H (args);
 	IDIO spec = IDIO_PAIR_HT (args);
 	IDIO proc = IDIO_PAIR_HTT (args);
@@ -1039,6 +1219,11 @@ A primitive instance creator			\n\
 	idio_struct_instance_set_direct (m, IDIO_METHOD_SLOT_PROCEDURE, proc);
 	return m;
     } else {
+	/*
+	 * Test Case: object-errors/pct-make-instance-bad-kind-value.idio
+	 *
+	 * %make-instance <class> 'instance #t
+	 */
 	idio_error_param_value_exp ("%make-instance", "kind", kind, "generic|method|class", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -1068,12 +1253,17 @@ IDIO idio_object_slot_ref (IDIO obj, IDIO slot_name)
 	}
     }
 
-    idio_object_slot_not_found_error (slot_name, IDIO_C_FUNC_LOCATION ());
+    /*
+     * Test Case: object-errors/slot-ref-slot-not-found.idio
+     *
+     * slot-ref <class> 'unknown
+     */
+    idio_object_slot_not_found_error (obj, cl, slot_name, IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE2_DS ("slot-ref", slot_ref, (IDIO obj, IDIO slot_name), "obj slot", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("slot-ref", slot_ref, (IDIO obj, IDIO slot), "obj slot", "\
 return the value of slot `slot` in `obj`	\n\
 						\n\
 :param obj: object				\n\
@@ -1085,27 +1275,38 @@ return the value of slot `slot` in `obj`	\n\
 ")
 {
     IDIO_ASSERT (obj);
-    IDIO_ASSERT (slot_name);
+    IDIO_ASSERT (slot);
 
+    /*
+     * Test Case: object-errors/slot-ref-bad-obj-type.idio
+     *
+     * slot-ref #t #t
+     */
     IDIO_USER_TYPE_ASSERT (instance, obj);
-    IDIO_USER_TYPE_ASSERT (symbol, slot_name);
 
-    return idio_object_slot_ref (obj, slot_name);
+    /*
+     * Test Case: object-errors/slot-ref-bad-slot-type.idio
+     *
+     * slot-ref <class> #t
+     */
+    IDIO_USER_TYPE_ASSERT (symbol, slot);
+
+    return idio_object_slot_ref (obj, slot);
 }
 
-IDIO idio_object_slot_set (IDIO obj, IDIO slot_name, IDIO val)
+IDIO idio_object_slot_set (IDIO obj, IDIO slot, IDIO val)
 {
     IDIO_ASSERT (obj);
-    IDIO_ASSERT (slot_name);
+    IDIO_ASSERT (slot);
     IDIO_ASSERT (val);
 
     IDIO_TYPE_ASSERT (instance, obj);
-    IDIO_TYPE_ASSERT (symbol, slot_name);
+    IDIO_TYPE_ASSERT (symbol, slot);
 
     IDIO cl = idio_object_class_of (obj);
     IDIO gns = idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_GETTERS_N_SETTERS);
 
-    IDIO slot_info = idio_list_assq (slot_name, gns);
+    IDIO slot_info = idio_list_assq (slot, gns);
 
     if (idio_S_false != slot_info) {
 	IDIO slot_getter = IDIO_PAIR_HTT (slot_info);
@@ -1117,12 +1318,17 @@ IDIO idio_object_slot_set (IDIO obj, IDIO slot_name, IDIO val)
 	}
     }
 
-    idio_object_slot_not_found_error (slot_name, IDIO_C_FUNC_LOCATION ());
+    /*
+     * Test Case: object-errors/slot-set!-slot-not-found.idio
+     *
+     * slot-set! <class> 'unknown #t
+     */
+    idio_object_slot_not_found_error (obj, cl, slot, IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE3_DS ("slot-set!", slot_set, (IDIO obj, IDIO slot_name, IDIO val), "obj slot val", "\
+IDIO_DEFINE_PRIMITIVE3_DS ("slot-set!", slot_set, (IDIO obj, IDIO slot, IDIO val), "obj slot val", "\
 set the value of slot `slot` in `obj` to `val`	\n\
 						\n\
 :param obj: object				\n\
@@ -1136,13 +1342,24 @@ set the value of slot `slot` in `obj` to `val`	\n\
 ")
 {
     IDIO_ASSERT (obj);
-    IDIO_ASSERT (slot_name);
+    IDIO_ASSERT (slot);
     IDIO_ASSERT (val);
 
+    /*
+     * Test Case: object-errors/slot-set!-bad-obj-type.idio
+     *
+     * slot-set! #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (instance, obj);
-    IDIO_USER_TYPE_ASSERT (symbol, slot_name);
 
-    return idio_object_slot_set (obj, slot_name, val);
+    /*
+     * Test Case: object-errors/slot-set!-bad-slot-type.idio
+     *
+     * slot-set! <class> #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (symbol, slot);
+
+    return idio_object_slot_set (obj, slot, val);
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("%slot-set-direct!", slot_set_direct, (IDIO obj, IDIO index, IDIO val), "obj index val", "\
@@ -1151,7 +1368,7 @@ set the value of the `index`\\ :sup:`th` slot in `obj` to `val`	\n\
 :param obj: object				\n\
 :type obj: instance				\n\
 :param index: slot index			\n\
-:type index: integer				\n\
+:type index: non-negative integer		\n\
 :param val: value				\n\
 :type val: any					\n\
 :return: ``#<unspec>>``				\n\
@@ -1162,10 +1379,21 @@ set the value of the `index`\\ :sup:`th` slot in `obj` to `val`	\n\
     IDIO_ASSERT (index);
     IDIO_ASSERT (val);
 
+    /*
+     * Test Case: object-errors/slot-set-direct!-bad-obj-type.idio
+     *
+     * slot-set! #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (instance, obj);
+
+    /*
+     * Test Case: object-errors/slot-set-direct!-bad-index-type.idio
+     *
+     * slot-set! <class> #t #t
+     */
     IDIO_USER_TYPE_ASSERT (integer, index);
 
-    size_t C_index = -1;
+    ssize_t C_index = -1;
     if (idio_isa_fixnum (index)) {
 	C_index = IDIO_FIXNUM_VAL (index);
     } else if (idio_isa_bignum (index)) {
@@ -1177,6 +1405,17 @@ set the value of the `index`\\ :sup:`th` slot in `obj` to `val`	\n\
 		C_index = idio_bignum_ptrdiff_t_value (i);
 	    }
 	}
+    }
+
+    /*
+     * Test Case: object-errors/slot-set-direct-bad-index-value.idio
+     *
+     * %slot-set-direct! <class> -1 #t
+     */
+    if (C_index < 0) {
+	idio_error_param_value_msg ("%slot-set-direct!", "index", index, "should be non-negative", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_struct_instance_set_direct (obj, IDIO_CLASS_ST_MAX + C_index, val);
@@ -1258,7 +1497,7 @@ static void idio_dump_instance (IDIO o)
 	idio_debug ("instance of %s:\n", idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_NAME));
 
 	IDIO nfields = idio_struct_instance_ref_direct (cl, IDIO_CLASS_SLOT_NFIELDS);
-	size_t C_nfields = -1;
+	ssize_t C_nfields = -1;
 	if (idio_isa_fixnum (nfields)) {
 	    C_nfields = IDIO_FIXNUM_VAL (nfields);
 	} else if (idio_isa_bignum (nfields)) {
@@ -1302,6 +1541,11 @@ dump instance `o`				\n\
 {
     IDIO_ASSERT (o);
 
+    /*
+     * Test Case: object-errors/dump-instance-bad-instance-type.idio
+     *
+     * dump-instance #t
+     */
     IDIO_USER_TYPE_ASSERT (instance, o);
 
     idio_dump_instance (o);
@@ -1366,6 +1610,7 @@ char *idio_instance_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, I
      * Otherwise, a basic printer
      */
     char *r = NULL;
+    *sizep = idio_asprintf (&r, "");
     size_t n_size = 0;
     char *ns;
 

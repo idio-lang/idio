@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -39,8 +39,9 @@ test (primitive? (current-input-handle))	#f ; HANDLE
 test (primitive? ^error)			#f ; STRUCT_TYPE
 test (primitive? char-set:letter)		#f ; STRUCT_INSTANCE
 test (primitive? #B{ 3 })			#f ; BITSET
-test (primitive? libc/INTMAX_MAX)		#f ; C_INT
-test (primitive? libc/UINTMAX_MAX)		#f ; C_UINT
+test (primitive? libc/INT_MAX)			#f ; C_INT
+test (primitive? libc/UINT_MAX)			#f ; C_UINT
+test (primitive? <class>)			#f ; instance
 
 ;; code coverage
 module evaluate
@@ -52,4 +53,4 @@ test (primitive-varargs? list) #t
 module tests/primitive
 
 ;; all done?
-Tests? (primitive0 + 22)
+Tests? (primitive0 + 23)

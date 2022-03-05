@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -28,30 +28,30 @@ define* (f a (b #f)) (list a b)
 
 test (f 1) '(1 #f)
 test (f 1 2) '(1 2)
-test/error (f 1 2 3) 'SRFI-89-error "rest-binding: too many actual parameters ((3)) at expand"
+test/error (f 1 2 3) 'SRFI-89-error "expand (3) rest-binding: too many actual parameters"
 
 define* (g a (b a) (:key k (* a b))) (list a b k)
 
 test (g 3) '(3 3 9)
 test (g 3 4) '(3 4 12)
-test/error (g 3 4 :key) 'SRFI-89-error "a value was expected after keyword (:key) at &process-keys"
+test/error (g 3 4 :key) 'SRFI-89-error "&process-keys a value was expected after keyword (:key)"
 test (g 3 4 :key 5) '(3 4 5)
-test/error (g 3 4 :zoo 5) 'SRFI-89-error "unknown parameter keyword (:zoo) at &process-keys"
-test/error (g 3 4 :key 5 :key 6) 'SRFI-89-error "duplicate parameter (:key) at &process-keys"
+test/error (g 3 4 :zoo 5) 'SRFI-89-error "&process-keys :zoo unknown parameter keyword"
+test/error (g 3 4 :key 5 :key 6) 'SRFI-89-error "&process-keys :key duplicate parameter"
 
 define* (h1 a (:key k #f) & r) (list a k r)
 
 test (h1 7) '(7 #f ())
 test (h1 7 8 9 10) '(7 #f (8 9 10))
 test (h1 7 :key 8 9 10) '(7 8 (9 10))
-test/error (h1 7 :key 8 :zoo 9) 'SRFI-89-error "unknown parameter keyword (:zoo) at &process-keys"
+test/error (h1 7 :key 8 :zoo 9) 'SRFI-89-error "&process-keys :zoo unknown parameter keyword"
 
 define* (h2 (:key k #f) a & r) (list a k r)
 
 test (h2 7) '(7 #f ())
 test (h2 7 8 9 10) '(7 #f (8 9 10))
 test (h2 :key 8 9 10) '(9 8 (10))
-test/error (h2 :key 8 :zoo 9) 'SRFI-89-error "unknown parameter keyword (:zoo) at &process-keys"
+test/error (h2 :key 8 :zoo 9) 'SRFI-89-error "&process-keys :zoo unknown parameter keyword"
 
 j := {
   function* ((:a a 1)) {
@@ -60,7 +60,7 @@ j := {
 }
 
 test (j) 1
-test/error (j 2) 'SRFI-89-error "rest-binding: too many actual parameters ((2)) at expand"
+test/error (j 2) 'SRFI-89-error "expand (2) rest-binding: too many actual parameters"
 test (j :a 2) 2
 
 define absent (list 'absent)
