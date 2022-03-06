@@ -13,12 +13,22 @@ metaobject protocol (MOP)
 class
     data describing an instance such as super-classes and slot names
 
+    A class has a name which is commonly surrounded by angle brackets,
+    eg. :samp:`<{name}>` giving rise to ``<class>`` etc., but not
+    required to be so.
+
+    If you use :ref:`define-class <object/define-class>` then the same
+    symbol is bound to the class instance.  Hence the symbol
+    ``<class>`` is bound to the class instance whose name is
+    ``<class>``.
+
 super-class
     classes whose slots are inherited
 
     There will be *direct* super-classes, given when the class is
     defined, and a total set of super-classes derived from those
-    inherited classes.  The total set is called the CPL.
+    inherited classes.  The total set is called the class precedence
+    list.
 
 slot
     a named field to contain any value
@@ -35,7 +45,33 @@ class precedence list (CPL)
     super-classes -- omitting duplicates
 
     IOS uses `C3 linearization
-    <https://en.wikipedia.org/wiki/C3_linearization>`_.
+    <https://en.wikipedia.org/wiki/C3_linearization>`_ for which its
+    example would be:
+
+    .. code-block:: idio
+
+       define-class O
+       define-class A O
+       define-class B O
+       define-class C O
+       define-class D O
+       define-class E O
+
+       define-class K1 (C B A)
+       define-class K3 (A D)
+       define-class K2 (B D E)
+
+       define-class Z (K1 K3 K2)
+
+       class-cpl Z	; (Z K1 C K3 K2 B A D E O <object> <top>)
+
+    .. note::
+
+       ``object>`` and ``<top>`` appear because ``O`` is implicitly a
+       sub-class of ``<object>`` as no super-classes are given for it
+       and ``<object>``'s super-class is ``<top>`` which has no
+       super-class itself.
+
 
 method resolution order (MRO)
     the ordering of applicable methods from most specific to least

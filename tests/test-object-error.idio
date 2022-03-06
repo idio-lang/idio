@@ -134,5 +134,7 @@ object-error-load "object-errors/compute-apply-methods-bad-type.idio" "compute-a
 
 object-error-load "object-errors/initialize-generic-no-methods.idio" "initialize generic function foo has no methods"
 
+object-error-load "object-errors/compute-cpl-inconsistent-precedence-graph.idio" "compute-cpl inconsistent precedence graph for class C"
+
 ;; all done?
-Tests? (object-error0 + 43)
+Tests? (object-error0 + 44)

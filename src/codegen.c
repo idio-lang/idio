@@ -335,9 +335,10 @@ idio_ai_t idio_codegen_constants_lookup (IDIO cs, IDIO v)
 	     * hash(pair) is pair specific not generalised to the
 	     * equal?-ness of pair
 	     *
-	     * So, walk through the array anyway
+	     * So, walk through the array anyway.  Instances mean we
+	     * have to use eq?.
 	     */
-	    return idio_array_find_equalp (cs, v, 0);
+	    return idio_array_find_eqp (cs, v, 0);
 	} else {
 	    return IDIO_FIXNUM_VAL (fgci);
 	}

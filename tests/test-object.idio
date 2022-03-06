@@ -18,6 +18,9 @@
 ;;
 ;; test-object.idio
 ;;
+
+module test/object
+
 object0 := Tests
 
 test (instance? 0)			#f ; FIXNUM
@@ -41,5 +44,215 @@ test (instance? libc/INT_MAX)		#f ; C_INT
 test (instance? libc/UINT_MAX)		#f ; C_UINT
 test (instance? <class>)		#t ; instance
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; classes
+
+;; simple class
+define-class A #n a
+
+test (class? A)			#t
+test (class-name A)		'A
+test (class-direct-supers A)	(list <object>)
+test (class-direct-slots A)	'((a))
+test (class-cpl A)		(list A <object> <top>)
+test (class-slots A)		'((a))
+test (class-nfields A)		1
+
+;; single-inheritance; no slots
+define-class A1 A
+
+test (class? A1)		#t
+test (class-name A1)		'A1
+test (class-direct-supers A1)	(list A)
+test (class-direct-slots A1)	#n
+test (class-cpl A1)		(list A1 A <object> <top>)
+test (class-slots A1)		'((a))
+test (class-nfields A1)		1
+
+;; single-inheritance; one slot
+define-class A2 A a2
+
+test (class? A2)		#t
+test (class-name A2)		'A2
+test (class-direct-supers A2)	(list A)
+test (class-direct-slots A2)	'((a2))
+test (class-cpl A2)		(list A2 A <object> <top>)
+test (class-slots A2)		'((a2) (a))
+test (class-nfields A2)		2
+
+;; single-inheritance; one slot -- identical to A2 except we pass a
+;; list of super-classes
+define-class A3 (A) a3
+
+test (class? A3)		#t
+test (class-name A3)		'A3
+test (class-direct-supers A3)	(list A)
+test (class-direct-slots A3)	'((a3))
+test (class-cpl A3)		(list A3 A <object> <top>)
+test (class-slots A3)		'((a3) (a))
+test (class-nfields A3)		2
+
+;; multiple inheritance; no slots
+define-class A12 (A1 A2)
+
+test (class? A12)		#t
+test (class-name A12)		'A12
+test (class-direct-supers A12)	(list A1 A2)
+test (class-direct-slots A12)	#n
+test (class-cpl A12)		(list A12 A1 A2 A <object> <top>)
+test (class-slots A12)		'((a2) (a))
+test (class-nfields A12)	2
+
+;; multiple inheritance; one slot
+define-class A23 (A2 A3) a23
+
+test (class? A23)		#t
+test (class-name A23)		'A23
+test (class-direct-supers A23)	(list A2 A3)
+test (class-direct-slots A23)	'((a23))
+test (class-cpl A23)		(list A23 A2 A3 A <object> <top>)
+test (class-slots A23)		'((a23) (a2) (a3) (a))
+test (class-nfields A23)	4
+
+;; duplicate slot names in super-classes
+define-class B1 #n b
+define-class B2 #n b
+define-class B12 (B1 B2)
+
+test (class? B12)		#t
+test (class-name B12)		'B12
+test (class-direct-supers B12)	(list B1 B2)
+test (class-direct-slots B12)	#n
+test (class-cpl B12)		(list B12 B1 B2 <object> <top>)
+test (class-slots B12)		'((b))
+test (class-nfields B12)	1
+
+;; duplicate slot names in self
+define-class C1 #n c
+define-class C2 #n c
+define-class C12 (C1 C2) c
+
+test (class? C12)		#t
+test (class-name C12)		'C12
+test (class-direct-supers C12)	(list C1 C2)
+test (class-direct-slots C12)	'((c))
+test (class-cpl C12)		(list C12 C1 C2 <object> <top>)
+test (class-slots C12)		'((c))
+test (class-nfields C12)	1
+
+;; multiple duplicate slot names across the piece
+define-class D1 #n a b c
+define-class D2 #n b c d
+define-class D12 (D1 D2) c d e
+
+test (class? D12)		#t
+test (class-name D12)		'D12
+test (class-direct-supers D12)	(list D1 D2)
+test (class-direct-slots D12)	'((c) (d) (e))
+test (class-cpl D12)		(list D12 D1 D2 <object> <top>)
+test (class-slots D12)		'((c) (d) (e) (a) (b))
+test (class-nfields D12)	5
+
+;; deeper tree
+define-class E D12 e
+define-class F E f
+
+test (class? F)			#t
+test (class-name F)		'F
+test (class-direct-supers F)	(list E)
+test (class-direct-slots F)	'((f))
+test (class-cpl F)		(list F E D12 D1 D2 <object> <top>)
+test (class-slots F)		'((f) (e) (c) (d) (a) (b))
+test (class-nfields F)		6
+
+;; the C3 linearization example from
+;; https://en.wikipedia.org/wiki/C3_linearization together with slots
+;; (and which also demonstrates that you can overwrite previous
+;; definitions although you'll end up with method madness)
+define-class O #n o
+define-class A O a
+define-class B O b
+define-class C O c
+define-class D O d
+define-class E O e
+
+define-class K1 (C B A) k1
+define-class K3 (A D)   k3
+define-class K2 (B D E) k2
+
+define-class Z (K1 K3 K2) z
+
+test (class-cpl Z)		(list Z K1 C K3 K2 B A D E O <object> <top>)
+test (class-slots Z)		'((z) (k1) (c) (k3) (k2) (b) (a) (d) (e) (o))
+test (class-nfields Z)		10
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; methods
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; single-inheritance
+define-class G1
+define-class G2 G1
+define-class G3 G2
+
+g1 := make-instance G1
+g2 := make-instance G2
+g3 := make-instance G3
+
+test (generic? g1)  #f
+test (method? g1)   #f
+test (class? g1)    #f
+test (instance? g1) #t
+
+define-method (which-g (g G1)) "a G1"
+define-method (which-g (g G2)) "a G2"
+define-method (which-g (g G3)) "a G3"
+
+test (generic? which-g)  #t
+test (method? which-g)   #f
+test (class? which-g)    #f
+test (instance? which-g) #t		; everything is an instance
+
+test (which-g g1)	"a G1"
+test (which-g g2)	"a G2"
+test (which-g g3)	"a G3"
+
+;; next-method
+define-method (chain-g (g G1)) "a G1"	; (next-method) would raise a "no applicable methods/next methods" error
+define-method (chain-g (g G2)) (sprintf "a G2; %s" (next-method))
+define-method (chain-g (g G3)) (sprintf "a G3; %s" (next-method))
+
+test (chain-g g1)	"a G1"
+test (chain-g g2)	"a G2; a G1"
+test (chain-g g3)	"a G3; a G2; a G1"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; multiple-inheritance
+define-class H0				; we need a backstop for chaining
+define-class H1 H0
+define-class H2 H0
+define-class H12 (H1 H2)
+define-class H21 (H2 H1)
+
+h12 := make-instance H12
+h21 := make-instance H21
+
+define-method (which-h (h H1)) "an H1"
+define-method (which-h (h H2)) "an H2"
+
+test (which-h h12)	"an H1"		; first applicable method
+test (which-h h21)	"an H2"		; first applicable method
+
+define-method (chain-h (h H0)) "an H0"
+define-method (chain-h (h H1)) (sprintf "an H1; %s" (next-method))
+define-method (chain-h (h H2)) (sprintf "an H2; %s" (next-method))
+
+test (chain-h h12)	"an H1; an H2; an H0" ; all applicable methods
+test (chain-h h21)	"an H2; an H1; an H0" ; all applicable methods
+
 ;; all done?
-Tests? (object0 + 20)
+Tests? (object0 + 111)

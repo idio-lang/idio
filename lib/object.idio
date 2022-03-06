@@ -176,20 +176,21 @@ define-template (define-class name & args) {
     supers = ph args
     slots = pt args
   }
-  ;; As this is a template and therefore supers is a list of symbols,
-  ;; we need to map the given supers into class instances.
+
+  ;; supers is a list of symbols at this point
   supers = (cond
-	    ((pair? supers)   (map class-instance supers))
+	    ((pair? supers)   supers)
 	    ((symbol? supers) (list supers))
-	    ((null? supers)   (list <object>))
+	    ((null? supers)   (list '<object>))
 	    (else	      {
 	      ;; Test Case: n/a - raised during template expansion
 	      (error/type ^rt-parameter-value-error
 			  'define-class
 			  (sprintf "'%s', a %s, is not a list|symbol" supers (typename supers)))
 	    }))
+
   #T{
-    define $name (make-class '$name '$supers '$slots)
+    define $name (make-class '$name (map class-instance '$supers) '$slots)
   }
 }
 
@@ -685,7 +686,7 @@ define-method (initialize (cl <class>) initargs) {
   slot-set! cl 'name (TC/get-keyword-arg initargs :name (gensym 'cl))
 
   ;; pluck out direct-* arguments
-  slot-set! cl 'direct-supers (TC/get-keyword-arg initargs :direct-supers #n)
+  slot-set! cl 'direct-supers (map class-instance (TC/get-keyword-arg initargs :direct-supers #n))
   slot-set! cl 'direct-slots  (map (function (s) {
     if (pair? s) s (list s)
   }) (TC/get-keyword-arg initargs :direct-slots #n))
@@ -843,8 +844,12 @@ The following method is defined:
 
 	merge (pair next reversed-partial-result) (map remove-next remaining-inputs)
       } {
-	;; Test Case: ??
-	error/type ^rt-instance-error 'compute-cpl "Inconsistent precedence graph"
+	;; Test Case: object-errors/compute-cpl-inconsistent-precedence-graph.idio
+	;; define-class A
+	;; define-class A3 A
+	;; define-class A13 (A A3)
+
+	error/type ^rt-instance-error 'compute-cpl (sprintf "inconsistent precedence graph for class %s" (class-name cl))
       }
     }
   }

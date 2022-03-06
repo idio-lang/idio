@@ -1,0 +1,7 @@
+
+module test/compute-cpl
+import object
+
+define-class A
+define-class B A
+define-class C (A B)
