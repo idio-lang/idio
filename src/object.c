@@ -87,6 +87,7 @@
 #include "handle.h"
 #include "hash.h"
 #include "idio-string.h"
+#include "keyword.h"
 #include "libc-wrap.h"
 #include "module.h"
 #include "object.h"
@@ -754,7 +755,8 @@ IDIO idio_simple_getters_n_setters (IDIO slots)
 	 *
 	 * In general, getter can be a unary function.
 	 */
-	r = idio_pair (IDIO_LIST3 (IDIO_PAIR_H (slots),
+	IDIO name = IDIO_PAIR_H (slots);
+	r = idio_pair (IDIO_LIST3 (name,
 				   idio_object_default_slot_value,
 				   idio_integer (i++)),
 		       r);
@@ -1244,6 +1246,9 @@ IDIO idio_object_slot_ref (IDIO obj, IDIO slot_name)
     IDIO slot_info = idio_list_assq (slot_name, gns);
 
     if (idio_S_false != slot_info) {
+	/*
+	 * (name init-function getter)
+	 */
 	IDIO slot_getter = IDIO_PAIR_HTT (slot_info);
 	if (idio_isa_integer (slot_getter)) {
 	    return idio_struct_instance_ref_direct (obj, IDIO_CLASS_ST_MAX + IDIO_FIXNUM_VAL (slot_getter));
@@ -1309,6 +1314,9 @@ IDIO idio_object_slot_set (IDIO obj, IDIO slot, IDIO val)
     IDIO slot_info = idio_list_assq (slot, gns);
 
     if (idio_S_false != slot_info) {
+	/*
+	 * (name init-function getter)
+	 */
 	IDIO slot_getter = IDIO_PAIR_HTT (slot_info);
 	if (idio_isa_integer (slot_getter)) {
 	    return idio_struct_instance_set_direct (obj, IDIO_CLASS_ST_MAX + IDIO_FIXNUM_VAL (slot_getter), val);

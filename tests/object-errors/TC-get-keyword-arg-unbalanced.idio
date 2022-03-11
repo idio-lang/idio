@@ -1,0 +1,4 @@
+
+module object
+
+TC/get-keyword-arg '(:foo) :bar

@@ -74,6 +74,17 @@ define (class-instance name & args) "
 
 return the instance of the class `name`
 
+:param name: name of the class or the class instance
+:type name: symbol or instance
+:return: class
+:rtype: instance
+
+``class-instance`` is usually used in templates to map the supplied
+class names into class instances.  Circumstances might be such that it
+is called in regular flow where the class' name has been evaluated to
+the class instance in which case ``class-instance`` simply returns the
+class instance.
+
 " {
   cl := name
   if (symbol? name) {
@@ -411,19 +422,44 @@ define (TC/collect-if test? list) {
    (else              (TC/collect-if test? (pt list))))
 }
 
-;; initargs is (... :name val ...)
+;; initargs is (... :kw val ...)
 define (TC/get-keyword-arg initargs name & args) {
-  scan :+ function (a*) {
+  scan :+ function (initarg*) {
     (cond
-     ((null? a*) {
+     ((null? initarg*) {
        if (pair? args) (ph args) {
 	 ;; Test Case: object-errors/TC-get-keyword-arg-not-found.idio
 	 ;;
-	 ;; TC/get-keyword-arg '(1 2 :foo 3 4 5) :bar
+	 ;; TC/get-keyword-arg '(:foo 3) :bar
 	 error/type ^rt-parameter-error 'TC/get-keyword-arg "keyword not found" name
        }
      })
-     ((eq? (ph a*) name) (pht a*))
+     ((null? (pt initarg*)) {
+       ;; Test Case: object-errors/TC-get-keyword-arg-unbalanced.idio
+       ;;
+       ;; TC/get-keyword-arg '(:foo) :bar
+       error/type ^rt-parameter-error 'TC/get-keyword-arg "unbalanced keyword list" initargs
+     })
+     ((eq? (ph initarg*) name) (pht initarg*))
+     (else                     (scan (ptt initarg*))))
+  }
+
+  scan initargs
+}
+
+;; get multiple items meaning the result can be #n (saving a default
+;; value)
+define (TC/get-keyword-args initargs name) {
+  scan :+ function (a*) {
+    (cond
+     ((null? a*) #n)
+     ((null? (pt a*)) {
+       ;; Test Case: object-errors/TC-get-keyword-args-unbalanced.idio
+       ;;
+       ;; TC/get-keyword-args '(:foo) :bar
+       error/type ^rt-parameter-error 'TC/get-keyword-args "unbalanced keyword list" initargs
+     })
+     ((eq? (ph a*) name) (pair (pht a*) (scan (ptt a*))))
      (else               (scan (ptt a*))))
   }
 
@@ -437,6 +473,16 @@ define (TC/applicable? c arg) {
 
 define (TC/more-specific? c1 c2 arg) {
   memq c2 (memq c1 (class-cpl (class-of arg)))
+}
+
+;; and a couple of variants with using pre-computed
+;; (class-cpl (class-of arg))
+define (TC/cpl-applicable? c cpl-arg) {
+  memq c cpl-arg
+}
+
+define (TC/cpl-more-specific? c1 c2 cpl-arg) {
+  memq c2 (memq c1 cpl-arg)
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -558,6 +604,10 @@ The following method is defined:
 
 ")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; compute-apply-generic and friends
+
 ; From tiny-clos.scm:
 
 ; Adding a method calls COMPUTE-APPLY-GENERIC, the result of which calls
@@ -601,19 +651,25 @@ define-method (compute-apply-generic (gf <generic>)) {
 
 define-method (compute-methods (gf <generic>)) {
   (function (args) {
+    cpl-args := map (function (arg) (class-cpl (class-of arg))) args
     applicable := TC/collect-if (function (m) {
-      TC/every TC/applicable? (method-specializers m) args
+      ;TC/every TC/applicable? (method-specializers m) args
+      TC/every TC/cpl-applicable? (method-specializers m) cpl-args
     }) (generic-methods gf)
 
-    sort applicable (function (m1 m2) {
-      (compute-method-more-specific? gf) m1 m2 args
-    })
+    if ((length applicable) gt 1) {
+      cmms? := compute-method-more-specific? gf
+      sort applicable (function (m1 m2) {
+	cmms? m1 m2 args
+      })
+    } applicable
   })
 }
 
 define-method (compute-method-more-specific? (gf <generic>)) {
   (function (m1 m2 args) {
-    loop :+ function (ms1 ms2 a*) {
+    cpl-args := map (function (arg) (class-cpl (class-of arg))) args
+    loop :+ function (ms1 ms2 ca*) {
       (cond
        ((and (null? ms1)
 	     (null? ms2)) {
@@ -629,23 +685,23 @@ define-method (compute-method-more-specific? (gf <generic>)) {
 	 ;; foo 1
 	 error/type ^rt-instance-error 'compute-method-more-specific? "two methods have a different number of specializers"
        })
-       ((null? args) {
+       ((null? ca*) {
 	 ;; Test Case: n/a -- we get an arity error first
 	 error/type ^rt-instance-error 'compute-method-more-specific? "fewer arguments than specializers"
        })
        (else {
 	 s1 := ph ms1
 	 s2 := ph ms2
-	 arg := ph a*
+	 cpl-arg := ph ca*
 	 if (eq? s1 s2) {
-	   loop (pt ms1) (pt ms2) (pt a*)
+	   loop (pt ms1) (pt ms2) (pt ca*)
 	 } {
-	   TC/more-specific? s1 s2 arg
+	   TC/cpl-more-specific? s1 s2 cpl-arg
 	 }
        }))
     }
 
-    loop (method-specializers m1) (method-specializers m2) args
+    loop (method-specializers m1) (method-specializers m2) cpl-args
   })
 }
 
@@ -675,8 +731,15 @@ define-method (compute-apply-methods (gf <generic>)) {
   })
 }
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; initialize
+
 define-method (initialize (obj <object>) initargs) {
-  obj
+  fold-left (function (i init-slot) {
+    %slot-set-direct! obj i (apply init-slot initargs)
+    i + 1
+  }) 0 (map pht (class-getters-n-setters (class-of obj)))
 }
 
 define-method (initialize (cl <class>) initargs) {
@@ -685,10 +748,27 @@ define-method (initialize (cl <class>) initargs) {
 
   slot-set! cl 'name (TC/get-keyword-arg initargs :name (gensym 'cl))
 
-  ;; pluck out direct-* arguments
+  ;; pluck out direct-supers argument
   slot-set! cl 'direct-supers (map class-instance (TC/get-keyword-arg initargs :direct-supers #n))
+
+  ;; for direct-slots we want to massage the list of slots into a list
+  ;; of lists of slots and slot-options -- always a list, in other
+  ;; words
+  ;;
+  ;; Slight weirdness:
+  ;; * s	=> (s)
+  ;; * (s)	=> (s :initarg :s)
   slot-set! cl 'direct-slots  (map (function (s) {
-    if (pair? s) s (list s)
+    if (pair? s) {
+      ;; if the slot is given as a pair then ensure there is a
+      ;; :initarg declared...
+      if (TC/get-keyword-arg (pt s) :initarg #f) s {
+	;; ...defaulting to :name
+	append (list (ph s) :initarg (make-keyword (symbol->string (ph s)))) (pt s)
+      }
+    } {
+      list s
+    }
   }) (TC/get-keyword-arg initargs :direct-slots #n))
 
   ;; call generic functions to calculate cpl and slots
@@ -701,8 +781,8 @@ define-method (initialize (cl <class>) initargs) {
   gns := #n
   fold-left (function (i slot) {
     ;; slot is (name ...)
-    ;; gns is (... (name init-func getter) ...) and we want to apply
-    gns = pair (list (ph slot) default-slot-value i) gns
+    ;; gns is (... (name init-func getter) ...)
+    gns = pair (pair (ph slot) (compute-getter-and-setter cl slot i)) gns
     i + 1
   }) 0 slots
 
@@ -740,7 +820,7 @@ define (allocate-helper cl allocator) {
 
   fold-left (function (i gns) {
     if (pair? gns) {
-      ;; gns is (name init-func getter) and we want to apply
+      ;; gns is (name init-func :initkw getter) and we want to apply
       ;; init-func, ie. (init-func)
       %slot-set-direct! inst i ((pht gns))
     }
@@ -750,6 +830,10 @@ define (allocate-helper cl allocator) {
   inst
 }
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; allocate-instance
+
 define-method (allocate-instance (cl <class>)) {
   allocate-helper cl %allocate-instance
 }
@@ -757,6 +841,10 @@ define-method (allocate-instance (cl <class>)) {
 define-method (allocate-instance (cl <entity-class>)) {
   allocate-helper cl %allocate-entity
 }
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; compute-cpl
 
 define-method (compute-cpl (cl <class>)) "
 
@@ -858,6 +946,10 @@ The following method is defined:
   merge (list cl) (append (map class-cpl supers) (list supers))
 }
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; compute-slots
+
 define-method (compute-slots (cl <class>)) "
 
 Determine the actual class slots from the direct and inherited slots.
@@ -889,9 +981,45 @@ The following method is defined:
   collect (apply append (map class-direct-slots (class-cpl cl))) #n
 }
 
-define-method (compute-getter-and-setter (cl <class>) slot allocator) {
-  #f
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; compute-getter-and-setter
+
+define-method (compute-getter-and-setter (cl <class>) slot index) {
+  ;; could be more than one :initarg
+  initargs := TC/get-keyword-args (pt slot) :initarg
+
+  ;; magic number
+  no-initargs := pair 'no 'initargs
+
+  ;; getarg stops on the first match
+  getarg :+ function (args initargs) {
+    if (null? initargs) no-initargs {
+      arg := TC/get-keyword-arg args (ph initargs) no-initargs
+      if (eq? arg no-initargs) (getarg args (pt initargs)) arg
+    }
+  }
+
+  ;; init should (attempt to) use :initializer and :initvalue
+  init := default-slot-value
+
+  ;; init-slot is the slot initializer that takes into account
+  ;; :initarg and init
+  ;;
+  ;; init-slot will be applied to the initargs passed to make-instance
+  init-slot := function args {
+    arg := getarg args initargs
+    if (eq? arg no-initargs) {
+      apply init args
+    } arg
+  }
+
+  list init-slot index
 }
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; make-instance
 
 define (make-instance cl & initargs) "
 

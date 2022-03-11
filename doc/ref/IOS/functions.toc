@@ -1,5 +1,6 @@
 (rst "functions-intro" 0)
 
+(document object class-instance)
 (document object add-method! add-method)
 (document object instance-of? instance-of)
 (document object slot-ref)

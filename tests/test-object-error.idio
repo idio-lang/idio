@@ -127,6 +127,9 @@ object-error-load "object-errors/dump-instance-bad-instance-type.idio" "bad para
 object-error-load "object-errors/class-instance-bad-instance-type.idio" "bad parameter type: '#t' a constant is not a class or the name of a class"
 
 object-error-load "object-errors/TC-get-keyword-arg-not-found.idio" "TC/get-keyword-arg :bar keyword not found"
+object-error-load "object-errors/TC-get-keyword-arg-unbalanced.idio" "TC/get-keyword-arg (:foo) unbalanced keyword list"
+
+object-error-load "object-errors/TC-get-keyword-args-unbalanced.idio" "TC/get-keyword-args (:foo) unbalanced keyword list"
 
 object-error-load "object-errors/compute-method-more-specific-inconsistent-specializers-count.idio" "compute-method-more-specific? two methods have a different number of specializers"
 
@@ -137,4 +140,4 @@ object-error-load "object-errors/initialize-generic-no-methods.idio" "initialize
 object-error-load "object-errors/compute-cpl-inconsistent-precedence-graph.idio" "compute-cpl inconsistent precedence graph for class C"
 
 ;; all done?
-Tests? (object-error0 + 44)
+Tests? (object-error0 + 46)
