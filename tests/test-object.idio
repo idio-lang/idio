@@ -679,7 +679,7 @@ test (slot-ref n12-3 's1)	10
 ;; slot is a list of stuff with different :initarg
 ;;
 ;; Here, the internal slot-init function getarg stops with the first
-;; matching :initarg which it looms for in CPL-order.  Hence if
+;; matching :initarg which it looks for in CPL-order.  Hence if
 ;; :N15-slot is specified at all, it "wins", then :N13-slot then
 ;; :N14-slot
 define-class N13 #n        (s1 :initarg :N13-slot)
@@ -688,31 +688,74 @@ define-class N15 (N13 N14) (s1 :initarg :N15-slot)
 
 n15-01 := make-instance N15
 n15-02 := make-instance N15 :rubbish #t
-n15-03 := make-instance N15 :N13-slot 10
-n15-04 := make-instance N15 :N14-slot 20
-n15-05 := make-instance N15 :N15-slot 30
-n15-06 := make-instance N15 :N13-slot 10 :N14-slot 20
-n15-07 := make-instance N15 :N14-slot 20 :N13-slot 10
-n15-08 := make-instance N15 :N13-slot 10 :N15-slot 30
-n15-09 := make-instance N15 :N15-slot 30 :N13-slot 10
-n15-10 := make-instance N15 :N14-slot 10 :N15-slot 30
-n15-11 := make-instance N15 :N15-slot 30 :N14-slot 10
-n15-12 := make-instance N15 :N13-slot 10 :N14-slot 10 :N15-slot 30
-n15-13 := make-instance N15 :N15-slot 30 :N14-slot 10 :N13-slot 10
+n15-03 := make-instance N15 :N13-slot 13
+n15-04 := make-instance N15 :N14-slot 14
+n15-05 := make-instance N15 :N15-slot 15
+n15-06 := make-instance N15 :N13-slot 13 :N14-slot 14
+n15-07 := make-instance N15 :N14-slot 14 :N13-slot 13
+n15-08 := make-instance N15 :N13-slot 13 :N15-slot 15
+n15-09 := make-instance N15 :N15-slot 15 :N13-slot 13
+n15-10 := make-instance N15 :N14-slot 14 :N15-slot 15
+n15-11 := make-instance N15 :N15-slot 15 :N14-slot 14
+n15-12 := make-instance N15 :N13-slot 13 :N14-slot 14 :N15-slot 15
+n15-13 := make-instance N15 :N15-slot 15 :N14-slot 14 :N13-slot 13
 
 test (slot-ref n15-01 's1)	#f
 test (slot-ref n15-02 's1)	#f
-test (slot-ref n15-03 's1)	10
-test (slot-ref n15-04 's1)	20
-test (slot-ref n15-05 's1)	30
-test (slot-ref n15-06 's1)	20
-test (slot-ref n15-07 's1)	20
-test (slot-ref n15-08 's1)	30
-test (slot-ref n15-09 's1)	30
-test (slot-ref n15-10 's1)	30
-test (slot-ref n15-11 's1)	30
-test (slot-ref n15-12 's1)	30
-test (slot-ref n15-13 's1)	30
+test (slot-ref n15-03 's1)	13
+test (slot-ref n15-04 's1)	14
+test (slot-ref n15-05 's1)	15
+test (slot-ref n15-06 's1)	13
+test (slot-ref n15-07 's1)	13
+test (slot-ref n15-08 's1)	15
+test (slot-ref n15-09 's1)	15
+test (slot-ref n15-10 's1)	15
+test (slot-ref n15-11 's1)	15
+test (slot-ref n15-12 's1)	15
+test (slot-ref n15-13 's1)	15
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; :initform
+
+;; no inheritance
+define-class O1 #n s1 (s2 :initform (function args 10))
+
+o1-1 := make-instance O1
+o1-2 := make-instance O1 :s2 20
+
+test (slot-ref o1-1 's1)	#f
+test (slot-ref o1-1 's2)	10
+test (slot-ref o1-2 's2)	20
+
+;; no inheritance - check we can see initargs correctly
+define-class O2 #n (s1 :initform (function args (length args)))
+
+o2-1 := make-instance O2
+o2-2 := make-instance O2 :this 10 :that 20
+
+test (slot-ref o2-1 's1)	0
+test (slot-ref o2-2 's1)	4
+
+;; single inheritance
+define-class O3 #n (s1 :initform (function args 10))
+define-class O4 O3 (s1 :initform (function args 20))
+
+o4-1 := make-instance O4
+
+test (slot-ref o4-1 's1)	20
+
+;; multiple inheritance
+define-class O5 #n (s1 :initform (function args 10))
+define-class O6 #n (s1 :initform (function args 20))
+define-class O7 (O5 O6) (s1 :initform (function args 30))
+define-class O8 (O5 O6)
+
+o7-1 := make-instance O7
+o8-1 := make-instance O8
+
+test (slot-ref o7-1 's1)	30
+test (slot-ref o8-1 's1)	10
 
 ;; all done?
-Tests? (object0 + 298)
+Tests? (object0 + 306)

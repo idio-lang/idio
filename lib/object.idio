@@ -200,8 +200,25 @@ define-template (define-class name & args) {
 			  (sprintf "'%s', a %s, is not a list|symbol" supers (typename supers)))
 	    }))
 
+  ;; slots is also a list of unevaluated expressions where we want to
+  ;; massage the list such that we evaluate to cover where someone has
+  ;; passed an expression for a slot option argument -- which also
+  ;; includes the names of functions, otherwise they are symbols and
+  ;; looked for on the PATH...he noted.
+  ;;
+  ;; XXX remember to quote the slot name!
   #T{
-    define $name (make-class '$name (map class-instance '$supers) '$slots)
+    define $name (make-class '$name (map class-instance '$supers) (list $@(map (function (slot) {
+      (cond
+       ((pair? slot) #T{
+	 (list
+	  '$(ph slot)
+	  $@(map (function (e) #T{ $e }) (pt slot)))
+       })
+       (else #T{
+	 '$slot
+       }))
+    }) slots)))
   }
 }
 
@@ -971,7 +988,7 @@ The following method is defined:
 	} #t
       }) (pt to-do)
 
-      collect remaining-to-do (pair (append current (apply append (map pt others)))
+      collect remaining-to-do (pair (append current (apply append (map pt (reverse! others))))
 				    r)
     }
   }
@@ -989,6 +1006,9 @@ define-method (compute-getter-and-setter (cl <class>) slot index) {
   ;; could be more than one :initarg
   initargs := TC/get-keyword-args (pt slot) :initarg
 
+  ;; other slot options
+  initform := TC/get-keyword-arg (pt slot) :initform #f
+
   ;; magic number
   no-initargs := pair 'no 'initargs
 
@@ -1000,8 +1020,10 @@ define-method (compute-getter-and-setter (cl <class>) slot index) {
     }
   }
 
-  ;; init should (attempt to) use :initializer and :initvalue
   init := default-slot-value
+  if initform {
+    init = initform	; (function args (initform))
+  }
 
   ;; init-slot is the slot initializer that takes into account
   ;; :initarg and init
@@ -1031,6 +1053,9 @@ create an instance of class `cl` using `initargs`
 :type initargs: list
 :return: instance
 :rtype: instance
+
+`initargs` should be a series of :samp:`{keyword} {arg}` pairs where
+the keyword and argument are dependent on the class of `cl`.
 
 " {
   inst := allocate-instance cl
