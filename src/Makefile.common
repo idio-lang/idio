@@ -86,7 +86,15 @@ LIBFFI_INCDIR	= $(wildcard /usr/lib/$(shell isainfo -k | grep -v i386)/libffi-*/
 LDFLAGS		:= -L/usr/local/lib -R/usr/local/lib
 LD_SONAME_FLAGS	:= -Wl,-soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
 LIBS		:= -ldl
-CFLAGS		:= -D__EXTENSIONS__
+CFLAGS		:= -D_POSIX_PTHREAD_SEMANTICS -D__EXTENSIONS__
+# Oracle Solaris 11.4
+ifneq (,$(wildcard /etc/os-release))
+
+# -D__XPG7_THREAD_MODEL__ is used because the macro isdigit() suggests
+# ℏ is a digit.  The function variant is OK.
+
+CFLAGS		:= -D__USE_DRAFT6_PROTOTYPES__ -D__XPG7_THREAD_MODEL__ $(CFLAGS)
+endif
 M64		:= $(filter %64, $(shell isainfo))
 ifeq ($(M64),amd64)
 CFLAGS		:= -m64 $(CFLAGS)

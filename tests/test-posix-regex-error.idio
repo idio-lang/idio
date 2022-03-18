@@ -69,12 +69,21 @@ posix-regex-error-load "posix-regex-errors/regcomp-bad-rx-type.idio" "bad parame
 posix-regex-error-load "posix-regex-errors/regcomp-bad-flag.idio" "regcomp flag='REG_PCRE': unexpected flag"
 posix-regex-error-load "posix-regex-errors/regcomp-bad-flag-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 (cond-expand
- ((or "uname/sysname/SunOS"
-      "uname/sysname/FreeBSD"
+ ((or "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"
       "uname/sysname/NetBSD"
       "uname/sysname/Darwin") {
    posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: repetition-operator operand invalid"
+ })
+ ("uname/sysname/SunOS" {
+   (cond-expand
+    ("os-release/ID/solaris" {
+      ;; Oracle Solaris 11.4
+      posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: ?, *, +, or { } not preceded by valid regular expression"
+    })
+    (else {
+      posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: repetition-operator operand invalid"
+    }))
  })
  (else {
    posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: Invalid preceding regular expression"

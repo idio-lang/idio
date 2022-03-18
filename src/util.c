@@ -2890,6 +2890,56 @@ IDIO idio_add_feature_pi (char const *p, size_t const plen, size_t const size)
     return r;
 }
 
+IDIO idio_add_module_feature (IDIO m, IDIO f)
+{
+    IDIO_ASSERT (m);
+    IDIO_ASSERT (f);
+
+    IDIO_TYPE_ASSERT (module, m);
+
+    IDIO mname = IDIO_MODULE_NAME (m);
+    IDIO_TYPE_ASSERT (symbol, mname);
+
+    size_t mlen = IDIO_SYMBOL_BLEN (mname);
+    IDIO r = idio_S_nil;
+
+    if (idio_isa_symbol (f)) {
+	size_t flen = IDIO_SYMBOL_BLEN (f);
+
+	size_t buflen = mlen + 1 + flen + 1;
+	char *buf;
+	IDIO_GC_ALLOC (buf, buflen);
+	size_t blen = idio_snprintf (buf, buflen, "%s/%s", IDIO_SYMBOL_S (mname), IDIO_SYMBOL_S (f));
+	r = idio_add_feature (idio_symbols_C_intern (buf, blen));
+
+	IDIO_GC_FREE (buf, buflen);
+    } else if (idio_isa_string (f)) {
+	size_t flen = 0;
+	char *C_f = idio_string_as_C (f, &flen);
+
+	size_t buflen = 1 + mlen + 1 + flen + 1 + 1;
+	char *buf;
+	IDIO_GC_ALLOC (buf, buflen);
+	size_t blen = idio_snprintf (buf, buflen, "\"%s/%s\"", IDIO_SYMBOL_S (mname), C_f);
+	r = idio_add_feature (idio_string_C_len (buf, blen));
+
+	IDIO_GC_FREE (C_f, flen);
+	IDIO_GC_FREE (buf, buflen);
+    } else {
+	/*
+	 * Test Case: ??
+	 *
+	 * The user interface is protected so this would be a coding
+	 * error.
+	 */
+	idio_error_param_type ("symbol|string",  f, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return r;
+}
+
 #if ! defined (IDIO_HAVE_STRNLEN)
 /*
  * strnlen is missing up to at least Mac OS X 10.5.8 -- at some later

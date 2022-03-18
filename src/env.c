@@ -303,7 +303,7 @@ static void idio_env_add_environ ()
     pwd_buf = idio_alloc (pwd_bufsize);
 
     int pwd_exists = 1;
-#if defined (__sun) && defined (__SVR4)
+#if defined (__sun) && defined (__SVR4) && defined (__USE_DRAFT6_PROTOTYPES__)
     errno = 0;
     pwd_result = getpwuid_r (getuid (), &pwd, pwd_buf, pwd_bufsize);
     if (pwd_result == NULL) {

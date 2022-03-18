@@ -3547,7 +3547,7 @@ void idio_init_libc_wrap ()
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("F_DUPFD"), idio_C_int (F_DUPFD), idio_libc_module);
 #if defined (F_DUPFD_CLOEXEC)
     IDIO sym = IDIO_SYMBOLS_C_INTERN ("F_DUPFD_CLOEXEC");
-    idio_add_feature (sym);
+    idio_add_module_feature (idio_libc_module, sym);
     idio_module_export_symbol_value (sym, idio_C_int (F_DUPFD_CLOEXEC), idio_libc_module);
 #endif
     idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("F_GETFD"), idio_C_int (F_GETFD), idio_libc_module);

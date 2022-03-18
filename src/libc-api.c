@@ -5109,7 +5109,7 @@ a wrapper to libc getpwuid(3)		\n\
     int pwd_exists = 1;
     int done = 0;
     for (int tries = 0; 0 == done && tries < 3; tries++) {
-#if defined (__sun) && defined (__SVR4)
+#if defined (__sun) && defined (__SVR4) && defined (__USE_DRAFT6_PROTOTYPES__)
 	errno = 0;
 	pwd_result = getpwuid_r (C_uid, pwd, pwd_buf, pwd_bufsize);
 	if (pwd_result == NULL) {
@@ -5223,7 +5223,7 @@ a wrapper to libc getpwnam(3)		\n\
     int pwd_exists = 1;
     int done = 0;
     for (int tries = 0; 0 == done && tries < 3; tries++) {
-#if defined (__sun) && defined (__SVR4)
+#if defined (__sun) && defined (__SVR4) && defined (__USE_DRAFT6_PROTOTYPES__)
 	errno = 0;
 	pwd_result = getpwnam_r (C_name, pwd, pwd_buf, pwd_bufsize);
 	if (pwd_result == NULL) {
@@ -5396,7 +5396,7 @@ a wrapper to libc getgrgid(3)		\n\
     int grp_exists = 1;
     int done = 0;
     for (int tries = 0; 0 == done && tries < 3; tries++) {
-#if defined (__sun) && defined (__SVR4)
+#if defined (__sun) && defined (__SVR4) && defined (__USE_DRAFT6_PROTOTYPES__)
 	errno = 0;
 	grp_result = getgrgid_r (C_gid, grp, grp_buf, grp_bufsize);
 	if (grp_result == NULL) {
@@ -5508,7 +5508,7 @@ a wrapper to libc getgrnam(3)		\n\
     int grp_exists = 1;
     int done = 0;
     for (int tries = 0; 0 == done && tries < 3; tries++) {
-#if defined (__sun) && defined (__SVR4)
+#if defined (__sun) && defined (__SVR4) && defined (__USE_DRAFT6_PROTOTYPES__)
 	errno = 0;
 	grp_result = getgrnam_r (C_name, grp, grp_buf, grp_bufsize);
 	if (grp_result == NULL) {
@@ -5989,12 +5989,17 @@ a wrapper to libc :manpage:`ctime(3)`	\n\
      * SunOS in non _POSIX_PTHREAD_SEMANTICS mode (ie. default) also
      * wants to pass buflen.
      *
+     * Oracle Solaris 11.4 complicates this because the use of
+     * __EXTENSIONS__ misdirects the definition to the three-arg
+     * variant.  We can close that off by checking
+     * __USE_DRAFT6_PROTOTYPES__ which is Oracle-specific.  So far.
+     *
      * Of note is that the git(1) source code bans the use of ctime_r.
      */
 #define IDIO_CTIME_BUFLEN 52
     char buf[IDIO_CTIME_BUFLEN];
 
-#if defined (__sun) && defined (__SVR4)
+#if defined (__sun) && defined (__SVR4) && defined (__USE_DRAFT6_PROTOTYPES__)
     char* ctime_r_r = ctime_r (&C_t, buf, IDIO_CTIME_BUFLEN);
 #else
     char* ctime_r_r = ctime_r (&C_t, buf);
@@ -6142,13 +6147,18 @@ a wrapper to libc :manpage:`asctime(3)`	\n\
      * SunOS in non _POSIX_PTHREAD_SEMANTICS mode (ie. default) also
      * wants to pass buflen.
      *
+     * Oracle Solaris 11.4 complicates this because the use of
+     * __EXTENSIONS__ misdirects the definition to the three-arg
+     * variant.  We can close that off by checking
+     * __USE_DRAFT6_PROTOTYPES__ which is Oracle-specific.  So far.
+     *
      * Of note is that the git(1) source code bans the use of
      * asctime_r.
      */
 #define IDIO_ASCTIME_BUFLEN 52
     char buf[IDIO_ASCTIME_BUFLEN];
 
-#if defined (__sun) && defined (__SVR4)
+#if defined (__sun) && defined (__SVR4) && defined (__USE_DRAFT6_PROTOTYPES__)
     char* asctime_r_r = asctime_r (C_tm, buf, IDIO_ASCTIME_BUFLEN);
 #else
     char* asctime_r_r = asctime_r (C_tm, buf);

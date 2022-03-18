@@ -266,6 +266,30 @@ if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
     IDIO_HAVE_CLOCK_GETTIME=0
 fi
 
+##############################
+
+# Oracle Solaris 11.4 doesn't have REG_STARTEND
+
+names+=(IDIO_HAVE_REG_STARTEND)
+cat <<EOF > ${tmpdir}/test.c
+#define _GNU_SOURCE
+#include <regex.h>
+
+int main (int argc, char **argv)
+{
+    regex_t reg;
+    regmatch_t matches[1];
+
+    regexec (&reg, "", 1, &matches, REG_STARTEND);
+    return 0;
+}
+EOF
+
+IDIO_HAVE_REG_STARTEND=1
+if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
+    IDIO_HAVE_REG_STARTEND=0
+fi
+
 ######################################################################
 
 var_MODULE=$( echo ${opt_module} | tr '[a-z]' '[A-Z]' )

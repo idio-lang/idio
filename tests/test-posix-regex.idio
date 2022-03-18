@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -34,6 +34,7 @@ If your locale is not UTF-8 oriented then these tests may fail.
 module test/posix-regex
 
 posix-regex-0 := Tests
+posix-regex-skipped := 0
 
 define (maybe-match->sexp rx str) {
   crx := regcomp rx
@@ -125,7 +126,13 @@ crx := regcomp "(b.)$" 'REG_NEWLINE
 test (array->list (regexec crx "ab1\nab2" 'REG_NOTEOL)) '("b1" "b1")
 
 ; REG_STARTEND is silently ignored
-regexec crx "" 'REG_STARTEND
+(cond-expand
+ (libc/REG_STARTEND {
+   regexec crx "" 'REG_STARTEND
+ })
+ (else {
+   posix-regex-skipped = posix-regex-skipped + 1
+ }))
 
 ;; REG_VERBOSE gives us some details on the matches
 r := regexec (regcomp "[bc]+") "abcd" REG_VERBOSE
@@ -284,4 +291,5 @@ test (regex-pattern-string "a*?c")	"a.*.c"
 test (regex-pattern-string "a*+c")	"a.*\\+c"
 
 ;; all done?
-Tests? (posix-regex-0 + 98)
+Skipped = Skipped + posix-regex-skipped
+Tests? (posix-regex-0 + 98 - posix-regex-skipped)

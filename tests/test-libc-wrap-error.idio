@@ -237,7 +237,7 @@ libc-wrap-error-load "libc-wrap-errors/fcntl-bad-fd-type.idio" "bad parameter ty
 libc-wrap-error-load "libc-wrap-errors/fcntl-bad-cmd-type.idio" "bad parameter type: '1' a fixnum is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 (cond-expand
- (F_DUPFD_CLOEXEC {
+ (libc/F_DUPFD_CLOEXEC {
    libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD_CLOEXEC-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
  })
  (else {
@@ -561,7 +561,14 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
 )
 (cond-expand
  ("uname/sysname/SunOS" {
-   libc-wrap-error-load "libc-wrap-errors/EGID-set-unused-gid.idio" "Not owner" EPERM "setegid"
+   (cond-expand
+    ("os-release/ID/solaris" {
+      ;; Oracle Solaris 11.4
+      libc-wrap-error-load "libc-wrap-errors/EGID-set-unused-gid.idio" "Insufficient privileges" EPERM "setegid"
+    })
+    (else {
+      libc-wrap-error-load "libc-wrap-errors/EGID-set-unused-gid.idio" "Not owner" EPERM "setegid"
+    }))
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/EGID-set-unused-gid.idio" "Operation not permitted" EPERM "setegid"
@@ -584,7 +591,14 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
 )
 (cond-expand
  ("uname/sysname/SunOS" {
-   libc-wrap-error-load "libc-wrap-errors/EUID-set-unused-uid.idio" "Not owner" EPERM "seteuid"
+   (cond-expand
+    ("os-release/ID/solaris" {
+      ;; Oracle Solaris 11.4
+      libc-wrap-error-load "libc-wrap-errors/EUID-set-unused-uid.idio" "Insufficient privileges" EPERM "seteuid"
+    })
+    (else {
+      libc-wrap-error-load "libc-wrap-errors/EUID-set-unused-uid.idio" "Not owner" EPERM "seteuid"
+    }))
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/EUID-set-unused-uid.idio" "Operation not permitted" EPERM "seteuid"
@@ -614,7 +628,14 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
 )
 (cond-expand
  ("uname/sysname/SunOS" {
-   libc-wrap-error-load "libc-wrap-errors/GID-set-unused-gid.idio" "Not owner" EPERM "setgid"
+   (cond-expand
+    ("os-release/ID/solaris" {
+      ;; Oracle Solaris 11.4
+      libc-wrap-error-load "libc-wrap-errors/GID-set-unused-gid.idio" "Insufficient privileges" EPERM "setgid"
+    })
+    (else {
+      libc-wrap-error-load "libc-wrap-errors/GID-set-unused-gid.idio" "Not owner" EPERM "setgid"
+    }))
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/GID-set-unused-gid.idio" "Operation not permitted" EPERM "setgid"
@@ -644,7 +665,14 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
 )
 (cond-expand
  ("uname/sysname/SunOS" {
-   libc-wrap-error-load "libc-wrap-errors/UID-set-unused-uid.idio" "Not owner" EPERM "setuid"
+   (cond-expand
+    ("os-release/ID/solaris" {
+      ;; Oracle Solaris 11.4
+      libc-wrap-error-load "libc-wrap-errors/UID-set-unused-uid.idio" "Insufficient privileges" EPERM "setuid"
+    })
+    (else {
+      libc-wrap-error-load "libc-wrap-errors/UID-set-unused-uid.idio" "Not owner" EPERM "setuid"
+    }))
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/UID-set-unused-uid.idio" "Operation not permitted" EPERM "setuid"

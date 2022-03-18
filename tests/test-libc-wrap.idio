@@ -231,7 +231,7 @@ nfd := fcntl C/0i F_DUPFD (C/integer-> 99)
 close nfd
 
 (cond-expand
- (F_DUPFD_CLOEXEC {
+ (libc/F_DUPFD_CLOEXEC {
    nfd := fcntl C/0i F_DUPFD_CLOEXEC (C/integer-> 99)
    close nfd
 

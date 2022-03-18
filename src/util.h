@@ -75,6 +75,7 @@ void idio_debug (char const *fmt, IDIO o);
 IDIO idio_add_feature (IDIO f);
 IDIO idio_add_feature_ps (char const *p, size_t plen, char const *s, size_t slen);
 IDIO idio_add_feature_pi (char const *p, size_t plen, size_t size);
+IDIO idio_add_module_feature (IDIO m, IDIO f);
 
 #if ! defined (IDIO_HAVE_STRNLEN)
 size_t strnlen (char const *s, size_t maxlen);

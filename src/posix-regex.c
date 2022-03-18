@@ -52,6 +52,7 @@
 #include "fixnum.h"
 #include "handle.h"
 #include "idio-string.h"
+#include "libc-wrap.h"
 #include "pair.h"
 #include "posix-regex.h"
 #include "string-handle.h"
@@ -67,7 +68,7 @@ IDIO idio_posix_regex_REG_NOSUB_sym;
 IDIO idio_posix_regex_REG_NEWLINE_sym;
 IDIO idio_posix_regex_REG_NOTBOL_sym;
 IDIO idio_posix_regex_REG_NOTEOL_sym;
-#ifdef REG_STARTEND
+#ifdef IDIO_HAVE_REG_STARTEND
 IDIO idio_posix_regex_REG_STARTEND_sym;
 #endif
 IDIO idio_posix_regex_REG_VERBOSE_sym;
@@ -279,7 +280,7 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
 		eflags |= REG_NOTBOL;
 	    } else if (idio_posix_regex_REG_NOTEOL_sym == flag) {
 		eflags |= REG_NOTEOL;
-#ifdef REG_STARTEND
+#ifdef IDIO_HAVE_REG_STARTEND
 	    } else if (idio_posix_regex_REG_STARTEND_sym == flag) {
 		/*
 		 * We don't support this anyway as we're not in a
@@ -466,8 +467,9 @@ void idio_init_posix_regex ()
     idio_posix_regex_REG_NEWLINE_sym = IDIO_SYMBOLS_C_INTERN ("REG_NEWLINE");
     idio_posix_regex_REG_NOTBOL_sym = IDIO_SYMBOLS_C_INTERN ("REG_NOTBOL");
     idio_posix_regex_REG_NOTEOL_sym = IDIO_SYMBOLS_C_INTERN ("REG_NOTEOL");
-#ifdef REG_STARTEND
+#ifdef IDIO_HAVE_REG_STARTEND
     idio_posix_regex_REG_STARTEND_sym = IDIO_SYMBOLS_C_INTERN ("REG_STARTEND");
+    idio_add_module_feature (idio_libc_module, idio_posix_regex_REG_STARTEND_sym);
 #endif
     idio_posix_regex_REG_VERBOSE_sym = IDIO_SYMBOLS_C_INTERN ("REG_VERBOSE");
 }

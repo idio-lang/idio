@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -56,6 +56,10 @@ uname/machine/$machine			uname(2)
 
 sizeof/pointer/$n			sizeof (void *) * CHAR_BIT
 
+Plus a variable number of not-quite-universal C library features such
+as the F_DUPFD_CLOEXEC cmd to fcntl(2), here denoted as
+libc/F_DUPFD_CLOEXEC.
+
 At the bottom of this file we'll add:
 Linux
 os-release/ID/$ID			os-release(5)
@@ -64,7 +68,7 @@ os-release/VERSION_ID/$VERSION_ID	os-release(5)
 virtualisation/WSL			if running under Windows Subsystem for Linux
 virtualisation/WSL2			if running under WSL 2 (in addition)
 
-SunOS:
+OpenIndiana based SunOS (Oracle Solaris 11.4 works like Linux):
 release/${1st word of /etc/release}	release/OpenIndiana
 
 *#
@@ -288,6 +292,9 @@ define-template (cond-expand & clause*) {
    }
  })
  ("uname/sysname/SunOS" {
+   ;; Oracle Solaris 11.4 has /etc/os-release
+   found := #f
+
    file-loop :+ function (fn*) {
      if (null? fn*) #n {
        fn := ph fn*
@@ -297,21 +304,18 @@ define-template (cond-expand & clause*) {
 	   if (eof? fh) #n {
 	     (regex-case
 	      (read-line fh)
-	      ; OpenIndiana Development oi_151.1.8 X86 (powered by illumos)
-	      ; OpenIndiana Hipster 2020.04 (powered by illumos)
-	      ; ...and from the Intertubes...
-	      ; Solaris 9 9/04 s9s_u7wos_09 SPARC
-	      ; Solaris 10 5/08 s10x_u5wos_10 X86
-	      ; Oracle Solaris 11.4 X86
-	      ; OpenSolaris 2009.06 snv_111b X86
-	      ; annoyingly different is:
-	      ; Oracle Solaris 11 Express snv_151a X86
-	      ("(Solaris|OpenSolaris|OpenIndiana|Oracle) " {
-		%add-feature (append-string "release/" (array-ref r 1))
-		; skip the remaining lines
+	      ("^#" {
+		(line-loop)
 	      })
-	      (else
-	       (line-loop)))
+	      ("([[:alnum:]_]+)=\"?([^\"]*)\"?" {
+		(case r.1
+		 (("ID" "VERSION_ID") {
+		   %add-feature (append-string "os-release/" r.1 "/" r.2)
+		   found = #t
+		 }))
+		(line-loop)
+	      }))
+	     (line-loop)
 	   }
 	 }
 	 (line-loop)
@@ -321,7 +325,30 @@ define-template (cond-expand & clause*) {
      }
    }
 
-   file-loop '("/etc/release")
+   file-loop '("/etc/os-release" "/usr/lib/os-release")
+
+   if (not found) {
+     rf := "/etc/release"
+     if (f? rf) {
+       rh := open-input-file rf
+       rl := read-lines rh
+       close-handle rh
+       (regex-case
+	rl
+	; OpenIndiana Development oi_151.1.8 X86 (powered by illumos)
+	; OpenIndiana Hipster 2020.04 (powered by illumos)
+	; ...and from the Intertubes...
+	; Solaris 9 9/04 s9s_u7wos_09 SPARC
+	; Solaris 10 5/08 s10x_u5wos_10 X86
+	; Oracle Solaris 11.4 X86
+	; OpenSolaris 2009.06 snv_111b X86
+	; annoyingly different is:
+	; Oracle Solaris 11 Express snv_151a X86
+	("(Solaris|OpenSolaris|OpenIndiana|Oracle) " {
+	  %add-feature (append-string "release/" (array-ref r 1))
+	}))
+     }
+   }
  }))
 
 provide SRFI-0
