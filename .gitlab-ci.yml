@@ -1,21 +1,62 @@
-test-regular:
+# This GitLab CI configuration has switched from, essentially, the
+# GitLab runner "shell" executor running on a Fedora box to a
+# Kubernetes system.
+
+# The shell variant reused the working directory of previous CIs and
+# consequently required the use of "make clean" to keep matters
+# aligned whereas with Kubernetes you get a brand new container for
+# each stage of the CI.
+
+# Of course, the new container requires make, gcc etc. which we want
+# to avoid time- and bit-wasting by pulling from the Intertubes every
+# few seconds.  Hence a bespoke ci-image in a local repository.
+
+# (Good for this author, not so good for everyone else.)
+
+# The Dockerfile for idio-ci-image looks like:
+#
+# FROM ubuntu:20.04
+# ENV DEBIAN_FRONTEND noninteractive
+# RUN apt-get update && apt-get install -yq --no-install-recommends git build-essential expect gcovr && rm -rf /var/lib/apt/lists/*
+#
+image: docker-registry:5000/idio-ci-image:latest
+
+stages:
+- compile
+- test
+
+compile-regular:
   tags:
-    - shell
-  stage: test
+    - ubuntu-20-shell
+  stage: compile
   script:
     - env | sort
-    - make clean
     - make
-    - ./utils/forced-tty-session ./.local/bin/idio test
+  artifacts:
+    paths:
+    - .local
+
+compile-coverage:
+  extends:
+  - compile-regular
+  script:
+    - make coverage
+
+test-regular:
+  tags:
+    - ubuntu-20-shell
+  stage: test
+  needs:
+  - compile-regular
+  script:
+    - .local/bin/idio --version
+    - ./utils/forced-tty-session .local/bin/idio test
 
 test-coverage:
-  tags:
-    - shell
-  stage: test
+  extends:
+  - test-regular
   script:
-    - make clean
-    - make coverage
-    - ./utils/forced-tty-session ./.local/bin/idio test
+    - utils/forced-tty-session .local/bin/idio test
     - gcovr --xml-pretty --exclude-unreachable-branches --print-summary -o coverage.xml --root ${CI_PROJECT_DIR}
   coverage: /^\s*lines:\s*\d+.\d+\%/
   artifacts:
@@ -27,8 +68,6 @@ test-coverage:
 include:
   - template: Security/SAST.gitlab-ci.yml
 
-stages:
-- test
 sast:
   tags:
   - docker
