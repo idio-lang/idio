@@ -25,17 +25,17 @@
 
 extern IDIO idio_G_frame;
 
-IDIO idio_frame_allocate (idio_ai_t nargs);
+IDIO idio_frame_allocate (idio_fi_t nargs);
 IDIO idio_frame (IDIO next, IDIO args);
 int idio_isa_frame (IDIO fo);
 void idio_free_frame (IDIO fo);
 
-IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i);
-void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v);
+IDIO idio_frame_fetch (IDIO fo, size_t d, idio_fi_t i);
+void idio_frame_update (IDIO fo, size_t d, idio_fi_t i, IDIO v);
 IDIO idio_link_frame (IDIO f1, IDIO f2);
-void idio_extend_frame (IDIO f1, size_t nalloc);
+void idio_extend_frame (IDIO f1, idio_fi_t nalloc);
 
-IDIO idio_frame_args_as_list_from (IDIO frame, idio_ai_t from);
+IDIO idio_frame_args_as_list_from (IDIO frame, idio_fi_t from);
 IDIO idio_frame_args_as_list (IDIO frame);
 IDIO idio_frame_params_as_list (IDIO frame);
 

@@ -441,7 +441,6 @@ size_t idio_list_length (IDIO l)
 	return 0;
     }
 
-    if (idio_isa_pair (l) == 0) IDIO_C_ASSERT (0);
     IDIO_TYPE_ASSERT (pair, l);
 
     size_t len = 0;
@@ -951,7 +950,7 @@ IDIO idio_list_nth (IDIO l, IDIO I_n, IDIO args)
     intmax_t C_n = -1;
 
     if (idio_isa_fixnum (I_n)) {
-	C_n = IDIO_FIXNUM_VAL (I_n);
+	C_n = (intmax_t) IDIO_FIXNUM_VAL (I_n);
     } else if (idio_isa_integer_bignum (I_n)) {
 	C_n = idio_bignum_ptrdiff_t_value (I_n);
     } else {

@@ -1891,9 +1891,9 @@ num	specifies a maximum limit on the output		\n\
 				size_t c_size = 0;
 				c = idio_display_string (arg, &c_size);
 
-				size_t c_prec_width = c_size;
+				ssize_t c_prec_width = c_size;
 				if (prec &&
-				    prec < c_size) {
+				    prec < (ssize_t) c_size) {
 				    c_prec_width = prec;
 				}
 
@@ -2115,7 +2115,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	idio_array_push (stack, h);
     }
 
-    idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
+    idio_sp_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
     IDIO e = idio_S_nil;
     IDIO r = idio_S_nil;
@@ -2152,16 +2152,16 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	    fprintf (stderr, " e %ld.%06ld", td.tv_sec, td.tv_usec);
 #endif
 
-	    idio_ai_t pc = idio_codegen (thr, m, cs);
+	    idio_pc_t pc = idio_codegen (thr, m, cs);
 
 	    r = idio_vm_run_C (thr, pc);
 
-	    idio_ai_t ss = idio_array_size (stack);
+	    idio_sp_t ss = idio_array_size (stack);
 
 	    if (ss != ss0) {
 		size_t size = 0;
 		char *sname = idio_handle_name_as_C (h, &size);
-		fprintf (stderr, "load-handle: %s: SS %td != %td\n", sname, ss, ss0);
+		fprintf (stderr, "load-handle: %s: SS %zd != %zd\n", sname, ss, ss0);
 
 		IDIO_GC_FREE (sname, size);
 
@@ -2197,11 +2197,11 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     IDIO_HANDLE_M_CLOSE (h) (h);
 
     if (preserve) {
-	idio_ai_t ss = idio_array_size (stack);
+	idio_sp_t ss = idio_array_size (stack);
 	if (ss == ss0) {
 	    idio_array_pop (stack);
 	} else {
-	    fprintf (stderr, "load-handle: SS %td != %td\n", ss, ss0);
+	    fprintf (stderr, "load-handle: SS %zd != %zd\n", ss, ss0);
 	}
     }
     return r;
@@ -2234,11 +2234,11 @@ This is the `load-handle` primitive.				\n\
     IDIO_USER_TYPE_ASSERT (handle, h);
 
     IDIO thr = idio_thread_current_thread ();
-    idio_ai_t pc0 = IDIO_THREAD_PC (thr);
+    idio_pc_t pc0 = IDIO_THREAD_PC (thr);
 
     IDIO r = idio_load_handle (h, idio_read, idio_evaluate_func, idio_vm_constants, 0);
 
-    idio_ai_t pc = IDIO_THREAD_PC (thr);
+    idio_pc_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
 	IDIO_THREAD_PC (thr) = pc0;
     }
@@ -2270,7 +2270,7 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
     }
 
     IDIO thr = idio_thread_current_thread ();
-    idio_ai_t sp0 = idio_array_size (IDIO_THREAD_STACK (thr));
+    idio_sp_t sp0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
     /*
      * When we call idio_vm_run() we are at risk of the garbage
@@ -2323,7 +2323,7 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	}
 
 	IDIO m = (*evaluator) (e, cs);
-	idio_ai_t pc = idio_codegen (thr, m, cs);
+	idio_pc_t pc = idio_codegen (thr, m, cs);
 
 	IDIO r = idio_vm_run_C (thr, pc);
 	/*
@@ -2350,12 +2350,12 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	return idio_S_notreached;
     }
 
-    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
+    idio_sp_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (sp != sp0) {
 	size_t size = 0;
 	char *sname = idio_handle_name_as_C (fh, &size);
-	fprintf (stderr, "load-file-handle-interactive: %s: SP %td != SP0 %td\n", sname, sp, sp0);
+	fprintf (stderr, "load-file-handle-interactive: %s: SP %zd != SP0 %zd\n", sname, sp, sp0);
 
 	IDIO_GC_FREE (sname, size);
 

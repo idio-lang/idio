@@ -546,7 +546,7 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 		bits++;
 	    }
 
-	    if (bits >= ((sizeof (intptr_t) * 8) - 2)) {
+	    if (bits >= (((int) sizeof (intptr_t) * 8) - 2)) {
 		/*
 		 * Definitely overflowed!  Probably.
 		 */

@@ -2978,7 +2978,7 @@ IDIO idio_libc_wrap_access_predicate (IDIO pathname, char const *pred_C, int mod
     return r;
 }
 
-IDIO idio_libc_wrap_stat_predicate (IDIO pathname, char const *pred_C, int mask)
+IDIO idio_libc_wrap_stat_predicate (IDIO pathname, char const *pred_C, mode_t mask)
 {
     IDIO_ASSERT (pathname);
     IDIO_C_ASSERT (pred_C);

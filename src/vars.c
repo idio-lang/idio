@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -197,7 +197,7 @@ void idio_vars_add_primitives ()
     int fd = open ("/dev/urandom", O_RDONLY | O_NONBLOCK);
     if (fd >= 0) {
 	int n = read (fd, buf, buflen);
-	if (n == buflen) {
+	if (n == (ssize_t) buflen) {
 	    srandom ((unsigned int) *((unsigned int *) buf));
 	} else {
 	    use_time = 1;

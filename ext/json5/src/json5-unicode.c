@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -64,10 +64,7 @@ unsigned int h2i (char c)
 
 int json5_unicode_valid_code_point (json5_unicode_t cp)
 {
-    if (/* too big */
-	cp > 0x10FFFF ||
-	/* too small */
-	cp < 0) {
+    if (cp > 0x10FFFF) {
 	return 0;
     }
 
@@ -655,17 +652,17 @@ int json5_unicode_string_n_equal (json5_unicode_string_t *s, const char *scmp, s
 	size_t i = s->i + si;
 	switch (s->width) {
 	case JSON5_UNICODE_STRING_WIDTH_1BYTE:
-	    if (*scmp != ((uint8_t *) s->s) [i]) {
+	    if (*scmp != ((int8_t *) s->s)[i]) {
 		r = 0;
 	    }
 	    break;
 	case JSON5_UNICODE_STRING_WIDTH_2BYTE:
-	    if (*scmp != ((uint16_t *) s->s) [i]) {
+	    if (*scmp != ((int16_t *) s->s)[i]) {
 		r = 0;
 	    }
 	    break;
 	case JSON5_UNICODE_STRING_WIDTH_4BYTE:
-	    if (*scmp != ((uint32_t *) s->s) [i]) {
+	    if (*scmp != ((int32_t *) s->s)[i]) {
 		r = 0;
 	    }
 	    break;

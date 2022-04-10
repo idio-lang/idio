@@ -1332,7 +1332,7 @@ int idio_C_float_C_eq_ULP (float o1, float o2, unsigned int max)
 	diff = -diff;
     }
 
-    if (diff <= max) {
+    if (diff <= (int) max) {
 	return 1;
     } else {
 	return 0;
@@ -2089,7 +2089,7 @@ IDIO idio_C_integer2 (IDIO i, IDIO t)
 	    return idio_C_long ((long) C_i);
 	}
     } else if (idio_S_ulong == t) {
-	if (C_i > ULONG_MAX) {
+	if ((uintmax_t) C_i > ULONG_MAX) {
 	    /*
 	     * Test Case: maybe on 32-bit -- c-type-errors/c-type-integer2-ulong-range.idio
 	     *
@@ -2128,7 +2128,7 @@ IDIO idio_C_integer2 (IDIO i, IDIO t)
 	    return idio_C_longlong ((long long) C_i);
 	}
     } else if (idio_S_ulonglong == t) {
-	if (C_i > ULLONG_MAX) {
+	if ((uintmax_t) C_i > ULLONG_MAX) {
 	    /*
 	     * Test Case: ?? -- not c-type-errors/c-type-integer2-ulonglong-range.idio
 	     *

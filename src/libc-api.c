@@ -2878,7 +2878,7 @@ is available for reference as ``libc/CLK_TCK``.			\n\
 
     clock_t times_r = times (tmsp);
 
-    if (-1 == times_r) {
+    if ((clock_t) -1 == times_r) {
 	/*
 	 * Test Case: ??
 	 *
@@ -5096,7 +5096,7 @@ a wrapper to libc getpwuid(3)		\n\
     struct passwd *pwd;
     struct passwd *pwd_result;
     char *pwd_buf;
-    size_t pwd_bufsize;
+    long pwd_bufsize;
 
     pwd_bufsize = sysconf (_SC_GETPW_R_SIZE_MAX);
     if (pwd_bufsize == -1) {
@@ -5210,7 +5210,7 @@ a wrapper to libc getpwnam(3)		\n\
     struct passwd *pwd;
     struct passwd *pwd_result;
     char *pwd_buf;
-    size_t pwd_bufsize;
+    long pwd_bufsize;
 
     pwd_bufsize = sysconf (_SC_GETPW_R_SIZE_MAX);
     if (pwd_bufsize == -1) {
@@ -5383,7 +5383,7 @@ a wrapper to libc getgrgid(3)		\n\
     struct group *grp;
     struct group *grp_result;
     char *grp_buf;
-    size_t grp_bufsize;
+    long grp_bufsize;
 
     grp_bufsize = sysconf (_SC_GETGR_R_SIZE_MAX);
     if (grp_bufsize == -1) {
@@ -5495,7 +5495,7 @@ a wrapper to libc getgrnam(3)		\n\
     struct group *grp;
     struct group *grp_result;
     char *grp_buf;
-    size_t grp_bufsize;
+    long grp_bufsize;
 
     grp_bufsize = sysconf (_SC_GETGR_R_SIZE_MAX);
     if (grp_bufsize == -1) {

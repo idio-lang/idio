@@ -118,13 +118,13 @@ static const uint8_t idio_utf8d[] = {
 
 static char const *hex_DIGITS = "0123456789ABCDEF";
 
-idio_unicode_t inline idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, idio_unicode_t byte)
+inline idio_unicode_t idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, idio_unicode_t byte)
 {
     idio_unicode_t type = idio_utf8d[byte];
 
     *codep = (*state != IDIO_UTF8_ACCEPT) ?
-	(byte & 0x3fu) | (*codep << 6) :
-	(0xff >> type) & (byte);
+	(idio_unicode_t) ((byte & 0x3fu) | (*codep << 6)) :
+	(idio_unicode_t) ((0xff >> type) & (byte));
 
     *state = idio_utf8d[256 + *state + type];
     return *state;
@@ -305,7 +305,7 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
     }
 
     char *s;
-    size_t len;
+    ssize_t len;
     IDIO_FLAGS_T flags;
     if (idio_isa_substring (str)) {
 	s = IDIO_SUBSTRING_S (str);
@@ -333,7 +333,7 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
     int is_octet = (flags & IDIO_STRING_FLAG_OCTET);
     int is_pathname = (flags & (IDIO_STRING_FLAG_PATHNAME | IDIO_STRING_FLAG_FD_PATHNAME | IDIO_STRING_FLAG_FIFO_PATHNAME));
 
-    size_t i;
+    ssize_t i;
     size_t n = 0;
     for (i = 0; i < len; i++) {
 	uint32_t c = 0;

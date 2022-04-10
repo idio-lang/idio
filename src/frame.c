@@ -66,7 +66,7 @@ void idio_frame_error_range (IDIO fo, size_t const d, size_t const i, IDIO c_loc
     /* notreached */
 }
 
-IDIO idio_frame_allocate (idio_ai_t arityp1)
+IDIO idio_frame_allocate (idio_fi_t arityp1)
 {
     IDIO_C_ASSERT (arityp1);
 
@@ -84,7 +84,7 @@ IDIO idio_frame_allocate (idio_ai_t arityp1)
     IDIO_FRAME_NALLOC (fo) = arityp1;
     IDIO_FRAME_NAMES (fo) = idio_S_nil;
 
-    idio_ai_t i;
+    idio_fi_t i;
     for (i = 0; i < arityp1 - 1; i++) {
 	IDIO_FRAME_ARGS (fo, i) = idio_S_undef;
     }
@@ -105,13 +105,13 @@ IDIO idio_frame (IDIO next, IDIO args)
 	return idio_S_notreached;
     }
 
-    idio_ai_t nargs = idio_list_length (args);
+    idio_fi_t nargs = idio_list_length (args);
 
     IDIO fo = idio_frame_allocate (nargs + 1);
 
     IDIO_FRAME_NEXT (fo) = next;
 
-    idio_ai_t i = 0;
+    idio_fi_t i = 0;
     while (idio_S_nil != args) {
 	IDIO_FRAME_ARGS (fo, i++) = IDIO_PAIR_H (args);
 	args = IDIO_PAIR_T (args);
@@ -137,12 +137,12 @@ void idio_free_frame (IDIO fo)
     IDIO_GC_FREE (fo->u.frame, sizeof (idio_frame_t));
 }
 
-IDIO idio_frame_fetch (IDIO fo, size_t const d, size_t const i)
+IDIO idio_frame_fetch (IDIO fo, size_t const d, idio_fi_t const i)
 {
     IDIO_ASSERT (fo);
     IDIO_TYPE_ASSERT (frame, fo);
 
-    size_t td = d;
+    ssize_t td = d;
 
     for (; td; td--) {
 	fo = IDIO_FRAME_NEXT (fo);
@@ -160,13 +160,13 @@ IDIO idio_frame_fetch (IDIO fo, size_t const d, size_t const i)
     return IDIO_FRAME_ARGS (fo, i);
 }
 
-void idio_frame_update (IDIO fo, size_t const d, size_t const i, IDIO v)
+void idio_frame_update (IDIO fo, size_t const d, idio_fi_t const i, IDIO v)
 {
     IDIO_ASSERT (fo);
     IDIO_TYPE_ASSERT (frame, fo);
     IDIO_ASSERT (v);
 
-    size_t td = d;
+    ssize_t td = d;
 
     for (; td; td--) {
 	fo = IDIO_FRAME_NEXT (fo);
@@ -219,13 +219,13 @@ IDIO idio_link_frame (IDIO f1, IDIO f2)
     return f2;
 }
 
-void idio_extend_frame (IDIO fo, size_t const nalloc)
+void idio_extend_frame (IDIO fo, idio_fi_t const nalloc)
 {
     IDIO_ASSERT (fo);
     IDIO_C_ASSERT (nalloc);
 
-    size_t nparams = IDIO_FRAME_NPARAMS (fo);
-    size_t oalloc = IDIO_FRAME_NALLOC (fo);
+    idio_fi_t nparams = IDIO_FRAME_NPARAMS (fo);
+    idio_fi_t oalloc = IDIO_FRAME_NALLOC (fo);
 
     if ((nparams + 1) == nalloc) {
 	return;
@@ -246,23 +246,21 @@ void idio_extend_frame (IDIO fo, size_t const nalloc)
 
     IDIO_FRAME_NALLOC (fo) = nalloc;
 
-    idio_ai_t i;
-    for (i = oalloc; i < nalloc; i++) {
+    for (idio_fi_t i = oalloc; i < nalloc; i++) {
 	IDIO_FRAME_ARGS (fo, i) = idio_S_undef;
     }
 }
 
-IDIO idio_frame_args_as_list_from (IDIO frame, idio_ai_t from)
+IDIO idio_frame_args_as_list_from (IDIO frame, idio_fi_t from)
 {
     IDIO_ASSERT (frame);
     IDIO_TYPE_ASSERT (frame, frame);
 
-    idio_ai_t nargs = IDIO_FRAME_NPARAMS (frame);
+    idio_fi_t nargs = IDIO_FRAME_NPARAMS (frame);
     IDIO r = IDIO_FRAME_ARGS (frame, nargs);
 
     if (nargs > 0) {
-	idio_ai_t i;
-	for (i = nargs - 1; i >= from; i--) {
+	for (idio_fi_t i = nargs - 1; i >= from; i--) {
 	    r = idio_pair (IDIO_FRAME_ARGS (frame, i),
 			   r);
 	}
@@ -290,12 +288,11 @@ IDIO idio_frame_params_as_list (IDIO frame)
     IDIO_ASSERT (frame);
     IDIO_TYPE_ASSERT (frame, frame);
 
-    idio_ai_t nargs = IDIO_FRAME_NPARAMS (frame);
+    idio_fi_t nargs = IDIO_FRAME_NPARAMS (frame);
     IDIO r = IDIO_FRAME_ARGS (frame, nargs);
 
     if (nargs > 0) {
-	idio_ai_t i;
-	for (i = nargs - 1; i >= 0; i--) {
+	for (idio_fi_t i = nargs - 1; i >= 0; i--) {
 	    r = idio_pair (IDIO_FRAME_ARGS (frame, i),
 			   r);
 	}
@@ -334,7 +331,7 @@ char *idio_frame_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO
      */
     *sizep = idio_asprintf (&r, "#<FRAME %p n=%d/%d [ ", v, IDIO_FRAME_NPARAMS (v), IDIO_FRAME_NALLOC (v));
 
-    for (idio_frame_args_t i = 0; i < IDIO_FRAME_NALLOC (v); i++) {
+    for (idio_fi_t i = 0; i < IDIO_FRAME_NALLOC (v); i++) {
 	size_t t_size = 0;
 	char *t = idio_as_string (IDIO_FRAME_ARGS (v, i), &t_size, depth - 1, seen, 0);
 	IDIO_STRCAT_FREE (r, sizep, t, t_size);

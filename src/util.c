@@ -2571,7 +2571,7 @@ void idio_dump (IDIO o, int detail)
 		break;
 	    case IDIO_TYPE_ARRAY:
 		if (detail) {
-		    fprintf (stderr, "size=%td/%td \n", IDIO_ARRAY_USIZE (o), IDIO_ARRAY_ASIZE (o));
+		    fprintf (stderr, "size=%zd/%zd \n", IDIO_ARRAY_USIZE (o), IDIO_ARRAY_ASIZE (o));
 		    if (detail > 1) {
 			size_t i;
 			for (i = 0; i < IDIO_ARRAY_USIZE (o); i++) {
@@ -3103,7 +3103,7 @@ int idio_snprintf (char *str, size_t const size, char const *format, ...)
      * null byte) which would have been written to the final string if
      * enough space had been available."
      */
-    if (plen >= size ||
+    if (plen >= (ssize_t) size ||
 	plen < 0) {
 	str[size] = '\0';
 

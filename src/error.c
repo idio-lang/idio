@@ -703,6 +703,7 @@ This does not return!				\n\
 	switch (nargs) {
 	case 2:
 	    msg = IDIO_PAIR_HT (args);
+	    /* fall through */
 	case 1:
 	    val = IDIO_PAIR_H (args);
 	}

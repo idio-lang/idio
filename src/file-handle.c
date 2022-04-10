@@ -2263,13 +2263,14 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char const *s, size_t const slen)
     }
 
     ssize_t r = EOF;
+    ssize_t const sslen = slen;
 
     /*
      * If the string is going to cause a flush then flush and write
      * the string directly out
      */
-    if (slen > IDIO_FILE_HANDLE_BUFSIZ (fh) ||
-	slen > (IDIO_FILE_HANDLE_BUFSIZ (fh) - IDIO_FILE_HANDLE_COUNT (fh))) {
+    if (sslen > IDIO_FILE_HANDLE_BUFSIZ (fh) ||
+	sslen > (IDIO_FILE_HANDLE_BUFSIZ (fh) - IDIO_FILE_HANDLE_COUNT (fh))) {
 	if (EOF == idio_flush_file_handle (fh)) {
 	    /*
 	     * Code coverage:
@@ -2335,7 +2336,7 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char const *s, size_t const slen)
 		  return r;
 	     }
 	} else {
-	     if (r != slen) {
+	     if (r != sslen) {
 #ifdef IDIO_DEBUG
 		 fprintf (stderr, "write: %4zd / %4zu\n", r, slen);
 #endif
@@ -2756,7 +2757,7 @@ static idio_file_extension_t idio_file_extensions[] = {
      */
     { NULL,  NULL, NULL, idio_read, idio_evaluate_func, idio_Idio_module_instance },
     /* { ".scm", idio_scm_read, idio_scm_evaluate, idio_main_scm_module_instance }, */
-    { NULL, NULL, NULL }
+    { NULL, NULL, NULL, NULL, NULL, NULL }
 };
 
 IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char const *libname, size_t const libname_len, IDIO cs)
@@ -3485,7 +3486,7 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 				/*
 				 * verify this is {mod}@...
 				 */
-				if (!((at - latest) == mod_len &&
+				if (!((at - latest) == (ssize_t) mod_len &&
 				      strncmp (latest, mod, mod_len) == 0)) {
 				    /*
 				     * Test Case: ??
@@ -3907,11 +3908,11 @@ This is the `load` primitive.					\n\
     IDIO_USER_TYPE_ASSERT (string, filename);
 
     IDIO thr = idio_thread_current_thread ();
-    idio_ai_t pc0 = IDIO_THREAD_PC (thr);
+    idio_pc_t pc0 = IDIO_THREAD_PC (thr);
 
     IDIO r = idio_load_file_name (filename, idio_vm_constants);
 
-    idio_ai_t pc = IDIO_THREAD_PC (thr);
+    idio_pc_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
 	IDIO_THREAD_PC (thr) = pc0;
     }

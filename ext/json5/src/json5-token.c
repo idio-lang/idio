@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -35,31 +35,6 @@
 #include "json5-token.h"
 #include "json5-unicode.h"
 #include "utf8.h"
-
-/*
- * https://262.ecma-international.org/5.1/#sec-7.6.1.1
- */
-static const char *json5_ECMA_keywords[] = {
-    "break",	"do",		"instanceof",	"typeof",
-    "case",	"else",		"new",		"var",
-    "catch",	"finally",	"return",	"void",
-    "continue",	"for",		"switch",	"while",
-    "debugger",	"function",	"this",		"with",
-    "default",	"if",		"throw",
-    "delete",	"in",		"try",
-    0
-};
-
-/*
- * https://262.ecma-international.org/5.1/#sec-7.6.1.2
- */
-static const char *json5_ECMA_future[] = {
-    "class",		"enum",		"extends",	"super",
-    "const",		"export",	"import",
-    "implements",	"let",		"private",	"public",	"yield",
-    "interface",	"package",	"protected",	"static",
-    0
-};
 
 void json5_value_array_free (json5_array_t *a)
 {
@@ -841,34 +816,6 @@ static json5_token_t *json5_token_number (json5_token_t *ct, json5_unicode_strin
     return ct;
 }
 
-/*
- * Code coverage: I was using these because I couldn't read a
- * specification properly, see below.  (Doesn't bode well.)
- */
-void json5_token_reserved_identifiers (json5_unicode_string_t *s, size_t slen)
-{
-    for (const char **k = json5_ECMA_keywords; *k; k++) {
-	size_t klen = strnlen (*k, 12);
-	if (slen == klen &&
-	    json5_unicode_string_n_equal (s, *k, klen)) {
-	    json5_error_printf ("json5/tokenize: identifier: is a keyword: %s", *k);
-
-	    /* notreached */
-	    return;
-	}
-    }
-    for (const char **frw = json5_ECMA_future; *frw; frw++) {
-	size_t frwlen = strnlen (*frw, 12);
-	if (slen == frwlen &&
-	    json5_unicode_string_n_equal (s, *frw, frwlen)) {
-	    json5_error_printf ("json5/tokenize: identifier: is a future reserved word: %s", *frw);
-
-	    /* notreached */
-	    return;
-	}
-    }
-}
-
 static json5_token_t *json5_token_identifier (json5_token_t *ct, json5_unicode_string_t *s, json5_token_t *ft)
 {
     ct->next = (json5_token_t *) malloc (sizeof (json5_token_t));
@@ -927,28 +874,6 @@ static json5_token_t *json5_token_identifier (json5_token_t *ct, json5_unicode_s
 	ct->value->u.s = json5_token_UES_identifier (s, ft, ct->start, ct->end);
 
 	s->i = ct->start;
-
-	/*
-	 * Bah!  Read the small print.
-	 *
-	 * The json5_token_reserved_identifiers() call will tease out
-	 * any use of reserved or future reserved words being used as
-	 * member names.
-	 *
-	 * However, as Jordan Tucker notes in
-	 * https://github.com/json5/json5-tests/issues/2#issuecomment-632983466,
-	 * a JSON5Identifier is just an IdentifierName, ie. accords
-	 * with the syntax, but is not constrained by the ECMAScript
-	 * rules for Identifiers,
-	 * https://262.ecma-international.org/5.1/#sec-7.6, which are
-	 * IdentifierNames but disallow reserved words.
-	 *
-	 * JSON5Identifier != (ECMAScript) Identifier
-	 */
-	/*
-	  size_t slen = ct->end - ct->start;
-	  json5_token_reserved_identifiers (s, slen);
-	*/
     }
     s->i = ct->end;
 

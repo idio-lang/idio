@@ -202,12 +202,12 @@
 IDIO_IA_T idio_ia (size_t n);
 void idio_ia_free (IDIO_IA_T ia);
 void idio_ia_push (IDIO_IA_T ia, IDIO_I ins);
-idio_ai_t idio_codegen_extend_constants (IDIO cs, IDIO v);
+idio_as_t idio_codegen_extend_constants (IDIO cs, IDIO v);
 idio_ai_t idio_codegen_constants_lookup (IDIO cs, IDIO v);
-idio_ai_t idio_codegen_constants_lookup_or_extend (IDIO cs, IDIO v);
-idio_ai_t idio_codegen_extend_src_constants (IDIO cs, IDIO v);
+idio_as_t idio_codegen_constants_lookup_or_extend (IDIO cs, IDIO v);
+idio_as_t idio_codegen_extend_src_constants (IDIO cs, IDIO v);
 void idio_codegen_code_prologue (IDIO_IA_T ia);
-idio_ai_t idio_codegen (IDIO thr, IDIO m, IDIO cs);
+idio_pc_t idio_codegen (IDIO thr, IDIO m, IDIO cs);
 
 char *idio_constant_i_code_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 

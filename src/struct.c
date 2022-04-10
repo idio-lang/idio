@@ -354,7 +354,7 @@ return the fields of struct type `st`		\n\
 
     IDIO r = idio_S_nil;
     size_t size = IDIO_STRUCT_TYPE_SIZE (st);
-    idio_ai_t i;		/* will go negative */
+    ssize_t i;		/* will go negative */
     for (i = size - 1; i >=0 ; i--) {
 	r = idio_pair (IDIO_STRUCT_TYPE_FIELDS (st, i), r);
     }
@@ -444,7 +444,7 @@ IDIO idio_allocate_struct_instance_size (IDIO st, size_t size, int fill)
     IDIO_GC_ALLOC (si->u.struct_instance->fields, size * sizeof (struct idio_s));
 
     if (fill) {
-	idio_ai_t i = 0;
+	size_t i = 0;
 	for (i = 0; i < size; i++) {
 	    IDIO_STRUCT_INSTANCE_FIELDS (si, i) = idio_S_nil;
 	}
@@ -471,8 +471,8 @@ IDIO idio_struct_instance (IDIO st, IDIO values)
 
     IDIO si = idio_allocate_struct_instance (st, 0);
 
-    idio_ai_t i = idio_list_length (values);
-    idio_ai_t size = IDIO_STRUCT_TYPE_SIZE (st);
+    size_t i = idio_list_length (values);
+    size_t size = IDIO_STRUCT_TYPE_SIZE (st);
 
     if (i < size) {
 	/*
@@ -523,8 +523,8 @@ IDIO idio_struct_instance_copy (IDIO si)
 
     IDIO sic = idio_allocate_struct_instance (IDIO_STRUCT_INSTANCE_TYPE (si), 0);
 
-    idio_ai_t size = IDIO_STRUCT_INSTANCE_SIZE (si);
-    idio_ai_t i;
+    size_t size = IDIO_STRUCT_INSTANCE_SIZE (si);
+    size_t i;
     for (i = 0; i < size; i++) {
 	IDIO_STRUCT_INSTANCE_FIELDS (sic, i) = IDIO_STRUCT_INSTANCE_FIELDS (si, i);
     }
@@ -637,7 +637,7 @@ return the struct type fields of struct instance `si`	\n\
 
     IDIO r = idio_S_nil;
     size_t size = IDIO_STRUCT_INSTANCE_SIZE (si);
-    idio_ai_t i;		/* will go negative */
+    ssize_t i;		/* will go negative */
     for (i = size - 1; i >=0 ; i--) {
 	r = idio_pair (IDIO_STRUCT_INSTANCE_FIELDS (si, i), r);
     }
@@ -654,20 +654,11 @@ return the struct type fields of struct instance `si`	\n\
  * Return:
  * The index of the first matching element or -1.
  */
-idio_ai_t idio_struct_type_find_eqp (IDIO st, IDIO e, idio_ai_t index)
+ssize_t idio_struct_type_find_eqp (IDIO st, IDIO e, size_t index)
 {
     IDIO_ASSERT (st);
 
     IDIO_TYPE_ASSERT (struct_type, st);
-
-    if (index < 0) {
-	/*
-	 * Code coverage:
-	 *
-	 * Coding error.
-	 */
-	return -1;
-    }
 
     if (index >= IDIO_STRUCT_TYPE_SIZE (st)) {
 	/*
@@ -696,7 +687,7 @@ IDIO idio_struct_instance_ref (IDIO si, IDIO field)
     IDIO_TYPE_ASSERT (symbol, field);
 
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (si);
-    idio_ai_t i = idio_struct_type_find_eqp (sit, field, 0);
+    ssize_t i = idio_struct_type_find_eqp (sit, field, 0);
 
     if (-1 == i) {
 	/*
@@ -743,7 +734,7 @@ return field `field` of struct instance `si`	\n\
     return idio_struct_instance_ref (si, field);
 }
 
-IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index)
+IDIO idio_struct_instance_ref_direct (IDIO si, ssize_t index)
 {
     IDIO_ASSERT (si);
 
@@ -765,7 +756,7 @@ IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index)
 	return idio_S_notreached;
     }
 
-    if (index >= IDIO_STRUCT_INSTANCE_SIZE (si)) {
+    if (index >= (ssize_t) IDIO_STRUCT_INSTANCE_SIZE (si)) {
 	/*
 	 * Test Case: struct-errors/struct-instance-ref-direct-non-existent.idio
 	 *
@@ -872,7 +863,7 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
     IDIO_TYPE_ASSERT (symbol, field);
 
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (si);
-    idio_ai_t i = idio_struct_type_find_eqp (sit, field, 0);
+    ssize_t i = idio_struct_type_find_eqp (sit, field, 0);
 
     if (-1 == i) {
 	/*
@@ -924,7 +915,7 @@ set field `field` of struct instance `si` to `v`\n\
     return idio_struct_instance_set (si, field, v);
 }
 
-IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v)
+IDIO idio_struct_instance_set_direct (IDIO si, ssize_t index, IDIO v)
 {
     IDIO_ASSERT (si);
     IDIO_ASSERT (v);
@@ -947,7 +938,7 @@ IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v)
 	return idio_S_notreached;
     }
 
-    if (index >= IDIO_STRUCT_INSTANCE_SIZE (si)) {
+    if (index >= (ssize_t) IDIO_STRUCT_INSTANCE_SIZE (si)) {
 	/*
 	 * Test Case: struct-errors/struct-instance-set-direct-non-existent.idio
 	 *

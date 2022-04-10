@@ -50,7 +50,7 @@ int idio_isa_substring (IDIO so);
 void idio_free_substring (IDIO so);
 size_t idio_string_len (IDIO so);
 char *idio_string_as_C (IDIO so, size_t *sizep);
-IDIO idio_string_ref_C (IDIO s, size_t i);
+IDIO idio_string_ref_C (IDIO s, ssize_t i);
 IDIO idio_string_ref (IDIO s, IDIO index);
 IDIO idio_string_set (IDIO s, IDIO index, IDIO c);
 int idio_string_equal (IDIO s1, IDIO s2);

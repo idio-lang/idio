@@ -37,6 +37,10 @@ isources	:= $(wildcard $(LIBDIR)/*.idio) $(wildcard $(LIBDIR)/bootstrap/*.idio)
 
 LD_SONAME_FLAGS	:=
 
+# Yes, I know there's an arithmetic shift left of a signed variable!
+# XXX older compilers (gcc-4?) don't support the option
+CFLAGS		:= -Wno-shift-negative-value
+
 ifeq ($(OS),Darwin)
 
 LIBFFI_INCDIR	:= /usr/include/ffi
@@ -47,10 +51,8 @@ LIBFFI_INCDIR	:= $(shell find ${XCODE_DIR} -type d -name ffi | tail -1)
 endif
 
 ifeq ($(REV),9.8.0)
+# No -Wno-shift-negative-value option
 CFLAGS		:=
-else
-# Yes, I know there's an arithmetic shift left of a signed variable!
-CFLAGS		:= -Wno-shift-negative-value
 endif
 
 LDFLAGS		:= -rdynamic
@@ -67,26 +69,52 @@ CFLAGS		:= -m64 $(CFLAGS) # -fsanitize=undefined
 LDFLAGS		:= -m64 -Wl,-Map=map $(LDFLAGS)
 endif
 
-ifneq (,$(findstring centos-6,$(HOSTNAME)))
+ifeq (,$(wildcard /etc/os-release))
+
+# CentOS 6 doesn't have /etc/os-release
+ifneq (,$(findstring .el6.,$(REV)))
 LIBS		:= -lrt $(LIBS)
 endif
 
-ifneq (,$(findstring debian-,$(HOSTNAME)))
+else
+
+ID		:= $(shell grep ^ID= /etc/os-release)
+VERSION_ID	:= $(shell grep ^VERSION_ID= /etc/os-release)
+
+ifeq (ID=debian,$(ID))
+ifneq (,$(findstring 10,$(VERSION_ID)))
+# Careful: also includes RPi4 in 64-bit?
+ifeq (,$(wildcard /etc/apt/sources.list.d/raspi.list))
 CC		:= gcc-8
 endif
+endif
+endif
 
-ifneq (,$(findstring ubuntu-18,$(HOSTNAME)))
+ifeq (ID=ubuntu,$(ID))
+ifneq (,$(findstring 18,$(VERSION_ID)))
 CC		:= gcc-8
+endif
+endif
+
 endif
 
 else ifeq ($(OS),SunOS)
+
+VER		:= $(shell uname -v)
+
+# OpenIndiana Development (pre-OpenIndiana Hipster)
+ifneq (,$(findstring oi_,$(VER)))
+# No -Wno-shift-negative-value option
+CFLAGS		:=
+endif
 
 CC		:= gcc
 LIBFFI_INCDIR	= $(wildcard /usr/lib/$(shell isainfo -k | grep -v i386)/libffi-*/include)
 LDFLAGS		:= -L/usr/local/lib -R/usr/local/lib
 LD_SONAME_FLAGS	:= -Wl,-soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
 LIBS		:= -ldl
-CFLAGS		:= -D_POSIX_PTHREAD_SEMANTICS -D__EXTENSIONS__
+CFLAGS		:= -D_POSIX_PTHREAD_SEMANTICS -D__EXTENSIONS__ $(CFLAGS)
+
 # Oracle Solaris 11.4
 ifneq (,$(wildcard /etc/os-release))
 
@@ -95,6 +123,7 @@ ifneq (,$(wildcard /etc/os-release))
 
 CFLAGS		:= -D__USE_DRAFT6_PROTOTYPES__ -D__XPG7_THREAD_MODEL__ $(CFLAGS)
 endif
+
 M64		:= $(filter %64, $(shell isainfo))
 ifeq ($(M64),amd64)
 CFLAGS		:= -m64 $(CFLAGS)
@@ -113,9 +142,6 @@ LIBFFI_INCDIR	:= /usr/local/include
 LDFLAGS		:= -Xlinker --export-dynamic -L/usr/local/lib
 LD_SONAME_FLAGS	:= -Wl,--soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
 
-# Yes, I know there's an arithmetic shift left of a signed variable!
-CFLAGS		:= -Wno-shift-negative-value
-
 else ifeq ($(OS),OpenBSD)
 
 CC		:= cc		# clang
@@ -124,7 +150,7 @@ LIBFFI_INCDIR	:= /usr/local/include
 LDFLAGS		:= -Xlinker --export-dynamic -L/usr/local/lib
 LD_SONAME_FLAGS	:= -Wl,--soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
 
-CFLAGS		:= -DIDIO_DEV_FD
+CFLAGS		:= -DIDIO_DEV_FD $(CFLAGS)
 
 else ifeq ($(OS),NetBSD)
 
@@ -133,7 +159,7 @@ CC		:= gcc
 LDFLAGS		:= -Xlinker --export-dynamic -L/usr/local/lib
 LD_SONAME_FLAGS	:= -Wl,--soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
 
-CFLAGS		:= -DIDIO_DEV_FD
+CFLAGS		:= -DIDIO_DEV_FD $(CFLAGS)
 
 endif
 

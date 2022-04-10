@@ -1103,7 +1103,7 @@ IDIO idio_module_direct_reference (IDIO name)
 		     * the same: the symbols M/S is not the same as
 		     * the symbol S.
 		     */
-		    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
+		    idio_as_t mci = idio_vm_constants_lookup_or_extend (name);
 		    r = IDIO_LIST3 (m_sym,
 				    s_sym,
 				    IDIO_LIST5 (IDIO_PAIR_H (si), idio_fixnum (mci), IDIO_PAIR_HTT (si), mod, idio_module_direct_reference_string));
@@ -1740,10 +1740,10 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	 */
 	scope = idio_S_toplevel;
 
-	idio_ai_t mci = idio_vm_constants_lookup_or_extend (symbol);
+	idio_as_t mci = idio_vm_constants_lookup_or_extend (symbol);
 	fmci = idio_fixnum (mci);
 
-	idio_ai_t gvi = idio_vm_extend_values ();
+	idio_as_t gvi = idio_vm_extend_values ();
 	fgvi = idio_fixnum (gvi);
 
 	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST5 (scope, fmci, fgvi, module, idio_module_set_symbol_value_string));
@@ -1921,9 +1921,9 @@ IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO modu
     IDIO fgvi;
 
     if (idio_S_unspec == sv) {
-	idio_ai_t mci = idio_vm_constants_lookup_or_extend (symbol);
+	idio_as_t mci = idio_vm_constants_lookup_or_extend (symbol);
 	scope = idio_S_computed;
-	idio_ai_t gvi = idio_vm_extend_values ();
+	idio_as_t gvi = idio_vm_extend_values ();
 	fgvi = idio_fixnum (gvi);
 
 	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST5 (scope,
@@ -2237,13 +2237,13 @@ void idio_init_module ()
     IDIO Iname = IDIO_SYMBOLS_C_INTERN ("Idio");
     idio_Idio_module = idio_module (Iname);
     IDIO_MODULE_IMPORTS (idio_Idio_module) = idio_S_nil;
-    idio_ai_t Im_gci = idio_vm_constants_lookup_or_extend (Iname);
-    idio_ai_t Im_gvi = idio_vm_extend_values ();
+    idio_as_t Im_gci = idio_vm_constants_lookup_or_extend (Iname);
+    idio_as_t Im_gvi = idio_vm_extend_values ();
 
     IDIO dname = IDIO_SYMBOLS_C_INTERN ("debugger");
     idio_debugger_module = idio_module (dname);
-    idio_ai_t dm_gci = idio_vm_constants_lookup_or_extend (dname);
-    idio_ai_t dm_gvi = idio_vm_extend_values ();
+    idio_as_t dm_gci = idio_vm_constants_lookup_or_extend (dname);
+    idio_as_t dm_gvi = idio_vm_extend_values ();
 
     idio_module_set_symbol (Iname, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (Im_gci), idio_fixnum (Im_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
 

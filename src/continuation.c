@@ -154,7 +154,7 @@ char *idio_continuation_as_C_string (IDIO v, size_t *sizep, idio_unicode_t forma
     char *r = NULL;
 
     IDIO ks = IDIO_CONTINUATION_STACK (v);
-    idio_ai_t kss;
+    idio_sp_t kss;
     char *kind = "";
     if (IDIO_CONTINUATION_FLAGS (v) & IDIO_CONTINUATION_FLAG_DELIMITED) {
 	kind = "D";

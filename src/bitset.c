@@ -1168,7 +1168,7 @@ char *idio_bitset_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	idio_bitset_word_t ul_bits = IDIO_BITSET_WORDS (v, i);
 
 	if (ul_bits) {
-	    int b;
+	    unsigned int b;
 	    for (b = 0; count < bs_size &&
 		     b < sizeof (idio_bitset_word_t); b++) {
 		/*

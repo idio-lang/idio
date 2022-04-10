@@ -593,7 +593,7 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	gc->grey = IDIO_FRAME_GREY (o);
 	idio_gc_gcc_mark (gc, IDIO_FRAME_NEXT (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_FRAME_NAMES (o), colour);
-	for (i = 0; i < IDIO_FRAME_NALLOC (o); i++) {
+	for (i = 0; i < (size_t) IDIO_FRAME_NALLOC (o); i++) {
 	    idio_gc_gcc_mark (gc, IDIO_FRAME_ARGS (o, i), colour);
 	}
 	break;
@@ -838,7 +838,7 @@ void idio_gc_dump ()
 	o = o->next;
 	n++;
     }
-    IDIO_C_ASSERT (n == idio_gc->stats.nfree);
+    IDIO_C_ASSERT (n == (size_t) idio_gc->stats.nfree);
 
     o = idio_gc->used;
     n = 0;
@@ -1857,8 +1857,8 @@ void idio_gc_stats ()
 	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  bounces\n", count, scales[scale]);
 
 	    int i;
-	    int tgets = 0;
-	    int nused = 0;
+	    long long tgets = 0;
+	    long long nused = 0;
 	    for (i = 1; i < IDIO_TYPE_MAX; i++) {
 		tgets += gc->stats.tgets[i];
 		nused += gc->stats.nused[i];
@@ -2114,7 +2114,7 @@ void idio_gc_obj_free ()
 	    IDIO_GC_FREE (co, sizeof (idio_t));
 	    n++;
 	}
-	IDIO_C_ASSERT (n == gc->stats.nfree);
+	IDIO_C_ASSERT (n == (size_t) gc->stats.nfree);
 
 	n = 0;
 	while (gc->used) {

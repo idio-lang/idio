@@ -658,7 +658,7 @@ int idio_usi_codepoint_is_category (idio_unicode_t cp, int cat)
     int r = 0;
 
     const idio_USI_t *var = idio_USI_codepoint (cp);
-    if (cat == var->category) {
+    if (cat == (int) var->category) {
 	r = 1;
     }
 

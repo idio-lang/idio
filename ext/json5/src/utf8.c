@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -81,7 +81,7 @@ static const uint8_t json5_utf8d[] = {
     12,36,12,12,12,12,12,12,12,12,12,12,
 };
 
-static json5_unicode_t inline json5_utf8_decode (json5_unicode_t* state, json5_unicode_t* codep, json5_unicode_t byte)
+inline static json5_unicode_t json5_utf8_decode (json5_unicode_t* state, json5_unicode_t* codep, json5_unicode_t byte)
 {
     json5_unicode_t type = json5_utf8d[byte];
 

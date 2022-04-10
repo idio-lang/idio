@@ -105,10 +105,10 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, char c
 	return fvi;
     }
 
-    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
+    idio_as_t mci = idio_vm_constants_lookup_or_extend (name);
     IDIO fmci = idio_fixnum (mci);
 
-    idio_ai_t gvi = idio_vm_extend_values ();
+    idio_as_t gvi = idio_vm_extend_values ();
     IDIO fgvi = idio_fixnum (gvi);
 
     idio_module_set_vci (module, fmci, fmci);
@@ -174,13 +174,13 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
 
     idio_thread_set_current_thread (ethr);
 
-    idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
+    idio_pc_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
     idio_initial_expander (x, e);
     IDIO r = idio_vm_run_C (ethr, IDIO_THREAD_PC (ethr));
 
-    idio_ai_t pc = IDIO_THREAD_PC (ethr);
+    idio_pc_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
 	IDIO_THREAD_PC (ethr) = pc0;
     }
@@ -779,13 +779,13 @@ IDIO idio_evaluate_expander_code (IDIO m, IDIO cs)
 
     idio_thread_set_current_thread (ethr);
 
-    idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
+    idio_pc_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
-    idio_ai_t cg_pc = idio_codegen (ethr, m, cs);
+    idio_pc_t cg_pc = idio_codegen (ethr, m, cs);
     IDIO r = idio_vm_run_C (ethr, cg_pc);
 
-    idio_ai_t pc = IDIO_THREAD_PC (ethr);
+    idio_pc_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
 	IDIO_THREAD_PC (ethr) = pc0;
     }
@@ -1039,7 +1039,7 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
 
     idio_thread_set_current_thread (ethr);
 
-    idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
+    idio_pc_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
     idio_apply (func, IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
@@ -1056,7 +1056,7 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_vm_prim_time (func, &prim_t0, &prim_te, &prim_ru0, &prim_rue);
 #endif
 
-    idio_ai_t pc = IDIO_THREAD_PC (ethr);
+    idio_pc_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
 	IDIO_THREAD_PC (ethr) = pc0;
     }

@@ -246,7 +246,7 @@ static void idio_meaning_base_error (IDIO src, IDIO c_location, IDIO msg, IDIO e
      * So, let's give the error subsystem a clue by copying what the
      * code generator does for normal calls.
      */
-    idio_ai_t mci = idio_codegen_extend_src_constants (idio_vm_src_constants, src);
+    idio_as_t mci = idio_codegen_extend_src_constants (idio_vm_src_constants, src);
     IDIO thr = idio_thread_current_thread ();
     IDIO_THREAD_EXPR (thr) = idio_fixnum (mci);
 
@@ -563,11 +563,11 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
 	}
     }
 
-    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
+    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
     idio_module_set_vci (module, fmci, fmci);
 
-    idio_ai_t gvi = idio_vm_extend_values ();
+    idio_as_t gvi = idio_vm_extend_values ();
     IDIO fgvi = idio_fixnum (gvi);
 
     idio_module_set_vvi (module, fmci, fgvi);
@@ -677,7 +677,7 @@ IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO cs, IDIO cm)
     }
 #endif
 
-    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
+    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
     /*
@@ -723,10 +723,10 @@ IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO cs)
 	}
     }
 
-    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
+    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
-    idio_ai_t gvi = idio_vm_extend_values ();
+    idio_as_t gvi = idio_vm_extend_values ();
     IDIO fgvi = idio_fixnum (gvi);
 
     si = idio_vm_add_dynamic (im, fmci, fgvi, idio_meaning_dynamic_extend_string);
@@ -770,10 +770,10 @@ IDIO idio_environ_extend (IDIO src, IDIO name, IDIO val, IDIO cs)
 	}
     }
 
-    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
+    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
-    idio_ai_t gvi = idio_vm_extend_values ();
+    idio_as_t gvi = idio_vm_extend_values ();
     IDIO fgvi = idio_fixnum (gvi);
 
     si = idio_vm_add_environ (im, fmci, fgvi, idio_meaning_environ_extend_string);
@@ -1910,7 +1910,7 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, IDI
     IDIO fgvi = IDIO_PAIR_HTT (si);
     if (idio_S_toplevel == scope &&
 	0 == IDIO_FIXNUM_VAL (fgvi)) {
-	idio_ai_t gvi = idio_vm_extend_values ();
+	idio_as_t gvi = idio_vm_extend_values ();
 	fgvi = idio_fixnum (gvi);
 	si = IDIO_LIST5 (scope, fmci, fgvi, cm, idio_meaning_define_gvi0_string);
 	idio_module_set_symbol (name, si, cm);
@@ -2132,7 +2132,7 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
      *
      * The vi is because this is definitely a define
      */
-    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
+    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
     IDIO ce = idio_thread_current_env ();
@@ -2173,7 +2173,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
     /*
      * Step 1: find the existing symbol for {name} or create a new one
      */
-    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
+    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
     idio_module_set_symbol (name,
@@ -2277,7 +2277,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
     /*
      * Step 1: find the existing symbol for {name} or create a new one
      */
-    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
+    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
     idio_module_set_symbol (name,
@@ -4094,7 +4094,7 @@ static IDIO idio_meaning_escape_block (IDIO src, IDIO label, IDIO be, IDIO namet
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, label);
+    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, label);
     IDIO fmci = idio_fixnum (mci);
 
     be = idio_meaning_rewrite_body (IDIO_MPP (be, src), be, nametree);
@@ -4139,7 +4139,7 @@ static IDIO idio_meaning_escape_from (IDIO src, IDIO label, IDIO ve, IDIO nametr
 	return idio_S_notreached;
     }
 
-    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, label);
+    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, label);
     IDIO fmci = idio_fixnum (mci);
 
     IDIO vm = idio_meaning (IDIO_MPP (ve, src), ve, nametree, escapes, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
@@ -4178,7 +4178,7 @@ static IDIO idio_meaning_escape_label (IDIO src, IDIO label, IDIO ve, IDIO namet
 	return idio_S_notreached;
     }
 
-    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, label);
+    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, label);
     IDIO fmci = idio_fixnum (mci);
 
     if (idio_isa_pair (ve)) {
@@ -4209,11 +4209,11 @@ static IDIO idio_meaning_include (IDIO src, IDIO e, IDIO nametree, IDIO escapes,
     IDIO_TYPE_ASSERT (module, cm);
 
     IDIO thr = idio_thread_current_thread ();
-    idio_ai_t pc0 = IDIO_THREAD_PC (thr);
+    idio_pc_t pc0 = IDIO_THREAD_PC (thr);
 
     idio_load_file_name (e, cs);
 
-    idio_ai_t pc = IDIO_THREAD_PC (thr);
+    idio_pc_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
 	IDIO_THREAD_PC (thr) = pc0;
     }

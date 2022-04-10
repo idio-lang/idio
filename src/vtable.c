@@ -342,8 +342,8 @@ void idio_vtable_add_method_name (IDIO name)
 
     IDIO_TYPE_ASSERT (symbol, name);
 
-    idio_ai_t al = IDIO_ARRAY_USIZE (idio_vtable_method_names);
-    for (idio_ai_t i = 0; i < al; i++) {
+    idio_as_t al = IDIO_ARRAY_USIZE (idio_vtable_method_names);
+    for (idio_as_t i = 0; i < al; i++) {
 	if (idio_eqp (name, IDIO_ARRAY_AE (idio_vtable_method_names, i))) {
 	    return;
 	}

@@ -273,7 +273,7 @@ IDIO idio_bignum_integer_uintmax_t (uintmax_t ui);
 IDIO idio_bignum_integer (IDIO_BSA sig_a);
 int idio_bignum_real_zero_p (IDIO a);
 int idio_bignum_real_equal_p (IDIO a, IDIO b);
-IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BE_T desired_exp, size_t max_size);
+IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BE_T desired_exp, IDIO_BE_T max_digits);
 IDIO idio_bignum_integer_argument (IDIO bn);
 int64_t idio_bignum_int64_t_value (IDIO bn);
 uint64_t idio_bignum_uint64_t_value (IDIO bn);

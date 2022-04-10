@@ -128,7 +128,7 @@ void idio_ia_append (IDIO_IA_T ia1, IDIO_IA_T ia2)
     if ((IDIO_IA_ASIZE (ia1) - IDIO_IA_USIZE (ia1)) < IDIO_IA_USIZE (ia2)) {
 	idio_ia_resize_by (ia1, IDIO_IA_USIZE (ia2));
     }
-    size_t i;
+    idio_pc_t i;
     for (i = 0; i < IDIO_IA_USIZE (ia2); i++) {
 	IDIO_IA_AE (ia1, IDIO_IA_USIZE (ia1)++) = IDIO_IA_AE (ia2, i);
     }
@@ -139,7 +139,7 @@ void idio_ia_copy (IDIO_IA_T iad, IDIO_IA_T ias)
     if (IDIO_IA_ASIZE (iad) < IDIO_IA_USIZE (ias)) {
 	idio_ia_resize_by (iad, IDIO_IA_USIZE (ias) - IDIO_IA_ASIZE (iad));
     }
-    size_t i;
+    idio_pc_t i;
     for (i = 0; i < IDIO_IA_USIZE (ias); i++) {
 	IDIO_IA_AE (iad, i) = IDIO_IA_AE (ias, i);
     }
@@ -308,13 +308,13 @@ IDIO_IA_T idio_ia_compute_64uint (uint64_t offset)
  */
 #define IDIO_IA_PUSH_REF(n)	IDIO_IA_PUSH_16UINT (n)
 
-idio_ai_t idio_codegen_extend_constants (IDIO cs, IDIO v)
+idio_as_t idio_codegen_extend_constants (IDIO cs, IDIO v)
 {
     IDIO_ASSERT (cs);
     IDIO_ASSERT (v);
     IDIO_TYPE_ASSERT (array, cs);
 
-    idio_ai_t gci = idio_array_size (cs);
+    idio_as_t gci = idio_array_size (cs);
     idio_array_push (cs, v);
     if (idio_S_nil != v) {
 	idio_hash_put (idio_vm_constants_hash, v, idio_fixnum (gci));
@@ -338,6 +338,7 @@ idio_ai_t idio_codegen_constants_lookup (IDIO cs, IDIO v)
 	     * So, walk through the array anyway.  Instances mean we
 	     * have to use eq?.
 	     */
+	    return -1;
 	    return idio_array_find_eqp (cs, v, 0);
 	} else {
 	    return IDIO_FIXNUM_VAL (fgci);
@@ -351,7 +352,7 @@ idio_ai_t idio_codegen_constants_lookup (IDIO cs, IDIO v)
     return idio_array_find_eqp (cs, v, 0);
 }
 
-idio_ai_t idio_codegen_constants_lookup_or_extend (IDIO cs, IDIO v)
+idio_as_t idio_codegen_constants_lookup_or_extend (IDIO cs, IDIO v)
 {
     IDIO_ASSERT (cs);
     IDIO_ASSERT (v);
@@ -380,12 +381,12 @@ Find `v` in `cs` or extend `cs`			\n\
     IDIO_ASSERT (cs);
     IDIO_ASSERT (v);
 
-    idio_ai_t gci = idio_codegen_constants_lookup_or_extend (cs, v);
+    idio_as_t gci = idio_codegen_constants_lookup_or_extend (cs, v);
 
     return idio_integer (gci);
 }
 
-idio_ai_t idio_codegen_extend_src_constants (IDIO cs, IDIO v)
+idio_as_t idio_codegen_extend_src_constants (IDIO cs, IDIO v)
 {
     IDIO_ASSERT (cs);
     IDIO_ASSERT (v);
@@ -791,8 +792,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 				}
 				return;
 			    }
-			    break;
 			}
+			break;
 		    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
 			{
 			    intptr_t v = IDIO_UNICODE_VAL (c);
@@ -809,6 +810,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 			break;
 		    }
 		}
+		break;
 	    case IDIO_TYPE_PLACEHOLDER_MARK:
 		idio_coding_error_C ("unexpected constant/PLACEHOLDER", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT"));
 
@@ -822,7 +824,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 		    IDIO_FLAGS (c) |= IDIO_FLAG_CONST;
 
-		    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, c);
+		    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, c);
 		    IDIO fmci = idio_fixnum (mci);
 		    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
 
@@ -1157,8 +1159,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 				}
 				return;
 			    }
-			    break;
 			}
+			break;
 		    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
 			{
 			    intptr_t v = IDIO_UNICODE_VAL (c);
@@ -1175,6 +1177,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 			break;
 		    }
 		}
+		break;
 	    case IDIO_TYPE_PLACEHOLDER_MARK:
 		idio_coding_error_C ("unexpected constant/PLACEHOLDER", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT"));
 
@@ -1188,7 +1191,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 		    IDIO_FLAGS (c) |= IDIO_FLAG_CONST;
 
-		    idio_ai_t gvi = idio_codegen_constants_lookup_or_extend (cs, c);
+		    idio_as_t gvi = idio_codegen_constants_lookup_or_extend (cs, c);
 		    IDIO fgvi = idio_fixnum (gvi);
 		    idio_module_set_vci (idio_thread_current_env (), fgvi, fgvi);
 
@@ -1550,7 +1553,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO mp = IDIO_PAIR_HT (mt);
 	    IDIO formals = IDIO_PAIR_HTT (mt);
 
-	    idio_ai_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
+	    idio_as_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
 
 	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
 
@@ -1574,7 +1577,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO mp = IDIO_PAIR_HT (mt);
 	    IDIO formals = IDIO_PAIR_HTT (mt);
 
-	    idio_ai_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
+	    idio_as_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
 
 	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
 
@@ -1601,7 +1604,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO mp      = IDIO_PAIR_HTTT (mt);
 	    IDIO formals = IDIO_PAIR_HTTTT (mt);
 
-	    idio_ai_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
+	    idio_as_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
 
 	    idio_codegen_compile (thr, ia, cs, m, depth + 1);
 
@@ -1787,9 +1790,9 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		return;
 	    }
 
-	    idio_ai_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
-	    idio_ai_t dsci = idio_codegen_constants_lookup_or_extend (cs, docstr);
-	    idio_ai_t slci = idio_codegen_constants_lookup_or_extend (cs, srcloc);
+	    idio_as_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
+	    idio_as_t dsci = idio_codegen_constants_lookup_or_extend (cs, docstr);
+	    idio_as_t slci = idio_codegen_constants_lookup_or_extend (cs, srcloc);
 
 	    /*
 	     * Remember this is the act of creating a closure *value*
@@ -1878,7 +1881,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_codegen_compile (thr, iap, cs, mp, depth + 1);
 	    idio_ia_push (iap, IDIO_A_RETURN);
 
-	    idio_ai_t code_len = IDIO_IA_USIZE (iap);
+	    idio_pc_t code_len = IDIO_IA_USIZE (iap);
 	    if (code_len <= IDIO_IA_VARUINT_1BYTE) {
 		/* 2: */
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, 2);
@@ -1934,9 +1937,9 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		return;
 	    }
 
-	    idio_ai_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
-	    idio_ai_t dsci = idio_codegen_constants_lookup_or_extend (cs, docstr);
-	    idio_ai_t slci = idio_codegen_constants_lookup_or_extend (cs, srcloc);
+	    idio_as_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
+	    idio_as_t dsci = idio_codegen_constants_lookup_or_extend (cs, docstr);
+	    idio_as_t slci = idio_codegen_constants_lookup_or_extend (cs, srcloc);
 
 	    /*
 	     * See IDIO_I_CODE_FIX_CLOSURE for commentary.
@@ -1956,7 +1959,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_codegen_compile (thr, iap, cs, mp, depth + 1);
 	    idio_ia_push (iap, IDIO_A_RETURN);
 
-	    idio_ai_t code_len = IDIO_IA_USIZE (iap);
+	    idio_pc_t code_len = IDIO_IA_USIZE (iap);
 	    if (code_len <= IDIO_IA_VARUINT_1BYTE) {
 		/* 2: */
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, 2);
@@ -2445,7 +2448,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO m1 = IDIO_PAIR_HT (mt);
 	    mt = IDIO_PAIR_TT (mt);
 
-	    size_t n = idio_list_length (mt);
+	    ssize_t n = idio_list_length (mt);
 
 	    if (n ||
 		idio_S_false == tailp) {
@@ -2544,7 +2547,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO m1 = IDIO_PAIR_HT (mt);
 	    mt = IDIO_PAIR_TT (mt);
 
-	    size_t n = idio_list_length (mt);
+	    ssize_t n = idio_list_length (mt);
 
 	    if (n ||
 		idio_S_false == tailp) {
@@ -2871,14 +2874,14 @@ void idio_codegen_code_prologue (IDIO_IA_T ia)
 #endif
 }
 
-idio_ai_t idio_codegen (IDIO thr, IDIO m, IDIO cs)
+idio_pc_t idio_codegen (IDIO thr, IDIO m, IDIO cs)
 {
     IDIO_ASSERT (thr);
     IDIO_ASSERT (m);
     IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (pair, m);
 
-    idio_ai_t PC0 = IDIO_IA_USIZE (idio_all_code);
+    idio_pc_t PC0 = IDIO_IA_USIZE (idio_all_code);
 
     IDIO_IA_T ia = idio_ia (1024);
 
@@ -2916,7 +2919,7 @@ Generate the code for `m` using `cs` in `thr`	\n\
     IDIO_USER_TYPE_ASSERT (list, m);
     IDIO_USER_TYPE_ASSERT (array, cs);
 
-    idio_ai_t PC0 = idio_codegen (thr, m, cs);
+    idio_pc_t PC0 = idio_codegen (thr, m, cs);
 
     /*
      * When some Idio code calls {codegen} then we are already *in*

@@ -206,8 +206,8 @@ void idio_print_array_as_json (IDIO a, IDIO oh, int json5, int depth)
     int printed = 0;
     idio_display_C ("[", oh);
 
-    idio_ai_t al = IDIO_ARRAY_USIZE (a);
-    idio_ai_t ai;
+    idio_as_t al = IDIO_ARRAY_USIZE (a);
+    idio_as_t ai;
 
     for (ai = 0 ; ai < al; ai++) {
 	if (printed) {

@@ -791,8 +791,8 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void const *kv)
 	break;
     case IDIO_TYPE_ARRAY:
 	if (deep) {
-	    idio_ai_t al = IDIO_ARRAY_USIZE (k);
-	    idio_ai_t ai = 0;
+	    idio_as_t al = IDIO_ARRAY_USIZE (k);
+	    idio_as_t ai = 0;
 	    for (; ai < al; ai++) {
 		hv ^= idio_hash_default_hash_C (h, IDIO_ARRAY_AE (k, ai));
 	    }

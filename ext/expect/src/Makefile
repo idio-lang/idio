@@ -17,7 +17,7 @@ else
 CDEBUG		:=
 endif
 
-CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -I$(PWD) -I$(TOPDIR)/src $(CFLAGS) $(CDEBUG) $(COVFLAGS) $(LIBFFI_INC)
+CFLAGS		:= -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -fPIC -I$(PWD) -I$(TOPDIR)/src $(CFLAGS) $(CDEBUG) $(COVFLAGS) $(LIBFFI_INC)
 LDFLAGS		:= -L$(PWD) $(LDFLAGS) $(COVFLAGS)
 LIBS		:= $(LIBS) -lm
 

@@ -319,6 +319,8 @@ extern FILE *idio_vm_perf_FILE;
 	0,								\
 	(char *) 0,							\
 	0,								\
+	__FILE__,							\
+	__LINE__							\
     };									\
     IDIO idio_defoperator_ ## cname params
 

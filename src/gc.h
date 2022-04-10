@@ -517,9 +517,11 @@ typedef struct idio_pair_s {
  */
 
 /**
- * typedef idio_ai_t - Idio ``array`` index
+ * typedef idio_ai_t - Idio ``array`` index (can be negative)
+ * typedef idio_as_t - Idio ``array`` size
  */
-typedef ptrdiff_t idio_ai_t;
+typedef ssize_t idio_ai_t;
+typedef size_t  idio_as_t;
 
 #define IDIO_ARRAY_FLAG_NONE		0
 
@@ -534,7 +536,7 @@ struct idio_array_s {
     /**
      * @asize: allocated size
      */
-    idio_ai_t asize;
+    idio_as_t asize;
     /**
      * @usize: used size/user-visible size
      *
@@ -545,7 +547,7 @@ struct idio_array_s {
      * Push an element on (therefore at index 0 itself) will have
      * @usize be 1 -- there is one element in the array.
      */
-    idio_ai_t usize;
+    idio_as_t usize;
     /**
      * @dv: default value
      */
@@ -618,6 +620,11 @@ typedef struct idio_hash_s {
 #define IDIO_HASH_HA(H,i)	((H)->u.hash->ha[i])
 #define IDIO_HASH_FLAGS(H)	((H)->tflags)
 
+/**
+ * typedef idio_pc_t - Idio VM ``PC`` index
+ */
+typedef intptr_t idio_pc_t;
+
 /*
  * If we wanted to store the arity and varargs boolean of a closure
  * (for a possible thunk? predicate) without increasing the size of
@@ -628,8 +635,8 @@ typedef struct idio_hash_s {
  */
 typedef struct idio_closure_s {
     struct idio_s *grey;
-    size_t code_pc;
-    size_t code_len;
+    idio_pc_t code_pc;
+    idio_pc_t code_len;
     struct idio_s *frame;
     struct idio_s *env;
 #ifdef IDIO_VM_PROF
@@ -733,17 +740,17 @@ typedef struct idio_module_s {
 #define IDIO_FRAME_FLAG_PROFILE  (1<<2)
 #define IDIO_FRAME_FLAG_C_STRUCT (1<<3)
 
-#if PTRDIFF_MAX == 2147483647L
-typedef uint16_t idio_frame_args_t;
-#else
-typedef uint32_t idio_frame_args_t;
-#endif
+/**
+ * typedef idio_fi_t - Idio ``frame`` arguments index
+ * can be looped to a negative value
+ */
+typedef int idio_fi_t;
 
 typedef struct idio_frame_s {
     struct idio_s *grey;
     struct idio_s *next;
-    idio_frame_args_t nparams;	/* number in use */
-    idio_frame_args_t nalloc;	/* number allocated */
+    idio_fi_t nparams;		/* number in use */
+    idio_fi_t nalloc;		/* number allocated */
     struct idio_s *names;	/* a ref into vm_constants */
     struct idio_s* *args;
 } idio_frame_t;
@@ -890,9 +897,18 @@ typedef struct idio_struct_instance_s {
 #define IDIO_STRUCT_INSTANCE_SIZE(SI)		((SI)->u.struct_instance->size)
 #define IDIO_STRUCT_INSTANCE_FIELDS(SI,i)	((SI)->u.struct_instance->fields[i])
 
+/*
+ * The stack will be an Idio array although the code assumes the stack
+ * pointer is a fixnum.
+ *
+ * Often a stack pointer of -1 is used as a sentinal value so keep it
+ * signed.
+ */
+typedef intptr_t idio_sp_t;
+
 typedef struct idio_thread_s {
     struct idio_s *grey;
-    idio_ai_t pc;
+    idio_pc_t pc;
     struct idio_s *stack;
     struct idio_s *val;
 
@@ -1010,7 +1026,7 @@ typedef struct idio_thread_s {
 
 typedef struct idio_continuation_s {
     struct idio_s *grey;
-    idio_ai_t pc;
+    idio_pc_t pc;
     struct idio_s *stack;
     struct idio_s *frame;
     struct idio_s *env;
@@ -1285,22 +1301,22 @@ typedef struct idio_gc_s {
     IDIO used;
     IDIO grey;
     IDIO weak;
-    unsigned int pause;
+    int pause;
     unsigned char verbose;
     unsigned char inst;
     IDIO_FLAGS_T flags;		/* generic GC flags */
     struct stats {
-	unsigned long long nfree; /* # on free list */
-	unsigned long long tgets[IDIO_TYPE_MAX];
-	unsigned long long igets; /* gets since last collection */
-	unsigned long long mgets; /* max igets */
-	unsigned long long reuse; /* objects from free list */
-	unsigned long long allocs; /* # allocations */
-	unsigned long long tbytes; /* # bytes ever allocated */
-	unsigned long long nbytes; /* # bytes currently allocated */
-	unsigned long long nused[IDIO_TYPE_MAX]; /* per-type usage */
-	unsigned long long collections;	/* # times gc has been run */
-	unsigned long long bounces;
+	long long nfree; /* # on free list */
+	long long tgets[IDIO_TYPE_MAX];
+	long long igets; /* gets since last collection */
+	long long mgets; /* max igets */
+	long long reuse; /* objects from free list */
+	long long allocs; /* # allocations */
+	long long tbytes; /* # bytes ever allocated */
+	long long nbytes; /* # bytes currently allocated */
+	long long nused[IDIO_TYPE_MAX]; /* per-type usage */
+	long long collections;	/* # times gc has been run */
+	long long bounces;
 	struct timeval dur;
 	struct timeval ru_utime;
 	struct timeval ru_stime;
@@ -1517,8 +1533,8 @@ typedef struct idio_gc_s {
  * Used in both codegen.c and vm.c.
  */
 typedef struct idio_ia_s {
-    size_t asize;		/* alloc()'d */
-    size_t usize;		/* used */
+    idio_pc_t asize;		/* alloc()'d */
+    idio_pc_t usize;		/* used */
     IDIO_I *ae;
 } idio_ia_t;
 

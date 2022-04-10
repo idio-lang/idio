@@ -60,7 +60,7 @@ static IDIO idio_running_threads;
 static IDIO idio_running_thread = idio_S_nil;
 IDIO idio_threading_module = idio_S_nil;
 
-IDIO idio_thread_base (idio_ai_t stack_size)
+IDIO idio_thread_base (idio_as_t stack_size)
 {
     IDIO t = idio_gc_get (IDIO_TYPE_THREAD);
     t->vtable = idio_vtable (IDIO_TYPE_THREAD);
@@ -106,7 +106,7 @@ IDIO idio_thread_base (idio_ai_t stack_size)
     return t;
 }
 
-IDIO idio_thread (idio_ai_t stack_size)
+IDIO idio_thread (idio_as_t stack_size)
 {
     IDIO t = idio_thread_base (stack_size);
 
@@ -283,7 +283,7 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
      * Not usually user-visible.
      */
     seen = idio_pair (v, seen);
-    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (v));
+    idio_as_t sp = idio_array_size (IDIO_THREAD_STACK (v));
     *sizep = idio_asprintf (&r, "#<THR %10p\n  pc=%6zd\n  sp/top=%2zd/",
 			    v,
 			    IDIO_THREAD_PC (v),
@@ -360,7 +360,7 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	    IDIO fmci = IDIO_THREAD_EXPR (v);
 	    if (idio_isa_fixnum (fmci)) {
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
-		idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
+		intptr_t gci = IDIO_FIXNUM_VAL (fgci);
 
 		IDIO src = idio_vm_src_constants_ref (gci);
 

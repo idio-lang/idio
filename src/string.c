@@ -126,7 +126,7 @@ static void idio_string_utf8_decode_error (char const *msg, char const *det, IDI
     /* notreached */
 }
 
-void idio_string_size_error (char const *msg, ptrdiff_t size, IDIO c_location)
+void idio_string_size_error (char const *msg, ssize_t size, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -147,7 +147,7 @@ void idio_string_size_error (char const *msg, ptrdiff_t size, IDIO c_location)
     /* notreached */
 }
 
-void idio_string_length_error (char const *msg, IDIO str, ptrdiff_t index, IDIO c_location)
+void idio_string_length_error (char const *msg, IDIO str, ssize_t index, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
@@ -180,7 +180,7 @@ void idio_string_length_error (char const *msg, IDIO str, ptrdiff_t index, IDIO 
  *
  * Not triggered as I can't provoke the clauses!
  */
-void idio_substring_length_error (char const *msg, IDIO str, ptrdiff_t index, IDIO c_location)
+void idio_substring_length_error (char const *msg, IDIO str, ssize_t index, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
@@ -208,7 +208,7 @@ void idio_substring_length_error (char const *msg, IDIO str, ptrdiff_t index, ID
     /* notreached */
 }
 
-void idio_substring_index_error (char const *msg, IDIO str, ptrdiff_t ip0, ptrdiff_t ipn, IDIO c_location)
+void idio_substring_index_error (char const *msg, IDIO str, ssize_t ip0, ssize_t ipn, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
@@ -798,8 +798,6 @@ void idio_free_string (IDIO so)
 IDIO idio_substring_offset_len (IDIO str, size_t const offset, size_t const len)
 {
     IDIO_ASSERT (str);
-    IDIO_C_ASSERT (offset >= 0);
-    IDIO_C_ASSERT (len >= 0);
 
     size_t width = idio_string_storage_size (str);
 
@@ -934,7 +932,7 @@ create a string with an initial length of `size`\n\
     IDIO_ASSERT (size);
     IDIO_ASSERT (args);
 
-    ptrdiff_t cp_count = -1;
+    ssize_t cp_count = -1;
 
     if (idio_isa_fixnum (size)) {
 	cp_count = IDIO_FIXNUM_VAL (size);
@@ -1066,7 +1064,7 @@ create a string with an initial length of `size`\n\
     uint16_t *us16 = (uint16_t *) IDIO_STRING_S (so);
     uint32_t *us32 = (uint32_t *) IDIO_STRING_S (so);
 
-    size_t i;
+    ssize_t i;
     for (i = 0; i < cp_count; i++) {
 	switch (flags) {
 	case IDIO_STRING_FLAG_1BYTE:
@@ -1217,7 +1215,7 @@ return a list of the Unicode code points in `s`	\n\
 
     IDIO r = idio_S_nil;
 
-    ptrdiff_t si;
+    ssize_t si;
     for (si = slen - 1; si >=0; si--) {
 	switch (width) {
 	case 1:
@@ -1463,13 +1461,13 @@ a string.								\n\
 
     IDIO r = idio_S_nil;
 
-    ptrdiff_t ns = idio_list_length (args);
+    ssize_t ns = idio_list_length (args);
     if (ns) {
 	char *copies[ns];
 	size_t lens[ns];
 	int substring[ns];
 
-	ptrdiff_t si;
+	ssize_t si;
 	for (si = 0; si < ns ; si++) {
 	    copies[si] = NULL;
 	    lens[si] = 0;
@@ -1844,7 +1842,7 @@ return the number of code points in `s`		\n\
     return idio_integer (idio_string_len (s));
 }
 
-IDIO idio_string_ref_C (IDIO s, size_t i)
+IDIO idio_string_ref_C (IDIO s, ssize_t i)
 {
     IDIO_ASSERT (s);
 
@@ -1853,7 +1851,7 @@ IDIO idio_string_ref_C (IDIO s, size_t i)
     uint8_t *s8 = NULL;
     uint16_t *s16 = NULL;
     uint32_t *s32 = NULL;
-    size_t slen = -1;
+    ssize_t slen = -1;
     size_t width = idio_string_storage_size (s);
 
     if (idio_isa_substring (s)) {
@@ -1925,7 +1923,7 @@ IDIO idio_string_ref (IDIO s, IDIO index)
 
     IDIO_TYPE_ASSERT (string, s);
 
-    ptrdiff_t i = -1;
+    ssize_t i = -1;
 
     if (idio_isa_fixnum (index)) {
 	i = IDIO_FIXNUM_VAL (index);
@@ -2009,7 +2007,7 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
      */
     IDIO_ASSERT_NOT_CONST (string, s);
 
-    ptrdiff_t i = -1;
+    ssize_t i = -1;
 
     if (idio_isa_fixnum (index)) {
 	i = IDIO_FIXNUM_VAL (index);
@@ -2074,7 +2072,7 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
     uint8_t *s8 = NULL;
     uint16_t *s16 = NULL;
     uint32_t *s32 = NULL;
-    size_t slen = -1;
+    ssize_t slen = -1;
     size_t width = idio_string_storage_size (s);
 
     if (idio_isa_substring (s)) {
@@ -2275,10 +2273,10 @@ can still result in a negative index.			\n\
      */
     IDIO_USER_TYPE_ASSERT (string, s);
 
-    size_t l = idio_string_len (s);
+    ssize_t l = idio_string_len (s);
 
-    ptrdiff_t ip0 = -1;
-    ptrdiff_t ipn = l;
+    ssize_t ip0 = -1;
+    ssize_t ipn = l;
 
     if (idio_isa_fixnum (p0)) {
 	ip0 = IDIO_FIXNUM_VAL (p0);
@@ -2387,7 +2385,7 @@ can still result in a negative index.			\n\
     }
 
     IDIO r = idio_S_unspec;
-    ptrdiff_t rl = ipn - ip0;
+    ssize_t rl = ipn - ip0;
 
     if (rl) {
 	r = idio_substring_offset_len (s, ip0, rl);
@@ -2751,7 +2749,7 @@ IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci>?", gt, >)
  * Of course, we're returning the number of Unicode code points of the
  * initial segment ...
  */
-static size_t idio_strspn (ptrdiff_t i, char const *is, size_t const ilen, size_t const iw, char const *as, size_t const alen, size_t const aw)
+static size_t idio_strspn (ssize_t i, char const *is, size_t const ilen, size_t const iw, char const *as, size_t const alen, size_t const aw)
 {
     uint8_t *is8 = NULL;
     uint16_t *is16 = NULL;
@@ -2850,7 +2848,7 @@ static size_t idio_strspn (ptrdiff_t i, char const *is, size_t const ilen, size_
  */
 #define IDIO_STRING_STRPBRK_SENTINEL	-1
 
-static ptrdiff_t idio_strpbrk (ptrdiff_t i, char const *is, size_t const ilen, size_t const iw, char const *as, size_t const alen, size_t const aw)
+static ssize_t idio_strpbrk (ssize_t i, char const *is, size_t const ilen, size_t const iw, char const *as, size_t const alen, size_t const aw)
 {
     uint8_t *is8 = NULL;
     uint16_t *is16 = NULL;
@@ -2884,8 +2882,8 @@ static ptrdiff_t idio_strpbrk (ptrdiff_t i, char const *is, size_t const ilen, s
 	break;
     }
 
-    ptrdiff_t r;
-    for (r = i; r < ilen; r++) {
+    ssize_t r;
+    for (r = i; r < (ssize_t) ilen; r++) {
 	idio_unicode_t icp = 0;
 	switch (iw) {
 	case 1:
@@ -2925,12 +2923,12 @@ static ptrdiff_t idio_strpbrk (ptrdiff_t i, char const *is, size_t const ilen, s
 /*
  * Note that the C string version of idio_string_token, using 'char
  * *'s rather than offsets, can use NULL as a sentinel value -- which
- * is outside of the string.  We'll have to use -1 (and ptrdiff_t
- * rather than size_t) to do something similar.
+ * is outside of the string.  We'll have to use -1 (and ssize_t rather
+ * than size_t) to do something similar.
  */
 #define IDIO_STRING_TOKEN_SENTINEL	-1
 
-static ptrdiff_t idio_string_token (ptrdiff_t i, char const *is, size_t const ilen, size_t const iw, char const *ds, size_t const dlen, size_t const dw, int flags, ptrdiff_t *saved, size_t *len)
+static ssize_t idio_string_token (ssize_t i, char const *is, size_t const ilen, size_t const iw, char const *ds, size_t const dlen, size_t const dw, int flags, ssize_t *saved, size_t *len)
 {
     /*
      * U+FFFF is specifically not a valid Unicode character so it's a
@@ -2983,8 +2981,8 @@ static ptrdiff_t idio_string_token (ptrdiff_t i, char const *is, size_t const il
 	i += idio_strspn (i, is, ilen, iw, ds, dlen, dw);
     } else if (0 &&
 	       0xFFFF != prev_delim) {
-	ptrdiff_t start = i;
-	ptrdiff_t end = i + idio_strspn (i, is, ilen, iw, ds, dlen, dw);
+	ssize_t start = i;
+	ssize_t end = i + idio_strspn (i, is, ilen, iw, ds, dlen, dw);
 	for (; i < end; i++) {
 	    idio_unicode_t icp = 0;
 	    switch (iw) {
@@ -3010,7 +3008,7 @@ static ptrdiff_t idio_string_token (ptrdiff_t i, char const *is, size_t const il
      * the pickup up for and return the sentinel value.  We shouldn't
      * re-enter but we might.
      */
-    if (i >= ilen) {
+    if (i >= (ssize_t) ilen) {
 	*saved = IDIO_STRING_TOKEN_SENTINEL;
 	*len = 0;
 	return IDIO_STRING_TOKEN_SENTINEL;
@@ -3019,13 +3017,13 @@ static ptrdiff_t idio_string_token (ptrdiff_t i, char const *is, size_t const il
     /*
      * Walk forward until we find a delimiter
      */
-    ptrdiff_t start = idio_strpbrk (i, is, ilen, iw, ds, dlen, dw);
+    ssize_t start = idio_strpbrk (i, is, ilen, iw, ds, dlen, dw);
 
     if (IDIO_STRING_STRPBRK_SENTINEL == start) {
 	*saved = IDIO_STRING_TOKEN_SENTINEL;
 	*len = ilen - i;
     } else {
-	if (start < ilen) {
+	if (start < (ssize_t) ilen) {
 	    *saved = start + 1;
 	    *len = start - i;
 	} else {
@@ -3103,10 +3101,10 @@ IDIO idio_split_string (IDIO in, IDIO delim, int flags)
     /*
      * offsets within string
      */
-    ptrdiff_t saved;
+    ssize_t saved;
     size_t len = ilen;
 
-    ptrdiff_t i = 0;
+    ssize_t i = 0;
     IDIO r = idio_S_nil;
     int wants_array = 0;
     if (IDIO_STRING_TOKEN_ARRAY (flags)) {
@@ -3116,7 +3114,7 @@ IDIO idio_split_string (IDIO in, IDIO delim, int flags)
     }
 
     for (; ; i = IDIO_STRING_TOKEN_SENTINEL) {
-	ptrdiff_t start = idio_string_token (i, is, ilen, iw, ds, dlen, dw, flags, &saved, &len);
+	ssize_t start = idio_string_token (i, is, ilen, iw, ds, dlen, dw, flags, &saved, &len);
 
 	if (IDIO_STRING_TOKEN_SENTINEL == start) {
 	    break;
@@ -3282,7 +3280,7 @@ IDIO idio_strip_string (IDIO str, IDIO discard, IDIO ends)
     IDIO_TYPE_ASSERT (list, ends);
 
     char *ss;
-    size_t slen = -1;
+    ssize_t slen = -1;
     size_t sw = idio_string_storage_size (str);
 
     if (idio_isa_substring (str)) {
@@ -3379,7 +3377,7 @@ IDIO idio_strip_string (IDIO str, IDIO discard, IDIO ends)
 	break;
     }
 
-    size_t rso = 0;
+    ssize_t rso = 0;
     if (ends_bits & IDIO_STRING_STRIP_LEFT) {
 	for (;rso < slen; rso++) {
 	    idio_unicode_t scp = 0;

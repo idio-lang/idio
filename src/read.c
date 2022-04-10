@@ -706,7 +706,7 @@ IDIO idio_read_unicode (IDIO handle, IDIO lo)
     IDIO I_cp = idio_read_bignum_radix (handle, lo, 'x', 16);
 
     if (idio_isa_fixnum (I_cp)) {
-	cp = IDIO_FIXNUM_VAL (I_cp);
+	cp = (uint32_t) IDIO_FIXNUM_VAL (I_cp);
     } else if (idio_isa_bignum (I_cp)) {
 	cp = idio_bignum_uint64_t_value (I_cp);
     } else {
@@ -2255,7 +2255,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		    *bit_range = '\0';
 		    bit_range++;
 
-		    size_t buf_len = bit_range - buf - 1;
+		    ssize_t buf_len = bit_range - buf - 1;
 		    idio_reopen_input_string_handle_C (idio_read_bitset_offset_sh, buf, buf_len);
 
 		    IDIO I_offset = idio_read_bignum_radix (idio_read_bitset_offset_sh, lo, 'x', 16);
@@ -2346,7 +2346,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		    /*
 		     * offset is size_t, ie unsigned to can't be < 0
 		     */
-		    if (offset > IDIO_BITSET_SIZE (bs)) {
+		    if (offset > (ssize_t) IDIO_BITSET_SIZE (bs)) {
 			/*
 			 * Test Case: read-errors/bitset-range-start-too-big.idio
 			 *
@@ -2391,7 +2391,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		    /*
 		     * bit_range_len is {i} less {buf_len} less 1 (for the NUL)
 		     */
-		    size_t bit_range_len = i - buf_len - 1;
+		    ssize_t bit_range_len = i - buf_len - 1;
 		    idio_reopen_input_string_handle_C (idio_read_bitset_end_sh, bit_range, bit_range_len);
 
 		    /*
@@ -2429,7 +2429,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			return idio_S_notreached;
 		    }
 
-		    if (end > IDIO_BITSET_SIZE (bs)) {
+		    if (end > (ssize_t) IDIO_BITSET_SIZE (bs)) {
 			/*
 			 * Test Case: read-errors/bitset-range-end-too-big.idio
 			 *
@@ -2479,14 +2479,14 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			int b = (offset % IDIO_BITSET_BITS_PER_WORD) / CHAR_BIT;
 
 			    if (0 == b &&
-				(offset + IDIO_BITSET_BITS_PER_WORD) < end) {
+				(offset + (ssize_t) IDIO_BITSET_BITS_PER_WORD) < end) {
 				IDIO_BITSET_WORDS (bs, n) = IDIO_BITSET_WORD_MAX;
 				offset += IDIO_BITSET_BITS_PER_WORD;
 			    } else {
 				idio_bitset_word_t br = 0;
 
 				for (; offset <= end &&
-					 b < sizeof (idio_bitset_word_t); b++) {
+					 b < (ssize_t) sizeof (idio_bitset_word_t); b++) {
 				    idio_bitset_word_t mask = UCHAR_MAX;
 				    mask <<= (b * CHAR_BIT);
 				    br |= mask;
@@ -2557,7 +2557,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			    return idio_S_notreached;
 			}
 
-			if (offset > IDIO_BITSET_SIZE (bs)) {
+			if (offset > (ssize_t) IDIO_BITSET_SIZE (bs)) {
 			    /*
 			     * Test Case: read-errors/bitset-offset-too-big.idio
 			     *
@@ -2754,7 +2754,7 @@ static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
      *
      * struct-instance? #P" *.c "
      */
-    IDIO e = idio_read_path_string (handle, lo, closedel, idio_default_string_ic);
+    IDIO e = idio_read_path_string (handle, lo, closedel, interpc);
 
     return idio_struct_instance (idio_path_type, IDIO_LIST1 (e));
 }
@@ -3283,7 +3283,7 @@ static IDIO idio_read_number_C (IDIO handle, char const *str)
 	 * Compare to the number of available FIXNUM bits less a sign
 	 * bit.
 	 */
-	if (((i - 1) * 4) < ((sizeof (intptr_t) * CHAR_BIT) - IDIO_TYPE_BITS - 1)) {
+	if (((i - 1) * 4) < (((ssize_t) sizeof (intptr_t) * CHAR_BIT) - IDIO_TYPE_BITS - 1)) {
 	    num = idio_fixnum_C (str, 10);
 	    idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	} else {

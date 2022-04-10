@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -93,16 +93,22 @@
  */
 
 #if PTRDIFF_MAX == 2147483647L
-#define idio_alloc_t			uint32_t
+typedef int32_t				idio_alloc_t;
 #define IDIO_PRIa			PRIu32
 #define IDIO_MALLOC_NBUCKETS		30
 #define IDIO_MALLOC_FIRST_Po2		3
 #else
-#define idio_alloc_t			uint64_t
+typedef int64_t				idio_alloc_t;
 #define IDIO_PRIa			PRIu64
 #define IDIO_MALLOC_NBUCKETS		62
 #define IDIO_MALLOC_FIRST_Po2		4
 #endif
+
+/*
+ * idio_bi_t is a bucket index -- we'll use around 19 for the test
+ * suite
+ */
+typedef uint8_t idio_bi_t;
 
 /*
  * The overhead on a block is at least 8 bytes using the ov_align
@@ -121,7 +127,7 @@ union idio_malloc_overhead_u {
     uint64_t o_align;		/* 					8 bytes */
     struct {
 	uint8_t ovu_magic;	/* magic number				1 */
-	uint8_t ovu_bucket;	/* bucket #				1 */
+	idio_bi_t ovu_bucket;   /* bucket #				1 */
 	uint16_t ovu_rmagic;	/* range magic number			2 */
 	idio_alloc_t ovu_size;	/* actual block size			4/8 */
     } ovu;
@@ -172,7 +178,7 @@ union idio_malloc_overhead_u {
 
 #define IDIO_MALLOC_BUCKET_RANGE(sz,b)	(((sz) > idio_malloc_bucket_sizes[(b)-1]) && ((sz) <= idio_malloc_bucket_sizes[(b)]))
 
-static void idio_malloc_morecore (uint8_t bucket);
+static void idio_malloc_morecore (idio_bi_t bucket);
 
 static idio_alloc_t idio_malloc_bucket_sizes[IDIO_MALLOC_NBUCKETS] = {
     0
@@ -187,17 +193,17 @@ static idio_alloc_t idio_malloc_bucket_sizes[IDIO_MALLOC_NBUCKETS] = {
 static union idio_malloc_overhead_u *idio_malloc_nextf[IDIO_MALLOC_NBUCKETS];
 
 static long idio_malloc_pagesz;			/* page size - result from sysconf() */
-static int idio_malloc_pagesz_bucket;		/* the page size bucket */
+static idio_bi_t idio_malloc_pagesz_bucket;	/* the page size bucket */
 
 #ifdef IDIO_DEBUG
 /*
  * idio_malloc_stats_num[i] is the difference between the number of
  * mallocs and frees for a given block size.
  */
-static u_int idio_malloc_stats_num[IDIO_MALLOC_NBUCKETS];
-static u_int idio_malloc_stats_peak[IDIO_MALLOC_NBUCKETS];
-static u_int idio_malloc_stats_mmaps[IDIO_MALLOC_NBUCKETS];
-static u_int idio_malloc_stats_munmaps[IDIO_MALLOC_NBUCKETS];
+static uint64_t idio_malloc_stats_num[IDIO_MALLOC_NBUCKETS];
+static uint64_t idio_malloc_stats_peak[IDIO_MALLOC_NBUCKETS];
+static uint64_t idio_malloc_stats_mmaps[IDIO_MALLOC_NBUCKETS];
+static uint64_t idio_malloc_stats_munmaps[IDIO_MALLOC_NBUCKETS];
 #endif
 
 static void idio_malloc_init ()
@@ -208,7 +214,7 @@ static void idio_malloc_init ()
 	idio_malloc_pagesz = 1024;
     }
 
-    register uint8_t nblks;
+    register idio_bi_t nblks;
 
     /*
      * Starting bucket size wants to be 2^IDIO_MALLOC_FIRST_Po2
@@ -216,7 +222,7 @@ static void idio_malloc_init ()
     register idio_alloc_t sz = 1 << IDIO_MALLOC_FIRST_Po2;
     for (nblks = 0; nblks < IDIO_MALLOC_NBUCKETS; nblks++) {
 	if (0 == sz) {
-	    sz = (idio_alloc_t) -1;
+	    sz = -1;
 	}
 	idio_malloc_bucket_sizes[nblks] = sz;
 	sz <<= 1;
@@ -245,7 +251,7 @@ void *idio_malloc_malloc (size_t size)
      * space used per block for accounting.
      */
     register idio_alloc_t reqd_size = IDIO_MALLOC_SIZE (size);
-    register uint8_t bucket;
+    register idio_bi_t bucket;
 
     /*
      * We can do a tiny speed increase as rather than always searching
@@ -325,11 +331,11 @@ void *idio_malloc_calloc (size_t num, size_t size)
 /*
  * Allocate more memory to the indicated bucket.
  */
-static void idio_malloc_morecore (uint8_t bucket)
+static void idio_malloc_morecore (idio_bi_t bucket)
 {
     register idio_alloc_t sz = idio_malloc_bucket_sizes[bucket];
 
-    if ((idio_alloc_t) -1 == sz) {
+    if (-1 == sz) {
 	fprintf (stderr, "im-morecore: pagesizes[%d] = %" IDIO_PRIa " is too large\n", bucket, sz);
 	return;
     }
@@ -338,7 +344,7 @@ static void idio_malloc_morecore (uint8_t bucket)
      * We want to allocate a rounded pagesize amount of memory
      */
     idio_alloc_t amt;
-    idio_alloc_t nblks;
+    int nblks;
     if (sz < idio_malloc_pagesz) {
 	amt = idio_malloc_pagesz;
 	nblks = amt / sz;
@@ -427,7 +433,7 @@ void idio_malloc_free (void *cp)
     IDIO_C_ASSERT(op->ov_rmagic == IDIO_MALLOC_RMAGIC);
     IDIO_C_ASSERT(*(uint16_t *)((caddr_t)(op + 1) + op->ov_size) == IDIO_MALLOC_RMAGIC);
 
-    register int bucket = op->ov_bucket;
+    register idio_bi_t bucket = op->ov_bucket;
 
     IDIO_C_ASSERT (bucket < IDIO_MALLOC_NBUCKETS);
 
@@ -502,7 +508,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
     IDIO_C_ASSERT (op->ov_rmagic == IDIO_MALLOC_RMAGIC);
     IDIO_C_ASSERT(*(uint16_t *)((caddr_t)(op + 1) + op->ov_size) == IDIO_MALLOC_RMAGIC);
 
-    register uint8_t bucket = op->ov_bucket;
+    register idio_bi_t bucket = op->ov_bucket;
 
     IDIO_C_ASSERT (bucket < IDIO_MALLOC_NBUCKETS);
 
@@ -517,7 +523,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
 	IDIO_C_ASSERT (0);
     }
 
-    if (size == op->ov_size) {
+    if (size == (size_t) op->ov_size) {
 	return cp;
     }
 

@@ -1060,7 +1060,7 @@ does not return per se						\n\
 	 * It would be better if we tagged these as ABORTs meaning they
 	 * could be nested.
 	 */
-	idio_ai_t krun_p = idio_array_size (idio_vm_krun);
+	idio_as_t krun_p = idio_array_size (idio_vm_krun);
 	IDIO krun = idio_S_nil;
 	while (krun_p > 2) {
 	    krun = idio_array_pop (idio_vm_krun);
@@ -1073,7 +1073,7 @@ does not return per se						\n\
 	idio_exit_status = 1;
 	krun = idio_array_top (idio_vm_krun);
 	if (idio_isa_pair (krun)) {
-	    fprintf (stderr, "restart-condition-handler: restoring krun #%td: ", krun_p);
+	    fprintf (stderr, "restart-condition-handler: restoring krun #%zd: ", krun_p);
 	    idio_debug ("%s\n", IDIO_PAIR_HT (krun));
 #ifdef IDIO_DEBUG
 	    fprintf (stderr, "restart-condition-handler: thread state before krun restored:\n");
@@ -1140,7 +1140,7 @@ Does not return.						\n\
      * As the reset-condition-handler we'll go back to the first krun
      * on the VM's stack which should be ABORT to main.
      */
-    idio_ai_t krun_p = idio_array_size (idio_vm_krun);
+    idio_as_t krun_p = idio_array_size (idio_vm_krun);
     IDIO krun = idio_S_nil;
     while (krun_p > 0) {
 	krun = idio_array_pop (idio_vm_krun);
@@ -1149,7 +1149,7 @@ Does not return.						\n\
 
     idio_exit_status = 1;
     if (idio_isa_pair (krun)) {
-	fprintf (stderr, "reset-condition-handler: restoring krun #%td: ", krun_p);
+	fprintf (stderr, "reset-condition-handler: restoring krun #%zd: ", krun_p);
 	idio_debug ("%s\n", IDIO_PAIR_HT (krun));
 	idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
 
@@ -1233,7 +1233,7 @@ void idio_init_condition ()
      * IDIO_DEFINE_CONDITION0 macro.
      */
     IDIO sym = IDIO_SYMBOLS_C_INTERN (IDIO_CONDITION_CONDITION_TYPE_NAME);
-    idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);
+    idio_as_t gci = idio_vm_constants_lookup_or_extend (sym);
     idio_condition_condition_type_mci = idio_fixnum (gci);
 
     /* Idio */

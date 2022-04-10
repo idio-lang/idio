@@ -293,7 +293,7 @@ static void idio_env_add_environ ()
     struct passwd pwd;
     struct passwd *pwd_result;
     char *pwd_buf;
-    size_t pwd_bufsize;
+    long pwd_bufsize;
 
     pwd_bufsize = sysconf (_SC_GETPW_R_SIZE_MAX);
     if (pwd_bufsize == -1) {
