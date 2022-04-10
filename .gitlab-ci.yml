@@ -44,6 +44,10 @@ compile-coverage:
   - compile-regular
   script:
     - make coverage
+  artifacts:
+    paths:
+    - .local
+    - src/*.gcno
 
 test-regular:
   tags:
