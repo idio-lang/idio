@@ -92,7 +92,9 @@ endif
 
 ifeq (ID=ubuntu,$(ID))
 ifneq (,$(findstring 18,$(VERSION_ID)))
+ifeq (,$(findstring WSL2,$(REV)))
 CC		:= gcc-8
+endif
 endif
 endif
 
