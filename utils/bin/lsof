@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# Copyright (c) 2015-2021 Ian Fitchet <idf@idio-lang.org>
+# Copyright (c) 2015-2022 Ian Fitchet <idf@idio-lang.org>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License.  You
@@ -22,11 +22,14 @@ _uname=( $(uname -mrps) )
 OS=${_uname[0]}
 
 case "${OS}" in
-SunOS|OpenBSD)
+SunOS)
     exec $0.${OS} ${1+"$@"}
     ;;
+*BSD)
+    exec $0.BSD ${1+"$@"}
+    ;;
 *)
-    echo "$0: SunOS|OpenBSD only" >&2
+    echo "$0: SunOS|*BSD only" >&2
     exit 1
     ;;
 esac

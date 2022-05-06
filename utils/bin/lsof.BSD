@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# Copyright (c) 2021 Ian Fitchet <idf@idio-lang.org>
+# Copyright (c) 2021, 2022 Ian Fitchet <idf@idio-lang.org>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License.  You
@@ -16,7 +16,7 @@
 #
 #
 
-# lsof.OpenBSD -- a poor man's lsof cobbled from fstat
+# lsof.BSD -- a poor man's lsof cobbled from fstat
 
 handle_EXIT ()
 {
@@ -30,9 +30,9 @@ usage ()
     cat << EOF >&2
 
 ${0##*/} replicates *some* of the functionality of lsof(1) using
-fstat(1) in OpenBSD.  Enough to allow the testing to work.
+fstat(1) in *BSD.  Enough to allow the testing to work.
 
-If your distribution of OpenBSD has lsof (unlikely):
+If your distribution of *BSD has lsof (unlikely on OpenBSD):
 
 # pkg_add lsof
 Can't find lsof
@@ -56,9 +56,9 @@ _uname=( $(uname -mrps) )
 OS=${_uname[0]}
 
 case "${OS}" in
-OpenBSD) ;;
+*BSD) ;;
 *)
-    echo "$0: OpenBSD only" >&2
+    echo "$0: *BSD only" >&2
     exit 1
     ;;
 esac
@@ -98,10 +98,19 @@ fstat_file=/tmp/${0##*/}.$$.fstat
 
 fstat -p ${opt_p} > ${fstat_file}
 
-# fstat generic output
+# fstat generic output:
+
+# OpenBSD
 
 # USER     CMD          PID   FD MOUNT        INUM  MODE         R/W    SZ|DV
 # idf      bash       27903 text /usr/local   129838  -rwxr-xr-x     r  1409326
+
+# FreeBSD / NetBSD
+
+# USER     CMD          PID   FD MOUNT       INUM MODE         SZ|DV R/W
+# idf      bash        8748   wd  /         1422903 drwxrwxr-x     512 r
+
+# Wait!  The last two columns are toggled?
 
 if [[ ! ${opt_F} ]] ; then
     printf "%-9s %-9s %5s %4s %-10s %6s  %-12s %3s  %s\n" USER CMD PID FD MOUNT INUM MODE "R/W" "SZ|DV"
@@ -109,6 +118,13 @@ fi
 
 (
     read headers
+
+    toggle=
+    case "${headers}" in
+    *W)
+	toggle=1
+	;;
+    esac
 
     printed_pid=
 
@@ -119,6 +135,28 @@ fi
 		printed_pid=1
 	    fi
 	fi
+
+	# XXX do this before the NetBSD pipe bit as it uses ${rw}
+	if [[ ${toggle} ]] ; then
+	    t=${rw}
+	    rw=${sz}
+	    sz=${t}
+	fi
+
+	# NetBSD puts a * after the FD for a pipe and for an output
+	# pipe the -> clashes with matching -* for ${mode} further on
+
+	# idf      bash       26426    1* pipe 0xc40573cc -> 0xc85bc604 w
+
+	case "${fd}" in
+	[0-9]*\*)
+	    fd=${fd%\*}
+
+	    # NetBSD isn't giving us a mode (other than <- or ->) so
+	    # we'll re-use rw
+	    mode=${rw}
+	    ;;
+	esac
 
 	p=
 	if [[ ${opt_d} ]] ; then
@@ -156,7 +194,12 @@ fi
 	    # I can't believe many would regard this call to find as
 	    # "efficient" but we might do this for the same inode
 	    # twice per invocation of lsof
-	    name=$(find ${mount} -xdev -inum ${inum})
+	    name=$(find ${mount} -xdev -inum ${inum} 2>/dev/null)
+	    case "${name}" in
+	    '')
+		name=inode-${inum}
+		;;
+	    esac
 	    ;;
 	null)
 	    name=/dev/null
