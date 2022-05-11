@@ -6,6 +6,7 @@
 .. _Ash: https://www.in-ulm.de/~mascheck/various/ash/
 .. _Bash: https://www.gnu.org/software/bash/
 .. _Busybox: https://www.busybox.net/
+.. _C3L: https://en.wikipedia.org/wiki/C3_linearization
 .. _C99: https://en.wikipedia.org/wiki/C99
 .. _Chibi: http://synthcode.com/wiki/chibi-scheme
 .. _DWARF: http://www.dwarfstd.org/
@@ -32,6 +33,7 @@
 .. _Jinja: https://jinja.palletsprojects.com/en/2.11.x/
 .. _LP64: https://en.wikipedia.org/wiki/64-bit_computing#64-bit_data_models
 .. _Lua: https://www.lua.org
+.. _MOP: https://en.wikipedia.org/wiki/Metaobject#Metaobject_protocol
 .. _Marcel: https://www.marceltheshell.org
 .. _Maru: https://www.piumarta.com/software/maru/
 .. _Mash: http://mash-shell.org/
@@ -69,6 +71,7 @@
 .. _Solid: https://github.com/chameco/Solid.git
 .. _TOML: https://toml.io/en/
 .. _Tcl: https://www.tcl-lang.org/
+.. _TinyCLOS: http://community.schemewiki.org/?Tiny-CLOS
 .. _ULA: https://en.wikipedia.org/wiki/Unique_local_address
 .. _UTF-16: https://www.unicode.org/notes/tn12/
 .. _UTF-8: https://en.wikipedia.org/wiki/UTF-8
