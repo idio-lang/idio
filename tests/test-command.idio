@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -604,12 +604,6 @@ test (true (glob "*")) #t
 }
 
 test (collect-output hostname) HOSTNAME
-
-;; execute a relative path command -- which means figuring one out!
-;; Where is auto-exit, relative to us?  We must be somewhere in the
-;; hierarchy.  Probably, GitLab CI shell puts us in
-;; .../builds/<RUNNER>/0/idio/idio and gitlab-runner exec shell in
-;; .../builds/0/project-0.
 
 a-e-str := append-string IDIO-UTILS-BIN "/auto-exit"
 

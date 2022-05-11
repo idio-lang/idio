@@ -20,7 +20,7 @@
 ;;
 
 file-handle-error0 := Tests
-file-handle-skipped := 0
+file-handle-error-skipped := 0
 
 file-handle-error-load := {
   n := 0
@@ -154,14 +154,13 @@ tmpfile := (make-tmp-file)
 ;; read-only issues are collected under the guise of protection errors
 ;; (EACCES)
 chmod \= tmpfile
-protection-Errors0 := Errors
-file-handle-error-load "file-handle-errors/open-file-protection.idio" "open-file: Permission denied"
-file-handle-error-load "file-handle-errors/open-input-file-protection.idio" "open-input-file: Permission denied"
-file-handle-error-load "file-handle-errors/open-output-file-protection.idio" "open-output-file: Permission denied"
-if (and (environ? 'GITLAB_CI)
-	(Errors eq (protection-Errors0 + 3))) {
-	  eprintf "GITLAB_CI/Docker: permission tests fakery\n"
-	  Errors = protection-Errors0
+if running-as-root {
+  eprintf "NOTICE: EUID == 0: skipping 3 permission failure tests\n"
+  file-handle-error-skipped = file-handle-error-skipped + 3
+} {
+  file-handle-error-load "file-handle-errors/open-file-protection.idio" "open-file: Permission denied"
+  file-handle-error-load "file-handle-errors/open-input-file-protection.idio" "open-input-file: Permission denied"
+  file-handle-error-load "file-handle-errors/open-output-file-protection.idio" "open-output-file: Permission denied"
 }
 chmod +r tmpfile
 
@@ -238,8 +237,8 @@ file-handle-error-load "file-handle-errors/find-lib-bad-type.idio" "bad paramete
 (cond-expand
  ("uname/sysname/SunOS" {
    ;; SunOS won't let you rmdir "." or any equivalent => EINVAL
-   eprintf "SunOS: skipping test using rmdir .\n"
-   file-handle-skipped = file-handle-skipped + 2
+   eprintf "NOTICE: SunOS: skipping test using rmdir .\n"
+   file-handle-error-skipped = file-handle-error-skipped + 2
  })
  (else {
    cwd := (getcwd)
@@ -265,11 +264,9 @@ file-handle-error-load "file-handle-errors/load-not-found.idio" "load: No such f
 
 file-handle-error-load "file-handle-errors/delete-file-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
 file-handle-error-load "file-handle-errors/delete-file-format.idio" "delete-file filename contains an ASCII NUL"
-if (and (environ? 'GITLAB_CI)
-	(not (environ? 'GITLAB_USER_LOGIN))) {
-	  ;; XXX -- no idea, something to do with Docker?
-	  ;; sudo gitlab-runner exec shell test-regular
-	  file-handle-error-load "file-handle-errors/delete-file-EACCESS.idio" "remove: No such file or directory"
+
+if running-as-root {
+  file-handle-error-load "file-handle-errors/delete-file-EACCESS.idio" "remove: No such file or directory"
 } {
   file-handle-error-load "file-handle-errors/delete-file-EACCESS.idio" "remove: Permission denied"
 }
@@ -371,7 +368,12 @@ if parts {
   ;; we actually want to make the file unreadable
   chmod 0 "foo-bar/latest"
 
-  extension-error-load "Permission denied" "open"
+  if running-as-root {
+    eprintf "NOTICE: EUID == 0: skipping 1 permission failure test\n"
+    file-handle-error-skipped = file-handle-error-skipped + 2
+  } {
+    extension-error-load "Permission denied" "open"
+  }
 
   ;; now it isn't of the form {mod}@{mod-ver}
   chmod a+r,u+w "foo-bar/latest"
@@ -444,5 +446,5 @@ rm -rf tmpdir
 IDIOLIB = OIDIOLIB
 
 ;; all done?
-Skipped = Skipped + file-handle-skipped
-Tests? (file-handle-error0 + 113 - file-handle-skipped)
+Skipped = Skipped + file-handle-error-skipped
+Tests? (file-handle-error0 + 113 - file-handle-error-skipped)

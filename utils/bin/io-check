@@ -134,8 +134,8 @@ lsof_data ()
 
     tmpfile=/tmp/${0##*/}.$$
 
-    # Grr.  GitLab CI (requiring Docker) causes lsof to whine about
-    # nsfs file systems which occludes the actual errors
+    # Grr.  GitLab CI (using Docker) causes lsof to whine about nsfs
+    # file systems which occludes the actual errors
     #
     # /run/docker is only readable by root so add -w
     lsof -w -a -p ${pid} -d 0-2 -F ftnri > ${tmpfile}

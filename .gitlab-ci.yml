@@ -57,7 +57,7 @@ test-regular:
   - compile-regular
   script:
     - .local/bin/idio --version
-    - ./utils/forced-tty-session .local/bin/idio test
+    - utils/bin/forced-tty-session .local/bin/idio test
 
 test-coverage:
   extends:
@@ -65,7 +65,7 @@ test-coverage:
   needs:
   - compile-coverage
   script:
-    - utils/forced-tty-session .local/bin/idio test
+    - utils/bin/forced-tty-session .local/bin/idio test
     - gcovr
     - gcovr --xml-pretty --exclude-unreachable-branches --print-summary -o coverage.xml --root ${CI_PROJECT_DIR}
   coverage: /^\s*lines:\s*\d+.\d+\%/

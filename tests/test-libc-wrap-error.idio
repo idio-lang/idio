@@ -23,7 +23,7 @@ module tests/libc-wrap
 import libc
 
 libc-wrap-error0 := Tests
-libc-wrap-skipped := 0
+libc-wrap-error-skipped := 0
 
 #*
 
@@ -256,8 +256,8 @@ libc-wrap-error-load "libc-wrap-errors/fstat-bad-fd.idio" strerror-EBADF EBADF "
 (cond-expand
  ("uname/sysname/SunOS" {
    ;; SunOS won't let you rmdir "." or any equivalent => EINVAL
-   eprintf "SunOS: skipping test using rmdir .\n"
-   libc-wrap-skipped = libc-wrap-skipped + 3
+   eprintf "NOTICE: SunOS: skipping test using rmdir .\n"
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  (else {
    cwd := (getcwd)
@@ -307,7 +307,7 @@ libc-wrap-error-load "libc-wrap-errors/isatty-bad-type.idio" "bad parameter type
 (cond-expand
  ("uname/sysname/SunOS" {
    ;; these don't set errno in this case
-   libc-wrap-skipped = libc-wrap-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  (else {
    ;; The Linux manpage notes: On some older kernels, some types of files
@@ -343,7 +343,7 @@ libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-format.idio" "mkdtemp: contai
       "uname/sysname/Darwin") {
    ;; SunOS/FreeBSD/Mac OS appear to be considerably more relaxed
    ;; about the template
-   libc-wrap-skipped = libc-wrap-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-template.idio" "Invalid argument" EINVAL "mkdtemp"
@@ -362,7 +362,7 @@ libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-format.idio" "mkstemp: contai
       "uname/sysname/Darwin") {
    ;; SunOS/FreeBSD/Mac OS appear to be considerably more relaxed
    ;; about the template
-   libc-wrap-skipped = libc-wrap-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-template.idio" "Invalid argument" EINVAL "mkstemp"
@@ -379,7 +379,7 @@ libc-wrap-error-load "libc-wrap-errors/nanosleep-req-sec-bad-type.idio" "bad par
  ((or "uname/sysname/FreeBSD"
       "uname/sysname/NetBSD") {
    ;; FreeBSD treats negative seconds as zero?
-   libc-wrap-skipped = libc-wrap-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/nanosleep-req-sec-negative.idio" "Invalid argument" EINVAL "nanosleep"
@@ -548,7 +548,7 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
 (cond-expand
  ("uname/sysname/NetBSD" {
    ;; NetBSD ignores a negative GID
-   libc-wrap-skipped = libc-wrap-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  ((or "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"
@@ -559,26 +559,32 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
    libc-wrap-error-load "libc-wrap-errors/EGID-set-invalid-gid.idio" "Invalid argument" EINVAL "setegid"
  })
 )
-(cond-expand
- ("uname/sysname/SunOS" {
-   (cond-expand
-    ("os-release/ID/solaris" {
-      ;; Oracle Solaris 11.4
-      libc-wrap-error-load "libc-wrap-errors/EGID-set-unused-gid.idio" "Insufficient privileges" EPERM "setegid"
-    })
-    (else {
-      libc-wrap-error-load "libc-wrap-errors/EGID-set-unused-gid.idio" "Not owner" EPERM "setegid"
-    }))
- })
- (else {
-   libc-wrap-error-load "libc-wrap-errors/EGID-set-unused-gid.idio" "Operation not permitted" EPERM "setegid"
- }))
+
+if running-as-root {
+  eprintf "NOTICE: EUID == 0: skipping set EGID failure test\n"
+  libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+} {
+  (cond-expand
+   ("uname/sysname/SunOS" {
+     (cond-expand
+      ("os-release/ID/solaris" {
+	;; Oracle Solaris 11.4
+	libc-wrap-error-load "libc-wrap-errors/EGID-set-unused-gid.idio" "Insufficient privileges" EPERM "setegid"
+      })
+      (else {
+	libc-wrap-error-load "libc-wrap-errors/EGID-set-unused-gid.idio" "Not owner" EPERM "setegid"
+      }))
+   })
+   (else {
+     libc-wrap-error-load "libc-wrap-errors/EGID-set-unused-gid.idio" "Operation not permitted" EPERM "setegid"
+   }))
+}
 
 libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
 (cond-expand
  ("uname/sysname/NetBSD" {
    ;; NetBSD ignores a negative UID
-   libc-wrap-skipped = libc-wrap-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  ((or "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"
@@ -589,31 +595,37 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
    libc-wrap-error-load "libc-wrap-errors/EUID-set-invalid-uid.idio" "Invalid argument" EINVAL "seteuid"
  })
 )
-(cond-expand
- ("uname/sysname/SunOS" {
-   (cond-expand
-    ("os-release/ID/solaris" {
-      ;; Oracle Solaris 11.4
-      libc-wrap-error-load "libc-wrap-errors/EUID-set-unused-uid.idio" "Insufficient privileges" EPERM "seteuid"
-    })
-    (else {
-      libc-wrap-error-load "libc-wrap-errors/EUID-set-unused-uid.idio" "Not owner" EPERM "seteuid"
-    }))
- })
- (else {
-   libc-wrap-error-load "libc-wrap-errors/EUID-set-unused-uid.idio" "Operation not permitted" EPERM "seteuid"
- }))
+
+if running-as-root {
+  eprintf "NOTICE: EUID == 0: skipping set EUID failure test\n"
+  libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+} {
+  (cond-expand
+   ("uname/sysname/SunOS" {
+     (cond-expand
+      ("os-release/ID/solaris" {
+	;; Oracle Solaris 11.4
+	libc-wrap-error-load "libc-wrap-errors/EUID-set-unused-uid.idio" "Insufficient privileges" EPERM "seteuid"
+      })
+      (else {
+	libc-wrap-error-load "libc-wrap-errors/EUID-set-unused-uid.idio" "Not owner" EPERM "seteuid"
+      }))
+   })
+   (else {
+     libc-wrap-error-load "libc-wrap-errors/EUID-set-unused-uid.idio" "Operation not permitted" EPERM "seteuid"
+   }))
+}
 
 libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
 (cond-expand
  (virtualisation/WSL {
    ;; WSL doesn't generate an error...
-   eprintf "WSL: skipping GID assignment test\n"
-   libc-wrap-skipped = libc-wrap-skipped + 3
+   eprintf "NOTICE: WSL: skipping GID assignment test\n"
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  ("uname/sysname/NetBSD" {
    ;; NetBSD ignores a negative GID
-   libc-wrap-skipped = libc-wrap-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  ((or "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"
@@ -626,31 +638,37 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
    libc-wrap-error-load "libc-wrap-errors/GID-set-invalid-gid.idio" "Invalid argument" EINVAL "setgid"
  })
 )
-(cond-expand
- ("uname/sysname/SunOS" {
-   (cond-expand
-    ("os-release/ID/solaris" {
-      ;; Oracle Solaris 11.4
-      libc-wrap-error-load "libc-wrap-errors/GID-set-unused-gid.idio" "Insufficient privileges" EPERM "setgid"
-    })
-    (else {
-      libc-wrap-error-load "libc-wrap-errors/GID-set-unused-gid.idio" "Not owner" EPERM "setgid"
-    }))
- })
- (else {
-   libc-wrap-error-load "libc-wrap-errors/GID-set-unused-gid.idio" "Operation not permitted" EPERM "setgid"
- }))
+
+if running-as-root {
+  eprintf "NOTICE: EUID == 0: skipping set GID failure test\n"
+  libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+} {
+  (cond-expand
+   ("uname/sysname/SunOS" {
+     (cond-expand
+      ("os-release/ID/solaris" {
+	;; Oracle Solaris 11.4
+	libc-wrap-error-load "libc-wrap-errors/GID-set-unused-gid.idio" "Insufficient privileges" EPERM "setgid"
+      })
+      (else {
+	libc-wrap-error-load "libc-wrap-errors/GID-set-unused-gid.idio" "Not owner" EPERM "setgid"
+      }))
+   })
+   (else {
+     libc-wrap-error-load "libc-wrap-errors/GID-set-unused-gid.idio" "Operation not permitted" EPERM "setgid"
+   }))
+}
 
 libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
 (cond-expand
  (virtualisation/WSL {
    ;; WSL doesn't generate an error...
-   eprintf "WSL: skipping UID assignment test\n"
-   libc-wrap-skipped = libc-wrap-skipped + 3
+   eprintf "NOTICE: WSL: skipping UID assignment test\n"
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  ("uname/sysname/NetBSD" {
    ;; NetBSD ignores a negative UID
-   libc-wrap-skipped = libc-wrap-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  ((or "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"
@@ -663,20 +681,26 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
    libc-wrap-error-load "libc-wrap-errors/UID-set-invalid-uid.idio" "Invalid argument" EINVAL "setuid"
  })
 )
-(cond-expand
- ("uname/sysname/SunOS" {
-   (cond-expand
-    ("os-release/ID/solaris" {
-      ;; Oracle Solaris 11.4
-      libc-wrap-error-load "libc-wrap-errors/UID-set-unused-uid.idio" "Insufficient privileges" EPERM "setuid"
-    })
-    (else {
-      libc-wrap-error-load "libc-wrap-errors/UID-set-unused-uid.idio" "Not owner" EPERM "setuid"
-    }))
- })
- (else {
-   libc-wrap-error-load "libc-wrap-errors/UID-set-unused-uid.idio" "Operation not permitted" EPERM "setuid"
- }))
+
+if running-as-root {
+  eprintf "NOTICE: EUID == 0: skipping set UID failure test\n"
+  libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+} {
+  (cond-expand
+   ("uname/sysname/SunOS" {
+     (cond-expand
+      ("os-release/ID/solaris" {
+	;; Oracle Solaris 11.4
+	libc-wrap-error-load "libc-wrap-errors/UID-set-unused-uid.idio" "Insufficient privileges" EPERM "setuid"
+      })
+      (else {
+	libc-wrap-error-load "libc-wrap-errors/UID-set-unused-uid.idio" "Not owner" EPERM "setuid"
+      }))
+   })
+   (else {
+     libc-wrap-error-load "libc-wrap-errors/UID-set-unused-uid.idio" "Operation not permitted" EPERM "setuid"
+   }))
+}
 
 libc-wrap-error-load "libc-wrap-errors/b-bad-type.idio" "bad parameter type: '#t' a constant is not a symbol|string"
 libc-wrap-error-load "libc-wrap-errors/b-bad-format.idio" "b?: contains an ASCII NUL"
@@ -728,5 +752,5 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-type.idio" "bad parameter type: '#t
 libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII NUL"
 
 ;; all done?
-Skipped = Skipped + libc-wrap-skipped
-Tests? (libc-wrap-error0 + 370 - libc-wrap-skipped)
+Skipped = Skipped + libc-wrap-error-skipped
+Tests? (libc-wrap-error0 + 370 - libc-wrap-error-skipped)

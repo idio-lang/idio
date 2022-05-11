@@ -146,6 +146,11 @@ define (Tests? n) {
   }
 }
 
+;; Where is the tests directory, say, relative to us?  We must be
+;; somewhere in the hierarchy.  Probably, GitLab CI shell puts us in
+;; .../builds/<RUNNER>/0/idio/idio and gitlab-runner exec shell in
+;; .../builds/0/project-0.
+
 ;; put the tests dirs on IDIOLIB
 topdir := #f
 testdir := #f
@@ -238,6 +243,15 @@ o-suppress-pipefail! := suppress-pipefail!
 o-suppress-exit-on-error! := suppress-exit-on-error!
 suppress-pipefail! = #f
 suppress-exit-on-error! = #f
+
+;; being root defeats some tests -- originally thought to be some
+;; (GitLab) CI weirdness whereas it turns out to be about my Docker
+;; ignorance
+C/0uid_t := C/integer-> 0 libc/uid_t
+running-as-root := C/== EUID C/0uid_t
+if running-as-root {
+  eprintf "NOTICE: EUID/UID == %d/%d; EGID/GID == %d/%d: some tests will be skipped\n" EUID UID EGID GID
+}
 
 test-load := {
   n := 0
