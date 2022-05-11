@@ -478,12 +478,25 @@ test (w? linkfile)   #t
    ;; tests for X_OK
    test (x? "/dev/tty") #t
  })
+ ((or "uname/sysname/SunOS"
+      "uname/sysname/Darwin") {
+   ;; normally #f but #t if running-as-root
+   test (x? "/dev/tty") running-as-root
+ })
  (else {
    test (x? "/dev/tty") #f
  }))
 test (x? ".")	     #t
-test (x? testfile)   #f
-test (x? linkfile)   #f
+(cond-expand
+ ("uname/sysname/SunOS" {
+   ;; normally #f but #t if running-as-root
+   test (x? testfile)   running-as-root
+   test (x? linkfile)   running-as-root
+ })
+ (else {
+   test (x? testfile)   #f
+   test (x? linkfile)   #f
+ }))
 
 ;; if someone has redirected stdin...
 T? (stdin-fileno)

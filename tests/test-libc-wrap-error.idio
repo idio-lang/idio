@@ -553,7 +553,12 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
  ((or "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"
       "uname/sysname/Darwin") {
-   libc-wrap-error-load "libc-wrap-errors/EGID-set-invalid-gid.idio" "Operation not permitted" EPERM "setegid"
+   if running-as-root {
+     eprintf "NOTICE: EUID == 0: skipping set EGID invalid GID failure test\n"
+     libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   } {
+     libc-wrap-error-load "libc-wrap-errors/EGID-set-invalid-gid.idio" "Operation not permitted" EPERM "setegid"
+   }
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/EGID-set-invalid-gid.idio" "Invalid argument" EINVAL "setegid"
@@ -561,7 +566,7 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
 )
 
 if running-as-root {
-  eprintf "NOTICE: EUID == 0: skipping set EGID failure test\n"
+  eprintf "NOTICE: EUID == 0: skipping set EGID unused GID failure test\n"
   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
 } {
   (cond-expand
@@ -589,7 +594,12 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
  ((or "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"
       "uname/sysname/Darwin") {
-   libc-wrap-error-load "libc-wrap-errors/EUID-set-invalid-uid.idio" "Operation not permitted" EPERM "seteuid"
+   if running-as-root {
+     eprintf "NOTICE: EUID == 0: skipping set EUID invalid UID failure test\n"
+     libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   } {
+     libc-wrap-error-load "libc-wrap-errors/EUID-set-invalid-uid.idio" "Operation not permitted" EPERM "seteuid"
+   }
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/EUID-set-invalid-uid.idio" "Invalid argument" EINVAL "seteuid"
@@ -597,7 +607,7 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
 )
 
 if running-as-root {
-  eprintf "NOTICE: EUID == 0: skipping set EUID failure test\n"
+  eprintf "NOTICE: EUID == 0: skipping set EUID unused UID failure test\n"
   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
 } {
   (cond-expand
@@ -632,7 +642,12 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
       "uname/sysname/Darwin"
       (and "os-release/ID/CentOS"
 	   "os-release/VERSION_ID/6")) {
-   libc-wrap-error-load "libc-wrap-errors/GID-set-invalid-gid.idio" "Operation not permitted" EPERM "setgid"
+   if running-as-root {
+     eprintf "NOTICE: EUID == 0: skipping set GID invalid GID failure test\n"
+     libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   } {
+     libc-wrap-error-load "libc-wrap-errors/GID-set-invalid-gid.idio" "Operation not permitted" EPERM "setgid"
+   }
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/GID-set-invalid-gid.idio" "Invalid argument" EINVAL "setgid"
@@ -640,7 +655,7 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
 )
 
 if running-as-root {
-  eprintf "NOTICE: EUID == 0: skipping set GID failure test\n"
+  eprintf "NOTICE: EUID == 0: skipping set GID unused GID failure test\n"
   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
 } {
   (cond-expand
@@ -675,7 +690,12 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
       "uname/sysname/Darwin"
       (and "os-release/ID/CentOS"
 	   "os-release/VERSION_ID/6")) {
-   libc-wrap-error-load "libc-wrap-errors/UID-set-invalid-uid.idio" "Operation not permitted" EPERM "setuid"
+   if running-as-root {
+     eprintf "NOTICE: EUID == 0: skipping set UID invalid UID failure test\n"
+     libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   } {
+     libc-wrap-error-load "libc-wrap-errors/UID-set-invalid-uid.idio" "Operation not permitted" EPERM "setuid"
+   }
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/UID-set-invalid-uid.idio" "Invalid argument" EINVAL "setuid"
@@ -683,7 +703,7 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
 )
 
 if running-as-root {
-  eprintf "NOTICE: EUID == 0: skipping set UID failure test\n"
+  eprintf "NOTICE: EUID == 0: skipping set UID unused UID failure test\n"
   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
 } {
   (cond-expand
