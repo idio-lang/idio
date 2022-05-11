@@ -277,13 +277,13 @@ div.gitcommit {
 .highlight .nd	{ color: #555555; font-weight: bold }		/* Name.Decorator */
 .highlight .ni	{ color: #d55537; font-weight: bold }		/* Name.Entity */
 .highlight .ne	{ color: #80f0a0 }				/* Name.Exception */
-.highlight .nf	{ color: #86a8fe }				/* Name.Function */
+.highlight .nf	{ color: #aaccff }				/* Name.Function */
 .highlight .nl	{ color: #80a0f0; font-weight: bold }		/* Name.Label */
 .highlight .nn	{ color: #0e84b5; font-weight: bold }		/* Name.Namespace */
 .highlight .nx	{ }						/* Name.Other */
 .highlight .py	{ }						/* Name.Property */
 .highlight .nt	{ color: #062873; font-weight: bold }		/* Name.Tag */
-.highlight .nv	{ color: #bb60d5 }				/* Name.Variable */
+.highlight .nv	{ color: #ccbbee }				/* Name.Variable */
 .highlight .o	{ color: #aaaaaa }				/* Operator */
 .highlight .ow	{ color: #80f0a0; font-weight: bold }		/* Operator.Word */
 .highlight .w	{ color: #bbbbbb }				/* Text.Whitespace */
