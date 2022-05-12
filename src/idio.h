@@ -377,6 +377,7 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_STACK_MARKER_RETURN			 25
 #define IDIO_STACK_MARKER_DYNAMIC			 26
 #define IDIO_STACK_MARKER_ENVIRON			 27
+#define IDIO_STACK_MARKER_ABORT				 28
 
 
 /*
@@ -405,6 +406,7 @@ extern FILE *idio_vm_perf_FILE;
 #define idio_SM_return			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_RETURN))
 #define idio_SM_dynamic			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_DYNAMIC))
 #define idio_SM_environ			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_ENVIRON))
+#define idio_SM_abort			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_ABORT))
 
 #define idio_S_notreached	((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NOTREACHED))
 

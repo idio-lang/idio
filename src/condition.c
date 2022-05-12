@@ -997,6 +997,10 @@ expression.							\n\
 :type c: condition instance					\n\
 								\n\
 does not return per se						\n\
+								\n\
+.. warning::							\n\
+   ``restart-condition-handler`` is only effective if the 	\n\
+   session is interactive				 	\n\
 ")
 {
     IDIO_ASSERT (c);
@@ -1054,38 +1058,28 @@ does not return per se						\n\
 	}
 
 	/*
-	 * As the restart-condition-handler we'll go back to #2, the most
-	 * recent ABORT.
-	 *
-	 * It would be better if we tagged these as ABORTs meaning they
-	 * could be nested.
+	 * As the interactive restart-condition-handler we'll go back
+	 * to ABORT #2, the most recent code-set top-level ABORT.
 	 */
-	idio_as_t krun_p = idio_array_size (idio_vm_krun);
-	IDIO krun = idio_S_nil;
-	while (krun_p > 2) {
-	    krun = idio_array_pop (idio_vm_krun);
-#ifdef IDIO_DEBUG
-	    idio_debug ("restart-condition-handler: krun: popping %s\n", IDIO_PAIR_HT (krun));
-#endif
-	    krun_p--;
-	}
+	IDIO thr = idio_thread_current_thread ();
+	idio_sp_t asp = idio_vm_find_abort_2 (thr);
 
-	idio_exit_status = 1;
-	krun = idio_array_top (idio_vm_krun);
-	if (idio_isa_pair (krun)) {
-	    fprintf (stderr, "restart-condition-handler: restoring krun #%zd: ", krun_p);
-	    idio_debug ("%s\n", IDIO_PAIR_HT (krun));
+	if (asp) {
+	    IDIO stack = IDIO_THREAD_STACK (thr);
 #ifdef IDIO_DEBUG
-	    fprintf (stderr, "restart-condition-handler: thread state before krun restored:\n");
-	    idio_vm_thread_state (idio_thread_current_thread ());
-	    fprintf (stderr, "restart-condition-handler: thread state to be restored:\n");
-	    idio_debug ("thr=%s\n", IDIO_CONTINUATION_THR (IDIO_PAIR_H (krun)));
-	    fprintf (stderr, "PC=%td\n", IDIO_CONTINUATION_PC (IDIO_PAIR_H (krun)));
-	    idio_vm_decode_stack (IDIO_CONTINUATION_STACK (IDIO_PAIR_H (krun)));
+	    fprintf (stderr, "restart-condition-handler: ABORT stack from %jd to %jd\n", idio_array_size (stack), asp + 1);
 #endif
-	    idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+	    IDIO krun = idio_array_ref_index (stack, asp - 1);
+	    IDIO_ARRAY_USIZE (stack) = asp + 1;
 
-	    return idio_S_notreached;
+	    idio_exit_status = 1;
+	    if (idio_isa_pair (krun)) {
+		fprintf (stderr, "restart-condition-handler: restoring ABORT continuation #2: ");
+		idio_debug ("%s\n", IDIO_PAIR_HT (krun));
+		idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+
+		return idio_S_notreached;
+	    }
 	}
 
 	fprintf (stderr, "restart-condition-handler: nothing to restore\n");
@@ -1093,6 +1087,10 @@ does not return per se						\n\
 	idio_debug ("\nrestart-condition-handler: re-raising %s\n", c);
 	idio_vm_trap_state (idio_thread_current_thread ());
 	idio_vm_frame_tree (idio_S_nil);
+#endif
+    } else {
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "restart-condition-handler: not interactive\n");
 #endif
     }
 
@@ -1137,23 +1135,28 @@ Does not return.						\n\
     }
 
     /*
-     * As the reset-condition-handler we'll go back to the first krun
+     * As the reset-condition-handler we'll go back to the first ABORT
      * on the VM's stack which should be ABORT to main.
      */
-    idio_as_t krun_p = idio_array_size (idio_vm_krun);
-    IDIO krun = idio_S_nil;
-    while (krun_p > 0) {
-	krun = idio_array_pop (idio_vm_krun);
-	krun_p--;
-    }
+    IDIO thr = idio_thread_current_thread ();
+    idio_sp_t asp = idio_vm_find_abort_1 (thr);
 
-    idio_exit_status = 1;
-    if (idio_isa_pair (krun)) {
-	fprintf (stderr, "reset-condition-handler: restoring krun #%zd: ", krun_p);
-	idio_debug ("%s\n", IDIO_PAIR_HT (krun));
-	idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+    if (asp) {
+	IDIO stack = IDIO_THREAD_STACK (thr);
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "reset-condition-handler: ABORT stack from %jd to %jd\n", idio_array_size (stack), asp + 1);
+#endif
+	IDIO krun = idio_array_ref_index (stack, asp - 1);
+	IDIO_ARRAY_USIZE (stack) = asp + 1;
 
-	return idio_S_notreached;
+	idio_exit_status = 1;
+	if (idio_isa_pair (krun)) {
+	    fprintf (stderr, "reset-condition-handler: restoring ABORT continuation #1: ");
+	    idio_debug ("%s\n", IDIO_PAIR_HT (krun));
+	    idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+
+	    return idio_S_notreached;
+	}
     }
 
     static int resetting = 0;

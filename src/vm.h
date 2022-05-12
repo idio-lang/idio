@@ -263,6 +263,10 @@ void idio_vm_environ_set (IDIO thr, idio_as_t msi, idio_as_t gvi, IDIO v);
 IDIO idio_vm_computed_ref (IDIO thr, idio_as_t msi, idio_as_t gvi);
 IDIO idio_vm_computed_set (IDIO thr, idio_as_t msi, idio_as_t gvi, IDIO v);
 void idio_vm_computed_define (IDIO thr, idio_as_t msi, idio_as_t gvi, IDIO v);
+void idio_vm_push_abort (IDIO thr, IDIO krun);
+void idio_vm_pop_abort (IDIO thr);
+idio_sp_t idio_vm_find_abort_1 (IDIO thr);
+idio_sp_t idio_vm_find_abort_2 (IDIO thr);
 void idio_vm_add_module_constants (IDIO module, IDIO constants);
 
 void idio_raise_condition (IDIO continuablep, IDIO e);

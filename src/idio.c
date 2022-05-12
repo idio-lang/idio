@@ -637,7 +637,7 @@ int main (int argc, char **argv, char **envp)
 
     idio_display_C ("ABORT to main/bootstrap => exit (probably badly)", dosh);
 
-    idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
+    idio_vm_push_abort (thr, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
     idio_load_file_name (idio_string_C_len (IDIO_STATIC_STR_LEN ("bootstrap")), idio_vm_constants);
 
@@ -697,10 +697,9 @@ int main (int argc, char **argv, char **envp)
     thr = v_thr;
 
     /*
-     * This should probably empty the array -- just in case -- so that
-     * there is only the following idio_k_exit on the krun stack
+     * We only want the following idio_k_exit on the ABORT stack
      */
-    idio_array_pop (idio_vm_krun);
+    idio_vm_pop_abort (thr);
 
     /*
      * Save a continuation for exit.
@@ -712,7 +711,7 @@ int main (int argc, char **argv, char **envp)
 
     idio_display_C ("ABORT to main => exit (probably badly)", dosh);
 
-    idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
+    idio_vm_push_abort (thr, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
     /*
      * Handle options

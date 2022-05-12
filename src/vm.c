@@ -2043,7 +2043,7 @@ static void idio_vm_push_dynamic (IDIO thr, idio_as_t gvi, IDIO val)
      * n   idio_SM_dynamic
      * n-1 vi
      * n-2 val
-     * n-3 next-dyn-sp of mark
+     * n-3 sp of next idio_SM_dynamic
      */
 
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
@@ -2203,7 +2203,7 @@ static void idio_vm_push_environ (IDIO thr, idio_as_t mci, idio_as_t gvi, IDIO v
      * n   idio_SM_environ
      * n-1 vi
      * n-2 val
-     * n-3 next-env-sp of mark
+     * n-3 sp of next idio_SM_environ
      */
 
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
@@ -2453,7 +2453,7 @@ void idio_vm_push_trap (IDIO thr, IDIO handler, IDIO fmci, idio_sp_t next)
      * n   idio_SM_trap
      * n-1 handler
      * n-2 condition-type
-     * n-3 next-trap-sp of mark
+     * n-3 sp of next idio_SM_trap
      */
 
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
@@ -2619,6 +2619,210 @@ void idio_vm_escaper_label_ref (IDIO thr, IDIO fmci)
     }
     */
     IDIO_ARRAY_USIZE (stack) = escaper_sp - 3;
+}
+
+void idio_vm_push_abort (IDIO thr, IDIO krun)
+{
+    IDIO_ASSERT (thr);
+    IDIO_ASSERT (krun);
+
+    IDIO_TYPE_ASSERT (thread, thr);
+    IDIO_TYPE_ASSERT (pair, krun);
+    IDIO_TYPE_ASSERT (continuation, IDIO_PAIR_H (krun));
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+
+    /*
+     * stack order:
+     *
+     * n   idio_SM_abort
+     * n-1 (k, desc)
+     * n-2 sp of next idio_SM_abort
+     */
+
+    /* push n-2 */
+    idio_sp_t asp = idio_vm_find_stack_marker (stack, idio_SM_abort, 0, 0);
+    if (asp >= 2) {
+	idio_array_push (stack, idio_fixnum (asp));
+    } else {
+	idio_array_push (stack, idio_fixnum (-1));
+    }
+
+    idio_array_push (stack, krun);
+    idio_array_push (stack, idio_SM_abort);
+}
+
+static void idio_vm_push_offset_abort (IDIO thr, uint64_t o)
+{
+    IDIO_ASSERT (thr);
+
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+
+    /*
+     * stack order:
+     *
+     * n   idio_SM_abort
+     * n-1 (k, desc)
+     * n-2 sp of next idio_SM_abort
+     */
+
+    /*
+     * A vanilla continuation right now would just lead us back into
+     * the errant code that we are putting this ABORT wrapper around.
+     * Therefore we want to massage the continuation's PC to be:
+     *
+     * * offset by {o} which would take us to the POP-ABORT which
+     *   would be expecting the restored stack to have the
+     *   idio_SM_abort marker etc.
+     *
+     * * offset by {o}+1 which would take us to the instruction after
+     *   POP-ABORT which would not be expecting the restored stack to
+     *   have the idio_SM_abort marker etc.
+     *
+     * The latter seems more convenient (and see comments on
+     * implementation below).
+     */
+
+    IDIO k = idio_continuation (thr, IDIO_CONTINUATION_CALL_CC);
+
+    IDIO_CONTINUATION_PC (k) += o + 1;
+
+    IDIO kosh = idio_open_output_string_handle_C ();
+    idio_display_C ("ABORT to toplevel (PC ", kosh);
+    idio_display (idio_fixnum (IDIO_CONTINUATION_PC (k)), kosh);
+    idio_display_C (")", kosh);
+
+    /* push n-2 */
+    idio_sp_t asp = idio_vm_find_stack_marker (stack, idio_SM_abort, 0, 0);
+    if (asp >= 2) {
+	idio_array_push (stack, idio_fixnum (asp));
+    } else {
+	idio_array_push (stack, idio_fixnum (-1));
+    }
+
+    /*
+     * If we took the former approach, that the continuation contains
+     * the idio_SM_abort marker, etc., then we need to push a krun
+     * value on the stack (before creating the continuation) which
+     * should contain the continuation...
+     *
+     * So we would need to push a dummy krun, (#n #n), and set its ph
+     * and pht after we've created the continuation stack.
+     */
+    IDIO krun = IDIO_LIST2 (k, idio_get_output_string (kosh));
+
+    /* push n-1 */
+    idio_array_push (stack, krun);
+
+    /* push n */
+    idio_array_push (stack, idio_SM_abort);
+
+    /*
+     * We would create the continuation, k, now, so as to include the
+     * idio_SM_abort etc. and change k's PC to +{o} and create kosh.
+     *
+     * We can now override krun's values:
+     *
+     * IDIO_PAIR_H (krun) = k;
+     * IDIO_PAIR_HT (krun) = idio_get_output_string (kosh);
+     */
+}
+
+void idio_vm_pop_abort (IDIO thr)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO marker = IDIO_THREAD_STACK_POP ();
+    if (idio_SM_abort != marker) {
+	idio_debug ("iv-pop-abort: marker: expected idio_SM_abort not %s\n", marker);
+	idio_vm_panic (thr, "iv-pop-abort: unexpected stack marker");
+    }
+    IDIO_THREAD_STACK_POP ();
+    IDIO_THREAD_STACK_POP ();
+}
+
+idio_sp_t idio_vm_find_abort_1 (IDIO thr)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+
+    idio_sp_t asp = idio_vm_find_stack_marker (stack, idio_SM_abort, 0, 0);
+
+    if (-1 == asp ||
+	asp < 2) {
+	fprintf (stderr, "find-abort-1: no ABORTs? asp == %jd\n", asp);
+#ifdef IDIO_DEBUG
+	idio_vm_thread_state (thr);
+#endif
+	assert (0);
+    }
+
+    IDIO I_next = idio_array_ref_index (stack, asp - 2);
+    idio_sp_t next = IDIO_FIXNUM_VAL (I_next);
+
+    int done = 0;
+    while (! done) {
+	if (-1 == next) {
+	    return asp;
+	}
+
+	asp = next;
+
+	I_next = idio_array_ref_index (stack, asp - 2);
+	next = IDIO_FIXNUM_VAL (I_next);
+    }
+
+    return 0;
+}
+
+idio_sp_t idio_vm_find_abort_2 (IDIO thr)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+
+    idio_sp_t asp = idio_vm_find_stack_marker (stack, idio_SM_abort, 0, 0);
+
+    if (-1 == asp ||
+	asp < 2) {
+	fprintf (stderr, "find-abort-2: no ABORTs? asp == %jd\n", asp);
+#ifdef IDIO_DEBUG
+	idio_vm_thread_state (thr);
+#endif
+	assert (0);
+    }
+
+    IDIO I_next = idio_array_ref_index (stack, asp - 2);
+    idio_sp_t next = IDIO_FIXNUM_VAL (I_next);
+
+    if (-1 == next) {
+	fprintf (stderr, "find-abort-2: only 1 ABORT\n");
+#ifdef IDIO_DEBUG
+	idio_vm_thread_state (thr);
+#endif
+	return 0;
+    }
+
+    int done = 0;
+    while (! done) {
+	IDIO I_next_1 = idio_array_ref_index (stack, next - 2);
+	idio_sp_t next_1 = IDIO_FIXNUM_VAL (I_next_1);
+
+	if (-1 == next_1) {
+	    return asp;
+	}
+
+	asp = next;
+	next = next_1;
+    }
+
+    return 0;
 }
 
 void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR, int reraise)
@@ -5128,21 +5332,7 @@ int idio_vm_run1 (IDIO thr)
 
 	    IDIO_VM_RUN_DIS ("PUSH-ABORT to PC +%" PRIu64 "\n", o);
 
-	    /*
-	     * A continuation right now would just lead us back into
-	     * this errant code.  We want to massage the
-	     * continuation's PC to be offset by {o}.
-	     */
-	    IDIO k = idio_continuation (thr, IDIO_CONTINUATION_CALL_CC);
-
-	    IDIO_CONTINUATION_PC (k) += o;
-
-	    IDIO dosh = idio_open_output_string_handle_C ();
-	    idio_display_C ("ABORT to toplevel (PC ", dosh);
-	    idio_display (idio_fixnum (IDIO_CONTINUATION_PC (k)), dosh);
-	    idio_display_C (")", dosh);
-
-	    idio_array_push (idio_vm_krun, IDIO_LIST2 (k, idio_get_output_string (dosh)));
+	    idio_vm_push_offset_abort (thr, o);
 	    idio_command_suppress_rcse = idio_S_false;
 
 	    if (idio_vm_tracing_user) {
@@ -5154,7 +5344,8 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    IDIO_VM_RUN_DIS ("POP-ABORT\n");
 
-	    idio_array_pop (idio_vm_krun);
+	    idio_vm_pop_abort (thr);
+
 	    if (0 == idio_vm_tracing_all) {
 		idio_vm_tracing = 0;
 	    }
@@ -5875,23 +6066,29 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("NON-CONT-ERROR\n");
 
 	    /*
-	     * We'll go back to krun #1, the most recent ABORT.
+	     * As the NON-CONT-ERROR handler we'll go back to the
+	     * first ABORT, which should be ABORT to main
 	     */
-	    idio_ai_t krun_p = idio_array_size (idio_vm_krun);
-	    IDIO krun = idio_S_nil;
-	    while (krun_p > 1) {
-		krun = idio_array_pop (idio_vm_krun);
-		idio_debug ("NON-CONT-ERROR: krun: popping %s\n", IDIO_PAIR_HT (krun));
-		krun_p--;
-	    }
+	    idio_sp_t asp = idio_vm_find_abort_1 (thr);
 
-	    if (idio_isa_pair (krun)) {
-		fprintf (stderr, "NON-CONT-ERROR: restoring krun #%zd: ", krun_p);
-		idio_debug ("%s\n", IDIO_PAIR_HT (krun));
-		idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+	    if (asp) {
+		IDIO stack = IDIO_THREAD_STACK (thr);
+#ifdef IDIO_DEBUG
+		fprintf (stderr, "NON-CONT-ERR: ABORT stack from %jd to %jd\n", idio_array_size (stack), asp + 1);
+#endif
+		IDIO krun = idio_array_ref_index (stack, asp - 1);
+		IDIO_ARRAY_USIZE (stack) = asp + 1;
+		idio_vm_thread_state (thr);
 
-		/* notreached */
-		return 0;
+		idio_exit_status = 1;
+		if (idio_isa_pair (krun)) {
+		    fprintf (stderr, "NON-CONT-ERR: restoring ABORT continuation #1: ");
+		    idio_debug ("%s\n", IDIO_PAIR_HT (krun));
+		    idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+
+		    /* notreached */
+		    return 0;
+		}
 	    }
 
 	    fprintf (stderr, "NON-CONT-ERROR: nothing to restore\n");
@@ -7112,20 +7309,6 @@ IDIO idio_vm_run (IDIO thr, idio_pc_t pc, int caller)
      */
     IDIO_v v_thr = thr;
 
-    /*
-     * Save a continuation in case things get ropey and we have to
-     * bail out.
-     */
-    volatile idio_ai_t krun_p0 = idio_array_size (idio_vm_krun);
-    if (0 == krun_p0 &&
-	thr != idio_expander_thread) {
-	fprintf (stderr, "How is krun 0?\n");
-	/*
-	 * experience suggests that things are bad, now
-	 */
-	IDIO_C_ASSERT (0);
-    }
-
     IDIO_THREAD_PC (thr) = pc;
     volatile idio_pc_t v_PC0 = IDIO_THREAD_PC (thr);
     volatile idio_sp_t v_ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
@@ -7459,8 +7642,6 @@ IDIO idio_vm_run (IDIO thr, idio_pc_t pc, int caller)
      * XXX except if a handler went off from a signal handler...
      */
     int bail = 0;
-    IDIO krun = idio_S_nil;
-    idio_ai_t krun_p = 0;
     if (IDIO_VM_RUN_C == caller) {
 	if (IDIO_THREAD_PC (thr) != (idio_vm_FINISH_pc + 1)) {
 	    fprintf (stderr, "vm-run: THREAD %zd failed to run to FINISH: PC %zd != %zd\n", v_PC0, IDIO_THREAD_PC (thr), (idio_vm_FINISH_pc + 1));
@@ -7479,37 +7660,47 @@ IDIO idio_vm_run (IDIO thr, idio_pc_t pc, int caller)
 	    bail = 1;
 	}
 
-	/*
-	 * ABORT and others will have added to idio_vm_krun with some
-	 * abandon but are in no position to repair the krun stack
-	 */
-	krun_p = idio_array_size (idio_vm_krun);
-	idio_ai_t krun_pd = krun_p - krun_p0;
-	if (krun_pd > 1) {
-	    fprintf (stderr, "vm-run: krun: popping %zd to #%zd\n", krun_pd, krun_p0);
-	}
-	while (krun_p > krun_p0) {
-	    krun = idio_array_pop (idio_vm_krun);
-	    krun_p--;
-	}
-	if (krun_pd > 1) {
-	    idio_gc_collect_gen ("vm-run: pop krun");
-	}
-
 	if (bail) {
-	    if (idio_isa_pair (krun)) {
-		fprintf (stderr, "vm-run/bail: restoring krun #%zd: ", krun_p - 1);
-		idio_debug ("%s\n", IDIO_PAIR_HT (krun));
-		idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
-
-		return idio_S_notreached;
+	    /*
+	     * As a mitigation, if interactive we'll go back to ABORT
+	     * #2, the most recent code-set top-level ABORT.
+	     * Otherwise #1.
+	     */
+	    int abort_index = 0;
+	    IDIO thr = idio_thread_current_thread ();
+	    idio_sp_t asp = -1;
+	    if (idio_job_control_interactive) {
+		asp = idio_vm_find_abort_2 (thr);
+		abort_index = 2;
 	    } else {
-		fprintf (stderr, "vm-run/bail: nothing to restore => exit (1)\n");
-		idio_exit_status = 1;
-		idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
-
-		return idio_S_notreached;
+		asp = idio_vm_find_abort_1 (thr);
+		abort_index = 1;
 	    }
+
+	    if (asp) {
+		IDIO stack = IDIO_THREAD_STACK (thr);
+#ifdef IDIO_DEBUG
+		fprintf (stderr, "vm-run: bail: ABORT stack from %jd to %jd\n", idio_array_size (stack), asp + 1);
+#endif
+		IDIO krun = idio_array_ref_index (stack, asp - 1);
+		IDIO_ARRAY_USIZE (stack) = asp + 1;
+		idio_vm_thread_state (thr);
+
+		idio_exit_status = 1;
+		if (idio_isa_pair (krun)) {
+		    fprintf (stderr, "vm-run: bail: restoring ABORT #%d: ", abort_index);
+		    idio_debug ("%s\n", IDIO_PAIR_HT (krun));
+		    idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+
+		    return idio_S_notreached;
+		}
+	    }
+
+	    fprintf (stderr, "vm-run/bail: nothing to restore => exit (1)\n");
+	    idio_exit_status = 1;
+	    idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
+
+	    return idio_S_notreached;
 	}
     }
 
@@ -7968,10 +8159,22 @@ void idio_vm_thread_state (IDIO thr)
 	}
 	fprintf (stderr, "vm-thread-state: environ: SP %3zd ", esp);
 	idio_debug ("= %s\n", idio_array_ref_index (stack, esp - 1));
-	idio_debug (" next %s", idio_array_ref_index (stack, dsp - 3));
-	idio_debug (" vi %s", idio_array_ref_index (stack, dsp - 1));
-	idio_debug (" val %s\n", idio_array_ref_index (stack, dsp - 2));
+	idio_debug (" next %s", idio_array_ref_index (stack, esp - 3));
+	idio_debug (" vi %s", idio_array_ref_index (stack, esp - 1));
+	idio_debug (" val %s\n", idio_array_ref_index (stack, esp - 2));
 	esp = IDIO_FIXNUM_VAL (idio_array_ref_index (stack, esp - 3));
+    }
+
+    header = 1;
+    idio_sp_t asp = idio_vm_find_stack_marker (stack, idio_SM_abort, 0, 0);
+    while (asp != -1) {
+	if (header) {
+	    header = 0;
+	    fprintf (stderr, "\n");
+	}
+	fprintf (stderr, "vm-thread-state: abort: SP %3zd ", asp);
+	idio_debug ("= %s\n", idio_array_ref_index (stack, asp - 1));
+	asp = IDIO_FIXNUM_VAL (idio_array_ref_index (stack, asp - 2));
     }
 
     header = 1;
@@ -7987,6 +8190,7 @@ void idio_vm_thread_state (IDIO thr)
 	krun_p--;
     }
 
+    fprintf (stderr, "\n");
     if (NULL == idio_k_exit) {
 	fprintf (stderr, "vm-thread-state: idio_k_exit NULL\n");
     } else {
@@ -8423,6 +8627,17 @@ void idio_vm_decode_stack (IDIO stack)
 	    idio_sp_t esp = IDIO_FIXNUM_VAL (sv3);
 	    fprintf (stderr, "next env @%zd", esp);
 	    sp -= 4;
+	} else if (idio_SM_abort == sv0 &&
+		   sp >= 2) {
+	    fprintf (stderr, "%-20s ", "ABORT");
+	    if (idio_isa_pair (sv1)) {
+		idio_debug ("%-35s ", IDIO_PAIR_HT (sv1));
+	    } else {
+		idio_debug ("?? %-35s ", sv1);
+	    }
+	    idio_sp_t asp = IDIO_FIXNUM_VAL (sv2);
+	    fprintf (stderr, "next abort @%zd", asp);
+	    sp -= 3;
 	} else if (idio_SM_preserve_all_state == sv0 &&
 		   sp >= 5) {
 	    fprintf (stderr, "%-20s ", "ALL-STATE");
@@ -8657,8 +8872,8 @@ void idio_final_vm ()
 
 	IDIO stack = IDIO_THREAD_STACK (thr);
 	idio_sp_t ss = idio_array_size (stack);
-	if (ss > 24) {
-	    fprintf (stderr, "VM didn't finish cleanly with %zd > 24 entries on the stack\n", ss);
+	if (ss > 27) {
+	    fprintf (stderr, "VM didn't finish cleanly with %zd > 27 entries on the stack\n", ss);
 	    idio_vm_thread_state (thr);
 	}
 #endif
