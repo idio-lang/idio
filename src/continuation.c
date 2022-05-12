@@ -74,11 +74,6 @@ IDIO idio_continuation (IDIO thr, int kind)
     IDIO_CONTINUATION_FRAME (k)		= IDIO_THREAD_FRAME (thr);
     IDIO_CONTINUATION_ENV (k)		= IDIO_THREAD_ENV (thr);
     memcpy (IDIO_CONTINUATION_JMP_BUF (k), IDIO_THREAD_JMP_BUF (thr), sizeof (sigjmp_buf));
-#ifdef IDIO_VM_DYNAMIC_REGISTERS
-    IDIO_CONTINUATION_ENVIRON_SP (k)	= IDIO_THREAD_ENVIRON_SP (thr);
-    IDIO_CONTINUATION_DYNAMIC_SP (k)	= IDIO_THREAD_DYNAMIC_SP (thr);
-    IDIO_CONTINUATION_TRAP_SP (k)	= IDIO_THREAD_TRAP_SP (thr);
-#endif
 #ifdef IDIO_CONTINUATION_HANDLES
     /*
      * See the comment in idio_vm_restore_continuation_data where

@@ -925,21 +925,6 @@ typedef struct idio_thread_s {
 
     sigjmp_buf jmp_buf;
 
-#ifdef IDIO_VM_DYNAMIC_REGISTERS
-    /*
-     * trap_sp is the SP of the current trap with SP-2 containing the
-     * SP of the next trap
-     */
-    struct idio_s *trap_sp;
-
-    /*
-     * dynamic_sp, environ_sp are the SP of the topmost
-     * dynamic/environ variable
-     */
-    struct idio_s *dynamic_sp;
-    struct idio_s *environ_sp;
-#endif
-
     /*
      * func, reg1 and reg1 are transient registers, ie. they don't
      * require preserving/restoring
@@ -976,11 +961,6 @@ typedef struct idio_thread_s {
 #define IDIO_THREAD_FRAME(T)          ((T)->u.thread->frame)
 #define IDIO_THREAD_ENV(T)            ((T)->u.thread->env)
 #define IDIO_THREAD_JMP_BUF(T)        ((T)->u.thread->jmp_buf)
-#ifdef IDIO_VM_DYNAMIC_REGISTERS
-#define IDIO_THREAD_TRAP_SP(T)        ((T)->u.thread->trap_sp)
-#define IDIO_THREAD_DYNAMIC_SP(T)     ((T)->u.thread->dynamic_sp)
-#define IDIO_THREAD_ENVIRON_SP(T)     ((T)->u.thread->environ_sp)
-#endif
 #define IDIO_THREAD_FUNC(T)           ((T)->u.thread->func)
 #define IDIO_THREAD_REG1(T)           ((T)->u.thread->reg1)
 #define IDIO_THREAD_REG2(T)           ((T)->u.thread->reg2)
@@ -1031,11 +1011,6 @@ typedef struct idio_continuation_s {
     struct idio_s *frame;
     struct idio_s *env;
     sigjmp_buf jmp_buf;
-#ifdef IDIO_VM_DYNAMIC_REGISTERS
-    struct idio_s *trap_sp;
-    struct idio_s *dynamic_sp;
-    struct idio_s *environ_sp;
-#endif
 #ifdef IDIO_CONTINUATION_HANDLES
     struct idio_s *input_handle;
     struct idio_s *output_handle;

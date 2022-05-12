@@ -635,11 +635,6 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	idio_gc_gcc_mark (gc, IDIO_THREAD_VAL (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_THREAD_FRAME (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_THREAD_ENV (o), colour);
-#ifdef IDIO_VM_DYNAMIC_REGISTERS
-	idio_gc_gcc_mark (gc, IDIO_THREAD_TRAP_SP (o), colour);
-	idio_gc_gcc_mark (gc, IDIO_THREAD_DYNAMIC_SP (o), colour);
-	idio_gc_gcc_mark (gc, IDIO_THREAD_ENVIRON_SP (o), colour);
-#endif
 	idio_gc_gcc_mark (gc, IDIO_THREAD_FUNC (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_THREAD_REG1 (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_THREAD_REG2 (o), colour);
@@ -656,11 +651,6 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_STACK (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_FRAME (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_ENV (o), colour);
-#ifdef IDIO_VM_DYNAMIC_REGISTERS
-	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_TRAP_SP (o), colour);
-	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_DYNAMIC_SP (o), colour);
-	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_ENVIRON_SP (o), colour);
-#endif
 #ifdef IDIO_CONTINUATION_HANDLES
 	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_INPUT_HANDLE (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_OUTPUT_HANDLE (o), colour);

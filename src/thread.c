@@ -76,17 +76,6 @@ IDIO idio_thread_base (idio_as_t stack_size)
     IDIO_THREAD_FRAME (t) = idio_S_nil;
     IDIO_THREAD_ENV (t) = main_module;
 
-#ifdef IDIO_VM_DYNAMIC_REGISTERS
-    /*
-     * 0 is used as a marker for bootstrapping the first thread when
-     * there are no previous trap handlers -- see
-     * idio_vm_thread_init
-     */
-    IDIO_THREAD_TRAP_SP (t) = idio_fixnum (0);
-
-    IDIO_THREAD_DYNAMIC_SP (t) = idio_fixnum (-1);
-    IDIO_THREAD_ENVIRON_SP (t) = idio_fixnum (-1);
-#endif
     if (sigsetjmp (IDIO_THREAD_JMP_BUF (t), 1)) {
 	fprintf (stderr, "idio_thread: C stack reverted to init\n");
 	idio_vm_panic (t, "thread reverted to init");
@@ -323,22 +312,6 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
     t = idio_as_string (IDIO_THREAD_ENV (v), &t_size, 1, seen, 0);
     IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-#ifdef IDIO_VM_DYNAMIC_REGISTERS
-    IDIO_STRCAT (r, sizep, "\n  t/sp=");
-    t_size = 0;
-    t = idio_as_string (IDIO_THREAD_TRAP_SP (v), &t_size, 1, seen, 0);
-    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-
-    IDIO_STRCAT (r, sizep, "\n  d/sp=");
-    t_size = 0;
-    t = idio_as_string (IDIO_THREAD_DYNAMIC_SP (v), &t_size, 1, seen, 0);
-    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-
-    IDIO_STRCAT (r, sizep, "\n  e/sp=");
-    t_size = 0;
-    t = idio_as_string (IDIO_THREAD_ENVIRON_SP (v), &t_size, 1, seen, 0);
-    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-#endif
     if (depth > 1) {
 	IDIO_STRCAT (r, sizep, "\n  fr=");
 	t_size = 0;
