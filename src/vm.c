@@ -5330,7 +5330,7 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t o = idio_vm_fetch_varuint (thr);
 
-	    IDIO_VM_RUN_DIS ("PUSH-ABORT to PC +%" PRIu64 "\n", o);
+	    IDIO_VM_RUN_DIS ("PUSH-ABORT to PC +%" PRIu64 "\n", o + 1);
 
 	    idio_vm_push_offset_abort (thr, o);
 	    idio_command_suppress_rcse = idio_S_false;
@@ -6712,7 +6712,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "A@%" PRId64 "", pc + o);
 		idio_hash_put (hints, idio_fixnum (pc + o), idio_symbols_C_intern (h, hlen));
-		IDIO_VM_DASM ("PUSH-ABORT to PC +%" PRIu64 " %" PRId64, o, pc + o);
+		IDIO_VM_DASM ("PUSH-ABORT to PC +%" PRIu64 " %" PRId64, o + 1, pc + o + 1);
 	    }
 	    break;
 	case IDIO_A_POP_ABORT:
@@ -8175,19 +8175,6 @@ void idio_vm_thread_state (IDIO thr)
 	fprintf (stderr, "vm-thread-state: abort: SP %3zd ", asp);
 	idio_debug ("= %s\n", idio_array_ref_index (stack, asp - 1));
 	asp = IDIO_FIXNUM_VAL (idio_array_ref_index (stack, asp - 2));
-    }
-
-    header = 1;
-    idio_ai_t krun_p = idio_array_size (idio_vm_krun) - 1;
-    while (krun_p >= 0) {
-	if (header) {
-	    header = 0;
-	    fprintf (stderr, "\n");
-	}
-	IDIO krun = idio_array_ref_index (idio_vm_krun, krun_p);
-	fprintf (stderr, "vm-thread-state: krun: % 3zd", krun_p + 1);
-	idio_debug (" %s\n", IDIO_PAIR_HT (krun));
-	krun_p--;
     }
 
     fprintf (stderr, "\n");
