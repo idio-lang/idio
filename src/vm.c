@@ -2644,7 +2644,7 @@ idio_sp_t idio_vm_find_abort_1 (IDIO thr)
 
     if (-1 == asp ||
 	asp < 2) {
-	fprintf (stderr, "find-abort-1: no ABORTs? asp == %td\n", asp);
+	fprintf (stderr, "find-abort-1: no ABORTs? asp == %" PRIdPTR "\n", asp);
 #ifdef IDIO_DEBUG
 	idio_vm_thread_state (thr);
 #endif
@@ -2680,7 +2680,7 @@ idio_sp_t idio_vm_find_abort_2 (IDIO thr)
 
     if (-1 == asp ||
 	asp < 2) {
-	fprintf (stderr, "find-abort-2: no ABORTs? asp == %td\n", asp);
+	fprintf (stderr, "find-abort-2: no ABORTs? asp == %" PRIdPTR "\n", asp);
 #ifdef IDIO_DEBUG
 	idio_vm_thread_state (thr);
 #endif
