@@ -1367,7 +1367,8 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
 				     idio_pair (timing_start,
 				     idio_pair (idio_S_false,
 				     idio_pair (idio_S_false,
-				     idio_S_nil))))))))))))))));
+				     idio_pair (idio_S_true,
+				     idio_S_nil)))))))))))))))));
     idio_array_push (protected, job);
 
     IDIO r = idio_job_control_launch_1proc_job (job, 1, pathname, argv, args);

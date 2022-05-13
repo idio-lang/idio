@@ -128,6 +128,7 @@ static IDIO idio_job_control_djn_sym;
 #define IDIO_JOB_ST_TIMING_START	12
 #define IDIO_JOB_ST_TIMING_END		13
 #define IDIO_JOB_ST_ASYNC		14
+#define IDIO_JOB_ST_SET_EXIT_STATUS	15
 
 #define IDIO_PROCESS_ST_ARGV		0
 #define IDIO_PROCESS_ST_EXEC		1
@@ -445,6 +446,7 @@ static IDIO idio_job_control_job_detail (IDIO job)
 	return idio_S_notreached;
     }
 
+    IDIO ses = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_SET_EXIT_STATUS);
     IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PROCS);
     while (idio_S_nil != procs) {
 	IDIO proc = IDIO_PAIR_H (procs);
@@ -453,15 +455,27 @@ static IDIO idio_job_control_job_detail (IDIO job)
 
 	if (WIFEXITED (*statusp)) {
 	    if (WEXITSTATUS (*statusp)) {
+		if (idio_S_true == ses) {
+		    idio_struct_instance_set_direct (job, IDIO_JOB_ST_SET_EXIT_STATUS, idio_S_false);
+		    idio_exit_status = WEXITSTATUS (*statusp);
+		}
 		return IDIO_LIST2 (idio_S_exit, idio_C_int (WEXITSTATUS (*statusp)));
 	    }
 	} else if (WIFSIGNALED (*statusp)) {
+	    if (idio_S_true == ses) {
+		idio_struct_instance_set_direct (job, IDIO_JOB_ST_SET_EXIT_STATUS, idio_S_false);
+		idio_exit_status = WTERMSIG (*statusp) + 128;
+	    }
 	    return IDIO_LIST2 (idio_S_killed, idio_C_int (WTERMSIG (*statusp)));
 	}
 
 	procs = IDIO_PAIR_T (procs);
     }
 
+    if (idio_S_true == ses) {
+	idio_struct_instance_set_direct (job, IDIO_JOB_ST_SET_EXIT_STATUS, idio_S_false);
+	idio_exit_status = 0;
+    }
     return IDIO_LIST2 (idio_S_exit, idio_C_int (0));
 }
 
@@ -2053,7 +2067,8 @@ launch a pipeline of `job_controls`			\n\
 				     idio_pair (timing_start,
 				     idio_pair (idio_S_false,
 				     idio_pair (idio_S_false,
-				     idio_S_nil))))))))))))))));
+				     idio_pair (idio_S_true,
+				     idio_S_nil)))))))))))))))));
 
     idio_job_control_launch_job (job, 1);
     return idio_S_unspec;
@@ -2381,7 +2396,8 @@ void idio_init_job_control ()
 						  idio_pair (IDIO_SYMBOLS_C_INTERN ("timing-start"),
 						  idio_pair (IDIO_SYMBOLS_C_INTERN ("timing-end"),
 						  idio_pair (IDIO_SYMBOLS_C_INTERN ("async"),
-						  idio_S_nil))))))))))))))));
+						  idio_pair (IDIO_SYMBOLS_C_INTERN ("set-exit-status"),
+						  idio_S_nil)))))))))))))))));
     idio_module_set_symbol_value (sym, idio_job_control_job_type, idio_job_control_module);
 
     idio_job_control_default_child_handler_sym = IDIO_SYMBOLS_C_INTERN ("default-child-handler");

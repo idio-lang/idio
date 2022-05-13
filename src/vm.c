@@ -8123,6 +8123,23 @@ This form will attempt to run through the full system shutdown.	\n\
     return idio_S_notreached;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("%set-exit-status", set_exit_status, (IDIO istatus), "status", "\
+update potential :lname:`Idio` exit status with	\n\
+`status`					\n\
+						\n\
+:param status: exit status			\n\
+:type status: C/int				\n\
+")
+{
+    IDIO_ASSERT (istatus);
+
+    IDIO_TYPE_ASSERT (C_int, istatus);
+
+    idio_exit_status = IDIO_C_TYPE_int (istatus);
+
+    return idio_S_unspec;
+}
+
 time_t idio_vm_elapsed (void)
 {
     return (time ((time_t *) NULL) - idio_vm_t0);
@@ -8672,6 +8689,7 @@ void idio_vm_add_primitives ()
 
     IDIO_ADD_PRIMITIVE (idio_thread_state);
     IDIO_ADD_PRIMITIVE (exit);
+    IDIO_ADD_PRIMITIVE (set_exit_status);
     IDIO_ADD_PRIMITIVE (run_in_thread);
     IDIO_ADD_PRIMITIVE (vm_frame_tree);
     IDIO_ADD_PRIMITIVE (vm_trap_state);

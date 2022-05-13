@@ -131,7 +131,7 @@ export (%idio-interactive
 
 
 export-struct-accessors-only %idio-process	argv exec pid completed stopped status
-export-struct-accessors-only %idio-job		pipeline procs pgid notify-stopped notify-completed raise? raised tcattrs stdin stdout stderr report-timing timing-start timing-end async
+export-struct-accessors-only %idio-job		pipeline procs pgid notify-stopped notify-completed raise? raised tcattrs stdin stdout stderr report-timing timing-start timing-end async set-exit-status
 
 %%last-job := #n
 
@@ -212,7 +212,7 @@ define (job-as-string job seen) {
 
     hprintf r "ns?%s nc?%s r?%s-%s " (%idio-job-notify-stopped job) (%idio-job-notify-completed job) (%idio-job-raise? job) (%idio-job-raised job)
 
-    hprintf r "rt?%s %s %s a?=%s" (%idio-job-report-timing job) (%idio-job-timing-start job) (%idio-job-timing-end job) (%idio-job-async job)
+    hprintf r "rt?%s %s %s a?=%s ses=%s" (%idio-job-report-timing job) (%idio-job-timing-start job) (%idio-job-timing-end job) (%idio-job-async job) (%idio-job-set-exit-status job)
 
     hprintf r ">"
     get-output-string r
@@ -488,6 +488,10 @@ left-hand processes are ignored
 	    loop (pt procs)
 	  })
 	  ((not (C/== (WEXITSTATUS status) C/0i)) {
+	    if (%idio-job-set-exit-status job) {
+	      set-%idio-job-set-exit-status! job #f
+	      %set-exit-status (WEXITSTATUS status)
+	    }
 	    list 'exit (WEXITSTATUS status)
 	  })
 	  (else {
@@ -499,6 +503,10 @@ left-hand processes are ignored
 		 (not (null? (pt procs)))) {
 	   loop (pt procs)
 	 } {
+	   if (%idio-job-set-exit-status job) {
+	     set-%idio-job-set-exit-status! job #f
+	     %set-exit-status ((WTERMSIG status) + (C/integer-> 128 'int))
+	   }
 	   list 'killed (WTERMSIG status)
 	 }
        })
@@ -515,7 +523,13 @@ left-hand processes are ignored
 	status := %idio-process-status last-proc
 	(cond
 	 ((null? status) (list 'running))
-	 ((WIFEXITED status) (list 'exit C/0i))
+	 ((WIFEXITED status) {
+	   if (%idio-job-set-exit-status job) {
+	     set-%idio-job-set-exit-status! job #f
+	     %set-exit-status C/0i
+	   }
+	   list 'exit C/0i
+	 })
 	 (else (list 'unknown)))
   })
 }
@@ -1598,7 +1612,8 @@ define-template (pipeline kind cmds) {
 				    $report-time
 				    (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN))
 				    #f
-				    $async-job)
+				    $async-job
+				    #t)
 
       $proc-id   := 1
       $cmd-pipe  := #f

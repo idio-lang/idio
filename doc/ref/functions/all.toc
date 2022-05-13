@@ -26,6 +26,7 @@
 (nodocument Idio with-values-from)
 (document Idio apply)
 (document Idio exit)
+(nodocument Idio %set-exit-status)
 (document Idio identity)
 
 (document Idio value-index)

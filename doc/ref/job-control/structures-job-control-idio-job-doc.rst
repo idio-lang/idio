@@ -53,3 +53,6 @@
 
 * `async` is a flag indicating the job is asynchronous and normally
   set for *Process Substitution* jobs
+
+* `set-exit-status` is a flag indicating whether the job should update
+  the pending :lname:`Idio` exit status

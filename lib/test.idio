@@ -408,6 +408,13 @@ printf "[%s/%d] %3ds test.idio\n" (getpid) PID SECONDS
 ;printf "# src-props %d\n" (length (hash-keys %idio-src-properties))
 
 if (zero? Errors) {
+  ;; A feature of external commands setting the pending Idio exit
+  ;; status is that the last external command in these tests quite
+  ;; probably failed --that was the idea of testing, after all --
+  ;; leaving us about to exit non-zero even though, in this clause,
+  ;; all tests passed.
+  %set-exit-status (C/integer-> 0 'int)
+
   printf "All %d tests passed" Tests
   if (Skipped gt 0) {
     printf " (with %d tests skipped)" Skipped
