@@ -932,7 +932,7 @@ int main (int argc, char **argv, char **envp)
 	 * load-handle *stdin*
 	 */
 	if (idio_job_control_tty_isatty) {
-	    idio_job_control_set_interactive (1);
+	    idio_job_control_set_interactive (idio_job_control_tty_isatty);
 
 	    idio_module_set_symbol_value (idio_vars_suppress_pipefail_sym, idio_S_true, idio_Idio_module);
 	    idio_module_set_symbol_value (idio_vars_suppress_exit_on_error_sym, idio_S_true, idio_Idio_module);
