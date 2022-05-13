@@ -47,6 +47,7 @@
 #include "bignum.h"
 #include "codegen.h"
 #include "condition.h"
+#include "continuation.h"
 #include "error.h"
 #include "evaluate.h"
 #include "file-handle.h"
@@ -2084,14 +2085,18 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     IDIO thr = idio_thread_current_thread ();
     IDIO_THREAD_ENV (thr) = IDIO_THREAD_MODULE (thr);
 
+    int handle_interactive = 0;
     if (idio_isa_file_handle (h) &&
 	IDIO_FILE_HANDLE_FLAGS (h) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
-	/*
-	 * Code coverage:
-	 *
-	 * Requires an interactive session.
-	 */
-	return idio_load_handle_interactive (h, reader, evaluator, cs);
+	handle_interactive = 1;
+
+	if (IDIO_HANDLE_FLAGS (h) & IDIO_HANDLE_FLAG_CLOSED) {
+	    IDIO eh = idio_thread_current_error_handle ();
+	    idio_display_C ("ERROR: load-file-handle-interactive: ", eh);
+	    idio_display (h, eh);
+	    idio_display_C (": handle already closed?\n", eh);
+	    return idio_S_false;
+	}
     }
 
     IDIO stack = IDIO_THREAD_STACK (thr);
@@ -2108,12 +2113,50 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	idio_array_push (stack, h);
     }
 
-    idio_sp_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
+    idio_sp_t sp0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
     IDIO e = idio_S_nil;
     IDIO r = idio_S_nil;
 
     for (;;) {
+	IDIO cm;
+	IDIO oh;
+	IDIO eh;
+
+	if (handle_interactive) {
+	    cm = idio_thread_current_module ();
+	    oh = idio_thread_current_output_handle ();
+	    eh = idio_thread_current_error_handle ();
+
+	    /*
+	     * Throw out some messages about any recently failed jobs
+	     */
+	    idio_vm_invoke_C (idio_thread_current_thread (),
+			      idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("do-job-notification"),
+							idio_job_control_module,
+							idio_S_nil));
+
+	    /*
+	     * As we're interactive, make an attempt to flush stdout
+	     * -- noting that stdout might no longer be a file-handle
+	     * and that a regular flush-handle merely shuffles our
+	     * handle's buffer into what is probably a FILE* buffer.
+	     */
+	    idio_flush_handle (oh);
+
+	    /*
+	     * The prompt -- could be better
+	     */
+#ifdef IDIO_DEBUG
+	    char pbuf[BUFSIZ];
+	    idio_snprintf (pbuf, BUFSIZ, "[%d] ", getpid ());
+
+	    idio_display_C (pbuf, eh);
+#endif
+	    idio_display (IDIO_MODULE_NAME (cm), eh);
+	    idio_display_C ("> ", eh);
+	}
+
 #ifdef IDIO_LOAD_TIMING
 	struct timeval t0;
 	if (gettimeofday (&t0, NULL) == -1) {
@@ -2124,79 +2167,115 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
 	if (idio_S_eof == e) {
 	    break;
-	} else {
-#ifdef IDIO_LOAD_TIMING
-	    struct timeval te;
-	    struct timeval td;
-	    fprintf (stderr, "  load %4d", i++);
-#endif
-	    IDIO m = (*evaluator) (e, cs);
-
-#ifdef IDIO_LOAD_TIMING
-	    if (gettimeofday (&te, NULL) == -1) {
-		perror ("gettimeofday");
-	    }
-	    td.tv_sec = te.tv_sec - t0.tv_sec;
-	    td.tv_usec = te.tv_usec - t0.tv_usec;
-	    if (td.tv_usec < 0) {
-		td.tv_usec += 1000000;
-		td.tv_sec -= 1;
-	    }
-	    fprintf (stderr, " e %ld.%06ld", td.tv_sec, td.tv_usec);
-#endif
-
-	    idio_pc_t pc = idio_codegen (thr, m, cs);
-
-	    r = idio_vm_run_C (thr, pc);
-
-	    idio_sp_t ss = idio_array_size (stack);
-
-	    if (ss != ss0) {
-		size_t size = 0;
-		char *sname = idio_handle_name_as_C (h, &size);
-		fprintf (stderr, "load-handle: %s: SS %zd != %zd\n", sname, ss, ss0);
-
-		IDIO_GC_FREE (sname, size);
-
-		idio_vm_thread_state (thr);
-	    }
-
-#ifdef IDIO_LOAD_TIMING
-	    if (gettimeofday (&te, NULL) == -1) {
-		perror ("gettimeofday");
-	    }
-	    td.tv_sec = te.tv_sec - t0.tv_sec;
-	    td.tv_usec = te.tv_usec - t0.tv_usec;
-	    if (td.tv_usec < 0) {
-		td.tv_usec += 1000000;
-		td.tv_sec -= 1;
-	    }
-	    fprintf (stderr, " r %ld.%06ld", td.tv_sec, td.tv_usec);
-	    if (td.tv_sec > 0 ||
-		td.tv_usec > 400000) {
-		if (idio_S_define == IDIO_PAIR_H (e) &&
-		    idio_isa_pair (IDIO_PAIR_HTT (e))) {
-		    fprintf (stderr, " %zu", idio_list_length (IDIO_PAIR_HTT (e)));
-		    idio_debug (" %s", IDIO_PAIR_HTT (e));
-		} else {
-		    idio_debug (" %s", e);
-		}
-	    }
-	    fprintf (stderr, "\n");
-#endif
 	}
+
+#ifdef IDIO_LOAD_TIMING
+	struct timeval te;
+	struct timeval td;
+	fprintf (stderr, "  load %4d", i++);
+#endif
+
+	IDIO eval_abort = idio_continuation (thr, IDIO_CONTINUATION_CALL_CC);
+
+	IDIO eosh = idio_open_output_string_handle_C ();
+
+	idio_display_C ("ABORT evaluate", eosh);
+
+	idio_vm_push_abort (thr, IDIO_LIST2 (eval_abort, idio_get_output_string (eosh)));
+
+	IDIO m = (*evaluator) (e, cs);
+
+	idio_vm_pop_abort (thr);
+
+#ifdef IDIO_LOAD_TIMING
+	if (gettimeofday (&te, NULL) == -1) {
+	    perror ("gettimeofday");
+	}
+	td.tv_sec = te.tv_sec - t0.tv_sec;
+	td.tv_usec = te.tv_usec - t0.tv_usec;
+	if (td.tv_usec < 0) {
+	    td.tv_usec += 1000000;
+	    td.tv_sec -= 1;
+	}
+	fprintf (stderr, " e %ld.%06ld", td.tv_sec, td.tv_usec);
+#endif
+
+	idio_pc_t pc = idio_codegen (thr, m, cs);
+
+	r = idio_vm_run_C (thr, pc);
+
+	idio_sp_t sp = idio_array_size (stack);
+
+	if (sp != sp0) {
+	    size_t size = 0;
+	    char *sname = idio_handle_name_as_C (h, &size);
+	    fprintf (stderr, "load-handle: %s: SP %zd != %zd\n", sname, sp, sp0);
+
+	    IDIO_GC_FREE (sname, size);
+
+	    idio_vm_thread_state (thr);
+	}
+
+	if (handle_interactive) {
+	    /*
+	     * NB.  We must deliberately call idio_as_string() because
+	     * the idio_print_handle (oh, r) method will call
+	     * idio_display_string(), ie. strings will not be
+	     * double-quoted which is *precisely* what we want here.
+	     */
+	    size_t r_size = 0;
+	    char *rs = idio_as_string_safe (r, &r_size, 40, 1);
+	    idio_puts_handle (oh, rs, r_size);
+
+	    IDIO_GC_FREE (rs, r_size);
+
+	    idio_display_C ("\n", oh);
+	}
+
+#ifdef IDIO_LOAD_TIMING
+	if (gettimeofday (&te, NULL) == -1) {
+	    perror ("gettimeofday");
+	}
+	td.tv_sec = te.tv_sec - t0.tv_sec;
+	td.tv_usec = te.tv_usec - t0.tv_usec;
+	if (td.tv_usec < 0) {
+	    td.tv_usec += 1000000;
+	    td.tv_sec -= 1;
+	}
+	fprintf (stderr, " r %ld.%06ld", td.tv_sec, td.tv_usec);
+	if (td.tv_sec > 0 ||
+	    td.tv_usec > 400000) {
+	    if (idio_S_define == IDIO_PAIR_H (e) &&
+		idio_isa_pair (IDIO_PAIR_HTT (e))) {
+		fprintf (stderr, " %zu", idio_list_length (IDIO_PAIR_HTT (e)));
+		idio_debug (" %s", IDIO_PAIR_HTT (e));
+	    } else {
+		idio_debug (" %s", e);
+	    }
+	}
+	fprintf (stderr, "\n");
+#endif
     }
 
     IDIO_HANDLE_M_CLOSE (h) (h);
 
+    if (handle_interactive &&
+	idio_vm_exit) {
+	fprintf (stderr, "load-handle-interactive/exit (%d)\n", idio_exit_status);
+	idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
+
+	return idio_S_notreached;
+    }
+
     if (preserve) {
-	idio_sp_t ss = idio_array_size (stack);
-	if (ss == ss0) {
+	idio_sp_t sp = idio_array_size (stack);
+	if (sp == sp0) {
 	    idio_array_pop (stack);
 	} else {
-	    fprintf (stderr, "load-handle: SS %zd != %zd\n", ss, ss0);
+	    fprintf (stderr, "load-handle: SP %zd != %zd\n", sp, sp0);
 	}
     }
+
     return r;
 }
 
@@ -2237,122 +2316,6 @@ This is the `load-handle` primitive.				\n\
     }
 
     return r;
-}
-
-/*
- * Code coverage:
- *
- * idio_load_handle_interactive() isn't tested by the automation
- * scripts
- */
-IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
-{
-    IDIO_ASSERT (fh);
-    IDIO_C_ASSERT (reader);
-    IDIO_C_ASSERT (evaluator);
-    IDIO_ASSERT (cs);
-    IDIO_TYPE_ASSERT (file_handle, fh);
-    IDIO_TYPE_ASSERT (array, cs);
-
-    if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
-	IDIO eh = idio_thread_current_error_handle ();
-	idio_display_C ("ERROR: load-file-handle-interactive: ", eh);
-	idio_display (fh, eh);
-	idio_display_C (": handle already closed?\n", eh);
-	return idio_S_false;
-    }
-
-    IDIO thr = idio_thread_current_thread ();
-    idio_sp_t sp0 = idio_array_size (IDIO_THREAD_STACK (thr));
-
-    /*
-     * When we call idio_vm_run() we are at risk of the garbage
-     * collector being called so we need to save the current file
-     * handle and any lists we're walking over
-     */
-    idio_remember_file_handle (fh);
-
-    for (;;) {
-	IDIO cm = idio_thread_current_module ();
-
-	/*
-	 * As we're interactive, make an attempt to flush stdout --
-	 * noting that stdout might no longer be a file-handle and
-	 * that a regular flush-handle merely shuffles our handle's
-	 * buffer into what is probably a FILE* buffer.
-	 */
-	IDIO oh = idio_thread_current_output_handle ();
-
-	/*
-	 * Throw out some messages about any recently failed jobs
-	 */
-	idio_vm_invoke_C (idio_thread_current_thread (),
-			  idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("do-job-notification"),
-						    idio_job_control_module,
-						    idio_S_nil));
-
-	idio_flush_handle (oh);
-
-	IDIO eh = idio_thread_current_error_handle ();
-#ifdef IDIO_DEBUG
-	char pbuf[BUFSIZ];
-	idio_snprintf (pbuf, BUFSIZ, "[%d] ", getpid ());
-
-	idio_display_C (pbuf, eh);
-#endif
-	idio_display (IDIO_MODULE_NAME (cm), eh);
-	idio_display_C ("> ", eh);
-
-	IDIO e = (*reader) (fh);
-
-	if (idio_S_eof == e) {
-	    break;
-	}
-
-	IDIO m = (*evaluator) (e, cs);
-	idio_pc_t pc = idio_codegen (thr, m, cs);
-
-	IDIO r = idio_vm_run_C (thr, pc);
-	/*
-	 * NB.  We must deliberately call idio_as_string() because the
-	 * idio_print_handle (oh, r) method will call
-	 * idio_display_string(), ie. strings will not be
-	 * double-quoted which is *precisely* what we want here.
-	 */
-	size_t r_size = 0;
-	char *rs = idio_as_string_safe (r, &r_size, 40, 1);
-	idio_puts_handle (oh, rs, r_size);
-
-	IDIO_GC_FREE (rs, r_size);
-
-	idio_display_C ("\n", oh);
-    }
-
-    IDIO_HANDLE_M_CLOSE (fh) (fh);
-
-    if (idio_vm_exit) {
-	fprintf (stderr, "load-filehandle-interactive/exit (%d)\n", idio_exit_status);
-	idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
-
-	return idio_S_notreached;
-    }
-
-    idio_sp_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
-
-    if (sp != sp0) {
-	size_t size = 0;
-	char *sname = idio_handle_name_as_C (fh, &size);
-	fprintf (stderr, "load-file-handle-interactive: %s: SP %zd != SP0 %zd\n", sname, sp, sp0);
-
-	IDIO_GC_FREE (sname, size);
-
-	idio_debug ("THR %s\n", thr);
-	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
-    }
-
-    idio_forget_file_handle (fh);
-
-    return idio_S_unspec;
 }
 
 char *idio_handle_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
