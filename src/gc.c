@@ -1718,7 +1718,7 @@ void idio_gc_closure_stats (IDIO c)
 
 	    fprintf (idio_vm_perf_FILE, " %5jd.%09ld", (intmax_t) IDIO_CLOSURE_CALL_TIME (c).tv_sec, IDIO_CLOSURE_CALL_TIME (c).tv_nsec);
 
-	    double call_time = (IDIO_PRIMITIVE_CALL_TIME (c).tv_sec * IDIO_VM_NS + IDIO_PRIMITIVE_CALL_TIME (c).tv_nsec) / IDIO_PRIMITIVE_CALLED (c);
+	    double call_time = (IDIO_CLOSURE_CALL_TIME (c).tv_sec * IDIO_VM_NS + IDIO_CLOSURE_CALL_TIME (c).tv_nsec) / IDIO_CLOSURE_CALLED (c);
 	    fprintf (idio_vm_perf_FILE, " %11.f", call_time);
 	    char *units = "ns";
 	    if (call_time > 10000) {
