@@ -7260,7 +7260,7 @@ IDIO idio_vm_run (IDIO thr, idio_pc_t pc, int caller)
      */
     if (!idio_isa_thread (v_thr)) {
 	fprintf (stderr, "\n\n\nrun: v_thr corrupt:\n");
-	fprintf (stderr, "thr      = %s\n", idio_type2string (thr));
+	fprintf (stderr, "thr      = %s\n", idio_type2string (v_thr));
 	fprintf (stderr, "v_thr    = %s\n", idio_type2string (v_thr));
 	idio_debug ("curr thr = %s\n", idio_thread_current_thread ());
 	abort ();

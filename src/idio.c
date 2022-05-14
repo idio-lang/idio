@@ -719,14 +719,14 @@ int main (int argc, char **argv, char **envp)
      * The enum options is to maintain state round the loop.
      * Non-argument options can just set a flag.
      */
-    int import_debugger = 0;
+    volatile int import_debugger = 0;
     enum options {
 	OPTION_NONE,
 	OPTION_LOAD,
     };
-    int in_idio_options = 1;
+    volatile int in_idio_options = 1;
     enum options option = OPTION_NONE;
-    int i;
+    volatile int i;
     for (i = 1; i < argc; i++) {
 	if (in_idio_options) {
 	    if (OPTION_NONE != option) {
