@@ -1561,6 +1561,42 @@ dump instance `o`				\n\
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("%cpl-args", cpl_args, (IDIO args), "args", "\
+An accelerator for				\n\
+						\n\
+.. code-block:: idio				\n\
+						\n\
+   map (function (arg) (class-cpl (class-of arg))) args	\n\
+						\n\
+:param args: method arguments			\n\
+:type args: list				\n\
+:return: list of argument CPLs			\n\
+")
+{
+    IDIO_ASSERT (args);
+
+    /*
+     * Test Case: object-errors/cpl-args-bad-args-type.idio
+     *
+     * %cpl-args #t
+     */
+    IDIO_USER_TYPE_ASSERT (list, args);
+
+    IDIO r = idio_S_nil;
+
+    while (idio_S_nil != args) {
+	IDIO arg = IDIO_PAIR_H (args);
+	IDIO co = idio_object_class_of (arg);
+	IDIO cpl = idio_struct_instance_ref_direct (co, IDIO_CLASS_SLOT_CPL);
+
+	r = idio_pair (cpl, r);
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    return idio_list_nreverse (r);
+}
+
 char *idio_instance_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);
@@ -1786,6 +1822,7 @@ void idio_object_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_object_module, slot_set);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_object_module, slot_set_direct);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_object_module, dump_instance);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_object_module, cpl_args);
 }
 
 void idio_final_object ()

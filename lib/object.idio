@@ -423,9 +423,9 @@ define (TC/last l) {
 
 define (TC/every test & lists) {
   scan :+ function (tails) {
-    if (member #t (map null? tails)) #t {
-      (and (apply test (map ph tails))
-	   (scan (map pt tails)))
+    if (any-null? tails) #t {
+      (and (apply test (ph-of tails))
+	   (scan (pt-of tails)))
     }
   }
 
@@ -668,7 +668,7 @@ define-method (compute-apply-generic (gf <generic>)) {
 
 define-method (compute-methods (gf <generic>)) {
   (function (args) {
-    cpl-args := map (function (arg) (class-cpl (class-of arg))) args
+    cpl-args := %cpl-args args ; map (function (arg) (class-cpl (class-of arg))) args
     applicable := TC/collect-if (function (m) {
       ;TC/every TC/applicable? (method-specializers m) args
       TC/every TC/cpl-applicable? (method-specializers m) cpl-args
@@ -685,7 +685,7 @@ define-method (compute-methods (gf <generic>)) {
 
 define-method (compute-method-more-specific? (gf <generic>)) {
   (function (m1 m2 args) {
-    cpl-args := map (function (arg) (class-cpl (class-of arg))) args
+    cpl-args := %cpl-args args ; map (function (arg) (class-cpl (class-of arg))) args
     loop :+ function (ms1 ms2 ca*) {
       (cond
        ((and (null? ms1)
@@ -988,7 +988,7 @@ The following method is defined:
 	} #t
       }) (pt to-do)
 
-      collect remaining-to-do (pair (append current (apply append (map pt (reverse! others))))
+      collect remaining-to-do (pair (append current (apply append (pt-of (reverse! others))))
 				    r)
     }
   }
