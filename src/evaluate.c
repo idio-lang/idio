@@ -3164,7 +3164,7 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
 		 * bindings/assignments will implicitly re-order them
 		 */
 		IDIO bindings = idio_S_nil;
-		IDIO ns = idio_list_map_ph (defs);
+		IDIO ns = idio_list_ph_of (defs);
 		while (idio_S_nil != ns) {
 		    bindings = idio_pair (IDIO_LIST2 (IDIO_PAIR_H (ns), idio_S_false), bindings);
 		    ns = IDIO_PAIR_T (ns);

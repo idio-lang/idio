@@ -671,8 +671,8 @@ static IDIO idio_application_expander (IDIO x, IDIO e)
     if (idio_S_nil == xh) {
 	return idio_S_nil;
     } else if (idio_isa_pair (xh)) {
-	IDIO mph = idio_list_map_ph (x);
-	IDIO mpt = idio_list_map_pt (x);
+	IDIO mph = idio_list_ph_of (x);
+	IDIO mpt = idio_list_pt_of (x);
 
 	/*
 	 * idio_template_expand() calls us with e == #f

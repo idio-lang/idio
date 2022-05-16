@@ -72,6 +72,43 @@ pair-error-load "pair-errors/pt-bad-type.idio" "bad parameter type: '#t' a const
 
 pair-error-load "pair-errors/set-pt-bad-type.idio" "bad parameter type: '#t' a constant is not a pair"
 
+pair-error-load "pair-errors/phh-bad-type-1.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/phh-bad-type-2.idio" "bad parameter type: '#t' a constant is not a pair"
+
+pair-error-load "pair-errors/pht-bad-type-1.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/pht-bad-type-2.idio" "bad parameter type: '#n' a constant is not a pair"
+
+pair-error-load "pair-errors/pth-bad-type-1.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/pth-bad-type-2.idio" "bad parameter type: '#t' a constant is not a pair"
+
+pair-error-load "pair-errors/ptt-bad-type-1.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/ptt-bad-type-2.idio" "bad parameter type: '#n' a constant is not a pair"
+
+pair-error-load "pair-errors/phhh-bad-type-1.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/phhh-bad-type-2.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/phhh-bad-type-3.idio" "bad parameter type: '#t' a constant is not a pair"
+
+pair-error-load "pair-errors/phth-bad-type-1.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/phth-bad-type-2.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/phth-bad-type-3.idio" "bad parameter type: '#n' a constant is not a pair"
+
+pair-error-load "pair-errors/phtt-bad-type-1.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/phtt-bad-type-2.idio" "bad parameter type: '#n' a constant is not a pair"
+pair-error-load "pair-errors/phtt-bad-type-3.idio" "bad parameter type: '#n' a constant is not a pair"
+
+pair-error-load "pair-errors/ptth-bad-type-1.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/ptth-bad-type-2.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/ptth-bad-type-3.idio" "bad parameter type: '#n' a constant is not a pair"
+
+pair-error-load "pair-errors/pttt-bad-type-1.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/pttt-bad-type-2.idio" "bad parameter type: '#n' a constant is not a pair"
+pair-error-load "pair-errors/pttt-bad-type-3.idio" "bad parameter type: '#n' a constant is not a pair"
+
+pair-error-load "pair-errors/phtth-bad-type-1.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/phtth-bad-type-2.idio" "bad parameter type: '#t' a constant is not a pair"
+pair-error-load "pair-errors/phtth-bad-type-3.idio" "bad parameter type: '#n' a constant is not a pair"
+pair-error-load "pair-errors/phtth-bad-type-4.idio" "bad parameter type: '#n' a constant is not a pair"
+
 pair-error-load "pair-errors/reverse-bad-type.idio" "bad parameter type: '#t' a constant is not a list"
 
 pair-error-load "pair-errors/nreverse-bad-type.idio" "bad parameter type: '#t' a constant is not a list"
@@ -81,6 +118,12 @@ pair-error-load "pair-errors/list2array-bad-type.idio" "bad parameter type: '#t'
 pair-error-load "pair-errors/length-bad-type.idio" "bad parameter type: '#t' a constant is not a list"
 
 pair-error-load "pair-errors/append-bad-type.idio" "bad parameter type: '#t' a constant is not a list"
+
+pair-error-load "pair-errors/ph-of-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
+
+pair-error-load "pair-errors/pt-of-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
+
+pair-error-load "pair-errors/any-nullp-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
 
 pair-error-load "pair-errors/memq-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
 
@@ -101,4 +144,4 @@ pair-error-load "pair-errors/nth-bad-list-type.idio" "bad parameter type: '#t' a
 pair-error-load "pair-errors/nth-bad-index-type.idio" "bad parameter type: '#t' a constant is not a integer"
 
 ;; all done?
-Tests? (pair-error0 + 20)
+Tests? (pair-error0 + 50)

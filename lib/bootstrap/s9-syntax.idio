@@ -27,36 +27,29 @@
 
 ;; Some obvious procedures first
 
-define (phhhh x) (ph (ph (ph (ph x))))
-define (phhht x) (ph (ph (ph (pt x))))
-define (phhth x) (ph (ph (pt (ph x))))
-define (phhtt x) (ph (ph (pt (pt x))))
-define (phthh x) (ph (pt (ph (ph x))))
-define (phtht x) (ph (pt (ph (pt x))))
-define (phtth x) (ph (pt (pt (ph x))))
-define (phttt x) (ph (pt (pt (pt x))))
-define (pthhh x) (pt (ph (ph (ph x))))
-define (pthht x) (pt (ph (ph (pt x))))
-define (pthth x) (pt (ph (pt (ph x))))
-define (pthtt x) (pt (ph (pt (pt x))))
-define (ptthh x) (pt (pt (ph (ph x))))
-define (pttht x) (pt (pt (ph (pt x))))
-define (pttth x) (pt (pt (pt (ph x))))
-define (ptttt x) (pt (pt (pt (pt x))))
+;; these are not used in anger in the Idio code base and so exist for
+;; completeness for the test suite -- the missing obvious others are
+;; defined as primitives for efficiency
+define (phht x) (ph (pht x))
+define (pthh x) (pt (phh x))
+define (ptht x) (pt (pht x))
 
-define (phhh x) (ph (ph (ph x)))
-define (phht x) (ph (ph (pt x)))
-define (phth x) (ph (pt (ph x)))
-define (phtt x) (ph (pt (pt x)))
-define (pthh x) (pt (ph (ph x)))
-define (ptht x) (pt (ph (pt x)))
-define (ptth x) (pt (pt (ph x)))
-define (pttt x) (pt (pt (pt x)))
-
-define (phh x) (ph (ph x))
-define (pht x) (ph (pt x))
-define (pth x) (pt (ph x))
-define (ptt x) (pt (pt x))
+define (phhhh x) (phh (phh x))
+define (phhht x) (phh (pht x))
+define (phhth x) (phh (pth x))
+define (phhtt x) (phh (ptt x))
+define (phthh x) (pht (phh x))
+define (phtht x) (pht (pht x))
+;; define (phtth x) (pht (pth x))	; phtth is used in the code-base
+define (phttt x) (pht (ptt x))
+define (pthhh x) (pth (phh x))
+define (pthht x) (pth (pht x))
+define (pthth x) (pth (pth x))
+define (pthtt x) (pth (ptt x))
+define (ptthh x) (ptt (phh x))
+define (pttht x) (ptt (pht x))
+define (pttth x) (ptt (pth x))
+define (ptttt x) (ptt (ptt x))
 
 define (map-ph f a) "map-ph: mapph1 a r" {
   mapph1 :+ function (a r) {
@@ -68,31 +61,6 @@ define (map-ph f a) "map-ph: mapph1 a r" {
   }
 
   mapph1 a '#n
-}
-
-ph-of := {
-  map-ph := map-ph
-
-  function (a*) "ph-of: map-ph ph a*" {
-    map-ph ph a*
-  }
-}
-
-pt-of := {
-  map-ph := map-ph
-
-  function (a*) {
-    map-ph pt a*
-  }
-}
-
-any-null? := {
-  map-ph := map-ph
-
-  function (a*) {
-    (and (memq #t (map-ph null? a*))
-	 #t)
-  }
 }
 
 map := {

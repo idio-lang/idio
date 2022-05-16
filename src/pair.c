@@ -260,6 +260,379 @@ set the tail of pair `p` to `v`			\n\
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("phh", pair_hh, (IDIO p), "p", "\
+return :samp:`(ph (ph {p}))`			\n\
+						\n\
+:param p: pair to query				\n\
+:type p: pair					\n\
+:return: head of the head of `p`		\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    /*
+     * Test Case: pair-errors/phh-bad-type-1.idio
+     *
+     * phh #t
+     */
+    IDIO_USER_TYPE_ASSERT (pair, p);
+
+    IDIO r = IDIO_PAIR_H (p);
+
+    /*
+     * Test Case: pair-errors/phh-bad-type-2.idio
+     *
+     * phh '(#t)
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_H (r);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("pht", pair_ht, (IDIO p), "p", "\
+return :samp:`(ph (pt {p}))`			\n\
+						\n\
+:param p: pair to query				\n\
+:type p: pair					\n\
+:return: head of the tail of `p`		\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    /*
+     * Test Case: pair-errors/pht-bad-type-1.idio
+     *
+     * pht #t
+     */
+    IDIO_USER_TYPE_ASSERT (pair, p);
+
+    IDIO r = IDIO_PAIR_T (p);
+
+    /*
+     * Test Case: pair-errors/pht-bad-type-2.idio
+     *
+     * pht '(#t)
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_H (r);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("pth", pair_th, (IDIO p), "p", "\
+return :samp:`(pt (ph {p}))`			\n\
+						\n\
+:param p: pair to query				\n\
+:type p: pair					\n\
+:return: tail of the head of `p`		\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    /*
+     * Test Case: pair-errors/pth-bad-type-1.idio
+     *
+     * pth #t
+     */
+    IDIO_USER_TYPE_ASSERT (pair, p);
+
+    IDIO r = IDIO_PAIR_H (p);
+
+    /*
+     * Test Case: pair-errors/pth-bad-type-2.idio
+     *
+     * pth '(#t)
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_T (r);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("ptt", pair_tt, (IDIO p), "p", "\
+return :samp:`(pt (pt {p}))`			\n\
+						\n\
+:param p: pair to query				\n\
+:type p: pair					\n\
+:return: tail of the tail of `p`		\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    /*
+     * Test Case: pair-errors/ptt-bad-type-1.idio
+     *
+     * ptt #t
+     */
+    IDIO_USER_TYPE_ASSERT (pair, p);
+
+    IDIO r = IDIO_PAIR_T (p);
+
+    /*
+     * Test Case: pair-errors/ptt-bad-type-2.idio
+     *
+     * ptt '(#t)
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_T (r);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("phhh", pair_hhh, (IDIO p), "p", "\
+return :samp:`(ph (ph (ph {p})))`		\n\
+						\n\
+:param p: pair to query				\n\
+:type p: pair					\n\
+:return: head of the head of the head of `p`	\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    /*
+     * Test Case: pair-errors/phhh-bad-type-1.idio
+     *
+     * phhh #t
+     */
+    IDIO_USER_TYPE_ASSERT (pair, p);
+
+    IDIO r = IDIO_PAIR_H (p);
+
+    /*
+     * Test Case: pair-errors/phhh-bad-type-2.idio
+     *
+     * phhh '(#t)
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_H (r);
+
+    /*
+     * Test Case: pair-errors/phhh-bad-type-3.idio
+     *
+     * phhh '((#t))
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_H (r);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("phth", pair_hth, (IDIO p), "p", "\
+return :samp:`(ph (pt (ph {p})))`		\n\
+						\n\
+:param p: pair to query				\n\
+:type p: pair					\n\
+:return: head of the tail of the head of `p`	\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    /*
+     * Test Case: pair-errors/phth-bad-type-1.idio
+     *
+     * phth #t
+     */
+    IDIO_USER_TYPE_ASSERT (pair, p);
+
+    IDIO r = IDIO_PAIR_H (p);
+
+    /*
+     * Test Case: pair-errors/phth-bad-type-2.idio
+     *
+     * phth '(#t)
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_T (r);
+
+    /*
+     * Test Case: pair-errors/phth-bad-type-3.idio
+     *
+     * phth '((#t))
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_H (r);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("phtt", pair_htt, (IDIO p), "p", "\
+return :samp:`(ph (pt (pt {p})))`		\n\
+						\n\
+:param p: pair to query				\n\
+:type p: pair					\n\
+:return: head of the tail of the tail of `p`	\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    /*
+     * Test Case: pair-errors/phtt-bad-type-1.idio
+     *
+     * phtt #t
+     */
+    IDIO_USER_TYPE_ASSERT (pair, p);
+
+    IDIO r = IDIO_PAIR_T (p);
+
+    /*
+     * Test Case: pair-errors/phtt-bad-type-2.idio
+     *
+     * phtt '(#t)
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_T (r);
+
+    /*
+     * Test Case: pair-errors/phtt-bad-type-3.idio
+     *
+     * phtt '(#t (#t))
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_H (r);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("ptth", pair_tth, (IDIO p), "p", "\
+return :samp:`(pt (pt (ph {p})))`		\n\
+						\n\
+:param p: pair to query				\n\
+:type p: pair					\n\
+:return: tail of the tail of the head of `p`	\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    /*
+     * Test Case: pair-errors/ptth-bad-type-1.idio
+     *
+     * ptth #t
+     */
+    IDIO_USER_TYPE_ASSERT (pair, p);
+
+    IDIO r = IDIO_PAIR_H (p);
+
+    /*
+     * Test Case: pair-errors/ptth-bad-type-2.idio
+     *
+     * ptth '(#t)
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_T (r);
+
+    /*
+     * Test Case: pair-errors/ptth-bad-type-3.idio
+     *
+     * ptth '((#t))
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_T (r);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("pttt", pair_ttt, (IDIO p), "p", "\
+return :samp:`(pt (pt (pt {p})))`		\n\
+						\n\
+:param p: pair to query				\n\
+:type p: pair					\n\
+:return: tail of the tail of the tail of `p`	\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    /*
+     * Test Case: pair-errors/pttt-bad-type-1.idio
+     *
+     * pttt #t
+     */
+    IDIO_USER_TYPE_ASSERT (pair, p);
+
+    IDIO r = IDIO_PAIR_T (p);
+
+    /*
+     * Test Case: pair-errors/pttt-bad-type-2.idio
+     *
+     * pttt '(#t)
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_T (r);
+
+    /*
+     * Test Case: pair-errors/pttt-bad-type-3.idio
+     *
+     * pttt '(#t (#t))
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_T (r);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("phtth", pair_htth, (IDIO p), "p", "\
+return :samp:`(ph (pt (pt (ph {p}))))`		\n\
+						\n\
+:param p: pair to query				\n\
+:type p: pair					\n\
+:return: head of the tail of the tail of the head of `p`	\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    /*
+     * Test Case: pair-errors/phtth-bad-type-1.idio
+     *
+     * phtth #t
+     */
+    IDIO_USER_TYPE_ASSERT (pair, p);
+
+    IDIO r = IDIO_PAIR_H (p);
+
+    /*
+     * Test Case: pair-errors/phtth-bad-type-2.idio
+     *
+     * phtth '(#t)
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_T (r);
+
+    /*
+     * Test Case: pair-errors/phtth-bad-type-3.idio
+     *
+     * phtth '((#t))
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_T (r);
+
+    /*
+     * Test Case: pair-errors/phtth-bad-type-4.idio
+     *
+     * phtth '((#t #t))
+     */
+    IDIO_USER_TYPE_ASSERT (pair, r);
+
+    r = IDIO_PAIR_H (r);
+
+    return r;
+}
+
 /*
  * Code coverage:
  *
@@ -597,7 +970,7 @@ list `a` is copied, list `b` is untouched	\n\
     return idio_list_append2 (a, b);
 }
 
-IDIO idio_list_map_ph (IDIO l)
+IDIO idio_list_ph_of (IDIO l)
 {
     IDIO_ASSERT (l);
     IDIO_TYPE_ASSERT (list, l);
@@ -618,7 +991,31 @@ IDIO idio_list_map_ph (IDIO l)
     return idio_list_nreverse (r);
 }
 
-IDIO idio_list_map_pt (IDIO l)
+IDIO_DEFINE_PRIMITIVE1_DS ("ph-of", ph_of, (IDIO l), "l", "\
+return the remainder of the list `l` from the	\n\
+first incidence of an element :ref:`eq? <eq?>`	\n\
+`k` or ``#f`` if `k` is not in `l`		\n\
+						\n\
+:param k: object to search for			\n\
+:type k: any					\n\
+:param l: list to search in			\n\
+:type l: list					\n\
+:return: a list starting from `k`, ``#f`` if `k` is not in `l`\n\
+")
+{
+    IDIO_ASSERT (l);
+
+    /*
+     * Test Case: pair-errors/ph-of-bad-list-type.idio
+     *
+     * ph-of #t
+     */
+    IDIO_USER_TYPE_ASSERT (list, l);
+
+    return idio_list_ph_of (l);
+}
+
+IDIO idio_list_pt_of (IDIO l)
 {
     IDIO_ASSERT (l);
     IDIO_TYPE_ASSERT (list, l);
@@ -637,6 +1034,61 @@ IDIO idio_list_map_pt (IDIO l)
     }
 
     return idio_list_nreverse (r);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("pt-of", pt_of, (IDIO l), "l", "\
+return the remainder of the list `l` from the	\n\
+first incidence of an element :ref:`eq? <eq?>`	\n\
+`k` or ``#f`` if `k` is not in `l`		\n\
+						\n\
+:param k: object to search for			\n\
+:type k: any					\n\
+:param l: list to search in			\n\
+:type l: list					\n\
+:return: a list starting from `k`, ``#f`` if `k` is not in `l`\n\
+")
+{
+    IDIO_ASSERT (l);
+
+    /*
+     * Test Case: pair-errors/pt-of-bad-list-type.idio
+     *
+     * pt-of #t
+     */
+    IDIO_USER_TYPE_ASSERT (list, l);
+
+    return idio_list_pt_of (l);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("any-null?", any_nullp, (IDIO l), "l", "\
+return the remainder of the list `l` from the	\n\
+first incidence of an element :ref:`eq? <eq?>`	\n\
+`k` or ``#f`` if `k` is not in `l`		\n\
+						\n\
+:param k: object to search for			\n\
+:type k: any					\n\
+:param l: list to search in			\n\
+:type l: list					\n\
+:return: a list starting from `k`, ``#f`` if `k` is not in `l`\n\
+")
+{
+    IDIO_ASSERT (l);
+
+    /*
+     * Test Case: pair-errors/any-nullp-bad-list-type.idio
+     *
+     * any-null? #t
+     */
+    IDIO_USER_TYPE_ASSERT (list, l);
+
+    while (idio_S_nil != l) {
+	if (idio_S_nil == IDIO_PAIR_H (l)) {
+	    return idio_S_true;
+	}
+	l = IDIO_PAIR_T (l);
+    }
+
+    return idio_S_false;
 }
 
 IDIO idio_list_memq (IDIO k, IDIO l)
@@ -1244,11 +1696,25 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (set_pair_head);
     IDIO_ADD_PRIMITIVE (set_pair_tail);
 
+    IDIO_ADD_PRIMITIVE (pair_hh);
+    IDIO_ADD_PRIMITIVE (pair_ht);
+    IDIO_ADD_PRIMITIVE (pair_th);
+    IDIO_ADD_PRIMITIVE (pair_tt);
+    IDIO_ADD_PRIMITIVE (pair_hhh);
+    IDIO_ADD_PRIMITIVE (pair_hth);
+    IDIO_ADD_PRIMITIVE (pair_htt);
+    IDIO_ADD_PRIMITIVE (pair_tth);
+    IDIO_ADD_PRIMITIVE (pair_ttt);
+    IDIO_ADD_PRIMITIVE (pair_htth);
+
     IDIO_ADD_PRIMITIVE (list_reverse);
     IDIO_ADD_PRIMITIVE (list_nreverse);
     IDIO_ADD_PRIMITIVE (list_length);
     IDIO_ADD_PRIMITIVE (list);
     IDIO_ADD_PRIMITIVE (append);
+    IDIO_ADD_PRIMITIVE (ph_of);
+    IDIO_ADD_PRIMITIVE (pt_of);
+    IDIO_ADD_PRIMITIVE (any_nullp);
     IDIO_ADD_PRIMITIVE (memq);
     IDIO_ADD_PRIMITIVE (memv);
     IDIO_ADD_PRIMITIVE (member);
