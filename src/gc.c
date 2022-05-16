@@ -791,9 +791,6 @@ void idio_gc_walk_tree ()
     idio_root_t *root = idio_gc->roots;
     while (root) {
 	fprintf (stderr, "root #%3zd: ", ri++);
-	if (idio_G_frame == root->object) {
-	    fprintf (stderr, "== idio_G_frame: ");
-	}
 	idio_dump (root->object, 16);
 	root = root->next;
     }

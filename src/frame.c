@@ -49,8 +49,6 @@
 #include "vm.h"
 #include "vtable.h"
 
-IDIO idio_G_frame;
-
 void idio_frame_error_range (IDIO fo, size_t const d, size_t const i, IDIO c_location)
 {
     IDIO_ASSERT (fo);

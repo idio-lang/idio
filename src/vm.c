@@ -8927,7 +8927,10 @@ void idio_init_vm ()
 	idio_module_export_symbol_value (sym, idio_fixnum (cs->value), idio_vm_module);
     }
 
-    idio_vm_prompt_tag_type = idio_struct_type (IDIO_SYMBOLS_C_INTERN ("prompt-tag"), idio_S_nil, IDIO_LIST1 (IDIO_SYMBOLS_C_INTERN ("name")));
+    idio_vm_prompt_tag_type = idio_struct_type (IDIO_SYMBOLS_C_INTERN ("prompt-tag"),
+						idio_S_nil,
+						IDIO_LIST1 (IDIO_SYMBOLS_C_INTERN ("name")));
+    idio_gc_protect_auto (idio_vm_prompt_tag_type);
 
     if (clock_gettime (CLOCK_MONOTONIC, &idio_vm_ts0) < 0) {
 	perror ("clock_gettime (CLOCK_MONOTONIC, ts)");

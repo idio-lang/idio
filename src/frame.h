@@ -23,8 +23,6 @@
 #ifndef FRAME_H
 #define FRAME_H
 
-extern IDIO idio_G_frame;
-
 IDIO idio_frame_allocate (idio_fi_t nargs);
 IDIO idio_frame (IDIO next, IDIO args);
 int idio_isa_frame (IDIO fo);

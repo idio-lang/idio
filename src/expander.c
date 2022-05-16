@@ -1449,6 +1449,7 @@ void idio_init_expander ()
     idio_expander_module = idio_module (IDIO_SYMBOLS_C_INTERN ("expander"));
 
     idio_evaluator_extend_str = idio_string_C_len (IDIO_STATIC_STR_LEN ("idio_evaluator_extend"));
+    idio_gc_protect_auto (idio_evaluator_extend_str);
 
     idio_expander_list = IDIO_SYMBOLS_C_INTERN ("*expander-list*");
     idio_module_set_symbol_value (idio_expander_list, idio_S_nil, idio_expander_module);

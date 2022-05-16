@@ -1860,6 +1860,7 @@ void idio_init_object ()
     idio_class_struct_type = idio_struct_type (idio_class_class_sym,
 					       idio_S_nil,
 					       class_st_names);
+    idio_gc_protect_auto (idio_class_struct_type);
 
     /*
      * Careful, though, IOS instances are recursive by design so we

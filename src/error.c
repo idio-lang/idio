@@ -62,7 +62,6 @@
 static IDIO idio_S_coding;
 static IDIO idio_S_internal;
 static IDIO idio_S_user;
-static IDIO idio_S_user_code;
 
 /*
  * Code coverage:
@@ -877,13 +876,8 @@ void idio_init_error ()
 {
     idio_module_table_register (idio_error_add_primitives, NULL, NULL);
 
-    idio_S_coding = IDIO_SYMBOLS_C_INTERN ("coding");
-    idio_gc_protect_auto (idio_S_coding);
-    idio_S_internal = IDIO_SYMBOLS_C_INTERN ("internal");
-    idio_gc_protect_auto (idio_S_internal);
-    idio_S_user = IDIO_SYMBOLS_C_INTERN ("user");
-    idio_gc_protect_auto (idio_S_user);
-    idio_S_user_code = idio_string_C_len (IDIO_STATIC_STR_LEN ("user code"));
-    idio_gc_protect_auto (idio_S_user_code);
+    idio_S_coding    = IDIO_SYMBOLS_C_INTERN ("coding");
+    idio_S_internal  = IDIO_SYMBOLS_C_INTERN ("internal");
+    idio_S_user      = IDIO_SYMBOLS_C_INTERN ("user");
 }
 
