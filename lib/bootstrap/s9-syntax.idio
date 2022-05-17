@@ -67,7 +67,7 @@ map := {
   ph-of := ph-of
   pt-of := pt-of
 
-  function/name mappy (f & a*) {
+  function/name map (f & a*) {
     map2 :+ function (a* r) {
       if (null? (ph a*)) {
 	reverse! r
