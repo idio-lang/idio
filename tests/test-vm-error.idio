@@ -39,7 +39,7 @@ Maybe we can give the checker a hint.
 vm-error-load := {
   n := 0
 
-  function (filename msg & args) {
+  function/name vm-error-load (filename msg & args) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1

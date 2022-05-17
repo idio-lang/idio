@@ -649,7 +649,7 @@ dirs := #f
     }
   }
 
-  pushd = function (d) "
+  pushd = function/name pushd (d) "
 
 if `d` is a directory then change the working directory to it and push
 it onto the top of the directory stack.
@@ -667,7 +667,7 @@ This function modifies :ref:`PWD <PWD>`.
     }
   }
 
-  popd = function () "
+  popd = function/name popd () "
 
 if the directory stack has more than one entry then pop an element off
 the directory stack and change the working directory to the top-most
@@ -687,7 +687,7 @@ This function modifies :ref:`PWD <PWD>`.
     }
   }
 
-  setd = function (d) "
+  setd = function/name setd (d) "
 
 if `d` is a directory then change the working directory to it and set
 the top entry in the directory stack to it.
@@ -705,7 +705,7 @@ This function modifies :ref:`PWD <PWD>`.
     }
   }
 
-  dirs = function () "
+  dirs = function/name dirs () "
 print the directory stack
 " {
     printf "%@\n" dir-stack

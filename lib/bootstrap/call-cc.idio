@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -121,7 +121,7 @@ call-with-values := #f
   orig-call/cc := call/cc
   call/cc = {
 
-    function (k-proc) "
+    function/name call/cc (k-proc) "
 This is the call-with-values call/cc variant which calls:
 
     " {
@@ -154,7 +154,7 @@ This is the call-with-values call/cc variant which calls:
 
   ;; Remember, with this form, {args} will be #n or a list
 
-  values = function args {
+  values = function/name values args {
     if (and (not (null? args))
 	    (null? (pt args))) {
       ph args
@@ -163,7 +163,7 @@ This is the call-with-values call/cc variant which calls:
     }
   }
 
-  call-with-values = function (producer consumer) {
+  call-with-values = function/name call-with-values (producer consumer) {
     x := (producer)
     if (magic? x) {
 
@@ -290,7 +290,7 @@ This is the dynamic-wind call/cc variant which calls:
 
   %set-property! call/cc :docstr-raw (append-string (%property call/cc :docstr-raw) (%property orig-call/cc :docstr-raw))
 
-  dynamic-wind = function (before during after) {
+  dynamic-wind = function/name dynamic-wind (before during after) {
     here := *here*
     reroot! (pair (pair before after) here)
     call-with-values during (function results {

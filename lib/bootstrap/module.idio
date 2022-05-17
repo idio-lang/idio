@@ -34,12 +34,12 @@
 {
   %module-stack := #n
 
-  %module-push = function (name) {
+  %module-push = function/name %module-push (name) {
     %module-stack = pair (current-module) %module-stack
     %find-or-create-module name
   }
 
-  %module-pop = function () {
+  %module-pop = function/name %module-pop () {
     prev := ph %module-stack
     %module-stack = pt %module-stack
     prev
@@ -94,7 +94,7 @@ define-template (module name) {
   orig-load := load
   orig-load-handle := load-handle
 
-  load = function (filename) "
+  load = function/name load (filename) "
 load Idio code from `filename`
 
 :param filename: the filename to load from
@@ -125,7 +125,7 @@ and calls
 
   %set-property! load :docstr-raw (append-string (%property load :docstr-raw) (%property orig-load :docstr-raw))
 
-  load-handle = function (handle) "
+  load-handle = function/name load-handle (handle) "
 load Idio code from `handle`
 
 :param handle: the handle to load from

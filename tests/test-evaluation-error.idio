@@ -33,7 +33,7 @@ strings.
 evaluation-error-load := {
   n := 0
 
-  function (filename msg) {
+  function/name evaluation-error-load (filename msg) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1
@@ -97,7 +97,14 @@ evaluation-error-load "evaluation-errors/quote-nil.idio" "quote: no argument"
 evaluation-error-load "evaluation-errors/quote-multiple-args.idio" "(1 2): too many arguments"
 evaluation-error-load "evaluation-errors/quasiquote-nil.idio" "quasiquote: no argument"
 evaluation-error-load "evaluation-errors/quasiquote-multiple-args.idio" "(1 2): too many arguments"
+
 evaluation-error-load "evaluation-errors/function-nil.idio" "function: no arguments"
+evaluation-error-load "evaluation-errors/function-no-body.idio" "function: no body"
+
+evaluation-error-load "evaluation-errors/function-name-nil.idio" "function/name: no arguments"
+evaluation-error-load "evaluation-errors/function-name-no-bindings.idio" "function/name: no bindings"
+evaluation-error-load "evaluation-errors/function-name-no-body.idio" "function/name: no body"
+
 evaluation-error-load "evaluation-errors/if-cond-nil.idio" "(if 1): no consequent/alternative"
 evaluation-error-load "evaluation-errors/if-nil.idio" "if: no arguments"
 evaluation-error-load "evaluation-errors/cond-nil.idio" "cond: no clauses"
@@ -137,4 +144,4 @@ evaluation-error-load "evaluation-errors/include-nil.idio" "include: no argument
 evaluation-error-load "evaluation-errors/template-expand-nil.idio" "template-expand: no argument"
 
 ;; all done?
-Tests? (evaluation-error0 + 65)
+Tests? (evaluation-error0 + 69)

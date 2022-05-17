@@ -1071,7 +1071,8 @@ void idio_meaning_copy_src_properties (IDIO src, IDIO dst)
 		IDIO slo = idio_hash_ref (idio_src_properties, src);
 		if (idio_S_unspec == slo) {
 #ifdef IDIO_DEBUG
-		    if (idio_S_function == IDIO_PAIR_H (src)) {
+		    if (idio_S_function_name == IDIO_PAIR_H (src) ||
+			idio_S_function == IDIO_PAIR_H (src)) {
 			idio_debug ("im_csp !!!! no src lo for\n src=%s\n", src);
 			idio_debug (" dst=%s\n", dst);
 			IDIO_C_ASSERT (0);
@@ -1880,7 +1881,8 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, IDI
 	 *
 	 * NB e is already a list
 	 */
-	e = idio_list_append2 (IDIO_LIST2 (idio_S_function,
+	e = idio_list_append2 (IDIO_LIST3 (idio_S_function_name,
+					   IDIO_PAIR_H (name),
 					   IDIO_PAIR_T (name)),
 			       e);
 	name = IDIO_PAIR_H (name);
@@ -1938,7 +1940,8 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
      * (define-template (name formal*) ...) => (define-template name (function (formal*) ...))
      */
     if (idio_isa_pair (name)) {
-	e = IDIO_LIST3 (idio_S_function,
+	e = IDIO_LIST4 (idio_S_function_name,
+			IDIO_PAIR_H (name),
 			IDIO_PAIR_T (name),
 			e);
 	name = IDIO_PAIR_H (name);
@@ -1969,7 +1972,8 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
 
     IDIO docstr = idio_get_output_string (dsh);
 
-    IDIO expander = IDIO_LIST4 (idio_S_function,
+    IDIO expander = IDIO_LIST5 (idio_S_function_name,
+				name,
 				bindings,
 				docstr,
 				appl);
@@ -2232,7 +2236,8 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 	 */
 	IDIO def_args = IDIO_LIST3 (idio_S_op, idio_S_before, idio_S_after);
 
-	IDIO fe = IDIO_LIST4 (idio_S_function,
+	IDIO fe = IDIO_LIST5 (idio_S_function_name,
+			      name,
 			      def_args,
 			      idio_meaning_define_infix_operator_string,
 			      e);
@@ -2336,7 +2341,8 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 	 */
 	IDIO def_args = IDIO_LIST3 (idio_S_op, idio_S_before, idio_S_after);
 
-	IDIO fe = IDIO_LIST4 (idio_S_function,
+	IDIO fe = IDIO_LIST5 (idio_S_function_name,
+			      name,
 			      def_args,
 			      idio_meaning_define_postfix_operator_string,
 			      e);
@@ -2637,9 +2643,10 @@ static IDIO idio_meaning_sequence (IDIO src, IDIO ep, IDIO nametree, IDIO escape
 
 static IDIO idio_meaning_escape_block (IDIO src, IDIO label, IDIO be, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm);
 
-static IDIO idio_meaning_fix_abstraction (IDIO src, IDIO ns, IDIO formals, IDIO docstr, IDIO ep, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm)
+static IDIO idio_meaning_fix_abstraction (IDIO src, IDIO name, IDIO ns, IDIO formals, IDIO docstr, IDIO ep, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm)
 {
     IDIO_ASSERT (src);
+    IDIO_ASSERT (name);
     IDIO_ASSERT (ns);
     IDIO_ASSERT (formals);
     IDIO_ASSERT (docstr);
@@ -2649,6 +2656,7 @@ static IDIO idio_meaning_fix_abstraction (IDIO src, IDIO ns, IDIO formals, IDIO 
     IDIO_ASSERT (cs);
     IDIO_ASSERT (cm);
 
+    IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (list, nametree);
     IDIO_TYPE_ASSERT (list, escapes);
     IDIO_TYPE_ASSERT (array, cs);
@@ -2662,16 +2670,18 @@ static IDIO idio_meaning_fix_abstraction (IDIO src, IDIO ns, IDIO formals, IDIO 
 
     return idio_pair (IDIO_I_FIX_CLOSURE,
 		      idio_pair (mp,
+		      idio_pair (name,
 		      idio_pair (idio_fixnum (arity),
 		      idio_pair (idio_meaning_nametree_to_list (ent),
 		      idio_pair (docstr,
 		      idio_pair (idio_meaning_src_location (src),
-				 idio_S_nil))))));
+				 idio_S_nil)))))));
 }
 
-static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO ns, IDIO n, IDIO formals, IDIO docstr, IDIO ep, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm)
+static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO name, IDIO ns, IDIO n, IDIO formals, IDIO docstr, IDIO ep, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm)
 {
     IDIO_ASSERT (src);
+    IDIO_ASSERT (name);
     IDIO_ASSERT (ns);
     IDIO_ASSERT (n);
     IDIO_ASSERT (formals);
@@ -2682,6 +2692,7 @@ static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO ns, IDIO n, IDIO for
     IDIO_ASSERT (cs);
     IDIO_ASSERT (cm);
 
+    IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (list, nametree);
     IDIO_TYPE_ASSERT (list, escapes);
     IDIO_TYPE_ASSERT (array, cs);
@@ -2696,11 +2707,12 @@ static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO ns, IDIO n, IDIO for
 
     return idio_pair (IDIO_I_NARY_CLOSURE,
 		      idio_pair (mp,
+		      idio_pair (name,
 		      idio_pair (idio_fixnum (arity),
 		      idio_pair (idio_meaning_nametree_to_list (ent),
 		      idio_pair (docstr,
 		      idio_pair (idio_meaning_src_location (src),
-				 idio_S_nil))))));
+				 idio_S_nil)))))));
 }
 
 
@@ -2756,6 +2768,29 @@ static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO ns, IDIO n, IDIO for
  *    do much the same themselves!
  */
 static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree);
+
+static IDIO idio_meaning_rewrite_assign_anon_function (IDIO src, IDIO e)
+{
+    if (idio_isa_pair (IDIO_PAIR_T (e)) &&
+	idio_isa_pair (IDIO_PAIR_HT (e)) &&
+	idio_S_function == IDIO_PAIR_HHT (e)) {
+	/*
+	 * (name (function ...))
+	 *
+	 *   to
+	 *
+	 * (name (function/name name ...))
+	 */
+	e = IDIO_LIST2 (IDIO_PAIR_H (e),
+			   idio_list_append2 (IDIO_LIST3 (idio_S_function_name,
+							  IDIO_PAIR_H (e),
+							  IDIO_PAIR_H (IDIO_PAIR_THT (e))),
+					      IDIO_PAIR_T (IDIO_PAIR_THT (e))));
+	idio_meaning_copy_src_properties (src, e);
+    }
+
+    return e;
+}
 
 static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 {
@@ -2826,7 +2861,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 	     * idio_meaning() if value-expr was not supplied so I think we
 	     * can just dive in
 	     */
-	    IDIO binding = IDIO_PAIR_T (cur);
+	    IDIO binding = idio_meaning_rewrite_assign_anon_function (src, IDIO_PAIR_T (cur));
 
 	    /*
 	     * We need to create a variable.  Nominally it would be
@@ -3098,7 +3133,8 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
 		IDIO dsh  = idio_open_output_string_handle_C ();
 		idio_display_C ("rewrite body letrec: define ", dsh);
 		idio_display (bindings, dsh);
-		IDIO fn = idio_list_append2 (IDIO_LIST3 (idio_S_function,
+		IDIO fn = idio_list_append2 (IDIO_LIST4 (idio_S_function_name,
+							 IDIO_PAIR_H (bindings),
 							 IDIO_PAIR_T (bindings),
 							 idio_get_output_string (dsh)),
 					     IDIO_PAIR_TT (cur));
@@ -3109,7 +3145,7 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
 		 *
 		 * (name value-expr)
 		 */
-		form = IDIO_PAIR_T (cur);
+		form = idio_meaning_rewrite_assign_anon_function (src, IDIO_PAIR_T (cur));
 	    }
 	    idio_meaning_copy_src_properties (IDIO_MPP (cur, src), form);
 	    defs = idio_pair (form, defs);
@@ -3209,9 +3245,10 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
     }
 }
 
-static IDIO idio_meaning_abstraction (IDIO src, IDIO nns, IDIO docstr, IDIO ep, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm)
+static IDIO idio_meaning_abstraction (IDIO src, IDIO name, IDIO nns, IDIO docstr, IDIO ep, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm)
 {
     IDIO_ASSERT (src);
+    IDIO_ASSERT (name);
     IDIO_ASSERT (nns);
     IDIO_ASSERT (docstr);
     IDIO_ASSERT (ep);
@@ -3220,6 +3257,7 @@ static IDIO idio_meaning_abstraction (IDIO src, IDIO nns, IDIO docstr, IDIO ep, 
     IDIO_ASSERT (cs);
     IDIO_ASSERT (cm);
 
+    IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (list, nametree);
     IDIO_TYPE_ASSERT (list, escapes);
     IDIO_TYPE_ASSERT (array, cs);
@@ -3236,9 +3274,9 @@ static IDIO idio_meaning_abstraction (IDIO src, IDIO nns, IDIO docstr, IDIO ep, 
 	    regular = idio_pair (IDIO_PAIR_H (ns), regular);
 	    ns = IDIO_PAIR_T (ns);
 	} else if (idio_S_nil == ns) {
-	    return idio_meaning_fix_abstraction (src, nns, nns, docstr, ep, nametree, escapes, flags, cs, cm);
+	    return idio_meaning_fix_abstraction (src, name, nns, nns, docstr, ep, nametree, escapes, flags, cs, cm);
 	} else {
-	    return idio_meaning_dotted_abstraction (src, idio_list_nreverse (regular), ns, nns, docstr, ep, nametree, escapes, flags, cs, cm);
+	    return idio_meaning_dotted_abstraction (src, name, idio_list_nreverse (regular), ns, nns, docstr, ep, nametree, escapes, flags, cs, cm);
 	}
     }
 
@@ -4383,7 +4421,13 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 		return idio_S_notreached;
 	    }
 	} else if (idio_S_function == eh) {
-	    /* (function bindings [docstr] body ...) */
+	    /*
+	     * (function bindings [docstr] body ...)
+	     *
+	     *   becomes
+	     *
+	     * (function/name anon/nnn bindings [docstr] body ...)
+	     */
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
@@ -4394,7 +4438,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 			/*
 			 * (function bindings "docstr" body ...)
 			 */
-			return idio_meaning_abstraction (src, IDIO_PAIR_H (et), etth, ettt, nametree, escapes, flags, cs, cm);
+			return idio_meaning_abstraction (src, idio_gensym (IDIO_STATIC_STR_LEN ("anon")), IDIO_PAIR_H (et), etth, ettt, nametree, escapes, flags, cs, cm);
 		    } else {
 			/*
 			 * (function bindings body ...)
@@ -4403,11 +4447,17 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 			 * The second is a function whose body is a
 			 * string.
 			 */
-			return idio_meaning_abstraction (src, IDIO_PAIR_H (et), idio_S_nil, ett, nametree, escapes, flags, cs, cm);
+			return idio_meaning_abstraction (src, idio_gensym (IDIO_STATIC_STR_LEN ("anon")), IDIO_PAIR_H (et), idio_S_nil, ett, nametree, escapes, flags, cs, cm);
 		    }
 		} else {
-		    /* (function bindings body ...) */
-		    return idio_meaning_abstraction (src, IDIO_PAIR_H (et), idio_S_nil, ett, nametree, escapes, flags, cs, cm);
+		/*
+		 * Test Case: evaluation-errors/function-no-body.idio
+		 *
+		 * (function bindings)
+		 */
+		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("function"), "no body", eh);
+
+		return idio_S_notreached;
 		}
 	    } else {
 		/*
@@ -4416,6 +4466,62 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 		 * (function)
 		 */
 		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("function"), "no arguments", eh);
+
+		return idio_S_notreached;
+	    }
+	} else if (idio_S_function_name == eh) {
+	    /* (function/name name bindings [docstr] body ...) */
+	    if (idio_isa_pair (et)) {
+		IDIO ett = IDIO_PAIR_T (et);
+		if (idio_isa_pair (ett)) {
+		    IDIO etth = IDIO_PAIR_H (ett);
+		    IDIO ettt = IDIO_PAIR_T (ett);
+		    if (idio_isa_pair (ettt)) {
+			IDIO ettth = IDIO_PAIR_H (ettt);
+			IDIO etttt = IDIO_PAIR_T (ettt);
+			if (idio_isa_string (ettth) &&
+			    idio_S_nil != etttt) {
+			    /*
+			     * (function/name name bindings "docstr" body ...)
+			     */
+			    return idio_meaning_abstraction (src, IDIO_PAIR_H (et), etth, ettth, etttt, nametree, escapes, flags, cs, cm);
+			} else {
+			    /*
+			     * (function/name name bindings body ...)
+			     * (function/name name bindings "...")
+			     *
+			     * The second is a function whose body is
+			     * a string.
+			     */
+			    return idio_meaning_abstraction (src, IDIO_PAIR_H (et), etth, idio_S_nil, ettt, nametree, escapes, flags, cs, cm);
+			}
+		    } else {
+			/*
+			 * Test Case: evaluation-errors/function-name-no-body.idio
+			 *
+			 * (function/name name bindings)
+			 */
+			idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("function/name"), "no body", eh);
+
+			return idio_S_notreached;
+		    }
+		} else {
+		    /*
+		     * Test Case: evaluation-errors/function-name-no-bindings.idio
+		     *
+		     * (function/name name)
+		     */
+		    idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("function/name"), "no bindings", eh);
+
+		    return idio_S_notreached;
+		}
+	    } else {
+		/*
+		 * Test Case: evaluation-errors/function-name-nil.idio
+		 *
+		 * (function/name)
+		 */
+		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("function/name"), "no arguments", eh);
 
 		return idio_S_notreached;
 	    }

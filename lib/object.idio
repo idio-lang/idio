@@ -403,7 +403,7 @@ define-template (define-method args & body) {
       add-method! $gf (make-instance <method>
 			    :generic-function $gf
 			    :specializers     (map class-instance '$(compute-method-specializers args))
-			    :procedure        (function $(compute-method-formals args) $@body))
+			    :procedure        (function/name $name $(compute-method-formals args) $@body))
     }
   }
 }
@@ -655,7 +655,7 @@ define-method (compute-apply-generic (gf <generic>)) {
 			 compute-method-more-specific?
 			 compute-apply-methods)
 
-  (function args {
+  (function/name compute-apply-generic/generic args {
     ;; catch circular references (and bootstrap)
     if (and (memq gf base-generics)
 	    (memq (ph args) base-generics)) {
@@ -667,7 +667,7 @@ define-method (compute-apply-generic (gf <generic>)) {
 }
 
 define-method (compute-methods (gf <generic>)) {
-  (function (args) {
+  (function/name compute-methods/generic (args) {
     cpl-args := %cpl-args args ; map (function (arg) (class-cpl (class-of arg))) args
     applicable := TC/collect-if (function (m) {
       ;TC/every TC/applicable? (method-specializers m) args
@@ -684,7 +684,7 @@ define-method (compute-methods (gf <generic>)) {
 }
 
 define-method (compute-method-more-specific? (gf <generic>)) {
-  (function (m1 m2 args) {
+  (function/name compute-method-more-specific?/generic (m1 m2 args) {
     cpl-args := %cpl-args args ; map (function (arg) (class-cpl (class-of arg))) args
     loop :+ function (ms1 ms2 ca*) {
       (cond
@@ -723,10 +723,10 @@ define-method (compute-method-more-specific? (gf <generic>)) {
 }
 
 define-method (compute-apply-methods (gf <generic>)) {
-  (function (method* args) {
+  (function/name compute-apply-methods/generic (method* args) {
     ;; one-step returns a thunk!
     one-step :+ function (m*) {
-      (function a {
+      (function/name one-step/generic a {
 	if (not (null? a)) {
 	  eprintf "WARNING: one-step thunk invoked with a=%@ args=%s\n" a args
 	}
@@ -814,7 +814,7 @@ define-method (initialize (gf <generic>) initargs) {
   slot-set! gf 'name	      (TC/get-keyword-arg initargs :name (gensym 'gf))
   slot-set! gf 'documentation (TC/get-keyword-arg initargs :documentation #n)
   slot-set! gf 'methods       #n
-  %set-instance-proc! gf (function args {
+  %set-instance-proc! gf (function/name instance-proc/generic args {
     ;; Test Case: object-errors/initialize-generic-no-methods.idio
     ;;
     ;; gf := make-instance <generic> :name 'foo

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -66,7 +66,7 @@ fold-left := {
   pt-of := pt-of
   any-null? := any-null?
 
-  function (f b & a*) {
+  function/name fold-left (f b & a*) {
     fold :+ function (a* r) {
       if (any-null? a*) r {
 	fold (pt-of a*) (apply f r (ph-of a*))
@@ -87,7 +87,7 @@ fold-right := {
   any-null? := any-null?
   map-ph := map-ph
 
-  function (f b & a*) {
+  function/name fold-right (f b & a*) {
     foldr :+ function (a* r) {
       if (any-null? a*) r {
 	foldr (pt-of a*) (apply f (append (ph-of a*)
@@ -106,7 +106,7 @@ fold-right := {
 append := {
   fold-left := fold-left
 
-  function a "
+  function/name append a "
 append the lists of `a`
 
 :param a: list of lists
@@ -209,7 +209,7 @@ raise `x` to the power of `y`
 gcd := {
   fold-left := fold-left
 
-  function a "
+  function/name gcd a "
 return the greatest common divisor of the numbers in `a`
 
 :param a: list of numbers
@@ -234,7 +234,7 @@ If no numbers are provided the result is 0.
 lcm := {
   fold-left := fold-left
 
-  function a "
+  function/name lcm a "
 return the least common multiple of the numbers in `a`
 
 :param a: list of numbers
@@ -258,7 +258,7 @@ If no numbers are provided the result is 1.
 max := {
   fold-left := fold-left
 
-  function (a & b) "
+  function/name max (a & b) "
 return the largest of the numbers in `a` and the numbers in the list `b`
 
 :param a: number
@@ -283,7 +283,7 @@ If any number is inexact the result is inexact.
 min := {
   fold-left := fold-left
 
-  function (a & b) "
+  function/name min (a & b) "
 return the smallest of the numbers in `a` and the numbers in the list `b`
 
 :param a: number
@@ -510,7 +510,7 @@ pi/2  := pi / 2
 ->circle := {
   2pi := 2pi
 
-  function (x) {
+  function/name ->circle (x) {
     x+ := abs x
     d := 2pi * (floor (x+ / 2pi))
     x+ = x+ - d
@@ -542,10 +542,10 @@ Return the factorial of `x`
 }
 
 ; p-series in S9fES, used by cos, sin
-sine-series  := {
+sine-series := {
   factorial := factorial
 
-  function (x y r add last) {
+  function/name sine-series (x y r add last) {
     if ((abs (r - last)) le *epsilon*) r {
       (sine-series x
 		   (2 + y)
@@ -564,7 +564,7 @@ cos := {
   3pi/2       := 3pi/2
   2pi         := 2pi
 
-  function (x) "
+  function/name cos (x) "
 return the cosine of `x`
 
 :param x: number
@@ -594,7 +594,7 @@ sin := {
   3pi/2       := 3pi/2
   2pi         := 2pi
 
-  function (x) "
+  function/name sin (x) "
 return the sine of `x`
 
 :param x: number
@@ -633,7 +633,7 @@ tan := {
   5pi/4    := 5pi/4
   7pi/4    := 7pi/4
 
-  function (x) "
+  function/name tan (x) "
 return the tangent of `x`
 
 :param x: number
@@ -674,7 +674,7 @@ atan := {
     }
   }
 
-  function (x) "
+  function/name atan (x) "
 return the arctangent of `x`
 
 :param x: number
@@ -707,7 +707,7 @@ acos := {
   pi   := pi
   pi/2 := pi/2
 
-  function (x) "
+  function/name acos (x) "
 return the arccosine of `x`
 
 :param x: number
@@ -757,7 +757,7 @@ define (number-of-digits n r) {
 define number->string {
   number-of-digits := number-of-digits
 
-  function (n & radix) {
+  function/name number->string (n & radix) {
     digits :+ list->array (string->list "0123456789abcdefghijklmnopqrstuvwxyz")
     conv :+ function (n rdx res) {
       if (zero? n) {
@@ -850,7 +850,7 @@ string->number := {
   number-of-digits := number-of-digits
   inexact := #f
 
-  function (str & radix) {
+  function/name string->number (str & radix) {
     digits :+ string->list "0123456789abcdefghijklmnopqrstuvwxyz"
     value-of-digit :+ function (x) {
       v :+ function (x d n) {
@@ -1069,7 +1069,7 @@ return the result of calling `proc` with a file handle open to `file` for output
 with-input-from-file := {
   set-input-handle! := set-input-handle!
 
-  function (file thunk) "
+  function/name with-input-from-file (file thunk) "
 return the result of calling `thunk` in the context of the current
 input handle being a file handle open to `file` for input
 
@@ -1093,7 +1093,7 @@ input handle being a file handle open to `file` for input
 with-output-to-file := {
   set-output-handle! := set-output-handle!
 
-  function (file thunk) "
+  function/name with-output-to-file (file thunk) "
 return the result of calling `thunk` in the context of the current
 output handle being a file handle open to `file` for output
 
@@ -1133,7 +1133,7 @@ define (check-bindings b who) {
 define-template %ext-let {
   check-bindings := check-bindings
 
-  function (a1 a2 & a3) {
+  function/name %ext-let (a1 a2 & a3) {
     split :+ function (bind* vars args) {
       if (null? bind*) {
 	pair vars args

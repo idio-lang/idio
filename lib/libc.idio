@@ -378,7 +378,7 @@ descriptor.
 getrlimit = {
   orig-getrlimit := getrlimit
 
-  function (res) "
+  function/name getrlimit (res) "
 
 a more convenient :manpage:`getrlimit(2)` which can use a
 :samp:`:{nickname}` keyword, eg. ``:NOFILE`` for
@@ -423,7 +423,7 @@ The resource names follow C conventions such as ``libc/RLIMIT_AS`` and
 setrlimit = {
   orig-setrlimit := setrlimit
 
-  function (res rlim) "
+  function/name setrlimit (res rlim) "
 
 a more convenient :manpage:`setrlimit(2)` which can use a
 :samp:`:{nickname}` keyword, eg. ``:NOFILE`` for

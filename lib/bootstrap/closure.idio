@@ -86,7 +86,7 @@
   ;;
   ;; The body of {setter}'s setter will do for {proc} what we've just
   ;; done by hand for {setter} itself.
-  keyword-set! setter-kwt :setter (function (proc setter) {
+  keyword-set! setter-kwt :setter (function/name bootstrap-setter (proc setter) {
     ;; bootstrap proc's properties
     proc-kwt := %properties proc
     if (null? proc-kwt) {

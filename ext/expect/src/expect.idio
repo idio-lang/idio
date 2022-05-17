@@ -79,7 +79,7 @@ import unicode
 make-struct-spawn = {
   orig-make-struct-spawn := make-struct-spawn
 
-  function (argv pid mfd mode) "
+  function/name make-struct-spawn (argv pid mfd mode) "
 create an instance of a :ref:`struct-spawn <expect/struct-spawn>`
 
 :param argv: command and arguments

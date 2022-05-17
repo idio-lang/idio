@@ -865,7 +865,7 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
 define (meaning-define src name e nametree escapes flags cs cm) {
   if (pair? name) {
     ;; (define (func arg) ...) => (define func (function (arg) ...))
-    e = append (list 'function (pt name)) e
+    e = append (list 'function/name (ph name) (pt name)) e
     name = ph name
 
     meaning-copy-src-properties src e
@@ -933,7 +933,8 @@ define (meaning-define-template src name e nametree escapes flags cs cm) {
   } {
     ;; (define-template (name formal*) ...) => (define-template name (function (formal*) ...))
     if (pair? name) {
-      e = (list 'function
+      e = (list 'function/name
+		(ph name)
 		(pt name)
 		e)
       name = ph name
@@ -947,7 +948,8 @@ define (meaning-define-template src name e nametree escapes flags cs cm) {
     ;; ie. e
 
     docstr := sprintf "define-template: %s (x e)" name
-    expander := (list 'function
+    expander := (list 'function/name
+		      name
 		      '(x e)
 		      docstr
 		      (list 'apply e '(pt x)))
@@ -1057,7 +1059,8 @@ define (meaning-define-infix-operator src name pri e nametree escapes flags cs c
 
     args := '(op before after)
 
-    fe := (list 'function
+    fe := (list 'function/name
+		name
 		'(op before after)
 		(sprintf "infix-operator %s" name)
 		e)
@@ -1115,7 +1118,8 @@ define (meaning-define-postfix-operator src name pri e nametree escapes flags cs
 
     args := '(op before after)
 
-    fe := (list 'function
+    fe := (list 'function/name
+		name
 		'(op before after)
 		(sprintf "postfix-operator %s" name)
 		e)
@@ -1246,16 +1250,16 @@ define (meaning-sequence src e+ nametree escapes flags keyword cs cm) {
   }
 }
 
-define (meaning-fix-abstraction src formal* arg-name* docstr e+ nametree escapes flags cs cm) {
+define (meaning-fix-abstraction src name formal* arg-name* docstr e+ nametree escapes flags cs cm) {
   arity := length formal*
   nt+ := meaning-nametree-extend-params nametree formal*
 
   m+ := meaning-sequence src e+ nt+ escapes (set-tailp flags) 'begin cs cm
 
-  list I-FIX-CLOSURE m+ arity (meaning-nametree->list nt+) docstr (meaning-src-location src)
+  list I-FIX-CLOSURE m+ name arity (meaning-nametree->list nt+) docstr (meaning-src-location src)
 }
 
-define (meaning-dotted-abstraction src formal* vararg arg-name* docstr e+ nametree escapes flags cs cm) {
+define (meaning-dotted-abstraction src name formal* vararg arg-name* docstr e+ nametree escapes flags cs cm) {
   arity := length formal*
   fix-formal* := append formal* (list vararg)
 
@@ -1263,7 +1267,23 @@ define (meaning-dotted-abstraction src formal* vararg arg-name* docstr e+ nametr
 
   m+ := meaning-sequence src e+ nt+ escapes (set-tailp flags) 'begin cs cm
 
-  list I-NARY-CLOSURE m+ arity (meaning-nametree->list nt+) docstr (meaning-src-location src)
+  list I-NARY-CLOSURE m+ name arity (meaning-nametree->list nt+) docstr (meaning-src-location src)
+}
+
+define (meaning-rewrite-assign-anon-function src e) {
+  if (and (pair? (pt e))
+	  (pair? (pht e))
+	  (eq? 'function (phht e))) {
+    e = (list (ph e)
+	      (append
+	       (list 'function/name
+		     (ph e)
+		     (phtht e))
+	       (pttht e)))
+    meaning-copy-src-properties src e
+  }
+
+  e
 }
 
 #*
@@ -1392,7 +1412,7 @@ define (meaning-rewrite-body src e nametree) {
 	  ;; and recurse on ..., which is now the body of
 	  ;; our (let)
 
-	  binding := pt cur
+	  binding := meaning-rewrite-assign-anon-function src (pt cur)
 
 	  assign := 'function
 	  if (not (null? nametree)) {
@@ -1571,7 +1591,8 @@ define (meaning-rewrite-body-letrec src e nametree) {
 
 	 ;; form	~ (name (function (formal*)) ...)
 
-	 fn := (append (list 'function
+	 fn := (append (list 'function/name
+			     (ph bindings)
 			     (pt bindings)
 			     (sprintf "rewrite body letrec: %s" bindings))
 		(ptt cur))
@@ -1581,7 +1602,7 @@ define (meaning-rewrite-body-letrec src e nametree) {
 	 ;; cur	~ (:+ name value-expr)
 
 	 ;; form	~ (name value-expr)
-	 form = pt cur
+	 form = meaning-rewrite-assign-anon-function src (pt cur)
        }
        meaning-copy-src-properties (mpp cur src) form
 
@@ -1681,7 +1702,7 @@ define (meaning-rewrite-body-letrec src e nametree) {
   loop e #n #n
 }
 
-define (meaning-abstraction src formal* docstr e+ nametree escapes flags cs cm) {
+define (meaning-abstraction src name formal* docstr e+ nametree escapes flags cs cm) {
   e+ := meaning-rewrite-body (mpp e+ src) e+ nametree
   meaning-copy-src-properties src e+
 
@@ -1690,8 +1711,8 @@ define (meaning-abstraction src formal* docstr e+ nametree escapes flags cs cm) 
   formals-loop :+ function (f* regular) {
     (cond
      ((pair? f*) (formals-loop (pt f*) (pair (ph f*) regular)))
-     ((null? f*) (meaning-fix-abstraction src formal* formal* docstr e+ nametree escapes flags cs cm))
-     (else (meaning-dotted-abstraction src (reverse! regular) f* formal* docstr e+ nametree escapes flags cs cm)))
+     ((null? f*) (meaning-fix-abstraction src name formal* formal* docstr e+ nametree escapes flags cs cm))
+     (else (meaning-dotted-abstraction src name (reverse! regular) f* formal* docstr e+ nametree escapes flags cs cm)))
   }
 
   formals-loop formal* #n
@@ -2300,7 +2321,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	   if (and (string? htte)
 		   (not (null? ttte))) {
 	     ;; (function bindings "docstr" body ...)
-	     meaning-abstraction src (ph te) htte ttte nametree escapes flags cs cm
+	     meaning-abstraction src (gensym 'anon) (ph te) htte ttte nametree escapes flags cs cm
 	   } {
 	     ;; (function bindings body ...)
 	     ;; (function bindings "...")
@@ -2308,11 +2329,56 @@ define (meaning src e nametree escapes flags cs cm) {
 	     ;; The second is a function whose body is a
 	     ;; string
 
-	     meaning-abstraction src (ph te) #n tte nametree escapes flags cs cm
+	     meaning-abstraction src (gensym 'anon) (ph te) #n tte nametree escapes flags cs cm
 	   }
 	 } {
-	   ;; (function bindings body ...)
-	   meaning-abstraction src (ph te) #n tte nametree escapes flags cs cm
+	   ;; Test Case: evaluation-errors/function-nil.idio
+
+	   ;; (function bindings)
+	   meaning-error-param src "no body" he
+	 }
+       } {
+	 ;; Test Case: evaluation-errors/function-nil.idio
+
+	 ;; (function)
+	 meaning-error-param src "no arguments" he
+       }
+     })
+
+     ((function/name) {
+       ;; (function/name name bindings [docstr] body ...)
+       if (pair? te) {
+	 tte := pt te
+	 if (pair? tte) {
+	   htte := ph tte
+	   ttte := pt tte
+	   if (pair? ttte) {
+	     httte := ph ttte
+	     tttte := pt ttte
+	     if (and (string? httte)
+		     (not (null? tttte))) {
+	       ;; (function/name name bindings "docstr" body ...)
+	       meaning-abstraction src (ph te) htte httte tttte nametree escapes flags cs cm
+	     } {
+	       ;; (function/name name bindings body ...)
+	       ;; (function/name name bindings "...")
+
+	       ;; The second is a function whose body is a
+	       ;; string
+
+	       meaning-abstraction src (ph te) htte #n ttte nametree escapes flags cs cm
+	     }
+	   } {
+	     ;; Test Case: evaluation-errors/function-no-body.idio
+
+	     ;; (function/name name bindings)
+	     meaning-error-param src "no body" he
+	   }
+	 } {
+	   ;; Test Case: evaluation-errors/function-no-bindings.idio
+
+	   ;; (function/name name)
+	   meaning-error-param src "no bindings" he
 	 }
        } {
 	 ;; Test Case: evaluation-errors/function-nil.idio

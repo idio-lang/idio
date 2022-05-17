@@ -1991,7 +1991,7 @@ with-handle-redir := {
   set-output-handle!	:= set-output-handle!
   set-error-handle!	:= set-error-handle!
 
-  function (type s/d thunk) {
+  function/name with-handle-redir (type s/d thunk) {
     ;; handle-oriented indirection function/variables
     get-current-h := #f
     open-fd-h     := #f
@@ -2023,7 +2023,7 @@ with-handle-redir := {
      ((eq? type 'append) {
        get-current-h = current-output-handle
        open-fd-h     = open-output-fd
-       open-file-h   = function (n) (open-file n "a")
+       open-file-h   = function/name open-file-h (n) (open-file n "a")
        set-h!        = set-output-handle!
        dir-fd-h?     = output-fd-handle?
        dir-string-h? = output-string-handle?
@@ -2041,7 +2041,7 @@ with-handle-redir := {
      ((eq? type 'append-error) {
        get-current-h = current-error-handle
        open-fd-h     = open-output-fd
-       open-file-h   = function (n) (open-file n "a")
+       open-file-h   = function/name open-file-h (n) (open-file n "a")
        set-h!        = set-error-handle!
        dir-fd-h?     = output-fd-handle?
        dir-string-h? = output-string-handle?
@@ -2144,7 +2144,7 @@ with-handle-dup := {
   set-output-handle!    := set-output-handle!
   set-error-handle!     := set-error-handle!
 
-  function (type new thunk) {
+  function/name with-handle-dup (type new thunk) {
     ;; handle-oriented indirection function/variables
     get-current-h := #f
     set-h!        := #f

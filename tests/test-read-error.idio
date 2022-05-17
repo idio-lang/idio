@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -40,7 +40,7 @@ fact, doesn't.  Invalid UTF-8 sequences are replaced with U+FFFD
 read-error-load := {
   n := 0
 
-  function (filename msg linenum) {
+  function/name read-error-load (filename msg linenum) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1
@@ -75,7 +75,7 @@ read-error-load := {
 string-error-load := {
   n := 0
 
-  function (filename msg linenum) {
+  function/name string-error-load (filename msg linenum) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1

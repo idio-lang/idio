@@ -1,6 +1,6 @@
 #*
 
-Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -115,7 +115,7 @@ add-as-string sparse-char-set sparse-char-set-as-string
 make-sparse-char-set = {
   orig-make := make-sparse-char-set
 
-  function (size & o) "
+  function/name make-sparse-char-set (size & o) "
 
 Create a sparse-char-set of `size` elements.  If an array of 17
 elements is also supplied it will be used as the planes of the

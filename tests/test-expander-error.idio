@@ -43,7 +43,7 @@ define-template (expander-trap type) {
 
     $loader-sym := {
       n := 0
-      function (filename msg) {
+      function/name $loader-sym (filename msg) {
 	if (not (string? filename)) (error/type ^rt-parameter-type-error '$loader-sym "string" filename)
 	n = n + 1
 	thunk := function () {

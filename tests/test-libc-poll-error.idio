@@ -36,7 +36,7 @@ which will pollper the actual load with a trap for
 libc-poll-error-load := {
   n := 0
 
-  function (filename msg & args) {
+  function/name libc-poll-error-load (filename msg & args) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1

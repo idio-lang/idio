@@ -468,7 +468,7 @@ condition-report := #f
 {
   extension-callbacks := make-hash #n #n 4
 
-  condition-report-extend = function (ct cb) "
+  condition-report-extend = function/name condition-report-extend (ct cb) "
 extend :ref:`condition-report <condition-report>` to handle condition
 type `ct`
 
@@ -496,7 +496,7 @@ report.
     }
   }
 
-  condition-report = function (prefix c & args) "print a report on condition `c`
+  condition-report = function/name condition-report (prefix c & args) "print a report on condition `c`
 
 :param prefix: a distinguishing string
 :type prefix: string

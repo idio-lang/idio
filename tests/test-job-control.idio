@@ -107,7 +107,7 @@ simply load those files and... react.
 job-control-error-load := {
   n := 0
 
-  function (filename exp) {
+  function/name job-control-error-load (filename exp) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1
@@ -230,7 +230,7 @@ pid-ph := #f
 job-control-async-load := {
   n := 0
 
-  function (filename exp) {
+  function/name job-control-async-load (filename exp) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1

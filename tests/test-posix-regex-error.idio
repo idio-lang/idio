@@ -35,7 +35,7 @@ wrapper the actual load with a trap for (^rt-regex-error
 posix-regex-error-load := {
   n := 0
 
-  function (filename msg) {
+  function/name posix-regex-error-load (filename msg) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1

@@ -65,12 +65,13 @@
  * Return:
  * Returns the closure.
  */
-IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr, IDIO srcloc)
+IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO env, IDIO name, IDIO sigstr, IDIO docstr, IDIO srcloc)
 {
     IDIO_C_ASSERT (code_pc);
     IDIO_C_ASSERT (code_len);
     IDIO_ASSERT (frame);
     IDIO_ASSERT (env);
+    IDIO_ASSERT (name);
     IDIO_ASSERT (sigstr);
     IDIO_ASSERT (docstr);
 
@@ -100,6 +101,11 @@ IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO
 #endif
 
     idio_create_properties (c);
+
+    if (idio_S_nil != name) {
+	idio_set_property (c, idio_KW_name, name);
+    }
+
     if (idio_S_nil != sigstr) {
 	IDIO osh = idio_open_output_string_handle_C ();
 	int printed = 0;

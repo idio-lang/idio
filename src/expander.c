@@ -352,7 +352,7 @@ poor man's let	\n\
 	 *
 	 * Those Schemers, eh?
 	 */
-	fn = IDIO_LIST3 (idio_S_function, idio_list_nreverse (vars), e);
+	fn = IDIO_LIST4 (idio_S_function_name, idio_gensym (IDIO_STATIC_STR_LEN ("let")), idio_list_nreverse (vars), e);
 
 	IDIO appl = idio_list_append2 (IDIO_LIST1 (name), idio_list_nreverse (vals));
 

@@ -67,7 +67,7 @@ map := {
   ph-of := ph-of
   pt-of := pt-of
 
-  function (f & a*) {
+  function/name mappy (f & a*) {
     map2 :+ function (a* r) {
       if (null? (ph a*)) {
 	reverse! r
@@ -331,7 +331,7 @@ define-template define-syntax {
     }
   }
 
-  function (name rules) {
+  function/name define-syntax (name rules) {
     (cond
      ((not (symbol? name))			(error/type ^rt-parameter-type-error 'define-syntax "expected symbol" name))
      ((or (not (pair? rules))

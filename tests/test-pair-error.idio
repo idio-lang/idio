@@ -35,7 +35,7 @@ compare the message strings.
 pair-error-load := {
   n := 0
 
-  function (filename msg) {
+  function/name pair-error-load (filename msg) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1

@@ -36,7 +36,7 @@ strings.
 object-error-load := {
   n := 0
 
-  function (filename msg) {
+  function/name object-error-load (filename msg) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1

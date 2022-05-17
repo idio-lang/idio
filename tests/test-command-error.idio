@@ -74,7 +74,7 @@ signals.  So, 10, 11, 12, ...
 command-parent-error-load := {
   n := 0
 
-  function (filename msg & args) {
+  function/name command-parent-error-load (filename msg & args) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1
@@ -124,7 +124,7 @@ command-parent-error-load := {
 command-env-error-load := {
   n := 0
 
-  function (filename msg) {
+  function/name command-env-error-load (filename msg) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1

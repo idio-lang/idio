@@ -25,7 +25,7 @@ file-handle-error-skipped := 0
 file-handle-error-load := {
   n := 0
 
-  function (filename msg & args) {
+  function/name file-handle-error-load (filename msg & args) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1
@@ -284,7 +284,7 @@ filename := "foo-bar"
 extension-error-load := {
   n := 0
 
-  function (msg & args) {
+  function/name extension-error-load (msg & args) {
     n = n + 1
 
     exp-tests := 1

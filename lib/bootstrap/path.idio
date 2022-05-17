@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -45,7 +45,7 @@ sort-ctime := #n
     libc/struct-stat-ref (hash-ref sort-stats p) 'st_ctime
   }
 
-  sort-size = function (l) "
+  sort-size = function/name sort-size (l) "
 sort the filenames in `l` by file size
 
 :param l: filenames
@@ -60,7 +60,7 @@ sort the filenames in `l` by file size
     sort l C/< key-stat-size
   }
 
-  sort-atime = function (l) "
+  sort-atime = function/name sort-atime (l) "
 sort the filenames in `l` by file access time
 
 :param l: filenames
@@ -75,7 +75,7 @@ sort the filenames in `l` by file access time
     sort l C/< key-stat-atime
   }
 
-  sort-mtime = function (l) "
+  sort-mtime = function/name sort-atime (l) "
 sort the filenames in `l` by file modification time
 
 :param l: filenames
@@ -90,7 +90,7 @@ sort the filenames in `l` by file modification time
     sort l C/< key-stat-mtime
   }
 
-  sort-ctime = function (l) "
+  sort-ctime = function/name sort-ctime (l) "
 sort sort filenames in `l` by file creation time
 
 :param l: filenames

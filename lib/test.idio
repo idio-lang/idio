@@ -93,7 +93,7 @@ Notify := #f
 define (seq) {
   n := 1
 
-  function () {
+  function/name seq () {
     x := n
     set! n (1 + n)
     x
@@ -256,7 +256,7 @@ if running-as-root {
 test-load := {
   n := 0
 
-  function (filename) {
+  function/name test-load (filename) {
     ;; forking hell!
     if (not (eqv? PID IDIO_PID)) {
       eprintf "\n\n**** %s: PID %d != IDIO_PID %d: kill -TERM\n\n" filename PID IDIO_PID
@@ -399,7 +399,7 @@ test-load "test-job-control.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? (8003 - Skipped)
+Tests? (8007 - Skipped)
 
 if (e? testfile) (delete-file testfile)
 

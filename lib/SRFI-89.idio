@@ -1,6 +1,6 @@
 #*
 
-Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -29,7 +29,7 @@ define-template (define* pattern & body) {
   if (pair? pattern) {
     #T{
       define $(ph pattern) {
-	function* $(pt pattern) $@body
+	function*/name $(ph pattern) $(pt pattern) $@body
       }
     }
   } {
@@ -40,8 +40,15 @@ define-template (define* pattern & body) {
 }
 
 ; Macro expander for function*.
-
 define-template (function* formals & body) {
+  name := gensym 'anon
+
+  #T{
+    function*/name $name $formals $@body
+  }
+}
+
+define-template (function*/name name formals & body) {
 
   ;------------------------------------------------------------------------------
 
@@ -190,7 +197,7 @@ define-template (function* formals & body) {
 	      (null? named)) {
 	; direct R5RS equivalent
 	#T{
-	  function $(append positional-reqs (or rest #n)) $@body
+	  function/name $name $(append positional-reqs (or rest #n)) $@body
 	}
       } {
 	utility-fns := #T{
@@ -309,7 +316,7 @@ define-template (function* formals & body) {
 
 
 	#T{
-	  function $(append (if positional-before-named? positional-reqs #n) '&args) $docstr {
+	  function/name $name $(append (if positional-before-named? positional-reqs #n) '&args) $docstr {
 	    let* $bindings $@body
 	  }
 	}

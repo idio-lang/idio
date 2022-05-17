@@ -275,7 +275,7 @@ test (hash-hash-function ht) #n
 ht-integer-hash := {
   bound := (expt 2 29) - 3
 
-  function (v) {
+  function/name ht-integer-hash (v) {
     if (not (integer? v)) {
       c := make-condition ^rt-parameter-type-error "not an integer" 'ht-integer-hash v
 

@@ -391,9 +391,9 @@ dynamic-wind := dyn-wind-yield/prompt-at
 define-syntax unwind-protect (syntax-rules ()
   ((_ body cleanup ...)
    (dynamic-wind
-    (function () #f)
-    (function () body)
-    (function () cleanup ...))))
+    (function/name dw/before () #f)
+    (function/name dw/body   () body)
+    (function/name dw/after  () cleanup ...))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

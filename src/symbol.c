@@ -155,6 +155,7 @@ IDIO_SYMBOL_DECL (excl_tilde);
 IDIO_SYMBOL_DECL (exit);
 IDIO_SYMBOL_DECL (fixed_template);
 IDIO_SYMBOL_DECL (function);
+IDIO_SYMBOL_DECL (function_name);
 IDIO_SYMBOL_DECL (functionp);
 IDIO_SYMBOL_DECL (gt);
 IDIO_SYMBOL_DECL (if);
@@ -584,6 +585,36 @@ test if `o` is a symbol				\n\
     return r;
 }
 
+int idio_symbol_gensymp (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    if (idio_isa_symbol (o) &&
+	IDIO_SYMBOL_FLAGS (o) & IDIO_SYMBOL_FLAG_GENSYM) {
+	return 1;
+    }
+
+    return 0;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("gensym?", gensym_p, (IDIO o), "o", "\
+test if `o` is a gensym				\n\
+						\n\
+:param o: object to test			\n\
+:return: ``#t`` if `o` is a gensym, ``#f`` otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_symbol_gensymp (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("symbol->string", symbol2string, (IDIO s), "s", "\
 convert symbol `s` into a string		\n\
 						\n\
@@ -970,8 +1001,9 @@ IDIO idio_symbol_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 
 void idio_symbol_add_primitives ()
 {
-    IDIO_ADD_PRIMITIVE (symbol_p);
     IDIO_ADD_PRIMITIVE (gensym);
+    IDIO_ADD_PRIMITIVE (symbol_p);
+    IDIO_ADD_PRIMITIVE (gensym_p);
     IDIO_ADD_PRIMITIVE (symbol2string);
     IDIO_ADD_PRIMITIVE (symbols);
     IDIO_ADD_PRIMITIVE (properties_ref);
@@ -1088,6 +1120,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("exit", exit);
     IDIO_SYMBOL_DEF ("fixed_template", fixed_template);
     IDIO_SYMBOL_DEF ("function", function);
+    IDIO_SYMBOL_DEF ("function/name", function_name);
     IDIO_SYMBOL_DEF ("function+", functionp);
     IDIO_SYMBOL_DEF (">", gt);
     IDIO_SYMBOL_DEF ("if", if);

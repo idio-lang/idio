@@ -210,7 +210,7 @@ int idio_vm_virtualisation_WSL = 0;
  *   Secondly, modules suggest library code, ie. something we can
  *   write out and load in again later.  This causes a similar but
  *   different problem.  If I compile a module it will use the next
- *   available (global) symbol index of the ucrrently running Idio
+ *   available (global) symbol index of the currently running Idio
  *   instance and encode that in the compiled output.  If I compile
  *   another module in a different Idio instance then, because it will
  *   use the same next available (global) symbol index, those symbol
@@ -4620,7 +4620,8 @@ int idio_vm_run1 (IDIO thr)
 
 		if (idio_isa_closure (val)) {
 		    IDIO name = idio_ref_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
-		    if (idio_S_false == name) {
+		    if (idio_S_false == name ||
+			idio_symbol_gensymp (name)) {
 			idio_set_property (val, idio_KW_name, sym);
 			IDIO str = idio_ref_property (val, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
 			if (idio_S_nil != str) {
@@ -5060,15 +5061,26 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t i = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("CREATE-CLOSURE @ +%" PRId64 "", i);
 	    uint64_t code_len = idio_vm_fetch_varuint (thr);
+	    uint64_t nci  = idio_vm_fetch_varuint (thr);
 	    uint64_t ssci = idio_vm_fetch_varuint (thr);
 	    uint64_t dsci = idio_vm_fetch_varuint (thr);
 	    uint64_t slci = idio_vm_fetch_varuint (thr);
 
 	    IDIO ce = idio_thread_current_env ();
 
-	    /* sigstr lookup */
-	    IDIO fci = idio_fixnum (ssci);
+	    /* name lookup */
+	    IDIO fci = idio_fixnum (nci);
 	    IDIO fgci = idio_module_get_or_set_vci (ce, fci);
+	    IDIO name = idio_S_nil;
+	    if (idio_S_unspec != fgci) {
+		name = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
+	    } else {
+		fprintf (stderr, "vm cc name: failed to find %" PRId64 " (%" PRId64 ")\n", (int64_t) IDIO_FIXNUM_VAL (fci), ssci);
+	    }
+
+	    /* sigstr lookup */
+	    fci = idio_fixnum (ssci);
+	    fgci = idio_module_get_or_set_vci (ce, fci);
 	    IDIO sigstr = idio_S_nil;
 	    if (idio_S_unspec != fgci) {
 		sigstr = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
@@ -5096,7 +5108,7 @@ int idio_vm_run1 (IDIO thr)
 		fprintf (stderr, "vm cc doc: failed to find %" PRId64 " (%" PRId64 ")\n", (int64_t) IDIO_FIXNUM_VAL (fci), dsci);
 	    }
 
-	    IDIO_THREAD_VAL (thr) = idio_closure (IDIO_THREAD_PC (thr) + i, code_len, IDIO_THREAD_FRAME (thr), IDIO_THREAD_ENV (thr), sigstr, docstr, srcloc);
+	    IDIO_THREAD_VAL (thr) = idio_closure (IDIO_THREAD_PC (thr) + i, code_len, IDIO_THREAD_FRAME (thr), IDIO_THREAD_ENV (thr), name, sigstr, docstr, srcloc);
 	}
 	break;
     case IDIO_A_FUNCTION_INVOKE:
@@ -6512,6 +6524,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 	    {
 		uint64_t i = idio_vm_get_varuint (bc, pcp);
 		/* uint64_t code_len = */ idio_vm_get_varuint (bc, pcp);
+		uint64_t nci  = idio_vm_get_varuint (bc, pcp);
 		uint64_t ssci = idio_vm_get_varuint (bc, pcp);
 		uint64_t dsci = idio_vm_get_varuint (bc, pcp);
 		uint64_t slci = idio_vm_get_varuint (bc, pcp);
@@ -6523,6 +6536,20 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 
 		IDIO ce = idio_thread_current_env ();
 
+		/* name lookup */
+		IDIO fnci = idio_fixnum (nci);
+		IDIO fgnci = idio_module_get_or_set_vci (ce, fnci);
+		IDIO name = idio_S_nil;
+		if (idio_S_unspec != fgnci) {
+		    name = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgnci));
+		} else {
+		    fprintf (stderr, "vm cc name: failed to find %" PRIu64 "\n", nci);
+		}
+		size_t size = 0;
+		char *ids = idio_display_string (name, &size);
+		IDIO_VM_DASM ("\n  name %s", ids);
+		IDIO_GC_FREE (ids, size);
+
 		/* sigstr lookup */
 		IDIO fssci = idio_fixnum (ssci);
 		IDIO fgssci = idio_module_get_or_set_vci (ce, fssci);
@@ -6532,8 +6559,8 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		} else {
 		    fprintf (stderr, "vm cc sig: failed to find %" PRIu64 "\n", ssci);
 		}
-		size_t size = 0;
-		char *ids = idio_display_string (ss, &size);
+		size = 0;
+		ids = idio_display_string (ss, &size);
 		IDIO_VM_DASM ("\n  sigstr %s", ids);
 		IDIO_GC_FREE (ids, size);
 

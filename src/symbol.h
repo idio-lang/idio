@@ -121,6 +121,7 @@ extern IDIO_SYMBOL_DECL (excl_tilde);
 extern IDIO_SYMBOL_DECL (exit);
 extern IDIO_SYMBOL_DECL (fixed_template);
 extern IDIO_SYMBOL_DECL (function);
+extern IDIO_SYMBOL_DECL (function_name);
 extern IDIO_SYMBOL_DECL (functionp);
 extern IDIO_SYMBOL_DECL (gt);
 extern IDIO_SYMBOL_DECL (if);
@@ -207,6 +208,7 @@ IDIO idio_symbols_string_intern (IDIO str);
 #define IDIO_SYMBOLS_C_INTERN(s)	idio_symbols_C_intern (s, sizeof (s) - 1)
 
 IDIO idio_gensym (char const *pref_prefix, size_t blen);
+int idio_symbol_gensymp (IDIO o);
 
 IDIO idio_ref_properties (IDIO o, IDIO args);
 void idio_set_properties (IDIO o, IDIO properties);

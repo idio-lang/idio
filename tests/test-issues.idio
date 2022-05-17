@@ -24,7 +24,7 @@ issues0 := Tests
 issues-load := {
   n := 0
 
-  function (filename) {
+  function/name issues-load (filename) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     (symbol-value 'load 'Idio) filename

@@ -37,7 +37,7 @@ which will wrapper the actual load with a trap for
 libc-wrap-error-load := {
   n := 0
 
-  function (filename msg & args) {
+  function/name libc-wrap-error-load (filename msg & args) {
     if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "string" filename)
 
     n = n + 1
