@@ -4102,6 +4102,31 @@ static idio_as_t idio_vm_get_or_create_vvi (idio_as_t mci)
     return gvi;
 }
 
+#ifdef IDIO_VM_PROF
+void idio_vm_update_ins_time (IDIO_I ins, struct timespec ins_t0)
+{
+    struct timespec ins_te;
+    if (clock_gettime (CLOCK_MONOTONIC, &ins_te) < 0) {
+	perror ("clock_gettime (CLOCK_MONOTONIC, ins_te)");
+    }
+
+    struct timespec ins_td;
+    ins_td.tv_sec = ins_te.tv_sec - ins_t0.tv_sec;
+    ins_td.tv_nsec = ins_te.tv_nsec - ins_t0.tv_nsec;
+    if (ins_td.tv_nsec < 0) {
+	ins_td.tv_nsec += IDIO_VM_NS;
+	ins_td.tv_sec -= 1;
+    }
+
+    idio_vm_ins_call_time[ins].tv_sec += ins_td.tv_sec;
+    idio_vm_ins_call_time[ins].tv_nsec += ins_td.tv_nsec;
+    if (idio_vm_ins_call_time[ins].tv_nsec > IDIO_VM_NS) {
+	idio_vm_ins_call_time[ins].tv_nsec -= IDIO_VM_NS;
+	idio_vm_ins_call_time[ins].tv_sec += 1;
+    }
+}
+#endif
+
 int idio_vm_run1 (IDIO thr)
 {
     IDIO_ASSERT (thr);
@@ -5120,6 +5145,7 @@ int idio_vm_run1 (IDIO thr)
 	    idio_vm_function_trace (ins, thr);
 #ifdef IDIO_VM_PROF
 	    idio_vm_clos_time (thr, "FUNCTION-INVOKE");
+	    idio_vm_update_ins_time (ins, ins_t0);
 #endif
 
 	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), IDIO_VM_INVOKE_REGULAR_CALL);
@@ -5134,6 +5160,7 @@ int idio_vm_run1 (IDIO thr)
 	    idio_vm_function_trace (ins, thr);
 #ifdef IDIO_VM_PROF
 	    idio_vm_clos_time (thr, "FUNCTION-GOTO");
+	    idio_vm_update_ins_time (ins, ins_t0);
 #endif
 
 	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), IDIO_VM_INVOKE_TAIL_CALL);
@@ -6069,24 +6096,17 @@ int idio_vm_run1 (IDIO thr)
     }
 
 #ifdef IDIO_VM_PROF
-    struct timespec ins_te;
-    if (clock_gettime (CLOCK_MONOTONIC, &ins_te) < 0) {
-	perror ("clock_gettime (CLOCK_MONOTONIC, ins_te)");
-    }
-
-    struct timespec ins_td;
-    ins_td.tv_sec = ins_te.tv_sec - ins_t0.tv_sec;
-    ins_td.tv_nsec = ins_te.tv_nsec - ins_t0.tv_nsec;
-    if (ins_td.tv_nsec < 0) {
-	ins_td.tv_nsec += IDIO_VM_NS;
-	ins_td.tv_sec -= 1;
-    }
-
-    idio_vm_ins_call_time[ins].tv_sec += ins_td.tv_sec;
-    idio_vm_ins_call_time[ins].tv_nsec += ins_td.tv_nsec;
-    if (idio_vm_ins_call_time[ins].tv_nsec > IDIO_VM_NS) {
-	idio_vm_ins_call_time[ins].tv_nsec -= IDIO_VM_NS;
-	idio_vm_ins_call_time[ins].tv_sec += 1;
+    /*
+     * We updated the ins timers for FUNCTION-* because they call
+     * idio_vm_invoke() which "may take some time".
+     */
+    switch (ins) {
+    case IDIO_A_FUNCTION_INVOKE:
+    case IDIO_A_FUNCTION_GOTO:
+	break;
+    default:
+	idio_vm_update_ins_time (ins, ins_t0);
+	break;
     }
 #endif
 
