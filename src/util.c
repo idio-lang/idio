@@ -2136,6 +2136,11 @@ char const *idio_vm_bytecode2string (int code)
     case IDIO_A_PRIMCALL3:			r = "A-PRIMCALL3";			break;
     case IDIO_A_PRIMCALL:			r = "A-PRIMCALL";			break;
 
+    case IDIO_A_SUPPRESS_RCSE:			r = "A-SUPPRESS-RCSE";			break;
+    case IDIO_A_POP_RCSE:			r = "A-POP-RCSE";			break;
+
+    case IDIO_A_NOT:				r = "A-NOT";				break;
+
     case IDIO_A_EXPANDER:			r = "A-EXPANDER";			break;
     case IDIO_A_INFIX_OPERATOR:			r = "A-INFIX-OPERATOR";			break;
     case IDIO_A_POSTFIX_OPERATOR:		r = "A-POSTFIX-OPERATOR";		break;
