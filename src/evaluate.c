@@ -3130,14 +3130,28 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
 		 *
 		 * (name (function (args) ...))
 		 */
-		IDIO dsh  = idio_open_output_string_handle_C ();
-		idio_display_C ("rewrite body letrec: define ", dsh);
-		idio_display (bindings, dsh);
-		IDIO fn = idio_list_append2 (IDIO_LIST4 (idio_S_function_name,
-							 IDIO_PAIR_H (bindings),
-							 IDIO_PAIR_T (bindings),
-							 idio_get_output_string (dsh)),
-					     IDIO_PAIR_TT (cur));
+
+		IDIO fn = idio_S_nil;
+		/*
+		 * Create a docstr if there isn't one already
+		 */
+		if (0 == idio_isa_string (IDIO_PAIR_HTT (cur)) ||
+		    0 == idio_isa_pair (IDIO_PAIR_TTT (cur))) {
+		    IDIO dsh  = idio_open_output_string_handle_C ();
+		    idio_display_C ("rewrite body letrec: define ", dsh);
+		    idio_display (bindings, dsh);
+		    fn = idio_list_append2 (IDIO_LIST4 (idio_S_function_name,
+							IDIO_PAIR_H (bindings),
+							IDIO_PAIR_T (bindings),
+							idio_get_output_string (dsh)),
+					    IDIO_PAIR_TT (cur));
+		} else {
+		    fn = idio_list_append2 (IDIO_LIST3 (idio_S_function_name,
+							IDIO_PAIR_H (bindings),
+							IDIO_PAIR_T (bindings)),
+					    IDIO_PAIR_TT (cur));
+		}
+		idio_meaning_copy_src_properties (IDIO_MPP (cur, src), fn);
 		form = IDIO_LIST2 (IDIO_PAIR_H (bindings), fn);
 	    } else {
 		/*

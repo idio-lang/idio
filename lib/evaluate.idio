@@ -1587,15 +1587,27 @@ define (meaning-rewrite-body-letrec src e nametree) {
        form := #f
 
        if (pair? bindings) {
-	 ;; cur	~ (define (name formal*) ...)
+	 ;; cur		~ (define (name formal*) ...)
 
 	 ;; form	~ (name (function (formal*)) ...)
 
-	 fn := (append (list 'function/name
-			     (ph bindings)
-			     (pt bindings)
-			     (sprintf "rewrite body letrec: %s" bindings))
-		(ptt cur))
+	 fn := #n
+
+	 ;; create a docstr if there isn't one already
+	 if (or (not (string? (phtt cur)))
+		(not (pair? (pttt cur)))) {
+	   fn = (append (list 'function/name
+			      (ph bindings)
+			      (pt bindings)
+			      (sprintf "rewrite body letrec: %s" bindings))
+		 (ptt cur))
+	 } {
+	   fn = (append (list 'function/name
+			      (ph bindings)
+			      (pt bindings))
+		 (ptt cur))
+	 }
+	 meaning-copy-src-properties (mpp cur src) fn
 
 	 form = list (ph bindings) fn
        } {
