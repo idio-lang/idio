@@ -133,7 +133,59 @@ The ``quasiquote`` special form is the basis for expanding
 
    #T{ ... }
 
-.. _`function special form`:
+.. _`function/name special form`:
+
+function/name
+^^^^^^^^^^^^^
+
+The ``function/name`` special form is used to return a function value,
+commonly called a closure.
+
+.. parsed-literal::
+
+   function/name *name* *formals* *[docstr]* *body*
+
+`name` is the name to be associated with the function.
+
+`formals` declares the parameters for the closure and arguments passed
+to the function are available through the named parameters within the
+`body` of the function.
+
+`formals` takes several forms, see :ref:`closure parameters <closure
+parameters>` and the extended forms in :ref:`function*/name
+<function*/name>`.
+
+The optional `docstr` allows the user to describe their function.
+This text will be used in :ref:`help <help>` output as well as used to
+generate documentation like this.  It should take the form of
+reStructuredText targeting the Sphinx documentation system.
+
+`body` is a single expression although commonly a block is used as a
+synonym for the :ref:`begin <begin special form>` sequence special
+form.
+
+``function/name`` exists largely because debugging with anonymous
+functions becomes difficult especially when that anonymity exists only
+because of the deliberate enforcement of anonymity in the evaluator.
+
+.. code-block:: idio
+
+   (define (foo a b) ...)
+
+was rewritten to:
+
+.. code-block:: idio
+
+   (define foo (function a b) ...)
+
+but can now be rewritten to:
+
+.. code-block:: idio
+
+   (define foo (function/name foo a b) ...)
+
+which keeps the normal form and also ensures the name of the function
+value is carried through.
 
 function
 ^^^^^^^^
@@ -145,21 +197,10 @@ commonly called a closure.
 
    function *formals* *[docstr]* *body*
 
-`formals` declares the parameters for the closure and arguments passed
-to the function are available through the named parameters within the
-`body` of the function.
-
-`formals` takes several forms, see :ref:`closure parameters <closure
-parameters>` and the extended forms in :ref:`function* <function*>`.
-
-The optional `docstr` allows the user to describe their function.
-This text will be used in :ref:`help <help>` output as well as used to
-generate documentation like this.  It should take the form of
-reStructuredText targeting the sphinx documentation system.
-
-`body` is a single expression although commonly a block is used as a
-synonym for the :ref:`begin <begin special form>` sequence special
-form.
+``function`` only differs from :ref:`function/name <function/name
+special form>` in the absence of a name.  ``function`` is a simple
+wrapper to ``function/name`` passing ``(gensym 'anon)`` as the
+function's name.
 
 function+
 ^^^^^^^^^
@@ -298,8 +339,8 @@ A second form is for defining functions: :samp:`define ({name}
 {formals}) {body}`.
 
 This is rewritten into the base form as: :samp:`define {name}
-(function {formals} {body})` thus creating a reference from `name` to
-a function value.
+(function/name {name} {formals} {body})` thus creating a reference
+from `name` to a function value.
 
 :*
 ^^

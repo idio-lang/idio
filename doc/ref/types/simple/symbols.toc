@@ -3,6 +3,8 @@
 (document Idio symbol?)
 
 (document Idio gensym)
+(document Idio gensym?)
+
 (document Idio string->symbol)
 
 (document Idio symbols)

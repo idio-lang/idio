@@ -55,9 +55,8 @@ Normally you would define a closure with the special form :ref:`define
 which creates a function called ``foo`` which takes two parameters,
 ``a`` and ``b``, and performs some addition on them.
 
-Alternatively (and secretly what ``define`` does under the hood) you
-can create an anonymous *function value* with the special form
-:ref:`function <function special form>`:
+Alternatively you can create an anonymous *function value* with the
+special form :ref:`function <function special form>`:
 
 .. code-block:: idio
 
@@ -68,7 +67,7 @@ can create an anonymous *function value* with the special form
 which seems to do much as ``foo`` above except that as soon as we have
 created it we appear to be throwing it away.
 
-In practice what ``define`` is doing is:
+In practice what ``define`` is doing [#]_ is:
 
 .. code-block:: idio
 
@@ -77,6 +76,26 @@ In practice what ``define`` is doing is:
    })
 
 with ``foo`` now available to be used in some way.
+
+.. [#]
+
+   *Technically*, ``define`` is creating a *named* function:
+
+   .. code-block:: idio
+
+      define foo (function/name foo (a b) {
+        a + b
+      })
+
+   but the double use of ``foo`` might be confusing at this stage.
+
+   The ``foo`` in ``define foo ...`` is establishing a binding between
+   the symbol ``foo`` in the current environment and some value,
+   ``...``.
+
+   The ``foo`` in ``function/name foo ...`` is passing the symbol
+   ``foo`` to be the name associated with the function value being
+   created.
 
 Notice the extra set of parentheses around the elements of the
 anonymous function.  Much like you might parenthesise a sub-expression

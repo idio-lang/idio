@@ -8,6 +8,7 @@
 (rst "function-constructors" 0)
 (document Idio define* define-star)
 (document Idio function* function-star)
+(document Idio function*/name function-star-name)
 
 (nodocument Idio &hash-keyword)
 (nodocument Idio &perfect-hash-table-lookup)

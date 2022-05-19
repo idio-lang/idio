@@ -21,6 +21,7 @@
 (document C number?)
 (document C integral?)
 (document C unsigned?)
+(document C floating?)
 
 (rst "type-constructors" 0)
 (document C integer->)

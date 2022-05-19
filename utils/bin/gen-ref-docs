@@ -223,7 +223,8 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 	 val := symbol-value sym mod (void)
 
 	 if (and (void? val)
-		 (not (eq? 'libc mod))) {
+		 (not (or (eq? 'libc mod)
+			  (eq? 'Idio mod)))) {
 	   hprintf out-fh ".. %s/%s - XXX not found\n\n" mod sym
 
 	   eprintf "generate-toc-file %s: %s %s: failed lookup\n" fbn mod sym

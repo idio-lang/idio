@@ -6,6 +6,8 @@
 (document object slot-ref)
 (document object slot-set! slot-set)
 
+(document object %cpl-args)
+
 (document object dump-instance)
 
 (nodocument object %allocate-instance)
