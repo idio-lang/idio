@@ -187,6 +187,8 @@ but can now be rewritten to:
 which keeps the normal form and also ensures the name of the function
 value is carried through.
 
+.. _`function special form`:
+
 function
 ^^^^^^^^
 
@@ -201,6 +203,8 @@ commonly called a closure.
 special form>` in the absence of a name.  ``function`` is a simple
 wrapper to ``function/name`` passing ``(gensym 'anon)`` as the
 function's name.
+
+.. _`function+ special form`:
 
 function+
 ^^^^^^^^^

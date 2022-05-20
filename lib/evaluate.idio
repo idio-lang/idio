@@ -595,7 +595,7 @@ define (meaning-alternative src e1 e2 e3 nametree escapes flags cs cm) {
   m2 := meaning (mpp e2 src) e2 nametree escapes flags cs cm
   m3 := meaning (mpp e3 src) e3 nametree escapes flags cs cm
 
-  list I-ALTERNATIVE e1 e2 e3 m1 m2 m3
+  list I-ALTERNATIVE src m1 m2 m3
 }
 
 #*

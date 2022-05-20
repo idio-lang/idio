@@ -1516,12 +1516,10 @@ static IDIO idio_meaning_alternative (IDIO src, IDIO e1, IDIO e2, IDIO e3, IDIO 
     IDIO m3 = idio_meaning (IDIO_MPP (e3, src), e3, nametree, escapes, flags, cs, cm);
 
     return idio_pair (IDIO_I_ALTERNATIVE,
-		      idio_pair (e1,
-		      idio_pair (e2,
-		      idio_pair (e3,
+		      idio_pair (src,
 		      idio_pair (m1,
 		      idio_pair (m2,
-		      idio_pair (m3, idio_S_nil)))))));
+		      idio_pair (m3, idio_S_nil)))));
 }
 
 /*

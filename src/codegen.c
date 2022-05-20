@@ -1427,20 +1427,17 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_ALTERNATIVE:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 6) {
-		idio_codegen_error_param_args ("ALTERNATIVE e1 e2 e3 m1 m2 m3", mt, IDIO_C_FUNC_LOCATION_S ("ALTERNATIVE"));
+		idio_list_length (mt) != 4) {
+		idio_codegen_error_param_args ("ALTERNATIVE src m1 m2 m3", mt, IDIO_C_FUNC_LOCATION_S ("ALTERNATIVE"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO e1  = IDIO_PAIR_H (mt);
-	    IDIO e2  = IDIO_PAIR_HT (mt);
-	    IDIO e3  = IDIO_PAIR_HTT (mt);
-	    mt = IDIO_PAIR_TTT (mt);
-	    IDIO m1 = IDIO_PAIR_H (mt);
-	    IDIO m2 = IDIO_PAIR_HT (mt);
-	    IDIO m3 = IDIO_PAIR_HTT (mt);
+	    IDIO src = IDIO_PAIR_H (mt);
+	    IDIO m1 = IDIO_PAIR_HT (mt);
+	    IDIO m2 = IDIO_PAIR_HTT (mt);
+	    IDIO m3 = IDIO_PAIR_HTTT (mt);
 
 	    /*
 	     * Think about the code to be generated where we can only
@@ -1462,18 +1459,16 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     */
 
 	    /* 2: */
-	    IDIO_CODEGEN_SRC_EXPR (ia, e1);
+	    IDIO_CODEGEN_SRC_EXPR (ia, src);
 
 	    IDIO_IA_PUSH1 (IDIO_A_SUPPRESS_RCSE);
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_POP_RCSE);
 
 	    IDIO_IA_T ia2 = idio_ia (100);
-	    IDIO_CODEGEN_SRC_EXPR (ia2, e2);
 	    idio_codegen_compile (thr, ia2, cs, m2, depth + 1);
 
 	    IDIO_IA_T ia3 = idio_ia (100);
-	    IDIO_CODEGEN_SRC_EXPR (ia3, e3);
 	    idio_codegen_compile (thr, ia3, cs, m3, depth + 1);
 
 	    IDIO_IA_T g7 = NULL;
@@ -1608,11 +1603,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    idio_codegen_compile (thr, ia, cs, m, depth + 1);
 
+	    IDIO_CODEGEN_SRC_EXPR (ia, e);
+
 	    idio_ia_push (ia, IDIO_A_EXTEND_FRAME);
 	    IDIO_IA_PUSH_VARUINT (idio_list_length (formals));
 	    IDIO_IA_PUSH_VARUINT (fci);
-
-	    IDIO_CODEGEN_SRC_EXPR (ia, e);
 
 	    IDIO_IA_PUSH1 (IDIO_A_SHALLOW_ARGUMENT_SET);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (i));
