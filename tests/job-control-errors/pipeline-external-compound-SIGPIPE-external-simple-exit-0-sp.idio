@@ -2,7 +2,7 @@
 suppress-pipefail! = #t
 
 {
-  job-control-pipeline-delay 1000
+  job-control-pipeline-delay 5000
   echo "hello"
 } | 'sleep 0
 

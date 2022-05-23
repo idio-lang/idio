@@ -23,7 +23,7 @@ opn := named-pipe-into {
 } | {
   ;; XXX all children have lock open
   libc/close (libc/pipe-writer lock)
-  (cat) > testfile
+  cat > testfile
 }
 
 hprintf pid-ph "%d,%d\n" PID (%idio-job-pgid %%last-job)

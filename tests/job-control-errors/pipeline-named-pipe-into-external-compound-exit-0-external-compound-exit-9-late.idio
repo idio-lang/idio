@@ -14,7 +14,7 @@ if (e? testfile) {
 opn := named-pipe-into {
   (cat)
 } | {
-  (cat) > testfile
+  cat > testfile
   libc/exit 9
 }
 

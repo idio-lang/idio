@@ -190,7 +190,11 @@ trap ^rt-command-status-error (function (c) {
   ;; SIGPIPE).  All we can usefully do is look at and see if SIGPIPE
   ;; is being ignored and use the appropriate handler.
   ;;
-  ;; This doesn't look like art.  Maybe it's contemporary art, then.
+  ;; This doesn't look like Art.  Maybe it's contemporary art, then.
+  ;;
+  ;; The test also fails, ie. the pipeline succeeds, when running
+  ;; under valgrind.  I'm guessing the launch of the RHS takes longer
+  ;; than the runtime of the LHS.
 
   if (C/== (signal-handler SIGPIPE) SIG_IGN) {
     rcseh = exit1

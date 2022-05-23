@@ -7,7 +7,7 @@ lock := (libc/pipe)
 
 opn := named-pipe-into {
   libc/exit 9
-  (cat) > testfile
+  cat > testfile
 }
 
 hprintf pid-ph "%d,%d\n" PID (%idio-job-pgid %%last-job)

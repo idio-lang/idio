@@ -9,7 +9,7 @@ opn := named-pipe-into {
   libc/exit 9
   (cat)
 } | {
-  (cat) > testfile
+  cat > testfile
 }
 
 hprintf pid-ph "%d,%d\n" PID (%idio-job-pgid %%last-job)

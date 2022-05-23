@@ -4,7 +4,7 @@ if (e? testfile) {
 }
 
 opn := named-pipe-into {
-  job-control-pipeline-delay 1000
+  job-control-pipeline-delay 5000
   (cat)
 } | {
   libc/sleep 0

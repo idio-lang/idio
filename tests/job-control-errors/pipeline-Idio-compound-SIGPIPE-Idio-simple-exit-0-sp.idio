@@ -2,7 +2,7 @@
 suppress-pipefail! = #t
 
 {
-  job-control-pipeline-delay 1000
+  job-control-pipeline-delay 5000
   puts "hello\n"
 } | libc/sleep 0
 

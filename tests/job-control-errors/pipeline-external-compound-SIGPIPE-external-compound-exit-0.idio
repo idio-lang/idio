@@ -6,7 +6,7 @@
      libc/sleep 1
    })
    (else {
-     job-control-pipeline-delay 1000
+     job-control-pipeline-delay 5000
    }))
   echo "hello"
 } | {

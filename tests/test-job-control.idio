@@ -532,6 +532,9 @@ calling us as we're assuming we are in a pipeline.  If we're not and
 we simply want to delay then we need a (the original) simple delay
 function as well.
 
+A timeout of 1000 works well enough for my dev box except when running
+under valgrind.  So bump it up to 5000.
+
 (*) So SunOS, the *BSDs and Mac OS X return POLLHUP and Mac OS X also
     returns POLLPRI.
 
