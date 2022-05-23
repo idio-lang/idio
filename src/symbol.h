@@ -195,6 +195,7 @@ extern IDIO_SYMBOL_DECL (longdouble);
 
 extern IDIO idio_properties_hash;
 
+void idio_property_nil_object_error (char const *msg, IDIO c_location);
 void idio_property_error_nil_object (char const *msg, IDIO c_location);
 void idio_properties_error_not_found (char const *msg, IDIO o, IDIO c_location);
 void idio_property_error_no_properties (char const *msg, IDIO c_location);

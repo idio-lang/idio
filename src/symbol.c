@@ -261,7 +261,7 @@ static void idio_symbol_format_error (char const *msg, IDIO s, IDIO c_location)
     /* notreached */
 }
 
-static void idio_property_nil_object_error (char const *msg, IDIO c_location)
+void idio_property_nil_object_error (char const *msg, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);

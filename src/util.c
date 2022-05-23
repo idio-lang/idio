@@ -3333,6 +3333,15 @@ void idio_final_util ()
 	}
     }
 #endif
+
+    /*
+     * Printing stuff during shutdown (never a good idea but...) will
+     * end up querying these two values.  At least the code checks
+     * whether they are set first -- a side-effect from printing
+     * during startup.
+     */
+    idio_print_conversion_format_sym = idio_S_nil;
+    idio_print_conversion_precision_sym = idio_S_nil;
 }
 
 void idio_init_util ()

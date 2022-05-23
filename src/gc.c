@@ -700,7 +700,7 @@ idio_gc_t *idio_gc_obj_new (idio_gc_t *next)
     c->next = next;
     c->roots = NULL;
     if (NULL == next) {
-	c->dynamic_roots = NULL;
+	c->dynamic_roots = idio_S_nil;
     } else {
 	IDIO dr = idio_pair (idio_S_nil, idio_S_nil);
 	idio_gc_protect (dr);
@@ -919,8 +919,6 @@ void idio_gc_protect_auto (IDIO o)
 	return;
     }
 
-    idio_gc_protect (o);
-
     IDIO_PAIR_H (idio_gc->dynamic_roots) = idio_pair (o, IDIO_PAIR_H (idio_gc->dynamic_roots));
 }
 
@@ -979,11 +977,15 @@ void idio_gc_expose (IDIO o)
 	fprintf (stderr, "idio_gc_expose: o %10p not previously protected\n", o);
 	idio_debug ("o = %s\n", o);
 
-	fprintf (stderr, "idio_gc_expose: currently protected:\n");
-	r = gc->roots;
-	while (r) {
-	    fprintf (stderr, "  %10p %s\n", r->object, idio_type2string (r->object));
-	    r = r->next;
+	fprintf (stderr, "idio_gc_expose: #%d currently protected:\n", gc->inst);
+	gc = idio_gc;
+	while (gc) {
+	    r = gc->roots;
+	    while (r) {
+		fprintf (stderr, "  %10p %s\n", r->object, idio_type2string (r->object));
+		r = r->next;
+	    }
+	    gc = gc->next;
 	}
 	IDIO_C_ASSERT (seen);
 	return;
@@ -1017,7 +1019,7 @@ void idio_gc_expose_all ()
 	     * Instead, just a quick note.
 	     */
 #ifdef IDIO_DEBUG
-	    fprintf (stderr, "expose-all: %10p %s\n", r->object, idio_type2string (r->object));
+	    fprintf (stderr, "gc-expose-all: %10p %s\n", r->object, idio_type2string (r->object));
 	    n++;
 #endif
 	    r = r->next;
@@ -1029,6 +1031,7 @@ void idio_gc_expose_all ()
 	}
 #endif
 
+	gc->roots = NULL;
 	gc = gc->next;
     }
 }
@@ -1037,14 +1040,7 @@ void idio_gc_expose_autos ()
 {
     idio_gc_t *gc = idio_gc;
     while (NULL != gc) {
-	IDIO dr = gc->dynamic_roots;
-	IDIO d = IDIO_PAIR_H (dr);
-	while (idio_S_nil != d) {
-	    idio_gc_expose (IDIO_PAIR_H (d));
-	    d = IDIO_PAIR_T (d);
-	}
-
-	idio_gc_expose (dr);
+	idio_gc_expose (gc->dynamic_roots);
 
 	/* just for completeness */
 	gc->dynamic_roots = idio_S_nil;
@@ -1361,6 +1357,109 @@ void idio_gc_mark (idio_gc_t *gc)
     idio_gc_mark_weak (gc);
 }
 
+#ifdef IDIO_VM_PROF
+static struct timespec idio_gc_all_closure_t;
+static struct timespec idio_gc_all_primitive_t;
+static double idio_gc_all_closure_ru;
+static double idio_gc_all_primitive_ru;
+
+void idio_gc_closure_stats (IDIO c)
+{
+    if (IDIO_CLOSURE_CALLED (c)) {
+	idio_gc_all_closure_t.tv_sec += IDIO_CLOSURE_CALL_TIME (c).tv_sec;
+	idio_gc_all_closure_t.tv_nsec += IDIO_CLOSURE_CALL_TIME (c).tv_nsec;
+	if (idio_gc_all_closure_t.tv_nsec > IDIO_VM_NS) {
+	    idio_gc_all_closure_t.tv_nsec -= IDIO_VM_NS;
+	    idio_gc_all_closure_t.tv_sec += 1;
+	}
+
+	fprintf (idio_vm_perf_FILE, "%+5jds gc_sweep_free Clos %6zu %8" PRIu64, (intmax_t) idio_vm_elapsed (), IDIO_CLOSURE_CODE_PC (c), IDIO_CLOSURE_CALLED (c));
+
+	idio_debug_FILE (idio_vm_perf_FILE, " %-40s", idio_vm_closure_name (c));
+
+	fprintf (idio_vm_perf_FILE, " %5jd.%09ld", (intmax_t) IDIO_CLOSURE_CALL_TIME (c).tv_sec, IDIO_CLOSURE_CALL_TIME (c).tv_nsec);
+
+	double call_time = (IDIO_CLOSURE_CALL_TIME (c).tv_sec * IDIO_VM_NS + IDIO_CLOSURE_CALL_TIME (c).tv_nsec) / IDIO_CLOSURE_CALLED (c);
+	fprintf (idio_vm_perf_FILE, " %11.f", call_time);
+	char *units = "ns";
+	if (call_time > 10000) {
+	    units = "us";
+	    call_time /= 1000;
+	    if (call_time > 10000) {
+		units = "ms";
+		call_time /= 1000;
+		if (call_time > 10000) {
+		    units = "s";
+		    call_time /= 1000;
+		}
+	    }
+	}
+	fprintf (idio_vm_perf_FILE, " %6.f %s", call_time, units);
+
+	double ru_t =
+	    IDIO_CLOSURE_RU_UTIME (c).tv_sec * IDIO_VM_US + IDIO_CLOSURE_RU_UTIME (c).tv_usec +
+	    IDIO_CLOSURE_RU_STIME (c).tv_sec * IDIO_VM_US + IDIO_CLOSURE_RU_STIME (c).tv_usec;
+
+	ru_t /= IDIO_VM_US;
+
+	fprintf (idio_vm_perf_FILE, " %11.6f", ru_t);
+
+	idio_gc_all_closure_ru += ru_t;
+
+	fprintf (idio_vm_perf_FILE, "\n");
+
+	IDIO_CLOSURE_CALLED (c) = 0;
+    }
+}
+
+void idio_gc_primitive_stats (IDIO p)
+{
+    if (IDIO_PRIMITIVE_CALLED (p)) {
+	fprintf (idio_vm_perf_FILE, "%+5jds gc_sweep_free Prim %10p %8" PRIu64 " %-40s %5jd.%09ld", (intmax_t) idio_vm_elapsed (), p, IDIO_PRIMITIVE_CALLED (p), IDIO_PRIMITIVE_NAME (p), (intmax_t) IDIO_PRIMITIVE_CALL_TIME (p).tv_sec, IDIO_PRIMITIVE_CALL_TIME (p).tv_nsec);
+
+	double call_time = (IDIO_PRIMITIVE_CALL_TIME (p).tv_sec * IDIO_VM_NS + IDIO_PRIMITIVE_CALL_TIME (p).tv_nsec) / IDIO_PRIMITIVE_CALLED (p);
+	fprintf (idio_vm_perf_FILE, " %11.f", call_time);
+	char *units = "ns";
+	if (call_time > 10000) {
+	    units = "us";
+	    call_time /= 1000;
+	    if (call_time > 10000) {
+		units = "ms";
+		call_time /= 1000;
+		if (call_time > 10000) {
+		    units = "s";
+		    call_time /= 1000;
+		}
+	    }
+	}
+	fprintf (idio_vm_perf_FILE, " %6.f %2s", call_time, units);
+
+	double ru_t =
+	    IDIO_PRIMITIVE_RU_UTIME (p).tv_sec * IDIO_VM_US + IDIO_PRIMITIVE_RU_UTIME (p).tv_usec +
+	    IDIO_PRIMITIVE_RU_STIME (p).tv_sec * IDIO_VM_US + IDIO_PRIMITIVE_RU_STIME (p).tv_usec;
+
+	ru_t /= IDIO_VM_US;
+
+	fprintf (idio_vm_perf_FILE, " %9.6f", ru_t);
+
+	if (strcmp ("load", IDIO_PRIMITIVE_NAME (p))) {
+	    idio_gc_all_primitive_t.tv_sec += IDIO_PRIMITIVE_CALL_TIME (p).tv_sec;
+	    idio_gc_all_primitive_t.tv_nsec += IDIO_PRIMITIVE_CALL_TIME (p).tv_nsec;
+	    if (idio_gc_all_primitive_t.tv_nsec > IDIO_VM_NS) {
+		idio_gc_all_primitive_t.tv_nsec -= IDIO_VM_NS;
+		idio_gc_all_primitive_t.tv_sec += 1;
+	    }
+
+	    idio_gc_all_primitive_ru += ru_t;
+	}
+
+	fprintf (idio_vm_perf_FILE, "\n");
+
+	IDIO_PRIMITIVE_CALLED (p) = 0;
+    }
+}
+#endif
+
 void idio_gc_sweep_free_value (IDIO vo)
 {
     IDIO_ASSERT (vo);
@@ -1406,12 +1505,18 @@ void idio_gc_sweep_free_value (IDIO vo)
 	idio_free_hash (vo);
 	break;
     case IDIO_TYPE_CLOSURE:
+#ifdef IDIO_VM_PROF
+	idio_gc_closure_stats (vo);
+#endif
 	if (0 == (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_FINISH)) {
 	    idio_delete_properties (vo);
 	}
 	idio_free_closure (vo);
 	break;
     case IDIO_TYPE_PRIMITIVE:
+#ifdef IDIO_VM_PROF
+	idio_gc_primitive_stats (vo);
+#endif
 	if (0 == (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_FINISH)) {
 	    idio_delete_properties (vo);
 	}
@@ -1503,7 +1608,7 @@ void idio_gc_sweep (idio_gc_t *gc)
 	if (((co->gc_flags & IDIO_GC_FLAG_STICKY_MASK) == IDIO_GC_FLAG_NOTSTICKY) &&
 	    ((co->gc_flags & IDIO_GC_FLAG_GCC_MASK) == IDIO_GC_FLAG_GCC_WHITE)) {
 	    gc->stats.nused[co->type]--;
-	    /* fprintf (stderr, "idio_gc_sweep: freeing %10p %2d %s\n", co, co->type, idio_type2string (co)); */
+	    /* fprintf (stderr, "idio_gc_sweep: free %10p %2d %s\n", co, co->type, idio_type2string (co)); */
 	    if (po) {
 		po->next = co->next;
 	    } else {
@@ -1520,6 +1625,7 @@ void idio_gc_sweep (idio_gc_t *gc)
 	    gc->stats.nfree++;
 	    freed++;
 	} else {
+	    /* fprintf (stderr, "idio_gc_sweep: skip %10p %2d %s\n", co, co->type, idio_type2string (co)); */
 	    po = co;
 	}
 
@@ -1533,286 +1639,6 @@ void idio_gc_sweep (idio_gc_t *gc)
 	fprintf (stderr, "gc-sweep #%d: saw %7zd obj; freed     0%%; left %7zd + %6zd\n", gc->inst, nobj, nobj - freed, freed);
     }
 #endif
-}
-
-void idio_gc_stats ();
-
-void idio_gc_possibly_collect ()
-{
-    /*
-     * How often to run the garbage collector?
-     *
-     * If you don't run it all all then we'll consume a lot of virtual
-     * memory.
-     *
-     * If you run it very often we'll spend more time winging up and
-     * down linked lists than doing any real work.
-     *
-     * There's no good answer.
-     *
-     * We're normally here because IDIO_GC_FLAG_REQUEST has been set
-     * in idio_gc_get_alloc() because there's nothing left on the free
-     * list.
-     */
-    if (idio_gc->pause == 0 &&
-	((IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) ||
-	 idio_gc->stats.igets > 1024000)) {
-#ifdef IDIO_GC_DEBUG
-	fprintf (stderr, "possibly-collect: reqd=%d %6llu igets %7llu allocs %6lld free\n",
-		 (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) ? 1 : 0,
-		 idio_gc->stats.igets,
-		 idio_gc->stats.allocs,
-		 idio_gc->stats.nfree);
-#endif
-	idio_gc_collect (idio_gc, IDIO_GC_COLLECT_GEN, "gc-possibly-collect");
-    }
-}
-
-void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
-{
-    /* idio_gc_walk_tree (); */
-    /* idio_gc_stats ();   */
-
-    if (gc->pause) {
-	return;
-    }
-
-#ifdef IDIO_GC_DEBUG
-    fprintf (stderr, "gc-collect #%d: %20s: ", gc->inst, caller);
-#endif
-
-    IDIO_GC_FLAGS (idio_gc) &= ~ IDIO_GC_FLAG_REQUEST;
-
-    struct timeval t0;
-    if (gettimeofday (&t0, NULL) < 0) {
-	perror ("gc-collect: gettimeofday");
-    }
-
-    struct rusage ru0;
-    if (getrusage (RUSAGE_SELF, &ru0) < 0) {
-	perror ("gc-collect: getrusage");
-    }
-
-    gc->stats.collections++;
-    if (gc->stats.igets > gc->stats.mgets) {
-	gc->stats.mgets = gc->stats.igets;
-    }
-    gc->stats.igets = 0;
-    if (IDIO_GC_COLLECT_GEN == gen) {
-	idio_gc_mark (idio_gc);
-	idio_gc_sweep (idio_gc);
-    } else {
-	idio_gc_t *gc = idio_gc;
-	while (NULL != gc) {
-	idio_gc_mark (gc);
-	idio_gc_sweep (gc);
-	gc = gc->next;
-	}
-    }
-
-    struct timeval t1;
-    if (gettimeofday (&t1, NULL) < 0) {
-	perror ("gc-collect: gettimeofday");
-    }
-
-    struct rusage ru1;
-    if (getrusage (RUSAGE_SELF, &ru1) < 0) {
-	perror ("gc-collect: getrusage");
-    }
-
-    /* elapsed */
-    time_t s = t1.tv_sec - t0.tv_sec;
-    suseconds_t us = t1.tv_usec - t0.tv_usec;
-
-    if (us < 0) {
-	us += 1000000;
-	s -= 1;
-    }
-
-    gc->stats.dur.tv_usec += us;
-    if (gc->stats.dur.tv_usec > 1000000) {
-	gc->stats.dur.tv_usec -= 1000000;
-	gc->stats.dur.tv_sec += 1;
-    }
-    gc->stats.dur.tv_sec += s;
-
-    /* rusage ru_utime */
-    s = ru1.ru_utime.tv_sec - ru0.ru_utime.tv_sec;
-    us = ru1.ru_utime.tv_usec - ru0.ru_utime.tv_usec;
-
-    if (us < 0) {
-	us += 1000000;
-	s -= 1;
-    }
-
-    gc->stats.ru_utime.tv_usec += us;
-    if (gc->stats.ru_utime.tv_usec > 1000000) {
-	gc->stats.ru_utime.tv_usec -= 1000000;
-	gc->stats.ru_utime.tv_sec += 1;
-    }
-    gc->stats.ru_utime.tv_sec += s;
-
-    /* rusage ru_stime */
-    s = ru1.ru_stime.tv_sec - ru0.ru_stime.tv_sec;
-    us = ru1.ru_stime.tv_usec - ru0.ru_stime.tv_usec;
-
-    if (us < 0) {
-	us += 1000000;
-	s -= 1;
-    }
-
-    gc->stats.ru_stime.tv_usec += us;
-    if (gc->stats.ru_stime.tv_usec > 1000000) {
-	gc->stats.ru_stime.tv_usec -= 1000000;
-	gc->stats.ru_stime.tv_sec += 1;
-    }
-    gc->stats.ru_stime.tv_sec += s;
-}
-
-void idio_gc_collect_gen (char const *caller)
-{
-    idio_gc_collect (idio_gc, IDIO_GC_COLLECT_GEN, caller);
-}
-
-void idio_gc_collect_all (char const *caller)
-{
-    idio_gc_collect (idio_gc, IDIO_GC_COLLECT_ALL, caller);
-}
-
-#ifdef IDIO_VM_PROF
-static struct timespec idio_gc_all_closure_t;
-static struct timespec idio_gc_all_primitive_t;
-static double idio_gc_all_closure_ru;
-static double idio_gc_all_primitive_ru;
-
-void idio_gc_closure_stats (IDIO c)
-{
-    if (IDIO_CLOSURE_CALLED (c) > 0) {
-	idio_gc_all_closure_t.tv_sec += IDIO_CLOSURE_CALL_TIME (c).tv_sec;
-	idio_gc_all_closure_t.tv_nsec += IDIO_CLOSURE_CALL_TIME (c).tv_nsec;
-	if (idio_gc_all_closure_t.tv_nsec > IDIO_VM_NS) {
-	    idio_gc_all_closure_t.tv_nsec -= IDIO_VM_NS;
-	    idio_gc_all_closure_t.tv_sec += 1;
-	}
-
-	IDIO name = idio_S_unspec;
-	if (0 == (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_FINISH)) {
-	    name = idio_vm_closure_name (c);
-	}
-	if (IDIO_CLOSURE_CALL_TIME (c).tv_sec ||
-	    IDIO_CLOSURE_CALL_TIME (c).tv_nsec ||
-	    idio_S_unspec != name) {
-	    fprintf (idio_vm_perf_FILE, "%+5jds gc_sweep_free Clos %6zu %8" PRIu64, (intmax_t) idio_vm_elapsed (), IDIO_CLOSURE_CODE_PC (c), IDIO_CLOSURE_CALLED (c));
-
-	    /*
-	     * A little more complicated to get the closure's name
-	     */
-	    if (idio_S_unspec != name) {
-		idio_debug_FILE (idio_vm_perf_FILE, " %-40s", name);
-	    } else {
-		fprintf (idio_vm_perf_FILE, " %-40s", "--");
-	    }
-
-	    fprintf (idio_vm_perf_FILE, " %5jd.%09ld", (intmax_t) IDIO_CLOSURE_CALL_TIME (c).tv_sec, IDIO_CLOSURE_CALL_TIME (c).tv_nsec);
-
-	    double call_time = (IDIO_CLOSURE_CALL_TIME (c).tv_sec * IDIO_VM_NS + IDIO_CLOSURE_CALL_TIME (c).tv_nsec) / IDIO_CLOSURE_CALLED (c);
-	    fprintf (idio_vm_perf_FILE, " %11.f", call_time);
-	    char *units = "ns";
-	    if (call_time > 10000) {
-		units = "us";
-		call_time /= 1000;
-		if (call_time > 10000) {
-		    units = "ms";
-		    call_time /= 1000;
-		    if (call_time > 10000) {
-			units = "s";
-			call_time /= 1000;
-		    }
-		}
-	    }
-	    fprintf (idio_vm_perf_FILE, " %6.f %s", call_time, units);
-
-	    double ru_t =
-		IDIO_CLOSURE_RU_UTIME (c).tv_sec * IDIO_VM_US + IDIO_CLOSURE_RU_UTIME (c).tv_usec +
-		IDIO_CLOSURE_RU_STIME (c).tv_sec * IDIO_VM_US + IDIO_CLOSURE_RU_STIME (c).tv_usec;
-
-	    ru_t /= IDIO_VM_US;
-
-	    fprintf (idio_vm_perf_FILE, " %11.6f", ru_t);
-
-	    idio_gc_all_closure_ru += ru_t;
-
-	    fprintf (idio_vm_perf_FILE, "\n");
-	}
-    }
-}
-
-void idio_gc_primitive_stats (IDIO p)
-{
-    if (IDIO_PRIMITIVE_CALLED (p)) {
-	fprintf (idio_vm_perf_FILE, "%+5jds gc_sweep_free Prim %10p %8" PRIu64 " %-40s %5jd.%09ld", (intmax_t) idio_vm_elapsed (), p, IDIO_PRIMITIVE_CALLED (p), IDIO_PRIMITIVE_NAME (p), (intmax_t) IDIO_PRIMITIVE_CALL_TIME (p).tv_sec, IDIO_PRIMITIVE_CALL_TIME (p).tv_nsec);
-
-	double call_time = (IDIO_PRIMITIVE_CALL_TIME (p).tv_sec * IDIO_VM_NS + IDIO_PRIMITIVE_CALL_TIME (p).tv_nsec) / IDIO_PRIMITIVE_CALLED (p);
-	fprintf (idio_vm_perf_FILE, " %11.f", call_time);
-	char *units = "ns";
-	if (call_time > 10000) {
-	    units = "us";
-	    call_time /= 1000;
-	    if (call_time > 10000) {
-		units = "ms";
-		call_time /= 1000;
-		if (call_time > 10000) {
-		    units = "s";
-		    call_time /= 1000;
-		}
-	    }
-	}
-	fprintf (idio_vm_perf_FILE, " %6.f %2s", call_time, units);
-
-	double ru_t =
-	    IDIO_PRIMITIVE_RU_UTIME (p).tv_sec * IDIO_VM_US + IDIO_PRIMITIVE_RU_UTIME (p).tv_usec +
-	    IDIO_PRIMITIVE_RU_STIME (p).tv_sec * IDIO_VM_US + IDIO_PRIMITIVE_RU_STIME (p).tv_usec;
-
-	ru_t /= IDIO_VM_US;
-
-	fprintf (idio_vm_perf_FILE, " %9.6f", ru_t);
-
-	if (strcmp ("load", IDIO_PRIMITIVE_NAME (p))) {
-	    idio_gc_all_primitive_t.tv_sec += IDIO_PRIMITIVE_CALL_TIME (p).tv_sec;
-	    idio_gc_all_primitive_t.tv_nsec += IDIO_PRIMITIVE_CALL_TIME (p).tv_nsec;
-	    if (idio_gc_all_primitive_t.tv_nsec > IDIO_VM_NS) {
-		idio_gc_all_primitive_t.tv_nsec -= IDIO_VM_NS;
-		idio_gc_all_primitive_t.tv_sec += 1;
-	    }
-
-	    idio_gc_all_primitive_ru += ru_t;
-	}
-
-	fprintf (idio_vm_perf_FILE, "\n");
-    }
-}
-#endif
-
-void idio_hcount (unsigned long long *bp, int *ip)
-{
-    if (*bp < 10000) {
-	return;
-    }
-    *ip += 1;
-    *bp /= 1000;
-    idio_hcount (bp, ip);
-}
-
-void idio_gc_stats_inc (idio_type_e type)
-{
-    if (type > IDIO_TYPE_MAX) {
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "bad type %hhu", type);
-
-	/* notreached */
-	return;
-    } else {
-	idio_gc->stats.tgets[type]++;
-    }
 }
 
 static FILE *idio_gc_stats_FILE = NULL;
@@ -1932,7 +1758,22 @@ void idio_gc_stats ()
 	    scale = 0;
 	    idio_hcount (&count, &scale);
 
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  protected objects\n", count, scales[scale]);
+	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  root objects\n", count, scales[scale]);
+
+	    int drc = 0;
+	    if (idio_isa_pair (gc->dynamic_roots)) {
+		IDIO dr = IDIO_PAIR_H (gc->dynamic_roots);
+		while (idio_S_nil != dr) {
+		    drc++;
+		    dr = IDIO_PAIR_T (dr);
+		}
+	    }
+
+	    count = drc;
+	    scale = 0;
+	    idio_hcount (&count, &scale);
+
+	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  auto objects\n", count, scales[scale]);
 
 	    int fc = 0;
 	    IDIO o = gc->free;
@@ -1955,22 +1796,10 @@ void idio_gc_stats ()
 		uc++;
 		if (o->next &&
 		    o->next->type == 0) {
-		    /* IDIO_ASSERT (o->next); */
 		    fprintf (idio_gc_stats_FILE, "bad type %10p\n", o->next);
 		    o->next = o->next->next;
 		}
-		/* idio_dump (o, 160); */
 
-#ifdef IDIO_VM_PROF
-		switch (o->type) {
-		case IDIO_TYPE_CLOSURE:
-		    idio_gc_closure_stats (o);
-		    break;
-		case IDIO_TYPE_PRIMITIVE:
-		    idio_gc_primitive_stats (o);
-		    break;
-		}
-#endif
 		o = o->next;
 	    }
 	    gc->verbose--;
@@ -2006,6 +1835,170 @@ void idio_gc_stats ()
 	}
 
 	fclose (idio_gc_stats_FILE);
+    }
+}
+
+void idio_gc_possibly_collect ()
+{
+    /*
+     * How often to run the garbage collector?
+     *
+     * If you don't run it all all then we'll consume a lot of virtual
+     * memory.
+     *
+     * If you run it very often we'll spend more time winging up and
+     * down linked lists than doing any real work.
+     *
+     * There's no good answer.
+     *
+     * We're normally here because IDIO_GC_FLAG_REQUEST has been set
+     * in idio_gc_get_alloc() because there's nothing left on the free
+     * list.
+     */
+    if (idio_gc->pause == 0 &&
+	((IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) ||
+	 idio_gc->stats.igets > 1024000)) {
+#ifdef IDIO_GC_DEBUG
+	fprintf (stderr, "possibly-collect: reqd=%d %6llu igets %7llu allocs %6lld free\n",
+		 (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) ? 1 : 0,
+		 idio_gc->stats.igets,
+		 idio_gc->stats.allocs,
+		 idio_gc->stats.nfree);
+#endif
+	idio_gc_collect (idio_gc, IDIO_GC_COLLECT_GEN, "gc-possibly-collect");
+    }
+}
+
+void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
+{
+    /* idio_gc_walk_tree (); */
+    /* idio_gc_stats ();   */
+
+    if (gc->pause) {
+	return;
+    }
+
+#ifdef IDIO_GC_DEBUG
+    fprintf (stderr, "gc-collect #%d: %20s: ", gc->inst, caller);
+#endif
+
+    IDIO_GC_FLAGS (idio_gc) &= ~ IDIO_GC_FLAG_REQUEST;
+
+    struct timeval t0;
+    if (gettimeofday (&t0, NULL) < 0) {
+	perror ("gc-collect: gettimeofday");
+    }
+
+    struct rusage ru0;
+    if (getrusage (RUSAGE_SELF, &ru0) < 0) {
+	perror ("gc-collect: getrusage");
+    }
+
+    gc->stats.collections++;
+    if (gc->stats.igets > gc->stats.mgets) {
+	gc->stats.mgets = gc->stats.igets;
+    }
+    gc->stats.igets = 0;
+    if (IDIO_GC_COLLECT_GEN == gen) {
+	idio_gc_mark (idio_gc);
+	idio_gc_sweep (idio_gc);
+    } else {
+	idio_gc_t *gc = idio_gc;
+	while (NULL != gc) {
+	    idio_gc_mark (gc);
+	    idio_gc_sweep (gc);
+	    gc = gc->next;
+	}
+    }
+
+    struct timeval t1;
+    if (gettimeofday (&t1, NULL) < 0) {
+	perror ("gc-collect: gettimeofday");
+    }
+
+    struct rusage ru1;
+    if (getrusage (RUSAGE_SELF, &ru1) < 0) {
+	perror ("gc-collect: getrusage");
+    }
+
+    /* elapsed */
+    time_t s = t1.tv_sec - t0.tv_sec;
+    suseconds_t us = t1.tv_usec - t0.tv_usec;
+
+    if (us < 0) {
+	us += 1000000;
+	s -= 1;
+    }
+
+    gc->stats.dur.tv_usec += us;
+    if (gc->stats.dur.tv_usec > 1000000) {
+	gc->stats.dur.tv_usec -= 1000000;
+	gc->stats.dur.tv_sec += 1;
+    }
+    gc->stats.dur.tv_sec += s;
+
+    /* rusage ru_utime */
+    s = ru1.ru_utime.tv_sec - ru0.ru_utime.tv_sec;
+    us = ru1.ru_utime.tv_usec - ru0.ru_utime.tv_usec;
+
+    if (us < 0) {
+	us += 1000000;
+	s -= 1;
+    }
+
+    gc->stats.ru_utime.tv_usec += us;
+    if (gc->stats.ru_utime.tv_usec > 1000000) {
+	gc->stats.ru_utime.tv_usec -= 1000000;
+	gc->stats.ru_utime.tv_sec += 1;
+    }
+    gc->stats.ru_utime.tv_sec += s;
+
+    /* rusage ru_stime */
+    s = ru1.ru_stime.tv_sec - ru0.ru_stime.tv_sec;
+    us = ru1.ru_stime.tv_usec - ru0.ru_stime.tv_usec;
+
+    if (us < 0) {
+	us += 1000000;
+	s -= 1;
+    }
+
+    gc->stats.ru_stime.tv_usec += us;
+    if (gc->stats.ru_stime.tv_usec > 1000000) {
+	gc->stats.ru_stime.tv_usec -= 1000000;
+	gc->stats.ru_stime.tv_sec += 1;
+    }
+    gc->stats.ru_stime.tv_sec += s;
+}
+
+void idio_gc_collect_gen (char const *caller)
+{
+    idio_gc_collect (idio_gc, IDIO_GC_COLLECT_GEN, caller);
+}
+
+void idio_gc_collect_all (char const *caller)
+{
+    idio_gc_collect (idio_gc, IDIO_GC_COLLECT_ALL, caller);
+}
+
+void idio_hcount (unsigned long long *bp, int *ip)
+{
+    if (*bp < 10000) {
+	return;
+    }
+    *ip += 1;
+    *bp /= 1000;
+    idio_hcount (bp, ip);
+}
+
+void idio_gc_stats_inc (idio_type_e type)
+{
+    if (type > IDIO_TYPE_MAX) {
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "bad type %hhu", type);
+
+	/* notreached */
+	return;
+    } else {
+	idio_gc->stats.tgets[type]++;
     }
 }
 
@@ -2057,21 +2050,8 @@ void idio_gc_reset (char const *caller, int pause)
     idio_gc->pause = pause;
 }
 
-void idio_gc_ports_free ()
-{
-}
-
 void idio_gc_obj_free ()
 {
-    /*
-      Things with finalizers will try to use embedded references which
-      may have been freed by gc_sweep (because we will remove
-      all roots before we call it).
-
-      We know ports have finalizers.
-     */
-    idio_gc_ports_free ();
-
     while (idio_gc->roots) {
 	idio_root_t *root = idio_gc->roots;
 	idio_gc->roots = root->next;
@@ -2109,6 +2089,10 @@ void idio_gc_obj_free ()
 	    gc->used = co->next;
 	    IDIO_GC_FREE (co, sizeof (idio_t));
 	    n++;
+	}
+
+	if (n) {
+	    fprintf (stderr, "gc-obj-free #%d: %zu remained in use\n", gc->inst, n);
 	}
 
 	idio_gc_t *ogc = gc;

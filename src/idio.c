@@ -95,7 +95,7 @@ IDIO idio_k_exit = NULL;
 void idio_add_primitives ();
 
 #ifdef IDIO_VM_PROF
-#define IDIO_VM_PROF_FILE_NAME "vm-perf.log"
+#define IDIO_VM_PROF_FILE_NAME "vm-perf"
 FILE *idio_vm_perf_FILE;
 #endif
 

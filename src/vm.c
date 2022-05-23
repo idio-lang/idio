@@ -3645,14 +3645,14 @@ set VM live disassembly to to `dis`			\n\
 /*
  * Code coverage:
  *
- * Used by the tracer.
+ * Used by reporting tools.
  */
 IDIO idio_vm_closure_name (IDIO c)
 {
     IDIO_ASSERT (c);
     IDIO_TYPE_ASSERT (closure, c);
 
-    return idio_ref_property (c, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+    return IDIO_CLOSURE_NAME (c);
 }
 
 /*

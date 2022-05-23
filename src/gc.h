@@ -628,15 +628,19 @@ typedef intptr_t idio_pc_t;
 /*
  * If we wanted to store the arity and varargs boolean of a closure
  * (for a possible thunk? predicate) without increasing the size of
- * idio_closure_s (and thus spoiling idio_s' union) then we should be
- * able to sneak in an extra char in idio_s (after tflags) for the
- * arity -- with a special value of 255 for 255+ arguments (how many
- * of those might we see?) and use a bit in tflags for varargs.
+ * idio_closure_s then we should be able to sneak in an extra char in
+ * idio_s (after tflags) for the arity -- with a special value of 255
+ * for 255+ arguments (how many of those might we see?) and use a bit
+ * in tflags for varargs.
+ *
+ * The closure's name is a reference into the VM's constants table
+ * which shouldn't get reclaimed during the lifetime of the program.
  */
 typedef struct idio_closure_s {
     struct idio_s *grey;
     idio_pc_t code_pc;
     idio_pc_t code_len;
+    struct idio_s *name;
     struct idio_s *frame;
     struct idio_s *env;
 #ifdef IDIO_VM_PROF
@@ -650,6 +654,7 @@ typedef struct idio_closure_s {
 #define IDIO_CLOSURE_GREY(C)       ((C)->u.closure->grey)
 #define IDIO_CLOSURE_CODE_PC(C)    ((C)->u.closure->code_pc)
 #define IDIO_CLOSURE_CODE_LEN(C)   ((C)->u.closure->code_len)
+#define IDIO_CLOSURE_NAME(C)       ((C)->u.closure->name)
 #define IDIO_CLOSURE_FRAME(C)      ((C)->u.closure->frame)
 #define IDIO_CLOSURE_ENV(C)        ((C)->u.closure->env)
 #ifdef IDIO_VM_PROF

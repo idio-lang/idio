@@ -104,6 +104,7 @@ IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO
 
     if (idio_S_nil != name) {
 	idio_set_property (c, idio_KW_name, name);
+	IDIO_CLOSURE_NAME (c) = name;
     }
 
     if (idio_S_nil != sigstr) {
