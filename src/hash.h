@@ -28,22 +28,22 @@
 #define IDIO_HASH_EQVP(s)	(IDIO_HASH ((s), idio_eqvp, idio_hash_default_hash_C, idio_S_nil, idio_S_nil))
 #define IDIO_HASH_EQUALP(s)	(IDIO_HASH ((s), idio_equalp, idio_hash_default_hash_C, idio_S_nil, idio_S_nil))
 
-IDIO idio_hash (idio_hi_t const size, int (*equal) (void const *k1, void const *k2), size_t (*hash_C) (IDIO h, void const *k), IDIO comp, IDIO hash);
+IDIO idio_hash (idio_hi_t const size, int (*equal) (void const *k1, void const *k2), idio_hi_t (*hash_C) (IDIO h, void const *k), IDIO comp, IDIO hash);
 IDIO idio_copy_hash (IDIO orig, int depth);
 IDIO idio_hash_alist_to_hash (IDIO alist, IDIO args);
 int idio_isa_hash (IDIO h);
 void idio_free_hash (IDIO h);
-size_t idio_hash_hcount (IDIO h);
 void idio_hash_resize (IDIO h, int larger);
-size_t idio_hash_default_hash_C_uintmax_t (uintmax_t i);
-size_t idio_hash_default_hash_C_string_C (size_t blen, char const *s_C);
-size_t idio_hash_default_hash_C_string (IDIO s);
-size_t idio_hash_default_hash_C_symbol (IDIO s);
-size_t idio_hash_default_hash_C_void (void *p);
-size_t idio_hash_default_hash_C_pair (IDIO h);
-size_t idio_hash_default_hash_C_array (IDIO h);
-size_t idio_hash_default_hash_C_hash (IDIO h);
-size_t idio_hash_default_hash_C (IDIO h, void const *k);
+idio_hi_t idio_hash_default_hash_C_uintmax_t (uintmax_t i);
+idio_hi_t idio_hash_default_hash_C_string_C_MurmurOAAT_32 (char const *s_C);
+idio_hi_t idio_hash_default_hash_C_string_C (size_t blen, char const *s_C);
+idio_hi_t idio_hash_default_hash_C_string (IDIO s);
+idio_hi_t idio_hash_default_hash_C_symbol (IDIO s);
+idio_hi_t idio_hash_default_hash_C_void (void *p);
+idio_hi_t idio_hash_default_hash_C_pair (IDIO h);
+idio_hi_t idio_hash_default_hash_C_array (IDIO h);
+idio_hi_t idio_hash_default_hash_C_hash (IDIO h);
+idio_hi_t idio_hash_default_hash_C (IDIO h, void const *k);
 IDIO idio_hash_put (IDIO h, void *k, IDIO v);
 int idio_hash_exists_key (IDIO h, void *kv);
 IDIO idio_hash_exists (IDIO h, void *k);

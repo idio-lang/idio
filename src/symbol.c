@@ -345,14 +345,10 @@ int idio_symbol_C_eqp (const void *s1, const void *s2)
 
 idio_hi_t idio_symbol_C_hash (IDIO h, const void *s)
 {
-    size_t hvalue = (uintptr_t) s;
+    idio_hi_t hvalue = (uintptr_t) s;
 
     if (idio_S_nil != s) {
-	/*
-	 * There are no useful restrictions on the length of a symbol.
-	 */
-	size_t slen = strlen ((char *) s);
-	hvalue = idio_hash_default_hash_C_string_C (slen, s);
+	hvalue = idio_hash_default_hash_C_string_C_MurmurOAAT_32 (s);
     }
 
     return (hvalue & IDIO_HASH_MASK (h));
@@ -1021,7 +1017,12 @@ void idio_init_symbol ()
 {
     idio_module_table_register (idio_symbol_add_primitives, idio_final_symbol, NULL);
 
-    idio_symbols_hash = idio_hash (1<<7, idio_symbol_C_eqp, idio_symbol_C_hash, idio_S_nil, idio_S_nil);
+    /*
+     * IDIO_HASH_COUNT (idio_symbols_hash)
+     * empty	=> 3k
+     * test	=> 8k
+     */
+    idio_symbols_hash = idio_hash (8 * 1024, idio_symbol_C_eqp, idio_symbol_C_hash, idio_S_nil, idio_S_nil);
     idio_gc_protect_auto (idio_symbols_hash);
     IDIO_HASH_FLAGS (idio_symbols_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
 
@@ -1203,8 +1204,12 @@ void idio_init_symbol ()
      *
      * weak keys otherwise the existence of any object in this hash
      * prevents it being freed!
+     *
+     * IDIO_HASH_COUNT (idio_properties_hash)
+     * empty	=> 2k
+     * test	=> 35k
      */
-    idio_properties_hash = IDIO_HASH_EQP (4 * 1024);
+    idio_properties_hash = IDIO_HASH_EQP (16 * 1024);
     idio_gc_add_weak_object (idio_properties_hash);
     idio_gc_protect_auto (idio_properties_hash);
 

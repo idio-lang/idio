@@ -132,7 +132,7 @@ idio_hi_t idio_keyword_C_hash (IDIO h, const void *s)
     size_t hvalue = (uintptr_t) s;
 
     if (idio_S_nil != s) {
-	hvalue = idio_hash_default_hash_C_string_C (strlen ((char *) s), s);
+	hvalue = idio_hash_default_hash_C_string_C_MurmurOAAT_32 (s);
     }
 
     return (hvalue & IDIO_HASH_MASK (h));

@@ -469,6 +469,41 @@ void idio_hash_resize (IDIO h, int larger)
 	return;
     }
 
+#ifdef IDIO_HASH_DEBUG
+    /*
+     * See if any hashing functions are particularly bad
+     */
+    idio_hi_t i;
+    idio_hi_t m = 0;
+    for (i = 0 ; i < ohsize; i++) {
+	idio_hash_entry_t *he = oha[i];
+	idio_hi_t c = 0;
+	for ( ; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
+	    if (idio_S_nil != IDIO_HASH_HE_KEY (he)) {
+		c++;
+	    } else {
+		/*
+		 * Code coverage:
+		 *
+		 * Coding error?
+		 */
+		fprintf (stderr, "hash-resize: #n key?\n");
+	    }
+	}
+	if (c > m) {
+	    m = c;
+	}
+    }
+
+    if (m > 10) {
+	fprintf (stderr, "h %p %d hc %6zu os %6zu md %4zu -> ns %6zu ", h, larger, hcount, osize, m, nsize);
+	if (h == idio_vm_constants_hash) {
+	    fprintf (stderr, "vm-constants");
+	}
+	fprintf (stderr, "\n");
+    }
+#endif
+
     idio_assign_hash_he (h, nsize);
 
     /*
@@ -536,8 +571,23 @@ void idio_hash_resize (IDIO h, int larger)
  */
 idio_hi_t idio_hash_default_hash_C_uintmax_t (uintmax_t i)
 {
-
-    idio_hi_t hv = i ^ (i << 8) ^ (i << 16) ^ (i << 24);
+    /*
+     * https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key
+     */
+    idio_hi_t hv = i;
+#if INTMAX_MAX == 9223372036854775807LL
+    hv = ((hv >> 16) ^ hv) * 0x45d9f3b;
+    hv = ((hv >> 16) ^ hv) * 0x45d9f3b;
+    hv = (hv >> 16) ^ hv;
+#else
+#if INTMAX_MAX == 2147483647L
+    hv = (hv ^ (hv >> 30)) * 0xbf58476d1ce4e5b9;
+    hv = (hv ^ (hv >> 27)) * 0x94d049bb133111eb;
+    hv = hv ^ (hv >> 31);
+#else
+#error unexpected INTMAX_MAX
+#endif
+#endif
 
     return hv;
 }
@@ -553,6 +603,27 @@ idio_hi_t idio_hash_default_hash_C_void (void *p)
      * means the bottom 4-5 bits are always 0
     */
     idio_hi_t hv = idio_hash_default_hash_C_uintmax_t (ul ^ (ul >> 5));
+    return hv;
+}
+
+/*
+ * https://stackoverflow.com/questions/7666509/hash-function-for-string
+ *
+ * Austin Appleby's Murmur-One-At-A-Time_32,
+ * https://github.com/aappleby/smhasher/blob/master/src/Hashes.cpp
+ */
+idio_hi_t idio_hash_default_hash_C_string_C_MurmurOAAT_32 (char const *s_C)
+{
+    IDIO_C_ASSERT (s_C);
+
+    uint32_t hv = 0x12345678;
+
+    for (; *s_C; s_C++) {
+	hv ^= *s_C;
+	hv *= 0x5bd1e995;
+	hv ^= hv >> 15;
+    }
+
     return hv;
 }
 
@@ -631,9 +702,7 @@ idio_hi_t idio_idio_hash_default_hash_C_closure (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    idio_hi_t hv = idio_hash_default_hash_C_uintmax_t (IDIO_CLOSURE_CODE_PC (h));
-    hv ^= idio_hash_default_hash_C_void (IDIO_CLOSURE_ENV (h));
-    return hv;
+    return idio_hash_default_hash_C_void (h->u.closure);
 }
 
 idio_hi_t idio_idio_hash_default_hash_C_primitive (IDIO h)
@@ -758,7 +827,7 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void const *kv)
 	{
 	    size_t size = 0;
 	    char *sk = idio_string_as_C (k, &size);
-	    hv = idio_hash_default_hash_C_string_C (size, sk);
+	    hv = idio_hash_default_hash_C_string_C_MurmurOAAT_32 (sk);
 
 	    IDIO_GC_FREE (sk, size);
 	}
@@ -767,7 +836,7 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void const *kv)
 	{
 	    size_t size = 0;
 	    char *sk = idio_string_as_C (k, &size);
-	    hv = idio_hash_default_hash_C_string_C (size, sk);
+	    hv = idio_hash_default_hash_C_string_C_MurmurOAAT_32 (sk);
 
 	    IDIO_GC_FREE (sk, size);
 	}
@@ -1069,7 +1138,10 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 	IDIO_HASH_COUNT (h) += 1;
     }
 
-    if (IDIO_HASH_COUNT (h) > IDIO_HASH_SIZE (h)) {
+    idio_hi_t hsize = IDIO_HASH_SIZE (h);
+
+    idio_hi_t load_high = (hsize / 2) + (hsize / 4); /* 75% */
+    if (IDIO_HASH_COUNT (h) > load_high) {
 	idio_hash_resize (h, 1);
     }
 

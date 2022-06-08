@@ -2648,6 +2648,7 @@ idio_sp_t idio_vm_find_abort_1 (IDIO thr)
 #ifdef IDIO_DEBUG
 	idio_vm_thread_state (thr);
 #endif
+	return 0;
 	assert (0);
     }
 
@@ -8656,7 +8657,12 @@ void idio_init_vm_values ()
      */
     idio_array_push (idio_vm_constants, idio_S_nil);
 
-    idio_vm_constants_hash = IDIO_HASH_EQUALP (2048);
+    /*
+     * IDIO_HASH_COUNT (idio_vm_constants_hash)
+     * empty	=> 5k
+     * test	=> 23k
+     */
+    idio_vm_constants_hash = IDIO_HASH_EQUALP (8 * 1024);
     idio_gc_protect_auto (idio_vm_constants_hash);
 
     /*

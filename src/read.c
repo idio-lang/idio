@@ -4558,7 +4558,12 @@ void idio_init_read ()
 					 idio_S_nil)))));
     idio_module_set_symbol_value (name, idio_lexobj_type, idio_Idio_module);
 
-    idio_src_properties = IDIO_HASH_EQP (1024);
+    /*
+     * IDIO_HASH_COUNT (idio_src_properties)
+     * empty	=> 20k
+     * test	=> 79k
+     */
+    idio_src_properties = IDIO_HASH_EQP (32 * 1024);
     idio_gc_add_weak_object (idio_src_properties);
     name = IDIO_SYMBOLS_C_INTERN ("%idio-src-properties");
     idio_module_set_symbol_value (name, idio_src_properties, idio_Idio_module);
