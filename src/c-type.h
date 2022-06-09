@@ -186,6 +186,8 @@ int idio_isa_C_unsigned (IDIO o);
 
 char *idio_C_type_format_string (int type);
 
+IDIO idio_C_primitive_unary_abs (IDIO n);
+
 IDIO idio_C_primitive_binary_add (IDIO n1, IDIO n2);
 IDIO idio_C_primitive_binary_subtract (IDIO n1, IDIO n2);
 IDIO idio_C_primitive_binary_multiply (IDIO n1, IDIO n2);
@@ -200,10 +202,10 @@ int idio_C_double_C_ne_ULP (double o1, double o2, unsigned int max);
 int idio_C_longdouble_C_eq_ULP (long double o1, long double o2, unsigned int max);
 int idio_C_longdouble_C_ne_ULP (long double o1, long double o2, unsigned int max);
 
-char *idio_C_char_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
-char *idio_C_number_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
-char *idio_C_pointer_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
-char *idio_C_pointer_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
+char *idio_C_char_as_C_string (IDIO v, size_t *sizep, idio_unicode_t cs, IDIO seen, int depth);
+char *idio_C_number_as_C_string (IDIO v, size_t *sizep, idio_unicode_t cs, IDIO seen, int depth);
+char *idio_C_pointer_report_string (IDIO v, size_t *sizep, idio_unicode_t cs, IDIO seen, int depth);
+char *idio_C_pointer_as_C_string (IDIO v, size_t *sizep, idio_unicode_t cs, IDIO seen, int depth);
 
 void idio_init_c_type ();
 

@@ -3559,6 +3559,14 @@ IDIO idio_bignum_C (char const *nums, size_t const nums_len)
     return idio_bignum_integer_C (nums, nums_len, 0);
 }
 
+IDIO idio_bignum_primitive_abs (IDIO a)
+{
+    IDIO_ASSERT (a);
+    IDIO_TYPE_ASSERT (bignum, a);
+
+    return idio_bignum_real_abs (a);
+}
+
 IDIO idio_bignum_primitive_add (IDIO args)
 {
     IDIO_ASSERT (args);

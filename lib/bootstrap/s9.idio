@@ -155,15 +155,6 @@ return the element of `x` at position `n`
 
 ;; Arithmetic procedures
 
-define (abs x) "
-return the absolute value of `x`
-
-:param x: number
-:type x: number
-:return: absolute value of `x`
-:rtype: number
-" (if (x lt 0) (- x) x)
-
 define (even? x) "
 is `x` even?
 

@@ -324,6 +324,20 @@ fixnum or bignum				\n\
     return r;
 }
 
+IDIO idio_fixnum_primitive_abs (IDIO a)
+{
+    IDIO_ASSERT (a);
+    IDIO_TYPE_ASSERT (fixnum, a);
+
+    intptr_t a_C = IDIO_FIXNUM_VAL (a);
+
+    if (a_C < 0) {
+	return idio_fixnum (- a_C);
+    }
+
+    return a;
+}
+
 IDIO idio_fixnum_primitive_add (IDIO args)
 {
     IDIO_ASSERT (args);
@@ -1094,6 +1108,31 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
  * Quotient might be a better bet.
  */
 
+#define IDIO_DEFINE_ARITHMETIC_UNARY_PRIMITIVE(name,cname,icname)	\
+    IDIO_DEFINE_PRIMITIVE1_DS (name, cname, (IDIO n), "n", "")		\
+    {									\
+	IDIO_ASSERT (n);						\
+									\
+	if (idio_isa_C_number (n)) {					\
+	    return idio_C_primitive_ ## cname (n);			\
+	}								\
+									\
+	if (idio_isa_bignum (n)) {					\
+	    IDIO num = idio_bignum_primitive_ ## icname (n);		\
+									\
+	    /* convert to a fixnum if possible */			\
+	    num = idio_bignum_to_fixnum (num);				\
+									\
+	    return num;							\
+	} else {							\
+	    if (! idio_isa_fixnum (n)) {				\
+		idio_error_param_type ("number", n, idio_string_C ("unary op " name)); \
+		return idio_S_notreached;				\
+	    }								\
+	    return idio_fixnum_primitive_ ## icname (n);		\
+	}								\
+    }
+
 #define IDIO_DEFINE_ARITHMETIC_BINARY_PRIMITIVE(name,cname,icname)	\
     IDIO_DEFINE_PRIMITIVE2_DS (name, cname, (IDIO n1, IDIO n2), "n1 n2", "") \
     {									\
@@ -1229,6 +1268,8 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 	    return idio_fixnum_primitive_ ## icname (IDIO_LIST2 (n1, n2)); \
         }								\
     }
+
+IDIO_DEFINE_ARITHMETIC_UNARY_PRIMITIVE ("abs", unary_abs, abs)
 
 IDIO_DEFINE_ARITHMETIC_BINARY_PRIMITIVE ("binary-+", binary_add, add)
 IDIO_DEFINE_ARITHMETIC_BINARY_PRIMITIVE ("binary--", binary_subtract, subtract)
@@ -1459,6 +1500,8 @@ void idio_fixnum_add_primitives ()
     IDIO_ADD_PRIMITIVE (ne);
     IDIO_ADD_PRIMITIVE (ge);
     IDIO_ADD_PRIMITIVE (gt);
+
+    IDIO_ADD_PRIMITIVE (unary_abs);
 
     IDIO_ADD_PRIMITIVE (binary_add);
     IDIO_ADD_PRIMITIVE (binary_subtract);

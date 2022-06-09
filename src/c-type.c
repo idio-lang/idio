@@ -854,6 +854,15 @@ test if `o` is any C type			\n\
 
 /*
  * XXX a char is not a number -- try using a signed char!
+ *
+ * Bah!  It's a grey area.  Technically, a char is an integer type.
+ * However, Idio treats it as a character type for I/O.  Most of the
+ * time this doesn't matter until you want to print one out in which
+ * case you won't get the digit 1, say, but the character ^A.
+ *
+ * If you were fiddling with characters, that's correct.  If you were
+ * fiddling with numbers, that's probably going to result in,
+ * effectively, an unprinted glyph.  Which is confusing.
  */
 int idio_isa_C_number (IDIO o)
 {
@@ -1024,6 +1033,201 @@ test if `o` is a C floating point type		\n\
  *
  * 30 should cover it!
  */
+size_t idio_C_type_format_string_len (int type, char *fmt, idio_unicode_t cs)
+{
+    size_t fmt_len = 0;
+
+    /*
+     * length modifier
+     */
+    switch (type) {
+    case IDIO_TYPE_C_CHAR:
+	fmt_len = 1;
+	memcpy (fmt, "%", fmt_len);
+	break;
+    case IDIO_TYPE_C_SCHAR:
+    case IDIO_TYPE_C_UCHAR:
+	fmt_len = 3;
+	memcpy (fmt, "%hh", fmt_len);
+	break;
+    case IDIO_TYPE_C_SHORT:
+    case IDIO_TYPE_C_USHORT:
+	fmt_len = 2;
+	memcpy (fmt, "%h", fmt_len);
+	break;
+    case IDIO_TYPE_C_INT:
+    case IDIO_TYPE_C_UINT:
+	fmt_len = 1;
+	memcpy (fmt, "%", fmt_len);
+	break;
+    case IDIO_TYPE_C_LONG:
+    case IDIO_TYPE_C_ULONG:
+	fmt_len = 2;
+	memcpy (fmt, "%l", fmt_len);
+	break;
+    case IDIO_TYPE_C_LONGLONG:
+    case IDIO_TYPE_C_ULONGLONG:
+	fmt_len = 3;
+	memcpy (fmt, "%ll", fmt_len);
+	break;
+    }
+
+    /*
+     * Conversion specifier
+     */
+    switch (type) {
+    case IDIO_TYPE_C_CHAR:
+	memcpy (fmt + fmt_len++, "c", 1);
+	break;
+    case IDIO_TYPE_C_SCHAR:
+    case IDIO_TYPE_C_SHORT:
+    case IDIO_TYPE_C_INT:
+    case IDIO_TYPE_C_LONG:
+    case IDIO_TYPE_C_LONGLONG:
+	switch (cs) {
+	case IDIO_PRINT_CONVERSION_FORMAT_d:
+	    memcpy (fmt + fmt_len++, "d", 1);
+	    break;
+	case IDIO_PRINT_CONVERSION_FORMAT_s:
+	    /*
+	     * A generic: printf "%s" e
+	     */
+	    memcpy (fmt + fmt_len++, "d", 1);
+	    break;
+	default:
+	    /*
+	     * Code coverage:
+	     *
+	     * format "%4q" 10		; "  10"
+	     */
+#ifdef IDIO_DEBUG
+	    fprintf (stderr, "signed C type format string: unexpected conversion format: '%c' (%#x).  Using 'd'\n", (int) cs, (int) cs);
+#endif
+	    memcpy (fmt + fmt_len++, "d", 1);
+	    break;
+	}
+	break;
+    case IDIO_TYPE_C_UCHAR:
+    case IDIO_TYPE_C_USHORT:
+    case IDIO_TYPE_C_UINT:
+    case IDIO_TYPE_C_ULONG:
+    case IDIO_TYPE_C_ULONGLONG:
+	switch (cs) {
+	case IDIO_PRINT_CONVERSION_FORMAT_X:
+	    memcpy (fmt + fmt_len++, "X", 1);
+	    break;
+	case IDIO_PRINT_CONVERSION_FORMAT_o:
+	    memcpy (fmt + fmt_len++, "o", 1);
+	    break;
+	case IDIO_PRINT_CONVERSION_FORMAT_u:
+	    memcpy (fmt + fmt_len++, "u", 1);
+	    break;
+	case IDIO_PRINT_CONVERSION_FORMAT_x:
+	    memcpy (fmt + fmt_len++, "x", 1);
+	    break;
+	case IDIO_PRINT_CONVERSION_FORMAT_s:
+	    /*
+	     * A generic: printf "%s" e
+	     */
+	    memcpy (fmt + fmt_len++, "u", 1);
+	    break;
+	default:
+	    /*
+	     * Code coverage:
+	     *
+	     * format "%4q" 10		; "  10"
+	     */
+#ifdef IDIO_DEBUG
+	    fprintf (stderr, "unsigned C type format string: unexpected conversion format: '%c' (%#x).  Using 'u'\n", (int) cs, (int) cs);
+#endif
+	    memcpy (fmt + fmt_len++, "u", 1);
+	    break;
+	}
+	break;
+    case IDIO_TYPE_C_FLOAT:
+    case IDIO_TYPE_C_DOUBLE:
+    case IDIO_TYPE_C_LONGDOUBLE:
+	{
+	    /*
+	     * The default precision for both e, f and
+	     * g formats is 6
+	     */
+	    int prec = 6;
+	    if (idio_S_nil != idio_print_conversion_precision_sym) {
+		IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+						      idio_Idio_module,
+						      IDIO_LIST1 (idio_S_false));
+
+		if (idio_S_false != ipcp) {
+		    if (idio_isa_fixnum (ipcp)) {
+			prec = IDIO_FIXNUM_VAL (ipcp);
+		    } else {
+			/*
+			 * Test Case: ??
+			 *
+			 * If we set idio-print-conversion-precision to
+			 * something not a fixnum (nor #f) then it affects
+			 * *everything* in the codebase that uses
+			 * idio-print-conversion-precision before we get here.
+			 */
+			idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
+
+			/* notreached */
+			return 0;
+		    }
+		}
+	    }
+	    fmt_len = idio_snprintf (fmt, 30, "%%.%d", prec);
+
+	    switch (type) {
+	    case IDIO_TYPE_C_DOUBLE:
+		memcpy (fmt + fmt_len++, "l", 1);
+		break;
+	    case IDIO_TYPE_C_LONGDOUBLE:
+		memcpy (fmt + fmt_len++, "L", 1);
+		break;
+	    }
+
+	    switch (cs) {
+	    case IDIO_PRINT_CONVERSION_FORMAT_e:
+		memcpy (fmt + fmt_len++, "e", 1);
+		break;
+	    case IDIO_PRINT_CONVERSION_FORMAT_f:
+		memcpy (fmt + fmt_len++, "f", 1);
+		break;
+	    case IDIO_PRINT_CONVERSION_FORMAT_g:
+		memcpy (fmt + fmt_len++, "g", 1);
+		break;
+	    case IDIO_PRINT_CONVERSION_FORMAT_s:
+		/*
+		 * A generic: printf "%s" e
+		 */
+		memcpy (fmt + fmt_len++, "g", 1);
+		break;
+	    default:
+		/*
+		 * Code coverage:
+		 *
+		 * format "%4q" 10		; "  10"
+		 */
+#ifdef IDIO_DEBUG
+		fprintf (stderr, "C type float format string: unexpected conversion format: '%c' (%#x).  Using 'g'\n", (int) cs, (int) cs);
+#endif
+		memcpy (fmt + fmt_len++, "g", 1);
+		break;
+	    }
+	}
+	break;
+    }
+    fmt[fmt_len] = '\0';
+
+    return fmt_len;
+}
+
+/*
+ * This is a convenience function for libc-api to be able to reliably
+ * print out C data types and, in particular, members of structures.
+ */
 char *idio_C_type_format_string (int type)
 {
     IDIO ipcf = idio_S_false;
@@ -1049,255 +1253,21 @@ char *idio_C_type_format_string (int type)
 		 *
 		 * Coding error.
 		 */
-		idio_error_param_value_msg_only ("idio_C_type_format_string", "idio-print-conversion-format", "should be unicode", IDIO_C_FUNC_LOCATION ());
+		idio_error_param_value_msg_only ("C type format string", "idio-print-conversion-format", "should be unicode", IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return NULL;
 	    }
 	}
     }
-    ipcf = idio_S_false;
+
+    idio_unicode_t cs = IDIO_PRINT_CONVERSION_FORMAT_s;
+    if (idio_S_false != ipcf) {
+	cs = IDIO_UNICODE_VAL (ipcf);
+    }
 
     char *fmt = idio_alloc (30);
-    size_t fmt_len = 0;
-
-    switch (type) {
-    case IDIO_TYPE_C_CHAR:
-	fmt_len = 2;
-	memcpy (fmt, "%c", fmt_len);
-	break;
-    case IDIO_TYPE_C_SCHAR:
-    case IDIO_TYPE_C_UCHAR:
-    case IDIO_TYPE_C_SHORT:
-    case IDIO_TYPE_C_USHORT:
-    case IDIO_TYPE_C_INT:
-    case IDIO_TYPE_C_UINT:
-    case IDIO_TYPE_C_LONG:
-    case IDIO_TYPE_C_ULONG:
-    case IDIO_TYPE_C_LONGLONG:
-    case IDIO_TYPE_C_ULONGLONG:
-    case IDIO_TYPE_C_FLOAT:
-    case IDIO_TYPE_C_DOUBLE:
-    case IDIO_TYPE_C_LONGDOUBLE:
-	{
-
-	    switch (type) {
-	    case IDIO_TYPE_C_SCHAR:
-	    case IDIO_TYPE_C_UCHAR:
-		fmt_len = 3;
-		memcpy (fmt, "%hh", fmt_len);
-		break;
-	    case IDIO_TYPE_C_SHORT:
-	    case IDIO_TYPE_C_USHORT:
-		fmt_len = 2;
-		memcpy (fmt, "%h", fmt_len);
-		break;
-	    case IDIO_TYPE_C_INT:
-	    case IDIO_TYPE_C_UINT:
-		fmt_len = 1;
-		memcpy (fmt, "%", fmt_len);
-		break;
-	    case IDIO_TYPE_C_LONG:
-	    case IDIO_TYPE_C_ULONG:
-		fmt_len = 2;
-		memcpy (fmt, "%l", fmt_len);
-		break;
-	    case IDIO_TYPE_C_LONGLONG:
-	    case IDIO_TYPE_C_ULONGLONG:
-		fmt_len = 3;
-		memcpy (fmt, "%ll", fmt_len);
-		break;
-	    }
-
-	    switch (type) {
-	    case IDIO_TYPE_C_SCHAR:
-	    case IDIO_TYPE_C_UCHAR:
-	    case IDIO_TYPE_C_SHORT:
-	    case IDIO_TYPE_C_USHORT:
-	    case IDIO_TYPE_C_INT:
-	    case IDIO_TYPE_C_UINT:
-	    case IDIO_TYPE_C_LONG:
-	    case IDIO_TYPE_C_ULONG:
-	    case IDIO_TYPE_C_LONGLONG:
-	    case IDIO_TYPE_C_ULONGLONG:
-		if (idio_S_false != ipcf) {
-		    idio_unicode_t f = IDIO_UNICODE_VAL (ipcf);
-		    switch (type) {
-		    case IDIO_TYPE_C_SCHAR:
-		    case IDIO_TYPE_C_SHORT:
-		    case IDIO_TYPE_C_INT:
-		    case IDIO_TYPE_C_LONG:
-		    case IDIO_TYPE_C_LONGLONG:
-			switch (f) {
-			case IDIO_PRINT_CONVERSION_FORMAT_d:
-			    memcpy (fmt + fmt_len++, "d", 1);
-			    break;
-			case IDIO_PRINT_CONVERSION_FORMAT_s:
-			    /*
-			     * A generic: printf "%s" e
-			     */
-			    memcpy (fmt + fmt_len++, "d", 1);
-			    break;
-			default:
-			    /*
-			     * Code coverage:
-			     *
-			     * format "%4q" 10		; "  10"
-			     */
-#ifdef IDIO_DEBUG
-			    fprintf (stderr, "signed C type as-string: unexpected conversion format: '%c' (%#x).  Using 'd'\n", (int) f, (int) f);
-#endif
-			    memcpy (fmt + fmt_len++, "d", 1);
-			    break;
-			}
-			break;
-		    case IDIO_TYPE_C_UCHAR:
-		    case IDIO_TYPE_C_USHORT:
-		    case IDIO_TYPE_C_UINT:
-		    case IDIO_TYPE_C_ULONG:
-		    case IDIO_TYPE_C_ULONGLONG:
-			switch (f) {
-			case IDIO_PRINT_CONVERSION_FORMAT_X:
-			    memcpy (fmt + fmt_len++, "X", 1);
-			    break;
-			case IDIO_PRINT_CONVERSION_FORMAT_o:
-			    memcpy (fmt + fmt_len++, "o", 1);
-			    break;
-			case IDIO_PRINT_CONVERSION_FORMAT_u:
-			    memcpy (fmt + fmt_len++, "u", 1);
-			    break;
-			case IDIO_PRINT_CONVERSION_FORMAT_x:
-			    memcpy (fmt + fmt_len++, "x", 1);
-			    break;
-			case IDIO_PRINT_CONVERSION_FORMAT_s:
-			    /*
-			     * A generic: printf "%s" e
-			     */
-			    memcpy (fmt + fmt_len++, "u", 1);
-			    break;
-			default:
-			    /*
-			     * Code coverage:
-			     *
-			     * format "%4q" 10		; "  10"
-			     */
-#ifdef IDIO_DEBUG
-			    fprintf (stderr, "idio_C_type_format-string: unexpected conversion format: '%c' (%#x).  Using 'u'\n", (int) f, (int) f);
-#endif
-			    memcpy (fmt + fmt_len++, "u", 1);
-			    break;
-			}
-			break;
-		    }
-		} else {
-		    switch (type) {
-		    case IDIO_TYPE_C_SCHAR:
-		    case IDIO_TYPE_C_SHORT:
-		    case IDIO_TYPE_C_INT:
-		    case IDIO_TYPE_C_LONG:
-		    case IDIO_TYPE_C_LONGLONG:
-			memcpy (fmt + fmt_len++, "d", 1);
-			break;
-		    case IDIO_TYPE_C_UCHAR:
-		    case IDIO_TYPE_C_USHORT:
-		    case IDIO_TYPE_C_UINT:
-		    case IDIO_TYPE_C_ULONG:
-		    case IDIO_TYPE_C_ULONGLONG:
-			memcpy (fmt + fmt_len++, "u", 1);
-			break;
-		    }
-		}
-		break;
-	    case IDIO_TYPE_C_FLOAT:
-	    case IDIO_TYPE_C_DOUBLE:
-	    case IDIO_TYPE_C_LONGDOUBLE:
-		{
-		    /*
-		     * The default precision for both e, f and
-		     * g formats is 6
-		     */
-		    int prec = 6;
-		    if (idio_S_nil != idio_print_conversion_precision_sym) {
-			IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
-							      idio_Idio_module,
-							      IDIO_LIST1 (idio_S_false));
-
-			if (idio_S_false != ipcp) {
-			    if (idio_isa_fixnum (ipcp)) {
-				prec = IDIO_FIXNUM_VAL (ipcp);
-			    } else {
-				/*
-				 * Test Case: ??
-				 *
-				 * If we set idio-print-conversion-precision to
-				 * something not a fixnum (nor #f) then it affects
-				 * *everything* in the codebase that uses
-				 * idio-print-conversion-precision before we get here.
-				 */
-				idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
-
-				/* notreached */
-				return NULL;
-			    }
-			}
-		    }
-		    fmt_len = idio_snprintf (fmt, 30, "%%.%d", prec);
-
-		    switch (type) {
-		    case IDIO_TYPE_C_DOUBLE:
-			memcpy (fmt + fmt_len++, "l", 1);
-			break;
-		    case IDIO_TYPE_C_LONGDOUBLE:
-			memcpy (fmt + fmt_len++, "L", 1);
-			break;
-		    }
-
-		    if (idio_S_false != ipcf) {
-			idio_unicode_t f = IDIO_UNICODE_VAL (ipcf);
-			switch (f) {
-			case IDIO_PRINT_CONVERSION_FORMAT_e:
-			    memcpy (fmt + fmt_len++, "e", 1);
-			    break;
-			case IDIO_PRINT_CONVERSION_FORMAT_f:
-			    memcpy (fmt + fmt_len++, "f", 1);
-			    break;
-			case IDIO_PRINT_CONVERSION_FORMAT_g:
-			    memcpy (fmt + fmt_len++, "g", 1);
-			    break;
-			case IDIO_PRINT_CONVERSION_FORMAT_s:
-			    /*
-			     * A generic: printf "%s" e
-			     */
-			    memcpy (fmt + fmt_len++, "g", 1);
-			    break;
-			default:
-			    /*
-			     * Code coverage:
-			     *
-			     * format "%4q" 10		; "  10"
-			     */
-#ifdef IDIO_DEBUG
-			    fprintf (stderr, "idio_C_type_format_string: unexpected conversion format: '%c' (%#x).  Using 'd'\n", (int) f, (int) f);
-#endif
-			    memcpy (fmt + fmt_len++, "g", 1);
-			    break;
-			}
-		    } else {
-			memcpy (fmt + fmt_len++, "g", 1);
-		    }
-		}
-		break;
-	    }
-	}
-	break;
-    default:
-	{
-	    fprintf (stderr, "idio_C_type_format_string: unexpected C base_type %d\n", type);
-	    IDIO_C_ASSERT (0);
-	}
-	break;
-    }
-    fmt[fmt_len] = '\0';
+    idio_C_type_format_string_len (type, fmt, cs);
 
     return fmt;
 }
@@ -1471,6 +1441,108 @@ int idio_C_longdouble_C_ne_ULP (long double o1, long double o2, unsigned int max
     return 0;
 
     return (idio_C_longdouble_C_eq_ULP (o1, o2, max) == 0);
+}
+
+IDIO idio_C_primitive_unary_abs (IDIO n)
+{
+    IDIO_ASSERT (n);
+
+    if (! idio_isa_C_number (n)) {
+	/*
+	 * Test Case: ??
+	 *
+	 * A coding error as this is only called from C,
+	 * IDIO_DEFINE_ARITHMETIC_UNARY_PRIMITIVE() in fixnum.c
+	 */
+	idio_error_param_value_exp ("C/abs", "n", n, "C numeric type", IDIO_C_FUNC_LOCATION ());
+	return idio_S_notreached;
+    }
+
+    int t = idio_type (n);
+    int is_neg = 0;
+    switch (t) {
+    case IDIO_TYPE_C_CHAR:
+	is_neg = IDIO_C_TYPE_char (n) < 0;
+	break;
+    case IDIO_TYPE_C_SCHAR:
+	is_neg = IDIO_C_TYPE_schar (n) < 0;
+	break;
+    case IDIO_TYPE_C_UCHAR:
+	is_neg = 0;
+	break;
+    case IDIO_TYPE_C_SHORT:
+	is_neg = IDIO_C_TYPE_short (n) < 0;
+	break;
+    case IDIO_TYPE_C_USHORT:
+	is_neg = 0;
+	break;
+    case IDIO_TYPE_C_INT:
+	is_neg = IDIO_C_TYPE_int (n) < 0;
+	break;
+    case IDIO_TYPE_C_UINT:
+	is_neg = 0;
+	break;
+    case IDIO_TYPE_C_LONG:
+	is_neg = IDIO_C_TYPE_long (n) < 0;
+	break;
+    case IDIO_TYPE_C_ULONG:
+	is_neg = 0;
+	break;
+    case IDIO_TYPE_C_LONGLONG:
+	is_neg = IDIO_C_TYPE_longlong (n) < 0;
+	break;
+    case IDIO_TYPE_C_ULONGLONG:
+	is_neg = 0;
+	break;
+    case IDIO_TYPE_C_FLOAT:
+	is_neg = IDIO_C_TYPE_float (n) < 0;
+	break;
+    case IDIO_TYPE_C_DOUBLE:
+	is_neg = IDIO_C_TYPE_double (n) < 0;
+	break;
+    case IDIO_TYPE_C_LONGDOUBLE:
+	is_neg = IDIO_C_TYPE_longdouble (n) < 0;
+	break;
+    default:
+	is_neg = 0;
+	break;
+    }
+    if (is_neg) {
+	switch (t) {
+	case IDIO_TYPE_C_CHAR:
+	    return idio_C_char (- IDIO_C_TYPE_char (n));
+	case IDIO_TYPE_C_SCHAR:
+	    return idio_C_schar (- IDIO_C_TYPE_schar (n));
+	case IDIO_TYPE_C_UCHAR:
+	    return idio_C_uchar (- IDIO_C_TYPE_uchar (n));
+	case IDIO_TYPE_C_SHORT:
+	    return idio_C_short (- IDIO_C_TYPE_short (n));
+	case IDIO_TYPE_C_USHORT:
+	    return idio_C_ushort (- IDIO_C_TYPE_ushort (n));
+	case IDIO_TYPE_C_INT:
+	    return idio_C_int (- IDIO_C_TYPE_int (n));
+	case IDIO_TYPE_C_UINT:
+	    return idio_C_uint (- IDIO_C_TYPE_uint (n));
+	case IDIO_TYPE_C_LONG:
+	    return idio_C_long (- IDIO_C_TYPE_long (n));
+	case IDIO_TYPE_C_ULONG:
+	    return idio_C_ulong (- IDIO_C_TYPE_ulong (n));
+	case IDIO_TYPE_C_LONGLONG:
+	    return idio_C_longlong (- IDIO_C_TYPE_longlong (n));
+	case IDIO_TYPE_C_ULONGLONG:
+	    return idio_C_ulonglong (- IDIO_C_TYPE_ulonglong (n));
+	case IDIO_TYPE_C_FLOAT:
+	    return idio_C_float (- IDIO_C_TYPE_float (n));
+	case IDIO_TYPE_C_DOUBLE:
+	    return idio_C_double (- IDIO_C_TYPE_double (n));
+	case IDIO_TYPE_C_LONGDOUBLE:
+	    return idio_C_longdouble (- IDIO_C_TYPE_longdouble (n));
+	default:
+	    return 0;
+	}
+    }
+
+    return n;
 }
 
 /*
@@ -2675,7 +2747,7 @@ perform a C bitwise-complement on `v1`	\n\
     return idio_C_int (~ v);
 }
 
-char *idio_C_char_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+char *idio_C_char_as_C_string (IDIO v, size_t *sizep, idio_unicode_t cs, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);
     IDIO_ASSERT (seen);
@@ -2708,7 +2780,7 @@ IDIO idio_C_char_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     return r;
 }
 
-char *idio_C_number_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+char *idio_C_number_as_C_string (IDIO v, size_t *sizep, idio_unicode_t cs, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);
     IDIO_ASSERT (seen);
@@ -2720,28 +2792,6 @@ char *idio_C_number_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, I
     int type = idio_type (v);
 
     /*
-     * Printing C types is a little more intricate than at first
-     * blush.  Not because calling sprintf(3) is hard but because the
-     * chances are we've been called from %format which has
-     * potentially set the conversion precision and specifier.
-     *
-     * The conversion specifier is handled below.
-     *
-     * For integral types (and 'char, above) the conversion precision
-     * is delegated back to %format as it will be applied to the
-     * string that we return.
-     *
-     * For floating point values that doesn't work as %format just has
-     * a string in its hands and the precision affects the significant
-     * figures after the decimal point so we need to figure out the
-     * precision here.
-     */
-
-    /*
-     * Broadly, we gradually build a format specification in {fmt}
-     * based on whatever is relevant before a final switch statement
-     * which invokes that format with the type-specific accessor.
-     *
      * {fmt} needs to be big enough to hold the largest format string
      * we need.  The conversion precision is a fixnum which can reach
      * 19 digits and be negative giving something like "%.-{19}le" or
@@ -2750,236 +2800,79 @@ char *idio_C_number_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, I
      * 30 should cover it!
      */
     char fmt[30];
-    size_t fmt_len = 0;
-    switch (type) {
-    case IDIO_TYPE_C_SCHAR:
-    case IDIO_TYPE_C_UCHAR:
-	fmt_len = 3;
-	memcpy (fmt, "%hh", fmt_len);
-	break;
-    case IDIO_TYPE_C_SHORT:
-    case IDIO_TYPE_C_USHORT:
-	fmt_len = 2;
-	memcpy (fmt, "%h", fmt_len);
-	break;
-    case IDIO_TYPE_C_INT:
-    case IDIO_TYPE_C_UINT:
-	fmt_len = 1;
-	memcpy (fmt, "%", fmt_len);
-	break;
-    case IDIO_TYPE_C_LONG:
-    case IDIO_TYPE_C_ULONG:
-	fmt_len = 2;
-	memcpy (fmt, "%l", fmt_len);
-	break;
-    case IDIO_TYPE_C_LONGLONG:
-    case IDIO_TYPE_C_ULONGLONG:
-	fmt_len = 3;
-	memcpy (fmt, "%ll", fmt_len);
-	break;
-    }
 
+    /*
+     * Possible immediate print for %b (binary)
+     *
+     * If we just called idio_C_type_format_string_len () then we get
+     * several warnings under debug about unexpected conversion format
+     * 'b'.
+     */
     int printed = 0;
     switch (type) {
-    case IDIO_TYPE_C_SCHAR:
     case IDIO_TYPE_C_UCHAR:
-    case IDIO_TYPE_C_SHORT:
     case IDIO_TYPE_C_USHORT:
-    case IDIO_TYPE_C_INT:
     case IDIO_TYPE_C_UINT:
-    case IDIO_TYPE_C_LONG:
     case IDIO_TYPE_C_ULONG:
-    case IDIO_TYPE_C_LONGLONG:
     case IDIO_TYPE_C_ULONGLONG:
-	switch (type) {
-	case IDIO_TYPE_C_SCHAR:
-	case IDIO_TYPE_C_SHORT:
-	case IDIO_TYPE_C_INT:
-	case IDIO_TYPE_C_LONG:
-	case IDIO_TYPE_C_LONGLONG:
-	    switch (format) {
-	    case IDIO_PRINT_CONVERSION_FORMAT_d:
-		memcpy (fmt + fmt_len++, "d", 1);
-		break;
-	    case IDIO_PRINT_CONVERSION_FORMAT_s:
-		/*
-		 * A generic: printf "%s" e
-		 */
-		memcpy (fmt + fmt_len++, "d", 1);
-		break;
-	    default:
-		/*
-		 * Code coverage:
-		 *
-		 * format "%4q" 10		; "  10"
-		 */
-#ifdef IDIO_DEBUG
-		fprintf (stderr, "signed C number as-string: unexpected conversion format: '%c' (%#x).  Using 'd'.\n", (int) format, (int) format);
-#endif
-		memcpy (fmt + fmt_len++, "d", 1);
-		break;
+	switch (cs) {
+	case IDIO_PRINT_CONVERSION_FORMAT_b:
+	    {
+		char bits[sizeof (uintmax_t) * CHAR_BIT + 1];
+		uintmax_t ui;
+		int j;
+		switch (type) {
+		case IDIO_TYPE_C_UCHAR:
+		    ui = (uintmax_t) IDIO_C_TYPE_uchar (v);
+		    j = sizeof (unsigned char) * CHAR_BIT;
+		    break;
+		case IDIO_TYPE_C_USHORT:
+		    ui = (uintmax_t) IDIO_C_TYPE_ushort (v);
+		    j = sizeof (unsigned short) * CHAR_BIT;
+		    break;
+		case IDIO_TYPE_C_UINT:
+		    ui = (uintmax_t) IDIO_C_TYPE_uint (v);
+		    j = sizeof (unsigned int) * CHAR_BIT;
+		    break;
+		case IDIO_TYPE_C_ULONG:
+		    ui = (uintmax_t) IDIO_C_TYPE_ulong (v);
+		    j = sizeof (unsigned long) * CHAR_BIT;
+		    break;
+		case IDIO_TYPE_C_ULONGLONG:
+		    ui = (uintmax_t) IDIO_C_TYPE_ulonglong (v);
+		    j = sizeof (unsigned long long) * CHAR_BIT;
+		    break;
+		default:
+		    fprintf (stderr, "unexpected type=%#x\n", type);
+		    ui = 0;
+		    j = 0;
+		    break;
+		}
+		int seen_bit = 0;
+		for (int i = 0; i < j; i++) {
+		    if (ui & (1UL << (j - 1 - i))) {
+			bits[i] = '1';
+			if (0 == seen_bit) {
+			    seen_bit = i;
+			}
+		    } else {
+			bits[i] = '0';
+		    }
+		}
+		bits[j] = '\0';
+		*sizep = idio_asprintf (&r, "%s", bits + seen_bit);
+		printed = 1;
 	    }
 	    break;
-	case IDIO_TYPE_C_UCHAR:
-	case IDIO_TYPE_C_USHORT:
-	case IDIO_TYPE_C_UINT:
-	case IDIO_TYPE_C_ULONG:
-	case IDIO_TYPE_C_ULONGLONG:
-	    switch (format) {
-	    case IDIO_PRINT_CONVERSION_FORMAT_X:
-		memcpy (fmt + fmt_len++, "X", 1);
-		break;
-	    case IDIO_PRINT_CONVERSION_FORMAT_o:
-		memcpy (fmt + fmt_len++, "o", 1);
-		break;
-	    case IDIO_PRINT_CONVERSION_FORMAT_u:
-		memcpy (fmt + fmt_len++, "u", 1);
-		break;
-	    case IDIO_PRINT_CONVERSION_FORMAT_x:
-		memcpy (fmt + fmt_len++, "x", 1);
-		break;
-	    case IDIO_PRINT_CONVERSION_FORMAT_b:
-		{
-		    char bits[sizeof (uintmax_t) * CHAR_BIT + 1];
-		    uintmax_t ui;
-		    int j;
-		    switch (type) {
-		    case IDIO_TYPE_C_UCHAR:
-			ui = (uintmax_t) IDIO_C_TYPE_uchar (v);
-			j = sizeof (unsigned char) * CHAR_BIT;
-			break;
-		    case IDIO_TYPE_C_USHORT:
-			ui = (uintmax_t) IDIO_C_TYPE_ushort (v);
-			j = sizeof (unsigned short) * CHAR_BIT;
-			break;
-		    case IDIO_TYPE_C_UINT:
-			ui = (uintmax_t) IDIO_C_TYPE_uint (v);
-			j = sizeof (unsigned int) * CHAR_BIT;
-			break;
-		    case IDIO_TYPE_C_ULONG:
-			ui = (uintmax_t) IDIO_C_TYPE_ulong (v);
-			j = sizeof (unsigned long) * CHAR_BIT;
-			break;
-		    case IDIO_TYPE_C_ULONGLONG:
-			ui = (uintmax_t) IDIO_C_TYPE_ulonglong (v);
-			j = sizeof (unsigned long long) * CHAR_BIT;
-			break;
-		    default:
-			fprintf (stderr, "unexpected type=%#x\n", type);
-			ui = 0;
-			j = 0;
-			break;
-		    }
-		    int seen_bit = 0;
-		    for (int i = 0; i < j; i++) {
-			if (ui & (1UL << (j - 1 - i))) {
-			    bits[i] = '1';
-			    if (0 == seen_bit) {
-				seen_bit = i;
-			    }
-			} else {
-			    bits[i] = '0';
-			}
-		    }
-		    bits[j] = '\0';
-		    *sizep = idio_asprintf (&r, "%s", bits + seen_bit);
-		    printed = 1;
-		}
-		break;
-	    case IDIO_PRINT_CONVERSION_FORMAT_s:
-		/*
-		 * A generic: printf "%s" e
-		 */
-		memcpy (fmt + fmt_len++, "u", 1);
-		break;
-	    default:
-		/*
-		 * Code coverage:
-		 *
-		 * format "%4q" 10		; "  10"
-		 */
-#ifdef IDIO_DEBUG
-		fprintf (stderr, "unsigned C number as-string: unexpected conversion format: '%c' (%#x).  Using 'u'.\n", (int) format, (int) format);
-#endif
-		memcpy (fmt + fmt_len++, "u", 1);
-		break;
-	    }
+	default:
+	    idio_C_type_format_string_len (type, fmt, cs);
 	    break;
 	}
 	break;
-    case IDIO_TYPE_C_FLOAT:
-    case IDIO_TYPE_C_DOUBLE:
-    case IDIO_TYPE_C_LONGDOUBLE:
-	{
-	    /*
-	     * The default precision for both e, f and
-	     * g formats is 6
-	     */
-	    int prec = 6;
-	    if (idio_S_nil != idio_print_conversion_precision_sym) {
-		IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
-						      idio_Idio_module,
-						      IDIO_LIST1 (idio_S_false));
-
-		if (idio_S_false != ipcp) {
-		    if (idio_isa_fixnum (ipcp)) {
-			prec = IDIO_FIXNUM_VAL (ipcp);
-		    } else {
-			/*
-			 * Test Case: ??
-			 *
-			 * If we set idio-print-conversion-precision to
-			 * something not a fixnum (nor #f) then it affects
-			 * *everything* in the codebase that uses
-			 * idio-print-conversion-precision before we get here.
-			 */
-			idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
-
-			/* notreached */
-			return NULL;
-		    }
-		}
-	    }
-	    fmt_len = idio_snprintf (fmt, 30, "%%.%d", prec);
-
-	    switch (type) {
-	    case IDIO_TYPE_C_LONGDOUBLE:
-		memcpy (fmt + fmt_len++, "L", 1);
-		break;
-	    }
-
-	    switch (format) {
-	    case IDIO_PRINT_CONVERSION_FORMAT_e:
-		memcpy (fmt + fmt_len++, "e", 1);
-		break;
-	    case IDIO_PRINT_CONVERSION_FORMAT_f:
-		memcpy (fmt + fmt_len++, "f", 1);
-		break;
-	    case IDIO_PRINT_CONVERSION_FORMAT_g:
-		memcpy (fmt + fmt_len++, "g", 1);
-		break;
-	    case IDIO_PRINT_CONVERSION_FORMAT_s:
-		/*
-		 * A generic: printf "%s" e
-		 */
-		memcpy (fmt + fmt_len++, "g", 1);
-		break;
-	    default:
-		/*
-		 * Code coverage:
-		 *
-		 * format "%4q" 10		; "  10"
-		 */
-#ifdef IDIO_DEBUG
-		fprintf (stderr, "as-string: unexpected conversion format: '%c' (%#x).  Using 'g'.\n", (int) format, (int) format);
-#endif
-		memcpy (fmt + fmt_len++, "g", 1);
-		break;
-	    }
-	}
+    default:
+	idio_C_type_format_string_len (type, fmt, cs);
 	break;
     }
-    fmt[fmt_len] = '\0';
 
     if (! printed) {
 	switch (type) {
@@ -3041,23 +2934,23 @@ IDIO idio_C_number_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     int first = va_arg (ap, int);
     va_end (ap);
 
-    idio_unicode_t format = IDIO_PRINT_CONVERSION_FORMAT_s;
+    idio_unicode_t cs = IDIO_PRINT_CONVERSION_FORMAT_s;
     int type = idio_type (v);
 
     switch (type) {
-    case IDIO_TYPE_C_SCHAR:		format = IDIO_PRINT_CONVERSION_FORMAT_d; break;
-    case IDIO_TYPE_C_UCHAR:		format = IDIO_PRINT_CONVERSION_FORMAT_u; break;
-    case IDIO_TYPE_C_SHORT:		format = IDIO_PRINT_CONVERSION_FORMAT_d; break;
-    case IDIO_TYPE_C_USHORT:		format = IDIO_PRINT_CONVERSION_FORMAT_u; break;
-    case IDIO_TYPE_C_INT:		format = IDIO_PRINT_CONVERSION_FORMAT_d; break;
-    case IDIO_TYPE_C_UINT:		format = IDIO_PRINT_CONVERSION_FORMAT_u; break;
-    case IDIO_TYPE_C_LONG:		format = IDIO_PRINT_CONVERSION_FORMAT_d; break;
-    case IDIO_TYPE_C_ULONG:		format = IDIO_PRINT_CONVERSION_FORMAT_u; break;
-    case IDIO_TYPE_C_LONGLONG:		format = IDIO_PRINT_CONVERSION_FORMAT_d; break;
-    case IDIO_TYPE_C_ULONGLONG:		format = IDIO_PRINT_CONVERSION_FORMAT_u; break;
-    case IDIO_TYPE_C_FLOAT:		format = IDIO_PRINT_CONVERSION_FORMAT_g; break;
-    case IDIO_TYPE_C_DOUBLE:		format = IDIO_PRINT_CONVERSION_FORMAT_g; break;
-    case IDIO_TYPE_C_LONGDOUBLE:	format = IDIO_PRINT_CONVERSION_FORMAT_g; break;
+    case IDIO_TYPE_C_SCHAR:		cs = IDIO_PRINT_CONVERSION_FORMAT_d; break;
+    case IDIO_TYPE_C_UCHAR:		cs = IDIO_PRINT_CONVERSION_FORMAT_u; break;
+    case IDIO_TYPE_C_SHORT:		cs = IDIO_PRINT_CONVERSION_FORMAT_d; break;
+    case IDIO_TYPE_C_USHORT:		cs = IDIO_PRINT_CONVERSION_FORMAT_u; break;
+    case IDIO_TYPE_C_INT:		cs = IDIO_PRINT_CONVERSION_FORMAT_d; break;
+    case IDIO_TYPE_C_UINT:		cs = IDIO_PRINT_CONVERSION_FORMAT_u; break;
+    case IDIO_TYPE_C_LONG:		cs = IDIO_PRINT_CONVERSION_FORMAT_d; break;
+    case IDIO_TYPE_C_ULONG:		cs = IDIO_PRINT_CONVERSION_FORMAT_u; break;
+    case IDIO_TYPE_C_LONGLONG:		cs = IDIO_PRINT_CONVERSION_FORMAT_d; break;
+    case IDIO_TYPE_C_ULONGLONG:		cs = IDIO_PRINT_CONVERSION_FORMAT_u; break;
+    case IDIO_TYPE_C_FLOAT:		cs = IDIO_PRINT_CONVERSION_FORMAT_g; break;
+    case IDIO_TYPE_C_DOUBLE:		cs = IDIO_PRINT_CONVERSION_FORMAT_g; break;
+    case IDIO_TYPE_C_LONGDOUBLE:	cs = IDIO_PRINT_CONVERSION_FORMAT_g; break;
     default:
 	idio_error_param_value_msg_only ("C-as-string", "value", "should be a C/ type", IDIO_C_FUNC_LOCATION ());
 
@@ -3071,10 +2964,10 @@ IDIO idio_C_number_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 	 * those checks just in case it was called with duff values
 	 * directly.
 	 */
-	format = idio_util_string_format (format);
+	cs = idio_util_string_format (cs);
     }
 
-    char *C_r = idio_C_number_as_C_string (v, sizep, format, seen, depth);
+    char *C_r = idio_C_number_as_C_string (v, sizep, cs, seen, depth);
 
     IDIO r = idio_string_C_len (C_r, *sizep);
 
@@ -3085,7 +2978,7 @@ IDIO idio_C_number_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 
 IDIO idio_C_pointer_method_2string (idio_vtable_method_t *m, IDIO v, ...);
 
-char *idio_C_pointer_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+char *idio_C_pointer_report_string (IDIO v, size_t *sizep, idio_unicode_t cs, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);
     IDIO_ASSERT (seen);
@@ -3111,7 +3004,7 @@ char *idio_C_pointer_report_string (IDIO v, size_t *sizep, idio_unicode_t format
     return r;
 }
 
-char *idio_C_pointer_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
+char *idio_C_pointer_as_C_string (IDIO v, size_t *sizep, idio_unicode_t cs, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);
     IDIO_ASSERT (seen);
@@ -3152,7 +3045,7 @@ char *idio_C_pointer_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, 
 	}
     }
 
-    return idio_C_pointer_report_string (v, sizep, format, seen, depth);
+    return idio_C_pointer_report_string (v, sizep, cs, seen, depth);
 }
 
 IDIO idio_C_pointer_method_2string (idio_vtable_method_t *m, IDIO v, ...)
@@ -3250,6 +3143,9 @@ void idio_init_c_type ()
     idio_vtable_t *Cpointer_vt     = idio_vtable (IDIO_TYPE_C_POINTER);
     idio_vtable_t *Cvoid_vt        = idio_vtable (IDIO_TYPE_C_VOID);
 
+    /*
+     * Handle printing char separately
+     */
     idio_vtable_add_method (Cchar_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,
@@ -3259,6 +3155,9 @@ void idio_init_c_type ()
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_C_char_method_2string));
 
+    /*
+     * Everything else is generic
+     */
     idio_vtable_add_method (Cschar_vt,
 			    idio_S_typename,
 			    idio_vtable_create_method_value (idio_util_method_typename,

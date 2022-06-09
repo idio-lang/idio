@@ -315,6 +315,7 @@ IDIO idio_bignum_integer_C (char const *nums, size_t nums_len, const int req_exa
 IDIO idio_bignum_real_C (char const *nums, size_t nums_len);
 IDIO idio_bignum_C (char const *nums, size_t nums_len);
 
+IDIO idio_bignum_primitive_abs (IDIO a);
 IDIO idio_bignum_primitive_add (IDIO args);
 IDIO idio_bignum_primitive_subtract (IDIO args);
 IDIO idio_bignum_primitive_multiply (IDIO args);
