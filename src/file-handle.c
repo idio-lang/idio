@@ -3420,9 +3420,12 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 				continue;
 			    }
 
-			    if (sb.st_size > 10) {
+			    /*
+			     * {mod}@{ver} where {ver} might be 10 chars
+			     */
+			    if (sb.st_size > (off_t) (mod_len + 1 + 10)) {
 #ifdef IDIO_DEBUG
-				fprintf (stderr, "WARNING: find-lib: %s is %lld bytes (more than the estimated 10)\n", libname, (long long) sb.st_size);
+				fprintf (stderr, "WARNING: find-lib: %s is %lld bytes (more than the estimated %llu)\n", libname, (long long) sb.st_size, (unsigned long long) (mod_len + 1 + 10));
 #endif
 			    }
 
