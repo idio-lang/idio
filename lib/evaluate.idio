@@ -931,7 +931,8 @@ define (meaning-define-template src name e nametree escapes flags cs cm) {
     copy-expander! name e
     meaning-assignment src name e nametree escapes (define-scope 'toplevel flags) cs cm
   } {
-    ;; (define-template (name formal*) ...) => (define-template name (function (formal*) ...))
+    ;; (define-template (name formal*) ...) =>
+    ;; (define-template name (function/name name (formal*) ...))
     if (pair? name) {
       e = (list 'function/name
 		(ph name)
@@ -942,14 +943,14 @@ define (meaning-define-template src name e nametree escapes flags cs cm) {
       meaning-copy-src-properties src e
     }
 
-    ;; create an expander: (function (x e) (apply proc (pt x)))
+    ;; create an expander: (function/name {name-expander} (x e) (apply proc (pt x)))
 
-    ;; where proc is (function (formal*) ...) from above,
+    ;; where proc is (function/name name (formal*) ...) from above,
     ;; ie. e
 
     docstr := sprintf "define-template: %s (x e)" name
     expander := (list 'function/name
-		      name
+		      (symbol->string (sprintf "%s-expander" name))
 		      '(x e)
 		      docstr
 		      (list 'apply e '(pt x)))

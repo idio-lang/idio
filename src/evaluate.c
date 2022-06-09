@@ -1935,7 +1935,8 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     IDIO_TYPE_ASSERT (module, cm);
 
     /*
-     * (define-template (name formal*) ...) => (define-template name (function (formal*) ...))
+     * (define-template (name formal*) ...) =>
+     * (define-template name (function/name name (formal*) ...))
      */
     if (idio_isa_pair (name)) {
 	e = IDIO_LIST4 (idio_S_function_name,
@@ -1948,9 +1949,9 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     }
 
     /*
-     * create an expander: (function (x e) (apply proc (pt x)))
+     * create an expander: (function/name {name-expander} (x e) (apply proc (pt x)))
      *
-     * where proc is (function (formal*) ...) from above, ie. e
+     * where proc is (function/name name (formal*) ...) from above, ie. e
      */
     IDIO x_sym = IDIO_SYMBOLS_C_INTERN ("x");
     IDIO e_sym = IDIO_SYMBOLS_C_INTERN ("e");
@@ -1963,6 +1964,10 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
 
     IDIO bindings = IDIO_LIST2 (x_sym, e_sym);
 
+    IDIO nsh  = idio_open_output_string_handle_C ();
+    idio_display (name, nsh);
+    idio_display_C ("-expander", nsh);
+
     IDIO dsh  = idio_open_output_string_handle_C ();
     idio_display_C ("define-template: ", dsh);
     idio_display (name, dsh);
@@ -1971,7 +1976,7 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     IDIO docstr = idio_get_output_string (dsh);
 
     IDIO expander = IDIO_LIST5 (idio_S_function_name,
-				name,
+				idio_symbols_string_intern (idio_get_output_string (nsh)),
 				bindings,
 				docstr,
 				appl);
