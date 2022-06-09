@@ -134,6 +134,12 @@ void idio_ia_append (IDIO_IA_T ia1, IDIO_IA_T ia2)
     }
 }
 
+void idio_ia_append_free (IDIO_IA_T ia1, IDIO_IA_T ia2)
+{
+    idio_ia_append (ia1, ia2);
+    idio_ia_free (ia2);
+}
+
 void idio_ia_copy (IDIO_IA_T iad, IDIO_IA_T ias)
 {
     if (IDIO_IA_ASIZE (iad) < IDIO_IA_USIZE (ias)) {
@@ -280,18 +286,17 @@ IDIO_IA_T idio_ia_compute_64uint (uint64_t offset)
 #define IDIO_IA_PUSH_VARUINT_BC(bc, n)				\
     {								\
 	IDIO_IA_T ia_pv = idio_ia_compute_varuint (n);	\
-	idio_ia_append ((bc), ia_pv);				\
-	idio_ia_free (ia_pv);					\
+	idio_ia_append_free ((bc), ia_pv);			\
     }
 
 /*
  * These macros assume {ia} is an accessible value
  */
 #define IDIO_IA_PUSH_VARUINT(n)   { IDIO_IA_PUSH_VARUINT_BC (ia, n); }
-#define IDIO_IA_PUSH_8UINT(n)     { IDIO_IA_T ia_p8 = idio_ia_compute_8uint (n);   idio_ia_append (ia, ia_p8); idio_ia_free (ia_p8); }
-#define IDIO_IA_PUSH_16UINT(n)    { IDIO_IA_T ia_p16 = idio_ia_compute_16uint (n);  idio_ia_append (ia, ia_p16); idio_ia_free (ia_p16); }
-#define IDIO_IA_PUSH_32UINT(n)    { IDIO_IA_T ia_p32 = idio_ia_compute_32uint (n);  idio_ia_append (ia, ia_p32); idio_ia_free (ia_p32); }
-#define IDIO_IA_PUSH_64UINT(n)    { IDIO_IA_T ia_p64 = idio_ia_compute_64uint (n);  idio_ia_append (ia, ia_p64); idio_ia_free (ia_p64); }
+#define IDIO_IA_PUSH_8UINT(n)     { IDIO_IA_T ia_p8 = idio_ia_compute_8uint (n);   idio_ia_append_free (ia, ia_p8); }
+#define IDIO_IA_PUSH_16UINT(n)    { IDIO_IA_T ia_p16 = idio_ia_compute_16uint (n);  idio_ia_append_free (ia, ia_p16); }
+#define IDIO_IA_PUSH_32UINT(n)    { IDIO_IA_T ia_p32 = idio_ia_compute_32uint (n);  idio_ia_append_free (ia, ia_p32); }
+#define IDIO_IA_PUSH_64UINT(n)    { IDIO_IA_T ia_p64 = idio_ia_compute_64uint (n);  idio_ia_append_free (ia, ia_p64); }
 
 /*
  * Check this aligns with IDIO_VM_FETCH_REF
@@ -436,6 +441,9 @@ idio_as_t idio_codegen_extend_src_constants (IDIO cs, IDIO v)
  *
  * The flip side of that is more C code dedicated to compilation and
  * interpretation of the resultant byte code.
+ *
+ * Much of the code below, particularly macros, assumes there is an
+ * {ia} variable in scope.
  */
 
 void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
@@ -1498,7 +1506,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 
 	    /* 4: */
-	    idio_ia_append (ia, ia2);
+	    idio_ia_append_free (ia, ia2);
 
 	    /* 5: */
 	    if (IDIO_IA_USIZE (ia3) <= IDIO_IA_VARUINT_1BYTE) {
@@ -1506,15 +1514,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		IDIO_IA_PUSH1 (IDIO_IA_USIZE (ia3));
 	    } else {
 		IDIO_IA_PUSH1 (IDIO_A_LONG_GOTO);
-		idio_ia_append (ia, g7);
-		idio_ia_free (g7);
+		idio_ia_append_free (ia, g7);
 	    }
 
 	    /* 6: */
-	    idio_ia_append (ia, ia3);
-
-	    idio_ia_free (ia2);
-	    idio_ia_free (ia3);
+	    idio_ia_append_free (ia, ia3);
 	}
 	break;
     case IDIO_I_CODE_SEQUENCE:
@@ -1903,14 +1907,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 		/* 3: */
 		IDIO_IA_PUSH1 (IDIO_A_LONG_GOTO);
-		idio_ia_append (ia, g5);
-		idio_ia_free (g5);
+		idio_ia_append_free (ia, g5);
 	    }
 
 	    /* 4: */
-	    idio_ia_append (ia, iap);
-
-	    idio_ia_free (iap);
+	    idio_ia_append_free (ia, iap);
 	}
 	break;
     case IDIO_I_CODE_NARY_CLOSURE:
@@ -1985,14 +1986,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 		/* 3: */
 		IDIO_IA_PUSH1 (IDIO_A_LONG_GOTO);
-		idio_ia_append (ia, g5);
-		idio_ia_free (g5);
+		idio_ia_append_free (ia, g5);
 	    }
 
 	    /* 4: */
-	    idio_ia_append (ia, iap);
-
-	    idio_ia_free (iap);
+	    idio_ia_append_free (ia, iap);
 	}
 	break;
     case IDIO_I_CODE_STORE_ARGUMENT:
@@ -2358,9 +2356,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	    IDIO_IA_PUSH_VARUINT (IDIO_IA_USIZE (iab));
 
-	    idio_ia_append (ia, iab);
-
-	    idio_ia_free (iab);
+	    idio_ia_append_free (ia, iab);
 	}
 	break;
     case IDIO_I_CODE_POP_ESCAPER:
@@ -2514,8 +2510,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		    IDIO_IA_PUSH_VARUINT_BC (iat, l);
 		}
 
-		idio_ia_append (iat, iac[i]);
-		idio_ia_free (iac[i]);
+		idio_ia_append_free (iat, iac[i]);
 
 		idio_ia_append (iat, iar);
 		idio_ia_copy (iar, iat);
@@ -2523,9 +2518,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		l = IDIO_IA_USIZE (iar);
 	    }
 
-	    idio_ia_append (ia, iar);
-
-	    idio_ia_free (iar);
+	    idio_ia_append_free (ia, iar);
 	    idio_ia_free (iat);
 	}
 	break;
@@ -2613,8 +2606,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		    IDIO_IA_PUSH_VARUINT_BC (iat, l);
 		}
 
-		idio_ia_append (iat, iac[i]);
-		idio_ia_free (iac[i]);
+		idio_ia_append_free (iat, iac[i]);
 
 		idio_ia_append (iat, iar);
 		idio_ia_copy (iar, iat);
@@ -2622,9 +2614,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		l = IDIO_IA_USIZE (iar);
 	    }
 
-	    idio_ia_append (ia, iar);
-
-	    idio_ia_free (iar);
+	    idio_ia_append_free (ia, iar);
 	    idio_ia_free (iat);
 	}
 	break;
@@ -2813,8 +2803,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_ABORT);
 	    IDIO_IA_PUSH_VARUINT (IDIO_IA_USIZE (ia1));
 
-	    idio_ia_append (ia, ia1);
-	    idio_ia_free (ia1);
+	    idio_ia_append_free (ia, ia1);
 	}
 	break;
     case IDIO_I_CODE_POP_ABORT:
@@ -2887,9 +2876,7 @@ idio_pc_t idio_codegen (IDIO thr, IDIO m, IDIO cs)
 	idio_ia_push (ia, IDIO_A_NOP);
     }
 
-    idio_ia_append (idio_all_code, ia);
-
-    idio_ia_free (ia);
+    idio_ia_append_free (idio_all_code, ia);
 
     return PC0;
 }
