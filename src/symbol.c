@@ -777,6 +777,41 @@ void idio_create_properties (IDIO o)
     idio_hash_set (idio_properties_hash, o, idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (8))));
 }
 
+void idio_share_properties (IDIO o1, IDIO o2)
+{
+    IDIO_ASSERT (o1);
+    IDIO_ASSERT (o2);
+
+    if (idio_S_nil == o1) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.  There is no user interface to this.
+	 */
+	idio_property_nil_object_error ("o1 is #n", IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
+    }
+
+    if (idio_S_nil == o2) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.  There is no user interface to this.
+	 */
+	idio_property_nil_object_error ("o2 is #n", IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
+    }
+
+    IDIO p = idio_hash_ref (idio_properties_hash, o1);
+    if (idio_S_unspec != p) {
+	idio_hash_set (idio_properties_hash, o2, p);
+    }
+}
+
 void idio_delete_properties (IDIO o)
 {
     IDIO_ASSERT (o);

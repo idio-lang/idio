@@ -5082,10 +5082,10 @@ int idio_vm_run1 (IDIO thr)
 	    idio_vm_restore_all_state (thr);
 	}
 	break;
-    case IDIO_A_CREATE_CLOSURE:
+    case IDIO_A_CREATE_FUNCTION:
 	{
 	    uint64_t i = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("CREATE-CLOSURE @ +%" PRId64 "", i);
+	    IDIO_VM_RUN_DIS ("CREATE-FUNCTION @ +%" PRId64 "", i);
 	    uint64_t code_len = idio_vm_fetch_varuint (thr);
 	    uint64_t nci  = idio_vm_fetch_varuint (thr);
 	    uint64_t ssci = idio_vm_fetch_varuint (thr);
@@ -5134,7 +5134,15 @@ int idio_vm_run1 (IDIO thr)
 		fprintf (stderr, "vm cc doc: failed to find %" PRId64 " (%" PRId64 ")\n", (int64_t) IDIO_FIXNUM_VAL (fci), dsci);
 	    }
 
-	    IDIO_THREAD_VAL (thr) = idio_closure (IDIO_THREAD_PC (thr) + i, code_len, IDIO_THREAD_FRAME (thr), IDIO_THREAD_ENV (thr), name, sigstr, docstr, srcloc);
+	    IDIO_THREAD_VAL (thr) = idio_toplevel_closure (IDIO_THREAD_PC (thr) + i, code_len, IDIO_THREAD_FRAME (thr), IDIO_THREAD_ENV (thr), name, sigstr, docstr, srcloc);
+	}
+	break;
+    case IDIO_A_CREATE_CLOSURE:
+	{
+	    uint64_t gvi = IDIO_VM_FETCH_REF (thr, bc);
+	    IDIO_VM_RUN_DIS ("CREATE-CLOSURE %" PRId64, gvi);
+
+	    IDIO_THREAD_VAL (thr) = idio_closure (idio_vm_values_ref (gvi), IDIO_THREAD_FRAME (thr));
 	}
 	break;
     case IDIO_A_FUNCTION_INVOKE:
@@ -6541,7 +6549,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		IDIO_VM_DASM ("RESTORE-ALL-STATE");
 	    }
 	    break;
-	case IDIO_A_CREATE_CLOSURE:
+	case IDIO_A_CREATE_FUNCTION:
 	    {
 		uint64_t i = idio_vm_get_varuint (bc, pcp);
 		/* uint64_t code_len = */ idio_vm_get_varuint (bc, pcp);
@@ -6553,7 +6561,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "C@%" PRId64 "", pc + i);
 		idio_hash_put (hints, idio_fixnum (pc + i), idio_symbols_C_intern (h, hlen));
-		IDIO_VM_DASM ("CREATE-CLOSURE @ +%" PRId64 " %" PRId64 "", i, pc + i);
+		IDIO_VM_DASM ("CREATE-FUNCTION @ +%" PRId64 " %" PRId64 "", i, pc + i);
 
 		IDIO ce = idio_thread_current_env ();
 
@@ -6616,6 +6624,13 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		    IDIO_VM_DASM ("\n  srcloc %s", ids);
 		    IDIO_GC_FREE (ids, size);
 		}
+	    }
+	    break;
+	case IDIO_A_CREATE_CLOSURE:
+	    {
+		uint64_t gvi = IDIO_VM_GET_REF (bc, pcp);
+
+		IDIO_VM_DASM ("CREATE-CLOSURE %" PRId64, gvi);
 	    }
 	    break;
 	case IDIO_A_FUNCTION_INVOKE:

@@ -450,6 +450,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 {
     IDIO_ASSERT (cs);
     IDIO_ASSERT (m);
+
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (pair, m);
 
@@ -1796,13 +1797,15 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_as_t slci = idio_codegen_constants_lookup_or_extend (cs, srcloc);
 
 	    /*
+	     * **** In the Beginning
+	     *
 	     * Remember this is the act of creating a closure *value*
 	     * not running the (body of the) closure.
-
-	     * {the-function}, the body of the function will be
+	     *
+	     * {the-function}, the body of the function, will be
 	     * prefaced with an arity check then whatever m+ consists
 	     * of.
-
+	     *
 	     * Obviously {the-function} is some arbitrary length and
 	     * we don't want to run it now, we are only creating the
 	     * closure value and that creation is essentially a call
@@ -1810,7 +1813,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     * {the-function}.  Not really a pointer, of course, but
 	     * rather where {the-function} starts relative to where we
 	     * are now.
-
+	     *
 	     * Thinking ahead, having created the closure value we now
 	     * want to jump over {the-function} -- we don't want to
 	     * run it -- which will be a SHORT- or a LONG- GOTO.  A
@@ -1819,7 +1822,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     * {the-function} in the CREATE-CLOSURE instruction will
 	     * vary depending on how many bytes are required to
 	     * instruct us to jump over {the-function}.
-
+	     *
 	     * Think about the code to be generated where we can only
 	     * calculate the length-of #3 when we have added the code
 	     * for goto #5 and the code for goto #5 depends on the
@@ -1834,10 +1837,10 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     * [features] are things we always add and therefore
 	     * always read off when implementing the CREATE-CLOSURE
 	     * instruction.
-
+	     *
 	     * Here there are obvious features like the constants
 	     * indexes for signature-string and documentation-string.
-
+	     *
 	     * A less obvious feature is the length of {the-function}.
 	     * Actually it will get emitted twice, once as a feature
 	     * and then as the GOTO.  We want it as a feature in order
@@ -1848,17 +1851,56 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     * engineer the GOTO immediately before {the-function} as
 	     * some LONG-GOTO can look like a combination of
 	     * CREATE-CLOSURE len [features].
-
+	     *
 	     * XXX if we want the closure *value* to know about its
 	     * own arity (and varargs) -- don't forget the closure
 	     * value doesn't know about its arity/varargs,
 	     * {the-function} does but not the value -- then we would
 	     * need to pass them to CREATE_CLOSURE as more [features].
-
+	     *
 	     * Why would we do that?  The only current reason is to
 	     * test if a closure is a thunk, ie. arity 0 and no
 	     * varargs.  Currently there's no pressing need for a
 	     * thunk? predicate.
+	     *
+	     * **** Then, post-0.2...
+	     *
+	     * We can always create an anonymous function directly in
+	     * idio_all_code and keep a note of the {vi} for it.  This
+	     * uses a new CREATE-FUNCTION opcode which is ostensibly
+	     * the old CREATE-CLOSURE opcode.  The only real
+	     * difference being that the (debug) stats need to be
+	     * shared with future CREATE-CLOSURE instances.
+	     *
+	     * All the heavy lifting of creating a closure/function
+	     * instance (the PC, the name, signature and documentation
+	     * strings etc.) are set up here, once.
+	     *
+	     * The entity returned by the CREATE-FUNCTION opcode will
+	     * be a valid closure -- top level because the VM won't
+	     * have a non-#n frame to give it when it is processed --
+	     * but, at this stage, nothing is going to call it.  Which
+	     * is partly why it doesn't need a name.  Hence the
+	     * lifted-{name} code being #define'd out.
+	     *
+	     * Then, at the original place in the (possibly nested)
+	     * code, we can insert the (new) CREATE-CLOSURE opcode
+	     * which simply dereferences the {vi} for the top level
+	     * function, copies the useful bits, adds the current VM
+	     * frame and reuses the stats area.
+	     *
+	     * Note, however, that the functionality[sic] is
+	     * unchanged.  There's no lambda lifting per se and all
+	     * actual, runnable closures are the CREATE-CLOSUREs.  All
+	     * we've done is some slight shuffling of the physical
+	     * location of the function's byte code from being
+	     * embedded to being "up there" somewhere.
+	     *
+	     * Driving this change is that there are, roughly 2200
+	     * abstractions seen during a run of the test suite which
+	     * become 189,000 closures.  Removing the duplicated
+	     * creation of 187k sets of closure properties is a
+	     * reasonable timesaver.
 	     */
 
 	    /* the-function */
@@ -1882,10 +1924,13 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_codegen_compile (thr, ia_tf, cs, mp, depth + 1);
 	    idio_ia_push (ia_tf, IDIO_A_RETURN);
 
+	    IDIO_IA_T ia_orig = ia;
+	    IDIO_IA_T ia = idio_ia (1024);
+
 	    idio_pc_t code_len = IDIO_IA_USIZE (ia_tf);
 	    if (code_len <= IDIO_IA_VARUINT_1BYTE) {
 		/* 2: */
-		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, 2);
+		IDIO_IA_PUSH2 (IDIO_A_CREATE_FUNCTION, 2);
 		IDIO_IA_PUSH_VARUINT (code_len);
 		IDIO_IA_PUSH_VARUINT (nci);
 		IDIO_IA_PUSH_VARUINT (fci);
@@ -1898,7 +1943,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    } else {
 		/* 2: */
 		IDIO_IA_T g5 = idio_ia_compute_varuint (code_len);
-		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, (1 + IDIO_IA_USIZE (g5)));
+		IDIO_IA_PUSH2 (IDIO_A_CREATE_FUNCTION, (1 + IDIO_IA_USIZE (g5)));
 		IDIO_IA_PUSH_VARUINT (code_len);
 		IDIO_IA_PUSH_VARUINT (nci);
 		IDIO_IA_PUSH_VARUINT (fci);
@@ -1912,6 +1957,53 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    /* 4: */
 	    idio_ia_append_free (ia, ia_tf);
+
+	    /*
+	     * We want to emulate a top level assignment to a new
+	     * symbol and, post-CREATE-FUNCTION, new global value
+	     * index which can be referred to by the CREATE-CLOSURE
+	     * code.
+	     *
+	     * However, we don't need the new (lifted) symbol as
+	     * nothing has a need to refer to it.
+	     */
+	    IDIO_IA_T ia_fn = ia;
+	    ia = idio_ia (1024);
+
+#ifdef IDIO_CODEGEN_LIFTED_NAME
+	    IDIO lifted_name = idio_gensym (IDIO_STATIC_STR_LEN ("lifted"));
+	    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, lifted_name);
+
+	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_SYM_DEF);
+	    IDIO_IA_PUSH_REF (mci);
+	    mci = idio_codegen_constants_lookup_or_extend (cs, idio_S_toplevel);
+	    IDIO_IA_PUSH_VARUINT (mci);
+#endif
+
+	    idio_ia_append (ia, ia_fn);
+
+	    idio_as_t gvi = idio_vm_extend_values ();
+
+	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_VAL_SET);
+	    IDIO_IA_PUSH_REF (gvi);
+
+	    /*
+	     * 1. don't free {ia}, we're about to reuse it
+	     *
+	     * 2. pushing directly onto idio_all_code seems a bit
+	     *    dubious.  In particular, the code will be outside
+	     *    any ABORTs.
+	     *
+	     * 3. do a regular CREATE-CLOSURE which refers to the
+	     *    CREATE-FUNCTION {vi} we just created
+	     */
+	    idio_ia_append (idio_all_code, ia);
+
+	    /* reset ia to reuse it */
+	    IDIO_IA_USIZE (ia) = 0;
+	    IDIO_IA_PUSH1 (IDIO_A_CREATE_CLOSURE);
+	    IDIO_IA_PUSH_REF (gvi);
+	    idio_ia_append_free (ia_orig, ia);
 	}
 	break;
     case IDIO_I_CODE_NARY_CLOSURE:
@@ -1961,10 +2053,13 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_codegen_compile (thr, ia_tf, cs, mp, depth + 1);
 	    idio_ia_push (ia_tf, IDIO_A_RETURN);
 
+	    IDIO_IA_T ia_orig = ia;
+	    IDIO_IA_T ia = idio_ia (1024);
+
 	    idio_pc_t code_len = IDIO_IA_USIZE (ia_tf);
 	    if (code_len <= IDIO_IA_VARUINT_1BYTE) {
 		/* 2: */
-		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, 2);
+		IDIO_IA_PUSH2 (IDIO_A_CREATE_FUNCTION, 2);
 		IDIO_IA_PUSH_VARUINT (code_len);
 		IDIO_IA_PUSH_VARUINT (nci);
 		IDIO_IA_PUSH_VARUINT (fci);
@@ -1977,7 +2072,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    } else {
 		/* 2: */
 		IDIO_IA_T g5 = idio_ia_compute_varuint (code_len);
-		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, (1 + IDIO_IA_USIZE (g5)));
+		IDIO_IA_PUSH2 (IDIO_A_CREATE_FUNCTION, (1 + IDIO_IA_USIZE (g5)));
 		IDIO_IA_PUSH_VARUINT (code_len);
 		IDIO_IA_PUSH_VARUINT (nci);
 		IDIO_IA_PUSH_VARUINT (fci);
@@ -1991,6 +2086,36 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    /* 4: */
 	    idio_ia_append_free (ia, ia_tf);
+
+	    /*
+	     * Again, see notes above
+	     */
+	    IDIO_IA_T ia_fn = ia;
+	    ia = idio_ia (1024);
+
+#ifdef IDIO_CODEGEN_LIFTED_NAME
+	    IDIO lifted_name = idio_gensym (IDIO_STATIC_STR_LEN ("lifted"));
+	    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, lifted_name);
+
+	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_SYM_DEF);
+	    IDIO_IA_PUSH_REF (mci);
+	    mci = idio_codegen_constants_lookup_or_extend (cs, idio_S_toplevel);
+	    IDIO_IA_PUSH_VARUINT (mci);
+#endif
+
+	    idio_ia_append (ia, ia_fn);
+
+	    idio_as_t gvi = idio_vm_extend_values ();
+
+	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_VAL_SET);
+	    IDIO_IA_PUSH_REF (gvi);
+
+	    idio_ia_append (idio_all_code, ia);
+
+	    IDIO_IA_USIZE (ia) = 0;
+	    IDIO_IA_PUSH1 (IDIO_A_CREATE_CLOSURE);
+	    IDIO_IA_PUSH_REF (gvi);
+	    idio_ia_append_free (ia_orig, ia);
 	}
 	break;
     case IDIO_I_CODE_STORE_ARGUMENT:
@@ -2862,8 +2987,11 @@ idio_pc_t idio_codegen (IDIO thr, IDIO m, IDIO cs)
 {
     IDIO_ASSERT (thr);
     IDIO_ASSERT (m);
+    IDIO_ASSERT (cs);
+
     IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (pair, m);
+    IDIO_TYPE_ASSERT (array, cs);
 
     idio_pc_t PC0 = IDIO_IA_USIZE (idio_all_code);
 

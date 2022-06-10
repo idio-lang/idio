@@ -39,6 +39,7 @@
 #include "gc.h"
 #include "idio.h"
 
+#include "closure.h"
 #include "error.h"
 #include "evaluate.h"
 #include "frame.h"
@@ -65,7 +66,7 @@
  * Return:
  * Returns the closure.
  */
-IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO env, IDIO name, IDIO sigstr, IDIO docstr, IDIO srcloc)
+IDIO idio_toplevel_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO env, IDIO name, IDIO sigstr, IDIO docstr, IDIO srcloc)
 {
     IDIO_C_ASSERT (code_pc);
     IDIO_C_ASSERT (code_len);
@@ -85,19 +86,21 @@ IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO
 
     IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
 
-    IDIO_CLOSURE_GREY (c) = NULL;
-    IDIO_CLOSURE_CODE_PC (c) = code_pc;
-    IDIO_CLOSURE_CODE_LEN (c) = code_len;
-    IDIO_CLOSURE_FRAME (c) = frame;
-    IDIO_CLOSURE_ENV (c) = env;
+    IDIO_CLOSURE_GREY (c)              = NULL;
+    IDIO_CLOSURE_CODE_PC (c)           = code_pc;
+    IDIO_CLOSURE_CODE_LEN (c)          = code_len;
+    IDIO_CLOSURE_FRAME (c)             = frame;
+    IDIO_CLOSURE_ENV (c)               = env;
 #ifdef IDIO_VM_PROF
-    IDIO_CLOSURE_CALLED (c) = 0;
-    IDIO_CLOSURE_CALL_TIME (c).tv_sec = 0;
+    IDIO_GC_ALLOC (c->u.closure->stats, sizeof (idio_closure_stats_t));
+    IDIO_CLOSURE_REFCNT (c)            = 1;
+    IDIO_CLOSURE_CALLED (c)            = 0;
+    IDIO_CLOSURE_CALL_TIME (c).tv_sec  = 0;
     IDIO_CLOSURE_CALL_TIME (c).tv_nsec = 0;
-    IDIO_CLOSURE_RU_UTIME (c).tv_sec = 0;
-    IDIO_CLOSURE_RU_UTIME (c).tv_usec = 0;
-    IDIO_CLOSURE_RU_STIME (c).tv_sec = 0;
-    IDIO_CLOSURE_RU_STIME (c).tv_usec = 0;
+    IDIO_CLOSURE_RU_UTIME (c).tv_sec   = 0;
+    IDIO_CLOSURE_RU_UTIME (c).tv_usec  = 0;
+    IDIO_CLOSURE_RU_STIME (c).tv_sec   = 0;
+    IDIO_CLOSURE_RU_STIME (c).tv_usec  = 0;
 #endif
 
     idio_create_properties (c);
@@ -151,6 +154,37 @@ IDIO idio_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO
     return c;
 }
 
+IDIO idio_closure (IDIO cl, IDIO frame)
+{
+    IDIO_ASSERT (cl);
+    IDIO_ASSERT (frame);
+
+    IDIO_TYPE_ASSERT (closure, cl);
+    if (idio_S_nil != frame) {
+	IDIO_TYPE_ASSERT (frame, frame);
+    }
+
+    IDIO c = idio_gc_get (IDIO_TYPE_CLOSURE);
+    c->vtable = idio_vtable (IDIO_TYPE_CLOSURE);
+
+    IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
+
+    IDIO_CLOSURE_GREY (c)     = NULL;
+    IDIO_CLOSURE_CODE_PC (c)  = IDIO_CLOSURE_CODE_PC (cl);
+    IDIO_CLOSURE_CODE_LEN (c) = IDIO_CLOSURE_CODE_LEN (cl);
+    IDIO_CLOSURE_FRAME (c)    = frame;
+    IDIO_CLOSURE_ENV (c)      = IDIO_CLOSURE_ENV (cl);
+#ifdef IDIO_VM_PROF
+    IDIO_CLOSURE_STATS (c)    = IDIO_CLOSURE_STATS (cl);
+    IDIO_CLOSURE_REFCNT (c)++;
+#endif
+    IDIO_CLOSURE_NAME (c)     = IDIO_CLOSURE_NAME (cl);
+
+    idio_share_properties (cl, c);
+
+    return c;
+}
+
 int idio_isa_closure (IDIO o)
 {
     IDIO_ASSERT (o);
@@ -170,6 +204,13 @@ void idio_free_closure (IDIO c)
 {
     IDIO_ASSERT (c);
     IDIO_TYPE_ASSERT (closure, c);
+
+#ifdef IDIO_VM_PROF
+    IDIO_CLOSURE_REFCNT (c)--;
+    if (0 == IDIO_CLOSURE_REFCNT (c)) {
+	IDIO_GC_FREE (c->u.closure->stats, sizeof (idio_closure_stats_t));
+    }
+#endif
 
     IDIO_GC_FREE (c->u.closure, sizeof (idio_closure_t));
 }

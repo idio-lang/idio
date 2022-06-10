@@ -139,58 +139,57 @@
  * This is regardless of implementation, eg. multiple constant types
  */
 typedef enum {
-	IDIO_TYPE_NONE,
-	IDIO_TYPE_FIXNUM,
-	IDIO_TYPE_CONSTANT_IDIO,
-	IDIO_TYPE_CONSTANT_TOKEN,
-	IDIO_TYPE_CONSTANT_I_CODE,
-	IDIO_TYPE_CONSTANT_UNICODE,
+    IDIO_TYPE_NONE,		/* 0 */
+    IDIO_TYPE_FIXNUM,
+    IDIO_TYPE_CONSTANT_IDIO,
+    IDIO_TYPE_CONSTANT_TOKEN,
+    IDIO_TYPE_CONSTANT_I_CODE,
+    IDIO_TYPE_CONSTANT_UNICODE,
 /*
-	IDIO_TYPE_CONSTANT_6,
-	IDIO_TYPE_CONSTANT_6,
-	IDIO_TYPE_CONSTANT_7,
-	IDIO_TYPE_CONSTANT_8,
+  IDIO_TYPE_CONSTANT_6,
+  IDIO_TYPE_CONSTANT_7,
+  IDIO_TYPE_CONSTANT_8,
 */
-	IDIO_TYPE_PLACEHOLDER,
+    IDIO_TYPE_PLACEHOLDER,
 
-	IDIO_TYPE_STRING,
-	IDIO_TYPE_SUBSTRING,
-	IDIO_TYPE_SYMBOL,
-	IDIO_TYPE_KEYWORD,
-	IDIO_TYPE_PAIR,
-	IDIO_TYPE_ARRAY,
-	IDIO_TYPE_HASH,
-	IDIO_TYPE_CLOSURE,
-	IDIO_TYPE_PRIMITIVE,
-	IDIO_TYPE_BIGNUM,
+    IDIO_TYPE_STRING,
+    IDIO_TYPE_SUBSTRING,
+    IDIO_TYPE_SYMBOL,
+    IDIO_TYPE_KEYWORD,		/* 10 */
+    IDIO_TYPE_PAIR,
+    IDIO_TYPE_ARRAY,
+    IDIO_TYPE_HASH,
+    IDIO_TYPE_CLOSURE,
+    IDIO_TYPE_PRIMITIVE,
+    IDIO_TYPE_BIGNUM,
 
-	IDIO_TYPE_MODULE,
-	IDIO_TYPE_FRAME,
-	IDIO_TYPE_HANDLE,
-	IDIO_TYPE_STRUCT_TYPE,
-	IDIO_TYPE_STRUCT_INSTANCE,
-	IDIO_TYPE_THREAD,
-	IDIO_TYPE_CONTINUATION,
-	IDIO_TYPE_BITSET,
+    IDIO_TYPE_MODULE,
+    IDIO_TYPE_FRAME,
+    IDIO_TYPE_HANDLE,
+    IDIO_TYPE_STRUCT_TYPE,	/* 20 */
+    IDIO_TYPE_STRUCT_INSTANCE,
+    IDIO_TYPE_THREAD,
+    IDIO_TYPE_CONTINUATION,
+    IDIO_TYPE_BITSET,
 
-	IDIO_TYPE_C_CHAR,
-	IDIO_TYPE_C_SCHAR,
-	IDIO_TYPE_C_UCHAR,
-	IDIO_TYPE_C_SHORT,
-	IDIO_TYPE_C_USHORT,
-	IDIO_TYPE_C_INT,
-	IDIO_TYPE_C_UINT,
-	IDIO_TYPE_C_LONG,
-	IDIO_TYPE_C_ULONG,
-	IDIO_TYPE_C_LONGLONG,
-	IDIO_TYPE_C_ULONGLONG,
-	IDIO_TYPE_C_FLOAT,
-	IDIO_TYPE_C_DOUBLE,
-	IDIO_TYPE_C_LONGDOUBLE,
-	IDIO_TYPE_C_POINTER,
-	IDIO_TYPE_C_VOID,
+    IDIO_TYPE_C_CHAR,
+    IDIO_TYPE_C_SCHAR,
+    IDIO_TYPE_C_UCHAR,
+    IDIO_TYPE_C_SHORT,
+    IDIO_TYPE_C_USHORT,
+    IDIO_TYPE_C_INT,		/* 30 */
+    IDIO_TYPE_C_UINT,
+    IDIO_TYPE_C_LONG,
+    IDIO_TYPE_C_ULONG,
+    IDIO_TYPE_C_LONGLONG,
+    IDIO_TYPE_C_ULONGLONG,
+    IDIO_TYPE_C_FLOAT,
+    IDIO_TYPE_C_DOUBLE,
+    IDIO_TYPE_C_LONGDOUBLE,
+    IDIO_TYPE_C_POINTER,
+    IDIO_TYPE_C_VOID,		/* 40 */
 
-	IDIO_TYPE_MAX
+    IDIO_TYPE_MAX
 } idio_type_enum;
 
 /**
@@ -636,6 +635,22 @@ typedef intptr_t idio_pc_t;
  * The closure's name is a reference into the VM's constants table
  * which shouldn't get reclaimed during the lifetime of the program.
  */
+#ifdef IDIO_VM_PROF
+typedef struct idio_closure_stats_s {
+    int refcnt;
+    uint64_t called;
+    struct timespec call_time;
+    struct timeval ru_utime;
+    struct timeval ru_stime;
+} idio_closure_stats_t;
+
+#define IDIO_CLOSURE_REFCNT(C)     ((C)->u.closure->stats->refcnt)
+#define IDIO_CLOSURE_CALLED(C)     ((C)->u.closure->stats->called)
+#define IDIO_CLOSURE_CALL_TIME(C)  ((C)->u.closure->stats->call_time)
+#define IDIO_CLOSURE_RU_UTIME(C)   ((C)->u.closure->stats->ru_utime)
+#define IDIO_CLOSURE_RU_STIME(C)   ((C)->u.closure->stats->ru_stime)
+#endif
+
 typedef struct idio_closure_s {
     struct idio_s *grey;
     idio_pc_t code_pc;
@@ -644,10 +659,7 @@ typedef struct idio_closure_s {
     struct idio_s *frame;
     struct idio_s *env;
 #ifdef IDIO_VM_PROF
-    uint64_t called;
-    struct timespec call_time;
-    struct timeval ru_utime;
-    struct timeval ru_stime;
+    idio_closure_stats_t *stats;
 #endif
 } idio_closure_t;
 
@@ -658,10 +670,7 @@ typedef struct idio_closure_s {
 #define IDIO_CLOSURE_FRAME(C)      ((C)->u.closure->frame)
 #define IDIO_CLOSURE_ENV(C)        ((C)->u.closure->env)
 #ifdef IDIO_VM_PROF
-#define IDIO_CLOSURE_CALLED(C)     ((C)->u.closure->called)
-#define IDIO_CLOSURE_CALL_TIME(C)  ((C)->u.closure->call_time)
-#define IDIO_CLOSURE_RU_UTIME(C)   ((C)->u.closure->ru_utime)
-#define IDIO_CLOSURE_RU_STIME(C)   ((C)->u.closure->ru_stime)
+#define IDIO_CLOSURE_STATS(C)      ((C)->u.closure->stats)
 #endif
 
 /*

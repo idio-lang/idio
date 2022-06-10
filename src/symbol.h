@@ -214,6 +214,7 @@ int idio_symbol_gensymp (IDIO o);
 IDIO idio_ref_properties (IDIO o, IDIO args);
 void idio_set_properties (IDIO o, IDIO properties);
 void idio_create_properties (IDIO o);
+void idio_share_properties (IDIO o1, IDIO o2);
 void idio_delete_properties (IDIO o);
 IDIO idio_ref_property (IDIO o, IDIO property, IDIO args);
 void idio_set_property (IDIO o, IDIO property, IDIO value);

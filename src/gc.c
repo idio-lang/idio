@@ -1365,7 +1365,12 @@ static double idio_gc_all_primitive_ru;
 
 void idio_gc_closure_stats (IDIO c)
 {
-    if (IDIO_CLOSURE_CALLED (c)) {
+    /*
+     * XXX IDIO_CLOSURE_REFCNT(c) is one because we're running this
+     * before the actual idio_gc_sweep_free_value()
+     */
+    if (IDIO_CLOSURE_CALLED (c) &&
+	1 == IDIO_CLOSURE_REFCNT (c)) {
 	idio_gc_all_closure_t.tv_sec += IDIO_CLOSURE_CALL_TIME (c).tv_sec;
 	idio_gc_all_closure_t.tv_nsec += IDIO_CLOSURE_CALL_TIME (c).tv_nsec;
 	if (idio_gc_all_closure_t.tv_nsec > IDIO_VM_NS) {

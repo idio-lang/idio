@@ -119,13 +119,14 @@
 #define IDIO_A_RESTORE_STATE			87
 #define IDIO_A_RESTORE_ALL_STATE		88
 
-#define IDIO_A_CREATE_CLOSURE			90
-#define IDIO_A_FUNCTION_INVOKE			91
-#define IDIO_A_FUNCTION_GOTO			92
-#define IDIO_A_RETURN				93
-#define IDIO_A_FINISH				94
-#define IDIO_A_PUSH_ABORT			95
-#define IDIO_A_POP_ABORT			96
+#define IDIO_A_CREATE_FUNCTION			90 /* top level closure */
+#define IDIO_A_CREATE_CLOSURE			91
+#define IDIO_A_FUNCTION_INVOKE			92
+#define IDIO_A_FUNCTION_GOTO			93
+#define IDIO_A_RETURN				94
+#define IDIO_A_FINISH				95
+#define IDIO_A_PUSH_ABORT			96
+#define IDIO_A_POP_ABORT			97
 
 #define IDIO_A_ALLOCATE_FRAME1			100
 #define IDIO_A_ALLOCATE_FRAME2			101
@@ -211,6 +212,7 @@ extern IDIO idio_vm_constants;
 extern IDIO idio_vm_constants_hash;
 extern IDIO idio_vm_src_constants;
 extern IDIO idio_vm_krun;
+extern FILE *idio_dasm_FILE;
 extern int idio_vm_reports;
 extern int idio_vm_reporting;
 extern IDIO_IA_T idio_all_code;

@@ -2119,12 +2119,11 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     IDIO r = idio_S_nil;
 
     for (;;) {
-	IDIO cm;
+	IDIO cm = idio_thread_current_module ();
 	IDIO oh;
 	IDIO eh;
 
 	if (handle_interactive) {
-	    cm = idio_thread_current_module ();
 	    oh = idio_thread_current_output_handle ();
 	    eh = idio_thread_current_error_handle ();
 

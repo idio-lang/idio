@@ -2079,6 +2079,7 @@ char const *idio_vm_bytecode2string (int code)
     case IDIO_A_RESTORE_STATE:			r = "A-RESTORE-STATE";			break;
     case IDIO_A_RESTORE_ALL_STATE:		r = "A-RESTORE-ALL-STATE";		break;
 
+    case IDIO_A_CREATE_FUNCTION:		r = "A-CREATE-FUNCTION";		break;
     case IDIO_A_CREATE_CLOSURE:			r = "A-CREATE-CLOSURE";			break;
     case IDIO_A_FUNCTION_INVOKE:		r = "A-FUNCTION-INVOKE";		break;
     case IDIO_A_FUNCTION_GOTO:			r = "A-FUNCTION-GOTO";			break;
