@@ -30,6 +30,7 @@ void idio_free_pair (IDIO p);
 IDIO idio_list_head (IDIO p);
 IDIO idio_list_tail (IDIO p);
 
+IDIO idio_listv (size_t nargs, ...);
 IDIO idio_improper_list_reverse (IDIO l, IDIO last);
 IDIO idio_list_reverse (IDIO l);
 IDIO idio_list_nreverse (IDIO l);
@@ -52,12 +53,13 @@ char *idio_pair_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO 
 
 void idio_init_pair ();
 
-#define IDIO_LIST1(e1)		idio_pair (e1, idio_S_nil)
-#define IDIO_LIST2(e1,e2)	idio_pair (e1, idio_pair (e2, idio_S_nil))
-#define IDIO_LIST3(e1,e2,e3)	idio_pair (e1, idio_pair (e2, idio_pair (e3, idio_S_nil)))
-#define IDIO_LIST4(e1,e2,e3,e4)	idio_pair (e1, idio_pair (e2, idio_pair (e3, idio_pair (e4, idio_S_nil))))
-#define IDIO_LIST5(e1,e2,e3,e4,e5)	idio_pair (e1, idio_pair (e2, idio_pair (e3, idio_pair (e4, idio_pair (e5, idio_S_nil)))))
-#define IDIO_LIST6(e1,e2,e3,e4,e5,e6)	idio_pair (e1, idio_pair (e2, idio_pair (e3, idio_pair (e4, idio_pair (e5, idio_pair (e6, idio_S_nil))))))
+#define IDIO_LIST1(...)		idio_listv (1, __VA_ARGS__)
+#define IDIO_LIST2(...)		idio_listv (2, __VA_ARGS__)
+#define IDIO_LIST3(...)		idio_listv (3, __VA_ARGS__)
+#define IDIO_LIST4(...)		idio_listv (4, __VA_ARGS__)
+#define IDIO_LIST5(...)		idio_listv (5, __VA_ARGS__)
+#define IDIO_LIST6(...)		idio_listv (6, __VA_ARGS__)
+#define IDIO_LIST7(...)		idio_listv (7, __VA_ARGS__)
 
 #endif
 

@@ -633,6 +633,36 @@ return :samp:`(ph (pt (pt (ph {p}))))`		\n\
     return r;
 }
 
+IDIO idio_listv (size_t nargs, ...)
+{
+    if (0 == nargs) {
+	return idio_S_nil;
+    }
+
+    IDIO r = idio_S_nil;
+    IDIO p = r;
+
+    va_list ap;
+    va_start (ap, nargs);
+
+    size_t i;
+    for (i = 0; i < nargs; i++) {
+	IDIO arg = va_arg (ap, IDIO);
+	IDIO c = idio_pair (arg, idio_S_nil);
+	if (idio_S_nil == r) {
+	    r = c;
+	} else {
+	    IDIO_PAIR_T (p) = c;
+	}
+
+	p = c;
+    }
+
+    va_end (ap);
+
+    return r;
+}
+
 /*
  * Code coverage:
  *
