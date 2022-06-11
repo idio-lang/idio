@@ -811,13 +811,7 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
       ((toplevel) {
 	vi := phtt si
 
-	;; Grr.  meaning-define has given us a gvi which means (define
-	;; (foo) 1) would get a GLOBAL-VAL-SET which doesn't set the
-	;; function name.  We can force the slower but more useful
-	;; GLOBAL-SYM-SET by checking for (function ...) in e.
-	if (or (0 eq vi)
-	       (and (pair? e)
-		    (eq? (ph e) 'function))) {
+	if (0 eq vi) {
 	  assign = list I-GLOBAL-SYM-SET src ci m
 	} {
 	  assign = list I-GLOBAL-VAL-SET src vi m

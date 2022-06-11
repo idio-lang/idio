@@ -39,7 +39,7 @@ LD_SONAME_FLAGS	:=
 
 # Yes, I know there's an arithmetic shift left of a signed variable!
 # XXX older compilers (gcc-4?) don't support the option
-CFLAGS		:= -Wno-shift-negative-value
+CFLAGS		:= $(CFLAGS) -Wno-shift-negative-value
 
 ifeq ($(OS),Darwin)
 

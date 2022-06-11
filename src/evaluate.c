@@ -1776,15 +1776,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
     } else if (idio_S_toplevel == scope) {
 	IDIO fgvi = IDIO_PAIR_HTT (si);
 
-	/*
-	 * Grr.  idio_meaning_define() has given us a gvi which means
-	 * (define (foo) 1) would get a GLOBAL-VAL-SET which doesn't
-	 * set the function name.  We can force the slower but more
-	 * useful GLOBAL-SYM-SET by checking for (function ...) in e.
-	 */
-	if (0 == IDIO_FIXNUM_VAL (fgvi) ||
-	    (idio_isa_pair (e) &&
-	     idio_S_function == IDIO_PAIR_H (e))) {
+	if (0 == IDIO_FIXNUM_VAL (fgvi)) {
 	    assign = IDIO_LIST4 (IDIO_I_GLOBAL_SYM_SET, src, fmci, m);
 	} else {
 	    assign = IDIO_LIST4 (IDIO_I_GLOBAL_VAL_SET, src, fgvi, m);
