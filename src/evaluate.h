@@ -69,9 +69,9 @@ IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, 
 IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, char const *cpp__FILE__, int cpp__LINE__);
 IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs, char const *cpp__FILE__, int cpp__LINE__);
 
-IDIO idio_toplevel_extend (IDIO lo, IDIO name, int variant, IDIO cs, IDIO cm);
-IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO cs);
-IDIO idio_environ_extend (IDIO lo, IDIO name, IDIO val, IDIO cs);
+IDIO idio_toplevel_extend (IDIO lo, IDIO name, int variant, IDIO cs, IDIO cm, IDIO cd);
+IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO cs, IDIO cd);
+IDIO idio_environ_extend (IDIO lo, IDIO name, IDIO val, IDIO cs, IDIO cd);
 
 void idio_meaning_copy_src_properties (IDIO src, IDIO dst);
 void idio_meaning_copy_src_properties_r (IDIO src, IDIO dst);
@@ -89,7 +89,7 @@ IDIO idio_postfix_operator_expand (IDIO e, int depth);
 
 IDIO idio_operator_expand (IDIO e, int depth);
 
-IDIO idio_evaluate (IDIO e, IDIO cs);
+IDIO idio_evaluate (IDIO src, IDIO cs, IDIO cd);
 IDIO idio_evaluate_func (IDIO src, IDIO cs);
 
 void idio_init_evaluate ();

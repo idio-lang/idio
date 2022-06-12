@@ -70,7 +70,7 @@ static int idio_vars_set_dynamic_default (IDIO name, IDIO val)
 
     IDIO VARS = idio_module_current_symbol_value_recurse (name, IDIO_LIST1 (idio_S_false));
     if (idio_S_false == VARS) {
-	idio_dynamic_extend (name, name, val, idio_vm_constants);
+	idio_dynamic_extend (name, name, val, idio_vm_constants, idio_S_nil);
 	return 1;
     }
 

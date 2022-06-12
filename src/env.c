@@ -157,7 +157,7 @@ static int idio_env_set_default (IDIO name, IDIO val)
 	 * So, we'll get here if no-one has set IDIOLIB otherwise it's
 	 * a manual test.
 	 */
-	idio_environ_extend (name, name, val, idio_vm_constants);
+	idio_environ_extend (name, name, val, idio_vm_constants, idio_S_nil);
 	return 1;
     }
 
@@ -216,7 +216,7 @@ static void idio_env_add_environ ()
 	    var = idio_string_C (*env);
 	}
 
-	idio_environ_extend (var, var, val, idio_vm_constants);
+	idio_environ_extend (var, var, val, idio_vm_constants, idio_S_nil);
     }
 
     /*

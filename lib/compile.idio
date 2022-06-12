@@ -1,0 +1,71 @@
+#*
+
+Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+compile.idio
+
+*#
+
+module compile
+export (
+	 compile-file
+)
+import vm ; evaluate
+
+define (compile-file file & args) "
+" {
+  symbols := #n
+  constants := (vm-constants)
+
+  if (pair? args) {
+    symbols = ph args
+
+    if (pair? (pt args)) {
+      constants = pht args
+    }
+  }
+
+  pcd := list symbols constants
+  printf "c pcd %s\n" pcd
+  fh := open-input-file file
+
+  all-m := #n
+
+  loop :+ function #n {
+    e := read fh
+    if (not (eof? fh)) {
+      m := evaluate/evaluate e (vm-constants) pcd
+      printf "m %s\n" m
+      all-m = pair m all-m
+      (loop)
+    }
+  }
+
+  (loop)
+
+  close-handle fh
+
+  symbols = ph pcd
+  while (pair? symbols) {
+    printf "c st %s\n" (ph symbols)
+    symbols = pt symbols
+  }
+
+  printf "c cs %s\n" (pht pcd)
+
+  all-m
+}
+
+provide compile
