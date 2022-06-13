@@ -522,11 +522,6 @@ Find the module called `name`					\n\
     return r;
 }
 
-IDIO idio_Idio_module_instance ()
-{
-    return idio_Idio_module;
-}
-
 IDIO idio_module_find_or_create_module (IDIO name)
 {
     IDIO_ASSERT (name);

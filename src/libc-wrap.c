@@ -3658,7 +3658,7 @@ void idio_init_libc_wrap ()
     /*
      * Define some host/user/process variables
      */
-    IDIO main_module = idio_Idio_module_instance ();
+    IDIO main_module = idio_Idio_module;
 
     struct utsname *up = idio_alloc (sizeof (struct utsname));
     if (uname (up) == -1) {

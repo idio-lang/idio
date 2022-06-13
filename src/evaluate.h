@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
@@ -55,6 +55,12 @@
 #define IDIO_MEANING_TEMPLATE(f)		((f) | IDIO_MEANING_FLAG_TEMPLATE)
 #define IDIO_MEANING_NO_TEMPLATE(f)		(((f) & (~ IDIO_MEANING_FLAG_TEMPLATE)) == 0)
 
+#define IDIO_MEANING_EENV_AOT(t)		IDIO_PAIR_H(t)
+#define IDIO_MEANING_EENV_SYMBOLS(t)		IDIO_PAIR_HT(t)
+#define IDIO_MEANING_EENV_CONSTANTS(t)		IDIO_PAIR_HTT(t)
+#define IDIO_MEANING_EENV_MODULE(t)		IDIO_PAIR_HTTT(t)
+#define IDIO_MEANING_EENV_ESCAPES(t)		IDIO_PAIR_HTTTT(t)
+
 extern IDIO idio_evaluate_module;
 
 void idio_meaning_warning (char const *prefix, char const *msg, IDIO e);
@@ -65,13 +71,13 @@ void idio_meaning_error_static_arity (IDIO lo, IDIO c_location, char const *msg,
 
 void idio_meaning_add_description (IDIO sym, IDIO desc);
 IDIO idio_meaning_get_description (IDIO sym);
-IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, char const *cpp__FILE__, int cpp__LINE__);
-IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, char const *cpp__FILE__, int cpp__LINE__);
-IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs, char const *cpp__FILE__, int cpp__LINE__);
+IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, char const *cpp__FILE__, int cpp__LINE__);
+IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, char const *cpp__FILE__, int cpp__LINE__);
+IDIO idio_add_primitive (idio_primitive_desc_t *d, char const *cpp__FILE__, int cpp__LINE__);
 
-IDIO idio_toplevel_extend (IDIO lo, IDIO name, int variant, IDIO cs, IDIO cm, IDIO cd);
-IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO cs, IDIO cd);
-IDIO idio_environ_extend (IDIO lo, IDIO name, IDIO val, IDIO cs, IDIO cd);
+IDIO idio_toplevel_extend (IDIO lo, IDIO name, int variant, IDIO eenv);
+IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO eenv);
+IDIO idio_environ_extend (IDIO lo, IDIO name, IDIO val, IDIO eenv);
 
 void idio_meaning_copy_src_properties (IDIO src, IDIO dst);
 void idio_meaning_copy_src_properties_r (IDIO src, IDIO dst);
@@ -89,8 +95,8 @@ IDIO idio_postfix_operator_expand (IDIO e, int depth);
 
 IDIO idio_operator_expand (IDIO e, int depth);
 
-IDIO idio_evaluate (IDIO src, IDIO cs, IDIO cd);
-IDIO idio_evaluate_func (IDIO src, IDIO cs);
+IDIO idio_evaluate (IDIO src, IDIO eenv);
+IDIO idio_evaluate_func (IDIO src, IDIO eenv);
 
 void idio_init_evaluate ();
 

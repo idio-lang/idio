@@ -4075,7 +4075,7 @@ static idio_as_t idio_vm_get_or_create_vvi (idio_as_t mci)
 	    IDIO_C_ASSERT (gvi >= 0);
 
 	    if (0 == gvi &&
-		idio_eqp (ce, idio_Idio_module_instance ())) {
+		idio_eqp (ce, idio_Idio_module)) {
 		IDIO si_im = idio_module_find_symbol_recurse (sym, ce, 2);
 
 		if (idio_S_false != si_im) {
@@ -4247,7 +4247,7 @@ int idio_vm_run1 (IDIO thr)
 		    idio_debug ("\nGLOBAL-SYM-REF: %s", sym);
 		    fprintf (stderr, " #%" PRId64, mci);
 		    idio_dump (thr, 2);
-		    idio_debug ("c-m: %s\n", idio_thread_current_module ());
+		    idio_debug ("c-m: %s\n", IDIO_THREAD_MODULE (thr));
 		    idio_error_printf (IDIO_C_FUNC_LOCATION_S ("GLOBAL-SYM-REF"), "unspecified toplevel: %" PRId64 "", mci);
 
 		    /* notreached */
@@ -4295,7 +4295,7 @@ int idio_vm_run1 (IDIO thr)
 			    idio_debug ("\nGLOBAL-SYM-REF: %s", sym);
 			    fprintf (stderr, " #%" PRId64, mci);
 			    idio_dump (thr, 2);
-			    idio_debug ("c-m: %s\n", idio_thread_current_module ());
+			    idio_debug ("c-m: %s\n", IDIO_THREAD_MODULE (thr));
 			    idio_error_printf (IDIO_C_FUNC_LOCATION_S ("GLOBAL-SYM-REF"), "unspecified toplevel: %" PRId64 "", mci);
 
 			    /* notreached */
@@ -4334,7 +4334,7 @@ int idio_vm_run1 (IDIO thr)
 		    idio_debug ("\nCHECKED-GLOBAL-SYM-REF: %s", sym);
 		    fprintf (stderr, " #%" PRId64, mci);
 		    idio_dump (thr, 2);
-		    idio_debug ("c-m: %s\n", idio_thread_current_module ());
+		    idio_debug ("c-m: %s\n", IDIO_THREAD_MODULE (thr));
 		    IDIO_C_ASSERT (0);
 		    idio_error_printf (IDIO_C_FUNC_LOCATION_S ("CHECKED-GLOBAL-SYM-REF"), "unspecified toplevel: %" PRId64 "", mci);
 
@@ -4378,7 +4378,7 @@ int idio_vm_run1 (IDIO thr)
 		    idio_debug ("\nGLOBAL-FUNCTION-SYM-REF:) %s", sym);
 		    fprintf (stderr, " #%" PRId64, mci);
 		    idio_dump (thr, 2);
-		    idio_debug ("c-m: %s\n", idio_thread_current_module ());
+		    idio_debug ("c-m: %s\n", IDIO_THREAD_MODULE (thr));
 		    idio_error_printf (IDIO_C_FUNC_LOCATION_S ("GLOBAL-FUNCTION-SYM-REF"), "unspecified toplevel: %" PRId64 "", mci);
 
 		    /* notreached */
@@ -4424,7 +4424,7 @@ int idio_vm_run1 (IDIO thr)
 			    idio_debug ("\nGLOBAL-FUNCTION-SYM-REF: %s", sym);
 			    fprintf (stderr, " #%" PRId64, mci);
 			    idio_dump (thr, 2);
-			    idio_debug ("c-m: %s\n", idio_thread_current_module ());
+			    idio_debug ("c-m: %s\n", IDIO_THREAD_MODULE (thr));
 			    idio_error_printf (IDIO_C_FUNC_LOCATION_S ("GLOBAL-FUNCTION-SYM-REF"), "unspecified toplevel: %" PRId64 "", mci);
 
 			    /* notreached */
@@ -4463,7 +4463,7 @@ int idio_vm_run1 (IDIO thr)
 		    idio_debug ("\nCHECKED-GLOBAL-FUNCTION-SYM-REF:) %s", sym);
 		    fprintf (stderr, " #%" PRId64, mci);
 		    idio_dump (thr, 2);
-		    idio_debug ("c-m: %s\n", idio_thread_current_module ());
+		    idio_debug ("c-m: %s\n", IDIO_THREAD_MODULE (thr));
 		    idio_error_printf (IDIO_C_FUNC_LOCATION_S ("CHECKED-GLOBAL-FUNCTION-SYM-REF"), "unspecified toplevel: %" PRId64 "", mci);
 
 		    /* notreached */

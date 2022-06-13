@@ -37,7 +37,6 @@ IDIO idio_module_get_vvi (IDIO module, IDIO msi);
 IDIO idio_module_set_vvi (IDIO module, IDIO msi, IDIO gvi);
 IDIO idio_module_find_module (IDIO name);
 IDIO idio_module_find_or_create_module (IDIO name);
-IDIO idio_Idio_module_instance ();
 IDIO idio_thread_current_module ();
 IDIO idio_thread_current_env ();
 IDIO idio_module_symbols (IDIO module);

@@ -2051,14 +2051,15 @@ return the name associated with handle `handle`	\n\
     return IDIO_HANDLE_FILENAME (handle);
 }
 
-IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs, int preserve)
+IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO eenv), IDIO eenv, int preserve)
 {
     IDIO_ASSERT (h);
     IDIO_C_ASSERT (reader);
     IDIO_C_ASSERT (evaluator);
-    IDIO_ASSERT (cs);
+    IDIO_ASSERT (eenv);
+
     IDIO_TYPE_ASSERT (handle, h);
-    IDIO_TYPE_ASSERT (array, cs);
+    IDIO_TYPE_ASSERT (list, eenv);
 
     /*
      * load/load-handle are both wrappered by closures meaning that
@@ -2182,7 +2183,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
 	idio_vm_push_abort (thr, IDIO_LIST2 (eval_abort, idio_get_output_string (eosh)));
 
-	IDIO m = (*evaluator) (e, cs);
+	IDIO m = (*evaluator) (e, eenv);
 
 	idio_vm_pop_abort (thr);
 
@@ -2199,7 +2200,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	fprintf (stderr, " e %ld.%06ld", td.tv_sec, td.tv_usec);
 #endif
 
-	idio_pc_t pc = idio_codegen (thr, m, cs);
+	idio_pc_t pc = idio_codegen (thr, m, eenv);
 
 	r = idio_vm_run_C (thr, pc);
 
@@ -2281,9 +2282,9 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 /*
  * A dumb wrapper to idio_load_handle()
  */
-IDIO idio_load_handle_C (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
+IDIO idio_load_handle_C (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO eenv), IDIO eenv)
 {
-    return idio_load_handle (h, reader, evaluator, cs, 1);
+    return idio_load_handle (h, reader, evaluator, eenv, 1);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("load-handle", load_handle, (IDIO h), "handle", "\
@@ -2307,7 +2308,19 @@ This is the `load-handle` primitive.				\n\
     IDIO thr = idio_thread_current_thread ();
     idio_pc_t pc0 = IDIO_THREAD_PC (thr);
 
-    IDIO r = idio_load_handle (h, idio_read, idio_evaluate_func, idio_vm_constants, 0);
+    IDIO cm = IDIO_THREAD_MODULE (thr);
+
+    IDIO eenv = IDIO_LIST5 (idio_S_false,
+			    idio_S_nil,
+			    idio_vm_constants,
+			    cm,
+			    idio_S_nil);
+
+    idio_gc_protect (eenv);
+
+    IDIO r = idio_load_handle (h, idio_read, idio_evaluate_func, eenv, 0);
+
+    idio_gc_expose (eenv);
 
     idio_pc_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {

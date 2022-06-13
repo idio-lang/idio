@@ -2745,23 +2745,26 @@ typedef struct idio_file_extension_s {
     char *ext;			/* X -> X{ext} */
     IDIO (*reader) (IDIO h);
     IDIO (*evaluator) (IDIO e, IDIO cs);
-    IDIO (*modulep) (void);
 } idio_file_extension_t;
 
 static idio_file_extension_t idio_file_extensions[] = {
-    { NULL,  NULL, IDIO_IDIO_EXT, idio_read, idio_evaluate_func, idio_Idio_module_instance },
-    { "lib", NULL, ".so",   idio_dl_read, idio_evaluate_func, idio_Idio_module_instance },
+    { NULL,  NULL, IDIO_IDIO_EXT, idio_read, idio_evaluate_func },
+    { "lib", NULL, ".so",   idio_dl_read, idio_evaluate_func },
 
     /*
      * ext==NULL => check for file ~ ".idio$"
      */
-    { NULL,  NULL, NULL, idio_read, idio_evaluate_func, idio_Idio_module_instance },
-    /* { ".scm", idio_scm_read, idio_scm_evaluate, idio_main_scm_module_instance }, */
-    { NULL, NULL, NULL, NULL, NULL, NULL }
+    { NULL,  NULL, NULL, idio_read, idio_evaluate_func },
+    /* { ".scm", idio_scm_read, idio_scm_evaluate }, */
+    { NULL, NULL, NULL, NULL, NULL }
 };
 
-IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char const *libname, size_t const libname_len, IDIO cs)
+IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char const *libname, size_t const libname_len, IDIO eenv)
 {
+    IDIO_ASSERT (eenv);
+
+    IDIO_TYPE_ASSERT (list, eenv);
+
     /*
      * NB libname might be {mod}@{mod-ver} or {mod}.so
      */
@@ -2980,7 +2983,7 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 
 	idio_file_extension_t *fe = idio_file_extensions;
 	IDIO (*reader) (IDIO h) = idio_read;
-	IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate_func;
+	IDIO (*evaluator) (IDIO e, IDIO eenv) = idio_evaluate_func;
 
 	for (;NULL != fe->reader;fe++) {
 	    if (NULL != fe->ext) {
@@ -2995,7 +2998,7 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 	    }
 	}
 
-	r = idio_load_handle_C (fh, reader, evaluator, cs);
+	r = idio_load_handle_C (fh, reader, evaluator, eenv);
 
 	idio_array_pop (IDIO_THREAD_STACK (thr));
     }
@@ -3721,10 +3724,10 @@ possible file name extensions			\n\
     return  r;
 }
 
-IDIO idio_load_file_name (IDIO filename, IDIO cs)
+IDIO idio_load_file_name (IDIO filename, IDIO eenv)
 {
     IDIO_ASSERT (filename);
-    IDIO_ASSERT (cs);
+    IDIO_ASSERT (eenv);
 
     if (! idio_isa_string (filename)) {
 	/*
@@ -3738,7 +3741,8 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 
 	return idio_S_notreached;
     }
-    IDIO_TYPE_ASSERT (array, cs);
+
+    IDIO_TYPE_ASSERT (list, eenv);
 
     int free_filename_C = 0;
     size_t filename_C_len = 0;
@@ -3800,7 +3804,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     char *lfn_dot = memrchr (lfn_slash, '.', lfn_len - (lfn_slash - lfn));
 
     IDIO (*reader) (IDIO h) = idio_read;
-    IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate_func;
+    IDIO (*evaluator) (IDIO e, IDIO eenv) = idio_evaluate_func;
 
     idio_file_extension_t *fe = idio_file_extensions;
     IDIO filename_ext = filename;
@@ -3835,7 +3839,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 			     * NB filename_C might be {mod}@{mod_ver}
 			     * or {mod}.so or {dir}/{mod}
 			     */
-			    IDIO r = idio_load_dl_library (lfn, lfn_len, filename_C, filename_C_len, cs);
+			    IDIO r = idio_load_dl_library (lfn, lfn_len, filename_C, filename_C_len, eenv);
 
 			    if (free_filename_C) {
 				IDIO_GC_FREE (filename_C, filename_C_len);
@@ -3862,7 +3866,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 				idio_array_pop (IDIO_THREAD_STACK (thr));
 			    }
 
-			    return idio_load_handle_C (fh, reader, evaluator, cs);
+			    return idio_load_handle_C (fh, reader, evaluator, eenv);
 			}
 		    }
 		}
@@ -3875,7 +3879,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 	    IDIO_GC_FREE (filename_C, filename_C_len);
 	}
 
-	return idio_load_handle_C (fh, reader, evaluator, cs);
+	return idio_load_handle_C (fh, reader, evaluator, eenv);
     }
 
     if (free_filename_C) {
@@ -3913,7 +3917,19 @@ This is the `load` primitive.					\n\
     IDIO thr = idio_thread_current_thread ();
     idio_pc_t pc0 = IDIO_THREAD_PC (thr);
 
-    IDIO r = idio_load_file_name (filename, idio_vm_constants);
+    IDIO cm = IDIO_THREAD_MODULE (thr);
+
+    IDIO eenv = IDIO_LIST5 (idio_S_false,
+			    idio_S_nil,
+			    idio_vm_constants,
+			    cm,
+			    idio_S_nil);
+
+    idio_gc_protect (eenv);
+
+    IDIO r = idio_load_file_name (filename, eenv);
+
+    idio_gc_expose (eenv);
 
     idio_pc_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {

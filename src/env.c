@@ -157,7 +157,7 @@ static int idio_env_set_default (IDIO name, IDIO val)
 	 * So, we'll get here if no-one has set IDIOLIB otherwise it's
 	 * a manual test.
 	 */
-	idio_environ_extend (name, name, val, idio_vm_constants, idio_S_nil);
+	idio_environ_extend (name, name, val, idio_default_eenv);
 	return 1;
     }
 
@@ -216,7 +216,7 @@ static void idio_env_add_environ ()
 	    var = idio_string_C (*env);
 	}
 
-	idio_environ_extend (var, var, val, idio_vm_constants, idio_S_nil);
+	idio_environ_extend (var, var, val, idio_default_eenv);
     }
 
     /*
@@ -943,9 +943,9 @@ void idio_env_init_idiolib (char const *argv0, size_t const argv0_len)
     /*
      * While we are here, set IDIO_CMD and IDIO_EXE.
      */
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD"), idio_pathname_C_len (argv0, argv0_len), idio_Idio_module_instance ());
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD_PATH"), idio_pathname_C_len (a0rp, a0rp_len), idio_Idio_module_instance ());
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_EXE"), idio_pathname_C_len (erp, erp_len), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD"), idio_pathname_C_len (argv0, argv0_len), idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD_PATH"), idio_pathname_C_len (a0rp, a0rp_len), idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_EXE"), idio_pathname_C_len (erp, erp_len), idio_Idio_module);
 
     if (erp_len > 0) {
 	idio_env_extend_IDIOLIB (erp, erp_len, 1);

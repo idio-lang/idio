@@ -67,7 +67,7 @@ IDIO idio_thread_base (idio_as_t stack_size)
 
     IDIO_GC_ALLOC (t->u.thread, sizeof (idio_thread_t));
 
-    IDIO main_module = idio_Idio_module_instance ();
+    IDIO main_module = idio_Idio_module;
 
     IDIO_THREAD_GREY (t) = NULL;
     IDIO_THREAD_PC (t) = 0;

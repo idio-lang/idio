@@ -365,7 +365,7 @@ void idio_closure_add_primitives ()
      * NB Can't set setter's setter until it's been added as a
      * primitive
      */
-    IDIO setter = idio_module_symbol_value_recurse (idio_S_setter, idio_Idio_module_instance (), idio_S_nil);
+    IDIO setter = idio_module_symbol_value_recurse (idio_S_setter, idio_Idio_module, idio_S_nil);
     idio_create_properties (setter);
 }
 
