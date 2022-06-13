@@ -298,7 +298,8 @@ void idio_init (void)
      * Not Art but idio_X_add_primitives() in env.c, vars.c are going
      * to use idio_default_eenv.
      */
-    idio_default_eenv = IDIO_LIST5 (idio_S_false,
+    idio_default_eenv = IDIO_LIST6 (idio_S_false,
+				    idio_S_nil,
 				    idio_S_nil,
 				    idio_vm_constants,
 				    idio_Idio_module,

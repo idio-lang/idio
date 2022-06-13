@@ -313,6 +313,29 @@ IDIO_IA_T idio_ia_compute_64uint (uint64_t offset)
  */
 #define IDIO_IA_PUSH_REF(n)	IDIO_IA_PUSH_16UINT (n)
 
+idio_as_t idio_codegen_extend_values (IDIO eenv)
+{
+    IDIO_ASSERT (eenv);
+
+    IDIO_TYPE_ASSERT (list, eenv);
+
+    if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv)) {
+	return idio_vm_extend_values ();
+    }
+
+    IDIO vs = IDIO_MEANING_EENV_VALUES (eenv);
+
+    idio_ai_t C_id = 1;
+    if (idio_S_nil != vs) {
+	IDIO id = IDIO_PAIR_H (vs);
+	C_id = IDIO_FIXNUM_VAL (id);
+	C_id++;
+    }
+    IDIO_MEANING_EENV_VALUES (eenv) = idio_pair (idio_fixnum (C_id), vs);
+
+    return C_id;
+}
+
 idio_as_t idio_codegen_extend_constants (IDIO eenv, IDIO v)
 {
     IDIO_ASSERT (eenv);
@@ -1998,7 +2021,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 
 	    idio_ia_append (ia, ia_fn);
 
-	    idio_as_t gvi = idio_vm_extend_values ();
+	    idio_as_t gvi = idio_codegen_extend_values (eenv);
 
 	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_VAL_SET);
 	    IDIO_IA_PUSH_REF (gvi);
@@ -2121,7 +2144,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 
 	    idio_ia_append (ia, ia_fn);
 
-	    idio_as_t gvi = idio_vm_extend_values ();
+	    idio_as_t gvi = idio_codegen_extend_values (eenv);
 
 	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_VAL_SET);
 	    IDIO_IA_PUSH_REF (gvi);

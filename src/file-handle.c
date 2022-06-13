@@ -3919,7 +3919,8 @@ This is the `load` primitive.					\n\
 
     IDIO cm = IDIO_THREAD_MODULE (thr);
 
-    IDIO eenv = IDIO_LIST5 (idio_S_false,
+    IDIO eenv = IDIO_LIST6 (idio_S_false,
+			    idio_S_nil,
 			    idio_S_nil,
 			    idio_vm_constants,
 			    cm,

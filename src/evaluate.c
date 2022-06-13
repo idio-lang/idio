@@ -537,10 +537,11 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
  *
  * The eenv (evaluation environment) tuple looks like:
  *
- *   (aot? symbols constants current-module escapes)
+ *   (aot? symbols values constants current-module escapes)
  *
  * aot?		boolean: normal or ahead-of-time
  * symbols	list of (name {si-data})
+ * values	list of indices (these are defines, dynamic and environs)
  * constants	array
  * module	module
  * escapes	list
@@ -600,6 +601,29 @@ static IDIO idio_meaning_find_symbol (IDIO name, IDIO eenv)
     return idio_meaning_find_symbol_recurse (name, eenv, 0);
 }
 
+static idio_as_t idio_meaning_extend_values (IDIO eenv)
+{
+    IDIO_ASSERT (eenv);
+
+    IDIO_TYPE_ASSERT (list, eenv);
+
+    if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv)) {
+	return idio_vm_extend_values ();
+    }
+
+    IDIO vs = IDIO_MEANING_EENV_VALUES (eenv);
+
+    idio_ai_t C_id = 1;
+    if (idio_S_nil != vs) {
+	IDIO id = IDIO_PAIR_H (vs);
+	C_id = IDIO_FIXNUM_VAL (id);
+	C_id++;
+    }
+    IDIO_MEANING_EENV_VALUES (eenv) = idio_pair (idio_fixnum (C_id), vs);
+
+    return C_id;
+}
+
 static idio_as_t idio_meaning_constants_lookup_or_extend (IDIO eenv, IDIO name)
 {
     IDIO_ASSERT (eenv);
@@ -642,7 +666,8 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
 	IDIO_MODULE_EXPORTS (module) = idio_pair (name, IDIO_MODULE_EXPORTS (module));
     }
 
-    IDIO eenv = IDIO_LIST5 (idio_S_false,
+    IDIO eenv = IDIO_LIST6 (idio_S_false,
+			    idio_S_nil,
 			    idio_S_nil,
 			    idio_vm_constants,
 			    module,
@@ -677,7 +702,7 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
     IDIO fmci = idio_fixnum (mci);
     idio_module_set_vci (module, fmci, fmci);
 
-    idio_as_t gvi = idio_vm_extend_values ();
+    idio_as_t gvi = idio_meaning_extend_values (eenv);
     IDIO fgvi = idio_fixnum (gvi);
 
     idio_module_set_vvi (module, fmci, fgvi);
@@ -822,8 +847,9 @@ IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO eenv)
      * as the stack, where dynamic variables live, is shared across
      * all modules
      */
-    IDIO dynamic_eenv = IDIO_LIST5 (IDIO_MEANING_EENV_AOT (eenv),
-				    IDIO_MODULE_SYMBOLS (idio_Idio_module),
+    IDIO dynamic_eenv = IDIO_LIST6 (IDIO_MEANING_EENV_AOT (eenv),
+				    IDIO_MEANING_EENV_SYMBOLS (eenv),
+				    IDIO_MEANING_EENV_VALUES (eenv),
 				    IDIO_MEANING_EENV_CONSTANTS (eenv),
 				    idio_Idio_module,
 				    IDIO_MEANING_EENV_ESCAPES (eenv));
@@ -853,7 +879,7 @@ IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO eenv)
     idio_as_t mci = idio_meaning_constants_lookup_or_extend (dynamic_eenv, name);
     IDIO fmci = idio_fixnum (mci);
 
-    idio_as_t gvi = idio_vm_extend_values ();
+    idio_as_t gvi = idio_meaning_extend_values (eenv);
     IDIO fgvi = idio_fixnum (gvi);
 
     si = idio_vm_add_dynamic (idio_Idio_module, fmci, fgvi, idio_meaning_dynamic_extend_string);
@@ -879,8 +905,9 @@ IDIO idio_environ_extend (IDIO src, IDIO name, IDIO val, IDIO eenv)
      * as the stack (and environ(3P)), where environ varibales live,
      * is shared by all modules
      */
-    IDIO environ_eenv = IDIO_LIST5 (IDIO_MEANING_EENV_AOT (eenv),
-				    IDIO_MODULE_SYMBOLS (idio_Idio_module),
+    IDIO environ_eenv = IDIO_LIST6 (IDIO_MEANING_EENV_AOT (eenv),
+				    IDIO_MEANING_EENV_SYMBOLS (eenv),
+				    IDIO_MEANING_EENV_VALUES (eenv),
 				    IDIO_MEANING_EENV_CONSTANTS (eenv),
 				    idio_Idio_module,
 				    IDIO_MEANING_EENV_ESCAPES (eenv));
@@ -910,7 +937,7 @@ IDIO idio_environ_extend (IDIO src, IDIO name, IDIO val, IDIO eenv)
     idio_as_t mci = idio_meaning_constants_lookup_or_extend (environ_eenv, name);
     IDIO fmci = idio_fixnum (mci);
 
-    idio_as_t gvi = idio_vm_extend_values ();
+    idio_as_t gvi = idio_meaning_extend_values (eenv);
     IDIO fgvi = idio_fixnum (gvi);
 
     si = idio_vm_add_environ (idio_Idio_module, fmci, fgvi, idio_meaning_environ_extend_string);
@@ -2006,7 +2033,7 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, int
     IDIO fgvi = IDIO_PAIR_HTT (si);
     if (idio_S_toplevel == scope &&
 	0 == IDIO_FIXNUM_VAL (fgvi)) {
-	idio_as_t gvi = idio_vm_extend_values ();
+	idio_as_t gvi = idio_meaning_extend_values (eenv);
 	fgvi = idio_fixnum (gvi);
 	IDIO cm = IDIO_MEANING_EENV_MODULE (eenv);
 	si = IDIO_LIST5 (scope, fmci, fgvi, cm, idio_meaning_define_gvi0_string);
@@ -4118,8 +4145,9 @@ static IDIO idio_meaning_escape_block (IDIO src, IDIO label, IDIO be, IDIO namet
     be = idio_meaning_rewrite_body (IDIO_MPP (be, src), be, nametree);
     idio_meaning_copy_src_properties (src, be);
 
-    IDIO escapes_eenv = IDIO_LIST5 (IDIO_MEANING_EENV_AOT (eenv),
+    IDIO escapes_eenv = IDIO_LIST6 (IDIO_MEANING_EENV_AOT (eenv),
 				    IDIO_MEANING_EENV_SYMBOLS (eenv),
+				    IDIO_MEANING_EENV_VALUES (eenv),
 				    IDIO_MEANING_EENV_CONSTANTS (eenv),
 				    IDIO_MEANING_EENV_MODULE (eenv),
 				    idio_pair (label, IDIO_MEANING_EENV_ESCAPES (eenv)));
@@ -5312,8 +5340,9 @@ IDIO idio_evaluate (IDIO src, IDIO eenv)
      *
      */
 
-    IDIO expr_eenv = IDIO_LIST5 (IDIO_MEANING_EENV_AOT (eenv),
+    IDIO expr_eenv = IDIO_LIST6 (IDIO_MEANING_EENV_AOT (eenv),
 				 IDIO_MEANING_EENV_SYMBOLS (eenv),
+				 IDIO_MEANING_EENV_VALUES (eenv),
 				 IDIO_MEANING_EENV_CONSTANTS (eenv),
 				 idio_thread_current_module (),
 				 IDIO_MEANING_EENV_ESCAPES (eenv));
