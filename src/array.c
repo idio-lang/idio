@@ -579,7 +579,7 @@ IDIO idio_array_ref_index (IDIO a, idio_ai_t index)
  * Return:
  * The index of the first matching element or -1.
  */
-idio_ai_t idio_array_find (IDIO a, int eqp, IDIO e, idio_ai_t index)
+static idio_ai_t idio_array_find (IDIO a, idio_equal_enum eqp, IDIO e, idio_ai_t index)
 {
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
