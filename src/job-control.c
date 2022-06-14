@@ -2002,12 +2002,12 @@ launch a pipeline of `job_controls`			\n\
     IDIO cmds = job_controls;
     while (idio_S_nil != cmds) {
 	IDIO proc = idio_struct_instance (idio_job_control_process_type,
-					  idio_pair (IDIO_PAIR_H (cmds),
-						     IDIO_LIST5 (idio_S_nil,
-								 idio_libc_pid_t (-1),
-								 idio_S_false,
-								 idio_S_false,
-								 idio_S_nil)));
+					  IDIO_LIST6 (IDIO_PAIR_H (cmds),
+						      idio_S_nil,
+						      idio_libc_pid_t (-1),
+						      idio_S_false,
+						      idio_S_false,
+						      idio_S_nil));
 
 	procs = idio_pair (proc, procs);
 
@@ -2052,23 +2052,23 @@ launch a pipeline of `job_controls`			\n\
 				    idio_C_pointer_type (idio_CSI_libc_struct_rusage, rusage_childrenp));
 
     IDIO job = idio_struct_instance (idio_job_control_job_type,
-				     idio_pair (job_controls,
-				     idio_pair (procs,
-				     idio_pair (idio_libc_pid_t (0),
-				     idio_pair (idio_S_false,
-				     idio_pair (idio_S_false,
-				     idio_pair (idio_S_false,
-				     idio_pair (idio_S_false,
-				     idio_pair (idio_S_nil,
-				     idio_pair (job_stdin,
-				     idio_pair (job_stdout,
-				     idio_pair (job_stderr,
-				     idio_pair (idio_S_false,
-				     idio_pair (timing_start,
-				     idio_pair (idio_S_false,
-				     idio_pair (idio_S_false,
-				     idio_pair (idio_S_true,
-				     idio_S_nil)))))))))))))))));
+				     idio_listv (16,
+						 job_controls,
+						 procs,
+						 idio_libc_pid_t (0),
+						 idio_S_false,
+						 idio_S_false,
+						 idio_S_false,
+						 idio_S_false,
+						 idio_S_nil,
+						 job_stdin,
+						 job_stdout,
+						 job_stderr,
+						 idio_S_false,
+						 timing_start,
+						 idio_S_false,
+						 idio_S_false,
+						 idio_S_true));
 
     idio_job_control_launch_job (job, 1);
     return idio_S_unspec;
@@ -2238,13 +2238,13 @@ void idio_init_job_control ()
     idio_job_control_module = idio_module (IDIO_SYMBOLS_C_INTERN ("job-control"));
 
     idio_S_background_job = IDIO_SYMBOLS_C_INTERN ("background-job");
-    idio_S_exit = IDIO_SYMBOLS_C_INTERN ("exit");
+    idio_S_exit           = IDIO_SYMBOLS_C_INTERN ("exit");
     idio_S_foreground_job = IDIO_SYMBOLS_C_INTERN ("foreground-job");
-    idio_S_killed = IDIO_SYMBOLS_C_INTERN ("killed");
-    idio_S_wait_for_job = IDIO_SYMBOLS_C_INTERN ("wait-for-job");
-    idio_S_stdin_fileno = IDIO_SYMBOLS_C_INTERN ("stdin-fileno");
-    idio_S_stdout_fileno = IDIO_SYMBOLS_C_INTERN ("stdout-fileno");
-    idio_S_stderr_fileno = IDIO_SYMBOLS_C_INTERN ("stderr-fileno");
+    idio_S_killed         = IDIO_SYMBOLS_C_INTERN ("killed");
+    idio_S_wait_for_job   = IDIO_SYMBOLS_C_INTERN ("wait-for-job");
+    idio_S_stdin_fileno   = IDIO_SYMBOLS_C_INTERN ("stdin-fileno");
+    idio_S_stdout_fileno  = IDIO_SYMBOLS_C_INTERN ("stdout-fileno");
+    idio_S_stderr_fileno  = IDIO_SYMBOLS_C_INTERN ("stderr-fileno");
 
     int signum;
     for (signum = IDIO_LIBC_FSIG; signum <= IDIO_LIBC_NSIG; signum++) {
@@ -2369,35 +2369,34 @@ void idio_init_job_control ()
     sym = IDIO_SYMBOLS_C_INTERN ("%idio-process");
     idio_job_control_process_type = idio_struct_type (sym,
 						      idio_S_nil,
-						      idio_pair (IDIO_SYMBOLS_C_INTERN ("argv"),
-						      idio_pair (IDIO_SYMBOLS_C_INTERN ("exec"),
-						      idio_pair (IDIO_SYMBOLS_C_INTERN ("pid"),
-						      idio_pair (IDIO_SYMBOLS_C_INTERN ("completed"),
-						      idio_pair (IDIO_SYMBOLS_C_INTERN ("stopped"),
-						      idio_pair (IDIO_SYMBOLS_C_INTERN ("status"),
-						      idio_S_nil)))))));
+						      IDIO_LIST6 (IDIO_SYMBOLS_C_INTERN ("argv"),
+								  IDIO_SYMBOLS_C_INTERN ("exec"),
+								  IDIO_SYMBOLS_C_INTERN ("pid"),
+								  IDIO_SYMBOLS_C_INTERN ("completed"),
+								  IDIO_SYMBOLS_C_INTERN ("stopped"),
+								  IDIO_SYMBOLS_C_INTERN ("status")));
     idio_module_set_symbol_value (sym, idio_job_control_process_type, idio_job_control_module);
 
     sym = IDIO_SYMBOLS_C_INTERN ("%idio-job");
     idio_job_control_job_type = idio_struct_type (sym,
 						  idio_S_nil,
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("pipeline"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("procs"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("pgid"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("notify-stopped"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("notify-completed"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("raise?"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("raised"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("tcattrs"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("stdin"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("stdout"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("stderr"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("report-timing"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("timing-start"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("timing-end"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("async"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("set-exit-status"),
-						  idio_S_nil)))))))))))))))));
+						  idio_listv (16,
+							      IDIO_SYMBOLS_C_INTERN ("pipeline"),
+							      IDIO_SYMBOLS_C_INTERN ("procs"),
+							      IDIO_SYMBOLS_C_INTERN ("pgid"),
+							      IDIO_SYMBOLS_C_INTERN ("notify-stopped"),
+							      IDIO_SYMBOLS_C_INTERN ("notify-completed"),
+							      IDIO_SYMBOLS_C_INTERN ("raise?"),
+							      IDIO_SYMBOLS_C_INTERN ("raised"),
+							      IDIO_SYMBOLS_C_INTERN ("tcattrs"),
+							      IDIO_SYMBOLS_C_INTERN ("stdin"),
+							      IDIO_SYMBOLS_C_INTERN ("stdout"),
+							      IDIO_SYMBOLS_C_INTERN ("stderr"),
+							      IDIO_SYMBOLS_C_INTERN ("report-timing"),
+							      IDIO_SYMBOLS_C_INTERN ("timing-start"),
+							      IDIO_SYMBOLS_C_INTERN ("timing-end"),
+							      IDIO_SYMBOLS_C_INTERN ("async"),
+							      IDIO_SYMBOLS_C_INTERN ("set-exit-status")));
     idio_module_set_symbol_value (sym, idio_job_control_job_type, idio_job_control_module);
 
     idio_job_control_default_child_handler_sym = IDIO_SYMBOLS_C_INTERN ("default-child-handler");

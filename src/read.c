@@ -661,11 +661,10 @@ IDIO idio_read_lexobj_from_handle (IDIO handle)
     IDIO_TYPE_ASSERT (handle, handle);
 
     return idio_struct_instance (idio_lexobj_type,
-				 idio_pair (IDIO_HANDLE_FILENAME (handle),
-				 idio_pair (idio_integer (IDIO_HANDLE_LINE (handle)),
-				 idio_pair (idio_integer (IDIO_HANDLE_POS (handle)),
-				 idio_pair (idio_S_unspec,
-				 idio_S_nil)))));
+				 IDIO_LIST4 (IDIO_HANDLE_FILENAME (handle),
+					     idio_integer (IDIO_HANDLE_LINE (handle)),
+					     idio_integer (IDIO_HANDLE_POS (handle)),
+					     idio_S_unspec));
 }
 
 IDIO idio_read_unicode (IDIO handle, IDIO lo)
@@ -4551,11 +4550,10 @@ void idio_init_read ()
     IDIO name = IDIO_SYMBOLS_C_INTERN ("%idio-lexical-object");
     idio_lexobj_type = idio_struct_type (name,
 					 idio_S_nil,
-					 idio_pair (IDIO_SYMBOLS_C_INTERN ("name"),
-					 idio_pair (IDIO_SYMBOLS_C_INTERN ("line"),
-					 idio_pair (IDIO_SYMBOLS_C_INTERN ("pos"),
-					 idio_pair (IDIO_SYMBOLS_C_INTERN ("expr"),
-					 idio_S_nil)))));
+					 IDIO_LIST4 (IDIO_SYMBOLS_C_INTERN ("name"),
+						     IDIO_SYMBOLS_C_INTERN ("line"),
+						     IDIO_SYMBOLS_C_INTERN ("pos"),
+						     IDIO_SYMBOLS_C_INTERN ("expr")));
     idio_module_set_symbol_value (name, idio_lexobj_type, idio_Idio_module);
 
     /*

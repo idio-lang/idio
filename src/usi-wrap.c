@@ -690,9 +690,8 @@ void idio_init_usi_wrap ()
     IDIO sym = IDIO_SYMBOLS_C_INTERN ("sparse-char-set");
     IDIO sparse_char_set_type = idio_struct_type (sym,
 						  idio_S_nil,
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("size"),
-						  idio_pair (IDIO_SYMBOLS_C_INTERN ("planes"),
-						  idio_S_nil)));
+						  IDIO_LIST2 (IDIO_SYMBOLS_C_INTERN ("size"),
+							      IDIO_SYMBOLS_C_INTERN ("planes")));
 
     idio_module_set_symbol_value (sym, sparse_char_set_type, idio_SRFI_14_module);
 
