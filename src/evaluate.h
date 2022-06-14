@@ -55,12 +55,26 @@
 #define IDIO_MEANING_TEMPLATE(f)		((f) | IDIO_MEANING_FLAG_TEMPLATE)
 #define IDIO_MEANING_NO_TEMPLATE(f)		(((f) & (~ IDIO_MEANING_FLAG_TEMPLATE)) == 0)
 
-#define IDIO_MEANING_EENV_AOT(t)		IDIO_PAIR_H(t)
-#define IDIO_MEANING_EENV_SYMBOLS(t)		IDIO_PAIR_HT(t)
-#define IDIO_MEANING_EENV_VALUES(t)		IDIO_PAIR_HTT(t)
-#define IDIO_MEANING_EENV_CONSTANTS(t)		IDIO_PAIR_H   (IDIO_PAIR_TTT(t))
-#define IDIO_MEANING_EENV_MODULE(t)		IDIO_PAIR_HT  (IDIO_PAIR_TTT(t))
-#define IDIO_MEANING_EENV_ESCAPES(t)		IDIO_PAIR_HTT (IDIO_PAIR_TTT(t))
+/*
+ * Indexes into structures for direct references
+ */
+#define IDIO_EENV_ST_AOTP		0
+#define IDIO_EENV_ST_SYMBOLS		1
+#define IDIO_EENV_ST_SYMBOLS_ARRAY	2
+#define IDIO_EENV_ST_VALUES		3
+#define IDIO_EENV_ST_CONSTANTS		4
+#define IDIO_EENV_ST_CONSTANTS_HASH	5
+#define IDIO_EENV_ST_MODULE		6
+#define IDIO_EENV_ST_ESCAPES		7
+#define IDIO_EENV_ST_SRC_EXPRS		8
+#define IDIO_EENV_ST_BYTE_CODE		9
+
+#define IDIO_MEANING_EENV_AOT(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_AOTP)
+#define IDIO_MEANING_EENV_SYMBOLS(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_SYMBOLS)
+#define IDIO_MEANING_EENV_VALUES(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_VALUES)
+#define IDIO_MEANING_EENV_CONSTANTS(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_CONSTANTS)
+#define IDIO_MEANING_EENV_MODULE(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_MODULE)
+#define IDIO_MEANING_EENV_ESCAPES(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ESCAPES)
 
 extern IDIO idio_evaluate_module;
 
@@ -98,6 +112,8 @@ IDIO idio_operator_expand (IDIO e, int depth);
 
 IDIO idio_evaluate (IDIO src, IDIO eenv);
 IDIO idio_evaluate_func (IDIO src, IDIO eenv);
+IDIO idio_evaluate_eenv (IDIO aotp, IDIO module);
+IDIO idio_evaluate_normal_eenv (IDIO module);
 
 void idio_init_evaluate ();
 

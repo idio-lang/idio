@@ -2059,7 +2059,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     IDIO_ASSERT (eenv);
 
     IDIO_TYPE_ASSERT (handle, h);
-    IDIO_TYPE_ASSERT (list, eenv);
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
 
     /*
      * load/load-handle are both wrappered by closures meaning that
@@ -2310,12 +2310,7 @@ This is the `load-handle` primitive.				\n\
 
     IDIO cm = IDIO_THREAD_MODULE (thr);
 
-    IDIO eenv = IDIO_LIST6 (idio_S_false,
-			    idio_S_nil,
-			    idio_S_nil,
-			    idio_vm_constants,
-			    cm,
-			    idio_S_nil);
+    IDIO eenv = idio_evaluate_normal_eenv (cm);
 
     idio_gc_protect (eenv);
 

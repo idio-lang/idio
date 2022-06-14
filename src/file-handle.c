@@ -2763,7 +2763,7 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 {
     IDIO_ASSERT (eenv);
 
-    IDIO_TYPE_ASSERT (list, eenv);
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
 
     /*
      * NB libname might be {mod}@{mod-ver} or {mod}.so
@@ -3742,7 +3742,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO eenv)
 	return idio_S_notreached;
     }
 
-    IDIO_TYPE_ASSERT (list, eenv);
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
 
     int free_filename_C = 0;
     size_t filename_C_len = 0;
@@ -3919,12 +3919,7 @@ This is the `load` primitive.					\n\
 
     IDIO cm = IDIO_THREAD_MODULE (thr);
 
-    IDIO eenv = IDIO_LIST6 (idio_S_false,
-			    idio_S_nil,
-			    idio_S_nil,
-			    idio_vm_constants,
-			    cm,
-			    idio_S_nil);
+    IDIO eenv = idio_evaluate_normal_eenv (cm);
 
     idio_gc_protect (eenv);
 

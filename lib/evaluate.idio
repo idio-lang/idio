@@ -24,6 +24,25 @@ export (
 )
 import read expander operator codegen threading vm
 
+export-struct-accessors-only %eenv	aot? symbols symbols-array values constants constants-hash module escapes src-exprs byte-code
+
+define (eenv-as-string eenv seen) {
+  if (%eenv? eenv) {
+    r := (open-output-string)
+    hprintf r "#<SI %%eenv "
+
+    hprintf r "aot?=%s " (%eenv-aot? eenv)
+    hprintf r "st=%s " (ph-of (%eenv-symbols eenv))
+    hprintf r "ct=%s " (%eenv-constants eenv)
+    hprintf r "vs #%s " (length (%eenv-values eenv))
+    hprintf r "se #%s " (array-length (%eenv-src-exprs eenv))
+    hprintf r ">"
+    get-output-string r
+  } #n
+}
+
+add-as-string %eenv eenv-as-string
+
 define (meaning-src-location e) {
   lo := #f
   if (pair? src) {

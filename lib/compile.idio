@@ -22,7 +22,12 @@ module compile
 export (
 	 compile-file
 )
-import vm ; evaluate
+import vm codegen
+
+;; XXX slightly cautious around importing evaluate as it will override
+;; the primitive and we've not updated evaluate.idio yet
+eval := evaluate/evaluate
+import evaluate
 
 define (compile-file file & args) "
 " {
@@ -37,8 +42,13 @@ define (compile-file file & args) "
     }
   }
 
-  pcd := list symbols constants
-  printf "c pcd %s\n" pcd
+  ;; (aot? symbols values constants module escapes)
+  eenv := %evaluation-environment #t (current-module)
+  set-%eenv-aot?! eenv #t
+  set-%eenv-constants! eenv #[]
+  set-%eenv-constants-hash! eenv #{}
+
+  printf "c eenv %s\n" eenv
   fh := open-input-file file
 
   all-m := #n
@@ -46,9 +56,12 @@ define (compile-file file & args) "
   loop :+ function #n {
     e := read fh
     if (not (eof? fh)) {
-      m := evaluate/evaluate e (vm-constants) pcd
-      printf "m %s\n" m
+      printf "cf e %s\n" e
+      m := eval e eenv
+      printf "cf m %s\n" m
+      printf "cf eenv %s\n" eenv
       all-m = pair m all-m
+      codegen m eenv
       (loop)
     }
   }
@@ -57,13 +70,18 @@ define (compile-file file & args) "
 
   close-handle fh
 
-  symbols = ph pcd
+  printf "\n"
+  symbols = %eenv-symbols eenv
   while (pair? symbols) {
     printf "c st %s\n" (ph symbols)
     symbols = pt symbols
   }
 
-  printf "c cs %s\n" (pht pcd)
+  printf "c vs %s\n" (%eenv-values eenv)
+
+  printf "c cs %s\n" (%eenv-constants eenv)
+
+  printf "c eenv %s\n" eenv
 
   all-m
 }
