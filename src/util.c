@@ -626,7 +626,7 @@ R5RS suggests that the values *print* the same.	\n\
     return r;
 }
 
-int idio_equal (IDIO o1, IDIO o2, int eqp)
+int idio_equal (IDIO o1, IDIO o2, idio_equal_enum eqp)
 {
     IDIO_ASSERT (o1);
     IDIO_ASSERT (o2);

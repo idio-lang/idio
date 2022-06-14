@@ -23,9 +23,11 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#define IDIO_EQUAL_EQP		1
-#define IDIO_EQUAL_EQVP		2
-#define IDIO_EQUAL_EQUALP	3
+typedef enum {
+    IDIO_EQUAL_EQP,
+    IDIO_EQUAL_EQVP,
+    IDIO_EQUAL_EQUALP,
+} idio_equal_enum;
 
 #define IDIO_COPY_DEEP		1
 #define IDIO_COPY_SHALLOW	2
@@ -56,7 +58,7 @@ int idio_isa_boolean (IDIO o);
 int idio_eqp (void const *o1, void const *o2);
 int idio_eqvp (void const *o1, void const *o2);
 int idio_equalp (void const *o1, void const *o2);
-int idio_equal (IDIO o1, IDIO o2, int eqp);
+int idio_equal (IDIO o1, IDIO o2, idio_equal_enum eqp);
 IDIO idio_value (IDIO o);
 idio_unicode_t idio_util_string_format (idio_unicode_t format);
 char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first);
