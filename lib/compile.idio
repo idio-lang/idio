@@ -44,9 +44,6 @@ define (compile-file file & args) "
 
   ;; (aot? symbols values constants module escapes)
   eenv := %evaluation-environment #t (current-module)
-  set-%eenv-aot?! eenv #t
-  set-%eenv-constants! eenv #[]
-  set-%eenv-constants-hash! eenv #{}
 
   printf "c eenv %s\n" eenv
   fh := open-input-file file

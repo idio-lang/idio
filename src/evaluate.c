@@ -248,7 +248,7 @@ static void idio_meaning_base_error (IDIO src, IDIO c_location, IDIO msg, IDIO e
      * So, let's give the error subsystem a clue by copying what the
      * code generator does for normal calls.
      */
-    idio_as_t mci = idio_codegen_extend_src_constants (idio_vm_src_constants, src);
+    idio_as_t mci = idio_codegen_extend_src_constants (idio_default_eenv, src);
     IDIO thr = idio_thread_current_thread ();
     IDIO_THREAD_EXPR (thr) = idio_fixnum (mci);
 
@@ -5416,7 +5416,7 @@ IDIO idio_evaluate_eenv (IDIO aotp, IDIO module)
     if (idio_S_true == aotp) {
 	return idio_struct_instance (idio_evaluate_eenv_type,
 				     idio_listv (10,
-						 idio_S_false,
+						 aotp,
 						 idio_S_nil,
 						 idio_array (0),
 						 idio_S_nil,
@@ -5429,7 +5429,7 @@ IDIO idio_evaluate_eenv (IDIO aotp, IDIO module)
     } else {
 	return idio_struct_instance (idio_evaluate_eenv_type,
 				     idio_listv (10,
-						 idio_S_false,
+						 aotp,
 						 idio_S_nil,
 						 idio_array (0),
 						 idio_S_nil,
