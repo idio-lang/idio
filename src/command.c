@@ -1262,12 +1262,12 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
     idio_array_push (protected, command);
 
     IDIO proc = idio_struct_instance (idio_job_control_process_type,
-				      idio_pair (command,
-						 IDIO_LIST5 (idio_S_nil,
-							     idio_C_int (-1),
-							     idio_S_false,
-							     idio_S_false,
-							     idio_S_nil)));
+				      IDIO_LIST6 (command,
+						  idio_S_nil,
+						  idio_C_int (-1),
+						  idio_S_false,
+						  idio_S_false,
+						  idio_S_nil));
     idio_array_push (protected, proc);
 
     IDIO cmd_sym;
@@ -1352,23 +1352,23 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
     IDIO inverted_suppress_rcse = idio_command_suppress_rcse == idio_S_false ? idio_S_true : idio_S_false;
 
     IDIO job = idio_struct_instance (idio_job_control_job_type,
-				     idio_pair (command,
-				     idio_pair (IDIO_LIST1 (proc),
-				     idio_pair (idio_C_int (0),
-				     idio_pair (idio_S_false,
-				     idio_pair (idio_S_false,
-				     idio_pair (inverted_suppress_rcse,
-				     idio_pair (idio_command_suppress_rcse,
-				     idio_pair (idio_S_nil,
-				     idio_pair (job_stdin_fd,
-				     idio_pair (job_stdout,
-				     idio_pair (job_stderr,
-				     idio_pair (idio_S_false,
-				     idio_pair (timing_start,
-				     idio_pair (idio_S_false,
-				     idio_pair (idio_S_false,
-				     idio_pair (idio_S_true,
-				     idio_S_nil)))))))))))))))));
+				     idio_listv (16,
+						 command,
+						 IDIO_LIST1 (proc),
+						 idio_C_int (0),
+						 idio_S_false,
+						 idio_S_false,
+						 inverted_suppress_rcse,
+						 idio_command_suppress_rcse,
+						 idio_S_nil,
+						 job_stdin_fd,
+						 job_stdout,
+						 job_stderr,
+						 idio_S_false,
+						 timing_start,
+						 idio_S_false,
+						 idio_S_false,
+						 idio_S_true));
     idio_array_push (protected, job);
 
     IDIO r = idio_job_control_launch_1proc_job (job, 1, pathname, argv, args);
