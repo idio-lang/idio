@@ -274,7 +274,8 @@ idio_as_t idio_vm_extend_constants (IDIO v);
 IDIO idio_vm_constants_ref (idio_as_t gci);
 idio_ai_t idio_vm_constants_lookup (IDIO v);
 idio_as_t idio_vm_constants_lookup_or_extend (IDIO v);
-IDIO idio_vm_src_constants_ref (idio_as_t gci);
+IDIO idio_vm_src_constants_ref (IDIO eenv, idio_as_t gci);
+IDIO idio_vm_src_properties_ref (IDIO eenv, IDIO src);
 idio_as_t idio_vm_extend_values ();
 IDIO idio_vm_values_ref (idio_as_t gvi);
 void idio_vm_values_set (idio_as_t gvi, IDIO v);
@@ -307,7 +308,6 @@ void idio_vm_prim_time (IDIO clos, struct timespec *ts0p, struct timespec *tsep,
 #endif
 IDIO idio_vm_invoke_C (IDIO thr, IDIO command);
 IDIO idio_vm_source_location ();
-IDIO idio_vm_source_expr ();
 IDIO idio_vm_frame_tree (IDIO args);
 void idio_vm_trap_state (IDIO thr);
 

@@ -784,7 +784,7 @@ void idio_vm_debug (IDIO thr, char const *prefix, idio_ai_t stack_start)
 	IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 	intptr_t gci = IDIO_FIXNUM_VAL (fgci);
 
-	IDIO src = idio_vm_src_constants_ref (gci);
+	IDIO src = idio_vm_src_constants_ref (idio_default_eenv, gci);
 	idio_debug ("   expr=%s", src);
 	idio_debug ("   %s\n", idio_vm_source_location ());
     } else {
@@ -3727,16 +3727,16 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 	IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 	idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-	IDIO src = idio_vm_src_constants_ref (gci);
+	IDIO src = idio_vm_src_constants_ref (idio_default_eenv, gci);
 
 	if (idio_isa_pair (src)) {
 	    IDIO lo = idio_hash_ref (idio_src_properties, src);
 	    if (idio_S_unspec == lo){
 		idio_display (lo, lo_sh);
 	    } else {
-		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lo_sh);
+		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME), lo_sh);
 		idio_display_C (":line ", lo_sh);
-		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lo_sh);
+		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE), lo_sh);
 	    }
 	} else {
 	    idio_display (src, lo_sh);
@@ -3846,16 +3846,16 @@ static void idio_vm_primitive_call_trace (IDIO primdata, IDIO thr, int nargs)
 	IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 	idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-	IDIO src = idio_vm_src_constants_ref (gci);
+	IDIO src = idio_vm_src_constants_ref (idio_default_eenv, gci);
 
 	if (idio_isa_pair (src)) {
 	    IDIO lo = idio_hash_ref (idio_src_properties, src);
 	    if (idio_S_unspec == lo){
 		idio_display (lo, lo_sh);
 	    } else {
-		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lo_sh);
+		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME), lo_sh);
 		idio_display_C (":line ", lo_sh);
-		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lo_sh);
+		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE), lo_sh);
 	    }
 	} else {
 	    idio_display (src, lo_sh);
@@ -6200,8 +6200,7 @@ IDIO idio_vm_dasm_constants_ref (IDIO eenv, idio_as_t gci)
     IDIO cs = IDIO_MEANING_EENV_CONSTANTS (eenv);
 
     if (gci > idio_array_size (cs)) {
-	fprintf (stderr, "vm-dasm-constants-ref: %zd > %zd\n", gci, idio_array_size (cs));
-	return idio_S_undef;
+	fprintf (stderr, "\n\nvm-dasm-constants-ref: %zd > %zd\n", gci, idio_array_size (cs));
 	IDIO_C_ASSERT (0);
     }
     return idio_array_ref_index (cs, gci);
@@ -6771,16 +6770,14 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
 		IDIO_VM_DASM ("SRC-EXPR %zd", mci);
-		IDIO e = idio_vm_src_constants_ref (gci);
-		if (! aot) {
-		    IDIO lo = idio_hash_ref (idio_src_properties, e);
+		IDIO e = idio_vm_src_constants_ref (eenv, gci);
+		IDIO lo = idio_vm_src_properties_ref (eenv, e);
 
-		    if (idio_S_unspec == lo) {
-			IDIO_VM_DASM (" %-25s", "<no lexobj>");
-		    } else {
-			idio_debug_FILE (idio_dasm_FILE, " %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
-			idio_debug_FILE (idio_dasm_FILE, ":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
-		    }
+		if (idio_S_unspec == lo) {
+		    IDIO_VM_DASM (" %-25s", "<no lexobj>");
+		} else {
+		    idio_debug_FILE (idio_dasm_FILE, " %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME));
+		    idio_debug_FILE (idio_dasm_FILE, ":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE));
 		}
 		idio_debug_FILE (idio_dasm_FILE, "\n  %s", e);
 	    }
@@ -6815,7 +6812,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		uint64_t slci = idio_vm_get_varuint (bc, pcp);
 
 		char h[BUFSIZ];
-		size_t hlen = idio_snprintf (h, BUFSIZ, "C@%" PRId64 "", pc + i);
+		size_t hlen = idio_snprintf (h, BUFSIZ, "CF@%" PRId64 "", pc + i);
 		idio_hash_put (hints, idio_fixnum (pc + i), idio_symbols_C_intern (h, hlen));
 		IDIO_VM_DASM ("CREATE-FUNCTION @ +%" PRId64 " %" PRId64 "", i, pc + i);
 
@@ -7218,7 +7215,13 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
 		IDIO sym = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgci));
 
-		IDIO_VM_DASM ("DYNAMIC-SYM-REF %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
+		if (idio_isa_symbol (sym)) {
+		    IDIO_VM_DASM ("DYNAMIC-SYM-REF %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
+		} else {
+		    fprintf (stderr, "DYNAMIC-SYM-REF not a symbol\n");
+		    IDIO_VM_DASM ("DYNAMIC-SYM-REF %" PRId64, mci);
+		    idio_debug_FILE (idio_dasm_FILE, " %s", sym);
+		}
 	    }
 	    break;
 	case IDIO_A_DYNAMIC_SYM_IREF:
@@ -8118,13 +8121,31 @@ Return the current vm constants array.		\n\
     return idio_vm_constants;
 }
 
-IDIO idio_vm_src_constants_ref (idio_as_t gci)
+IDIO idio_vm_src_constants_ref (IDIO eenv, idio_as_t gci)
 {
-    if (gci > idio_array_size (idio_vm_src_constants)) {
-	fprintf (stderr, "vm-src-constants-ref: %zd > %zd\n", gci, idio_array_size (idio_vm_src_constants));
+    IDIO_ASSERT (eenv);
+
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
+
+    IDIO scs = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_SRC_EXPRS);
+
+    if (gci > idio_array_size (scs)) {
+	fprintf (stderr, "vm-src-constants-ref: %zd > %zd\n", gci, idio_array_size (scs));
 	IDIO_C_ASSERT (0);
     }
-    return idio_array_ref_index (idio_vm_src_constants, gci);
+    return idio_array_ref_index (scs, gci);
+}
+
+IDIO idio_vm_src_properties_ref (IDIO eenv, IDIO src)
+{
+    IDIO_ASSERT (eenv);
+    IDIO_ASSERT (src);
+
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
+
+    IDIO sps = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_SRC_PROPS);
+
+    return idio_hash_ref (sps, src);
 }
 
 void idio_vm_dump_src_constants ()
@@ -8149,8 +8170,8 @@ void idio_vm_dump_src_constants ()
 	    fprintf (fp, "%50s", "<no src props>");
 	    idio_debug_FILE (fp, " - %s\n", src);
 	} else if (idio_isa_struct_instance (lo)) {
-	    idio_debug_FILE (fp, "%40s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
-	    idio_debug_FILE (fp, ":line %4s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
+	    idio_debug_FILE (fp, "%40s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME));
+	    idio_debug_FILE (fp, ":line %4s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE));
 	    idio_debug_FILE (fp, " - %s\n", src);
 	} else {
 	    fprintf (fp, "%50s", "<que?>");
@@ -8728,7 +8749,7 @@ IDIO idio_vm_source_location ()
 	IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 	idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-	IDIO expr = idio_vm_src_constants_ref (gci);
+	IDIO expr = idio_vm_src_constants_ref (idio_default_eenv, gci);
 
 	IDIO lo = idio_S_nil;
 	if (idio_S_nil != expr) {
@@ -8743,29 +8764,15 @@ IDIO idio_vm_source_location ()
 	    idio_display (expr, lsh);
 	    idio_display_C (">", lsh);
 	} else {
-	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lsh);
+	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME), lsh);
 	    idio_display_C (":line ", lsh);
-	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lsh);
+	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE), lsh);
 	}
     } else {
 	idio_display (fmci, lsh);
     }
 
     return idio_get_output_string (lsh);
-}
-
-IDIO idio_vm_source_expr ()
-{
-    IDIO cthr = idio_thread_current_thread ();
-    IDIO fmci = IDIO_THREAD_EXPR (cthr);
-    if (idio_isa_fixnum (fmci)) {
-	IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
-	idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
-
-	return idio_vm_src_constants_ref (gci);
-    }
-
-    return idio_S_nil;
 }
 
 void idio_vm_decode_thread (IDIO thr)

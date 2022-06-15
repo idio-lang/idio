@@ -58,16 +58,20 @@
 /*
  * Indexes into structures for direct references
  */
-#define IDIO_EENV_ST_AOTP		0
-#define IDIO_EENV_ST_SYMBOLS		1
-#define IDIO_EENV_ST_SYMBOLS_ARRAY	2
-#define IDIO_EENV_ST_VALUES		3
-#define IDIO_EENV_ST_CONSTANTS		4
-#define IDIO_EENV_ST_CONSTANTS_HASH	5
-#define IDIO_EENV_ST_MODULE		6
-#define IDIO_EENV_ST_ESCAPES		7
-#define IDIO_EENV_ST_SRC_EXPRS		8
-#define IDIO_EENV_ST_BYTE_CODE		9
+typedef enum {
+    IDIO_EENV_ST_AOTP,
+    IDIO_EENV_ST_SYMBOLS,
+    IDIO_EENV_ST_SYMBOLS_ARRAY,
+    IDIO_EENV_ST_VALUES,
+    IDIO_EENV_ST_CONSTANTS,
+    IDIO_EENV_ST_CONSTANTS_HASH,
+    IDIO_EENV_ST_MODULE,
+    IDIO_EENV_ST_ESCAPES,
+    IDIO_EENV_ST_SRC_EXPRS,
+    IDIO_EENV_ST_SRC_PROPS,
+    IDIO_EENV_ST_BYTE_CODE,
+    IDIO_EENV_ST_SIZE,
+} idio_eenv_st_enum;
 
 #define IDIO_MEANING_EENV_AOT(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_AOTP)
 #define IDIO_MEANING_EENV_SYMBOLS(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_SYMBOLS)

@@ -68,6 +68,7 @@
 #include "fixnum.h"
 #include "handle.h"
 #include "hash.h"
+#include "job-control.h"
 #include "idio-string.h"
 #include "libc-wrap.h"
 #include "module.h"
@@ -109,40 +110,6 @@ IDIO idio_S_stderr_fileno;
 
 static IDIO idio_job_control_default_child_handler_sym;
 static IDIO idio_job_control_djn_sym;
-
-/*
- * Indexes into structures for direct references
- */
-#define IDIO_JOB_ST_PIPELINE		0
-#define IDIO_JOB_ST_PROCS		1
-#define IDIO_JOB_ST_PGID		2
-#define IDIO_JOB_ST_NOTIFY_STOPPED	3
-#define IDIO_JOB_ST_NOTIFY_COMPLETED	4
-#define IDIO_JOB_ST_RAISEP		5
-#define IDIO_JOB_ST_RAISED		6
-#define IDIO_JOB_ST_TCATTRS		7
-#define IDIO_JOB_ST_STDIN		8
-#define IDIO_JOB_ST_STDOUT		9
-#define IDIO_JOB_ST_STDERR		10
-#define IDIO_JOB_ST_REPORT_TIMING	11
-#define IDIO_JOB_ST_TIMING_START	12
-#define IDIO_JOB_ST_TIMING_END		13
-#define IDIO_JOB_ST_ASYNC		14
-#define IDIO_JOB_ST_SET_EXIT_STATUS	15
-
-#define IDIO_PROCESS_ST_ARGV		0
-#define IDIO_PROCESS_ST_EXEC		1
-#define IDIO_PROCESS_ST_PID		2
-#define IDIO_PROCESS_ST_COMPLETED	3
-#define IDIO_PROCESS_ST_STOPPED		4
-#define IDIO_PROCESS_ST_STATUS		5
-
-/* PSJ is PROCESS_SUBSTITUTION_JOB */
-#define IDIO_PSJ_READ			0
-#define IDIO_PSJ_FD			1
-#define IDIO_PSJ_PATH			2
-#define IDIO_PSJ_DIR			3
-#define IDIO_PSJ_SUPPRESS		4
 
 static void idio_job_control_error_exec (char **argv, char **envp, IDIO c_location)
 {
@@ -803,7 +770,7 @@ void idio_job_control_do_job_notification ()
 	    IDIO psj = idio_hash_ref (ps_jobs, job);
 
 	    if (idio_S_unspec != psj) {
-		IDIO psj_path = idio_struct_instance_ref_direct (psj, IDIO_PSJ_PATH);
+		IDIO psj_path = idio_struct_instance_ref_direct (psj, IDIO_PSJ_ST_PATH);
 		if (idio_S_false != psj_path) {
 #ifdef IDIO_DEBUG
 		    fprintf (stderr, "%6d: SHUTDOWN: ", getpid ());
@@ -827,7 +794,7 @@ void idio_job_control_do_job_notification ()
 
 			    perror (em);
 			} else {
-			    IDIO psj_dir = idio_struct_instance_ref_direct (psj, IDIO_PSJ_DIR);
+			    IDIO psj_dir = idio_struct_instance_ref_direct (psj, IDIO_PSJ_ST_DIR);
 			    size = 0;
 			    char *dir_C = idio_string_as_C (psj_dir, &size);
 
@@ -2002,7 +1969,8 @@ launch a pipeline of `job_controls`			\n\
     IDIO cmds = job_controls;
     while (idio_S_nil != cmds) {
 	IDIO proc = idio_struct_instance (idio_job_control_process_type,
-					  IDIO_LIST6 (IDIO_PAIR_H (cmds),
+					  idio_listv (IDIO_PROCESS_ST_SIZE,
+						      IDIO_PAIR_H (cmds),
 						      idio_S_nil,
 						      idio_libc_pid_t (-1),
 						      idio_S_false,
@@ -2052,7 +2020,7 @@ launch a pipeline of `job_controls`			\n\
 				    idio_C_pointer_type (idio_CSI_libc_struct_rusage, rusage_childrenp));
 
     IDIO job = idio_struct_instance (idio_job_control_job_type,
-				     idio_listv (16,
+				     idio_listv (IDIO_JOB_ST_SIZE,
 						 job_controls,
 						 procs,
 						 idio_libc_pid_t (0),
@@ -2369,7 +2337,8 @@ void idio_init_job_control ()
     sym = IDIO_SYMBOLS_C_INTERN ("%idio-process");
     idio_job_control_process_type = idio_struct_type (sym,
 						      idio_S_nil,
-						      IDIO_LIST6 (IDIO_SYMBOLS_C_INTERN ("argv"),
+						      idio_listv (IDIO_PROCESS_ST_SIZE,
+								  IDIO_SYMBOLS_C_INTERN ("argv"),
 								  IDIO_SYMBOLS_C_INTERN ("exec"),
 								  IDIO_SYMBOLS_C_INTERN ("pid"),
 								  IDIO_SYMBOLS_C_INTERN ("completed"),
@@ -2380,7 +2349,7 @@ void idio_init_job_control ()
     sym = IDIO_SYMBOLS_C_INTERN ("%idio-job");
     idio_job_control_job_type = idio_struct_type (sym,
 						  idio_S_nil,
-						  idio_listv (16,
+						  idio_listv (IDIO_JOB_ST_SIZE,
 							      IDIO_SYMBOLS_C_INTERN ("pipeline"),
 							      IDIO_SYMBOLS_C_INTERN ("procs"),
 							      IDIO_SYMBOLS_C_INTERN ("pgid"),

@@ -33,11 +33,13 @@ extern IDIO idio_src_properties;
  *
  * Lexical Objects that contain information about the source
  */
-#define IDIO_LEXOBJ_NAME		0
-#define IDIO_LEXOBJ_LINE		1
-#define IDIO_LEXOBJ_POS			2
-#define IDIO_LEXOBJ_EXPR		3
-
+typedef enum {
+    IDIO_LEXOBJ_ST_NAME,
+    IDIO_LEXOBJ_ST_LINE,
+    IDIO_LEXOBJ_ST_POS,
+    IDIO_LEXOBJ_ST_EXPR,
+    IDIO_LEXOBJ_SIZE,
+} idio_lexobj_st_enum;
 
 /*
  * These read specific constants don't have to be different to

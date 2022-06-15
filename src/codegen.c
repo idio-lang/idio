@@ -49,6 +49,7 @@
 #include "idio-string.h"
 #include "module.h"
 #include "pair.h"
+#include "read.h"
 #include "struct.h"
 #include "symbol.h"
 #include "thread.h"
@@ -57,6 +58,7 @@
 #include "vtable.h"
 
 static IDIO idio_codegen_module = idio_S_nil;
+IDIO_C_STRUCT_IDENT_DECL (idio_ia_s);
 
 static void idio_codegen_error_param_args (char const *m, IDIO mt, IDIO c_location)
 {
@@ -344,7 +346,6 @@ idio_as_t idio_codegen_extend_constants (IDIO eenv, IDIO v)
 
     IDIO_TYPE_ASSERT (struct_instance, eenv);
 
-    IDIO aot = IDIO_MEANING_EENV_AOT (eenv);
     IDIO cs = IDIO_MEANING_EENV_CONSTANTS (eenv);
 
     idio_as_t gci = idio_array_size (cs);
@@ -354,10 +355,6 @@ idio_as_t idio_codegen_extend_constants (IDIO eenv, IDIO v)
 	idio_hash_put (idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_CONSTANTS_HASH), v, idio_fixnum (gci));
     }
 
-    if (idio_S_true == aot) {
-	idio_debug ("cec %-20s", v);
-	fprintf (stderr, "%zu\n", gci);
-    }
     return gci;
 }
 
@@ -431,10 +428,10 @@ Find `v` in `eenv` or extend `eenv`		\n\
     return idio_integer (gci);
 }
 
-idio_as_t idio_codegen_extend_src_constants (IDIO eenv, IDIO v)
+idio_as_t idio_codegen_extend_src_constants (IDIO eenv, IDIO src)
 {
     IDIO_ASSERT (eenv);
-    IDIO_ASSERT (v);
+    IDIO_ASSERT (src);
 
     IDIO_TYPE_ASSERT (struct_instance, eenv);
 
@@ -442,7 +439,17 @@ idio_as_t idio_codegen_extend_src_constants (IDIO eenv, IDIO v)
     IDIO_TYPE_ASSERT (array, scs);
 
     idio_ai_t gci = idio_array_size (scs);
-    idio_array_push (scs, v);
+    idio_array_push (scs, src);
+
+    if (idio_isa_pair (src)) {
+	IDIO lo = idio_hash_ref (idio_src_properties, src);
+	if (idio_S_unspec != lo){
+	    IDIO sps = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_SRC_PROPS);
+	    IDIO_TYPE_ASSERT (hash, sps);
+
+	    idio_hash_put (sps, src, lo);
+	}
+    }
     return gci;
 }
 
@@ -539,6 +546,19 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
     }
 
     int aot = idio_S_true == IDIO_MEANING_EENV_AOT (eenv);
+    IDIO CTP_bc = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_BYTE_CODE);
+    if (idio_CSI_idio_ia_s != IDIO_C_TYPE_POINTER_PTYPE (CTP_bc)) {
+	/*
+	 * Test Case: libc-errors/struct-utsname-ref-invalid-pointer-type.idio
+	 *
+	 * struct-utsname-ref libc/NULL #t
+	 */
+	idio_error_param_value_exp ("codegen-compile", "byte-code", CTP_bc, "struct-idio-ia-s", IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
+    }
+    IDIO_IA_T byte_code = IDIO_C_TYPE_POINTER_P (CTP_bc);
 
     switch (IDIO_CONSTANT_I_CODE_VAL (mh)) {
     case IDIO_I_CODE_SHALLOW_ARGUMENT_REF:
@@ -1918,7 +1938,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 	     * **** Then, post-0.2...
 	     *
 	     * We can always create an anonymous function directly in
-	     * idio_all_code and keep a note of the {vi} for it.  This
+	     * byte_code and keep a note of the {vi} for it.  This
 	     * uses a new CREATE-FUNCTION opcode which is ostensibly
 	     * the old CREATE-CLOSURE opcode.  The only real
 	     * difference being that the (debug) stats need to be
@@ -2026,7 +2046,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 	    IDIO lifted_name = idio_gensym (IDIO_STATIC_STR_LEN ("lifted"));
 	    idio_as_t mci = idio_codegen_constants_lookup_or_extend (eenv, lifted_name);
 
-	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_SYM_DEF);
+	    IDIO_IA_PUSH1 (aot ? IDIO_A_GLOBAL_SYM_IDEF : IDIO_A_GLOBAL_SYM_DEF);
 	    IDIO_IA_PUSH_REF (mci);
 	    mci = idio_codegen_constants_lookup_or_extend (eenv, idio_S_toplevel);
 	    IDIO_IA_PUSH_VARUINT (mci);
@@ -2036,20 +2056,19 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 
 	    idio_as_t gvi = idio_codegen_extend_values (eenv);
 
-	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_VAL_SET);
+	    IDIO_IA_PUSH1 (aot ? IDIO_A_GLOBAL_VAL_ISET : IDIO_A_GLOBAL_VAL_SET);
 	    IDIO_IA_PUSH_REF (gvi);
 
 	    /*
 	     * 1. don't free {ia}, we're about to reuse it
 	     *
-	     * 2. pushing directly onto idio_all_code seems a bit
-	     *    dubious.  In particular, the code will be outside
-	     *    any ABORTs.
+	     * 2. pushing directly onto byte_code seems a bit dubious.
+	     *    In particular, the code will be outside any ABORTs.
 	     *
 	     * 3. do a regular CREATE-CLOSURE which refers to the
 	     *    CREATE-FUNCTION {vi} we just created
 	     */
-	    idio_ia_append (idio_all_code, ia);
+	    idio_ia_append (byte_code, ia);
 
 	    /* reset ia to reuse it */
 	    IDIO_IA_USIZE (ia) = 0;
@@ -2149,7 +2168,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 	    IDIO lifted_name = idio_gensym (IDIO_STATIC_STR_LEN ("lifted"));
 	    idio_as_t mci = idio_codegen_constants_lookup_or_extend (eenv, lifted_name);
 
-	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_SYM_DEF);
+	    IDIO_IA_PUSH1 (aot ? IDIO_A_GLOBAL_SYM_IDEF : IDIO_A_GLOBAL_SYM_DEF);
 	    IDIO_IA_PUSH_REF (mci);
 	    mci = idio_codegen_constants_lookup_or_extend (eenv, idio_S_toplevel);
 	    IDIO_IA_PUSH_VARUINT (mci);
@@ -2159,10 +2178,10 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 
 	    idio_as_t gvi = idio_codegen_extend_values (eenv);
 
-	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_VAL_SET);
+	    IDIO_IA_PUSH1 (aot ? IDIO_A_GLOBAL_VAL_ISET : IDIO_A_GLOBAL_VAL_SET);
 	    IDIO_IA_PUSH_REF (gvi);
 
-	    idio_ia_append (idio_all_code, ia);
+	    idio_ia_append (byte_code, ia);
 
 	    IDIO_IA_USIZE (ia) = 0;
 	    IDIO_IA_PUSH1 (IDIO_A_CREATE_CLOSURE);
@@ -3016,22 +3035,22 @@ void idio_codegen_code_prologue (IDIO_IA_T ia)
      * That's not proof but a useful debugging aid.
      */
 
-    idio_vm_NCE_pc = IDIO_IA_USIZE (idio_all_code); /* PC == 0 */
+    idio_vm_NCE_pc = IDIO_IA_USIZE (ia); /* PC == 0 */
     IDIO_IA_PUSH1 (IDIO_A_NON_CONT_ERR);
 
-    idio_vm_FINISH_pc = IDIO_IA_USIZE (idio_all_code); /* PC == 1 */
+    idio_vm_FINISH_pc = IDIO_IA_USIZE (ia); /* PC == 1 */
     IDIO_IA_PUSH1 (IDIO_A_FINISH);
 
-    idio_vm_CHR_pc = IDIO_IA_USIZE (idio_all_code); /* PC == 2 */
+    idio_vm_CHR_pc = IDIO_IA_USIZE (ia); /* PC == 2 */
     IDIO_IA_PUSH3 (IDIO_A_POP_TRAP, IDIO_A_RESTORE_STATE, IDIO_A_RETURN);
 
     /*
      * Just the RESTORE_STATE, RETURN for apply
      */
-    idio_vm_AR_pc = IDIO_IA_USIZE (idio_all_code); /* PC == 5 */
+    idio_vm_AR_pc = IDIO_IA_USIZE (ia); /* PC == 5 */
     IDIO_IA_PUSH2 (IDIO_A_RESTORE_STATE, IDIO_A_RETURN);
 
-    idio_vm_IHR_pc = IDIO_IA_USIZE (idio_all_code); /* PC == 7 */
+    idio_vm_IHR_pc = IDIO_IA_USIZE (ia); /* PC == 7 */
     IDIO_IA_PUSH3 (IDIO_A_POP_TRAP, IDIO_A_RESTORE_ALL_STATE, IDIO_A_RETURN);
 }
 
@@ -3045,7 +3064,21 @@ idio_pc_t idio_codegen (IDIO thr, IDIO m, IDIO eenv)
     IDIO_TYPE_ASSERT (pair, m);
     IDIO_TYPE_ASSERT (struct_instance, eenv);
 
-    idio_pc_t PC0 = IDIO_IA_USIZE (idio_all_code);
+    IDIO CTP_bc = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_BYTE_CODE);
+    if (idio_CSI_idio_ia_s != IDIO_C_TYPE_POINTER_PTYPE (CTP_bc)) {
+	/*
+	 * Test Case: libc-errors/struct-utsname-ref-invalid-pointer-type.idio
+	 *
+	 * struct-utsname-ref libc/NULL #t
+	 */
+	idio_error_param_value_exp ("codegen", "byte-code", CTP_bc, "struct-idio-ia-s", IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return -1;
+    }
+    IDIO_IA_T byte_code = IDIO_C_TYPE_POINTER_P (CTP_bc);
+
+    idio_pc_t PC0 = IDIO_IA_USIZE (byte_code);
 
     IDIO_IA_T ia = idio_ia (1024);
 
@@ -3056,7 +3089,7 @@ idio_pc_t idio_codegen (IDIO thr, IDIO m, IDIO eenv)
 	idio_ia_push (ia, IDIO_A_NOP);
     }
 
-    idio_ia_append_free (idio_all_code, ia);
+    idio_ia_append_free (byte_code, ia);
 
     return PC0;
 }
@@ -3098,10 +3131,23 @@ Generate the code for `m` using `eenv`		\n\
      * idio_vm_run() which means that we don't enter idio_vm_run() to
      * have a RETURN added to the code
      */
-    idio_ia_push (idio_all_code, IDIO_A_RETURN);
+    IDIO CTP_bc = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_BYTE_CODE);
+    if (idio_CSI_idio_ia_s != IDIO_C_TYPE_POINTER_PTYPE (CTP_bc)) {
+	/*
+	 * Test Case: libc-errors/struct-utsname-ref-invalid-pointer-type.idio
+	 *
+	 * struct-utsname-ref libc/NULL #t
+	 */
+	idio_error_param_value_exp ("codegen", "byte-code", CTP_bc, "struct-idio-ia-s", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+    IDIO_IA_T byte_code = IDIO_C_TYPE_POINTER_P (CTP_bc);
+
+    idio_ia_push (byte_code, IDIO_A_RETURN);
 
     if (idio_S_true == IDIO_MEANING_EENV_AOT (eenv)) {
-	idio_vm_dasm (thr, idio_all_code, PC0, 0, eenv);
+	idio_vm_dasm (thr, byte_code, PC0, 0, eenv);
     }
 
     return idio_fixnum (PC0);
@@ -3379,4 +3425,6 @@ void idio_init_codegen ()
     idio_vtable_add_method (ci_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_constant_i_code_method_2string));
+
+    IDIO_C_STRUCT_IDENT_DEF (IDIO_SYMBOLS_C_INTERN ("struct-idio-ia-s"), idio_S_nil, idio_ia_s, idio_fixnum (0));
 }

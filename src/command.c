@@ -1352,7 +1352,7 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
     IDIO inverted_suppress_rcse = idio_command_suppress_rcse == idio_S_false ? idio_S_true : idio_S_false;
 
     IDIO job = idio_struct_instance (idio_job_control_job_type,
-				     idio_listv (16,
+				     idio_listv (IDIO_JOB_ST_SIZE,
 						 command,
 						 IDIO_LIST1 (proc),
 						 idio_C_int (0),
