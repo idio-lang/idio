@@ -2028,10 +2028,8 @@ char const *idio_vm_bytecode2string (int code)
     case IDIO_A_DEEP_ARGUMENT_SET:		r = "A-DEEP-ARGUMENT-SET";		break;
 
     case IDIO_A_GLOBAL_SYM_REF:			r = "A-GLOBAL-SYM-REF";			break;
-    case IDIO_A_CHECKED_GLOBAL_SYM_REF:		r = "A-CHECKED-GLOBAL-SYM-REF";		break;
     case IDIO_A_GLOBAL_FUNCTION_SYM_REF:	r = "A-GLOBAL-FUNCTION-SYM-REF";	break;
-    case IDIO_A_CHECKED_GLOBAL_FUNCTION_SYM_REF:r = "A-CHECKED-GLOBAL-FUNCTION-SYM-REF";break;
-    case IDIO_A_CONSTANT_SYM_REF:		r = "A-CONSTANT-SYM-REF";		break;
+    case IDIO_A_CONSTANT_REF:			r = "A-CONSTANT-REF";			break;
     case IDIO_A_COMPUTED_SYM_REF:		r = "A-COMPUTED-SYM-REF";		break;
 
     case IDIO_A_GLOBAL_SYM_DEF:			r = "A-GLOBAL-SYM-DEF";			break;
@@ -2039,17 +2037,10 @@ char const *idio_vm_bytecode2string (int code)
     case IDIO_A_COMPUTED_SYM_SET:		r = "A-COMPUTED-SYM-SET";		break;
     case IDIO_A_COMPUTED_SYM_DEF:		r = "A-COMPUTED-SYM-DEF";		break;
 
-    case IDIO_A_GLOBAL_VAL_REF:			r = "A-GLOBAL-VAL-REF";			break;
     case IDIO_A_CHECKED_GLOBAL_VAL_REF:		r = "A-CHECKED-GLOBAL-VAL-REF";		break;
-    case IDIO_A_GLOBAL_FUNCTION_VAL_REF:	r = "A-GLOBAL-FUNCTION-VAL-REF";	break;
     case IDIO_A_CHECKED_GLOBAL_FUNCTION_VAL_REF:r = "A-CHECKED-GLOBAL-FUNCTION-VAL-REF";break;
-    case IDIO_A_CONSTANT_VAL_REF:		r = "A-CONSTANT-VAL-REF";		break;
-    case IDIO_A_COMPUTED_VAL_REF:		r = "A-COMPUTED-VAL-REF";		break;
 
-    case IDIO_A_GLOBAL_VAL_DEF:			r = "A-GLOBAL-VAL-DEF";			break;
     case IDIO_A_GLOBAL_VAL_SET:			r = "A-GLOBAL-VAL-SET";			break;
-    case IDIO_A_COMPUTED_VAL_SET:		r = "A-COMPUTED-VAL-SET";		break;
-    case IDIO_A_COMPUTED_VAL_DEF:		r = "A-COMPUTED-VAL-DEF";		break;
 
     case IDIO_A_PREDEFINED0:			r = "A-PREDEFINED0";			break;
     case IDIO_A_PREDEFINED1:			r = "A-PREDEFINED1";			break;
@@ -2150,18 +2141,14 @@ char const *idio_vm_bytecode2string (int code)
     case IDIO_A_POP_DYNAMIC:			r = "A-POP-DYNAMIC";			break;
     case IDIO_A_DYNAMIC_SYM_REF:		r = "A-DYNAMIC-SYM-REF";		break;
     case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:	r = "A-DYNAMIC-FUNCTION-SYM-REF";	break;
-    case IDIO_A_DYNAMIC_VAL_REF:		r = "A-DYNAMIC-VAL-REF";		break;
-    case IDIO_A_DYNAMIC_FUNCTION_VAL_REF:	r = "A-DYNAMIC-FUNCTION-VAL-REF";	break;
 
     case IDIO_A_PUSH_ENVIRON:			r = "A-PUSH-ENVIRON";			break;
     case IDIO_A_POP_ENVIRON:			r = "A-POP-ENVIRON";			break;
     case IDIO_A_ENVIRON_SYM_REF:		r = "A-ENVIRON-SYM-REF";		break;
-    case IDIO_A_ENVIRON_VAL_REF:		r = "A-ENVIRON-VAL-REF";		break;
 
     case IDIO_A_NON_CONT_ERR:			r = "A-NON-CONT-ERR";			break;
     case IDIO_A_PUSH_TRAP:			r = "A-PUSH-TRAP";			break;
     case IDIO_A_POP_TRAP:			r = "A-POP-TRAP";			break;
-    case IDIO_A_RESTORE_TRAP:			r = "A-RESTORE-TRAP";			break;
 
     case IDIO_A_PUSH_ESCAPER:			r = "A-PUSH-ESCAPER";			break;
     case IDIO_A_POP_ESCAPER:			r = "A-POP-ESCAPER";			break;

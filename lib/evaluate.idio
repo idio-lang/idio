@@ -512,7 +512,7 @@ define (meaning-escape src e nametree escapes flags cs cm) {
 }
 
 define (meaning-quotation src v nametree escapes flags) {
-  list I-CONSTANT-SYM-REF v
+  list I-CONSTANT-REF v
 }
 
 ; a couple of helper functions from Alan Bawden's Quasiquotation in

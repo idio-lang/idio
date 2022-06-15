@@ -611,7 +611,10 @@ static idio_as_t idio_meaning_extend_values (IDIO eenv)
 
     IDIO vs = IDIO_MEANING_EENV_VALUES (eenv);
 
-    idio_ai_t C_id = 0;
+    /*
+     * a vi of 0 indicates the symbol hasn't been defined (yet).
+     */
+    idio_ai_t C_id = 1;
     if (idio_S_nil != vs) {
 	IDIO id = IDIO_PAIR_H (vs);
 	C_id = IDIO_FIXNUM_VAL (id);
@@ -1410,7 +1413,7 @@ static IDIO idio_meaning_quotation (IDIO src, IDIO v, IDIO nametree, int flags)
 
     IDIO_TYPE_ASSERT (list, nametree);
 
-    return IDIO_LIST2 (IDIO_I_CONSTANT_SYM_REF, v);
+    return IDIO_LIST2 (IDIO_I_CONSTANT_REF, v);
 }
 
 static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
