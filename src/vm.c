@@ -5906,7 +5906,7 @@ IDIO idio_vm_dasm_symbols_ref (IDIO eenv, idio_as_t mci)
 	st = IDIO_MEANING_EENV_SYMBOLS (eenv);
 	size_t st_len = idio_list_length (st);
 	if (mci > st_len) {
-	    fprintf (stderr, "vm-dasm-symbols-ref: %zd > %zd (%zd)\n", mci, idio_array_size (sa), st_len);
+	    fprintf (stderr, "\n\nvm-dasm-symbols-ref: %zd > %zd (%zd)\n", mci, idio_array_size (sa), st_len);
 	    IDIO_C_ASSERT (0);
 	} else {
 	    /*
@@ -6061,7 +6061,10 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, mci);
+
 		IDIO_VM_DASM ("GLOBAL-SYM-IREF %" PRId64 "", mci);
+		idio_debug_FILE (idio_dasm_FILE, " %s", sym);
 	    }
 	    break;
 	case IDIO_A_GLOBAL_FUNCTION_SYM_REF:
@@ -6075,7 +6078,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO sym = idio_vm_dasm_symbols_ref (eenv, mci);
+		IDIO sym = idio_vm_dasm_constants_ref (eenv, mci);
 
 		IDIO_VM_DASM ("GLOBAL-FUNCTION-SYM-IREF %" PRId64 "", mci);
 		idio_debug_FILE (idio_dasm_FILE, " %s", sym);
@@ -6132,7 +6135,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		IDIO fgci = idio_module_get_or_set_vci (ce, idio_fixnum (mci));
 		IDIO fgkci = idio_module_get_or_set_vci (ce, idio_fixnum (mkci));
 
-		IDIO sym = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
 		IDIO kind = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgkci));
 
 		if (idio_isa_symbol (sym)) {
@@ -6152,7 +6155,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		IDIO fgci = idio_module_get_or_set_vci (ce, idio_fixnum (mci));
 		IDIO fgkci = idio_module_get_or_set_vci (ce, idio_fixnum (mkci));
 
-		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+		IDIO sym = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgci));
 		IDIO kind = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgkci));
 
 		if (idio_isa_symbol (sym)) {
@@ -6168,7 +6171,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
-		IDIO sym = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
 
 		if (idio_isa_symbol (sym)) {
 		    IDIO_VM_DASM ("GLOBAL-SYM-SET %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
@@ -6183,7 +6186,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
-		IDIO sym = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
 
 		if (idio_isa_symbol (sym)) {
 		    IDIO_VM_DASM ("GLOBAL-SYM-ISET %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
@@ -6228,11 +6231,25 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		IDIO_VM_DASM ("CHECKED-GLOBAL-VAL-REF %" PRId64 "", gvi);
 	    }
 	    break;
+	case IDIO_A_CHECKED_GLOBAL_VAL_IREF:
+	    {
+		uint64_t gvi = IDIO_VM_GET_REF (bc, pcp);
+
+		IDIO_VM_DASM ("CHECKED-GLOBAL-VAL-IREF %" PRId64 "", gvi);
+	    }
+	    break;
 	case IDIO_A_CHECKED_GLOBAL_FUNCTION_VAL_REF:
 	    {
 		uint64_t gvi = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO_VM_DASM ("CHECKED-GLOBAL-FUNCTION-VAL-REF %" PRId64 "", gvi);
+	    }
+	    break;
+	case IDIO_A_CHECKED_GLOBAL_FUNCTION_VAL_IREF:
+	    {
+		uint64_t gvi = IDIO_VM_GET_REF (bc, pcp);
+
+		IDIO_VM_DASM ("CHECKED-GLOBAL-FUNCTION-VAL-IREF %" PRId64 "", gvi);
 	    }
 	    break;
 	case IDIO_A_GLOBAL_VAL_SET:
@@ -6476,6 +6493,13 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		uint64_t gvi = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO_VM_DASM ("CREATE-CLOSURE %" PRId64, gvi);
+	    }
+	    break;
+	case IDIO_A_CREATE_ICLOSURE:
+	    {
+		uint64_t gvi = IDIO_VM_GET_REF (bc, pcp);
+
+		IDIO_VM_DASM ("CREATE-ICLOSURE %" PRId64, gvi);
 	    }
 	    break;
 	case IDIO_A_FUNCTION_INVOKE:
@@ -6769,12 +6793,27 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		IDIO_VM_DASM ("EXPANDER %" PRId64 "", mci);
 	    }
 	    break;
+	case IDIO_A_IEXPANDER:
+	    {
+		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
+
+		IDIO_VM_DASM ("IEXPANDER %" PRId64 "", mci);
+	    }
+	    break;
 	case IDIO_A_INFIX_OPERATOR:
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 		uint64_t pri = idio_vm_get_varuint (bc, pcp);
 
 		IDIO_VM_DASM ("INFIX-OPERATOR %" PRId64 " %" PRId64 "", mci, pri);
+	    }
+	    break;
+	case IDIO_A_INFIX_IOPERATOR:
+	    {
+		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
+		uint64_t pri = idio_vm_get_varuint (bc, pcp);
+
+		IDIO_VM_DASM ("INFIX-IOPERATOR %" PRId64 " %" PRId64 "", mci, pri);
 	    }
 	    break;
 	case IDIO_A_POSTFIX_OPERATOR:
@@ -6785,14 +6824,32 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		IDIO_VM_DASM ("POSTFIX-OPERATOR %" PRId64 " %" PRId64 "", mci, pri);
 	    }
 	    break;
+	case IDIO_A_POSTFIX_IOPERATOR:
+	    {
+		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
+		uint64_t pri = idio_vm_get_varuint (bc, pcp);
+
+		IDIO_VM_DASM ("POSTFIX-IOPERATOR %" PRId64 " %" PRId64 "", mci, pri);
+	    }
+	    break;
 	case IDIO_A_PUSH_DYNAMIC:
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
-		IDIO sym = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
 
 		IDIO_VM_DASM ("PUSH-DYNAMIC %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
+	    }
+	    break;
+	case IDIO_A_PUSH_IDYNAMIC:
+	    {
+		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
+
+		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+
+		IDIO_VM_DASM ("PUSH-IDYNAMIC %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
 	    }
 	    break;
 	case IDIO_A_POP_DYNAMIC:
@@ -6805,7 +6862,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
-		IDIO sym = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
 
 		if (idio_isa_symbol (sym)) {
 		    IDIO_VM_DASM ("DYNAMIC-SYM-REF %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
@@ -6821,7 +6878,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
-		IDIO sym = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
 
 		IDIO_VM_DASM ("DYNAMIC-SYM-IREF %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
 	    }
@@ -6831,7 +6888,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
-		IDIO sym = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
 
 		IDIO_VM_DASM ("DYNAMIC-FUNCTION-SYM-REF %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
 	    }
@@ -6841,7 +6898,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
-		IDIO sym = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
 
 		IDIO_VM_DASM ("DYNAMIC-FUNCTION-SYM-IREF %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
 	    }
@@ -6851,9 +6908,19 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
-		IDIO sym = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
 
 		IDIO_VM_DASM ("PUSH-ENVIRON %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
+	    }
+	    break;
+	case IDIO_A_PUSH_IENVIRON:
+	    {
+		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
+
+		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+
+		IDIO_VM_DASM ("PUSH-IENVIRON %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
 	    }
 	    break;
 	case IDIO_A_POP_ENVIRON:
@@ -6866,7 +6933,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
-		IDIO sym = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
 
 		IDIO_VM_DASM ("ENVIRON-SYM-REF %" PRIu64 " %s", mci, IDIO_SYMBOL_S (sym));
 	    }
@@ -6876,7 +6943,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
-		IDIO sym = idio_vm_dasm_constants_ref (eenv, IDIO_FIXNUM_VAL (fgci));
+		IDIO sym = idio_vm_dasm_symbols_ref (eenv, IDIO_FIXNUM_VAL (fgci));
 
 		IDIO_VM_DASM ("ENVIRON-SYM-IREF %" PRIu64 " %s", mci, IDIO_SYMBOL_S (sym));
 	    }
@@ -6893,6 +6960,13 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		IDIO_VM_DASM ("PUSH-TRAP %" PRIu64, mci);
 	    }
 	    break;
+	case IDIO_A_PUSH_ITRAP:
+	    {
+		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
+
+		IDIO_VM_DASM ("PUSH-ITRAP %" PRIu64, mci);
+	    }
+	    break;
 	case IDIO_A_POP_TRAP:
 	    {
 		IDIO_VM_DASM ("POP-TRAP");
@@ -6904,6 +6978,14 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 		uint64_t offset = idio_vm_get_varuint (bc, pcp);
 
 		IDIO_VM_DASM ("PUSH-ESCAPER %" PRIu64 " -> %" PRIu64, mci, pc + offset + 1);
+	    }
+	    break;
+	case IDIO_A_PUSH_IESCAPER:
+	    {
+		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
+		uint64_t offset = idio_vm_get_varuint (bc, pcp);
+
+		IDIO_VM_DASM ("PUSH-IESCAPER %" PRIu64 " -> %" PRIu64, mci, pc + offset + 1);
 	    }
 	    break;
 	case IDIO_A_POP_ESCAPER:

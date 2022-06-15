@@ -584,31 +584,37 @@ static idio_ai_t idio_array_find (IDIO a, idio_equal_enum eqp, IDIO e, idio_ai_t
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
 
+    idio_as_t as = IDIO_ARRAY_USIZE (a);
+
+    if (0 == as) {
+	return -1;
+    }
+
     if (index < 0) {
 	/*
 	 * Test Case: ??
 	 *
 	 * Used by the codegen constants lookup code
 	 */
-	idio_array_bounds_error (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
+	idio_array_bounds_error (index, as, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
     }
 
-    if (index >= (idio_ai_t) IDIO_ARRAY_USIZE (a)) {
+    if (index >= (idio_ai_t) as) {
 	/*
 	 * Test Case: ??
 	 *
 	 * Used by the codegen constants lookup code
 	 */
-	idio_array_bounds_error (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
+	idio_array_bounds_error (index, as, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
     }
 
-    for (; index < (idio_ai_t) IDIO_ARRAY_USIZE (a); index++) {
+    for (; index < (idio_ai_t) as; index++) {
 	if (idio_equal (IDIO_ARRAY_AE (a, index), e, eqp)) {
 	    return index;
 	}

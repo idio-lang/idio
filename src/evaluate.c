@@ -537,93 +537,30 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
  * Pre-compilation wants to maintain a list of names it wants to use
  * in the future.
  *
- * The eenv (evaluation environment) tuple looks like:
+ * The eenv (evaluation environment) structure looks like:
  *
- *   (aot? symbols values constants current-module escapes)
+ * aot?			boolean: normal or ahead-of-time
+ * symbols		list of (name {si-data})
+ * symbols-array	symbols indexed by ci
+ * values		list of indices (these are defines, dynamic and environs)
+ * constants		array
+ * constants-hash	constant to ci map
+ * module		module
+ * escapes		list
+ * src-exprs
+ * src-props		lexobj data
+ * byte-code
  *
- * aot?		boolean: normal or ahead-of-time
- * symbols	list of (name {si-data})
- * values	list of indices (these are defines, dynamic and environs)
- * constants	array
- * module	module
- * escapes	list
+ * values is a placeholder for a table of gvi at runtime.  The
+ * {si-data} should have an mci field indexing into the constants
+ * array and a mvi indexing into the values table (for future
+ * reference).
  *
- * it should be capturing the environment beyond the current
+ * It should be capturing the environment beyond the current
  * expression.  The top level.
  *
  * And escapes, even though they are dynamic like nametree.
  */
-
-static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, int recurse)
-{
-    IDIO_ASSERT (name);
-    IDIO_ASSERT (eenv);
-
-    IDIO_TYPE_ASSERT (symbol, name);
-    IDIO_TYPE_ASSERT (struct_instance, eenv);
-
-    if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv)) {
-	return idio_module_find_symbol_recurse (name, IDIO_MEANING_EENV_MODULE (eenv), recurse);
-    }
-
-    IDIO st = IDIO_MEANING_EENV_SYMBOLS (eenv);
-    IDIO sym_si = idio_list_assq (name, st);
-    if (idio_S_false == sym_si) {
-	idio_as_t C_id = 0;
-	if (idio_S_nil != st) {
-	    IDIO h = IDIO_PAIR_H (st);
-	    IDIO id = IDIO_PAIR_HTT (h);
-	    C_id = IDIO_FIXNUM_VAL (id);
-	    C_id++;
-	}
-	sym_si = IDIO_LIST6 (name,
-			     idio_S_toplevel,
-			     idio_fixnum (C_id),
-			     idio_fixnum (C_id),
-			     IDIO_MEANING_EENV_MODULE (eenv),
-			     idio_meaning_precompilation_string);
-	idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SYMBOLS, idio_pair (sym_si, st));
-    }
-
-    return IDIO_PAIR_T (sym_si);
-}
-
-static IDIO idio_meaning_find_symbol (IDIO name, IDIO eenv)
-{
-    IDIO_ASSERT (name);
-    IDIO_ASSERT (eenv);
-
-    IDIO_TYPE_ASSERT (symbol, name);
-    IDIO_TYPE_ASSERT (struct_instance, eenv);
-
-    return idio_meaning_find_symbol_recurse (name, eenv, 0);
-}
-
-static idio_as_t idio_meaning_extend_values (IDIO eenv)
-{
-    IDIO_ASSERT (eenv);
-
-    IDIO_TYPE_ASSERT (struct_instance, eenv);
-
-    if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv)) {
-	return idio_vm_extend_values ();
-    }
-
-    IDIO vs = IDIO_MEANING_EENV_VALUES (eenv);
-
-    /*
-     * a vi of 0 indicates the symbol hasn't been defined (yet).
-     */
-    idio_ai_t C_id = 1;
-    if (idio_S_nil != vs) {
-	IDIO id = IDIO_PAIR_H (vs);
-	C_id = IDIO_FIXNUM_VAL (id);
-	C_id++;
-    }
-    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_VALUES, idio_pair (idio_fixnum (C_id), vs));
-
-    return C_id;
-}
 
 static idio_as_t idio_meaning_constants_lookup_or_extend (IDIO eenv, IDIO name)
 {
@@ -648,6 +585,73 @@ static idio_as_t idio_meaning_constants_lookup_or_extend (IDIO eenv, IDIO name)
     }
 
     return C_id;
+}
+
+static idio_as_t idio_meaning_extend_values (IDIO eenv)
+{
+    IDIO_ASSERT (eenv);
+
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
+
+    if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv)) {
+	return idio_vm_extend_values ();
+    }
+
+    IDIO vs = IDIO_MEANING_EENV_VALUES (eenv);
+
+    /*
+     * NB Normally a vi of 0 indicates the symbol hasn't been defined
+     * (yet) however these vi are palceholders.
+     */
+    idio_ai_t C_vi = 0;
+    if (idio_S_nil != vs) {
+	IDIO vi = IDIO_PAIR_H (vs);
+	C_vi = IDIO_FIXNUM_VAL (vi);
+	C_vi++;
+    }
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_VALUES, idio_pair (idio_fixnum (C_vi), vs));
+
+    return C_vi;
+}
+
+static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, int recurse)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (eenv);
+
+    IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
+
+    if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv)) {
+	return idio_module_find_symbol_recurse (name, IDIO_MEANING_EENV_MODULE (eenv), recurse);
+    }
+
+    IDIO st = IDIO_MEANING_EENV_SYMBOLS (eenv);
+    IDIO sym_si = idio_list_assq (name, st);
+    if (idio_S_false == sym_si) {
+	idio_as_t C_ci = idio_meaning_constants_lookup_or_extend (eenv, name);
+	idio_as_t C_vi = idio_meaning_extend_values (eenv);
+	sym_si = IDIO_LIST6 (name,
+			     idio_S_toplevel,
+			     idio_fixnum (C_ci),
+			     idio_fixnum (C_vi),
+			     IDIO_MEANING_EENV_MODULE (eenv),
+			     idio_meaning_precompilation_string);
+	idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SYMBOLS, idio_pair (sym_si, st));
+    }
+
+    return IDIO_PAIR_T (sym_si);
+}
+
+static IDIO idio_meaning_find_symbol (IDIO name, IDIO eenv)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (eenv);
+
+    IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
+
+    return idio_meaning_find_symbol_recurse (name, eenv, 0);
 }
 
 /*
@@ -2024,7 +2028,8 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, int
     IDIO scope = IDIO_PAIR_H (si);
     IDIO fmci = IDIO_PAIR_HT (si);
     IDIO fgvi = IDIO_PAIR_HTT (si);
-    if (idio_S_toplevel == scope &&
+    if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv) &&
+	idio_S_toplevel == scope &&
 	0 == IDIO_FIXNUM_VAL (fgvi)) {
 	idio_as_t gvi = idio_meaning_extend_values (eenv);
 	fgvi = idio_fixnum (gvi);
