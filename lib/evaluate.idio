@@ -446,8 +446,8 @@ define (meaning-reference src name nametree escapes flags cs cm) {
      ; ('toplevel ci vi)
      vi := phtt si
      (if (vi gt 0)
-      (list I-CHECKED-GLOBAL-VAL-REF vi)
-      (list I-GLOBAL-SYM-REF i))
+      (list I-VAL-REF vi)
+      (list I-SYM-REF i))
    })
    ((dynamic) (list I-DYNAMIC-SYM-REF i))
    ((environ) (list I-ENVIRON-SYM-REF i))
@@ -486,8 +486,8 @@ define (meaning-function-reference src name nametree escapes flags cs cm) {
      ; ('toplevel ci vi)
      vi := phtt si
      (if (vi gt 0)
-      (list I-CHECKED-GLOBAL-FUNCTION-VAL-REF vi)
-      (list I-GLOBAL-FUNCTION-SYM-REF i))
+      (list I-FUNCTION-VAL-REF vi)
+      (list I-FUNCTION-SYM-REF i))
    })
    ((dynamic) (list I-DYNAMIC-FUNCTION-SYM-REF i))
    ((environ) (list I-ENVIRON-SYM-REF i))
@@ -831,17 +831,17 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
 	vi := phtt si
 
 	if (0 eq vi) {
-	  assign = list I-GLOBAL-SYM-SET src ci m
+	  assign = list I-SYM-SET src ci m
 	} {
-	  assign = list I-GLOBAL-VAL-SET src vi m
+	  assign = list I-VAL-SET src vi m
 	}
       })
       ((dynamic environ) {
-	assign = list I-GLOBAL-SYM-SET src ci m
+	assign = list I-SYM-SET src ci m
       })
       ((computed) {
 	if (eval-flags-define flags) {
-	  i-code = (list (list I-GLOBAL-SYM-DEF name scope ci)
+	  i-code = (list (list I-SYM-DEF name scope ci)
 			 (list I-COMPUTED-SYM-DEF ci m))
 	} {
 	  i-code = list I-COMPUTED-SYM-SET ci m
@@ -852,7 +852,7 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
 
 	vi := phtt si
 	set-symbol-value! name (vm-values-ref vi) cm
-	assign = list I-GLOBAL-SYM-SET src new-ci m
+	assign = list I-SYM-SET src new-ci m
 	ci = new-ci
       })
       (else {
@@ -863,7 +863,7 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
 
      (cond (i-code i-code)
       ((eval-flags-define flags) {
-	(list (list I-GLOBAL-SYM-DEF name scope ci)
+	(list (list I-SYM-DEF name scope ci)
 	      assign)
       })
       (else assign))
@@ -2065,7 +2065,7 @@ define (meaning-dynamic-let src name e e+ nametree escapes flags cs cm) {
 			m+
 			(list I-POP-DYNAMIC))
 
-  (list (list I-GLOBAL-SYM-DEF name 'dynamic ci)
+  (list (list I-SYM-DEF name 'dynamic ci)
 	dynamic-wrap)
 }
 
@@ -2098,7 +2098,7 @@ define (meaning-environ-let src name e e+ nametree escapes flags cs cm) {
 			m+
 			(list I-POP-ENVIRON))
 
-  (list (list I-GLOBAL-SYM-DEF name 'environ ci)
+  (list (list I-SYM-DEF name 'environ ci)
 	environ-wrap)
 }
 

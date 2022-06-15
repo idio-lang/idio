@@ -1284,9 +1284,9 @@ static IDIO idio_meaning_reference (IDIO src, IDIO name, IDIO nametree, int flag
     } else if (idio_S_toplevel == scope) {
 	IDIO fgvi = IDIO_PAIR_HTT (si);
 	if (IDIO_FIXNUM_VAL (fgvi) > 0) {
-	    return IDIO_LIST2 (IDIO_I_CHECKED_GLOBAL_VAL_REF, fgvi);
+	    return IDIO_LIST2 (IDIO_I_VAL_REF, fgvi);
 	} else {
-	    return IDIO_LIST2 (IDIO_I_GLOBAL_SYM_REF, fmci);
+	    return IDIO_LIST2 (IDIO_I_SYM_REF, fmci);
 	}
     } else if (idio_S_dynamic == scope) {
 	return IDIO_LIST2 (IDIO_I_DYNAMIC_SYM_REF, fmci);
@@ -1350,9 +1350,9 @@ static IDIO idio_meaning_function_reference (IDIO src, IDIO name, IDIO nametree,
 	IDIO fgvi = IDIO_PAIR_HTT (si);
 	if (0 == aot &&
 	    IDIO_FIXNUM_VAL (fgvi) > 0) {
-	    return IDIO_LIST2 (IDIO_I_CHECKED_GLOBAL_FUNCTION_VAL_REF, fgvi);
+	    return IDIO_LIST2 (IDIO_I_FUNCTION_VAL_REF, fgvi);
 	} else {
-	    return IDIO_LIST2 (IDIO_I_GLOBAL_FUNCTION_SYM_REF, fmci);
+	    return IDIO_LIST2 (IDIO_I_FUNCTION_SYM_REF, fmci);
 	}
     } else if (idio_S_dynamic == scope) {
 	return IDIO_LIST2 (IDIO_I_DYNAMIC_FUNCTION_SYM_REF, fmci);
@@ -1907,16 +1907,16 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	IDIO fgvi = IDIO_PAIR_HTT (si);
 
 	if (0 == IDIO_FIXNUM_VAL (fgvi)) {
-	    assign = IDIO_LIST4 (IDIO_I_GLOBAL_SYM_SET, src, fmci, m);
+	    assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, fmci, m);
 	} else {
-	    assign = IDIO_LIST4 (IDIO_I_GLOBAL_VAL_SET, src, fgvi, m);
+	    assign = IDIO_LIST4 (IDIO_I_VAL_SET, src, fgvi, m);
 	}
     } else if (idio_S_dynamic == scope ||
 	       idio_S_environ == scope) {
-	assign = IDIO_LIST4 (IDIO_I_GLOBAL_SYM_SET, src, fmci, m);
+	assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, fmci, m);
     } else if (idio_S_computed == scope) {
 	if (IDIO_MEANING_IS_DEFINE (flags)) {
-	    return IDIO_LIST2 (IDIO_LIST4 (IDIO_I_GLOBAL_SYM_DEF, name, scope, fmci),
+	    return IDIO_LIST2 (IDIO_LIST4 (IDIO_I_SYM_DEF, name, scope, fmci),
 			       IDIO_LIST3 (IDIO_I_COMPUTED_SYM_DEF, fmci, m));
 	} else {
 	    return IDIO_LIST3 (IDIO_I_COMPUTED_SYM_SET, fmci, m);
@@ -1940,9 +1940,9 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	 * But now we have a problem.
 	 *
 	 * As we *compile* regular code, any subsequent reference to
-	 * {name} will find this new toplevel and we'll embed
-	 * GLOBAL-SYM-REFs to it etc..  All good for the future when we
-	 * *run* the compiled code.
+	 * {name} will find this new toplevel and we'll embed SYM-REFs
+	 * to it etc..  All good for the future when we *run* the
+	 * compiled code.
 	 *
 	 * However, if any templates in the here and now refer to
 	 * {name} then we have a problem.  All we've done is extend
@@ -1957,7 +1957,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	idio_module_set_symbol_value (name,
 				      idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi)),
 				      IDIO_MEANING_EENV_MODULE (eenv));
-	assign = IDIO_LIST4 (IDIO_I_GLOBAL_SYM_SET, src, new_mci, m);
+	assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, new_mci, m);
 	fmci = new_mci;
 
 	/* if we weren't allowing shadowing */
@@ -1975,7 +1975,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
     }
 
     if (IDIO_MEANING_IS_DEFINE (flags)) {
-	return IDIO_LIST2 (IDIO_LIST4 (IDIO_I_GLOBAL_SYM_DEF, name, scope, fmci),
+	return IDIO_LIST2 (IDIO_LIST4 (IDIO_I_SYM_DEF, name, scope, fmci),
 			   assign);
     } else {
 	return assign;
@@ -3947,7 +3947,7 @@ static IDIO idio_meaning_dynamic_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
 				    mp,
 				    IDIO_LIST1 (IDIO_I_POP_DYNAMIC));
 
-    return IDIO_LIST2 (IDIO_LIST4 (IDIO_I_GLOBAL_SYM_DEF, name, idio_S_dynamic, fmci),
+    return IDIO_LIST2 (IDIO_LIST4 (IDIO_I_SYM_DEF, name, idio_S_dynamic, fmci),
 		       dynamic_wrap);
 }
 
@@ -4015,7 +4015,7 @@ static IDIO idio_meaning_environ_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
 				    mp,
 				    IDIO_LIST1 (IDIO_I_POP_ENVIRON));
 
-    return IDIO_LIST2 (IDIO_LIST4 (IDIO_I_GLOBAL_SYM_DEF, name, idio_S_environ, fmci),
+    return IDIO_LIST2 (IDIO_LIST4 (IDIO_I_SYM_DEF, name, idio_S_environ, fmci),
 		       environ_wrap);
 }
 
