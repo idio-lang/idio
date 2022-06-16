@@ -3625,16 +3625,28 @@ void idio_init_libc_wrap ()
     IDIO geti;
     IDIO seti;
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, libc_errno_get);
-    idio_module_export_computed_symbol (IDIO_SYMBOLS_C_INTERN ("errno"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_libc_module);
+    idio_module_export_computed_symbol (IDIO_SYMBOLS_C_INTERN ("errno"),
+					idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
+					idio_S_nil,
+					idio_libc_module);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, libc_STDIN_get);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("STDIN"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_libc_module);
+    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("STDIN"),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
+				     idio_S_nil,
+				     idio_libc_module);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, libc_STDOUT_get);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("STDOUT"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_libc_module);
+    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("STDOUT"),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
+				     idio_S_nil,
+				     idio_libc_module);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, libc_STDERR_get);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("STDERR"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_libc_module);
+    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("STDERR"),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
+				     idio_S_nil,
+				     idio_libc_module);
 
     idio_vm_signal_handler_conditions = idio_array (IDIO_LIBC_NSIG + 1);
     idio_gc_protect_auto (idio_vm_signal_handler_conditions);
@@ -3658,8 +3670,6 @@ void idio_init_libc_wrap ()
     /*
      * Define some host/user/process variables
      */
-    IDIO main_module = idio_Idio_module;
-
     struct utsname *up = idio_alloc (sizeof (struct utsname));
     if (uname (up) == -1) {
 	/*
@@ -3674,7 +3684,7 @@ void idio_init_libc_wrap ()
     }
 
     if (getenv ("HOSTNAME") == NULL) {
-	idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("HOSTNAME"), idio_string_C (up->nodename), main_module);
+	idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("HOSTNAME"), idio_string_C (up->nodename), idio_Idio_module);
     }
 
     idio_add_feature_ps (IDIO_STATIC_STR_LEN ("uname/sysname/"), up->sysname, sizeof (up->sysname) - 1);
@@ -3686,19 +3696,31 @@ void idio_init_libc_wrap ()
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, UID_get);
     seti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, UID_set);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("UID"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_vm_values_ref (IDIO_FIXNUM_VAL (seti)), main_module);
+    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("UID"),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (seti)),
+				     idio_Idio_module);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, EUID_get);
     seti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, EUID_set);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("EUID"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_vm_values_ref (IDIO_FIXNUM_VAL (seti)), main_module);
+    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("EUID"),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (seti)),
+				     idio_Idio_module);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, GID_get);
     seti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, GID_set);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("GID"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_vm_values_ref (IDIO_FIXNUM_VAL (seti)), main_module);
+    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("GID"),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (seti)),
+				     idio_Idio_module);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, EGID_get);
     seti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, EGID_set);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("EGID"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_vm_values_ref (IDIO_FIXNUM_VAL (seti)), main_module);
+    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("EGID"),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (seti)),
+				     idio_Idio_module);
 
     int ngroups = getgroups (0, (gid_t *) NULL);
 
@@ -3748,11 +3770,11 @@ void idio_init_libc_wrap ()
     }
     idio_free (grp_list);
 
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("GROUPS"), GROUPS, main_module);
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("GROUPS"), GROUPS, idio_Idio_module);
 
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_PID"), idio_libc_pid_t (getpid ()), main_module);
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("PID"), idio_libc_pid_t (getpid ()), main_module);
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("PPID"), idio_libc_pid_t (getppid ()), main_module);
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_PID"), idio_libc_pid_t (getpid ()), idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("PID"), idio_libc_pid_t (getpid ()), idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("PPID"), idio_libc_pid_t (getppid ()), idio_Idio_module);
 
     /*
      * POSIX times(3) uses clock_t which is measured in terms of the

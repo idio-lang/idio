@@ -1201,17 +1201,17 @@ void idio_condition_add_primitives ()
 
     IDIO fvi;
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, reset_condition_handler);
-    idio_condition_reset_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_condition_reset_condition_handler = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, restart_condition_handler);
-    idio_condition_restart_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_condition_restart_condition_handler = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_condition_handler);
-    idio_condition_default_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_condition_default_condition_handler = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_rcse_handler);
-    idio_condition_default_rcse_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_condition_default_rcse_handler = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_racse_handler);
-    idio_condition_default_racse_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_condition_default_racse_handler = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_SIGCHLD_handler);
-    idio_condition_default_SIGCHLD_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_condition_default_SIGCHLD_handler = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
 }
 
 void idio_init_condition ()
@@ -1236,7 +1236,7 @@ void idio_init_condition ()
      * IDIO_DEFINE_CONDITION0 macro.
      */
     IDIO sym = IDIO_SYMBOLS_C_INTERN (IDIO_CONDITION_CONDITION_TYPE_NAME);
-    idio_as_t gci = idio_vm_constants_lookup_or_extend (sym);
+    idio_as_t gci = idio_vm_extend_default_constants (sym);
     idio_condition_condition_type_mci = idio_fixnum (gci);
 
     /* Idio */

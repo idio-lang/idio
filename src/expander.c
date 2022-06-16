@@ -87,7 +87,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, char c
     IDIO si = idio_module_find_symbol (name, module);
     if (idio_S_false != si) {
 	IDIO fvi = IDIO_PAIR_HTT (si);
-	IDIO pd = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+	IDIO pd = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
 
 	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
 	    /*
@@ -105,10 +105,13 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, char c
 	return fvi;
     }
 
-    idio_as_t mci = idio_vm_constants_lookup_or_extend (name);
+    /*
+     * We should only be being called from C idio_init_X() functions.
+     */
+    idio_as_t mci = idio_vm_extend_default_constants (name);
     IDIO fmci = idio_fixnum (mci);
 
-    idio_as_t gvi = idio_vm_extend_values ();
+    idio_as_t gvi = idio_vm_extend_default_values ();
     IDIO fgvi = idio_fixnum (gvi);
 
     idio_module_set_vci (module, fmci, fmci);
@@ -119,7 +122,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, char c
      * idio_module_set_symbol_value() is a bit sniffy about setting
      * predefs -- rightly so -- so go under the hood!
      */
-    idio_vm_values_set (gvi, primdata);
+    idio_vm_default_values_set (gvi, primdata);
 
     return fgvi;
 }

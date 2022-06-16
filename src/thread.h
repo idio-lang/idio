@@ -23,6 +23,8 @@
 #ifndef THREAD_H
 #define THREAD_H
 
+extern IDIO idio_threading_module;
+
 IDIO idio_thread (idio_as_t stack_size);
 int idio_isa_thread (IDIO o);
 void idio_free_thread (IDIO t);

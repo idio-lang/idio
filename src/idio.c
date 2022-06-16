@@ -331,6 +331,7 @@ void idio_final ()
     idio_state = IDIO_STATE_SHUTDOWN;
 
     idio_module_table_final ();
+    idio_final_xenv ();
     idio_final_vtable ();
 
 #ifdef IDIO_VM_PROF

@@ -51,6 +51,7 @@
 #include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
+#include "thread.h"
 #include "vm.h"
 
 #include "json5-api.h"

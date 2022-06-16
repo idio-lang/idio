@@ -2554,13 +2554,13 @@ void idio_hash_add_primitives ()
     idio_vtable_add_method (h_vt,
 			    idio_S_value_index,
 			    idio_vtable_create_method_value (idio_util_method_value_index,
-							     idio_vm_values_ref (IDIO_FIXNUM_VAL (ref))));
+							     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (ref))));
 
     IDIO set = IDIO_ADD_PRIMITIVE (hash_set);
     idio_vtable_add_method (h_vt,
 			    idio_S_set_value_index,
 			    idio_vtable_create_method_value (idio_util_method_set_value_index,
-							     idio_vm_values_ref (IDIO_FIXNUM_VAL (set))));
+							     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (set))));
 
     IDIO_ADD_PRIMITIVE (hash_delete);
     IDIO_ADD_PRIMITIVE (hash_existsp);

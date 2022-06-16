@@ -221,13 +221,22 @@ void idio_vars_add_primitives ()
     IDIO seti;
     geti = IDIO_ADD_PRIMITIVE (RANDOM_get);
     seti = IDIO_ADD_PRIMITIVE (RANDOM_set);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("RANDOM"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_vm_values_ref (IDIO_FIXNUM_VAL (seti)), idio_Idio_module);
+    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("RANDOM"),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (seti)),
+				     idio_Idio_module);
 
     geti = IDIO_ADD_PRIMITIVE (SECONDS_get);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("SECONDS"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_Idio_module);
+    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("SECONDS"),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
+				     idio_S_nil,
+				     idio_Idio_module);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, suppress_rcse_get);
-    idio_module_export_computed_symbol (IDIO_SYMBOLS_C_INTERN ("%suppress-rcse"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_command_module);
+    idio_module_export_computed_symbol (IDIO_SYMBOLS_C_INTERN ("%suppress-rcse"),
+					idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
+					idio_S_nil,
+					idio_command_module);
 
     idio_vars_set_dynamic_default (idio_vars_IFS_sym, idio_string_C_len (IDIO_STATIC_STR_LEN (IDIO_VARS_IFS_DEFAULT)));
     idio_vars_set_dynamic_default (idio_vars_suppress_exit_on_error_sym, idio_S_false);

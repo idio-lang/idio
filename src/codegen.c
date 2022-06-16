@@ -323,7 +323,7 @@ idio_as_t idio_codegen_extend_values (IDIO eenv)
     IDIO_TYPE_ASSERT (struct_instance, eenv);
 
     if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv)) {
-	return idio_vm_extend_values ();
+	return idio_vm_extend_default_values ();
     }
 
     IDIO vs = IDIO_MEANING_EENV_VALUES (eenv);
@@ -449,6 +449,7 @@ idio_as_t idio_codegen_extend_src_constants (IDIO eenv, IDIO src)
 	    idio_hash_put (sps, src, lo);
 	}
     }
+
     return gci;
 }
 

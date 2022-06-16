@@ -594,7 +594,7 @@ static idio_as_t idio_meaning_extend_values (IDIO eenv)
     IDIO_TYPE_ASSERT (struct_instance, eenv);
 
     if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv)) {
-	return idio_vm_extend_values ();
+	return idio_vm_extend_default_values ();
     }
 
     IDIO vs = IDIO_MEANING_EENV_VALUES (eenv);
@@ -679,7 +679,11 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
 
     if (idio_S_false != si) {
 	IDIO fgvi = IDIO_PAIR_HTT (si);
-	IDIO pd = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
+
+	/*
+	 * Should only be called in C bootstrap
+	 */
+	IDIO pd = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fgvi));
 
 	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
 	    idio_debug ("WARNING: predef-extend: %s: ", name);
@@ -720,7 +724,7 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
      * idio_module_set_symbol_value() is a bit sniffy about setting
      * predefs -- rightly so -- so go under the hood!
      */
-    idio_vm_values_set (gvi, primdata);
+    idio_vm_default_values_set (gvi, primdata);
 
     return fgvi;
 }
@@ -1953,10 +1957,13 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	 * What we need to do is patch up the toplevel with the
 	 * current primitive value we're overriding.
 	 */
-	IDIO fvi = IDIO_PAIR_HTT (si);
-	idio_module_set_symbol_value (name,
-				      idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi)),
-				      IDIO_MEANING_EENV_MODULE (eenv));
+	if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv)) {
+	    IDIO fvi = IDIO_PAIR_HTT (si);
+	    idio_module_set_symbol_value (name,
+					  idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi)),
+					  IDIO_MEANING_EENV_MODULE (eenv));
+	}
+
 	assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, new_mci, m);
 	fmci = new_mci;
 
@@ -3708,7 +3715,7 @@ static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDI
      *
      * Need to figure out run-in-thread too...
      */
-    IDIO primdata = idio_vm_values_ref (IDIO_FIXNUM_VAL (gvi));
+    IDIO primdata = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (gvi));
 
     if (IDIO_PRIMITIVE_VARARGS (primdata)) {
 	/*
@@ -3809,7 +3816,7 @@ static IDIO idio_meaning_application (IDIO src, IDIO fe, IDIO aes, IDIO nametree
 
 	    if (idio_S_predef == scope) {
 		IDIO fvi = IDIO_PAIR_HTT (si);
-		IDIO p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+		IDIO p = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
 
 		if (idio_S_unspec != p) {
 		    if (idio_isa_primitive (p)) {
@@ -3841,7 +3848,7 @@ static IDIO idio_meaning_application (IDIO src, IDIO fe, IDIO aes, IDIO nametree
 			idio_debug ("BAD application: ! function\npd %s\n", p);
 			idio_debug ("si %s\n", si);
 			idio_debug ("e %s\n", fe);
-			idio_debug ("ivvr %s\n", idio_vm_values_ref (IDIO_FIXNUM_VAL (IDIO_PAIR_HTT (si))));
+			idio_debug ("ivvr %s\n", idio_vm_default_values_ref (IDIO_FIXNUM_VAL (IDIO_PAIR_HTT (si))));
 		    }
 		}
 	    }
@@ -5431,7 +5438,7 @@ IDIO idio_evaluate_eenv (IDIO aotp, IDIO module)
 	/*
 	 * Slightly annoyingly, idio_C_pointer_type() will free() the
 	 * embedded pointer by default.  Which isn't great for the
-	 * shared idio_all_code
+	 * shared idio_all_code (or anything else).
 	 */
 	IDIO CTP_byte_code = idio_C_pointer_type (idio_CSI_idio_ia_s, idio_all_code);
 	IDIO_C_TYPE_POINTER_FREEP (CTP_byte_code) = 0;

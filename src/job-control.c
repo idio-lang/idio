@@ -2286,7 +2286,7 @@ void idio_init_job_control ()
     IDIO geti;
     geti = IDIO_ADD_PRIMITIVE (interactivep);
     idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("%idio-interactive"),
-				     idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
 				     idio_S_nil,
 				     idio_job_control_module);
 

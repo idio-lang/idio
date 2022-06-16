@@ -832,7 +832,7 @@ void idio_unicode_add_primitives ()
      * add the sigstr and docstr
      */
     IDIO fvi = IDIO_ADD_PRIMITIVE (unicode_eq_p);
-    IDIO p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    IDIO p = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
     idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("cp1 cp2 [...]"));
     idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if unicode arguments are equal			\n\

@@ -1098,7 +1098,7 @@ IDIO idio_module_direct_reference (IDIO name)
 		     * the same: the symbols M/S is not the same as
 		     * the symbol S.
 		     */
-		    idio_as_t mci = idio_vm_constants_lookup_or_extend (name);
+		    idio_as_t mci = idio_vm_constants_lookup_or_extend (idio_thread_current_thread (),  name);
 		    r = IDIO_LIST3 (m_sym,
 				    s_sym,
 				    IDIO_LIST5 (IDIO_PAIR_H (si), idio_fixnum (mci), IDIO_PAIR_HTT (si), mod, idio_module_direct_reference_string));
@@ -1417,9 +1417,9 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n, IDIO args)
 	IDIO fgvi = IDIO_PAIR_HTT (si);
 
 	if (idio_S_toplevel == scope) {
-	    r = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_values_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fgvi));
 	} else if (idio_S_predef == scope) {
-	    r = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_values_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fgvi));
 	} else if (idio_S_dynamic == scope) {
 	    r = idio_vm_dynamic_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
 	} else if (idio_S_environ == scope) {
@@ -1546,9 +1546,9 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
 
 	if (gvi) {
 	    if (idio_S_toplevel == scope) {
-		r = idio_vm_values_ref (gvi);
+		r = idio_vm_values_ref (idio_thread_current_thread (), gvi);
 	    } else if (idio_S_predef == scope) {
-		r = idio_vm_values_ref (gvi);
+		r = idio_vm_values_ref (idio_thread_current_thread (), gvi);
 	    } else if (idio_S_dynamic == scope) {
 		/*
 		 * Code coverage
@@ -1727,6 +1727,8 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
     IDIO fmci;
     IDIO fgvi;
 
+    IDIO thr = idio_thread_current_thread ();
+
     if (idio_S_unspec == sv) {
 	/*
 	 * C init code will get us here without having been through
@@ -1735,10 +1737,10 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	 */
 	scope = idio_S_toplevel;
 
-	idio_as_t mci = idio_vm_constants_lookup_or_extend (symbol);
+	idio_as_t mci = idio_vm_constants_lookup_or_extend (thr, symbol);
 	fmci = idio_fixnum (mci);
 
-	idio_as_t gvi = idio_vm_extend_values ();
+	idio_as_t gvi = idio_vm_extend_values (thr);
 	fgvi = idio_fixnum (gvi);
 
 	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST5 (scope, fmci, fgvi, module, idio_module_set_symbol_value_string));
@@ -1756,7 +1758,7 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	 * and then immediately set_symbol_value() which means the gvi
 	 * remains 0.
 	 */
-	gvi = idio_vm_extend_values ();
+	gvi = idio_vm_extend_values (thr);
 	fgvi = idio_fixnum (gvi);
 	IDIO_PAIR_HTT (sv) = idio_fixnum (gvi);
     }
@@ -1765,7 +1767,7 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
     idio_module_set_vvi (module, fmci, fgvi);
 
     if (idio_S_toplevel == scope) {
-	idio_vm_values_set (gvi, value);
+	idio_vm_values_set (thr, gvi, value);
     } else if (idio_S_dynamic == scope) {
 	/*
 	 * Code coverage
@@ -1814,7 +1816,7 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	 * can live with it for now.
 	 */
 	if (module != idio_operator_module) {
-	    IDIO cv = idio_vm_values_ref (gvi);
+	    IDIO cv = idio_vm_values_ref (idio_thread_current_thread (),  gvi);
 	    idio_debug ("PRIM %s/", IDIO_MODULE_NAME (module));
 	    idio_debug ("%s", symbol);
 	    idio_debug (" => %s", value);
@@ -1915,10 +1917,12 @@ IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO modu
     IDIO scope;
     IDIO fgvi;
 
+    IDIO thr = idio_thread_current_thread ();
+
     if (idio_S_unspec == sv) {
-	idio_as_t mci = idio_vm_constants_lookup_or_extend (symbol);
+	idio_as_t mci = idio_vm_constants_lookup_or_extend (thr, symbol);
 	scope = idio_S_computed;
-	idio_as_t gvi = idio_vm_extend_values ();
+	idio_as_t gvi = idio_vm_extend_values (thr);
 	fgvi = idio_fixnum (gvi);
 
 	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST5 (scope,
@@ -1945,7 +1949,7 @@ IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO modu
 	fgvi = IDIO_PAIR_HTT (scope);
     }
 
-    idio_vm_values_set (IDIO_FIXNUM_VAL (fgvi), idio_pair (get, set));
+    idio_vm_values_set (thr, IDIO_FIXNUM_VAL (fgvi), idio_pair (get, set));
 
     return idio_S_unspec;
 }
@@ -2169,7 +2173,10 @@ void idio_final_module ()
 		IDIO gvi = idio_hash_ref (IDIO_MODULE_VVI (module), mci);
 		if (idio_S_unspec != gvi) {
 		    idio_debug_FILE (fp, " %5s", mci);
-		    IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (mci));
+		    /*
+		     * XXX which xenv?
+		     */
+		    IDIO sym = idio_vm_constants_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (mci));
 		    idio_debug_FILE (fp, " %-40s", sym);
 		    if (idio_S_false != idio_list_memq (sym, IDIO_MODULE_EXPORTS (module))) {
 			fprintf (fp, "E ");
@@ -2232,15 +2239,15 @@ void idio_init_module ()
     IDIO Iname = IDIO_SYMBOLS_C_INTERN ("Idio");
     idio_Idio_module = idio_module (Iname);
     IDIO_MODULE_IMPORTS (idio_Idio_module) = idio_S_nil;
-    idio_as_t Im_gci = idio_vm_constants_lookup_or_extend (Iname);
-    idio_as_t Im_gvi = idio_vm_extend_values ();
+    idio_as_t Im_gci = idio_vm_extend_default_constants (Iname);
+    idio_as_t Im_gvi = idio_vm_extend_default_values ();
+
+    idio_module_set_symbol (Iname, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (Im_gci), idio_fixnum (Im_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
 
     IDIO dname = IDIO_SYMBOLS_C_INTERN ("debugger");
     idio_debugger_module = idio_module (dname);
-    idio_as_t dm_gci = idio_vm_constants_lookup_or_extend (dname);
-    idio_as_t dm_gvi = idio_vm_extend_values ();
-
-    idio_module_set_symbol (Iname, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (Im_gci), idio_fixnum (Im_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
+    idio_as_t dm_gci = idio_vm_extend_default_constants (dname);
+    idio_as_t dm_gvi = idio_vm_extend_default_values ();
 
     idio_module_set_symbol (dname, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (dm_gci), idio_fixnum (dm_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
 }

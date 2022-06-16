@@ -257,17 +257,22 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO ee
 
 void idio_vm_restore_continuation (IDIO k, IDIO val);
 void idio_vm_restore_exit (IDIO k, IDIO val);
-idio_as_t idio_vm_extend_constants (IDIO v);
-IDIO idio_vm_constants_ref (idio_as_t gci);
-idio_ai_t idio_vm_constants_lookup (IDIO v);
-idio_as_t idio_vm_constants_lookup_or_extend (IDIO v);
+idio_as_t idio_vm_extend_constants_direct (IDIO cs, IDIO ch, IDIO v);
+idio_as_t idio_vm_extend_default_constants (IDIO v);
+idio_as_t idio_vm_extend_constants (IDIO thr, IDIO v);
+IDIO idio_vm_constants_ref (IDIO thr, idio_as_t gci);
+idio_ai_t idio_vm_constants_lookup (IDIO thr, IDIO v);
+idio_as_t idio_vm_constants_lookup_or_extend (IDIO thr, IDIO v);
 IDIO idio_vm_src_constants_ref (IDIO eenv, idio_as_t gci);
 IDIO idio_vm_src_properties_ref (IDIO eenv, IDIO src);
-idio_as_t idio_vm_extend_values ();
-IDIO idio_vm_values_ref (idio_as_t gvi);
-void idio_vm_values_set (idio_as_t gvi, IDIO v);
+idio_as_t idio_vm_extend_values (IDIO thr);
+idio_as_t idio_vm_extend_default_values ();
+IDIO idio_vm_values_ref (IDIO thr, idio_as_t gvi);
+IDIO idio_vm_default_values_ref (idio_as_t gvi);
+void idio_vm_values_set (IDIO thr, idio_as_t gvi, IDIO v);
+void idio_vm_default_values_set (idio_as_t gvi, IDIO v);
 void idio_vm_decode_thread (IDIO thr);
-void idio_vm_decode_stack (IDIO stack);
+void idio_vm_decode_stack (IDIO thr, IDIO stack);
 void idio_vm_reset_thread (IDIO thr, int verbose);
 IDIO idio_vm_add_dynamic (IDIO m, IDIO ci, IDIO vi, IDIO note);
 IDIO idio_vm_dynamic_ref (IDIO thr, idio_as_t msi, idio_as_t gvi, IDIO args);
@@ -282,7 +287,6 @@ void idio_vm_push_abort (IDIO thr, IDIO krun);
 void idio_vm_pop_abort (IDIO thr);
 idio_sp_t idio_vm_find_abort_1 (IDIO thr);
 idio_sp_t idio_vm_find_abort_2 (IDIO thr);
-void idio_vm_add_module_constants (IDIO module, IDIO constants);
 
 void idio_raise_condition (IDIO continuablep, IDIO e);
 void idio_reraise_condition (IDIO continuablep, IDIO condition);
@@ -307,6 +311,7 @@ time_t idio_vm_elapsed (void);
 void idio_vm_stop_tracing ();
 
 void idio_init_vm_values ();
+void idio_final_xenv ();
 void idio_init_vm ();
 
 #endif

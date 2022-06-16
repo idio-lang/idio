@@ -66,7 +66,7 @@
  * Return:
  * Returns the closure.
  */
-IDIO idio_toplevel_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO env, IDIO name, IDIO sigstr, IDIO docstr, IDIO srcloc)
+IDIO idio_toplevel_closure (size_t xi, size_t const code_pc, size_t const code_len, IDIO frame, IDIO env, IDIO name, IDIO sigstr, IDIO docstr, IDIO srcloc)
 {
     IDIO_C_ASSERT (code_pc);
     IDIO_C_ASSERT (code_len);
@@ -87,6 +87,7 @@ IDIO idio_toplevel_closure (size_t const code_pc, size_t const code_len, IDIO fr
     IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
 
     IDIO_CLOSURE_GREY (c)              = NULL;
+    IDIO_CLOSURE_XI (c)                = xi;
     IDIO_CLOSURE_CODE_PC (c)           = code_pc;
     IDIO_CLOSURE_CODE_LEN (c)          = code_len;
     IDIO_CLOSURE_FRAME (c)             = frame;

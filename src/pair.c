@@ -1758,7 +1758,7 @@ void idio_pair_add_primitives ()
     idio_vtable_add_method (p_vt,
 			    idio_S_value_index,
 			    idio_vtable_create_method_value (idio_util_method_value_index,
-							     idio_vm_values_ref (IDIO_FIXNUM_VAL (ref))));
+							     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (ref))));
 }
 
 void idio_init_pair ()

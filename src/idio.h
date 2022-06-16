@@ -350,7 +350,11 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_ADD_POSTFIX_OPERATOR(cname,pri)	  idio_add_postfix_operator_primitive (&idio_postfix_operator_data_ ## cname, pri);
 
 #define IDIO_C_STRUCT_IDENT_DECL(n)			IDIO idio_CSI_ ## n
-#define IDIO_C_STRUCT_IDENT_DEF(sname,fnames,cname,fvi)	idio_CSI_ ## cname = IDIO_LIST3 (sname, fnames, idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi)));  idio_gc_protect_auto (idio_CSI_ ## cname);
+#define IDIO_C_STRUCT_IDENT_DEF(sname,fnames,cname,fvi)			\
+    idio_CSI_ ## cname = IDIO_LIST3 (sname,				\
+				     fnames,				\
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi))); \
+    idio_gc_protect_auto (idio_CSI_ ## cname);
 
 /*
  * Some well-known constants.

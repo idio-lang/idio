@@ -653,6 +653,7 @@ typedef struct idio_closure_stats_s {
 
 typedef struct idio_closure_s {
     struct idio_s *grey;
+    size_t xi;			/* xenv index */
     idio_pc_t code_pc;
     idio_pc_t code_len;
     struct idio_s *name;
@@ -664,6 +665,7 @@ typedef struct idio_closure_s {
 } idio_closure_t;
 
 #define IDIO_CLOSURE_GREY(C)       ((C)->u.closure->grey)
+#define IDIO_CLOSURE_XI(C)         ((C)->u.closure->xi)
 #define IDIO_CLOSURE_CODE_PC(C)    ((C)->u.closure->code_pc)
 #define IDIO_CLOSURE_CODE_LEN(C)   ((C)->u.closure->code_len)
 #define IDIO_CLOSURE_NAME(C)       ((C)->u.closure->name)
@@ -922,6 +924,7 @@ typedef intptr_t idio_sp_t;
 
 typedef struct idio_thread_s {
     struct idio_s *grey;
+    size_t xi;			/* xenv index */
     idio_pc_t pc;
     struct idio_s *stack;
     struct idio_s *val;
@@ -969,6 +972,7 @@ typedef struct idio_thread_s {
 } idio_thread_t;
 
 #define IDIO_THREAD_GREY(T)           ((T)->u.thread->grey)
+#define IDIO_THREAD_XI(T)             ((T)->u.thread->xi)
 #define IDIO_THREAD_PC(T)             ((T)->u.thread->pc)
 #define IDIO_THREAD_STACK(T)          ((T)->u.thread->stack)
 #define IDIO_THREAD_VAL(T)            ((T)->u.thread->val)

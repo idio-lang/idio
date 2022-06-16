@@ -3611,7 +3611,7 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (string_length);
 
     IDIO ref = IDIO_ADD_PRIMITIVE (string_ref);
-    IDIO ref_func = idio_vm_values_ref (IDIO_FIXNUM_VAL (ref));
+    IDIO ref_func = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (ref));
     idio_vtable_t *s_vt = idio_vtable (IDIO_TYPE_STRING);
     idio_vtable_t *ss_vt = idio_vtable (IDIO_TYPE_SUBSTRING);
     idio_vtable_add_method (s_vt,
@@ -3625,7 +3625,7 @@ void idio_string_add_primitives ()
 							     ref_func));
 
     IDIO set = IDIO_ADD_PRIMITIVE (string_set);
-    IDIO set_func = idio_vm_values_ref (IDIO_FIXNUM_VAL (set));
+    IDIO set_func = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (set));
     idio_vtable_add_method (s_vt,
 			    idio_S_set_value_index,
 			    idio_vtable_create_method_value (idio_util_method_set_value_index,

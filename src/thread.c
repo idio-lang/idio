@@ -70,6 +70,7 @@ IDIO idio_thread_base (idio_as_t stack_size)
     IDIO main_module = idio_Idio_module;
 
     IDIO_THREAD_GREY (t) = NULL;
+    IDIO_THREAD_XI (t) = 0;
     IDIO_THREAD_PC (t) = 0;
     IDIO_THREAD_STACK (t) = idio_array (stack_size);
     IDIO_THREAD_VAL (t) = idio_S_unspec;
@@ -82,10 +83,27 @@ IDIO idio_thread_base (idio_as_t stack_size)
 
 	return idio_S_notreached;
     }
-    IDIO_THREAD_FUNC (t) = idio_S_unspec;
+
+    /*
+     * Hmm.  Switching the loader to idio_invoke_C
+     * (idio_module_symbol_value ("evaluate/evaluate"), ...) seems to
+     * prise out an idio_vm_restore_all_state() verification fail.
+     *
+     * Hence preset *func* and *expr* to values that are restorable
+     */
+    IDIO_THREAD_FUNC (t) = idio_S_load;
     IDIO_THREAD_REG1 (t) = idio_S_unspec;
     IDIO_THREAD_REG2 (t) = idio_S_unspec;
     IDIO_THREAD_EXPR (t) = idio_fixnum (0);
+
+    /*
+     * Arguably these should be idio_thread_current_X_handle() but
+     * that creates a circular loop for the first thread.
+     *
+     * As it happens, because the first thread is created before
+     * idio_stdX are defined in file-handle.c, we have to re-assign
+     * them in idio_init_first_thread() anyway.
+     */
     IDIO_THREAD_INPUT_HANDLE (t) = idio_stdin_file_handle ();
     IDIO_THREAD_OUTPUT_HANDLE (t) = idio_stdout_file_handle ();
     IDIO_THREAD_ERROR_HANDLE (t) = idio_stderr_file_handle ();
@@ -399,11 +417,6 @@ IDIO idio_thread_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 
 void idio_thread_add_primitives ()
 {
-    /*
-     * Required by environ stuff during add_primitives...
-     */
-    idio_running_thread = idio_thread_base (40);
-
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_threading_module, current_thread);
 }
 
@@ -415,10 +428,23 @@ void idio_init_thread ()
     idio_gc_protect_auto (idio_running_threads);
 
     idio_threading_module = idio_module (IDIO_SYMBOLS_C_INTERN ("threading"));
+
+    /*
+     * Required early doors
+     */
+    idio_running_thread = idio_thread_base (40);
 }
 
 void idio_init_first_thread ()
 {
+    /*
+     * We created a holding idio_running_thread before
+     * idio_init_file_handle() could set these up
+     */
+    IDIO_THREAD_INPUT_HANDLE (idio_running_thread) = idio_stdin_file_handle ();
+    IDIO_THREAD_OUTPUT_HANDLE (idio_running_thread) = idio_stdout_file_handle ();
+    IDIO_THREAD_ERROR_HANDLE (idio_running_thread) = idio_stderr_file_handle ();
+
     idio_vm_thread_init (idio_running_thread);
     idio_array_push (idio_running_threads, idio_running_thread);
 

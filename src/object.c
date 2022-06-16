@@ -1837,12 +1837,12 @@ void idio_init_object ()
 
     IDIO vi;
     vi = IDIO_ADD_MODULE_PRIMITIVE (idio_object_module, invoke_instance_in_error);
-    idio_object_invoke_instance_in_error = idio_vm_values_ref (IDIO_FIXNUM_VAL (vi));
+    idio_object_invoke_instance_in_error = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (vi));
     vi = IDIO_ADD_MODULE_PRIMITIVE (idio_object_module, invoke_entity_in_error);
-    idio_object_invoke_entity_in_error = idio_vm_values_ref (IDIO_FIXNUM_VAL (vi));
+    idio_object_invoke_entity_in_error = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (vi));
 
     vi = IDIO_ADD_MODULE_PRIMITIVE (idio_object_module, default_slot_value);
-    idio_object_default_slot_value = idio_vm_values_ref (IDIO_FIXNUM_VAL (vi));
+    idio_object_default_slot_value = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (vi));
 
     /*
      * We need an implementation to (nearly silently) do all the heavy
