@@ -527,6 +527,34 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
 #define IDIO_MEANING_PREDEF_FLAG_NONE	0
 #define IDIO_MEANING_PREDEF_FLAG_EXPORT	1
 
+static IDIO idio_meaning_flags_scope (int flags)
+{
+    IDIO scope;
+    switch (IDIO_MEANING_SCOPE (flags)) {
+    case IDIO_MEANING_FLAG_TOPLEVEL_SCOPE:
+	scope = idio_S_toplevel;
+	break;
+    case IDIO_MEANING_FLAG_DYNAMIC_SCOPE:
+	scope = idio_S_dynamic;
+	break;
+    case IDIO_MEANING_FLAG_ENVIRON_SCOPE:
+	scope = idio_S_environ;
+	break;
+    case IDIO_MEANING_FLAG_COMPUTED_SCOPE:
+	scope = idio_S_computed;
+	break;
+    default:
+	/*
+	 * Shouldn't get here without a developer coding error.
+	 */
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected variable scope %#x", flags);
+
+	return idio_S_notreached;
+    }
+
+    return scope;
+}
+
 /*
  * How we look up a name depends on whether we are compiling "live" or
  * pre-compiling.
@@ -541,7 +569,6 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
  *
  * aot?			boolean: normal or ahead-of-time
  * symbols		list of (name {si-data})
- * symbols-array	symbols indexed by ci
  * values		list of indices (these are defines, dynamic and environs)
  * constants		array
  * constants-hash	constant to ci map
@@ -614,13 +641,15 @@ static idio_as_t idio_meaning_extend_values (IDIO eenv)
     return C_vi;
 }
 
-static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, int recurse)
+static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, IDIO scope, int recurse)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (eenv);
+    IDIO_ASSERT (scope);
 
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (struct_instance, eenv);
+    IDIO_TYPE_ASSERT (symbol, scope);
 
     if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv)) {
 	return idio_module_find_symbol_recurse (name, IDIO_MEANING_EENV_MODULE (eenv), recurse);
@@ -632,7 +661,7 @@ static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, int recurse)
 	idio_as_t C_ci = idio_meaning_constants_lookup_or_extend (eenv, name);
 	idio_as_t C_vi = idio_meaning_extend_values (eenv);
 	sym_si = IDIO_LIST6 (name,
-			     idio_S_toplevel,
+			     scope,
 			     idio_fixnum (C_ci),
 			     idio_fixnum (C_vi),
 			     IDIO_MEANING_EENV_MODULE (eenv),
@@ -643,7 +672,20 @@ static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, int recurse)
     return IDIO_PAIR_T (sym_si);
 }
 
-static IDIO idio_meaning_find_symbol (IDIO name, IDIO eenv)
+static IDIO idio_meaning_find_symbol (IDIO name, IDIO eenv, IDIO scope)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (eenv);
+    IDIO_ASSERT (scope);
+
+    IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
+    IDIO_TYPE_ASSERT (symbol, scope);
+
+    return idio_meaning_find_symbol_recurse (name, eenv, scope, 0);
+}
+
+static IDIO idio_meaning_find_toplevel_symbol (IDIO name, IDIO eenv)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (eenv);
@@ -651,7 +693,29 @@ static IDIO idio_meaning_find_symbol (IDIO name, IDIO eenv)
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (struct_instance, eenv);
 
-    return idio_meaning_find_symbol_recurse (name, eenv, 0);
+    return idio_meaning_find_symbol_recurse (name, eenv, idio_S_toplevel, 0);
+}
+
+static IDIO idio_meaning_find_dynamic_symbol (IDIO name, IDIO eenv)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (eenv);
+
+    IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
+
+    return idio_meaning_find_symbol_recurse (name, eenv, idio_S_dynamic, 0);
+}
+
+static IDIO idio_meaning_find_environ_symbol (IDIO name, IDIO eenv)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (eenv);
+
+    IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
+
+    return idio_meaning_find_symbol_recurse (name, eenv, idio_S_environ, 0);
 }
 
 /*
@@ -675,7 +739,7 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
 
     IDIO eenv = idio_evaluate_normal_eenv (module);
 
-    IDIO si = idio_meaning_find_symbol (name, eenv);
+    IDIO si = idio_meaning_find_toplevel_symbol (name, eenv);
 
     if (idio_S_false != si) {
 	IDIO fgvi = IDIO_PAIR_HTT (si);
@@ -765,30 +829,9 @@ IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO eenv)
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (struct_instance, eenv);
 
-    IDIO scope;
-    switch (IDIO_MEANING_SCOPE (flags)) {
-    case IDIO_MEANING_FLAG_TOPLEVEL_SCOPE:
-	scope = idio_S_toplevel;
-	break;
-    case IDIO_MEANING_FLAG_DYNAMIC_SCOPE:
-	scope = idio_S_dynamic;
-	break;
-    case IDIO_MEANING_FLAG_ENVIRON_SCOPE:
-	scope = idio_S_environ;
-	break;
-    case IDIO_MEANING_FLAG_COMPUTED_SCOPE:
-	scope = idio_S_computed;
-	break;
-    default:
-	/*
-	 * Shouldn't get here without a developer coding error.
-	 */
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected toplevel variable scope %#x", flags);
+    IDIO scope = idio_meaning_flags_scope (flags);
 
-	return idio_S_notreached;
-    }
-
-    IDIO si = idio_meaning_find_symbol (name, eenv);
+    IDIO si = idio_meaning_find_symbol (name, eenv, scope);
 
     if (idio_S_false != si) {
 	IDIO curscope = IDIO_PAIR_H (si);
@@ -837,6 +880,9 @@ IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO eenv)
     return fmci;
 }
 
+/*
+ * Called by code in vars.c
+ */
 IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO eenv)
 {
     IDIO_ASSERT (src);
@@ -856,7 +902,7 @@ IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO eenv)
     IDIO dynamic_eenv = idio_struct_instance_copy (eenv);
     idio_struct_instance_set_direct (dynamic_eenv, IDIO_EENV_ST_MODULE, idio_Idio_module);
 
-    IDIO si = idio_meaning_find_symbol (name, dynamic_eenv);
+    IDIO si = idio_meaning_find_dynamic_symbol (name, dynamic_eenv);
 
     if (idio_S_false != si) {
 	IDIO scope = IDIO_PAIR_H (si);
@@ -891,6 +937,9 @@ IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO eenv)
     return fmci;
 }
 
+/*
+ * Called by code in env.c
+ */
 IDIO idio_environ_extend (IDIO src, IDIO name, IDIO val, IDIO eenv)
 {
     IDIO_ASSERT (src);
@@ -910,7 +959,7 @@ IDIO idio_environ_extend (IDIO src, IDIO name, IDIO val, IDIO eenv)
     IDIO environ_eenv = idio_struct_instance_copy (eenv);
     idio_struct_instance_set_direct (environ_eenv, IDIO_EENV_ST_MODULE, idio_Idio_module);
 
-    IDIO si = idio_meaning_find_symbol (name, environ_eenv);
+    IDIO si = idio_meaning_find_environ_symbol (name, environ_eenv);
 
     if (idio_S_false != si) {
 	IDIO scope = IDIO_PAIR_H (si);
@@ -1175,6 +1224,8 @@ static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int 
     IDIO r = idio_meaning_lexical_lookup (src, nametree, name);
 
     if (idio_S_false == r) {
+	IDIO scope = idio_meaning_flags_scope (flags);
+
 	/*
 	 * NOTICE This must be a recursive lookup.  Otherwise we'll
 	 * not see any bindings in Idio.
@@ -1182,7 +1233,7 @@ static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int 
 	 * Unless we're defining something in which case we mustn't
 	 * recurse...
 	 */
-        r = idio_meaning_find_symbol_recurse (name, eenv, recurse);
+        r = idio_meaning_find_symbol_recurse (name, eenv, scope, recurse);
 
 	if (idio_S_false == r) {
 
@@ -1197,7 +1248,7 @@ static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int 
 		 * -- we should (eventually) see a definition for it
 		 */
 		idio_toplevel_extend (src, name, flags, eenv);
-		r = idio_meaning_find_symbol (name, eenv);
+		r = idio_meaning_find_toplevel_symbol (name, eenv);
 	    }
 	}
     }
@@ -2214,7 +2265,11 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
 	     * "hard" to debug.
 	     */
 	    idio_install_expander_source (name, exp, expander);
-	    return idio_meaning_assignment (src, name, IDIO_PAIR_H (exp), nametree, IDIO_MEANING_TOPLEVEL_SCOPE (flags), eenv);
+	    return idio_meaning_assignment (src,
+					    name,
+					    IDIO_PAIR_H (exp),
+					    nametree,
+					    IDIO_MEANING_TOPLEVEL_SCOPE (flags), eenv);
 	}
     }
 
@@ -3733,15 +3788,27 @@ static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDI
 	    break;
 	case 1:
 	    {
-		IDIO m1 = idio_meaning (IDIO_MPP (IDIO_PAIR_H (aes), src), IDIO_PAIR_H (aes), nametree, IDIO_MEANING_NOT_TAILP (flags), eenv);
+		IDIO m1 = idio_meaning (IDIO_MPP (IDIO_PAIR_H (aes), src),
+					IDIO_PAIR_H (aes),
+					nametree,
+					IDIO_MEANING_NOT_TAILP (flags),
+					eenv);
 
 		return IDIO_LIST5 (IDIO_I_PRIMCALL1, src, idio_fixnum (IDIO_A_PRIMCALL1), m1, gvi);
 	    }
 	    break;
 	case 2:
 	    {
-		IDIO m1 = idio_meaning (IDIO_MPP (IDIO_PAIR_H (aes), src), IDIO_PAIR_H (aes), nametree, IDIO_MEANING_NOT_TAILP (flags), eenv);
-		IDIO m2 = idio_meaning (IDIO_MPP (IDIO_PAIR_HT (aes), src), IDIO_PAIR_HT (aes), nametree, IDIO_MEANING_NOT_TAILP (flags), eenv);
+		IDIO m1 = idio_meaning (IDIO_MPP (IDIO_PAIR_H (aes), src),
+					IDIO_PAIR_H (aes),
+					nametree,
+					IDIO_MEANING_NOT_TAILP (flags),
+					eenv);
+		IDIO m2 = idio_meaning (IDIO_MPP (IDIO_PAIR_HT (aes), src),
+					IDIO_PAIR_HT (aes),
+					nametree,
+					IDIO_MEANING_NOT_TAILP (flags),
+					eenv);
 
 #define IDIO_EVALUATE_RUN_IN_THREAD	"run-in-thread"
 		size_t rit_len = sizeof (IDIO_EVALUATE_RUN_IN_THREAD) - 1;
@@ -3931,7 +3998,7 @@ static IDIO idio_meaning_dynamic_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
     IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, IDIO_MEANING_NOT_TAILP (flags), eenv);
 
     IDIO fmci;
-    IDIO si = idio_meaning_find_symbol_recurse (name, eenv, 1);
+    IDIO si = idio_meaning_find_symbol_recurse (name, eenv, idio_S_dynamic, 1);
 
     if (idio_S_false != si) {
 	fmci = IDIO_PAIR_HT (si);
@@ -3999,7 +4066,7 @@ static IDIO idio_meaning_environ_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
     IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, IDIO_MEANING_NOT_TAILP (flags), eenv);
 
     IDIO fmci;
-    IDIO si = idio_meaning_find_symbol_recurse (name, eenv, 1);
+    IDIO si = idio_meaning_find_symbol_recurse (name, eenv, idio_S_environ, 1);
 
     if (idio_S_false != si) {
 	fmci = IDIO_PAIR_HT (si);
@@ -4104,7 +4171,7 @@ static IDIO idio_meaning_trap (IDIO src, IDIO ce, IDIO he, IDIO be, IDIO nametre
 	IDIO cname = IDIO_PAIR_H (ce);
 
 	IDIO fmci;
-	IDIO si = idio_meaning_find_symbol_recurse (cname, eenv, 1);
+	IDIO si = idio_meaning_find_symbol_recurse (cname, eenv, idio_S_toplevel, 1);
 
 	if (idio_isa_pair (si)) {
 	    fmci = IDIO_PAIR_HT (si);
@@ -4443,7 +4510,14 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 			/*
 			 * (function bindings "docstr" body ...)
 			 */
-			return idio_meaning_abstraction (src, idio_gensym (IDIO_STATIC_STR_LEN ("anon")), IDIO_PAIR_H (et), etth, ettt, nametree, flags, eenv);
+			return idio_meaning_abstraction (src,
+							 idio_gensym (IDIO_STATIC_STR_LEN ("anon")),
+							 IDIO_PAIR_H (et),
+							 etth,
+							 ettt,
+							 nametree,
+							 flags,
+							 eenv);
 		    } else {
 			/*
 			 * (function bindings body ...)
@@ -4452,7 +4526,14 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 			 * The second is a function whose body is a
 			 * string.
 			 */
-			return idio_meaning_abstraction (src, idio_gensym (IDIO_STATIC_STR_LEN ("anon")), IDIO_PAIR_H (et), idio_S_nil, ett, nametree, flags, eenv);
+			return idio_meaning_abstraction (src,
+							 idio_gensym (IDIO_STATIC_STR_LEN ("anon")),
+							 IDIO_PAIR_H (et),
+							 idio_S_nil,
+							 ett,
+							 nametree,
+							 flags,
+							 eenv);
 		    }
 		} else {
 		/*
@@ -4489,7 +4570,14 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 			    /*
 			     * (function/name name bindings "docstr" body ...)
 			     */
-			    return idio_meaning_abstraction (src, IDIO_PAIR_H (et), etth, ettth, etttt, nametree, flags, eenv);
+			    return idio_meaning_abstraction (src,
+							     IDIO_PAIR_H (et),
+							     etth,
+							     ettth,
+							     etttt,
+							     nametree,
+							     flags,
+							     eenv);
 			} else {
 			    /*
 			     * (function/name name bindings body ...)
@@ -4498,7 +4586,14 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 			     * The second is a function whose body is
 			     * a string.
 			     */
-			    return idio_meaning_abstraction (src, IDIO_PAIR_H (et), etth, idio_S_nil, ettt, nametree, flags, eenv);
+			    return idio_meaning_abstraction (src,
+							     IDIO_PAIR_H (et),
+							     etth,
+							     idio_S_nil,
+							     ettt,
+							     nametree,
+							     flags,
+							     eenv);
 			}
 		    } else {
 			/*
@@ -4540,7 +4635,13 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 			/*
 			 * (function+ var val body ...)
 			 */
-			return idio_meaning_local_application (src, IDIO_PAIR_H (et), IDIO_PAIR_H (ett), ettt, nametree, flags, eenv);
+			return idio_meaning_local_application (src,
+							       IDIO_PAIR_H (et),
+							       IDIO_PAIR_H (ett),
+							       ettt,
+							       nametree,
+							       flags,
+							       eenv);
 		    } else {
 			/*
 			 * Test Case: evaluation-errors/function+-no-body.idio
@@ -4581,7 +4682,13 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 		    if (idio_isa_pair (ettt)) {
 			ettth = IDIO_PAIR_H (ettt);
 		    }
-		    return idio_meaning_alternative (src, IDIO_PAIR_H (et), IDIO_PAIR_H (ett), ettth, nametree, flags, eenv);
+		    return idio_meaning_alternative (src,
+						     IDIO_PAIR_H (et),
+						     IDIO_PAIR_H (ett),
+						     ettth,
+						     nametree,
+						     flags,
+						     eenv);
 		} else {
 		    /*
 		     * Test Case: evaluation-errors/if-cond-nil.idio
@@ -4639,7 +4746,12 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
-		    return idio_meaning_assignment (src, IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, IDIO_MEANING_TOPLEVEL_SCOPE (flags), eenv);
+		    return idio_meaning_assignment (src,
+						    IDIO_PAIR_H (et),
+						    IDIO_PAIR_H (ett),
+						    nametree,
+						    IDIO_MEANING_TOPLEVEL_SCOPE (flags),
+						    eenv);
 		} else {
 		    /*
 		     * Test Case: evaluation-errors/set-symbol-nil.idio
@@ -4665,7 +4777,12 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
-		    return idio_meaning_define_template (src, IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, flags, eenv);
+		    return idio_meaning_define_template (src,
+							 IDIO_PAIR_H (et),
+							 IDIO_PAIR_H (ett),
+							 nametree,
+							 flags,
+							 eenv);
 		} else {
 		    /*
 		     * Test Case: evaluation-errors/define-template-bindings-nil.idio
@@ -4693,7 +4810,13 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 		if (idio_isa_pair (ett)) {
 		    IDIO ettt = IDIO_PAIR_T (ett);
 		    if (idio_isa_pair (ettt)) {
-			return idio_meaning_define_infix_operator (src, IDIO_PAIR_H (et), IDIO_PAIR_H (ett), IDIO_PAIR_H (ettt), nametree, flags, eenv);
+			return idio_meaning_define_infix_operator (src,
+								   IDIO_PAIR_H (et),
+								   IDIO_PAIR_H (ett),
+								   IDIO_PAIR_H (ettt),
+								   nametree,
+								   flags,
+								   eenv);
 		    } else {
 			/*
 			 * Test Case: evaluation-errors/define-infix-op-symbol-pri-nil.idio
@@ -4731,7 +4854,13 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 		if (idio_isa_pair (ett)) {
 		    IDIO ettt = IDIO_PAIR_T (ett);
 		    if (idio_isa_pair (ettt)) {
-			return idio_meaning_define_postfix_operator (src, IDIO_PAIR_H (et), IDIO_PAIR_H (ett), IDIO_PAIR_H (ettt), nametree, flags, eenv);
+			return idio_meaning_define_postfix_operator (src,
+								     IDIO_PAIR_H (et),
+								     IDIO_PAIR_H (ett),
+								     IDIO_PAIR_H (ettt),
+								     nametree,
+								     flags,
+								     eenv);
 		    } else {
 			/*
 			 * Test Case: evaluation-errors/define-infix-op-symbol-pri-nil.idio
@@ -4956,7 +5085,13 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 		if (idio_isa_pair (eth)) {
 		    IDIO etht = IDIO_PAIR_T (eth);
 		    if (idio_isa_pair (etht)) {
-			return idio_meaning_dynamic_let (src, IDIO_PAIR_H (eth), IDIO_PAIR_H (etht), IDIO_PAIR_T (et), nametree, flags, eenv);
+			return idio_meaning_dynamic_let (src,
+							 IDIO_PAIR_H (eth),
+							 IDIO_PAIR_H (etht),
+							 IDIO_PAIR_T (et),
+							 nametree,
+							 flags,
+							 eenv);
 		    } else {
 			/*
 			 * Test Case: evaluation-errors/dynamic-let-bindings-not-tuple.idio
@@ -5020,7 +5155,13 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 		if (idio_isa_pair (eth)) {
 		    IDIO etht = IDIO_PAIR_T (eth);
 		    if (idio_isa_pair (etht)) {
-			return idio_meaning_environ_let (src, IDIO_PAIR_H (eth), IDIO_PAIR_H (etht), IDIO_PAIR_T (et), nametree, flags, eenv);
+			return idio_meaning_environ_let (src,
+							 IDIO_PAIR_H (eth),
+							 IDIO_PAIR_H (etht),
+							 IDIO_PAIR_T (et),
+							 nametree,
+							 flags,
+							 eenv);
 		    } else {
 			/*
 			 * Test Case: evaluation-errors/environ-let-bindings-not-tuple.idio
@@ -5424,15 +5565,14 @@ IDIO idio_evaluate_eenv (IDIO aotp, IDIO module)
 	return idio_struct_instance (idio_evaluate_eenv_type,
 				     idio_listv (IDIO_EENV_ST_SIZE,
 						 aotp,
-						 idio_S_nil,
-						 idio_array (0),
-						 idio_S_nil,
-						 idio_array (0),
-						 IDIO_HASH_EQP (8),
+						 idio_S_nil, /* symbols */
+						 idio_S_nil, /* values */
+						 idio_array (0), /* constants */
+						 IDIO_HASH_EQP (8), /* constants-hash */
 						 module,
-						 idio_S_nil,
-						 idio_array (0),
-						 IDIO_HASH_EQP (8),
+						 idio_S_nil, /* escapes */
+						 idio_array (0), /* src-exprs */
+						 idio_array (0), /* src-props */
 						 idio_C_pointer_type (idio_CSI_idio_ia_s, byte_code)));
     } else {
 	/*
@@ -5446,15 +5586,14 @@ IDIO idio_evaluate_eenv (IDIO aotp, IDIO module)
 	return idio_struct_instance (idio_evaluate_eenv_type,
 				     idio_listv (IDIO_EENV_ST_SIZE,
 						 aotp,
-						 idio_S_nil,
-						 idio_array (0),
-						 idio_S_nil,
+						 idio_S_nil, /* symbols */
+						 idio_S_nil, /* values */
 						 idio_vm_constants,
 						 idio_vm_constants_hash,
 						 module,
-						 idio_S_nil,
-						 idio_vm_src_constants,
-						 idio_src_properties,
+						 idio_S_nil, /* escapes */
+						 idio_vm_src_exprs,
+						 idio_array (0), /* src-props */
 						 CTP_byte_code));
     }
 }
@@ -5629,8 +5768,6 @@ void idio_init_evaluate ()
      *
      * Which also includes convenience attributes such as:
      *
-     * * symbols-array used by idio_vm_dasm()
-     *
      * * constants-hash used as a fast lookup into the constants array
      *
      * * escapes even though they are dynamic like nametree
@@ -5645,7 +5782,6 @@ void idio_init_evaluate ()
 						idio_listv (IDIO_EENV_ST_SIZE,
 							    IDIO_SYMBOLS_C_INTERN ("aot?"),
 							    IDIO_SYMBOLS_C_INTERN ("symbols"),
-							    IDIO_SYMBOLS_C_INTERN ("symbols-array"),
 							    IDIO_SYMBOLS_C_INTERN ("values"),
 							    IDIO_SYMBOLS_C_INTERN ("constants"),
 							    IDIO_SYMBOLS_C_INTERN ("constants-hash"),

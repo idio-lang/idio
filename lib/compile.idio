@@ -42,7 +42,6 @@ define (compile-file file & args) "
     }
   }
 
-  ;; (aot? symbols values constants module escapes)
   eenv := %evaluation-environment #t (current-module)
 
   printf "c eenv %s\n" eenv
@@ -53,10 +52,10 @@ define (compile-file file & args) "
   loop :+ function #n {
     e := read fh
     if (not (eof? fh)) {
-      printf "cf e %s\n" e
+      ;printf "cf e %s\n" e
       m := eval e eenv
-      printf "cf m %s\n" m
-      printf "cf eenv %s\n" eenv
+      ;printf "cf m %s\n" m
+      ;printf "cf eenv %s\n" eenv
       all-m = pair m all-m
       codegen m eenv
       (loop)
@@ -64,6 +63,8 @@ define (compile-file file & args) "
   }
 
   (loop)
+
+  %vm-add-xenv-from-eenv eenv
 
   close-handle fh
 

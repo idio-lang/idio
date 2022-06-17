@@ -440,15 +440,29 @@ idio_as_t idio_codegen_extend_src_constants (IDIO eenv, IDIO src)
     idio_ai_t gci = idio_array_size (scs);
     idio_array_push (scs, src);
 
+    IDIO sps = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_SRC_PROPS);
+    IDIO_TYPE_ASSERT (array, sps);
+
+    IDIO sp = idio_S_nil;
     if (idio_isa_pair (src)) {
 	IDIO lo = idio_hash_ref (idio_src_properties, src);
-	if (idio_S_unspec != lo){
-	    IDIO sps = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_SRC_PROPS);
-	    IDIO_TYPE_ASSERT (hash, sps);
 
-	    idio_hash_put (sps, src, lo);
+	if (idio_S_unspec != lo){
+	    /*
+	     * The src_props entry wants to look like (fci line) where
+	     * {fci} is the constants index for the filename.
+	     *
+	     * Otherwise we'll have the compiled byte code referencing
+	     * long filenames repeatedly.
+	     */
+	    IDIO fn = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME);
+	    idio_as_t ci = idio_codegen_constants_lookup_or_extend (eenv, fn);
+
+	    sp = IDIO_LIST2 (idio_fixnum (ci),
+			     idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE));
 	}
     }
+    idio_array_push (sps, sp);
 
     return gci;
 }
@@ -549,9 +563,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
     IDIO CTP_bc = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_BYTE_CODE);
     if (idio_CSI_idio_ia_s != IDIO_C_TYPE_POINTER_PTYPE (CTP_bc)) {
 	/*
-	 * Test Case: libc-errors/struct-utsname-ref-invalid-pointer-type.idio
-	 *
-	 * struct-utsname-ref libc/NULL #t
+	 * Test Case: ??
 	 */
 	idio_error_param_value_exp ("codegen-compile", "byte-code", CTP_bc, "struct-idio-ia-s", IDIO_C_FUNC_LOCATION ());
 
@@ -2727,9 +2739,7 @@ idio_pc_t idio_codegen (IDIO thr, IDIO m, IDIO eenv)
     IDIO CTP_bc = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_BYTE_CODE);
     if (idio_CSI_idio_ia_s != IDIO_C_TYPE_POINTER_PTYPE (CTP_bc)) {
 	/*
-	 * Test Case: libc-errors/struct-utsname-ref-invalid-pointer-type.idio
-	 *
-	 * struct-utsname-ref libc/NULL #t
+	 * Test Case: ??
 	 */
 	idio_error_param_value_exp ("codegen", "byte-code", CTP_bc, "struct-idio-ia-s", IDIO_C_FUNC_LOCATION ());
 
@@ -2794,9 +2804,7 @@ Generate the code for `m` using `eenv`		\n\
     IDIO CTP_bc = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_BYTE_CODE);
     if (idio_CSI_idio_ia_s != IDIO_C_TYPE_POINTER_PTYPE (CTP_bc)) {
 	/*
-	 * Test Case: libc-errors/struct-utsname-ref-invalid-pointer-type.idio
-	 *
-	 * struct-utsname-ref libc/NULL #t
+	 * Test Case: ??
 	 */
 	idio_error_param_value_exp ("codegen", "byte-code", CTP_bc, "struct-idio-ia-s", IDIO_C_FUNC_LOCATION ());
 
@@ -2805,10 +2813,6 @@ Generate the code for `m` using `eenv`		\n\
     IDIO_IA_T byte_code = IDIO_C_TYPE_POINTER_P (CTP_bc);
 
     idio_ia_push (byte_code, IDIO_A_RETURN);
-
-    if (idio_S_true == IDIO_MEANING_EENV_AOT (eenv)) {
-	idio_vm_dasm (thr, byte_code, PC0, 0, eenv);
-    }
 
     return idio_fixnum (PC0);
 }

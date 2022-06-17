@@ -187,6 +187,7 @@ extern IDIO_C_STRUCT_IDENT_DECL (idio_ia_s);
 
 IDIO_IA_T idio_ia (size_t n);
 void idio_ia_free (IDIO_IA_T ia);
+void idio_ia_copy (IDIO_IA_T iad, IDIO_IA_T ias);
 void idio_ia_push (IDIO_IA_T ia, IDIO_I ins);
 idio_as_t idio_codegen_extend_constants (IDIO eenv, IDIO v);
 idio_ai_t idio_codegen_constants_lookup (IDIO eenv, IDIO v);

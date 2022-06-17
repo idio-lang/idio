@@ -24,7 +24,7 @@ export (
 )
 import read expander operator codegen threading vm
 
-export-struct-accessors-only %eenv	aot? symbols symbols-array values constants constants-hash module escapes src-exprs byte-code
+export-struct-accessors-only %eenv	aot? symbols values constants constants-hash module escapes src-exprs src-props byte-code
 
 define (eenv-as-string eenv seen) {
   if (%eenv? eenv) {

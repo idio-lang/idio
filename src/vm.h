@@ -222,7 +222,7 @@ typedef enum {
 extern IDIO idio_vm_module;
 extern IDIO idio_vm_constants;
 extern IDIO idio_vm_constants_hash;
-extern IDIO idio_vm_src_constants;
+extern IDIO idio_vm_src_exprs;
 extern IDIO idio_vm_krun;
 extern FILE *idio_dasm_FILE;
 extern int idio_vm_reports;
@@ -253,7 +253,7 @@ void idio_vm_signal_report ();
 
 IDIO idio_vm_run (IDIO thr, idio_pc_t pc, int caller);
 IDIO idio_vm_run_C (IDIO thr, idio_pc_t pc);
-void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce, IDIO eenv);
+void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce);
 
 void idio_vm_restore_continuation (IDIO k, IDIO val);
 void idio_vm_restore_exit (IDIO k, IDIO val);
@@ -263,8 +263,8 @@ idio_as_t idio_vm_extend_constants (IDIO thr, IDIO v);
 IDIO idio_vm_constants_ref (IDIO thr, idio_as_t gci);
 idio_ai_t idio_vm_constants_lookup (IDIO thr, IDIO v);
 idio_as_t idio_vm_constants_lookup_or_extend (IDIO thr, IDIO v);
-IDIO idio_vm_src_constants_ref (IDIO eenv, idio_as_t gci);
-IDIO idio_vm_src_properties_ref (IDIO eenv, IDIO src);
+IDIO idio_vm_src_expr_ref (IDIO thr, idio_as_t gci);
+IDIO idio_vm_src_props_ref (IDIO thr, idio_as_t gci);
 idio_as_t idio_vm_extend_values (IDIO thr);
 idio_as_t idio_vm_extend_default_values ();
 IDIO idio_vm_values_ref (IDIO thr, idio_as_t gvi);

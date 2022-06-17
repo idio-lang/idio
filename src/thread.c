@@ -348,12 +348,12 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 	    IDIO_STRCAT (r, sizep, "\n  expr=");
-	    IDIO fmci = IDIO_THREAD_EXPR (v);
-	    if (idio_isa_fixnum (fmci)) {
-		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
+	    IDIO fsci = IDIO_THREAD_EXPR (v);
+	    if (idio_isa_fixnum (fsci)) {
+		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fsci);
 		intptr_t gci = IDIO_FIXNUM_VAL (fgci);
 
-		IDIO src = idio_vm_src_constants_ref (idio_default_eenv, gci);
+		IDIO src = idio_vm_src_expr_ref (idio_thread_current_thread (), gci);
 
 		t_size = 0;
 		t = idio_as_string (src, &t_size, 4, seen, 0);
