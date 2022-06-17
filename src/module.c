@@ -1101,7 +1101,11 @@ IDIO idio_module_direct_reference (IDIO name)
 		    idio_as_t mci = idio_vm_constants_lookup_or_extend (idio_thread_current_thread (),  name);
 		    r = IDIO_LIST3 (m_sym,
 				    s_sym,
-				    IDIO_LIST5 (IDIO_PAIR_H (si), idio_fixnum (mci), IDIO_PAIR_HTT (si), mod, idio_module_direct_reference_string));
+				    IDIO_LIST5 (IDIO_PAIR_H (si),
+						idio_fixnum (mci),
+						IDIO_PAIR_HTT (si),
+						mod,
+						idio_module_direct_reference_string));
 		}
 	    }
 	}
@@ -1367,12 +1371,14 @@ or the current environment if no `mod` supplied			\n\
 /*
  * idio_module_symbol_value will only look in the current module
  */
-IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n, IDIO args)
+IDIO idio_module_symbol_value_thread (IDIO thr, IDIO symbol, IDIO m_or_n, IDIO args)
 {
+    IDIO_ASSERT (thr);
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (m_or_n);
     IDIO_ASSERT (args);
 
+    IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (list, args);
 
@@ -1417,20 +1423,20 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n, IDIO args)
 	IDIO fgvi = IDIO_PAIR_HTT (si);
 
 	if (idio_S_toplevel == scope) {
-	    r = idio_vm_values_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_values_ref (thr, IDIO_FIXNUM_VAL (fgvi));
 	} else if (idio_S_predef == scope) {
-	    r = idio_vm_values_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_values_ref (thr, IDIO_FIXNUM_VAL (fgvi));
 	} else if (idio_S_dynamic == scope) {
-	    r = idio_vm_dynamic_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
+	    r = idio_vm_dynamic_ref (thr, IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
 	} else if (idio_S_environ == scope) {
-	    r = idio_vm_environ_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
+	    r = idio_vm_environ_ref (thr, IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
 	} else if (idio_S_computed == scope) {
 	    /*
 	     * Code coverage
 	     *
 	     * Nobody looks one up, I guess.  I'm not sweating it.
 	     */
-	    r = idio_vm_computed_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_computed_ref (thr, IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi));
 	} else {
 	    /*
 	     * Test Case: ??
@@ -1444,6 +1450,18 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n, IDIO args)
     }
 
     return r;
+}
+
+IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n, IDIO args)
+{
+    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (m_or_n);
+    IDIO_ASSERT (args);
+
+    IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (list, args);
+
+    return idio_module_symbol_value_thread (idio_thread_current_thread (), symbol, m_or_n, args);
 }
 
 IDIO idio_module_env_symbol_value (IDIO symbol, IDIO args)
@@ -1713,12 +1731,14 @@ set the information associated with symbol `sym` in module `mod` to `v`		\n\
     return idio_module_set_symbol (sym, v, mod);
 }
 
-IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
+IDIO idio_module_set_symbol_value_thread (IDIO thr, IDIO symbol, IDIO value, IDIO module)
 {
+    IDIO_ASSERT (thr);
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (value);
     IDIO_ASSERT (module);
 
+    IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (module, module);
 
@@ -1726,8 +1746,6 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
     IDIO scope;
     IDIO fmci;
     IDIO fgvi;
-
-    IDIO thr = idio_thread_current_thread ();
 
     if (idio_S_unspec == sv) {
 	/*
@@ -1845,6 +1863,18 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
     }
 
     return value;
+}
+
+IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
+{
+    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (value);
+    IDIO_ASSERT (module);
+
+    IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (module, module);
+
+    return idio_module_set_symbol_value_thread (idio_thread_current_thread (), symbol, value, module);
 }
 
 /*

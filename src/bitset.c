@@ -1040,8 +1040,6 @@ The argument to `f` will be the index of the bit	\n\
      */
     IDIO_USER_TYPE_ASSERT (function, f);
 
-    IDIO thr = idio_thread_current_thread ();
-
     size_t bs_size = IDIO_BITSET_SIZE (bs);
 
     size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD;
@@ -1058,7 +1056,7 @@ The argument to `f` will be the index of the bit	\n\
 		if (ul & (1UL << j)) {
 		    IDIO cmd = IDIO_LIST2 (f, idio_fixnum (i * IDIO_BITSET_BITS_PER_WORD + j));
 
-		    idio_vm_invoke_C (thr, cmd);
+		    idio_vm_invoke_C (cmd);
 		}
 	    }
 	}
@@ -1102,8 +1100,6 @@ subsequently set to the result of `f`.		\n\
      */
     IDIO_USER_TYPE_ASSERT (function, f);
 
-    IDIO thr = idio_thread_current_thread ();
-
     size_t bs_size = IDIO_BITSET_SIZE (bs);
 
     size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD;
@@ -1120,7 +1116,7 @@ subsequently set to the result of `f`.		\n\
 		if (ul & (1UL << j)) {
 		    IDIO cmd = IDIO_LIST3 (f, idio_fixnum (i * IDIO_BITSET_BITS_PER_WORD + j), v);
 
-		    v = idio_vm_invoke_C (thr, cmd);
+		    v = idio_vm_invoke_C (cmd);
 		}
 	    }
 	}

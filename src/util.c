@@ -678,8 +678,7 @@ int idio_equal (IDIO o1, IDIO o2, idio_equal_enum eqp)
 	    if (IDIO_TYPE_FIXNUM_MARK == m2) {
 		return (o1 == o2);
 	    } else if (idio_isa_number (o2)) {
-		r = idio_vm_invoke_C (idio_thread_current_thread (),
-				      IDIO_LIST3 (idio_module_symbol_value (idio_S_num_eq,
+		r = idio_vm_invoke_C (IDIO_LIST3 (idio_module_symbol_value (idio_S_num_eq,
 									    idio_Idio_module,
 									    idio_S_nil),
 						  o1,
@@ -709,8 +708,7 @@ int idio_equal (IDIO o1, IDIO o2, idio_equal_enum eqp)
 		    IDIO r = idio_S_false;
 
 		    if (idio_isa_bignum (o1)) {
-			r = idio_vm_invoke_C (idio_thread_current_thread (),
-					      IDIO_LIST3 (idio_module_symbol_value (idio_S_num_eq,
+			r = idio_vm_invoke_C (IDIO_LIST3 (idio_module_symbol_value (idio_S_num_eq,
 										    idio_Idio_module,
 										    idio_S_nil),
 							  o1,
@@ -2187,7 +2185,7 @@ IDIO idio_util_method_value_index (idio_vtable_method_t *m, IDIO v, ...)
 
     IDIO cmd = IDIO_LIST3 (func, v, member);
 
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+    IDIO r = idio_vm_invoke_C (cmd);
 
     return r;
 }
@@ -2211,7 +2209,7 @@ otherwise index the object `o` by `i`		\n\
     if (idio_isa_function (i)) {
 	IDIO cmd = IDIO_LIST2 (i, o);
 
-	IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+	IDIO r = idio_vm_invoke_C (cmd);
 
 	return r;
     }
@@ -2258,7 +2256,7 @@ IDIO idio_util_method_set_value_index (idio_vtable_method_t *m, IDIO v, ...)
 
     IDIO cmd = IDIO_LIST4 (func, v, member, value);
 
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+    IDIO r = idio_vm_invoke_C (cmd);
 
     return r;
 }
@@ -2315,7 +2313,7 @@ set value of the object `o` indexed by `i` to `v`	\n\
 	if (idio_isa_function (setter_func)) {
 	    IDIO set_cmd = IDIO_LIST4 (setter_func, o, i, v);
 
-	    IDIO set_r = idio_vm_invoke_C (idio_thread_current_thread (), set_cmd);
+	    IDIO set_r = idio_vm_invoke_C (set_cmd);
 
 	    return set_r;
 	}
@@ -3243,7 +3241,7 @@ IDIO idio_util_method_run0 (idio_vtable_method_t *m, IDIO v, ...)
 
     IDIO cmd = IDIO_LIST2 (func, v);
 
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+    IDIO r = idio_vm_invoke_C (cmd);
 
     return r;
 }
@@ -3278,7 +3276,7 @@ IDIO idio_util_method_run (idio_vtable_method_t *m, IDIO v, ...)
 
     IDIO cmd = idio_list_append2 (IDIO_LIST2 (func, v), args);
 
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+    IDIO r = idio_vm_invoke_C (cmd);
 
     return r;
 }

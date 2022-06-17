@@ -1388,7 +1388,7 @@ value with arguments: `index` the value at that	index		\n\
     for (ai = 0; ai < al; ai++) {
 	IDIO v = idio_array_ref_index (a, ai);
 	if (! idio_equal (v, IDIO_ARRAY_DV (a), IDIO_EQUAL_EQUALP)) {
-	    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (func, idio_integer (ai), v));
+	    idio_vm_invoke_C (IDIO_LIST3 (func, idio_integer (ai), v));
 	}
     }
 
@@ -1434,7 +1434,7 @@ The final value of `val` is returned.				\n\
 
     for (ai = 0; ai < al; ai++) {
 	IDIO v = idio_array_ref_index (a, ai);
-	val = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST4 (func, idio_integer (ai), v, val));
+	val = idio_vm_invoke_C (IDIO_LIST4 (func, idio_integer (ai), v, val));
     }
 
     return val;
@@ -1559,20 +1559,18 @@ void idio_array_add_primitives ()
     IDIO_ADD_PRIMITIVE (array_fill);
     IDIO_ADD_PRIMITIVE (array_length);
 
-    IDIO thr = idio_thread_current_thread ();
-
     IDIO ref = IDIO_ADD_PRIMITIVE (array_ref);
     idio_vtable_t *a_vt = idio_vtable (IDIO_TYPE_ARRAY);
     idio_vtable_add_method (a_vt,
 			    idio_S_value_index,
 			    idio_vtable_create_method_value (idio_util_method_value_index,
-							     idio_vm_values_ref (thr, IDIO_FIXNUM_VAL (ref))));
+							     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (ref))));
 
     IDIO set = IDIO_ADD_PRIMITIVE (array_set);
     idio_vtable_add_method (a_vt,
 			    idio_S_set_value_index,
 			    idio_vtable_create_method_value (idio_util_method_set_value_index,
-							     idio_vm_values_ref (thr, IDIO_FIXNUM_VAL (set))));
+							     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (set))));
 
     IDIO_ADD_PRIMITIVE (array_push);
     IDIO_ADD_PRIMITIVE (array_pop);

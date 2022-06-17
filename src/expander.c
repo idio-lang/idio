@@ -151,14 +151,20 @@ void idio_add_infix_operator_primitive (idio_primitive_desc_t *d, int pri, char 
 {
     idio_add_evaluation_primitive (d, idio_operator_module, cpp__FILE__, cpp__LINE__);
     IDIO primdata = idio_primitive_data (d);
-    idio_install_infix_operator (idio_symbols_C_intern (d->name, d->name_len), primdata, pri);
+    idio_install_infix_operator (idio_thread_current_thread (),
+				 idio_symbols_C_intern (d->name, d->name_len),
+				 primdata,
+				 pri);
 }
 
 void idio_add_postfix_operator_primitive (idio_primitive_desc_t *d, int pri, char const *cpp__FILE__, int cpp__LINE__)
 {
     idio_add_evaluation_primitive (d, idio_operator_module, cpp__FILE__, cpp__LINE__);
     IDIO primdata = idio_primitive_data (d);
-    idio_install_postfix_operator (idio_symbols_C_intern (d->name, d->name_len), primdata, pri);
+    idio_install_postfix_operator (idio_thread_current_thread (),
+				   idio_symbols_C_intern (d->name, d->name_len),
+				   primdata,
+				   pri);
 }
 
 IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
@@ -729,21 +735,24 @@ static IDIO idio_initial_expander (IDIO x, IDIO e)
     }
 }
 
-void idio_install_expander (IDIO id, IDIO proc)
+void idio_install_expander (IDIO thr, IDIO id, IDIO proc)
 {
+    IDIO_ASSERT (thr);
     IDIO_ASSERT (id);
     IDIO_ASSERT (proc);
 
+    IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (symbol, id);
 
-    IDIO el = idio_module_symbol_value (idio_expander_list, idio_expander_module, idio_S_nil);
+    IDIO el = idio_module_symbol_value_thread (thr, idio_expander_list, idio_expander_module, idio_S_nil);
     IDIO old = idio_list_assq (id, el);
 
     if (idio_S_false == old) {
-	idio_module_set_symbol_value (idio_expander_list,
-				      idio_pair (idio_pair (id, proc),
-						 el),
-				      idio_expander_module);
+	idio_module_set_symbol_value_thread (thr,
+					     idio_expander_list,
+					     idio_pair (idio_pair (id, proc),
+							el),
+					     idio_expander_module);
     } else {
 	IDIO_PAIR_T (old) = proc;
     }
@@ -753,15 +762,18 @@ void idio_install_expander_source (IDIO id, IDIO proc, IDIO code)
 {
     /* idio_debug ("install-expander-source: %s\n", id); */
 
-    idio_install_expander (id, proc);
+    IDIO thr = idio_thread_current_thread ();
 
-    IDIO els = idio_module_symbol_value (idio_expander_list_src, idio_expander_module, idio_S_nil);
+    idio_install_expander (thr, id, proc);
+
+    IDIO els = idio_module_symbol_value_thread (thr, idio_expander_list_src, idio_expander_module, idio_S_nil);
     IDIO old = idio_list_assq (id, els);
     if (idio_S_false == old) {
-	idio_module_set_symbol_value (idio_expander_list_src,
-				      idio_pair (idio_pair (id, code),
-						 els),
-				      idio_expander_module);
+	idio_module_set_symbol_value_thread (thr,
+					     idio_expander_list_src,
+					     idio_pair (idio_pair (id, code),
+							els),
+					     idio_expander_module);
     } else {
 	IDIO_PAIR_T (old) = proc;
     }
@@ -856,13 +868,16 @@ IDIO idio_template_expands (IDIO e)
     }
 }
 
-void idio_install_operator (IDIO id, IDIO proc, int pri, IDIO ol_sym, IDIO og_sym)
+void idio_install_operator (IDIO thr, IDIO id, IDIO proc, int pri, IDIO ol_sym, IDIO og_sym)
 {
+    IDIO_ASSERT (thr);
     IDIO_ASSERT (id);
     IDIO_ASSERT (proc);
-    IDIO_TYPE_ASSERT (symbol, id);
     IDIO_ASSERT (ol_sym);
     IDIO_ASSERT (og_sym);
+
+    IDIO_TYPE_ASSERT (thread, thr);
+    IDIO_TYPE_ASSERT (symbol, id);
 
     /* idio_debug ("op install %s", id); */
     /* idio_debug (" as %s\n", proc); */
@@ -871,21 +886,22 @@ void idio_install_operator (IDIO id, IDIO proc, int pri, IDIO ol_sym, IDIO og_sy
 	IDIO_C_ASSERT (0);
     }
 
-    idio_module_set_symbol_value (id, proc, idio_operator_module);
+    idio_module_set_symbol_value_thread (thr, id, proc, idio_operator_module);
 
-    IDIO ol = idio_module_symbol_value (ol_sym, idio_operator_module, idio_S_nil);
+    IDIO ol = idio_module_symbol_value_thread (thr, ol_sym, idio_operator_module, idio_S_nil);
     IDIO op = idio_list_assq (id, ol);
 
     if (idio_S_false == op) {
-	idio_module_set_symbol_value (ol_sym,
-				      idio_pair (idio_pair (id, proc),
-						 ol),
-				      idio_operator_module);
+	idio_module_set_symbol_value_thread (thr,
+					     ol_sym,
+					     idio_pair (idio_pair (id, proc),
+							ol),
+					     idio_operator_module);
     } else {
 	IDIO_PAIR_T (op) = proc;
     }
 
-    IDIO og = idio_module_symbol_value (og_sym, idio_operator_module, idio_S_nil);
+    IDIO og = idio_module_symbol_value_thread (thr, og_sym, idio_operator_module, idio_S_nil);
 
     IDIO fpri = idio_fixnum (pri);
     IDIO grp = idio_list_assq (fpri, og);
@@ -894,10 +910,11 @@ void idio_install_operator (IDIO id, IDIO proc, int pri, IDIO ol_sym, IDIO og_sy
 	grp = IDIO_LIST1 (idio_pair (id, proc));
 
 	if (idio_S_nil == og) {
-	    idio_module_set_symbol_value (og_sym,
-					  idio_pair (idio_pair (fpri, grp),
-						     og),
-					  idio_operator_module);
+	    idio_module_set_symbol_value_thread (thr,
+						 og_sym,
+						 idio_pair (idio_pair (fpri, grp),
+							    og),
+						 idio_operator_module);
 	} else {
 	    IDIO c = og;
 	    IDIO p = idio_S_nil;
@@ -905,10 +922,11 @@ void idio_install_operator (IDIO id, IDIO proc, int pri, IDIO ol_sym, IDIO og_sy
 		IDIO cpri = IDIO_PAIR_HH (c);
 		if (IDIO_FIXNUM_VAL (cpri) < pri) {
 		    if (idio_S_nil == p) {
-			idio_module_set_symbol_value (og_sym,
-						      idio_pair (idio_pair (fpri, grp),
-								 c),
-						      idio_operator_module);
+			idio_module_set_symbol_value_thread (thr,
+							     og_sym,
+							     idio_pair (idio_pair (fpri, grp),
+									c),
+							     idio_operator_module);
 		    } else {
 			IDIO_PAIR_T (p) = idio_pair (idio_pair (fpri, grp),
 						     c);
@@ -935,16 +953,18 @@ void idio_install_operator (IDIO id, IDIO proc, int pri, IDIO ol_sym, IDIO og_sy
     }
 }
 
-void idio_copy_operator (IDIO new_id, IDIO fpri, IDIO old_id, IDIO ol_sym, IDIO og_sym)
+void idio_copy_operator (IDIO thr, IDIO new_id, IDIO fpri, IDIO old_id, IDIO ol_sym, IDIO og_sym)
 {
+    IDIO_ASSERT (thr);
     IDIO_ASSERT (new_id);
     IDIO_ASSERT (fpri);
     IDIO_ASSERT (old_id);
 
+    IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (symbol, new_id);
     IDIO_TYPE_ASSERT (symbol, old_id);
 
-    IDIO ol = idio_module_symbol_value (ol_sym, idio_operator_module, idio_S_nil);
+    IDIO ol = idio_module_symbol_value_thread (thr, ol_sym, idio_operator_module, idio_S_nil);
 
     IDIO new = idio_list_assq (new_id, ol);
 
@@ -963,13 +983,14 @@ void idio_copy_operator (IDIO new_id, IDIO fpri, IDIO old_id, IDIO ol_sym, IDIO 
 	/* notreached */
 	return;
     } else {
-	idio_module_set_symbol_value (ol_sym,
-				      idio_pair (idio_pair (new_id, IDIO_PAIR_T (old)),
-						 ol),
-				      idio_operator_module);
+	idio_module_set_symbol_value_thread (thr,
+					     ol_sym,
+					     idio_pair (idio_pair (new_id, IDIO_PAIR_T (old)),
+							ol),
+					     idio_operator_module);
 
 	intptr_t new_pri = IDIO_FIXNUM_VAL (fpri);
-	IDIO og = idio_module_symbol_value (og_sym, idio_operator_module, idio_S_nil);
+	IDIO og = idio_module_symbol_value_thread (thr, og_sym, idio_operator_module, idio_S_nil);
 	IDIO grp = idio_list_assq (fpri, og);
 
 	if (idio_S_false == grp) {
@@ -981,10 +1002,11 @@ void idio_copy_operator (IDIO new_id, IDIO fpri, IDIO old_id, IDIO ol_sym, IDIO 
 		IDIO cpri = IDIO_PAIR_HH (c);
 		if (IDIO_FIXNUM_VAL (cpri) < new_pri) {
 		    if (idio_S_nil == p) {
-			idio_module_set_symbol_value (og_sym,
-						      idio_pair (idio_pair (fpri, grp),
-								 c),
-						      idio_operator_module);
+			idio_module_set_symbol_value_thread (thr,
+							     og_sym,
+							     idio_pair (idio_pair (fpri, grp),
+									c),
+							     idio_operator_module);
 		    } else {
 			IDIO_PAIR_T (p) = idio_pair (idio_pair (fpri, grp),
 						     c);
@@ -995,10 +1017,11 @@ void idio_copy_operator (IDIO new_id, IDIO fpri, IDIO old_id, IDIO ol_sym, IDIO 
 		c = IDIO_PAIR_T (c);
 	    }
 	    if (idio_S_nil == c) {
-		idio_module_set_symbol_value (og_sym,
-					      idio_list_append2 (og,
-								 IDIO_LIST1 (idio_pair (fpri, grp))),
-					      idio_operator_module);
+		idio_module_set_symbol_value_thread (thr,
+						     og_sym,
+						     idio_list_append2 (og,
+									IDIO_LIST1 (idio_pair (fpri, grp))),
+						     idio_operator_module);
 	    }
 	} else {
 	    IDIO procs = IDIO_PAIR_T (grp);
@@ -1068,28 +1091,33 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     return r;
 }
 
-void idio_install_infix_operator (IDIO id, IDIO proc, int pri)
+void idio_install_infix_operator (IDIO thr, IDIO id, IDIO proc, int pri)
 {
+    IDIO_ASSERT (thr);
     IDIO_ASSERT (id);
     IDIO_ASSERT (proc);
+
+    IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (symbol, id);
 
     /* idio_debug ("op install %s", id); */
     /* idio_debug (" as %s\n", proc); */
 
-    idio_install_operator (id, proc, pri, idio_infix_operator_list, idio_infix_operator_group);
+    idio_install_operator (thr, id, proc, pri, idio_infix_operator_list, idio_infix_operator_group);
 }
 
-void idio_copy_infix_operator (IDIO new_id, IDIO fpri, IDIO old_id)
+void idio_copy_infix_operator (IDIO thr, IDIO new_id, IDIO fpri, IDIO old_id)
 {
+    IDIO_ASSERT (thr);
     IDIO_ASSERT (new_id);
     IDIO_ASSERT (fpri);
     IDIO_ASSERT (old_id);
 
+    IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (symbol, new_id);
     IDIO_TYPE_ASSERT (symbol, old_id);
 
-    idio_copy_operator (new_id, fpri, old_id, idio_infix_operator_list, idio_infix_operator_group);
+    idio_copy_operator (thr, new_id, fpri, old_id, idio_infix_operator_list, idio_infix_operator_group);
 }
 
 IDIO idio_evaluate_infix_operator_code (IDIO m, IDIO cs)
@@ -1166,28 +1194,33 @@ test if `o` is a infix operator		\n\
     return idio_infix_operatorp (o);
 }
 
-void idio_install_postfix_operator (IDIO id, IDIO proc, int pri)
+void idio_install_postfix_operator (IDIO thr, IDIO id, IDIO proc, int pri)
 {
+    IDIO_ASSERT (thr);
     IDIO_ASSERT (id);
     IDIO_ASSERT (proc);
+
+    IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (symbol, id);
 
     /* idio_debug ("op install %s", id); */
     /* idio_debug (" as %s\n", proc); */
 
-    idio_install_operator (id, proc, pri, idio_postfix_operator_list, idio_postfix_operator_group);
+    idio_install_operator (thr, id, proc, pri, idio_postfix_operator_list, idio_postfix_operator_group);
 }
 
-void idio_copy_postfix_operator (IDIO new_id, IDIO fpri, IDIO old_id)
+void idio_copy_postfix_operator (IDIO thr, IDIO new_id, IDIO fpri, IDIO old_id)
 {
+    IDIO_ASSERT (thr);
     IDIO_ASSERT (new_id);
     IDIO_ASSERT (fpri);
     IDIO_ASSERT (old_id);
 
+    IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (symbol, new_id);
     IDIO_TYPE_ASSERT (symbol, old_id);
 
-    idio_copy_operator (new_id, fpri, old_id, idio_postfix_operator_list, idio_postfix_operator_group);
+    idio_copy_operator (thr, new_id, fpri, old_id, idio_postfix_operator_list, idio_postfix_operator_group);
 }
 
 IDIO idio_evaluate_postfix_operator_code (IDIO m, IDIO cs)

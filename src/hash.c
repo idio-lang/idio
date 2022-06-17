@@ -1022,7 +1022,7 @@ idio_hi_t idio_hash_index (IDIO ht, void const *kv)
 	 */
 	ptrdiff_t hvi = 0;
 
-	IDIO ihvi = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (IDIO_HASH_HASH (ht), k));
+	IDIO ihvi = idio_vm_invoke_C (IDIO_LIST2 (IDIO_HASH_HASH (ht), k));
 
 	if (idio_isa_fixnum (ihvi)) {
 	    hvi = IDIO_FIXNUM_VAL (ihvi);
@@ -1088,7 +1088,7 @@ int idio_hash_equal (IDIO ht, void const *kv1, void const *kv2)
     if (IDIO_HASH_COMP_C (ht) != NULL) {
 	return IDIO_HASH_COMP_C (ht) (kv1, kv2);
     } else {
-	IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (IDIO_HASH_COMP (ht), (IDIO) kv1, (IDIO) kv2));
+	IDIO r = idio_vm_invoke_C (IDIO_LIST3 (IDIO_HASH_COMP (ht), (IDIO) kv1, (IDIO) kv2));
 	if (idio_S_false == r) {
 	    return 0;
 	} else {
@@ -1369,7 +1369,7 @@ IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args)
 	if (idio_S_nil != args) {
 	    IDIO dv = IDIO_PAIR_H (args);
 	    if (idio_isa_function (dv)) {
-		r = idio_vm_invoke_C (idio_thread_current_thread (), dv);
+		r = idio_vm_invoke_C (dv);
 	    } else {
 		r = dv;
 	    }
@@ -2003,7 +2003,7 @@ key to the returned value					\n\
 
     IDIO cv = idio_hash_reference (ht, key, args);
 
-    IDIO nv = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (func, cv));
+    IDIO nv = idio_vm_invoke_C (IDIO_LIST2 (func, cv));
 
     idio_hash_put (ht, key, nv);
 
@@ -2051,7 +2051,7 @@ call `func` for each `key` in hash table `ht`			\n\
     while (idio_S_nil != keys) {
 	IDIO k = IDIO_PAIR_H (keys);
 	IDIO v = idio_hash_ref (ht, k);
-	idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (func, k, v));
+	idio_vm_invoke_C (IDIO_LIST3 (func, k, v));
 
 	keys = IDIO_PAIR_T (keys);
     }
@@ -2110,7 +2110,7 @@ The final value of `val` is returned				\n\
     while (idio_S_nil != keys) {
 	IDIO k = IDIO_PAIR_H (keys);
 	IDIO v = idio_hash_ref (ht, k);
-	val = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST4 (func, k, v, val));
+	val = idio_vm_invoke_C (IDIO_LIST4 (func, k, v, val));
 
 	keys = IDIO_PAIR_T (keys);
     }

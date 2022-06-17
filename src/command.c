@@ -1271,8 +1271,8 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
     idio_array_push (protected, proc);
 
     IDIO cmd_sym;
-    cmd_sym = idio_module_symbol_value (idio_S_stdin_fileno, idio_libc_module, idio_S_nil);
-    IDIO job_stdin = idio_vm_invoke_C (thr, IDIO_LIST1 (cmd_sym));
+    cmd_sym = idio_module_symbol_value_thread (thr, idio_S_stdin_fileno, idio_libc_module, idio_S_nil);
+    IDIO job_stdin = idio_vm_invoke_C (IDIO_LIST1 (cmd_sym));
     idio_array_push (protected, job_stdin);
 
     IDIO job_stdin_fd = job_stdin;
@@ -1282,8 +1282,8 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
 	job_stdin_fd = idio_C_int (IDIO_FILE_HANDLE_FD (close_stdin));
     }
 
-    cmd_sym = idio_module_symbol_value (idio_S_stdout_fileno, idio_libc_module, idio_S_nil);
-    IDIO job_stdout = idio_vm_invoke_C (thr, IDIO_LIST1 (cmd_sym));
+    cmd_sym = idio_module_symbol_value_thread (thr, idio_S_stdout_fileno, idio_libc_module, idio_S_nil);
+    IDIO job_stdout = idio_vm_invoke_C (IDIO_LIST1 (cmd_sym));
     idio_array_push (protected, job_stdout);
 
     IDIO recover_stdout = idio_S_false;
@@ -1292,8 +1292,8 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
 	job_stdout = IDIO_PAIR_H (job_stdout);
     }
 
-    cmd_sym = idio_module_symbol_value (idio_S_stderr_fileno, idio_libc_module, idio_S_nil);
-    IDIO job_stderr = idio_vm_invoke_C (thr, IDIO_LIST1 (cmd_sym));
+    cmd_sym = idio_module_symbol_value_thread (thr, idio_S_stderr_fileno, idio_libc_module, idio_S_nil);
+    IDIO job_stderr = idio_vm_invoke_C (IDIO_LIST1 (cmd_sym));
     idio_array_push (protected, job_stderr);
 
     IDIO recover_stderr = idio_S_false;

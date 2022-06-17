@@ -297,7 +297,8 @@ void idio_vm_func_start (IDIO clos, struct timespec *tsp, struct rusage *rup);
 void idio_vm_func_stop (IDIO clos, struct timespec *tsp, struct rusage *rup);
 void idio_vm_prim_time (IDIO clos, struct timespec *ts0p, struct timespec *tsep, struct rusage *ru0p, struct rusage *ruep);
 #endif
-IDIO idio_vm_invoke_C (IDIO thr, IDIO command);
+IDIO idio_vm_invoke_C_thread (IDIO thr, IDIO command);
+IDIO idio_vm_invoke_C (IDIO command);
 IDIO idio_vm_source_location ();
 IDIO idio_vm_frame_tree (IDIO args);
 void idio_vm_trap_state (IDIO thr);

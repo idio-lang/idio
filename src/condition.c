@@ -704,7 +704,7 @@ void idio_condition_report (char const *prefix, IDIO c)
 			      c,
 			      idio_thread_current_error_handle ());
 
-    idio_vm_invoke_C (idio_thread_current_thread (), cr_cmd);
+    idio_vm_invoke_C (cr_cmd);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("default-rcse-handler", default_rcse_handler, (IDIO c), "c", "\
@@ -821,8 +821,6 @@ does not return per se						\n\
 	exit (1);
     }
 
-    IDIO thr = idio_thread_current_thread ();
-
     /*
      * Technically we can allow the user to override the SIGCHLD and
      * SIGHUP handlers -- though we'd advise against it.
@@ -832,7 +830,7 @@ does not return per se						\n\
 	IDIO handler = idio_hash_ref (idio_condition_default_handler, sit);
 
 	if (idio_S_unspec != handler) {
-	    return idio_vm_invoke_C (thr, IDIO_LIST2 (handler, c));
+	    return idio_vm_invoke_C (IDIO_LIST2 (handler, c));
 	}
 
 	sit = IDIO_STRUCT_TYPE_PARENT (sit);
@@ -942,7 +940,7 @@ does not return per se						\n\
 		IDIO cmd = IDIO_LIST1 (debugger);
 
 		fprintf (stderr, "invoking debugger\n");
-		IDIO r = idio_vm_invoke_C (thr, cmd);
+		IDIO r = idio_vm_invoke_C (cmd);
 
 		/*
 		 * PC for RETURN
@@ -953,8 +951,6 @@ does not return per se						\n\
 		 *
 		 *
 		 */
-		/* IDIO_THREAD_PC (thr) = idio_vm_CHR_pc + 2; */
-
 		return r;
 	    }
 	} else {
@@ -1085,7 +1081,7 @@ does not return per se						\n\
 	fprintf (stderr, "restart-condition-handler: nothing to restore\n");
 #ifdef IDIO_DEBUG
 	idio_debug ("\nrestart-condition-handler: re-raising %s\n", c);
-	idio_vm_trap_state (idio_thread_current_thread ());
+	idio_vm_trap_state (thr);
 	idio_vm_frame_tree (idio_S_nil);
 #endif
     } else {

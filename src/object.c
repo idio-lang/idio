@@ -1254,7 +1254,7 @@ IDIO idio_object_slot_ref (IDIO obj, IDIO slot_name)
 	    return idio_struct_instance_ref_direct (obj, IDIO_CLASS_ST_MAX + IDIO_FIXNUM_VAL (slot_getter));
 	} else {
 	    IDIO cmd = IDIO_LIST2 (slot_getter, obj);
-	    return idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+	    return idio_vm_invoke_C (cmd);
 	}
     }
 
@@ -1322,7 +1322,7 @@ IDIO idio_object_slot_set (IDIO obj, IDIO slot, IDIO val)
 	    return idio_struct_instance_set_direct (obj, IDIO_CLASS_ST_MAX + IDIO_FIXNUM_VAL (slot_getter), val);
 	} else {
 	    IDIO cmd = IDIO_LIST3 (slot_getter, obj, val);
-	    return idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+	    return idio_vm_invoke_C (cmd);
 	}
     }
 

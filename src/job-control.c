@@ -917,8 +917,7 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 	}
     }
 
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (),
-			       IDIO_LIST2 (idio_module_symbol_value (idio_S_wait_for_job,
+    IDIO r = idio_vm_invoke_C (IDIO_LIST2 (idio_module_symbol_value (idio_S_wait_for_job,
 								     idio_job_control_module,
 								     idio_S_nil),
 					   job));
@@ -1249,8 +1248,7 @@ IDIO idio_job_control_SIGCHLD_signal_handler ()
     /*
      * do-job-notification is a thunk so we can call it direct
      */
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (),
-			       idio_module_symbol_value (idio_job_control_djn_sym,
+    IDIO r = idio_vm_invoke_C (idio_module_symbol_value (idio_job_control_djn_sym,
 							 idio_job_control_module,
 							 idio_S_nil));
 
@@ -1897,7 +1895,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 	     * As we simply return the result of idio_vm_invoke_C(),
 	     * no need to protect anything here.
 	     */
-	    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+	    IDIO r = idio_vm_invoke_C (cmd);
 
 	    return r;
 	}

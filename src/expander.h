@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -33,8 +33,8 @@ IDIO idio_evaluate_expander_code (IDIO m, IDIO cs);
 IDIO idio_expanderp (IDIO name);
 IDIO idio_template_expand (IDIO e);
 IDIO idio_template_expands (IDIO e);
-void idio_copy_infix_operator (IDIO new_id, IDIO fpri, IDIO old_id);
-void idio_copy_postfix_operator (IDIO new_id, IDIO fpri, IDIO old_id);
+void idio_copy_infix_operator (IDIO thr, IDIO new_id, IDIO fpri, IDIO old_id);
+void idio_copy_postfix_operator (IDIO thr, IDIO new_id, IDIO fpri, IDIO old_id);
 IDIO idio_evaluate_infix_operator_code (IDIO m, IDIO cs);
 IDIO idio_evaluate_postfix_operator_code (IDIO m, IDIO cs);
 void idio_add_infix_operator_primitive (idio_primitive_desc_t *d, int pri, char const *cpp__FILE__, int cpp__LINE__);

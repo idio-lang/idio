@@ -102,13 +102,13 @@ void idio_meaning_copy_src_properties (IDIO src, IDIO dst);
 void idio_meaning_copy_src_properties_r (IDIO src, IDIO dst);
 void idio_meaning_copy_src_properties_f (IDIO src, IDIO dst);
 
-void idio_install_expander (IDIO id, IDIO proc);
+void idio_install_expander (IDIO thr, IDIO id, IDIO proc);
 
-void idio_install_infix_operator (IDIO id, IDIO proc, int pri);
+void idio_install_infix_operator (IDIO thr, IDIO id, IDIO proc, int pri);
 IDIO idio_infix_operatorp (IDIO name);
 IDIO idio_infix_operator_expand (IDIO e, int depth);
 
-void idio_install_postfix_operator (IDIO id, IDIO proc, int pri);
+void idio_install_postfix_operator (IDIO thr, IDIO id, IDIO proc, int pri);
 IDIO idio_postfix_operatorp (IDIO name);
 IDIO idio_postfix_operator_expand (IDIO e, int depth);
 

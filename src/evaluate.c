@@ -2351,7 +2351,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
 
-	idio_copy_infix_operator (name, pri, e);
+	idio_copy_infix_operator (idio_thread_current_thread (), name, pri, e);
 	m = idio_meaning (sve, sve, nametree, flags, eenv);
     } else {
 	/*
@@ -2452,7 +2452,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
 
-	idio_copy_postfix_operator (name, pri, e);
+	idio_copy_postfix_operator (idio_thread_current_thread (), name, pri, e);
 	m = idio_meaning (sve, sve, nametree, flags, eenv);
     } else {
 	/*
@@ -5407,7 +5407,7 @@ IDIO idio_evaluate_func (IDIO src, IDIO eenv)
 					     idio_evaluate_module,
 					     IDIO_LIST1 (idio_S_false));
 
-    return idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (ev_func, src, eenv));
+    return idio_vm_invoke_C (IDIO_LIST3 (ev_func, src, eenv));
 }
 
 IDIO idio_evaluate_eenv (IDIO aotp, IDIO module)

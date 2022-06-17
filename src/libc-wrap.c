@@ -556,7 +556,7 @@ IDIO idio_libc_proc_subst_named_pipe (int into)
 							 idio_S_nil),
 			       idio_string_C_len (IDIO_STATIC_STR_LEN ("idio-np-")));
 
-    IDIO td = idio_vm_invoke_C (idio_thread_current_thread (), mtd_cmd);
+    IDIO td = idio_vm_invoke_C (mtd_cmd);
 
     /*
      * make-tmp-dir/mkdtemp should have barfed if it failed to create

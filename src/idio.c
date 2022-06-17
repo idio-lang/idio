@@ -665,7 +665,7 @@ int main (int argc, char **argv, char **envp)
      * Dig out the (post-bootstrap) definition of "load" which will
      * now be continuation and module aware.
      */
-    IDIO load = idio_module_symbol_value (idio_S_load, idio_Idio_module, IDIO_LIST1 (idio_S_false));
+    IDIO load = idio_module_symbol_value_thread (thr, idio_S_load, idio_Idio_module, IDIO_LIST1 (idio_S_false));
     if (idio_S_false == load) {
 	idio_free (sargv);
 	idio_coding_error_C ("cannot lookup 'load'", idio_S_nil, IDIO_C_FUNC_LOCATION ());
@@ -778,7 +778,7 @@ int main (int argc, char **argv, char **envp)
 
 			switch (sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1)) {
 			case 0:
-			    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, filename));
+			    idio_vm_invoke_C (IDIO_LIST2 (load, filename));
 			    break;
 			case IDIO_VM_SIGLONGJMP_CONTINUATION:
 			    fprintf (stderr, "load %s: continuation was invoked => pending exit (1)\n", argv[i]);
@@ -818,10 +818,10 @@ int main (int argc, char **argv, char **envp)
 		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--load"))) {
 		    option = OPTION_LOAD;
 		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--version"))) {
-		    idio_vm_invoke_C (idio_thread_current_thread (),
-				      IDIO_LIST2 (idio_module_symbol_value (idio_symbols_C_intern (IDIO_STATIC_STR_LEN ("idio-version")),
-									    idio_Idio_module,
-									    IDIO_LIST1 (idio_S_false)),
+		    idio_vm_invoke_C (IDIO_LIST2 (idio_module_symbol_value_thread (thr,
+										   idio_symbols_C_intern (IDIO_STATIC_STR_LEN ("idio-version")),
+										   idio_Idio_module,
+										   IDIO_LIST1 (idio_S_false)),
 						  idio_symbols_C_intern (IDIO_STATIC_STR_LEN ("-v"))));
 
 		    exit (0);
@@ -917,7 +917,7 @@ int main (int argc, char **argv, char **envp)
 
 	switch (sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1)) {
 	case 0:
-	    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, filename));
+	    idio_vm_invoke_C (IDIO_LIST2 (load, filename));
 	    break;
 	case IDIO_VM_SIGLONGJMP_CONTINUATION:
 	    fprintf (stderr, "load %s: continuation was invoked => pending exit (1)\n", sargv[0]);
