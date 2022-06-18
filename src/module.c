@@ -2157,9 +2157,9 @@ void idio_module_add_primitives ()
 void idio_final_module ()
 {
     if (idio_vm_reports) {
-	FILE *fp = fopen ("vm-modules", "w");
+	FILE *fp = fopen ("idio-vm-modules", "w");
 	if (NULL == fp) {
-	    perror ("fopen (vm-modules, w)");
+	    perror ("fopen (idio-vm-modules, w)");
 	    return;
 	}
 

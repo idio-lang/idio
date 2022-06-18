@@ -1654,9 +1654,9 @@ void idio_gc_stats ()
     fprintf (stderr, "gc-stats ");
 #endif
     if (NULL == idio_gc_stats_FILE) {
-	idio_gc_stats_FILE = fopen ("gc-stats", "w");
+	idio_gc_stats_FILE = fopen ("idio-gc-stats", "w");
     } else {
-	idio_gc_stats_FILE = fopen ("gc-stats", "a");
+	idio_gc_stats_FILE = fopen ("idio-gc-stats", "a");
     }
 
     if (NULL != idio_gc_stats_FILE) {

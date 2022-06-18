@@ -84,6 +84,7 @@
 #include "usi-wrap.h"
 #include "util.h"
 #include "vars.h"
+#include "vm-dasm.h"
 #include "vm.h"
 #include "vtable.h"
 
@@ -96,7 +97,7 @@ IDIO idio_default_eenv = idio_S_nil;
 void idio_add_primitives ();
 
 #ifdef IDIO_VM_PROF
-#define IDIO_VM_PROF_FILE_NAME "vm-perf"
+#define IDIO_VM_PROF_FILE_NAME "idio-vm-perf"
 FILE *idio_vm_perf_FILE;
 #endif
 
@@ -283,6 +284,7 @@ void idio_init (void)
     idio_init_env ();
     idio_init_path ();
     idio_init_vm ();
+    idio_init_vm_dasm ();
     idio_init_codegen ();
     idio_init_continuation ();
     idio_init_object ();

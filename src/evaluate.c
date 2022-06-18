@@ -63,6 +63,7 @@
 #include "symbol.h"
 #include "thread.h"
 #include "util.h"
+#include "vm-asm.h"
 #include "vm.h"
 
 /*

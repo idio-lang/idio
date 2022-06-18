@@ -66,7 +66,6 @@ char *idio_as_string_safe (IDIO o, size_t *sizep, int depth, int first);
 IDIO idio_util_method_2string (idio_vtable_method_t *m, IDIO v, ...);
 char *idio_display_string (IDIO o, size_t *sizep);
 char *idio_report_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first);
-char const *idio_vm_bytecode2string (int code);
 IDIO idio_util_method_value_index (idio_vtable_method_t *m, IDIO v, ...);
 IDIO idio_util_method_set_value_index (idio_vtable_method_t *m, IDIO v, ...);
 void idio_as_flat_string (IDIO o, char **argv, int *i);

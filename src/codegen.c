@@ -54,6 +54,7 @@
 #include "symbol.h"
 #include "thread.h"
 #include "util.h"
+#include "vm-asm.h"
 #include "vm.h"
 #include "vtable.h"
 
@@ -300,21 +301,6 @@ IDIO_IA_T idio_ia_compute_64uint (uint64_t offset)
 #define IDIO_IA_PUSH_16UINT(n)    { IDIO_IA_T ia_p16 = idio_ia_compute_16uint (n);  idio_ia_append_free (ia, ia_p16); }
 #define IDIO_IA_PUSH_32UINT(n)    { IDIO_IA_T ia_p32 = idio_ia_compute_32uint (n);  idio_ia_append_free (ia, ia_p32); }
 #define IDIO_IA_PUSH_64UINT(n)    { IDIO_IA_T ia_p64 = idio_ia_compute_64uint (n);  idio_ia_append_free (ia, ia_p64); }
-
-/*
- * Check this aligns with IDIO_VM_FETCH_REF
- *
- * At the time of r0.1 the tests used around 19000 symbols, so
- * uint16_t.
- *
- * uint32_t adds a second or two to the test duration.  Maybe.
- *
- * The question comes up because adding more SRC_EXPR byte code
- * statements was producing 55k additional constants which bumped us
- * over the uint16_t limit.  SRC_EXPR constants can live in another
- * table.
- */
-#define IDIO_IA_PUSH_REF(n)	IDIO_IA_PUSH_16UINT (n)
 
 idio_as_t idio_codegen_extend_values (IDIO eenv)
 {

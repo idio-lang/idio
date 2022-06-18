@@ -45,180 +45,6 @@
 #define IDIO_LIBC_NSIG NSIG
 #endif
 
-/*
- * Idio VM Assembly code: IDIO_A_*
- *
- * These are broadly following the intermediate instructions but
- * specialize for the common cases.  For loose values of common.
- *
- * As a byte-compiler there should be less than 256 of these!
- */
-typedef enum {
-    IDIO_A_SHALLOW_ARGUMENT_REF0,
-    IDIO_A_SHALLOW_ARGUMENT_REF1,
-    IDIO_A_SHALLOW_ARGUMENT_REF2,
-    IDIO_A_SHALLOW_ARGUMENT_REF3,
-    IDIO_A_SHALLOW_ARGUMENT_REF,
-    IDIO_A_DEEP_ARGUMENT_REF,
-
-    IDIO_A_SHALLOW_ARGUMENT_SET0,
-    IDIO_A_SHALLOW_ARGUMENT_SET1,
-    IDIO_A_SHALLOW_ARGUMENT_SET2,
-    IDIO_A_SHALLOW_ARGUMENT_SET3,
-    IDIO_A_SHALLOW_ARGUMENT_SET,
-    IDIO_A_DEEP_ARGUMENT_SET,
-
-    IDIO_A_SYM_REF,
-    IDIO_A_SYM_IREF,
-    IDIO_A_FUNCTION_SYM_REF,
-    IDIO_A_FUNCTION_SYM_IREF,
-    IDIO_A_CONSTANT_REF,
-    IDIO_A_CONSTANT_IREF,
-    IDIO_A_COMPUTED_SYM_REF,
-    IDIO_A_COMPUTED_SYM_IREF,
-
-    IDIO_A_SYM_DEF,
-    IDIO_A_SYM_IDEF,
-    IDIO_A_SYM_SET,
-    IDIO_A_SYM_ISET,
-    IDIO_A_COMPUTED_SYM_SET,
-    IDIO_A_COMPUTED_SYM_ISET,
-    IDIO_A_COMPUTED_SYM_DEF,
-    IDIO_A_COMPUTED_SYM_IDEF,
-
-    IDIO_A_VAL_REF,
-    IDIO_A_VAL_IREF,
-    IDIO_A_FUNCTION_VAL_REF,
-    IDIO_A_FUNCTION_VAL_IREF,
-
-    IDIO_A_VAL_SET,
-    IDIO_A_VAL_ISET,
-
-    IDIO_A_PREDEFINED0,
-    IDIO_A_PREDEFINED1,
-    IDIO_A_PREDEFINED2,
-    IDIO_A_PREDEFINED3,		/* not implemented */
-    IDIO_A_PREDEFINED4,		/* not implemented */
-    IDIO_A_PREDEFINED5,		/* not implemented */
-    IDIO_A_PREDEFINED6,		/* not implemented */
-    IDIO_A_PREDEFINED7,		/* not implemented */
-    IDIO_A_PREDEFINED8,		/* not implemented */
-    IDIO_A_PREDEFINED,
-
-    IDIO_A_LONG_GOTO,
-    IDIO_A_LONG_JUMP_FALSE,
-    IDIO_A_LONG_JUMP_TRUE,
-    IDIO_A_SHORT_GOTO,
-    IDIO_A_SHORT_JUMP_FALSE,
-    IDIO_A_SHORT_JUMP_TRUE,
-
-    IDIO_A_PUSH_VALUE,
-    IDIO_A_POP_VALUE,
-    IDIO_A_POP_REG1,
-    IDIO_A_POP_REG2,
-    IDIO_A_SRC_EXPR,
-    IDIO_A_POP_FUNCTION,
-    IDIO_A_PRESERVE_STATE,
-    IDIO_A_RESTORE_STATE,
-    IDIO_A_RESTORE_ALL_STATE,
-
-    IDIO_A_CREATE_FUNCTION,	/* top level closure */
-    IDIO_A_CREATE_CLOSURE,
-    IDIO_A_CREATE_ICLOSURE,
-    IDIO_A_FUNCTION_INVOKE,
-    IDIO_A_FUNCTION_GOTO,
-    IDIO_A_RETURN,
-    IDIO_A_FINISH,
-    IDIO_A_PUSH_ABORT,
-    IDIO_A_POP_ABORT,
-
-    IDIO_A_ALLOCATE_FRAME1,
-    IDIO_A_ALLOCATE_FRAME2,
-    IDIO_A_ALLOCATE_FRAME3,
-    IDIO_A_ALLOCATE_FRAME4,
-    IDIO_A_ALLOCATE_FRAME5,
-    IDIO_A_ALLOCATE_FRAME,
-    IDIO_A_ALLOCATE_DOTTED_FRAME,
-    IDIO_A_REUSE_FRAME,
-
-    IDIO_A_POP_FRAME0,
-    IDIO_A_POP_FRAME1,
-    IDIO_A_POP_FRAME2,
-    IDIO_A_POP_FRAME3,
-    IDIO_A_POP_FRAME,
-
-    IDIO_A_LINK_FRAME,
-    IDIO_A_UNLINK_FRAME,
-    IDIO_A_PACK_FRAME,
-    IDIO_A_POP_LIST_FRAME,
-    IDIO_A_EXTEND_FRAME,
-
-    /* NB. No ARITY0P as there is always an implied varargs */
-    IDIO_A_ARITY1P,
-    IDIO_A_ARITY2P,
-    IDIO_A_ARITY3P,
-    IDIO_A_ARITY4P,
-    IDIO_A_ARITYEQP,
-    IDIO_A_ARITYGEP,
-
-    IDIO_A_SHORT_NUMBER,	/* not implemented */
-    IDIO_A_SHORT_NEG_NUMBER,	/* not implemented */
-    IDIO_A_CONSTANT_0,
-    IDIO_A_CONSTANT_1,
-    IDIO_A_CONSTANT_2,
-    IDIO_A_CONSTANT_3,
-    IDIO_A_CONSTANT_4,
-    IDIO_A_FIXNUM,
-    IDIO_A_NEG_FIXNUM,
-    IDIO_A_CONSTANT,
-    IDIO_A_NEG_CONSTANT,
-    IDIO_A_UNICODE,
-
-    IDIO_A_NOP,
-    IDIO_A_PRIMCALL0,
-    IDIO_A_PRIMCALL1,
-    IDIO_A_PRIMCALL2,
-    IDIO_A_PRIMCALL3,		/* not implemented */
-    IDIO_A_PRIMCALL,		/* not implemented */
-
-    IDIO_A_SUPPRESS_RCSE,
-    IDIO_A_POP_RCSE,
-
-    IDIO_A_NOT,
-
-    IDIO_A_EXPANDER,
-    IDIO_A_IEXPANDER,
-    IDIO_A_INFIX_OPERATOR,
-    IDIO_A_INFIX_IOPERATOR,
-    IDIO_A_POSTFIX_OPERATOR,
-    IDIO_A_POSTFIX_IOPERATOR,
-
-    IDIO_A_PUSH_DYNAMIC,
-    IDIO_A_PUSH_IDYNAMIC,
-    IDIO_A_POP_DYNAMIC,
-    IDIO_A_DYNAMIC_SYM_REF,
-    IDIO_A_DYNAMIC_SYM_IREF,
-    IDIO_A_DYNAMIC_FUNCTION_SYM_REF,
-    IDIO_A_DYNAMIC_FUNCTION_SYM_IREF,
-
-    IDIO_A_PUSH_ENVIRON,
-    IDIO_A_PUSH_IENVIRON,
-    IDIO_A_POP_ENVIRON,
-    IDIO_A_ENVIRON_SYM_REF,
-    IDIO_A_ENVIRON_SYM_IREF,
-
-    IDIO_A_NON_CONT_ERR,
-    IDIO_A_PUSH_TRAP,
-    IDIO_A_PUSH_ITRAP,
-    IDIO_A_POP_TRAP,
-
-    IDIO_A_PUSH_ESCAPER,
-    IDIO_A_PUSH_IESCAPER,
-    IDIO_A_POP_ESCAPER,
-    IDIO_A_ESCAPER_LABEL_REF,
-    IDIO_A_ESCAPER_LABEL_IREF,
-} idio_vm_a_enum;
-
 extern IDIO idio_vm_module;
 extern IDIO idio_vm_constants;
 extern IDIO idio_vm_constants_hash;
@@ -236,6 +62,109 @@ extern idio_pc_t idio_prologue_len;
 extern int idio_vm_exit;
 extern int idio_vm_virtualisation_WSL;
 
+/*
+ * An execution environment, xenv, is a collection of the various VM
+ * tables.
+ *
+ * It allows us to associate collections of VM tables with the byte
+ * code that refers to them.  A sort of Global Offset Table (GOT) as
+ * used by x86 processors.
+ *
+ * xenv[0] is the standard VM collection using the static C variables.
+ * We need this because the various C idio_init_X() functions want to
+ * stuff the VM full of symbols, constants and values, long before we
+ * get round to running any byte code.
+ *
+ * xenv[n] is that collection read in from the pre-compiled X.idio
+ * files and will reflect much of the idio_evaluate_eenv_type
+ * structure.
+ *
+ * The fields are:
+ *
+ * * symbols - a map from a SYM_IREF index to the constants index
+ *
+ *	symbols represents each thing that requires an associated
+ *	value.  The evaluator chose a SYM_IREF (rather than a
+ *	VAL_IREF) because we haven't seen the symbol *defined* in this
+ *	module.  So it is either a forward lookup or a reference to a
+ *	library function.  Probably.
+ *
+ * * constants - a table of all things (symbols, strings, bignums
+ *	etc.) that we can't quietly encode in the byte code.  We can
+ *	then encode the index into the constants table into the byte
+ *	code.
+ *
+ * * constants_hash - the inverse of constants
+ *
+ * * src_exprs - table of source code expressions
+ *
+ * * src_props - table of lexical information (file, line number)
+ *
+ *	Note that file is really file-index into the constants table
+ *	to get the (string) file name.
+ *
+ * * values - a table of resolved global value indexes
+ *
+ *	values holds the (eventually resolved) gvi for each entry in
+ *	symbols.  The initial values are all 0 (zero) meaning
+ *	unresolved.
+ *
+ * Suppose, when we compile a file, {printf} is the third symbol seen,
+ * ie. si==2 which happens to be the fifth entry in the constants
+ * table, ie. ci==4.
+ *
+ * The byte code will see "SYM_IREF 2".
+ *
+ * Short-circuit: if values[si] is non-zero we've already looked this
+ * symbol up and can use values[si].
+ *
+ * Without a short-circuit, we can dereference the symbols array to
+ * get ci==4.  We can dereference the constants table to get
+ * sym==printf.
+ *
+ * Now we need to lookup {printf} in our top level or the (exported)
+ * names of our imports.  That will return us some symbol information,
+ * (scope mci gvi module helpful-string).  If it failed we can add a
+ * new symbol information tuple which maps the symbol to itself,
+ * cf. calling external programs, eg. ls(1).
+ *
+ * We can now set values[si] to gvi (from the symbol information).
+ *
+ * Obviously, "VAL_IREF n" can just blast away and use values[n].
+ * Experience suggests that we've successfully arranged to avoid
+ * seeing a "VAL_IREF n" before we are certain to have set values[n].
+ */
+typedef struct idio_xenv_s {
+    size_t index;
+    IDIO symbols;
+    IDIO constants;
+    IDIO constants_hash;
+    IDIO src_exprs;
+    IDIO src_props;
+    IDIO values;
+    IDIO_IA_T byte_code;
+} idio_xenv_t;
+
+#define IDIO_XENV_INDEX(X)          ((X)->index)
+#define IDIO_XENV_SYMBOLS(X)        ((X)->symbols)
+#define IDIO_XENV_CONSTANTS(X)      ((X)->constants)
+#define IDIO_XENV_CONSTANTS_HASH(X) ((X)->constants_hash)
+#define IDIO_XENV_SRC_EXPRS(X)      ((X)->src_exprs)
+#define IDIO_XENV_SRC_PROPS(X)      ((X)->src_props)
+#define IDIO_XENV_VALUES(X)         ((X)->values)
+#define IDIO_XENV_BYTE_CODE(X)      ((X)->byte_code)
+
+extern size_t idio_xenvs_size;
+extern idio_xenv_t **idio_xenvs;
+
+#define IDIO_THREAD_SYMBOLS(T)        IDIO_XENV_SYMBOLS (idio_xenvs[IDIO_THREAD_XI(T)])
+#define IDIO_THREAD_CONSTANTS(T)      IDIO_XENV_CONSTANTS (idio_xenvs[IDIO_THREAD_XI(T)])
+#define IDIO_THREAD_CONSTANTS_HASH(T) IDIO_XENV_CONSTANTS_HASH (idio_xenvs[IDIO_THREAD_XI(T)])
+#define IDIO_THREAD_SRC_EXPRS(T)      IDIO_XENV_SRC_EXPRS (idio_xenvs[IDIO_THREAD_XI(T)])
+#define IDIO_THREAD_SRC_PROPS(T)      IDIO_XENV_SRC_PROPS (idio_xenvs[IDIO_THREAD_XI(T)])
+#define IDIO_THREAD_VALUES(T)         IDIO_XENV_VALUES (idio_xenvs[IDIO_THREAD_XI(T)])
+#define IDIO_THREAD_BYTE_CODE(T)      IDIO_XENV_BYTE_CODE (idio_xenvs[IDIO_THREAD_XI(T)])
+
 #define IDIO_VM_NS	1000000000L
 #define IDIO_VM_US	1000000L
 
@@ -252,7 +181,6 @@ void idio_vm_signal_report ();
 
 IDIO idio_vm_run (IDIO thr, idio_pc_t pc, int caller);
 IDIO idio_vm_run_C (IDIO thr, idio_pc_t pc);
-void idio_vm_dasm (FILE *fp, IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce);
 
 void idio_vm_restore_continuation (IDIO k, IDIO val);
 void idio_vm_restore_exit (IDIO k, IDIO val);
@@ -290,6 +218,11 @@ idio_sp_t idio_vm_find_abort_2 (IDIO thr);
 void idio_raise_condition (IDIO continuablep, IDIO e);
 void idio_reraise_condition (IDIO continuablep, IDIO condition);
 IDIO idio_apply (IDIO fn, IDIO args);
+
+uint64_t idio_vm_get_varuint (IDIO_IA_T bc, idio_pc_t *pcp);
+uint64_t idio_vm_get_16uint (IDIO_IA_T bc, idio_pc_t *pcp);
+uint64_t idio_vm_fetch_16uint (IDIO thr, IDIO_IA_T bc);
+
 void idio_vm_debug (IDIO thr, char const *prefix, idio_ai_t stack_start);
 #ifdef IDIO_VM_PROF
 void idio_vm_func_start (IDIO clos, struct timespec *tsp, struct rusage *rup);
