@@ -224,7 +224,6 @@ extern IDIO idio_vm_constants;
 extern IDIO idio_vm_constants_hash;
 extern IDIO idio_vm_src_exprs;
 extern IDIO idio_vm_krun;
-extern FILE *idio_dasm_FILE;
 extern int idio_vm_reports;
 extern int idio_vm_reporting;
 extern IDIO_IA_T idio_all_code;
@@ -253,7 +252,7 @@ void idio_vm_signal_report ();
 
 IDIO idio_vm_run (IDIO thr, idio_pc_t pc, int caller);
 IDIO idio_vm_run_C (IDIO thr, idio_pc_t pc);
-void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce);
+void idio_vm_dasm (FILE *fp, IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce);
 
 void idio_vm_restore_continuation (IDIO k, IDIO val);
 void idio_vm_restore_exit (IDIO k, IDIO val);

@@ -124,7 +124,6 @@ static char *idio_vm_tracing_out = "<<<<<<<<<<<<<<<<<<<<<<<<<";
 static int idio_vm_dis = 0;
 #endif
 FILE *idio_tracing_FILE;
-FILE *idio_dasm_FILE;
 int idio_vm_reports = 0;
 int idio_vm_reporting = 0;
 
@@ -6007,7 +6006,7 @@ int idio_vm_run1 (IDIO thr)
     return 1;
 }
 
-#define IDIO_VM_DASM(...)	{ fprintf (idio_dasm_FILE, __VA_ARGS__); }
+#define IDIO_VM_DASM(...)	{ fprintf (fp, __VA_ARGS__); }
 
 IDIO idio_vm_dasm_symbols_ref (IDIO thr, idio_as_t si)
 {
@@ -6038,15 +6037,13 @@ IDIO idio_vm_dasm_constants_ref (IDIO thr, idio_as_t ci)
     return idio_array_ref_index (cs, ci);
 }
 
-void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
+void idio_vm_dasm (FILE *fp, IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 {
+    IDIO_C_ASSERT (fp);
     IDIO_ASSERT (thr);
+    IDIO_C_ASSERT (bc);
 
     IDIO_TYPE_ASSERT (thread, thr);
-
-#ifdef IDIO_DEBUG
-    fprintf (stderr, "dasm: ia=%10p pc0=%zd pce=%zd\n", bc, pc0, pce);
-#endif
 
     if (0 == pce) {
 	pce = IDIO_IA_USIZE (bc);
@@ -6058,8 +6055,6 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 	idio_debug ("STK %.1000s\n", IDIO_THREAD_STACK (thr));
 	idio_vm_panic (thr, "vm-dasm: bad PC!");
     }
-
-    IDIO_VM_DASM ("idio_vm_dasm: thr %p pc0 %6zd pce %6zd\n", thr, pc0, pce);
 
     IDIO hints = IDIO_HASH_EQP (256);
 
@@ -6148,7 +6143,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		IDIO sym = idio_vm_dasm_symbols_ref (thr, mci);
 
 		IDIO_VM_DASM ("SYM-IREF %" PRId64 "", mci);
-		idio_debug_FILE (idio_dasm_FILE, " %s", sym);
+		idio_debug_FILE (fp, " %s", sym);
 	    }
 	    break;
 	case IDIO_A_FUNCTION_SYM_REF:
@@ -6165,7 +6160,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		IDIO sym = idio_vm_dasm_constants_ref (thr, mci);
 
 		IDIO_VM_DASM ("FUNCTION-SYM-IREF %" PRId64 "", mci);
-		idio_debug_FILE (idio_dasm_FILE, " %s", sym);
+		idio_debug_FILE (fp, " %s", sym);
 	    }
 	    break;
 	case IDIO_A_CONSTANT_REF:
@@ -6179,7 +6174,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		IDIO c = idio_vm_dasm_constants_ref (thr, gci);
 
 		IDIO_VM_DASM ("CONSTANT-REF %5zd", mci);
-		idio_debug_FILE (idio_dasm_FILE, " %s", c);
+		idio_debug_FILE (fp, " %s", c);
 	    }
 	    break;
 	case IDIO_A_CONSTANT_IREF:
@@ -6193,7 +6188,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		IDIO c = idio_vm_dasm_constants_ref (thr, gci);
 
 		IDIO_VM_DASM ("CONSTANT-IREF %5zd", mci);
-		idio_debug_FILE (idio_dasm_FILE, " %s", c);
+		idio_debug_FILE (fp, " %s", c);
 	    }
 	    break;
 	case IDIO_A_COMPUTED_SYM_REF:
@@ -6226,7 +6221,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		    IDIO_VM_DASM ("SYM-DEF %" PRId64 " %s as %s", mci, IDIO_SYMBOL_S (sym), IDIO_SYMBOL_S (kind));
 		} else {
 		    IDIO_VM_DASM ("SYM-DEF %" PRId64 " %s", mci, idio_type2string (sym));
-		    idio_debug_FILE (idio_dasm_FILE, " %s", sym);
+		    idio_debug_FILE (fp, " %s", sym);
 		}
 	    }
 	    break;
@@ -6246,7 +6241,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		    IDIO_VM_DASM ("SYM-IDEF %" PRId64 " %s as %s", mci, IDIO_SYMBOL_S (sym), IDIO_SYMBOL_S (kind));
 		} else {
 		    IDIO_VM_DASM ("SYM-IDEF %" PRId64 " %s", mci, idio_type2string (sym));
-		    idio_debug_FILE (idio_dasm_FILE, " %s", sym);
+		    idio_debug_FILE (fp, " %s", sym);
 		}
 	    }
 	    break;
@@ -6261,7 +6256,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		    IDIO_VM_DASM ("SYM-SET %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
 		} else {
 		    IDIO_VM_DASM ("SYM-SET %" PRId64 " %s", mci, idio_type2string (sym));
-		    idio_debug_FILE (idio_dasm_FILE, " %s", sym);
+		    idio_debug_FILE (fp, " %s", sym);
 		}
 	    }
 	    break;
@@ -6276,7 +6271,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		    IDIO_VM_DASM ("SYM-ISET %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
 		} else {
 		    IDIO_VM_DASM ("SYM-ISET %" PRId64 " %s", mci, idio_type2string (sym));
-		    idio_debug_FILE (idio_dasm_FILE, " %s", sym);
+		    idio_debug_FILE (fp, " %s", sym);
 		}
 	    }
 	    break;
@@ -6469,10 +6464,10 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		if (idio_S_unspec == lo) {
 		    IDIO_VM_DASM (" %-25s", "<no lexobj>");
 		} else {
-		    idio_debug_FILE (idio_dasm_FILE, " %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME));
-		    idio_debug_FILE (idio_dasm_FILE, ":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE));
+		    idio_debug_FILE (fp, " %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME));
+		    idio_debug_FILE (fp, ":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE));
 		}
-		idio_debug_FILE (idio_dasm_FILE, "\n  %s", e);
+		idio_debug_FILE (fp, "\n  %s", e);
 	    }
 	    break;
 	case IDIO_A_POP_FUNCTION:
@@ -6695,7 +6690,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		uint64_t ssci = idio_vm_get_varuint (bc, pcp);
 		IDIO names = idio_vm_dasm_constants_ref (thr, ssci);
 		IDIO_VM_DASM ("LINK-FRAME sci=%" PRId64, ssci);
-		idio_debug_FILE (idio_dasm_FILE, " %s", names);
+		idio_debug_FILE (fp, " %s", names);
 	    }
 	    break;
 	case IDIO_A_UNLINK_FRAME:
@@ -6723,7 +6718,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		IDIO names = idio_vm_dasm_constants_ref (thr, ssci);
 
 		IDIO_VM_DASM ("EXTEND-FRAME %" PRId64 " sci=%" PRId64, alloc, ssci);
-		idio_debug_FILE (idio_dasm_FILE, " %s", names);
+		idio_debug_FILE (fp, " %s", names);
 	    }
 	    break;
 	case IDIO_A_ARITY1P:
@@ -6953,7 +6948,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		} else {
 		    fprintf (stderr, "DYNAMIC-SYM-REF not a symbol\n");
 		    IDIO_VM_DASM ("DYNAMIC-SYM-REF %" PRId64, mci);
-		    idio_debug_FILE (idio_dasm_FILE, " %s", sym);
+		    idio_debug_FILE (fp, " %s", sym);
 		}
 	    }
 	    break;
@@ -7132,14 +7127,16 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
     }
 }
 
+void idio_vm_dump_dasm ();
+
 IDIO_DEFINE_PRIMITIVE0V_DS ("%%idio-dasm", dasm, (IDIO args), "[c]", "\
 generate the disassembler code for closure `c` or everything	\n\
 								\n\
 :param c: (optional) the closure to disassemble			\n\
 :type c: closure						\n\
 								\n\
-The output goes to the file \"vm-dasm\" in the current directory.	\n\
-It will get overwritten when Idio stops.			\n\
+The output goes to the file(s) :file:`vm-dasm.{n}` in the	\n\
+current directory.  These may get overwritten when Idio stops.	\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -7152,6 +7149,7 @@ It will get overwritten when Idio stops.			\n\
 	if (idio_isa_closure (c)) {
 	    pc0 = IDIO_CLOSURE_CODE_PC (c);
 	    pce = pc0 + IDIO_CLOSURE_CODE_LEN (c);
+	    fprintf (stderr, "NOTICE: unable to dump a specific closure: %zu, %zu\n", pc0, pce);
 	} else {
 	    /*
 	     * Test Case: vm-errors/idio-dasm-bad-type.idio
@@ -7164,9 +7162,7 @@ It will get overwritten when Idio stops.			\n\
 	}
     }
 
-    IDIO thr = idio_thread_current_thread ();
-    IDIO_IA_T bc = IDIO_THREAD_BYTE_CODE (thr);
-    idio_vm_dasm (thr, bc, pc0, pce);
+    idio_vm_dump_dasm ();
 
     return idio_S_unspec;
 }
@@ -7625,7 +7621,7 @@ IDIO idio_vm_run (IDIO thr, idio_pc_t pc, int caller)
     if (IDIO_VM_RUN_C == caller) {
 	if (IDIO_THREAD_PC (thr) != (idio_vm_FINISH_pc + 1)) {
 	    fprintf (stderr, "vm-run: THREAD %zd failed to run to FINISH: PC %zd != %zd\n", v_PC0, IDIO_THREAD_PC (thr), (idio_vm_FINISH_pc + 1));
-	    idio_vm_dasm (thr, IDIO_THREAD_BYTE_CODE (thr), v_PC0, IDIO_THREAD_PC (thr));
+	    idio_vm_dump_dasm ();
 	    bail = 1;
 	}
 
@@ -7887,6 +7883,34 @@ idio_as_t idio_vm_constants_lookup_or_extend (IDIO thr, IDIO name)
     }
 
     return gci;
+}
+
+void idio_vm_dump_dasm ()
+{
+#ifdef IDIO_DEBUG
+    fprintf (stderr, "vm-dasm ");
+#endif
+
+    IDIO thr = idio_thread_current_thread ();
+
+    for (size_t xi = 0; xi < idio_xenvs_size; xi++) {
+	char fn[40];
+	snprintf (fn, 40, "vm-dasm.%zu", xi);
+
+	FILE *fp = fopen (fn, "w");
+	if (NULL == fp) {
+	    perror ("fopen (vm-dasm, w)");
+	    return;
+	}
+
+	IDIO_IA_T bc = IDIO_XENV_BYTE_CODE (idio_xenvs[xi]);
+
+	fprintf (fp, "byte code table #%2zu: %6zd\n", xi, IDIO_IA_USIZE (bc));
+
+	idio_vm_dasm (fp, thr, bc, 0, 0);
+
+	fclose (fp);
+    }
 }
 
 void idio_vm_dump_constants ()
@@ -9072,14 +9096,7 @@ void idio_final_vm ()
 #endif
 
 	if (idio_vm_reports) {
-#ifdef IDIO_DEBUG
-	    fprintf (stderr, "vm-dasm ");
-#endif
-	    idio_dasm_FILE = fopen ("vm-dasm", "w");
-	    if (idio_dasm_FILE) {
-		idio_vm_dasm (thr, IDIO_THREAD_BYTE_CODE (thr), 0, 0);
-		fclose (idio_dasm_FILE);
-	    }
+	    idio_vm_dump_dasm ();
 
 	    /*
 	     * We deliberately test that broken struct instance and
@@ -9297,7 +9314,6 @@ void idio_init_vm ()
 	idio_vm_ins_call_time[i].tv_nsec = 0;
     }
 #endif
-    idio_dasm_FILE = stderr;
     idio_tracing_FILE = stderr;
 
     idio_vm_symbol_t *cs = idio_vm_symbols;
