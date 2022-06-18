@@ -201,7 +201,7 @@ raise a ^system-error						\n\
 
     char *name = "n/k";
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO h = IDIO_PAIR_H (args);
 	if (idio_isa_string (h)) {
 	    size_t size = 0;

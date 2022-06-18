@@ -486,7 +486,7 @@ Find the module called `name`					\n\
      * find-module #t
      */
     if (! idio_isa_symbol (name)) {
-	if (idio_S_nil != args) {
+	if (idio_isa_pair (args)) {
 	    return IDIO_PAIR_H (args);
 	} else {
 	    idio_error_param_type ("symbol", name, IDIO_C_FUNC_LOCATION ());
@@ -505,7 +505,7 @@ Find the module called `name`					\n\
     IDIO r = idio_module_find_module (name);
 
     if (idio_S_unspec == r) {
-	if (idio_S_nil != args) {
+	if (idio_isa_pair (args)) {
 	    r = IDIO_PAIR_H (args);
 	} else {
 	    /*
@@ -859,7 +859,7 @@ return the symbols in `module`				\n\
 
     IDIO module = idio_thread_current_module ();
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO m_or_n = IDIO_PAIR_H (args);
 
 	if (idio_isa_module (m_or_n)) {
@@ -1412,7 +1412,7 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n, IDIO args)
     IDIO si = idio_hash_ref (IDIO_MODULE_SYMBOLS (module), symbol);
 
     IDIO r = idio_S_unspec;
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	r = IDIO_PAIR_H (args);
     }
 

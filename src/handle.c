@@ -1094,7 +1094,7 @@ unless `whence` is ``'set`` and position is ``0`` (zero)	\n\
 
     int whence = -1;
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO w = idio_list_head (args);
 	/*
 	 * Test Case: file-handle-errors/seek-handle-bad-whence-type.idio
@@ -1858,7 +1858,7 @@ num	specifies a maximum limit on the output		\n\
 			    memcpy (fmt, s, ss - s);
 			    fmt[ss - s] = '\0';
 
-			    if (idio_S_nil != args) {
+			    if (idio_isa_pair (args)) {
 				IDIO arg = IDIO_PAIR_H (args);
 				args = IDIO_PAIR_T (args);
 				if (idio_isa_fixnum (arg)) {
@@ -1885,7 +1885,7 @@ num	specifies a maximum limit on the output		\n\
 			break;
 		    case 's':
 			{
-			    if (idio_S_nil != args) {
+			    if (idio_isa_pair (args)) {
 				IDIO arg = IDIO_PAIR_H (args);
 				args = IDIO_PAIR_T (args);
 

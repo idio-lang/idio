@@ -2709,7 +2709,7 @@ Options will be IORed together			     \n\
      * waitpid (C/integer-> 0 libc/pid_t) #t
      */
     int C_options = 0;
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO option = IDIO_PAIR_H (args);
 
 	IDIO_USER_C_TYPE_ASSERT (int, option);
@@ -3423,7 +3423,7 @@ a wrapper to libc :manpage:`posix_openpt(3)`		\n\
     int C_flags = O_RDWR | O_NOCTTY;
 #endif
     IDIO flags = args;
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	flags = IDIO_PAIR_H (args);
 
 	/*
@@ -3903,7 +3903,7 @@ If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
 
     size_t C_count = BUFSIZ;
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO count = IDIO_PAIR_H (args);
 
 	if (idio_isa_fixnum (count)) {
@@ -4038,7 +4038,7 @@ a wrapper to libc open()		\n\
 
     IDIO mode = idio_S_nil;
     mode_t C_mode = 0;
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	mode = IDIO_PAIR_H (args);
 
 	/*

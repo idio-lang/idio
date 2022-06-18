@@ -916,7 +916,7 @@ int idio_equal_bitsetp (IDIO args)
 
     IDIO bs = idio_S_nil;
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	bs = IDIO_PAIR_H (args);
 	if (idio_isa_bitset (bs) == 0) {
 	    /*

@@ -2271,7 +2271,7 @@ see :ref:`C/integer->unsigned <C/integer->unsigned>`	\n\
 
     IDIO t = idio_S_int;
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	t = IDIO_PAIR_H (args);
     }
 
@@ -2462,7 +2462,7 @@ or an alias thereof, eg. ``libc/size_t``.	\n\
 
     IDIO t = idio_S_uint;
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	t = IDIO_PAIR_H (args);
     }
 

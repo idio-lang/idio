@@ -1395,7 +1395,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("operator-expand", operator_expand, (IDIO l), "l", "X
 	    return idio_S_notreached;					\
 	}								\
     									\
-	if (idio_S_nil != args) {					\
+	if (idio_isa_pair (args)) {					\
 	    IDIO after = IDIO_PAIR_H (args);				\
 	    if (idio_S_nil == after) {					\
 		idio_meaning_error_static_arity (before, IDIO_C_FUNC_LOCATION (), "too few args after " #iname, args); \
