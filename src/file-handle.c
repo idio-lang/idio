@@ -600,7 +600,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
     char fd_name[PATH_MAX];
     size_t fd_name_len = idio_snprintf (fd_name, PATH_MAX, "/dev/fd/%d", fd);
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO name = IDIO_PAIR_H (args);
 	if (idio_S_nil == name) {
 	    /*
@@ -667,7 +667,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
     char *mode_C = (char *) def_mode_str;
     size_t mode_C_len = dms_len;
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO mode = IDIO_PAIR_H (args);
 	if (idio_isa_string (mode)) {
 	    /*

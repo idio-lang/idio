@@ -996,7 +996,7 @@ create a string with an initial length of `size`\n\
     idio_unicode_t fillc = ' ';
     IDIO_FLAGS_T flags = IDIO_STRING_FLAG_1BYTE;
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO fill = IDIO_PAIR_H (args);
 	/*
 	 * Test Case: string-errors/make-string-bad-fill-type.idio
@@ -2321,7 +2321,7 @@ can still result in a negative index.			\n\
 	ip0 += l;
     }
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO pn = IDIO_PAIR_H (args);
 	if (idio_isa_fixnum (pn)) {
 	    ipn = IDIO_FIXNUM_VAL (pn);

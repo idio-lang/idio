@@ -1366,7 +1366,7 @@ IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args)
     IDIO r = idio_hash_ref (ht, key);
 
     if (idio_S_unspec == r) {
-	if (idio_S_nil != args) {
+	if (idio_isa_pair (args)) {
 	    IDIO dv = IDIO_PAIR_H (args);
 	    if (idio_isa_function (dv)) {
 		r = idio_vm_invoke_C (dv);
@@ -1685,7 +1685,7 @@ IDIO idio_hash_make_hash (IDIO args)
     IDIO comp = idio_S_nil;
     IDIO hash = idio_S_nil;
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	comp = IDIO_PAIR_H (args);
 
 	if (idio_S_nil != comp) {
@@ -1705,7 +1705,7 @@ IDIO idio_hash_make_hash (IDIO args)
 	args = IDIO_PAIR_T (args);
     }
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	hash = IDIO_PAIR_H (args);
 
 	if (idio_S_nil != hash) {
@@ -1718,7 +1718,7 @@ IDIO idio_hash_make_hash (IDIO args)
     /*
      * SRFI-69 -- remaining args are implementation specific
      */
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO isize = IDIO_PAIR_H (args);
 
 	if (idio_isa_fixnum (isize)) {
@@ -2142,7 +2142,7 @@ copy hash table `orig`					\n\
 
     int depth = IDIO_COPY_DEEP;
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO idepth = IDIO_PAIR_H (args);
 
 	if (idio_isa_symbol (idepth)) {

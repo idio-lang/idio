@@ -46,7 +46,7 @@ IDIO idio_list_member (IDIO k, IDIO l);
 IDIO idio_list_assq (IDIO k, IDIO l);
 IDIO idio_list_assv (IDIO k, IDIO l);
 IDIO idio_list_assoc (IDIO k, IDIO l);
-IDIO idio_list_nth (IDIO l, IDIO I_n, IDIO args);
+IDIO idio_list_nth (IDIO l, intmax_t C_n, IDIO args);
 
 char *idio_pair_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_pair_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);

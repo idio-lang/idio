@@ -4436,7 +4436,7 @@ normal hexadecimal digits are extended to all ASCII	\n\
 
     unsigned int radix = 10;
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO I_radix = IDIO_PAIR_H (args);
 	if (idio_isa_fixnum (I_radix)) {
 	    radix = IDIO_FIXNUM_VAL (I_radix);

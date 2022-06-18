@@ -1421,36 +1421,18 @@ or ``#f`` if `k` is not a key in `l`		\n\
     return idio_list_assoc (k, l);
 }
 
-IDIO idio_list_nth (IDIO l, IDIO I_n, IDIO args)
+IDIO idio_list_nth (IDIO l, intmax_t C_n, IDIO args)
 {
     IDIO_ASSERT (l);
-    IDIO_ASSERT (I_n);
     IDIO_ASSERT (args);
 
     IDIO_TYPE_ASSERT (list, l);
-
-    intmax_t C_n = -1;
-
-    if (idio_isa_fixnum (I_n)) {
-	C_n = (intmax_t) IDIO_FIXNUM_VAL (I_n);
-    } else if (idio_isa_integer_bignum (I_n)) {
-	C_n = idio_bignum_ptrdiff_t_value (I_n);
-    } else {
-	/*
-	 * Test Case: pair-errors/nth-bad-index-type.idio
-	 *
-	 * nth '(1 2 3) #t
-	 */
-	idio_error_param_type ("integer", I_n, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
 
     IDIO r = idio_S_nil;
 
     IDIO_TYPE_ASSERT (list, args);
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	r = IDIO_PAIR_H (args);
     }
 
@@ -1491,7 +1473,24 @@ return the nth (`n`) element from list `l`		\n\
      */
     IDIO_USER_TYPE_ASSERT (list, l);
 
-    return idio_list_nth (l, I_n, args);
+    intmax_t C_n = -1;
+
+    if (idio_isa_fixnum (I_n)) {
+	C_n = (intmax_t) IDIO_FIXNUM_VAL (I_n);
+    } else if (idio_isa_integer_bignum (I_n)) {
+	C_n = idio_bignum_ptrdiff_t_value (I_n);
+    } else {
+	/*
+	 * Test Case: pair-errors/nth-bad-index-type.idio
+	 *
+	 * nth '(1 2 3) #t
+	 */
+	idio_error_param_type ("integer", I_n, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_list_nth (l, C_n, args);
 }
 
 char *idio_pair_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)

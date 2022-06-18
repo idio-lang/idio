@@ -3629,7 +3629,7 @@ set VM tracing to `level` for user code			\n\
 
     idio_vm_tracing_user = IDIO_FIXNUM_VAL (level);
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	idio_vm_set_tracing_file (args);
     }
 
@@ -3667,7 +3667,7 @@ set VM tracing to `level` for all code			\n\
 	idio_vm_tracing = 0;
     }
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	idio_vm_set_tracing_file (args);
     }
 

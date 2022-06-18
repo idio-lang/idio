@@ -2323,7 +2323,7 @@ copy `v` to `depth`					\n\
 
     int depth = IDIO_COPY_DEEP;
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO idepth = IDIO_PAIR_H (args);
 
 	if (idio_isa_symbol (idepth)) {

@@ -494,7 +494,7 @@ Poll `poller` for `timeout` milliseconds	\n\
     idio_libc_poller_t *C_poller = IDIO_C_TYPE_POINTER_P (poller);
 
     intmax_t C_timeout = -1;
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO timeout = IDIO_PAIR_H (args);
 	if (idio_isa_fixnum (timeout)) {
 	    C_timeout = IDIO_FIXNUM_VAL (timeout);

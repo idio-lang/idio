@@ -851,7 +851,7 @@ create an array with an initial allocation size of `size`\n\
      */
     IDIO dv = idio_array_default_value;
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	dv = IDIO_PAIR_H (args);
     }
 
@@ -904,7 +904,7 @@ copy array `orig` and add an optional `extra` elements	\n\
     idio_ai_t extra = 0;
     int depth = IDIO_COPY_DEEP;
 
-    if (idio_S_nil != args) {
+    if (idio_isa_pair (args)) {
 	IDIO idepth = IDIO_PAIR_H (args);
 	IDIO iextra = idio_S_nil;
 	if (idio_isa_pair (IDIO_PAIR_T (args))) {
