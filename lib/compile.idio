@@ -27,7 +27,7 @@ import vm codegen
 ;; XXX slightly cautious around importing evaluate as it will override
 ;; the primitive and we've not updated evaluate.idio yet
 eval := evaluate/evaluate
-import evaluate
+require evaluate
 
 define (compile-file file & args) "
 " {
@@ -42,7 +42,7 @@ define (compile-file file & args) "
     }
   }
 
-  eenv := %evaluation-environment #t (current-module)
+  eenv := evaluate/%evaluation-environment #t
 
   printf "c eenv %s\n" eenv
   fh := open-input-file file
@@ -69,15 +69,15 @@ define (compile-file file & args) "
   close-handle fh
 
   printf "\n"
-  symbols = %eenv-symbols eenv
+  symbols = evaluate/%eenv-symbols eenv
   while (pair? symbols) {
     printf "c st %s\n" (ph symbols)
     symbols = pt symbols
   }
 
-  printf "c vs %s\n" (%eenv-values eenv)
+  printf "c vs %s\n" (evaluate/%eenv-values eenv)
 
-  printf "c cs %s\n" (%eenv-constants eenv)
+  printf "c cs %s\n" (evaluate/%eenv-constants eenv)
 
   printf "c eenv %s\n" eenv
 

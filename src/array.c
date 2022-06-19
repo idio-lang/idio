@@ -657,6 +657,90 @@ idio_ai_t idio_array_find_equalp (IDIO a, IDIO e, idio_ai_t index)
     return idio_array_find (a, IDIO_EQUAL_EQUALP, e, index);
 }
 
+IDIO_DEFINE_PRIMITIVE2V_DS ("array-find-eqp", array_find_eqp, (IDIO a, IDIO v, IDIO args), "a v [index]", "\
+return the first index of `v` in `a` starting	\n\
+at `index` or ``-1``				\n\
+						\n\
+:param a: the array				\n\
+:type a: array					\n\
+:param v: the value to search for		\n\
+:type v: any					\n\
+:param index: starting index, defaults to ``0``	\n\
+:type index: integer, optional			\n\
+:return: the index of the first `v` in `a`	\n\
+:rtype: integer					\n\
+")
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (args);
+
+    IDIO_USER_TYPE_ASSERT (array, a);
+
+    idio_ai_t index = 0;
+
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
+    IDIO_USER_TYPE_ASSERT (list, args);
+
+    if (idio_isa_pair (args)) {
+	IDIO iv = IDIO_PAIR_H (args);
+
+	if (idio_isa_fixnum (iv)) {
+	    index = IDIO_FIXNUM_VAL (iv);
+	} else if (idio_isa_bignum (iv)) {
+	    if (IDIO_BIGNUM_INTEGER_P (iv)) {
+		/*
+		 * Code coverage: to get here we'd need to pass
+		 * FIXNUM-MAX+1 and that is to too big to allocate...
+		 */
+		index = idio_bignum_ptrdiff_t_value (iv);
+	    } else {
+		IDIO iv_i = idio_bignum_real_to_integer (iv);
+		if (idio_S_nil == iv_i) {
+		    /*
+		     * Test Case: array-errors/array-find-eqp-index-not-integer.idio
+		     *
+		     * array-find-eqp #[] #t 1.1
+		     */
+		    idio_error_param_type ("integer", iv, IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		} else {
+		    index = idio_bignum_ptrdiff_t_value (iv_i);
+		}
+	    }
+	} else {
+	    /*
+	     * Test Case: array-errors/array-find-eqp-index-not-integer.idio
+	     *
+	     * array-find-eqp #[] #t #t
+	     */
+	    idio_error_param_type ("integer", iv, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
+    if (index < 0) {
+	/*
+	 * Test Case: array-errors/array-find-eqp-index-negative-integer.idio
+	 *
+	 * make-array -1
+	 */
+	idio_array_length_error ("invalid length", index, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    idio_ai_t fi = idio_array_find_eqp (a, v, index);
+
+    return idio_integer (fi);
+}
+
 /**
  * idio_copy_array() - copy an array
  * @a: array
@@ -1553,6 +1637,7 @@ IDIO idio_array_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 
 void idio_array_add_primitives ()
 {
+    IDIO_ADD_PRIMITIVE (array_find_eqp);
     IDIO_ADD_PRIMITIVE (arrayp);
     IDIO_ADD_PRIMITIVE (make_array);
     IDIO_ADD_PRIMITIVE (copy_array);

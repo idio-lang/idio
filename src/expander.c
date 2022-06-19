@@ -86,7 +86,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, char c
 
     IDIO si = idio_module_find_symbol (name, module);
     if (idio_S_false != si) {
-	IDIO fvi = IDIO_PAIR_HTT (si);
+	IDIO fvi = IDIO_SI_VI (si);
 	IDIO pd = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
 
 	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
@@ -116,7 +116,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, char c
 
     idio_module_set_vci (module, fmci, fmci);
     idio_module_set_vvi (module, fmci, fgvi);
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_predef, fmci, fgvi, module, idio_evaluator_extend_str), module);
+    idio_module_set_symbol (name, IDIO_LIST6 (idio_S_predef, fmci, fmci, fgvi, module, idio_evaluator_extend_str), module);
 
     /*
      * idio_module_set_symbol_value() is a bit sniffy about setting

@@ -56,6 +56,29 @@
 #define IDIO_MEANING_NO_TEMPLATE(f)		(((f) & (~ IDIO_MEANING_FLAG_TEMPLATE)) == 0)
 
 /*
+ * symbol information tuple:
+ *
+ * (scope si ci vi module string)
+ *
+ * nametree also gets in the mix
+ *
+ * (param i j)
+ * (local i j)
+ *
+ * (dynamic ci)
+ * (environ ci)
+ */
+#define IDIO_SI_SCOPE(SI)	IDIO_PAIR_H(SI)
+#define IDIO_SI_SI(SI)		IDIO_PAIR_HT(SI)
+#define IDIO_SI_CI(SI)		IDIO_PAIR_HTT(SI)
+#define IDIO_SI_VI(SI)		IDIO_PAIR_H   (IDIO_PAIR_TTT (SI))
+#define IDIO_SI_MODULE(SI)	IDIO_PAIR_HT  (IDIO_PAIR_TTT (SI))
+#define IDIO_SI_DESCRIPTION(SI)	IDIO_PAIR_HTT (IDIO_PAIR_TTT (SI))
+
+#define IDIO_NT_PARAM_I(SI)	IDIO_PAIR_HT(SI)
+#define IDIO_NT_PARAM_J(SI)	IDIO_PAIR_HTT(SI)
+
+/*
  * Indexes into structures for direct references
  */
 typedef enum {

@@ -2136,7 +2136,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 		return;
 	    }
 
-	    IDIO_IA_PUSH1 (aot ? IDIO_A_ENVIRON_SYM_REF : IDIO_A_ENVIRON_SYM_REF);
+	    IDIO_IA_PUSH1 (aot ? IDIO_A_ENVIRON_SYM_IREF : IDIO_A_ENVIRON_SYM_REF);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;

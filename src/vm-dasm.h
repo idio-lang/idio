@@ -27,7 +27,7 @@
 #define IDIO_THREAD_FETCH_NEXT(bc)	IDIO_IA_GET_NEXT (bc, &(IDIO_THREAD_PC(thr)))
 
 char const *idio_vm_bytecode2string (int code);
-void idio_vm_dasm (FILE *fp, IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce);
+void idio_vm_dasm (FILE *fp, size_t xi, idio_pc_t pc0, idio_pc_t pce);
 void idio_vm_dump_dasm ();
 
 void idio_init_vm_dasm ();

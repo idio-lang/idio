@@ -31,9 +31,15 @@ define (eenv-as-string eenv seen) {
     r := (open-output-string)
     hprintf r "#<SI %%eenv "
 
-    hprintf r "aot?=%s " (%eenv-aot? eenv)
-    hprintf r "st=%s " (ph-of (%eenv-symbols eenv))
-    hprintf r "ct=%s " (%eenv-constants eenv)
+    aot := %eenv-aot? eenv
+    hprintf r "aot?=%s " aot
+    if aot {
+      hprintf r "st=%s " (ph-of (%eenv-symbols eenv))
+      hprintf r "ct=%s " (%eenv-constants eenv)
+    } {
+      hprintf r "st #%s " (length (%eenv-symbols eenv))
+      hprintf r "ct #%s " (array-length (%eenv-constants eenv))
+    }
     hprintf r "vs #%s " (length (%eenv-values eenv))
     hprintf r "se #%s " (array-length (%eenv-src-exprs eenv))
     hprintf r ">"
@@ -42,6 +48,17 @@ define (eenv-as-string eenv seen) {
 }
 
 add-as-string %eenv eenv-as-string
+
+define (eenv-symbol-index eenv si) {
+  sym-idx := #f
+  if (%eenv-aot? eenv) {
+    sym-idx = si-si si
+  } {
+    sym-idx = si-ci si
+  }
+
+  sym-idx
+}
 
 define (meaning-src-location e) {
   lo := #f
@@ -147,10 +164,95 @@ define (define-scope scope flags) {
   make-eval-flags (eval-flags-tailp flags) scope #t
 }
 
-;; symbol-info is a tuple: (scope ci vi mod creator)
+;; symbol-info is a tuple: (scope si ci vi module description)
+define (si-scope si)       (ph si)
+define (si-si si)          (pht si)
+define (si-ci si)          (phtt si)
+define (si-vi si)          (ph   (pttt si))
+define (si-module si)      (pht  (pttt si))
+define (si-description si) (phtt (pttt si))
 
-define (meaning-toplevel-extend src name flags cs cm) {
-  scope := (eval-flags-scope flags)
+define (nt-param-i si)     (pht si)
+define (nt-param-j si)     (phtt si)
+
+define (meaning-constants-lookup-or-extend eenv name) {
+  id := #f
+
+  if (%eenv-aot? eenv) {
+    cs := %eenv-constants
+
+    id = array-find-eqp cs name
+    if (-1 eq id) {
+      id = array-size cs
+      array-push cs name
+      eprintf "mcloe %-20s %d\n" name id
+    }
+  } {
+    id = codegen-constants-lookup-or-extend eenv name
+  }
+
+  id
+}
+
+define (meaning-extend-values eenv) {
+  vi := #f
+
+  if (%eenv-aot? eenv) {
+    vs := %eenv-values
+
+    ;; NB Normally a vi of 0 indicates the symbol hasn't been defined
+    ;; (yet) however these vi are placeholders.
+    vi = 0
+    if (pair? vs) {
+      vi = ph vs
+      vi = vi + 1
+    }
+    set-%eenv-values! eenv (pair vi, vs)
+  } {
+    vi = (vm-extend-values)
+  }
+
+  vi
+}
+
+define (meaning-find-symbol-recurse name eenv scope recurse) {
+  if (%eenv-aot? eenv) {
+    st := %eenv-symbols eenv
+
+    sym-si := assq st name
+    if (not sym-si) {
+      ci := meaning-constants-lookup-or-extend eenv name
+      vi := meaning-extend-values eenv
+      sym-si = list name scope (length st) ci vi (%eenv-module eenv) "idio-precompilation"
+      set-%eenv-symbols! eenv (pair sym-si st)
+    }
+
+    pt sym-si
+  } {
+    find-symbol name eenv recurse
+  }
+}
+
+define (meaning-find-symbol name eenv scope) {
+  meaning-find-symbol-recurse name eenv scope #f
+}
+
+define (meaning-find-toplevel-symbol name eenv) {
+  meaning-find-symbol-recurse name eenv 'toplevel #f
+}
+
+define (meaning-find-dynamic-symbol name eenv) {
+  meaning-find-symbol-recurse name eenv 'dynamic #f
+}
+
+define (meaning-find-environ-symbol name eenv) {
+  meaning-find-symbol-recurse name eenv 'environ #f
+}
+
+;; No meaning-predef-extend in Idio-land, C-land only
+
+define (meaning-toplevel-extend src name flags eenv) {
+  scope := eval-flags-scope flags
 
   (case scope
    ((toplevel dynamic environ computed) #t)
@@ -158,15 +260,15 @@ define (meaning-toplevel-extend src name flags cs cm) {
      meaning-evaluation-error src (sprintf "unexpected toplevel scope: flags %s\n" flags) name
    }))
 
-  si := find-symbol name cm #f
+  si := meaning-find-symbol name eenv scope
 
   if (pair? si) {
-    cur-scope := ph si
+    cur-scope := si-scope si
 
     if (not (eq? cur-scope scope)) {
       meaning-error-static-redefine src "toplevel-extend: type change" name si scope
     } {
-      pht si
+      si-ci si
     }
   } {
     (cond-expand
@@ -177,30 +279,46 @@ define (meaning-toplevel-extend src name flags cs cm) {
        }
      }))
 
-    ci := codegen-constants-lookup-or-extend cs name
+    ci := meaning-constants-lookup-or-extend eenv name
 
-    set-symbol! name (list scope ci 0 cm "meaning-toplevel-extend") cm
+    ;; NB a vi of 0 indicates an unresolved value index to be resolved
+    ;; (based on the current set of imports) during runtime
+    cm := %eenv-module eenv
+
+    st := %eenv-symbols eenv
+
+    sym-si := list name scope (length st) ci 0 cm "meaning-toplevel-extend"
+    set-%eenv-symbols! eenv (pair sym-si st)
+
+    set-symbol! name (pt sym-si) cm
 
     ci
   }
 }
 
-define (meaning-environ-extend src name val cs) {
-  ; environment variables are only defined in 'Idio module
+;; idio_dynamic_extend() is only called from C
+
+define (meaning-environ-extend src name val eenv) {
+  ;; All environ symbols live in the Idio module -- it doesn't make
+  ;; any sense for environ symbols to be different in other modules as
+  ;; the stack (and environ(3P)), where environ varibales live, is
+  ;; shared by all modules
   im := find-module 'Idio
 
-  si := find-symbol name im #f
+  si := meaning-find-environ-symbol name
 
   if (pair? si) {
-    cur-scope := ph si
+    cur-scope := si-scope si
 
     if (not (eq? cur-scope 'environ)) {
       meaning-error-static-redefine src "environ-extend: type change" name si cur-scope
     } {
-      pht si
+      si-ci si
     }
   } {
-    ci := codegen-constants-lookup-or-extend cs name
+    st := %eenv-symbols eenv
+
+    ci := meaning-constants-lookup-or-extend eenv name
     vi := (vm-extend-values)
 
     ;; I don't like these two statements.  They should be the concern
@@ -209,8 +327,13 @@ define (meaning-environ-extend src name val cs) {
     set-module-vci! 'Idio ci ci
     set-module-vvi! 'Idio ci vi
 
-    set-symbol! name (list 'environ ci vi im "idio-environ-extend") im
+    sym-si := list name 'environ (length st) ci vi cm "meaning-environ-extend"
+    set-%eenv-symbols! eenv (pair sym-si st)
+
+    set-symbol! name (pt sym-si) im
     set-symbol-value! name val im
+
+    ci
   }
 }
 
@@ -242,8 +365,10 @@ It is interspersed with dynamic and environ variables.  They are
 one-at-a-time variable introductions and they should not increment
 {i}!
 
-The return is, say, ('dynamic {ci}) where {ci} is the constant index
-associated with the dynamic/environ variable.
+The return is, say, ('dynamic {ci} {ci}) where {ci} is the constant
+index associated with the dynamic/environ variable.  {ci} is added
+twice to avoid inconsistencies with a top level dynamic variable which
+will have a regular symbol information tuple.
 
 *#
 define (meaning-lexical-lookup src nametree name) {
@@ -256,8 +381,8 @@ define (meaning-lexical-lookup src nametree name) {
 	if l {
 	  scope := pht l	; ({name} 'param {j})
 	  (case scope
-	   ((param local) (list scope i (phtt l)))
-	   ((dynamic environ) (pt l))
+	   ((param local)     (list scope i (phtt l)))
+	   ((dynamic environ) (list (pht l) (phtt l) (phtt l)))
 	   (else (meaning-error-static-variable src "unexpected local variant" name)))
 	} {
 	  ;; only bump i if these were formal parameters
@@ -368,23 +493,23 @@ define (meaning-nametree-dynamic-extend nametree name index scope) {
   pair (list (list name scope index)) nametree
 }
 
-define* (meaning-variable-info src nametree name flags cs cm (recurse? #t)) {
+define* (meaning-variable-info src nametree name flags eenv (recurse? #t)) {
   r := meaning-lexical-lookup src nametree name
 
   if (not r) {
-    r = find-symbol name cm recurse?
+    r = meaning-find-symbol-recurse name eenv (eval-flags-scope flags) recurse?
     if (not r) {
       ; is name M/S ?
       r = symbol-direct-reference name
       if r {
 	r = phtt r
-	set-symbol! name r cm
+	set-symbol! name r (%eenv-module eenv)
       } {
 	; not found -> (auto) extend toplevel
-	meaning-toplevel-extend src name flags cs cm
+	meaning-toplevel-extend src name flags eenv
 
 	; meaning-toplevel-extend only returns a ci
-	r = find-symbol name cm #f
+	r = meaning-find-toplevel-symbol name eenv
       }
     }
   }
@@ -423,38 +548,35 @@ define (meaning-copy-src-properties src dst) {
 
 ; let's find some meaning in all of this!
 
-define (meaning-reference src name nametree escapes flags cs cm) {
-  si := meaning-variable-info src nametree name flags cs cm
+define (meaning-reference src name nametree flags eenv) {
+  si := meaning-variable-info src nametree name flags eenv
 
   if (not si) {
     ; shouldn't get here as unknowns are automatically made toplevel
     meaning-error-static-unbound src name
   }
 
-  scope := ph si
-  i := pht si
+  scope := si-scope si
 
   (case scope
    ((param local) {
-     ; ('param {i} {j})
-     j := phtt si
+     i := nt-param-i si
+     j := nt-param-j si
      (if (i gt 0)
       (list I-DEEP-ARGUMENT-REF i j)
       (list I-SHALLOW-ARGUMENT-REF j))
    })
    ((toplevel) {
-     ; ('toplevel ci vi)
-     vi := phtt si
+     vi := si-vi si
      (if (vi gt 0)
-      (list I-VAL-REF vi)
-      (list I-SYM-REF i))
+      (list I-VAL-REF vi) list I-SYM-REF
+      (eenv-symbol-index eenv si))
    })
-   ((dynamic) (list I-DYNAMIC-SYM-REF i))
-   ((environ) (list I-ENVIRON-SYM-REF i))
-   ((computed) (list I-COMPUTED-SYM-REF i))
+   ((dynamic) (list I-DYNAMIC-SYM-REF (eenv-symbol-index eenv si)))
+   ((environ) (list I-ENVIRON-SYM-REF (eenv-symbol-index eenv si)))
+   ((computed) (list I-COMPUTED-SYM-REF (eenv-symbol-index eenv si)))
    ((predef) {
-     vi := phtt si
-     list I-PREDEFINED vi
+     list I-PREDEFINED (si-vi si)
    })
    (else {
      ;; Shouldn't get here unless the if clauses above don't
@@ -463,38 +585,34 @@ define (meaning-reference src name nametree escapes flags cs cm) {
    }))
 }
 
-define (meaning-function-reference src name nametree escapes flags cs cm) {
-  si := meaning-variable-info src nametree name (define-scope 'toplevel flags) cs cm
+define (meaning-function-reference src name nametree flags eenv) {
+  si := meaning-variable-info src nametree name (define-scope 'toplevel flags) eenv
 
   if (not si) {
     ; shouldn't get here as unknowns are automatically made toplevel
     meaning-error-static-unbound src name
   }
 
-  scope := ph si
-  i := pht si
+  scope := si-scope si
 
   (case scope
    ((param local) {
-     ; ('param {i} {j})
-     j := phtt si
+     i := nt-param-i si
+     j := nt-param-j si
      (if (i gt 0)
       (list I-DEEP-ARGUMENT-REF i j)
       (list I-SHALLOW-ARGUMENT-REF j))
    })
    ((toplevel) {
-     ; ('toplevel ci vi)
-     vi := phtt si
+     vi := si-vi si
      (if (vi gt 0)
-      (list I-FUNCTION-VAL-REF vi)
-      (list I-FUNCTION-SYM-REF i))
+      (list I-FUNCTION-VAL-REF vi) (list I-FUNCTION-SYM-REF (eenv-symbol-index eenv si)))
    })
-   ((dynamic) (list I-DYNAMIC-FUNCTION-SYM-REF i))
-   ((environ) (list I-ENVIRON-SYM-REF i))
-   ((computed) (list I-COMPUTED-SYM-REF i))
+   ((dynamic) (list I-DYNAMIC-FUNCTION-SYM-REF (eenv-symbol-index eenv si)))
+   ((environ) (list I-ENVIRON-SYM-REF (eenv-symbol-index eenv si)))
+   ((computed) (list I-COMPUTED-SYM-REF (eenv-symbol-index eenv si)))
    ((predef) {
-     vi := phtt si
-     list I-PREDEFINED vi
+     list I-PREDEFINED (si-vi si)
    })
    (else {
      ;; Shouldn't get here unless the if clauses above don't
@@ -503,15 +621,15 @@ define (meaning-function-reference src name nametree escapes flags cs cm) {
    }))
 }
 
-define (meaning-not src e nametree escapes flags cs cm) {
-  list I-NOT (eval-flags-tailp flags) (meaning (mpp e src) e nametree escapes (clear-tailp flags) cs cm)
+define (meaning-not src e nametree flags eenv) {
+  list I-NOT (eval-flags-tailp flags) (meaning (mpp e src) e nametree (clear-tailp flags) eenv)
 }
 
-define (meaning-escape src e nametree escapes flags cs cm) {
-  meaning (mpp e src) e nametree escapes flags cs cm
+define (meaning-escape src e nametree flags eenv) {
+  meaning (mpp e src) e nametree flags eenv
 }
 
-define (meaning-quotation src v nametree escapes flags) {
+define (meaning-quotation src v nametree flags) {
   list I-CONSTANT-REF v
 }
 
@@ -602,17 +720,17 @@ define (STklos-expand e) {
   STklos-backquotify e 0
 }
 
-define (meaning-quasiquotation src e nametree escapes flags cs cm) {
+define (meaning-quasiquotation src e nametree flags eenv) {
   ee := qq-expand e
   meaning-copy-src-properties src ee
 
-  meaning ee ee nametree escapes flags cs cm
+  meaning ee ee nametree flags eenv
 }
 
-define (meaning-alternative src e1 e2 e3 nametree escapes flags cs cm) {
-  m1 := meaning (mpp e1 src) e1 nametree escapes (clear-tailp flags) cs cm
-  m2 := meaning (mpp e2 src) e2 nametree escapes flags cs cm
-  m3 := meaning (mpp e3 src) e3 nametree escapes flags cs cm
+define (meaning-alternative src e1 e2 e3 nametree flags eenv) {
+  m1 := meaning (mpp e1 src) e1 nametree (clear-tailp flags) eenv
+  m2 := meaning (mpp e2 src) e2 nametree flags eenv
+  m3 := meaning (mpp e3 src) e3 nametree flags eenv
 
   list I-ALTERNATIVE src m1 m2 m3
 }
@@ -759,7 +877,7 @@ define (meaning-rewrite-cond prev src clause*) {
    }))
 }
 
-define (meaning-assignment src name e nametree escapes flags cs cm) {
+define (meaning-assignment src name e nametree flags eenv) {
   (cond
    ((pair? name) {
      ;; setter
@@ -772,7 +890,7 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
 
      se := append (list setter) args (list e)
 
-     meaning src se nametree escapes (clear-define flags) cs cm
+     meaning src se nametree (clear-define flags) eenv
    })
    ((symbol? name) {
      mflags := make-eval-flags #f (eval-flags-scope flags) #f
@@ -796,17 +914,17 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
        }
      }
 
-     m := meaning (mpp e src) e nametree escapes mflags cs cm
+     m := meaning (mpp e src) e nametree mflags eenv
 
-     si := meaning-variable-info src nametree name flags cs cm
+     si := meaning-variable-info src nametree name flags eenv
 
      if (not si) {
        ; shouldn't get here as unknowns are automatically made toplevel
        meaning-error-static-unbound src name
      }
 
-     scope := ph si
-     ci := pht si
+     scope := si-scope si
+     ci := #f
 
      ; without being able to return early we can presume that if
      ; someone has set the intermediate code {i-code} then they
@@ -820,15 +938,17 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
 
      (case scope
       ((param local) {
-	vi := phtt si
-	if (0 eq ci) {
-	  i-code = list I-SHALLOW-ARGUMENT-SET vi m
+	i := nt-param-i si
+	j := nt-param-j si
+	if (0 eq i) {
+	  i-code = list I-SHALLOW-ARGUMENT-SET j m
 	} {
-	  i-code = list I-DEEP-ARGUMENT-SET ci vi m
+	  i-code = list I-DEEP-ARGUMENT-SET i j m
 	}
       })
       ((toplevel) {
-	vi := phtt si
+	ci = if (%eenv-aot? eenv) (si-si si) (si-ci si)
+	vi := si-vi si
 
 	if (0 eq vi) {
 	  assign = list I-SYM-SET src ci m
@@ -837,20 +957,23 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
 	}
       })
       ((dynamic environ) {
+	ci = if (%eenv-aot? eenv) (si-si si) (si-ci si)
 	assign = list I-SYM-SET src ci m
       })
       ((computed) {
+	sym-idx := eenv-symbol-index eenv si
+
 	if (eval-flags-define flags) {
-	  i-code = (list (list I-SYM-DEF name scope ci)
-			 (list I-COMPUTED-SYM-DEF ci m))
+	  i-code = (list (list I-SYM-DEF name scope sym-idx)
+			 (list I-COMPUTED-SYM-DEF sym-idx m))
 	} {
-	  i-code = list I-COMPUTED-SYM-SET ci m
+	  i-code = list I-COMPUTED-SYM-SET sym-idx m
 	}
       })
       ((predef) {
-	new-ci := meaning-toplevel-extend src name (define-scope 'toplevel flags) cs cm
+	new-ci := meaning-toplevel-extend src name (define-scope 'toplevel flags) eenv
 
-	vi := phtt si
+	vi := si-vi si
 	set-symbol-value! name (vm-values-ref vi) cm
 	assign = list I-SYM-SET src new-ci m
 	ci = new-ci
@@ -862,10 +985,9 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
       }))
 
      (cond (i-code i-code)
-      ((eval-flags-define flags) {
-	(list (list I-SYM-DEF name scope ci)
-	      assign)
-      })
+      ((eval-flags-define flags)
+       (list (list I-SYM-DEF name scope (eenv-symbol-index eenv si))
+	     assign))
       (else assign))
    })
    (else
@@ -875,9 +997,10 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
     (meaning-evaluation-error src "cannot assign to" name)))
 }
 
-define (meaning-define src name e nametree escapes flags cs cm) {
+define (meaning-define src name e nametree flags eenv) {
   if (pair? name) {
-    ;; (define (func arg) ...) => (define func (function (arg) ...))
+    ;; (define (func arg) ...) =>
+    ;; (define func (function/name func (arg) ...))
     e = append (list 'function/name (ph name) (pt name)) e
     name = ph name
 
@@ -893,23 +1016,31 @@ define (meaning-define src name e nametree escapes flags cs cm) {
   define-flags := make-eval-flags (eval-flags-tailp flags) 'toplevel #t
 
   ;; Careful!  Don't recurse when defining variables.
-  si := meaning-variable-info src nametree name define-flags cs cm #f
+  si := meaning-variable-info src nametree name define-flags eenv #f
 
   ;; if the act of looking the variable up auto-created it then
   ;; actually give it a value slot as this *is* the definition of it
-  scope :=  ph si
-  vi := phtt si
-  if (and (eq? 'toplevel scope)
+  scope :=  si-scope si
+  ci := si-ci si
+  vi := si-vi si
+  if (and (%eenv-aot? eenv)
+	  (eq? 'toplevel scope)
 	  (0 eq vi)) {
     vi = (vm-extend-values)
-    si = list scope (pht si) vi cm "meaning-define/gvi=0"
-    set-symbol! name si cm
+    cm := %eenv-module eenv
+
+    st := %eenv-symbols eenv
+
+    sym-si := list name scope (length st) ci vi cm "meaning-define/gvi=0"
+    set-%eenv-symbols! eenv (pair sym-si st)
+
+    set-symbol! name (pt sym-si) cm
   }
 
-  meaning-assignment src name e nametree escapes define-flags cs cm
+  meaning-assignment src name e nametree define-flags eenv
 }
 
-define (meaning-define-template src name e nametree escapes flags cs cm) {
+define (meaning-define-template src name e nametree flags eenv) {
 
   if (and (symbol? e)
 	  (expander? e)) {
@@ -942,7 +1073,7 @@ define (meaning-define-template src name e nametree escapes flags cs cm) {
     ;; *expander-list* copying.
 
     copy-expander! name e
-    meaning-assignment src name e nametree escapes (define-scope 'toplevel flags) cs cm
+    meaning-assignment src name e nametree (define-scope 'toplevel flags) eenv
   } {
     ;; (define-template (name formal*) ...) =>
     ;; (define-template name (function/name name (formal*) ...))
@@ -1007,7 +1138,7 @@ define (meaning-define-template src name e nametree escapes flags cs cm) {
     ;; call to install-expander in the object code for future users.
 
     ;; this is a define at the toplevel and not tailp
-    ma := meaning-assignment expander name expander nametree escapes (make-eval-flags #f 'toplevel #t) cs cm
+    ma := meaning-assignment expander name expander nametree (make-eval-flags #f 'toplevel #t) eenv
 
     install-expander/source! name expander expander
 
@@ -1016,29 +1147,38 @@ define (meaning-define-template src name e nametree escapes flags cs cm) {
     ;; The ci is required so that the EXPANDER opcode can call
     ;; install-expander to overwrite the proc from the
     ;; install-expander/source! call we just made
+    ci := meaning-constants-lookup-or-extend eenv name
 
-    ;; The vi is because this is definitely a define
-    ci := codegen-constants-lookup-or-extend cs name
-    vi := (vm-extend-values)
+    ce := (current-env)
 
-    set-symbol! name (list 'toplevel ci vi cm docstr) cm
+    st := %eenv-symbols eenv
+
+    sym-si := list name 'toplevel (length st) ci 0 ce docstr
+    set-%eenv-symbols! eenv (pair sym-si st)
+
+    set-symbol! name (pt sym-si) ce
 
     list I-EXPANDER ci ma
   }
 }
 
-define (meaning-define-infix-operator src name pri e nametree escapes flags cs cm) {
+define (meaning-define-infix-operator src name pri e nametree flags eenv) {
   if (pri lt 0) {
     meaning-evaluation-error src "positive priority" pri
   }
 
   ;; Step 1: find the existing symbol for {name} or create a new one
-  ci := codegen-constants-lookup-or-extend cs name
+  ci := meaning-constants-lookup-or-extend eenv name
 
   ;; XXX the plain use of operator gets a symbol in set-symbol! ??
   op-mod := find-module 'operator
 
-  set-symbol! name (list 'toplevel ci 0 op-mod (sprintf "meaning-define-infix-operator %s" name)) op-mod
+  st := %eenv-symbols eenv
+
+  sym-si := list name 'toplevel (length st) ci 0 op-mod (sprintf "meaning-define-infix-operator %s" name)
+  set-%eenv-symbols! eenv (pair sym-si st)
+
+  set-symbol! name (pt sym-si) op-mod
 
   ;; Step 2: rework the expression into some appropriate code and
   ;; compile
@@ -1056,7 +1196,7 @@ define (meaning-define-infix-operator src name pri e nametree escapes flags cs c
       meaning-copy-src-properties src sve
 
       copy-infix-operator! name pri e
-      m = meaning-assignment src name sve nametree escapes (define-scope 'toplevel flags) cs cm
+      m = meaning-assignment src name sve nametree (define-scope 'toplevel flags) eenv
     } {
       ;; Test Case: evaluation-errors/infix-op-not-an-operator.idio
 
@@ -1080,24 +1220,29 @@ define (meaning-define-infix-operator src name pri e nametree escapes flags cs c
 		e)
     meaning-copy-src-properties src fe
 
-    m = meaning fe fe nametree escapes flags cs cm
+    m = meaning fe fe nametree flags eenv
   }
 
   list I-INFIX-OPERATOR ci pri m
 }
 
-define (meaning-define-postfix-operator src name pri e nametree escapes flags cs cm) {
+define (meaning-define-postfix-operator src name pri e nametree flags eenv) {
   if (pri lt 0) {
     meaning-evaluation-error src "positive priority" pri
   }
 
   ;; Step 1: find the existing symbol for {name} or create a new one
-  ci := codegen-constants-lookup-or-extend cs name
+  ci := meaning-constants-lookup-or-extend eenv name
 
   ;; XXX the plain use of operator gets a symbol in set-symbol! ??
   op-mod := find-module 'operator
 
-  set-symbol! name (list 'toplevel ci 0 op-mod (sprintf "meaning-define-postfix-operator %s" name)) op-mod
+  st := %eenv-symbols eenv
+
+  sym-si := list name 'toplevel (length st) ci 0 op-mod (sprintf "meaning-define-postfix-operator %s" name)
+  set-%eenv-symbols! eenv (pair sym-si st)
+
+  set-symbol! name (pt sym-si) op-mod
 
   ;; Step 2: rework the expression into some appropriate code and
   ;; compile
@@ -1115,7 +1260,7 @@ define (meaning-define-postfix-operator src name pri e nametree escapes flags cs
       meaning-copy-src-properties src sve
 
       copy-postfix-operator! name pri e
-      m = meaning-assignment src name sve nametree escapes (define-scope 'toplevel flags) cs cm
+      m = meaning-assignment src name sve nametree (define-scope 'toplevel flags) eenv
     } {
       ;; Test Case: evaluation-errors/postfix-op-not-an-operator.idio
 
@@ -1139,30 +1284,30 @@ define (meaning-define-postfix-operator src name pri e nametree escapes flags cs
 		e)
     meaning-copy-src-properties src fe
 
-    m = meaning fe fe nametree escapes flags cs cm
+    m = meaning fe fe nametree flags eenv
   }
 
   list I-POSTFIX-OPERATOR ci pri m
 }
 
-define (meaning-define-dynamic src name e nametree escapes flags cs cm) {
+define (meaning-define-dynamic src name e nametree flags eenv) {
   if (pair? e) {
     e = ph e
 
     meaning-copy-src-properties src e
   }
 
-  meaning-assignment src name e nametree escapes (define-scope 'dynamic flags) cs cm
+  meaning-assignment src name e nametree (define-scope 'dynamic flags) eenv
 }
 
-define (meaning-define-environ src name e nametree escapes flags cs cm) {
+define (meaning-define-environ src name e nametree flags eenv) {
   if (pair? e) {
     e = ph e
 
     meaning-copy-src-properties src e
   }
 
-  meaning-assignment src name e nametree escapes (define-scope 'environ flags) cs cm
+  meaning-assignment src name e nametree (define-scope 'environ flags) eenv
 }
 
 ;; A computed variable's value should be a pair, (getter & setter).
@@ -1170,7 +1315,7 @@ define (meaning-define-environ src name e nametree escapes flags cs cm) {
 ;;
 ;; We shouldn't have both #n as it wouldn't be much use.
 
-define (meaning-define-computed src name e nametree escapes flags cs cm) {
+define (meaning-define-computed src name e nametree flags eenv) {
   getter := #n
   setter := #n
 
@@ -1209,15 +1354,15 @@ define (meaning-define-computed src name e nametree escapes flags cs cm) {
 
   *#
 
-  meaning-assignment src name (list 'pair getter setter) nametree escapes (define-scope 'computed flags) cs cm
+  meaning-assignment src name (list 'pair getter setter) nametree (define-scope 'computed flags) eenv
 }
 
-define (meaning*-single-sequence src e nametree escapes flags cs cm) {
-  meaning (mpp e src) e nametree escapes flags cs cm
+define (meaning*-single-sequence src e nametree flags eenv) {
+  meaning (mpp e src) e nametree flags eenv
 }
 
-define (meaning*-multiple-sequence src e e+ nametree escapes flags keyword cs cm) {
-  m := meaning (mpp e src) e nametree escapes (clear-tailp flags) cs cm
+define (meaning*-multiple-sequence src e e+ nametree flags keyword eenv) {
+  m := meaning (mpp e src) e nametree (clear-tailp flags) eenv
 
   ;; The C code handles meaning*-multiple-sequence directly in
   ;; meaning-sequence by using a while loop (to avoid recursion)
@@ -1228,7 +1373,7 @@ define (meaning*-multiple-sequence src e e+ nametree escapes flags keyword cs cm
   ;; I-cmd accordingly
   args := list (eval-flags-tailp flags) m
   if (pair? e+) {
-    args = append args (list (meaning-sequence src e+ nametree escapes flags keyword cs cm))
+    args = append args (list (meaning-sequence src e+ nametree flags keyword eenv))
   }
 
   (case keyword
@@ -1241,20 +1386,20 @@ define (meaning*-multiple-sequence src e e+ nametree escapes flags keyword cs cm
     (meaning-evaluation-error src "unexpected sequence keyword" keyword)))
 }
 
-define (meaning-sequence src e+ nametree escapes flags keyword cs cm) {
+define (meaning-sequence src e+ nametree flags keyword eenv) {
   if (pair? e+) {
     ;; We're going to deviate here from LiSP which differentiates
     ;; between multiple and single expression sequences.
     ;;
     ;; We choose not to do that because we want AND/OR to
     ;; suppress-rcse thus handling external-command logic.
-    meaning*-multiple-sequence src (ph e+) (pt e+) nametree escapes flags keyword cs cm
+    meaning*-multiple-sequence src (ph e+) (pt e+) nametree flags keyword eenv
     #*
     he+ := ph e+
     if (pair? (pt e+)) {
-    meaning*-multiple-sequence src he+ (pt e+) nametree escapes flags keyword cs cm
+    meaning*-multiple-sequence src he+ (pt e+) nametree flags keyword eenv
     } {
-    meaning*-single-sequence src he+ nametree escapes flags cs cm
+    meaning*-single-sequence src he+ nametree flags eenv
     }
     *#
   } {
@@ -1264,22 +1409,22 @@ define (meaning-sequence src e+ nametree escapes flags keyword cs cm) {
   }
 }
 
-define (meaning-fix-abstraction src name formal* arg-name* docstr e+ nametree escapes flags cs cm) {
+define (meaning-fix-abstraction src name formal* arg-name* docstr e+ nametree flags eenv) {
   arity := length formal*
   nt+ := meaning-nametree-extend-params nametree formal*
 
-  m+ := meaning-sequence src e+ nt+ escapes (set-tailp flags) 'begin cs cm
+  m+ := meaning-sequence src e+ nt+ (set-tailp flags) 'begin eenv
 
   list I-FIX-CLOSURE m+ name arity (meaning-nametree->list nt+) docstr (meaning-src-location src)
 }
 
-define (meaning-dotted-abstraction src name formal* vararg arg-name* docstr e+ nametree escapes flags cs cm) {
+define (meaning-dotted-abstraction src name formal* vararg arg-name* docstr e+ nametree flags eenv) {
   arity := length formal*
   fix-formal* := append formal* (list vararg)
 
   nt+ := meaning-nametree-extend-vparams nametree fix-formal*
 
-  m+ := meaning-sequence src e+ nt+ escapes (set-tailp flags) 'begin cs cm
+  m+ := meaning-sequence src e+ nt+ (set-tailp flags) 'begin eenv
 
   list I-NARY-CLOSURE m+ name arity (meaning-nametree->list nt+) docstr (meaning-src-location src)
 }
@@ -1728,7 +1873,7 @@ define (meaning-rewrite-body-letrec src e nametree) {
   loop e #n #n
 }
 
-define (meaning-abstraction src name formal* docstr e+ nametree escapes flags cs cm) {
+define (meaning-abstraction src name formal* docstr e+ nametree flags eenv) {
   e+ := meaning-rewrite-body (mpp e+ src) e+ nametree
   meaning-copy-src-properties src e+
 
@@ -1737,50 +1882,50 @@ define (meaning-abstraction src name formal* docstr e+ nametree escapes flags cs
   formals-loop :+ function (f* regular) {
     (cond
      ((pair? f*) (formals-loop (pt f*) (pair (ph f*) regular)))
-     ((null? f*) (meaning-fix-abstraction src name formal* formal* docstr e+ nametree escapes flags cs cm))
-     (else (meaning-dotted-abstraction src name (reverse! regular) f* formal* docstr e+ nametree escapes flags cs cm)))
+     ((null? f*) (meaning-fix-abstraction src name formal* formal* docstr e+ nametree flags eenv))
+     (else (meaning-dotted-abstraction src name (reverse! regular) f* formal* docstr e+ nametree flags eenv)))
   }
 
   formals-loop formal* #n
 }
 
-define (meaning-block src e* nametree escapes flags cs cm) {
+define (meaning-block src e* nametree flags eenv) {
   e* = meaning-rewrite-body (mpp e* src) e* nametree
   meaning-copy-src-properties src e*
 
-  meaning-sequence e* e* nametree escapes flags 'begin cs cm
+  meaning-sequence e* e* nametree flags 'begin eenv
 }
 
-define (meaning-some-arguments src ae ae* nametree escapes arity flags cs cm) {
-  am := meaning (mpp ae src) ae nametree escapes (clear-tailp flags) cs cm
-  am* := meaning-arguments src ae* nametree escapes arity flags cs cm
+define (meaning-some-arguments src ae ae* nametree arity flags eenv) {
+  am := meaning (mpp ae src) ae nametree (clear-tailp flags) eenv
+  am* := meaning-arguments src ae* nametree arity flags eenv
 
   rank := arity - ((length ae*) + 1)
 
   list I-STORE-ARGUMENT am am* rank
 }
 
-define (meaning-no-argument src nametree escapes arity flags cs) {
+define (meaning-no-argument src nametree arity flags cs) {
   list I-ALLOCATE-FRAME arity
 }
 
-define (meaning-arguments src ae* nametree escapes arity flags cs cm) {
+define (meaning-arguments src ae* nametree arity flags eenv) {
   if (pair? ae*) {
-    meaning-some-arguments src (ph ae*) (pt ae*) nametree escapes arity flags cs cm
+    meaning-some-arguments src (ph ae*) (pt ae*) nametree arity flags eenv
   } {
-    meaning-no-argument src nametree escapes arity flags cs
+    meaning-no-argument src nametree arity flags cs
   }
 }
 
-define (meaning-fix-closed-application src formal* body ae* nametree escapes flags cs cm) {
+define (meaning-fix-closed-application src formal* body ae* nametree flags eenv) {
   props := mpp body src
   body = meaning-rewrite-body props body nametree
   meaning-copy-src-properties src body
 
-  am* := meaning-arguments src ae* nametree escapes (length ae*) (clear-tailp flags) cs cm
+  am* := meaning-arguments src ae* nametree (length ae*) (clear-tailp flags) eenv
   nt+ := meaning-nametree-extend-params nametree formal*
 
-  mbody := meaning-sequence props body nt+ escapes flags 'begin cs cm
+  mbody := meaning-sequence props body nt+ flags 'begin eenv
 
   if (eval-flags-tailp flags) {
     list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+)
@@ -1789,9 +1934,9 @@ define (meaning-fix-closed-application src formal* body ae* nametree escapes fla
   }
 }
 
-define (meaning-some-dotted-arguments src ae ae* nametree escapes nargs arity flags cs cm) {
-  am := meaning (mpp ae src) ae nametree escapes (clear-tailp flags) cs cm
-  am* := meaning-dotted-arguments src ae* nametree escapes nargs arity flags cs cm
+define (meaning-some-dotted-arguments src ae ae* nametree nargs arity flags eenv) {
+  am := meaning (mpp ae src) ae nametree (clear-tailp flags) eenv
+  am* := meaning-dotted-arguments src ae* nametree nargs arity flags eenv
   rank := nargs - ((length ae*) + 1)
 
   if (rank lt arity) {
@@ -1801,29 +1946,29 @@ define (meaning-some-dotted-arguments src ae ae* nametree escapes nargs arity fl
   }
 }
 
-define (meaning-no-dotted-argument src nametree escapes nargs arity flags cs) {
+define (meaning-no-dotted-argument src nametree nargs arity flags cs) {
   list I-ALLOCATE-FRAME arity
 }
 
-define (meaning-dotted-arguments src ae* nametree escapes nargs arity flags cs cm) {
+define (meaning-dotted-arguments src ae* nametree nargs arity flags eenv) {
   if (pair? ae*) {
-    meaning-some-dotted-arguments src (ph ae*) (pt ae*) nametree escapes nargs arity flags cs cm
+    meaning-some-dotted-arguments src (ph ae*) (pt ae*) nametree nargs arity flags eenv
   } {
-    meaning-no-dotted-argument src nametree escapes nargs arity flags cs
+    meaning-no-dotted-argument src nametree nargs arity flags cs
   }
 }
 
-define (meaning-dotted-closed-application src formal* vararg body ae* nametree escapes flags cs cm) {
+define (meaning-dotted-closed-application src formal* vararg body ae* nametree flags eenv) {
   props := mpp body src
   body = meaning-rewrite-body props body nametree
   meaning-copy-src-properties src body
 
-  am* := meaning-dotted-arguments src ae* nametree escapes (length ae*) (length formal*) (clear-tailp flags) cs cm
+  am* := meaning-dotted-arguments src ae* nametree (length ae*) (length formal*) (clear-tailp flags) eenv
 
   fix-formal* := append formal* (list vararg)
   nt+ := meaning-nametree-extend-vparams nametree fix-formal*
 
-  mbody := meaning-sequence props body nt+ escapes flags 'begin cs cm
+  mbody := meaning-sequence props body nt+ flags 'begin eenv
 
   if (eval-flags-tailp flags) {
     list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+)
@@ -1832,7 +1977,7 @@ define (meaning-dotted-closed-application src formal* vararg body ae* nametree e
   }
 }
 
-define (meaning-closed-application src fe ae* nametree escapes flags cs cm) {
+define (meaning-closed-application src fe ae* nametree flags eenv) {
   ;; ((function ...) args)
   ;;
   ;; fe		~ (function ...)
@@ -1873,7 +2018,7 @@ define (meaning-closed-application src fe ae* nametree escapes flags cs cm) {
      ((null? f*) {
        if (null? a*) {
 	 meaning-nametree-extend-locals nametree formal*
-	 meaning-fix-closed-application fe formal* (ptt fe) ae* nametree escapes flags cs cm
+	 meaning-fix-closed-application fe formal* (ptt fe) ae* nametree flags eenv
        } {
 	 ;; Test Cases:
 	 ;; evaluation-errors/closed-function-too-many-args-{0,1}.idio
@@ -1883,22 +2028,22 @@ define (meaning-closed-application src fe ae* nametree escapes flags cs cm) {
 	 meaning-evaluation-error src "closed function: too many arguments" (list formal* ae*)
        }
      })
-     (else (meaning-dotted-closed-application fe (reverse! fixed-args) f* (ptt fe) ae* nametree escapes flags cs cm)))
+     (else (meaning-dotted-closed-application fe (reverse! fixed-args) f* (ptt fe) ae* nametree flags eenv)))
   }
 
   formals-loop formal* ae* #n
 }
 
-define (meaning-local-application src n ae body nametree escapes flags cs cm) {
+define (meaning-local-application src n ae body nametree flags eenv) {
   body-props := mpp body src
   body = meaning-rewrite-body body-props body nametree
   meaning-copy-src-properties src body
 
-  am := meaning (mpp ae src) ae nametree escapes (clear-tailp flags) cs cm
+  am := meaning (mpp ae src) ae nametree (clear-tailp flags) eenv
 
   nt+ := meaning-nametree-extend-locals nametree (list n)
 
-  mbody := meaning-sequence body-props body nt+ escapes flags 'begin cs cm
+  mbody := meaning-sequence body-props body nt+ flags 'begin eenv
 
   ll := meaning-lexical-lookup src nt+ n
 
@@ -1935,12 +2080,12 @@ Need to figure out run-in-thread too...
 
 *#
 
-define (meaning-primitive-application src fe ae* nametree escapes flags arity vi cs cm) {
+define (meaning-primitive-application src fe ae* nametree flags arity vi eenv) {
   primdata := vm-values-ref vi
 
   if (primitive-varargs? primdata) {
     ;; only a full function call protocol can cope with varargs!
-    meaning-regular-application src fe ae* nametree escapes flags cs cm
+    meaning-regular-application src fe ae* nametree flags eenv
   } {
     name := primitive-name primdata
 
@@ -1951,33 +2096,33 @@ define (meaning-primitive-application src fe ae* nametree escapes flags arity vi
        i-code = list I-PRIMCALL0 src A-PRIMCALL0 vi
      })
      ((1) {
-       m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree escapes (clear-tailp flags) cs cm
+       m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree (clear-tailp flags) eenv
 
        i-code = list I-PRIMCALL1 src A-PRIMCALL1 m1 vi
      })
      ((2) {
-       m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree escapes (clear-tailp flags) cs cm
-       m2 := meaning (mpp (pht ae*) src) (pht ae*) nametree escapes (clear-tailp flags) cs cm
+       m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree (clear-tailp flags) eenv
+       m2 := meaning (mpp (pht ae*) src) (pht ae*) nametree (clear-tailp flags) eenv
 
        ;; XXX run-in-thread?
        i-code = list I-PRIMCALL2 src A-PRIMCALL2 m1 m2 vi
      }))
 
     if i-code i-code {
-      meaning-regular-application src fe ae* nametree escapes flags cs cm
+      meaning-regular-application src fe ae* nametree flags eenv
     }
   }
 }
 
-define (meaning-regular-application src fe ae* nametree escapes flags cs cm) {
+define (meaning-regular-application src fe ae* nametree flags eenv) {
   fm := #n
   if (symbol? fe) {
-    fm = meaning-function-reference src fe nametree escapes flags cs cm
+    fm = meaning-function-reference src fe nametree flags eenv
   } {
-    fm = meaning fe fe nametree escapes (clear-tailp flags) cs cm
+    fm = meaning fe fe nametree (clear-tailp flags) eenv
   }
 
-  am* := meaning-arguments src ae* nametree escapes (length ae*) (clear-tailp flags) cs cm
+  am* := meaning-arguments src ae* nametree (length ae*) (clear-tailp flags) eenv
 
   if (eval-flags-tailp flags) {
     list I-TR-REGULAR-CALL src fm am*
@@ -1986,18 +2131,19 @@ define (meaning-regular-application src fe ae* nametree escapes flags cs cm) {
   }
 }
 
-define (meaning-application src fe ae* nametree escapes flags cs cm) {
+define (meaning-application src fe ae* nametree flags eenv) {
   i-code := #f
 
   ;; check for a primitive
   if (symbol? fe) {
-    si := meaning-variable-info src nametree fe (set-scope 'toplevel flags) cs cm
+    si := meaning-variable-info src nametree fe (set-scope 'toplevel flags) eenv
 
     if (pair? si) {
-      scope := ph si
+      scope := si-scope si
 
       if (eq? 'predef scope) {
-	primdata := vm-values-ref (phtt si)
+	vi := si-vi si
+	primdata := vm-values-ref vi
 
 	if (primitive? primdata) {
 	  arity := primitive-arity primdata
@@ -2006,7 +2152,7 @@ define (meaning-application src fe ae* nametree escapes flags cs cm) {
 	  if (or (and (primitive-varargs? primdata)
 		      (n-args ge arity))
 	      (n-args eq arity)) {
-	    i-code = meaning-primitive-application src fe ae* nametree escapes flags arity (phtt si) cs cm
+	    i-code = meaning-primitive-application src fe ae* nametree flags arity vi eenv
 	  } {
 	    ;; Test Case: evaluation-errors/primitive-arity.idio
 
@@ -2033,81 +2179,89 @@ define (meaning-application src fe ae* nametree escapes flags cs cm) {
       }
       meaning-copy-src-properties src fe
 
-      meaning-closed-application src fe ae* nametree escapes flags cs cm
+      meaning-closed-application src fe ae* nametree flags eenv
     } {
-      meaning-regular-application src fe ae* nametree escapes flags cs cm
+      meaning-regular-application src fe ae* nametree flags eenv
     }
   }
 }
 
-define (meaning-dynamic-reference src name nametree escapes flags cs cm) {
-  meaning-reference src name nametree escapes (set-scope 'dynamic flags) cs cm
+define (meaning-dynamic-reference src name nametree flags eenv) {
+  meaning-reference src name nametree (set-scope 'dynamic flags) eenv
 }
 
-define (meaning-dynamic-let src name e e+ nametree escapes flags cs cm) {
-  m := meaning (mpp e src) e nametree escapes (clear-tailp flags) cs cm
+define (meaning-dynamic-let src name e e+ nametree flags eenv) {
+  m := meaning (mpp e src) e nametree (clear-tailp flags) eenv
 
-  si := find-symbol name cm
+  si := meaning-find-symbol-recurse name eenv 'dynamic #t
 
-  ci := #f
+  sym_idx := #f
 
   if si {
-    ci = pht si
+    sym-idx = eenv-symbol-index eenv si
+    if (%eenv-aot? eenv) {
+      eprintf "WARNING: dynamic-extend: likely si clash\n"
+    }
   } {
-    ci = meaning-toplevel-extend src name (set-scope 'dynamic flags) cs cm
+    sym-idx = meaning-toplevel-extend src name (set-scope 'dynamic flags) eenv
   }
 
-  nt+ := meaning-nametree-dynamic-extend nametree name ci 'dynamic
+  nt+ := meaning-nametree-dynamic-extend nametree name sym-idx 'dynamic
 
-  m+ := meaning-sequence src e+ nt+ escapes (clear-tailp flags) 'begin cs cm
+  m+ := meaning-sequence src e+ nt+ (clear-tailp flags) 'begin eenv
 
-  dynamic-wrap := (list (list I-PUSH-DYNAMIC ci m)
+  dynamic-wrap := (list (list I-PUSH-DYNAMIC sym-idx m)
 			m+
 			(list I-POP-DYNAMIC))
 
-  (list (list I-SYM-DEF name 'dynamic ci)
+  (list (list I-SYM-DEF name 'dynamic sym-idx)
 	dynamic-wrap)
 }
 
-define (meaning-dynamic-unset src name e+ nametree escapes flags cs cm) {
-  meaning-dynamic-let src name (undef) e+ nametree escapes flags cs cm
+define (meaning-dynamic-unset src name e+ nametree flags eenv) {
+  meaning-dynamic-let src name (undef) e+ nametree flags eenv
 }
 
-define (meaning-environ-reference src name nametree escapes flags cs cm) {
-  meaning-reference src name nametree escapes (set-scope 'environ flags) cs cm
+define (meaning-environ-reference src name nametree flags eenv) {
+  meaning-reference src name nametree (set-scope 'environ flags) eenv
 }
 
-define (meaning-environ-let src name e e+ nametree escapes flags cs cm) {
-  m := meaning (mpp e src) e nametree escapes (clear-tailp flags) cs cm
+define (meaning-environ-let src name e e+ nametree flags eenv) {
+  m := meaning (mpp e src) e nametree (clear-tailp flags) eenv
 
-  si := find-symbol name cm
+  si := meaning-find-symbol-recurse name eenv 'environ #t
 
-  ci := #f
+  sym-idx := #f
 
   if si {
-    ci = pht si
+    sym-idx = eenv-symbol-index eenv si
+    if (%eenv-aot? eenv) {
+      eprintf "WARNING: environ-extend: likely si clash\n"
+    }
   } {
-    ci = meaning-toplevel-extend src name (set-scope 'environ flags) cs cm
+    sym-idx = meaning-toplevel-extend src name (set-scope 'environ flags) eenv
   }
 
-  nt+ := meaning-nametree-dynamic-extend nametree name ci 'environ
+  sym-idx := eenv-symbol-index eenv si
 
-  m+ := meaning-sequence src e+ nt+ escapes (clear-tailp flags) 'begin cs cm
+  nt+ := meaning-nametree-dynamic-extend nametree name sym-idx 'environ
 
-  environ-wrap := (list (list I-PUSH-ENVIRON ci m)
+  m+ := meaning-sequence src e+ nt+ (clear-tailp flags) 'begin eenv
+
+  environ-wrap := (list (list I-PUSH-ENVIRON sym-idx m)
 			m+
 			(list I-POP-ENVIRON))
 
-  (list (list I-SYM-DEF name 'environ ci)
+  (list (list I-SYM-DEF name 'environ sym-idx)
 	environ-wrap)
 }
 
-define (meaning-environ-unset src name e+ nametree escapes flags cs cm) {
-  meaning-environ-let src name (undef) e+ nametree escapes flags cs cm
+define (meaning-environ-unset src name e+ nametree flags eenv) {
+  meaning-environ-let src name (undef) e+ nametree flags eenv
 }
 
-define (meaning-computed-reference src name nametree escapes flags cs cm) {
-  meaning-reference src name nametree escapes (set-scope 'computed flags) cs cm
+define (meaning-computed-reference src name nametree flags eenv) {
+  meaning-reference src name nametree (set-scope 'computed flags) eenv
 }
 
 ;; (trap condition       handler body ...)
@@ -2119,12 +2273,12 @@ define (meaning-computed-reference src name nametree escapes flags cs cm) {
 ;; *val* then have a sequence of "PUSH-TRAP n" statements all re-using
 ;; the handler in *val* then the body code then a matching sequence of
 ;; POP-TRAP statements.
-define (meaning-trap src ce he be nametree escapes flags cs cm) {
+define (meaning-trap src ce he be nametree flags eenv) {
   he-props := mpp he src
   he = meaning-rewrite-body he-props he nametree
   meaning-copy-src-properties src he
 
-  hm := meaning he-props he nametree escapes (clear-tailp flags) cs cm
+  hm := meaning he-props he nametree (clear-tailp flags) eenv
 
   ;; if the condition expression is not a list then make it one
   if (not (pair? ce)) {
@@ -2145,12 +2299,12 @@ define (meaning-trap src ce he be nametree escapes flags cs cm) {
 
       ci := #f
 
-      si := find-symbol c-sym cm
+      si := meaning-find-symbol-recurse c-sym eenv 'toplevel #t
       if (pair? si) {
-	ci = pht si
+	ci = si-ci si
       } {
 	eprintf "meaning-trap: condition name unknown: '%s'\n" c-sym
-	ci = meaning-toplevel-extend src c-sym (set-scope 'toplevel flags) cs cm
+	ci = meaning-toplevel-extend src c-sym (set-scope 'toplevel flags) eenv
       }
 
       pushs = pair (list I-PUSH-TRAP ci) pushs
@@ -2166,44 +2320,45 @@ define (meaning-trap src ce he be nametree escapes flags cs cm) {
   be = meaning-rewrite-body be-props be nametree
   meaning-copy-src-properties src be
 
-  bm := meaning-sequence be-props be nametree escapes (clear-tailp flags) 'begin cs cm
+  bm := meaning-sequence be-props be nametree (clear-tailp flags) 'begin eenv
 
   append (list hm) pushs (list bm) pops
 }
 
-define (meaning-escape-block src label be nametree escapes flags cs cm) {
-  ci := codegen-constants-lookup-or-extend cs label
+define (meaning-escape-block src label be nametree flags eenv) {
+  ci := meaning-constants-lookup-or-extend eenv label
 
   be-props := mpp be src
   be = meaning-rewrite-body be-props be nametree
   meaning-copy-src-properties src be
 
-  ee := pair label escapes
+  escapes-eenv := idio-copy eenv
+  set-%eenv-escapes! escapes-eenv (pair label (%eenv-escapes eenv))
 
-  bm := meaning-sequence be-props be nametree ee (clear-tailp flags) 'begin cs cm
+  bm := meaning-sequence be-props be nametree (clear-tailp flags) 'begin escapes-eenv
 
   (list (list I-PUSH-ESCAPER ci bm)
 	(list I-POP-ESCAPER))
 }
 
-define (meaning-escape-from src label ve nametree escapes flags cs cm) {
-  if (not (memq label escapes)) {
+define (meaning-escape-from src label ve nametree flags eenv) {
+  if (not (memq label (%eenv-escapes eenv))) {
     meaning-error-static-unbound src label
   }
 
-  ci := codegen-constants-lookup-or-extend cs label
+  ci := meaning-constants-lookup-or-extend eenv label
 
-  vm := meaning (mpp ve src) ve nametree escapes (clear-tailp flags) cs cm
+  vm := meaning (mpp ve src) ve nametree (clear-tailp flags) eenv
 
   list I-ESCAPER-LABEL-REF ci vm
 }
 
-define (meaning-escape-label src label ve nametree escapes flags cs cm) {
-  if (not (memq label escapes)) {
+define (meaning-escape-label src label ve nametree flags eenv) {
+  if (not (memq label (%eenv-escapes eenv))) {
     meaning-error-static-unbound src label
   }
 
-  ci := codegen-constants-lookup-or-extend cs label
+  ci := meaning-constants-lookup-or-extend eenv label
 
   if (pair? ve) {
     ve = ph ve
@@ -2211,7 +2366,7 @@ define (meaning-escape-label src label ve nametree escapes flags cs cm) {
     ve = (void)
   }
 
-  vm := meaning (mpp ve src) ve nametree escapes (clear-tailp flags) cs cm
+  vm := meaning (mpp ve src) ve nametree (clear-tailp flags) eenv
 
   list I-ESCAPER-LABEL-REF ci vm
 }
@@ -2227,7 +2382,7 @@ define (evaluate-include-file fh cs) {
   }
 }
 
-define (meaning-include src e nametree escapes flags cs cm) {
+define (meaning-include src e nametree flags eenv) {
   fh := open-input-file (find-lib e)
   unwind-protect {
     evaluate-include-file fh cs
@@ -2236,14 +2391,14 @@ define (meaning-include src e nametree escapes flags cs cm) {
   }
 }
 
-define (meaning-expander src e nametree escapes flags cs cm) {
+define (meaning-expander src e nametree flags eenv) {
   te := expander/template-expand e
   meaning-copy-src-properties src te
 
-  meaning te te nametree escapes flags cs cm
+  meaning te te nametree flags eenv
 }
 
-define (meaning src e nametree escapes flags cs cm) {
+define (meaning src e nametree flags eenv) {
   if (pair? e) {
     he := ph e
     te := pt e
@@ -2251,12 +2406,12 @@ define (meaning src e nametree escapes flags cs cm) {
     (case he
      ((begin \and \or) {
        if (pair? te) {
-	 meaning-sequence src te nametree escapes flags he cs cm
+	 meaning-sequence src te nametree flags he eenv
        } {
 	 (case he
-	  ((begin) (meaning src (void) nametree escapes flags cs cm))
-	  ((and)   (meaning src #t     nametree escapes flags cs cm))
-	  ((or)    (meaning src #f     nametree escapes flags cs cm))
+	  ((begin) (meaning src (void) nametree flags eenv))
+	  ((and)   (meaning src #t     nametree flags eenv))
+	  ((or)    (meaning src #f     nametree flags eenv))
 	  (else
 	   ;; can we even get here?
 	   (meaning-evaluation-error src "unexpected sequence keyword" he)))
@@ -2271,7 +2426,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	   ;; (not 1 2)
 	   meaning-error-param src "too many arguments" te
 	 } {
-	   meaning-not src (ph te) nametree escapes flags cs cm
+	   meaning-not src (ph te) nametree flags eenv
 	 }
        } {
 	 ;; Test Case: evaluation-errors/not-nil.idio
@@ -2289,7 +2444,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	   ;; (escape 1 2)
 	   meaning-error-param src "too many arguments" te
 	 } {
-	   meaning-escape src (ph te) nametree escapes flags cs cm
+	   meaning-escape src (ph te) nametree flags eenv
 	 }
        } {
 	 ;; Test Case: evaluation-errors/escape-nil.idio
@@ -2307,7 +2462,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	   ;; (quote 1 2)
 	   meaning-error-param src "too many arguments" te
 	 } {
-	   meaning-quotation src (ph te) nametree escapes flags
+	   meaning-quotation src (ph te) nametree flags
 	 }
        } {
 	 ;; Test Case: evaluation-errors/quote-nil.idio
@@ -2327,7 +2482,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	   ;; (quasiquote 1 2)
 	   meaning-error-param src "too many arguments" te
 	 } {
-	   meaning-quasiquotation src (ph te) nametree escapes flags cs cm
+	   meaning-quasiquotation src (ph te) nametree flags eenv
 	 }
        } {
 	 ;; Test Case: evaluation-errors/quasiquote-nil.idio
@@ -2347,7 +2502,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	   if (and (string? htte)
 		   (not (null? ttte))) {
 	     ;; (function bindings "docstr" body ...)
-	     meaning-abstraction src (gensym 'anon) (ph te) htte ttte nametree escapes flags cs cm
+	     meaning-abstraction src (gensym 'anon) (ph te) htte ttte nametree flags eenv
 	   } {
 	     ;; (function bindings body ...)
 	     ;; (function bindings "...")
@@ -2355,7 +2510,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	     ;; The second is a function whose body is a
 	     ;; string
 
-	     meaning-abstraction src (gensym 'anon) (ph te) #n tte nametree escapes flags cs cm
+	     meaning-abstraction src (gensym 'anon) (ph te) #n tte nametree flags eenv
 	   }
 	 } {
 	   ;; Test Case: evaluation-errors/function-nil.idio
@@ -2384,7 +2539,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	     if (and (string? httte)
 		     (not (null? tttte))) {
 	       ;; (function/name name bindings "docstr" body ...)
-	       meaning-abstraction src (ph te) htte httte tttte nametree escapes flags cs cm
+	       meaning-abstraction src (ph te) htte httte tttte nametree flags eenv
 	     } {
 	       ;; (function/name name bindings body ...)
 	       ;; (function/name name bindings "...")
@@ -2392,7 +2547,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	       ;; The second is a function whose body is a
 	       ;; string
 
-	       meaning-abstraction src (ph te) htte #n ttte nametree escapes flags cs cm
+	       meaning-abstraction src (ph te) htte #n ttte nametree flags eenv
 	     }
 	   } {
 	     ;; Test Case: evaluation-errors/function-no-body.idio
@@ -2422,16 +2577,16 @@ define (meaning src e nametree escapes flags cs cm) {
 	   ttte := pt tte
 	   if (pair? ttte) {
 	     ;; (function+ var val body ...)
-	     meaning-local-application src (ph te) (ph tte) ttte nametree escapes flags cs cm
+	     meaning-local-application src (ph te) (ph tte) ttte nametree flags eenv
 	   } {
 	     ;; Test Case: evaluation-errors/function+-no-body.idio
-	     
+
 	     ;; (function+ var val)
 	     meaning-error-param src "no body" he
 	   }
 	 } {
 	   ;; Test Case: evaluation-errors/function+-no-val.idio
-	   
+
 	   ;; (function+ var)
 	   meaning-error-param src "no value" he
 	 }
@@ -2453,7 +2608,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	   if (pair? ttte) {
 	     httte = ph ttte
 	   }
-	   meaning-alternative src (ph te) (ph tte) httte nametree escapes flags cs cm
+	   meaning-alternative src (ph te) (ph tte) httte nametree flags eenv
 	 } {
 	   ;; Test Case: evaluation-errors/if-cond-nil.idio
 
@@ -2484,7 +2639,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	 ce := meaning-rewrite-cond e (mpp te src) te
 	 meaning-copy-src-properties src ce
 
-	 meaning ce ce nametree escapes flags cs cm
+	 meaning ce ce nametree flags eenv
        } {
 	 ;; Test Case: evaluation-errors/cond-nil.idio
 
@@ -2498,7 +2653,7 @@ define (meaning src e nametree escapes flags cs cm) {
        if (pair? te) {
 	 tte := pt te
 	 if (pair? tte) {
-	   meaning-assignment src (ph te) (ph tte) nametree escapes (set-scope 'toplevel flags) cs cm
+	   meaning-assignment src (ph te) (ph tte) nametree (set-scope 'toplevel flags) eenv
 	 } {
 	   ;; Test Case: evaluation-errors/set-symbol-nil.idio
 
@@ -2518,7 +2673,7 @@ define (meaning src e nametree escapes flags cs cm) {
        if (pair? te) {
 	 tte := pt te
 	 if (pair? tte) {
-	   meaning-define-template src (ph te) (ph tte) nametree escapes flags cs cm
+	   meaning-define-template src (ph te) (ph tte) nametree flags eenv
 	 } {
 	   ;; Test Case: evaluation-errors/define-template-bindings-nil.idio
 
@@ -2540,7 +2695,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	 if (pair? tte) {
 	   ttte := pt tte
 	   if (pair? ttte) {
-	     meaning-define-infix-operator src (ph te) (ph tte) (ph ttte) nametree escapes flags cs cm
+	     meaning-define-infix-operator src (ph te) (ph tte) (ph ttte) nametree flags eenv
 	   } {
 	     ;; Test Case: evaluation-errors/define-infix-op-symbol-pri-nil.idio
 
@@ -2568,7 +2723,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	 if (pair? tte) {
 	   ttte := pt tte
 	   if (pair? ttte) {
-	     meaning-define-postfix-operator src (ph te) (ph tte) (ph ttte) nametree escapes flags cs cm
+	     meaning-define-postfix-operator src (ph te) (ph tte) (ph ttte) nametree flags eenv
 	   } {
 	     ;; Test Case: evaluation-errors/define-postfix-op-symbol-pri-nil.idio
 
@@ -2595,7 +2750,7 @@ define (meaning src e nametree escapes flags cs cm) {
        if (pair? te) {
 	 tte := pt te
 	 if (pair? tte) {
-	   meaning-define src (ph te) tte nametree escapes flags cs cm
+	   meaning-define src (ph te) tte nametree flags eenv
 	 } {
 	   ;; Test Case: evaluation-errors/define-sym-nil.idio
 
@@ -2620,7 +2775,7 @@ define (meaning src e nametree escapes flags cs cm) {
        if (pair? te) {
 	 tte := pt te
 	 if (pair? tte) {
-	   meaning-define src (ph te) tte nametree escapes flags cs cm
+	   meaning-define src (ph te) tte nametree flags eenv
 	 } {
 	   ;; Test Case: evaluation-errors/toplevel-define-sym-nil.idio
 
@@ -2645,7 +2800,7 @@ define (meaning src e nametree escapes flags cs cm) {
        if (pair? te) {
 	 tte := pt te
 	 if (pair? tte) {
-	   meaning-define-environ src (ph te) tte nametree escapes flags cs cm
+	   meaning-define-environ src (ph te) tte nametree flags eenv
 	 } {
 	   ;; Test Case: evaluation-errors/environ-define-sym-nil.idio
 
@@ -2670,7 +2825,7 @@ define (meaning src e nametree escapes flags cs cm) {
        if (pair? te) {
 	 tte := pt te
 	 if (pair? tte) {
-	   meaning-define-dynamic src (ph te) tte nametree escapes flags cs cm
+	   meaning-define-dynamic src (ph te) tte nametree flags eenv
 	 } {
 	   ;; Test Case: evaluation-errors/dynamic-define-sym-nil.idio
 
@@ -2696,7 +2851,7 @@ define (meaning src e nametree escapes flags cs cm) {
        if (pair? te) {
 	 tte := pt te
 	 if (pair? tte) {
-	   meaning-define-computed src (ph te) tte nametree escapes flags cs cm
+	   meaning-define-computed src (ph te) tte nametree flags eenv
 	 } {
 	   ;; Test Case: evaluation-errors/computed-define-sym-nil.idio
 
@@ -2717,17 +2872,17 @@ define (meaning src e nametree escapes flags cs cm) {
      ((block) {
        ;; { ... }
        if (pair? te) {
-	 meaning-block src te nametree escapes flags cs cm
+	 meaning-block src te nametree flags eenv
        } {
 	 meaning-warning "meaning" "empty body for block => void" src
-	 meaning src (void) nametree escapes flags cs cm
+	 meaning src (void) nametree flags eenv
        }
      })
 
      ((dynamic) {
        ;; (dynamic var)
        if (pair? te) {
-	 meaning-dynamic-reference src (ph te) nametree escapes flags cs cm
+	 meaning-dynamic-reference src (ph te) nametree flags eenv
        } {
 	 ;; Test Case: evaluation-errors/dynamic-nil.idio
 
@@ -2743,7 +2898,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	 if (pair? hte) {
 	   thte := pt hte
 	   if (pair? thte) {
-	     meaning-dynamic-let src (ph hte) (ph thte) (pt te) nametree escapes flags cs cm
+	     meaning-dynamic-let src (ph hte) (ph thte) (pt te) nametree flags eenv
 	   } {
 	     ;; Test Case: evaluation-errors/dynamic-let-bindings-not-tuple.idio
 
@@ -2769,7 +2924,7 @@ define (meaning src e nametree escapes flags cs cm) {
        if (pair? te) {
 	 hte := ph te
 	 if (symbol? hte) {
-	   meaning-dynamic-unset src hte (pt te) nametree escapes flags cs cm
+	   meaning-dynamic-unset src hte (pt te) nametree flags eenv
 	 } {
 	   ;; Test Case: evaluation-errors/dynamic-unset-non-sym.idio
 
@@ -2791,7 +2946,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	 if (pair? hte) {
 	   thte := pt hte
 	   if (pair? thte) {
-	     meaning-environ-let src (ph hte) (ph thte) (pt te) nametree escapes flags cs cm
+	     meaning-environ-let src (ph hte) (ph thte) (pt te) nametree flags eenv
 	   } {
 	     ;; Test Case: evaluation-errors/environ-let-bindings-not-tuple.idio
 
@@ -2817,7 +2972,7 @@ define (meaning src e nametree escapes flags cs cm) {
        if (pair? te) {
 	 hte := ph te
 	 if (symbol? hte) {
-	   meaning-environ-unset src hte (pt te) nametree escapes flags cs cm
+	   meaning-environ-unset src hte (pt te) nametree flags eenv
 	 } {
 	   ;; Test Case: evaluation-errors/environ-unset-non-sym.idio
 
@@ -2845,7 +3000,7 @@ define (meaning src e nametree escapes flags cs cm) {
 	 if (pair? tte) {
 	   ttte := pt tte
 	   if (pair? ttte) {
-	     meaning-trap src (ph te) (ph tte) ttte nametree escapes flags cs cm
+	     meaning-trap src (ph te) (ph tte) ttte nametree flags eenv
 	   } {
 	     ;; Test Case: evaluation-errors/trap-condition-handler-nil.idio
 
@@ -2871,7 +3026,7 @@ define (meaning src e nametree escapes flags cs cm) {
        if (pair? te) {
 	 tte := pt te
 	 if (pair? tte) {
-	   meaning-escape-block src (ph te) tte nametree escapes flags cs cm
+	   meaning-escape-block src (ph te) tte nametree flags eenv
 	 } {
 	   ;; Test Case: evaluation-errors/escape-block-condition-nil.idio
 
@@ -2891,7 +3046,7 @@ define (meaning src e nametree escapes flags cs cm) {
        if (pair? te) {
 	 tte := pt te
 	 if (pair? tte) {
-	   meaning-escape-from src (ph te) (ph tte) nametree escapes flags cs cm
+	   meaning-escape-from src (ph te) (ph tte) nametree flags eenv
 	 } {
 	   ;; Test Case: evaluation-errors/escape-from-condition-nil.idio
 
@@ -2909,7 +3064,7 @@ define (meaning src e nametree escapes flags cs cm) {
      ((include) {
        ;; (include filename)
        if (pair? te) {
-	 meaning-include src (ph te) nametree escapes flags cs cm
+	 meaning-include src (ph te) nametree flags eenv
        } {
 	 ;; Test Case: evaluation-errors/include-nil.idio
 
@@ -2947,16 +3102,16 @@ define (meaning src e nametree escapes flags cs cm) {
 
        ;; otherwise it is a derived form, ie. an application
        if (symbol? he) {
-	 si := meaning-variable-info src nametree he (set-scope 'toplevel flags) cs cm
+	 si := meaning-variable-info src nametree he (set-scope 'toplevel flags) eenv
 
 	 if (and si
 		 (expander? he)) {
-	   meaning-expander src e nametree escapes flags cs cm
+	   meaning-expander src e nametree flags eenv
 	 } {
-	   meaning-application src he te nametree escapes flags cs cm
+	   meaning-application src he te nametree flags eenv
 	 }
        } {
-	 meaning-application src he te nametree escapes flags cs cm
+	 meaning-application src he te nametree flags eenv
        }
      }))
   } {
@@ -2975,9 +3130,9 @@ define (meaning src e nametree escapes flags cs cm) {
 	       (struct-instance? e)
 	       (void? e)
 	       (undef? e))
-	    (meaning-quotation src e nametree escapes flags))
+	    (meaning-quotation src e nametree flags))
      ((symbol? e) {
-       meaning-reference src e nametree escapes (set-scope 'toplevel flags) cs cm
+       meaning-reference src e nametree (set-scope 'toplevel flags) eenv
      })
      (else
       ;; anything else is something the user shouldn't be dealing
@@ -2990,24 +3145,29 @@ define (meaning src e nametree escapes flags cs cm) {
   }
 }
 
-define (evaluate src & constants) "
-evaluate Idio source code `src` in the context of `constants` and
-return intermediate code for the code generator
+define (evaluate src & eenv) "
+evaluate Idio source code `src` in the context of evaluation
+environment `eenv` and return intermediate code for the code generator
 
 :param src: Idio source code
 :type src: Abstract Syntax Tree
-:param constants: context, defaults to the VM's constants table
-:type constants: array
+:param eenv: evaluation environment, defaults to a new instance
+:type eenv: struct-instance
 
+.. seealso: :ref:`
 " {
-  c* := #n
-  if (pair? constants) {
-    c* = ph constants
+  ee := #n
+  if (pair? eenv) {
+    ee = ph eenv
   } {
-    c* = (vm-constants)
+    ee = %evaluation-environment #t
   }
 
-  m := meaning src src #n #n no-flags c* (current-module)
+  printf "evaluate src %s\n" src
+
+  m := meaning src src #n no-flags ee
+
+  printf "evaluate eenv %s\n\n" eenv
 
   list (list I-PUSH-ABORT m) (list I-POP-ABORT)
 }

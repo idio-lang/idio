@@ -432,9 +432,9 @@ test if symbol `s` is defined in this environment	\n\
 
     IDIO r = idio_S_false;
 
-    IDIO sk = idio_module_env_symbol_recurse (s);
+    IDIO si = idio_module_env_symbol_recurse (s);
 
-    if (idio_S_false != sk) {
+    if (idio_S_false != si) {
 	r = idio_S_true;
     }
 

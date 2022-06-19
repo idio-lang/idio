@@ -353,7 +353,7 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fsci);
 		intptr_t gci = IDIO_FIXNUM_VAL (fgci);
 
-		IDIO src = idio_vm_src_expr_ref (idio_thread_current_thread (), gci);
+		IDIO src = idio_vm_src_expr_ref (IDIO_THREAD_XI (idio_thread_current_thread ()), gci);
 
 		t_size = 0;
 		t = idio_as_string (src, &t_size, 4, seen, 0);
