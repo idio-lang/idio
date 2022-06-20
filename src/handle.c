@@ -2131,7 +2131,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	     * Throw out some messages about any recently failed jobs
 	     */
 	    idio_vm_invoke_C (idio_thread_current_thread (),
-			      idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("do-job-notification"),
+			      idio_module_symbol_value (IDIO_SYMBOL ("do-job-notification"),
 							idio_job_control_module,
 							idio_S_nil));
 

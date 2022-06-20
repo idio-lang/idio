@@ -1971,7 +1971,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    ia = idio_ia (1024);
 
 #ifdef IDIO_CODEGEN_LIFTED_NAME
-	    IDIO lifted_name = idio_gensym (IDIO_STATIC_STR_LEN ("lifted"));
+	    IDIO lifted_name = IDIO_GENSYM ("lifted");
 	    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, lifted_name);
 
 	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_SYM_DEF);
@@ -2094,7 +2094,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    ia = idio_ia (1024);
 
 #ifdef IDIO_CODEGEN_LIFTED_NAME
-	    IDIO lifted_name = idio_gensym (IDIO_STATIC_STR_LEN ("lifted"));
+	    IDIO lifted_name = IDIO_GENSYM ("lifted");
 	    idio_as_t mci = idio_codegen_constants_lookup_or_extend (cs, lifted_name);
 
 	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_SYM_DEF);
@@ -3291,7 +3291,7 @@ void idio_init_codegen ()
 {
     idio_module_table_register (idio_codegen_add_primitives, NULL, NULL);
 
-    idio_codegen_module = idio_module (IDIO_SYMBOLS_C_INTERN ("codegen"));
+    idio_codegen_module = idio_module (IDIO_SYMBOL ("codegen"));
 
     idio_codegen_symbol_t *cs = idio_codegen_symbols;
     for (; cs->name != NULL; cs++) {

@@ -876,8 +876,8 @@ void idio_init_error ()
 {
     idio_module_table_register (idio_error_add_primitives, NULL, NULL);
 
-    idio_S_coding    = IDIO_SYMBOLS_C_INTERN ("coding");
-    idio_S_internal  = IDIO_SYMBOLS_C_INTERN ("internal");
-    idio_S_user      = IDIO_SYMBOLS_C_INTERN ("user");
+    idio_S_coding    = IDIO_SYMBOL ("coding");
+    idio_S_internal  = IDIO_SYMBOL ("internal");
+    idio_S_user      = IDIO_SYMBOL ("user");
 }
 

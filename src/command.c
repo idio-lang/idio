@@ -1643,6 +1643,6 @@ void idio_init_command ()
 {
     idio_module_table_register (idio_command_add_primitives, NULL, NULL);
 
-    idio_command_module = idio_module (IDIO_SYMBOLS_C_INTERN ("command"));
+    idio_command_module = idio_module (IDIO_SYMBOL ("command"));
 }
 

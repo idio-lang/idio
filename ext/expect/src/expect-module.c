@@ -407,13 +407,13 @@ void idio_final_expect ()
 
 void idio_init_expect (void *handle)
 {
-    idio_expect_module = idio_module (IDIO_SYMBOLS_C_INTERN ("expect"));
+    idio_expect_module = idio_module (IDIO_SYMBOL ("expect"));
 
     idio_module_table_register (idio_expect_add_primitives, idio_final_expect, handle);
 
-    idio_expect_exp_human_sym = IDIO_SYMBOLS_C_INTERN ("exp-human");
+    idio_expect_exp_human_sym = IDIO_SYMBOL ("exp-human");
 
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("version"),
+    idio_module_export_symbol_value (IDIO_SYMBOL ("version"),
 				     idio_string_C_len (EXPECT_SYSTEM_VERSION, sizeof (EXPECT_SYSTEM_VERSION) - 1),
 				     idio_expect_module);
 

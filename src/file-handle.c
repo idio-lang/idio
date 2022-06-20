@@ -759,7 +759,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	 * Test Case: ??
 	 */
 	fprintf (stderr, "[%d]fcntl %d (%s) => %d\n", getpid (), fd, idio_type2string (ifd), errno);
-	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, IDIO_SYMBOLS_C_INTERN ("F_GETFL")), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, IDIO_SYMBOL ("F_GETFL")), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -841,7 +841,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	/*
 	 * Test Case: ??
 	 */
-	idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, IDIO_SYMBOLS_C_INTERN ("F_SETFL"), idio_C_int (req_fs_flags)), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, IDIO_SYMBOL ("F_SETFL"), idio_C_int (req_fs_flags)), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -871,7 +871,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	/*
 	 * Test Case: ??
 	 */
-	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, IDIO_SYMBOLS_C_INTERN ("F_GETFD")), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, IDIO_SYMBOL ("F_GETFD")), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -914,7 +914,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	     IDIO_STATE_BOOTSTRAP == idio_state)) {
 	    perror ("fcntl F_SETFD");
 	} else {
-	    idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, IDIO_SYMBOLS_C_INTERN ("F_SETFD"), idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, IDIO_SYMBOL ("F_SETFD"), idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1397,7 +1397,7 @@ IDIO idio_open_file_handle_C (char const *func, IDIO filename, char const *pathn
 	     IDIO_STATE_BOOTSTRAP == idio_state)) {
 	    perror ("fcntl F_SETFD");
 	} else {
-	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), IDIO_SYMBOLS_C_INTERN ("F_SETFD"), idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), IDIO_SYMBOL ("F_SETFD"), idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2709,7 +2709,7 @@ fd handle `fdh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
 	     *
 	     * Not sure how to provoke this...
 	     */
-	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), IDIO_SYMBOLS_C_INTERN ("F_SETFD"), IDIO_SYMBOLS_C_INTERN ("FD_CLOEXEC")), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), IDIO_SYMBOL ("F_SETFD"), IDIO_SYMBOL ("FD_CLOEXEC")), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}

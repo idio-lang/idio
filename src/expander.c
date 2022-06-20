@@ -352,7 +352,10 @@ poor man's let	\n\
 	 *
 	 * Those Schemers, eh?
 	 */
-	fn = IDIO_LIST4 (idio_S_function_name, idio_gensym (IDIO_STATIC_STR_LEN ("let")), idio_list_nreverse (vars), e);
+	fn = IDIO_LIST4 (idio_S_function_name,
+			 IDIO_GENSYM ("let"),
+			 idio_list_nreverse (vars),
+			 e);
 
 	IDIO appl = idio_list_append2 (IDIO_LIST1 (name), idio_list_nreverse (vals));
 
@@ -1446,29 +1449,29 @@ void idio_init_expander ()
 {
     idio_module_table_register (idio_expander_add_primitives, NULL, NULL);
 
-    idio_expander_module = idio_module (IDIO_SYMBOLS_C_INTERN ("expander"));
+    idio_expander_module = idio_module (IDIO_SYMBOL ("expander"));
 
-    idio_evaluator_extend_str = idio_string_C_len (IDIO_STATIC_STR_LEN ("idio_evaluator_extend"));
+    idio_evaluator_extend_str = IDIO_STRING ("idio_evaluator_extend");
     idio_gc_protect_auto (idio_evaluator_extend_str);
 
-    idio_expander_list = IDIO_SYMBOLS_C_INTERN ("*expander-list*");
+    idio_expander_list = IDIO_SYMBOL ("*expander-list*");
     idio_module_set_symbol_value (idio_expander_list, idio_S_nil, idio_expander_module);
 
-    idio_expander_list_src = IDIO_SYMBOLS_C_INTERN ("*expander-list-src*");
+    idio_expander_list_src = IDIO_SYMBOL ("*expander-list-src*");
     idio_module_set_symbol_value (idio_expander_list_src, idio_S_nil, idio_expander_module);
 
-    idio_operator_module = idio_module (IDIO_SYMBOLS_C_INTERN ("operator"));
+    idio_operator_module = idio_module (IDIO_SYMBOL ("operator"));
 
-    idio_infix_operator_list = IDIO_SYMBOLS_C_INTERN ("*infix-operator-list*");
+    idio_infix_operator_list = IDIO_SYMBOL ("*infix-operator-list*");
     idio_module_set_symbol_value (idio_infix_operator_list, idio_S_nil, idio_operator_module);
 
-    idio_infix_operator_group = IDIO_SYMBOLS_C_INTERN ("*infix-operator-group*");
+    idio_infix_operator_group = IDIO_SYMBOL ("*infix-operator-group*");
     idio_module_set_symbol_value (idio_infix_operator_group, idio_S_nil, idio_operator_module);
 
-    idio_postfix_operator_list = IDIO_SYMBOLS_C_INTERN ("*postfix-operator-list*");
+    idio_postfix_operator_list = IDIO_SYMBOL ("*postfix-operator-list*");
     idio_module_set_symbol_value (idio_postfix_operator_list, idio_S_nil, idio_operator_module);
 
-    idio_postfix_operator_group = IDIO_SYMBOLS_C_INTERN ("*postfix-operator-group*");
+    idio_postfix_operator_group = IDIO_SYMBOL ("*postfix-operator-group*");
     idio_module_set_symbol_value (idio_postfix_operator_group, idio_S_nil, idio_operator_module);
 }
 

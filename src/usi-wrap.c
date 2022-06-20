@@ -685,13 +685,13 @@ void idio_init_usi_wrap ()
      * Create the SRFI-14 char-sets
      */
 
-    IDIO idio_SRFI_14_module = idio_module (IDIO_SYMBOLS_C_INTERN ("SRFI-14"));
+    IDIO idio_SRFI_14_module = idio_module (IDIO_SYMBOL ("SRFI-14"));
 
-    IDIO sym = IDIO_SYMBOLS_C_INTERN ("sparse-char-set");
+    IDIO sym = IDIO_SYMBOL ("sparse-char-set");
     IDIO sparse_char_set_type = idio_struct_type (sym,
 						  idio_S_nil,
-						  IDIO_LIST2 (IDIO_SYMBOLS_C_INTERN ("size"),
-							      IDIO_SYMBOLS_C_INTERN ("planes")));
+						  IDIO_LIST2 (IDIO_SYMBOL ("size"),
+							      IDIO_SYMBOL ("planes")));
 
     idio_module_set_symbol_value (sym, sparse_char_set_type, idio_SRFI_14_module);
 

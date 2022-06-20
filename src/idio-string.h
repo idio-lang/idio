@@ -33,6 +33,8 @@
 #define IDIO_STRING_TOKEN_INEXACT(f)		(IDIO_STRING_TOKEN_EXACT (f) == 0)
 #define IDIO_STRING_TOKEN_ARRAY(f)		((f) & IDIO_STRING_TOKEN_FLAG_ARRAY)
 
+#define IDIO_STRING(s)		idio_string_C_len ((s), sizeof (s) - 1)
+
 void idio_string_error_C (char const *msg, IDIO detail, IDIO c_location);
 size_t idio_string_storage_size (IDIO s);
 int idio_assign_string_C (IDIO so, char const *s_C);

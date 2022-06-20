@@ -458,7 +458,7 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t const given, size_
     if (idio_isa_closure (func)) {
 	name = idio_ref_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 	if (idio_S_nil == name) {
-	    name = idio_string_C_len (IDIO_STATIC_STR_LEN ("-anon-"));
+	    name = IDIO_STRING ("-anon-");
 	}
     } else if (idio_isa_primitive (func)) {
 	name = idio_string_C_len (IDIO_PRIMITIVE_NAME (func), IDIO_PRIMITIVE_NAME_LEN (func));
@@ -470,7 +470,7 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t const given, size_
 	 *
 	 * Also we can squelch an uninitialised variable error.
 	 */
-	name = idio_string_C_len (IDIO_STATIC_STR_LEN ("-?func?-"));
+	name = IDIO_STRING ("-?func?-");
     }
 
     IDIO sigstr = idio_ref_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
@@ -530,7 +530,7 @@ static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t const give
     if (idio_isa_closure (func)) {
 	name = idio_ref_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 	if (idio_S_nil == name) {
-	    name = idio_string_C_len (IDIO_STATIC_STR_LEN ("-anon-"));
+	    name = IDIO_STRING ("-anon-");
 	}
     } else if (idio_isa_primitive (func)) {
 	name = idio_string_C_len (IDIO_PRIMITIVE_NAME (func), IDIO_PRIMITIVE_NAME_LEN (func));
@@ -542,7 +542,7 @@ static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t const give
 	 *
 	 * Also we can squelch an uninitialised variable error.
 	 */
-	name = idio_string_C_len (IDIO_STATIC_STR_LEN ("-?func?-"));
+	name = IDIO_STRING ("-?func?-");
     }
 
     IDIO sigstr = idio_ref_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
@@ -7161,11 +7161,11 @@ void idio_vm_thread_init (IDIO thr)
 
     idio_vm_push_trap (thr, idio_condition_restart_condition_handler, idio_condition_condition_type_mci, 0);
     idio_vm_push_trap (thr, idio_condition_default_condition_handler, idio_condition_condition_type_mci, 0);
-    IDIO fvci = idio_fixnum (idio_vm_constants_lookup (IDIO_SYMBOLS_C_INTERN (IDIO_CONDITION_RCSE_TYPE_NAME)));
+    IDIO fvci = idio_fixnum (idio_vm_constants_lookup (IDIO_SYMBOL (IDIO_CONDITION_RCSE_TYPE_NAME)));
     idio_vm_push_trap (thr, idio_condition_default_rcse_handler, fvci, 0);
-    fvci = idio_fixnum (idio_vm_constants_lookup (IDIO_SYMBOLS_C_INTERN (IDIO_CONDITION_RACSE_TYPE_NAME)));
+    fvci = idio_fixnum (idio_vm_constants_lookup (IDIO_SYMBOL (IDIO_CONDITION_RACSE_TYPE_NAME)));
     idio_vm_push_trap (thr, idio_condition_default_racse_handler, fvci, 0);
-    fvci = idio_fixnum (idio_vm_constants_lookup (IDIO_SYMBOLS_C_INTERN (IDIO_CONDITION_RT_SIGCHLD_TYPE_NAME)));
+    fvci = idio_fixnum (idio_vm_constants_lookup (IDIO_SYMBOL (IDIO_CONDITION_RT_SIGCHLD_TYPE_NAME)));
     idio_vm_push_trap (thr, idio_condition_default_SIGCHLD_handler, fvci, 0);
 }
 
@@ -7978,7 +7978,7 @@ void idio_vm_dump_values ()
      */
     idio_gc_pause ("vm-dump-values");
 
-    IDIO Rx = IDIO_SYMBOLS_C_INTERN ("Rx");
+    IDIO Rx = IDIO_SYMBOL ("Rx");
 
     idio_as_t al = idio_array_size (idio_vm_values);
     fprintf (fp, "idio_vm_values: %zd\n", al);
@@ -8933,29 +8933,29 @@ void idio_init_vm ()
     idio_vm_extend_constants (idio_S_quote);
     idio_vm_extend_constants (idio_bignum_real_C ("0.0", 3));
     idio_vm_extend_constants (idio_bignum_real_C ("1.0", 3));
-    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("\n")));
-    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (e)")));
-    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (end)")));
-    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (loop)")));
-    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (r)")));
-    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (start)")));
-    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (v)")));
-    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("closed application: (x)")));
-    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("invalid syntax")));
-    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("not a char-set")));
-    idio_vm_extend_constants (idio_string_C_len (IDIO_STATIC_STR_LEN ("not a condition:")));
-    idio_vm_extend_constants (IDIO_SYMBOLS_C_INTERN ("&args"));
-    idio_vm_extend_constants (IDIO_SYMBOLS_C_INTERN (":"));
-    idio_vm_extend_constants (IDIO_SYMBOLS_C_INTERN ("close"));
-    idio_vm_extend_constants (IDIO_SYMBOLS_C_INTERN ("define-syntax"));
-    idio_vm_extend_constants (IDIO_SYMBOLS_C_INTERN ("display"));
-    idio_vm_extend_constants (IDIO_SYMBOLS_C_INTERN ("display*"));
-    idio_vm_extend_constants (IDIO_SYMBOLS_C_INTERN ("ih"));
-    idio_vm_extend_constants (IDIO_SYMBOLS_C_INTERN ("operator"));
-    idio_vm_extend_constants (IDIO_SYMBOLS_C_INTERN ("pair?"));
-    idio_vm_extend_constants (IDIO_SYMBOLS_C_INTERN ("seq"));
+    idio_vm_extend_constants (IDIO_STRING ("\n"));
+    idio_vm_extend_constants (IDIO_STRING ("closed application: (e)"));
+    idio_vm_extend_constants (IDIO_STRING ("closed application: (end)"));
+    idio_vm_extend_constants (IDIO_STRING ("closed application: (loop)"));
+    idio_vm_extend_constants (IDIO_STRING ("closed application: (r)"));
+    idio_vm_extend_constants (IDIO_STRING ("closed application: (start)"));
+    idio_vm_extend_constants (IDIO_STRING ("closed application: (v)"));
+    idio_vm_extend_constants (IDIO_STRING ("closed application: (x)"));
+    idio_vm_extend_constants (IDIO_STRING ("invalid syntax"));
+    idio_vm_extend_constants (IDIO_STRING ("not a char-set"));
+    idio_vm_extend_constants (IDIO_STRING ("not a condition:"));
+    idio_vm_extend_constants (IDIO_SYMBOL ("&args"));
+    idio_vm_extend_constants (IDIO_SYMBOL (":"));
+    idio_vm_extend_constants (IDIO_SYMBOL ("close"));
+    idio_vm_extend_constants (IDIO_SYMBOL ("define-syntax"));
+    idio_vm_extend_constants (IDIO_SYMBOL ("display"));
+    idio_vm_extend_constants (IDIO_SYMBOL ("display*"));
+    idio_vm_extend_constants (IDIO_SYMBOL ("ih"));
+    idio_vm_extend_constants (IDIO_SYMBOL ("operator"));
+    idio_vm_extend_constants (IDIO_SYMBOL ("pair?"));
+    idio_vm_extend_constants (IDIO_SYMBOL ("seq"));
 
-    idio_vm_module = idio_module (IDIO_SYMBOLS_C_INTERN ("vm"));
+    idio_vm_module = idio_module (IDIO_SYMBOL ("vm"));
 
     idio_vm_t0 = time ((time_t *) NULL);
 
@@ -8995,9 +8995,9 @@ void idio_init_vm ()
 	idio_module_export_symbol_value (sym, idio_fixnum (cs->value), idio_vm_module);
     }
 
-    idio_vm_prompt_tag_type = idio_struct_type (IDIO_SYMBOLS_C_INTERN ("prompt-tag"),
+    idio_vm_prompt_tag_type = idio_struct_type (IDIO_SYMBOL ("prompt-tag"),
 						idio_S_nil,
-						IDIO_LIST1 (IDIO_SYMBOLS_C_INTERN ("name")));
+						IDIO_LIST1 (IDIO_SYMBOL ("name")));
     idio_gc_protect_auto (idio_vm_prompt_tag_type);
 
     if (clock_gettime (CLOCK_MONOTONIC, &idio_vm_ts0) < 0) {

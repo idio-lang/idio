@@ -1479,8 +1479,8 @@ IDIO idio_fixnum_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 
 void idio_fixnum_add_primitives ()
 {
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("FIXNUM-MAX"), idio_fixnum (IDIO_FIXNUM_MAX), idio_Idio_module_instance ());
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("FIXNUM-MIN"), idio_fixnum (IDIO_FIXNUM_MIN), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOL ("FIXNUM-MAX"), idio_fixnum (IDIO_FIXNUM_MAX), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOL ("FIXNUM-MIN"), idio_fixnum (IDIO_FIXNUM_MIN), idio_Idio_module_instance ());
 
     IDIO_ADD_PRIMITIVE (fixnump);
     IDIO_ADD_PRIMITIVE (integerp);

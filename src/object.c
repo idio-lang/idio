@@ -1833,7 +1833,7 @@ void idio_init_object ()
 {
     idio_module_table_register (idio_object_add_primitives, idio_final_object, NULL);
 
-    idio_object_module = idio_module (IDIO_SYMBOLS_C_INTERN ("object"));
+    idio_object_module = idio_module (IDIO_SYMBOL ("object"));
 
     IDIO vi;
     vi = IDIO_ADD_MODULE_PRIMITIVE (idio_object_module, invoke_instance_in_error);
@@ -1851,10 +1851,10 @@ void idio_init_object ()
      * Here we use a struct-type and everything, including Classes are
      * instances of it.
      */
-    idio_class_sym = IDIO_SYMBOLS_C_INTERN ("class");
-    idio_class_class_sym = IDIO_SYMBOLS_C_INTERN ("<class>");
+    idio_class_sym = IDIO_SYMBOL ("class");
+    idio_class_class_sym = IDIO_SYMBOL ("<class>");
     IDIO class_st_names = idio_pair (idio_class_sym,
-                          idio_pair (IDIO_SYMBOLS_C_INTERN ("proc"),
+                          idio_pair (IDIO_SYMBOL ("proc"),
 				     idio_S_nil));
 
     idio_class_struct_type = idio_struct_type (idio_class_class_sym,
@@ -1879,13 +1879,13 @@ void idio_init_object ()
      *
      * These are the standard slots for a Class.
      */
-    idio_class_slot_names = idio_pair (IDIO_SYMBOLS_C_INTERN ("name"),
-                            idio_pair (IDIO_SYMBOLS_C_INTERN ("direct-supers"),
-                            idio_pair (IDIO_SYMBOLS_C_INTERN ("direct-slots"),
-                            idio_pair (IDIO_SYMBOLS_C_INTERN ("cpl"),
-                            idio_pair (IDIO_SYMBOLS_C_INTERN ("slots"),
-                            idio_pair (IDIO_SYMBOLS_C_INTERN ("nfields"),
-                            idio_pair (IDIO_SYMBOLS_C_INTERN ("getters-n-setters"),
+    idio_class_slot_names = idio_pair (IDIO_SYMBOL ("name"),
+                            idio_pair (IDIO_SYMBOL ("direct-supers"),
+                            idio_pair (IDIO_SYMBOL ("direct-slots"),
+                            idio_pair (IDIO_SYMBOL ("cpl"),
+                            idio_pair (IDIO_SYMBOL ("slots"),
+                            idio_pair (IDIO_SYMBOL ("nfields"),
+                            idio_pair (IDIO_SYMBOL ("getters-n-setters"),
 				       idio_S_nil)))))));
 
     /*
@@ -1910,7 +1910,7 @@ void idio_init_object ()
 
     idio_module_export_symbol_value (idio_class_class_sym, idio_class_inst, idio_object_module);
 
-    IDIO top_class_sym = IDIO_SYMBOLS_C_INTERN ("<top>");
+    IDIO top_class_sym = IDIO_SYMBOL ("<top>");
     idio_top_inst = idio_simple_make_class (idio_class_inst,
 					    top_class_sym,
 					    idio_S_nil,
@@ -1918,7 +1918,7 @@ void idio_init_object ()
 
     idio_module_export_symbol_value (top_class_sym, idio_top_inst, idio_object_module);
 
-    IDIO object_class_sym = IDIO_SYMBOLS_C_INTERN ("<object>");
+    IDIO object_class_sym = IDIO_SYMBOL ("<object>");
     idio_object_inst = idio_simple_make_class (idio_class_inst,
 					       object_class_sym,
 					       IDIO_LIST1 (idio_top_inst),
@@ -1940,28 +1940,28 @@ void idio_init_object ()
     IDIO class_sym;
 
 #define IDIO_EXPORT_SIMPLE_CLASS(v,cname,cl,super,slots)			\
-    class_sym = IDIO_SYMBOLS_C_INTERN (cname);				\
+    class_sym = IDIO_SYMBOL (cname);				\
     IDIO v = idio_simple_make_class (cl, class_sym, IDIO_LIST1 (super), slots); \
     idio_module_export_symbol_value (class_sym, v, idio_object_module);
 
     IDIO_EXPORT_SIMPLE_CLASS (proc_class_inst, "<procedure-class>", idio_class_inst, idio_class_inst, idio_S_nil);
     IDIO_EXPORT_SIMPLE_CLASS (entity_class_inst, "<entity-class>", idio_class_inst, proc_class_inst, idio_S_nil);
 
-    IDIO generic_slots = IDIO_LIST3 (IDIO_SYMBOLS_C_INTERN ("name"),
-				     IDIO_SYMBOLS_C_INTERN ("documentation"),
-				     IDIO_SYMBOLS_C_INTERN ("methods"));
+    IDIO generic_slots = IDIO_LIST3 (IDIO_SYMBOL ("name"),
+				     IDIO_SYMBOL ("documentation"),
+				     IDIO_SYMBOL ("methods"));
 
-    idio_generic_sym = IDIO_SYMBOLS_C_INTERN ("generic");
-    idio_generic_class_sym = IDIO_SYMBOLS_C_INTERN ("<generic>");
+    idio_generic_sym = IDIO_SYMBOL ("generic");
+    idio_generic_class_sym = IDIO_SYMBOL ("<generic>");
     idio_generic_inst = idio_simple_make_class (entity_class_inst, idio_generic_class_sym, IDIO_LIST1 (idio_object_inst), generic_slots);
     idio_module_export_symbol_value (idio_generic_class_sym, idio_generic_inst, idio_object_module);
 
-    IDIO method_slots = IDIO_LIST3 (IDIO_SYMBOLS_C_INTERN ("generic-function"),
-				    IDIO_SYMBOLS_C_INTERN ("specializers"),
-				    IDIO_SYMBOLS_C_INTERN ("procedure"));
+    IDIO method_slots = IDIO_LIST3 (IDIO_SYMBOL ("generic-function"),
+				    IDIO_SYMBOL ("specializers"),
+				    IDIO_SYMBOL ("procedure"));
 
-    idio_method_sym = IDIO_SYMBOLS_C_INTERN ("method");
-    idio_method_class_sym = IDIO_SYMBOLS_C_INTERN ("<method>");
+    idio_method_sym = IDIO_SYMBOL ("method");
+    idio_method_class_sym = IDIO_SYMBOL ("<method>");
     idio_method_inst = idio_simple_make_class (idio_class_inst, idio_method_class_sym, IDIO_LIST1 (idio_object_inst), method_slots);
     idio_module_export_symbol_value (idio_method_class_sym, idio_method_inst, idio_object_module);
 
@@ -1977,7 +1977,7 @@ void idio_init_object ()
     IDIO_EXPORT_SIMPLE_CLASS (builtin_class_inst, "<builtin-class>", idio_class_inst, idio_top_inst, idio_S_nil);
 
 #define IDIO_EXPORT_PRIMITIVE_CLASS(v,cname)				\
-    class_sym = IDIO_SYMBOLS_C_INTERN (cname);				\
+    class_sym = IDIO_SYMBOL (cname);				\
     v = idio_simple_make_class (idio_class_inst, class_sym, IDIO_LIST1 (builtin_class_inst), idio_S_nil); \
     idio_module_export_symbol_value (class_sym, v, idio_object_module);
 
@@ -2020,7 +2020,7 @@ void idio_init_object ()
     IDIO_EXPORT_PRIMITIVE_CLASS (idio_bitset_inst,          "<bitset>");
 
 #define IDIO_EXPORT_PROCEDURE_CLASS(v,cname)				\
-    class_sym = IDIO_SYMBOLS_C_INTERN (cname);				\
+    class_sym = IDIO_SYMBOL (cname);				\
     v = idio_simple_make_class (proc_class_inst, class_sym, IDIO_LIST1 (builtin_class_inst), idio_S_nil); \
     idio_module_export_symbol_value (class_sym, v, idio_object_module);
 

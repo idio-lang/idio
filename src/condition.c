@@ -697,7 +697,7 @@ void idio_condition_report (char const *prefix, IDIO c)
     memcpy (pid_prefix + prefix_len, pid, pid_len);
     pid_prefix[prefix_len + pid_len] = '\0';
 
-    IDIO cr_cmd = IDIO_LIST4 (idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("condition-report"),
+    IDIO cr_cmd = IDIO_LIST4 (idio_module_symbol_value (IDIO_SYMBOL ("condition-report"),
 							idio_Idio_module,
 							idio_S_nil),
 			      idio_string_C_len (pid_prefix, prefix_len + pid_len),
@@ -934,7 +934,7 @@ does not return per se						\n\
 	idio_condition_report ("default-condition-handler", c);
 
 	if (IDIO_STATE_RUNNING == idio_state) {
-	    IDIO debugger = idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("debug"),
+	    IDIO debugger = idio_module_symbol_value (IDIO_SYMBOL ("debug"),
 						      idio_debugger_module,
 						      idio_S_nil);
 
@@ -1235,7 +1235,7 @@ void idio_init_condition ()
      * which means we have to repeat a couple of the actions of the
      * IDIO_DEFINE_CONDITION0 macro.
      */
-    IDIO sym = IDIO_SYMBOLS_C_INTERN (IDIO_CONDITION_CONDITION_TYPE_NAME);
+    IDIO sym = IDIO_SYMBOL (IDIO_CONDITION_CONDITION_TYPE_NAME);
     idio_as_t gci = idio_vm_constants_lookup_or_extend (sym);
     idio_condition_condition_type_mci = idio_fixnum (gci);
 
