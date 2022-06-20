@@ -189,9 +189,9 @@ dist-clean : clean clean-local-install
 
 tags : TAGS
 
-TAGS : *.[ch] $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
+TAGS : $(SRCDIR)/*.[ch] $(LIBDIR)/bootstrap/*.idio $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
 	@echo TAGS: $?
-	@etags *.[ch] --language=none --regex=@idio.tags $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
+	@etags --regex=@$(SRCDIR)/idio.primitive.tags $(SRCDIR)/*.[ch] --language=none --regex=@$(SRCDIR)/idio.tags  $(LIBDIR)/bootstrap/*.idio $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
 
 valgrind: local-install
 	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(LI_BINDIR)/idio # 2>&1 | less +/^==
