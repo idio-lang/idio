@@ -2287,7 +2287,7 @@ void idio_init_module ()
      * imports list for all other modules to be '(Idio)
      */
 
-    IDIO Iname = IDIO_SYMBOLS_C_INTERN ("Idio");
+    IDIO Iname = IDIO_SYMBOL ("Idio");
     idio_Idio_module = idio_module (Iname);
     IDIO_MODULE_IMPORTS (idio_Idio_module) = idio_S_nil;
     idio_as_t Im_gci = idio_vm_extend_default_constants (Iname);
@@ -2302,7 +2302,7 @@ void idio_init_module ()
 					idio_module_init_string),
 			    idio_Idio_module);
 
-    IDIO dname = IDIO_SYMBOLS_C_INTERN ("debugger");
+    IDIO dname = IDIO_SYMBOL ("debugger");
     idio_debugger_module = idio_module (dname);
     idio_as_t dm_gci = idio_vm_extend_default_constants (dname);
     idio_as_t dm_gvi = idio_vm_extend_default_values ();

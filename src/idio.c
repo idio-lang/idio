@@ -657,7 +657,7 @@ int main (int argc, char **argv, char **envp)
 
     idio_vm_push_abort (thr, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
-    idio_load_file_name (idio_string_C_len (IDIO_STATIC_STR_LEN ("bootstrap")), idio_default_eenv);
+    idio_load_file_name (IDIO_STRING ("bootstrap"), idio_default_eenv);
 
     idio_gc_collect_all ("post-bootstrap");
     idio_add_terminal_signals ();
@@ -821,10 +821,10 @@ int main (int argc, char **argv, char **envp)
 		    option = OPTION_LOAD;
 		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--version"))) {
 		    idio_vm_invoke_C (IDIO_LIST2 (idio_module_symbol_value_thread (thr,
-										   idio_symbols_C_intern (IDIO_STATIC_STR_LEN ("idio-version")),
+										   IDIO_SYMBOL ("idio-version"),
 										   idio_Idio_module,
 										   IDIO_LIST1 (idio_S_false)),
-						  idio_symbols_C_intern (IDIO_STATIC_STR_LEN ("-v"))));
+						  IDIO_SYMBOL ("-v")));
 
 		    exit (0);
 		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--help"))) {
@@ -878,7 +878,7 @@ int main (int argc, char **argv, char **envp)
      * no arguments sargv[0] is argv[0].
      */
     IDIO filename = idio_string_C (sargv[0]);
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("ARGV0"), filename, idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("ARGV0"), filename, idio_Idio_module);
 
     IDIO args = idio_array (sargc);
     if (sargc) {
@@ -887,8 +887,8 @@ int main (int argc, char **argv, char **envp)
 	}
     }
 
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("ARGC"), idio_integer (sargc - 1), idio_Idio_module);
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("ARGV"), args, idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("ARGC"), idio_integer (sargc - 1), idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("ARGV"), args, idio_Idio_module);
 
     if (sargc) {
 	/*

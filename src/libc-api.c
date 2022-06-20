@@ -5724,8 +5724,8 @@ a wrapper to libc :manpage:`fork(2)`				\n\
 	idio_job_control_cmd_pid = getpid ();
 	idio_job_control_interactive = 0;
 	idio_command_suppress_rcse = idio_S_false;
-	idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("PID"), idio_libc_pid_t (getpid ()), idio_Idio_module);
-	idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("PPID"), idio_libc_pid_t (getppid ()), idio_Idio_module);
+	idio_module_set_symbol_value (IDIO_SYMBOL ("PID"), idio_libc_pid_t (getpid ()), idio_Idio_module);
+	idio_module_set_symbol_value (IDIO_SYMBOL ("PPID"), idio_libc_pid_t (getppid ()), idio_Idio_module);
     }
 
     return idio_libc_pid_t (C_pid);
@@ -6323,7 +6323,7 @@ void idio_libc_api_add_primitives ()
 #define IDIO_ADD_STRUCT(iname,cname,mname)				\
     {									\
 	IDIO fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_ ## mname ## _module, cname ## _ref); \
-	IDIO struct_name = IDIO_SYMBOLS_C_INTERN (iname);		\
+	IDIO struct_name = IDIO_SYMBOL (iname);		\
 	IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), cname, fgvi); \
 	IDIO I_vt = idio_C_pointer_type_add_vtable (idio_CSI_ ## cname); \
 	IDIO printer = IDIO_EXPORT_MODULE_PRIMITIVE (idio_ ## mname ## _module, cname ## _as_string); \
@@ -6558,32 +6558,32 @@ void idio_init_libc_api ()
      * generated header/Idio files will still reference these names
      */
 #ifdef __rlimit_resource
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_CPU"), idio_C_uint (RLIMIT_CPU), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_FSIZE"), idio_C_uint (RLIMIT_FSIZE), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_DATA"), idio_C_uint (RLIMIT_DATA), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_STACK"), idio_C_uint (RLIMIT_STACK), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_CORE"), idio_C_uint (RLIMIT_CORE), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_RSS"), idio_C_uint (__RLIMIT_RSS), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_NOFILE"), idio_C_uint (RLIMIT_NOFILE), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_OFILE"), idio_C_uint (__RLIMIT_OFILE), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIMIT_AS"), idio_C_uint (RLIMIT_AS), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_NPROC"), idio_C_uint (__RLIMIT_NPROC), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_MEMLOCK"), idio_C_uint (__RLIMIT_MEMLOCK), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_LOCKS"), idio_C_uint (__RLIMIT_LOCKS), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_SIGPENDING"), idio_C_uint (__RLIMIT_SIGPENDING), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_MSGQUEUE"), idio_C_uint (__RLIMIT_MSGQUEUE), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_NICE"), idio_C_uint (__RLIMIT_NICE), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_RTPRIO"), idio_C_uint (__RLIMIT_RTPRIO), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_RTTIME"), idio_C_uint (__RLIMIT_RTTIME), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIMIT_NLIMITS"), idio_C_uint (__RLIMIT_NLIMITS), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("__RLIM_NLIMITS"), idio_C_uint (__RLIM_NLIMITS), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RLIMIT_CPU"), idio_C_uint (RLIMIT_CPU), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RLIMIT_FSIZE"), idio_C_uint (RLIMIT_FSIZE), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RLIMIT_DATA"), idio_C_uint (RLIMIT_DATA), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RLIMIT_STACK"), idio_C_uint (RLIMIT_STACK), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RLIMIT_CORE"), idio_C_uint (RLIMIT_CORE), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("__RLIMIT_RSS"), idio_C_uint (__RLIMIT_RSS), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RLIMIT_NOFILE"), idio_C_uint (RLIMIT_NOFILE), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("__RLIMIT_OFILE"), idio_C_uint (__RLIMIT_OFILE), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RLIMIT_AS"), idio_C_uint (RLIMIT_AS), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("__RLIMIT_NPROC"), idio_C_uint (__RLIMIT_NPROC), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("__RLIMIT_MEMLOCK"), idio_C_uint (__RLIMIT_MEMLOCK), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("__RLIMIT_LOCKS"), idio_C_uint (__RLIMIT_LOCKS), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("__RLIMIT_SIGPENDING"), idio_C_uint (__RLIMIT_SIGPENDING), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("__RLIMIT_MSGQUEUE"), idio_C_uint (__RLIMIT_MSGQUEUE), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("__RLIMIT_NICE"), idio_C_uint (__RLIMIT_NICE), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("__RLIMIT_RTPRIO"), idio_C_uint (__RLIMIT_RTPRIO), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("__RLIMIT_RTTIME"), idio_C_uint (__RLIMIT_RTTIME), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("__RLIMIT_NLIMITS"), idio_C_uint (__RLIMIT_NLIMITS), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("__RLIM_NLIMITS"), idio_C_uint (__RLIM_NLIMITS), idio_libc_module);
 #endif	/* __rlimit_resource */
 
     /* /usr/include/bits/resource.h */
     /* enum __rusage_who */
 #ifdef __rusage_who
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RUSAGE_SELF"), idio_C_int (RUSAGE_SELF), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RUSAGE_CHILDREN"), idio_C_int (RUSAGE_CHILDREN), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RUSAGE_THREAD"), idio_C_int (RUSAGE_THREAD), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RUSAGE_SELF"), idio_C_int (RUSAGE_SELF), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RUSAGE_CHILDREN"), idio_C_int (RUSAGE_CHILDREN), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RUSAGE_THREAD"), idio_C_int (RUSAGE_THREAD), idio_libc_module);
 #endif  /* __rusage_who */
 }

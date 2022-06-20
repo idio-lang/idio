@@ -259,7 +259,7 @@ static void idio_meaning_base_error (IDIO src, IDIO c_location, IDIO msg, IDIO e
      * function call indicated and it must be a valid invocable entity
      * so idio_vm_restore_all_state() doesn't complain.
      */
-    IDIO_THREAD_FUNC (thr) = idio_symbols_C_intern (IDIO_STATIC_STR_LEN ("evaluate"));
+    IDIO_THREAD_FUNC (thr) = IDIO_SYMBOL ("evaluate");
 
     IDIO lsh;
     IDIO dsh;
@@ -1683,7 +1683,7 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
     } else if (idio_isa_array (e)) {
 	IDIO iatl = idio_array_to_list (e);
 
-	r = IDIO_LIST2 (IDIO_SYMBOLS_C_INTERN ("list->array"), idio_meaning_dequasiquote (iatl, iatl, level, indent + 1));
+	r = IDIO_LIST2 (IDIO_SYMBOL ("list->array"), idio_meaning_dequasiquote (iatl, iatl, level, indent + 1));
     } else if (idio_isa_symbol (e)) {
 	r = IDIO_LIST2 (idio_S_quote, e);
     } else {
@@ -2174,8 +2174,8 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
      *
      * where proc is (function/name name (formal*) ...) from above, ie. e
      */
-    IDIO x_sym = IDIO_SYMBOLS_C_INTERN ("x");
-    IDIO e_sym = IDIO_SYMBOLS_C_INTERN ("e");
+    IDIO x_sym = IDIO_SYMBOL ("x");
+    IDIO e_sym = IDIO_SYMBOL ("e");
 
     IDIO pt_x = IDIO_LIST2 (idio_S_pt, x_sym);
     idio_meaning_copy_src_properties (src, pt_x);
@@ -2442,11 +2442,11 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 	    return idio_S_notreached;
 	}
 
-	IDIO find_module = IDIO_LIST2 (IDIO_SYMBOLS_C_INTERN ("find-module"),
+	IDIO find_module = IDIO_LIST2 (IDIO_SYMBOL ("find-module"),
 				       IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module)));
 	idio_meaning_copy_src_properties (src, find_module);
 
-	IDIO sve = IDIO_LIST3 (IDIO_SYMBOLS_C_INTERN ("symbol-value"),
+	IDIO sve = IDIO_LIST3 (IDIO_SYMBOL ("symbol-value"),
 			       IDIO_LIST2 (idio_S_quote, e),
 			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
@@ -2544,11 +2544,11 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 	    return idio_S_notreached;
 	}
 
-	IDIO find_module = IDIO_LIST2 (IDIO_SYMBOLS_C_INTERN ("find-module"),
+	IDIO find_module = IDIO_LIST2 (IDIO_SYMBOL ("find-module"),
 				       IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module)));
 	idio_meaning_copy_src_properties (src, find_module);
 
-	IDIO sve = IDIO_LIST3 (IDIO_SYMBOLS_C_INTERN ("symbol-value"),
+	IDIO sve = IDIO_LIST3 (IDIO_SYMBOL ("symbol-value"),
 			       IDIO_LIST2 (idio_S_quote, e),
 			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
@@ -4564,7 +4564,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 			 * (function bindings "docstr" body ...)
 			 */
 			return idio_meaning_abstraction (src,
-							 idio_gensym (IDIO_STATIC_STR_LEN ("anon")),
+							 IDIO_GENSYM ("anon"),
 							 IDIO_PAIR_H (et),
 							 etth,
 							 ettt,
@@ -4580,7 +4580,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 			 * string.
 			 */
 			return idio_meaning_abstraction (src,
-							 idio_gensym (IDIO_STATIC_STR_LEN ("anon")),
+							 IDIO_GENSYM ("anon"),
 							 IDIO_PAIR_H (et),
 							 idio_S_nil,
 							 ett,
@@ -5802,7 +5802,7 @@ void idio_init_evaluate ()
 {
     idio_module_table_register (idio_evaluate_add_primitives, NULL, NULL);
 
-    idio_evaluate_evaluate_sym = IDIO_SYMBOLS_C_INTERN ("evaluate");
+    idio_evaluate_evaluate_sym = IDIO_SYMBOL ("evaluate");
     idio_evaluate_module = idio_module (idio_evaluate_evaluate_sym);
 
 #define IDIO_MEANING_STRING(c,s) idio_meaning_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_meaning_ ## c ## _string);
@@ -5829,20 +5829,20 @@ void idio_init_evaluate ()
      *
      * Perhaps calling it a compilation unit context might be better.
      */
-    IDIO sym = IDIO_SYMBOLS_C_INTERN ("%eenv");
+    IDIO sym = IDIO_SYMBOL ("%eenv");
     idio_evaluate_eenv_type = idio_struct_type (sym,
 						idio_S_nil,
 						idio_listv (IDIO_EENV_ST_SIZE,
-							    IDIO_SYMBOLS_C_INTERN ("aot?"),
-							    IDIO_SYMBOLS_C_INTERN ("symbols"),
-							    IDIO_SYMBOLS_C_INTERN ("values"),
-							    IDIO_SYMBOLS_C_INTERN ("constants"),
-							    IDIO_SYMBOLS_C_INTERN ("constants-hash"),
-							    IDIO_SYMBOLS_C_INTERN ("module"),
-							    IDIO_SYMBOLS_C_INTERN ("escapes"),
-							    IDIO_SYMBOLS_C_INTERN ("src-exprs"),
-							    IDIO_SYMBOLS_C_INTERN ("src-props"),
-							    IDIO_SYMBOLS_C_INTERN ("byte-code")));
+							    IDIO_SYMBOL ("aot?"),
+							    IDIO_SYMBOL ("symbols"),
+							    IDIO_SYMBOL ("values"),
+							    IDIO_SYMBOL ("constants"),
+							    IDIO_SYMBOL ("constants-hash"),
+							    IDIO_SYMBOL ("module"),
+							    IDIO_SYMBOL ("escapes"),
+							    IDIO_SYMBOL ("src-exprs"),
+							    IDIO_SYMBOL ("src-props"),
+							    IDIO_SYMBOL ("byte-code")));
     idio_module_set_symbol_value (sym, idio_evaluate_eenv_type, idio_evaluate_module);
 }
 

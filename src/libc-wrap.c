@@ -551,10 +551,10 @@ IDIO idio_libc_proc_subst_named_pipe (int into)
      * now I need it again here...  Poor FreeBSD, we'll need to go the
      * long way round.
      */
-    IDIO mtd_cmd = IDIO_LIST2 (idio_module_symbol_value (IDIO_SYMBOLS_C_INTERN ("make-tmp-dir"),
+    IDIO mtd_cmd = IDIO_LIST2 (idio_module_symbol_value (IDIO_SYMBOL ("make-tmp-dir"),
 							idio_libc_module,
 							 idio_S_nil),
-			       idio_string_C_len (IDIO_STATIC_STR_LEN ("idio-np-")));
+			       IDIO_STRING ("idio-np-"));
 
     IDIO td = idio_vm_invoke_C (mtd_cmd);
 
@@ -681,7 +681,7 @@ This exists to avoid :ref:`close <libc/close>` reacting to	\n\
 	/*
 	 * Test Case: ??
 	 */
-	idio_error_system_errno ("close-if-open/fcntl", IDIO_LIST2 (fd, IDIO_SYMBOLS_C_INTERN ("F_GETFD")), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("close-if-open/fcntl", IDIO_LIST2 (fd, IDIO_SYMBOL ("F_GETFD")), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -3532,118 +3532,118 @@ void idio_init_libc_wrap ()
 {
     idio_module_table_register (idio_libc_wrap_add_primitives, idio_final_libc_wrap, NULL);
 
-    idio_libc_module = idio_module (IDIO_SYMBOLS_C_INTERN ("libc"));
+    idio_libc_module = idio_module (IDIO_SYMBOL ("libc"));
 
     /*
      * XXX *after* creating the module!
      */
     idio_init_libc_api ();
 
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("0pid_t"), idio_libc_pid_t (0), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("0gid_t"), idio_libc_gid_t (0), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("0pid_t"), idio_libc_pid_t (0), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("0gid_t"), idio_libc_gid_t (0), idio_libc_module);
 
     /* fcntl.h */
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("FD_CLOEXEC"), idio_C_int (FD_CLOEXEC), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("F_DUPFD"), idio_C_int (F_DUPFD), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("FD_CLOEXEC"), idio_C_int (FD_CLOEXEC), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("F_DUPFD"), idio_C_int (F_DUPFD), idio_libc_module);
 #if defined (F_DUPFD_CLOEXEC)
-    IDIO sym = IDIO_SYMBOLS_C_INTERN ("F_DUPFD_CLOEXEC");
+    IDIO sym = IDIO_SYMBOL ("F_DUPFD_CLOEXEC");
     idio_add_module_feature (idio_libc_module, sym);
     idio_module_export_symbol_value (sym, idio_C_int (F_DUPFD_CLOEXEC), idio_libc_module);
 #endif
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("F_GETFD"), idio_C_int (F_GETFD), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("F_SETFD"), idio_C_int (F_SETFD), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("F_GETFL"), idio_C_int (F_GETFL), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("F_SETFL"), idio_C_int (F_SETFL), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("F_GETFD"), idio_C_int (F_GETFD), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("F_SETFD"), idio_C_int (F_SETFD), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("F_GETFL"), idio_C_int (F_GETFL), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("F_SETFL"), idio_C_int (F_SETFL), idio_libc_module);
 
     /* limits.h */
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("CHAR_MIN"), idio_C_char (CHAR_MIN), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("CHAR_MAX"), idio_C_char (CHAR_MAX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("SCHAR_MIN"), idio_C_schar (SCHAR_MIN), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("SCHAR_MAX"), idio_C_schar (SCHAR_MAX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("UCHAR_MAX"), idio_C_uchar (UCHAR_MAX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("SHRT_MIN"), idio_C_short (SHRT_MIN), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("SHRT_MAX"), idio_C_short (SHRT_MAX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("USHRT_MAX"), idio_C_ushort (USHRT_MAX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("INT_MIN"), idio_C_int (INT_MIN), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("INT_MAX"), idio_C_int (INT_MAX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("UINT_MAX"), idio_C_uint (UINT_MAX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("LONG_MIN"), idio_C_long (LONG_MIN), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("LONG_MAX"), idio_C_long (LONG_MAX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("ULONG_MAX"), idio_C_ulong (ULONG_MAX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("LLONG_MIN"), idio_C_longlong (LLONG_MIN), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("LLONG_MAX"), idio_C_longlong (LLONG_MAX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("ULLONG_MAX"), idio_C_ulonglong (ULLONG_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("CHAR_MIN"), idio_C_char (CHAR_MIN), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("CHAR_MAX"), idio_C_char (CHAR_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("SCHAR_MIN"), idio_C_schar (SCHAR_MIN), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("SCHAR_MAX"), idio_C_schar (SCHAR_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("UCHAR_MAX"), idio_C_uchar (UCHAR_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("SHRT_MIN"), idio_C_short (SHRT_MIN), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("SHRT_MAX"), idio_C_short (SHRT_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("USHRT_MAX"), idio_C_ushort (USHRT_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("INT_MIN"), idio_C_int (INT_MIN), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("INT_MAX"), idio_C_int (INT_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("UINT_MAX"), idio_C_uint (UINT_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("LONG_MIN"), idio_C_long (LONG_MIN), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("LONG_MAX"), idio_C_long (LONG_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("ULONG_MAX"), idio_C_ulong (ULONG_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("LLONG_MIN"), idio_C_longlong (LLONG_MIN), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("LLONG_MAX"), idio_C_longlong (LLONG_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("ULLONG_MAX"), idio_C_ulonglong (ULLONG_MAX), idio_libc_module);
 
 
     /* signal.h */
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("SIG_DFL"), idio_C_pointer (SIG_DFL), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("SIG_IGN"), idio_C_pointer (SIG_IGN), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("SIG_DFL"), idio_C_pointer (SIG_DFL), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("SIG_IGN"), idio_C_pointer (SIG_IGN), idio_libc_module);
 
     /* stdio.h */
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("BUFSIZ"), idio_libc_size_t (BUFSIZ), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("EOF"), idio_C_int (EOF), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("NULL"), idio_C_pointer (NULL), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("BUFSIZ"), idio_libc_size_t (BUFSIZ), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("EOF"), idio_C_int (EOF), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("NULL"), idio_C_pointer (NULL), idio_libc_module);
 
     /* stdint.h */
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("INTPTR_MIN"), idio_libc_intptr_t (INTPTR_MIN), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("INTPTR_MAX"), idio_libc_intptr_t (INTPTR_MAX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("INTMAX_MIN"), idio_libc_intmax_t (INTMAX_MIN), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("INTMAX_MAX"), idio_libc_intmax_t (INTMAX_MAX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("UINTMAX_MAX"), idio_libc_uintmax_t (UINTMAX_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("INTPTR_MIN"), idio_libc_intptr_t (INTPTR_MIN), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("INTPTR_MAX"), idio_libc_intptr_t (INTPTR_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("INTMAX_MIN"), idio_libc_intmax_t (INTMAX_MIN), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("INTMAX_MAX"), idio_libc_intmax_t (INTMAX_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("UINTMAX_MAX"), idio_libc_uintmax_t (UINTMAX_MAX), idio_libc_module);
 
     /* sys/resource.h */
     /*
      * NB RLIM_SAVED_* not defined in FreeBSD (10)
      */
 #ifdef RLIM_SAVED_MAX
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIM_SAVED_MAX"), idio_libc_rlim_t (RLIM_SAVED_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RLIM_SAVED_MAX"), idio_libc_rlim_t (RLIM_SAVED_MAX), idio_libc_module);
 #endif
 #ifdef RLIM_SAVED_CUR
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIM_SAVED_CUR"), idio_libc_rlim_t (RLIM_SAVED_CUR), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RLIM_SAVED_CUR"), idio_libc_rlim_t (RLIM_SAVED_CUR), idio_libc_module);
 #endif
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RLIM_INFINITY"), idio_libc_rlim_t (RLIM_INFINITY), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RLIM_INFINITY"), idio_libc_rlim_t (RLIM_INFINITY), idio_libc_module);
 
     /* sys/wait.h */
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("WAIT_ANY"), idio_libc_pid_t (WAIT_ANY), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("WNOHANG"), idio_C_int (WNOHANG), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("WUNTRACED"), idio_C_int (WUNTRACED), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("WAIT_ANY"), idio_libc_pid_t (WAIT_ANY), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("WNOHANG"), idio_C_int (WNOHANG), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("WUNTRACED"), idio_C_int (WUNTRACED), idio_libc_module);
 
     /* termios.h */
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("TCSADRAIN"), idio_C_int (TCSADRAIN), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("TCSAFLUSH"), idio_C_int (TCSAFLUSH), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("TCSADRAIN"), idio_C_int (TCSADRAIN), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("TCSAFLUSH"), idio_C_int (TCSAFLUSH), idio_libc_module);
 
     /* unistd.h */
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("PATH_MAX"), idio_C_int (PATH_MAX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("STDIN_FILENO"), idio_C_int (STDIN_FILENO), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("STDOUT_FILENO"), idio_C_int (STDOUT_FILENO), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("STDERR_FILENO"), idio_C_int (STDERR_FILENO), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("R_OK"), idio_C_int (R_OK), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("W_OK"), idio_C_int (W_OK), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("X_OK"), idio_C_int (X_OK), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("F_OK"), idio_C_int (F_OK), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("PATH_MAX"), idio_C_int (PATH_MAX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("STDIN_FILENO"), idio_C_int (STDIN_FILENO), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("STDOUT_FILENO"), idio_C_int (STDOUT_FILENO), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("STDERR_FILENO"), idio_C_int (STDERR_FILENO), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("R_OK"), idio_C_int (R_OK), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("W_OK"), idio_C_int (W_OK), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("X_OK"), idio_C_int (X_OK), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("F_OK"), idio_C_int (F_OK), idio_libc_module);
 
     IDIO geti;
     IDIO seti;
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, libc_errno_get);
-    idio_module_export_computed_symbol (IDIO_SYMBOLS_C_INTERN ("errno"),
+    idio_module_export_computed_symbol (IDIO_SYMBOL ("errno"),
 					idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
 					idio_S_nil,
 					idio_libc_module);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, libc_STDIN_get);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("STDIN"),
+    idio_module_add_computed_symbol (IDIO_SYMBOL ("STDIN"),
 				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
 				     idio_S_nil,
 				     idio_libc_module);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, libc_STDOUT_get);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("STDOUT"),
+    idio_module_add_computed_symbol (IDIO_SYMBOL ("STDOUT"),
 				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
 				     idio_S_nil,
 				     idio_libc_module);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, libc_STDERR_get);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("STDERR"),
+    idio_module_add_computed_symbol (IDIO_SYMBOL ("STDERR"),
 				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
 				     idio_S_nil,
 				     idio_libc_module);
@@ -3684,7 +3684,7 @@ void idio_init_libc_wrap ()
     }
 
     if (getenv ("HOSTNAME") == NULL) {
-	idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("HOSTNAME"), idio_string_C (up->nodename), idio_Idio_module);
+	idio_module_set_symbol_value (IDIO_SYMBOL ("HOSTNAME"), idio_string_C (up->nodename), idio_Idio_module);
     }
 
     idio_add_feature_ps (IDIO_STATIC_STR_LEN ("uname/sysname/"), up->sysname, sizeof (up->sysname) - 1);
@@ -3696,28 +3696,28 @@ void idio_init_libc_wrap ()
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, UID_get);
     seti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, UID_set);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("UID"),
+    idio_module_add_computed_symbol (IDIO_SYMBOL ("UID"),
 				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
 				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (seti)),
 				     idio_Idio_module);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, EUID_get);
     seti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, EUID_set);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("EUID"),
+    idio_module_add_computed_symbol (IDIO_SYMBOL ("EUID"),
 				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
 				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (seti)),
 				     idio_Idio_module);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, GID_get);
     seti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, GID_set);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("GID"),
+    idio_module_add_computed_symbol (IDIO_SYMBOL ("GID"),
 				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
 				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (seti)),
 				     idio_Idio_module);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, EGID_get);
     seti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, EGID_set);
-    idio_module_add_computed_symbol (IDIO_SYMBOLS_C_INTERN ("EGID"),
+    idio_module_add_computed_symbol (IDIO_SYMBOL ("EGID"),
 				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
 				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (seti)),
 				     idio_Idio_module);
@@ -3770,11 +3770,11 @@ void idio_init_libc_wrap ()
     }
     idio_free (grp_list);
 
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("GROUPS"), GROUPS, idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("GROUPS"), GROUPS, idio_Idio_module);
 
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_PID"), idio_libc_pid_t (getpid ()), idio_Idio_module);
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("PID"), idio_libc_pid_t (getpid ()), idio_Idio_module);
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("PPID"), idio_libc_pid_t (getppid ()), idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("IDIO_PID"), idio_libc_pid_t (getpid ()), idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("PID"), idio_libc_pid_t (getpid ()), idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("PPID"), idio_libc_pid_t (getppid ()), idio_Idio_module);
 
     /*
      * POSIX times(3) uses clock_t which is measured in terms of the
@@ -3792,10 +3792,10 @@ void idio_init_libc_wrap ()
 	/* notreached */
 	return;
     }
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("CLK_TCK"), idio_C_long (idio_SC_CLK_TCK), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("CLK_TCK"), idio_C_long (idio_SC_CLK_TCK), idio_libc_module);
 
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RUSAGE_SELF"), idio_C_int (RUSAGE_SELF), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("RUSAGE_CHILDREN"), idio_C_int (RUSAGE_CHILDREN), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RUSAGE_SELF"), idio_C_int (RUSAGE_SELF), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("RUSAGE_CHILDREN"), idio_C_int (RUSAGE_CHILDREN), idio_libc_module);
     /*
      * It's not clear how portable the RUSAGE_THREAD parameter is.  In
      * Linux it requires the _GNU_SOURCE feature test macro.  In
@@ -3804,15 +3804,15 @@ void idio_init_libc_wrap ()
      */
 
 #if defined (__sun) && defined (__SVR4)
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("I_PUSH"), idio_C_int (I_PUSH), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("I_PUSH"), idio_C_int (I_PUSH), idio_libc_module);
 #endif
 
 #ifdef IDIO_DEV_FD
-    idio_add_feature (IDIO_SYMBOLS_C_INTERN ("/dev/fd"));
+    idio_add_feature (IDIO_SYMBOL ("/dev/fd"));
 #endif
 
 #ifdef IDIO_CAN_POLL_DEVICE
-    idio_add_feature (IDIO_SYMBOLS_C_INTERN ("IDIO_CAN_POLL_DEVICE"));
+    idio_add_feature (IDIO_SYMBOL ("IDIO_CAN_POLL_DEVICE"));
 #endif
 }
 

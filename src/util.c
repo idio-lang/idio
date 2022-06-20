@@ -3173,18 +3173,18 @@ void idio_init_util ()
 {
     idio_module_table_register (idio_util_add_primitives, idio_final_util, NULL);
 
-    idio_print_conversion_format_sym = IDIO_SYMBOLS_C_INTERN ("idio-print-conversion-format");
-    idio_print_conversion_precision_sym = IDIO_SYMBOLS_C_INTERN ("idio-print-conversion-precision");
+    idio_print_conversion_format_sym = IDIO_SYMBOL ("idio-print-conversion-format");
+    idio_print_conversion_precision_sym = IDIO_SYMBOL ("idio-print-conversion-precision");
 
-    idio_features = IDIO_SYMBOLS_C_INTERN ("*idio-features*");
+    idio_features = IDIO_SYMBOL ("*idio-features*");
     idio_module_set_symbol_value (idio_features, idio_S_nil, idio_Idio_module);
 
 #ifdef IDIO_DEBUG
-    idio_add_feature (IDIO_SYMBOLS_C_INTERN ("IDIO_DEBUG"));
+    idio_add_feature (IDIO_SYMBOL ("IDIO_DEBUG"));
 #endif
 
 #ifdef __SANITIZE_ADDRESS__
-    idio_add_feature (IDIO_SYMBOLS_C_INTERN ("__SANITIZE_ADDRESS__"));
+    idio_add_feature (IDIO_SYMBOL ("__SANITIZE_ADDRESS__"));
 #endif
 
 #ifdef IDIO_EQUAL_DEBUG

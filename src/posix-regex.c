@@ -460,17 +460,17 @@ void idio_init_posix_regex ()
      * XXX REG_BASIC is not a thing in regex.h however we could do
      * with a "not-REG_EXTENDED" flag
      */
-    idio_posix_regex_REG_BASIC_sym    = IDIO_SYMBOLS_C_INTERN ("REG_BASIC");
-    idio_posix_regex_REG_EXTENDED_sym = IDIO_SYMBOLS_C_INTERN ("REG_EXTENDED");
-    idio_posix_regex_REG_ICASE_sym    = IDIO_SYMBOLS_C_INTERN ("REG_ICASE");
-    idio_posix_regex_REG_NOSUB_sym    = IDIO_SYMBOLS_C_INTERN ("REG_NOSUB");
-    idio_posix_regex_REG_NEWLINE_sym  = IDIO_SYMBOLS_C_INTERN ("REG_NEWLINE");
-    idio_posix_regex_REG_NOTBOL_sym   = IDIO_SYMBOLS_C_INTERN ("REG_NOTBOL");
-    idio_posix_regex_REG_NOTEOL_sym   = IDIO_SYMBOLS_C_INTERN ("REG_NOTEOL");
+    idio_posix_regex_REG_BASIC_sym    = IDIO_SYMBOL ("REG_BASIC");
+    idio_posix_regex_REG_EXTENDED_sym = IDIO_SYMBOL ("REG_EXTENDED");
+    idio_posix_regex_REG_ICASE_sym    = IDIO_SYMBOL ("REG_ICASE");
+    idio_posix_regex_REG_NOSUB_sym    = IDIO_SYMBOL ("REG_NOSUB");
+    idio_posix_regex_REG_NEWLINE_sym  = IDIO_SYMBOL ("REG_NEWLINE");
+    idio_posix_regex_REG_NOTBOL_sym   = IDIO_SYMBOL ("REG_NOTBOL");
+    idio_posix_regex_REG_NOTEOL_sym   = IDIO_SYMBOL ("REG_NOTEOL");
 #ifdef IDIO_HAVE_REG_STARTEND
-    idio_posix_regex_REG_STARTEND_sym = IDIO_SYMBOLS_C_INTERN ("REG_STARTEND");
+    idio_posix_regex_REG_STARTEND_sym = IDIO_SYMBOL ("REG_STARTEND");
     idio_add_module_feature (idio_libc_module, idio_posix_regex_REG_STARTEND_sym);
 #endif
-    idio_posix_regex_REG_VERBOSE_sym  = IDIO_SYMBOLS_C_INTERN ("REG_VERBOSE");
+    idio_posix_regex_REG_VERBOSE_sym  = IDIO_SYMBOL ("REG_VERBOSE");
 }
 

@@ -943,9 +943,9 @@ void idio_env_init_idiolib (char const *argv0, size_t const argv0_len)
     /*
      * While we are here, set IDIO_CMD and IDIO_EXE.
      */
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD"), idio_pathname_C_len (argv0, argv0_len), idio_Idio_module);
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_CMD_PATH"), idio_pathname_C_len (a0rp, a0rp_len), idio_Idio_module);
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("IDIO_EXE"), idio_pathname_C_len (erp, erp_len), idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("IDIO_CMD"), idio_pathname_C_len (argv0, argv0_len), idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("IDIO_CMD_PATH"), idio_pathname_C_len (a0rp, a0rp_len), idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("IDIO_EXE"), idio_pathname_C_len (erp, erp_len), idio_Idio_module);
 
     if (erp_len > 0) {
 	idio_env_extend_IDIOLIB (erp, erp_len, 1);
@@ -989,9 +989,9 @@ void idio_init_env ()
 {
     idio_module_table_register (idio_env_add_primitives, idio_final_env, NULL);
 
-    idio_env_IDIOLIB_sym = IDIO_SYMBOLS_C_INTERN ("IDIOLIB");
-    idio_env_PATH_sym = IDIO_SYMBOLS_C_INTERN ("PATH");
-    idio_env_PWD_sym = IDIO_SYMBOLS_C_INTERN ("PWD");
+    idio_env_IDIOLIB_sym = IDIO_SYMBOL ("IDIOLIB");
+    idio_env_PATH_sym = IDIO_SYMBOL ("PATH");
+    idio_env_PWD_sym = IDIO_SYMBOL ("PWD");
 
     /*
      * /usr/lib/{pkg} was pretty universal -- now, not so much.

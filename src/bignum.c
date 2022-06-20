@@ -4438,7 +4438,7 @@ void idio_init_bignum ()
     IDIO_BSA sig_a = idio_bsa (1);
     idio_bsa_set (sig_a, 1, 0);
     IDIO epsilon = idio_bignum_real (IDIO_BIGNUM_FLAG_REAL, - IDIO_BIGNUM_SIG_MAX_DIGITS, sig_a);
-    idio_module_set_symbol_value (IDIO_SYMBOLS_C_INTERN ("*epsilon*"), epsilon, idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("*epsilon*"), epsilon, idio_Idio_module);
 
     idio_vtable_t *b_vt = idio_vtable (IDIO_TYPE_BIGNUM);
 

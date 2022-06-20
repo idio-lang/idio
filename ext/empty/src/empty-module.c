@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021, 2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -91,11 +91,11 @@ void idio_final_empty ()
 
 void idio_init_empty (void *handle)
 {
-    idio_empty_module = idio_module (IDIO_SYMBOLS_C_INTERN ("empty"));
+    idio_empty_module = idio_module (IDIO_SYMBOL ("empty"));
 
     idio_module_table_register (idio_empty_add_primitives, idio_final_empty, handle);
 
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("version"),
+    idio_module_export_symbol_value (IDIO_SYMBOL ("version"),
 				     idio_string_C_len (EMPTY_SYSTEM_VERSION, sizeof (EMPTY_SYSTEM_VERSION) - 1),
 				     idio_empty_module);
 }

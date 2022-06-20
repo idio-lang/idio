@@ -136,22 +136,22 @@ void idio_final_json5 ()
 
 void idio_init_json5 (void *handle)
 {
-    idio_json5_module = idio_module (IDIO_SYMBOLS_C_INTERN ("json5"));
+    idio_json5_module = idio_module (IDIO_SYMBOL ("json5"));
 
     idio_module_table_register (idio_json5_add_primitives, idio_final_json5, handle);
 
-    idio_json5_literal_value_Infinity_sym = IDIO_SYMBOLS_C_INTERN ("Infinity");
-    idio_json5_literal_value_pos_Infinity_sym = IDIO_SYMBOLS_C_INTERN ("+Infinity");
-    idio_json5_literal_value_neg_Infinity_sym = IDIO_SYMBOLS_C_INTERN ("-Infinity");
-    idio_json5_literal_value_NaN_sym = IDIO_SYMBOLS_C_INTERN ("NaN");
-    idio_json5_literal_value_pos_NaN_sym = IDIO_SYMBOLS_C_INTERN ("+NaN");
-    idio_json5_literal_value_neg_NaN_sym = IDIO_SYMBOLS_C_INTERN ("-NaN");
+    idio_json5_literal_value_Infinity_sym = IDIO_SYMBOL ("Infinity");
+    idio_json5_literal_value_pos_Infinity_sym = IDIO_SYMBOL ("+Infinity");
+    idio_json5_literal_value_neg_Infinity_sym = IDIO_SYMBOL ("-Infinity");
+    idio_json5_literal_value_NaN_sym = IDIO_SYMBOL ("NaN");
+    idio_json5_literal_value_pos_NaN_sym = IDIO_SYMBOL ("+NaN");
+    idio_json5_literal_value_neg_NaN_sym = IDIO_SYMBOL ("-NaN");
 
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_json5_error_type, "^rt-json5-error", idio_condition_runtime_error_type);
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_json5_value_error_type, "^rt-json5-value-error", idio_condition_rt_json5_error_type, "value");
 
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("version"),
+    idio_module_export_symbol_value (IDIO_SYMBOL ("version"),
 				     idio_string_C_len (JSON5_SYSTEM_VERSION, sizeof (JSON5_SYSTEM_VERSION) - 1),
 				     idio_json5_module);
 

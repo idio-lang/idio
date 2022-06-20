@@ -4544,16 +4544,16 @@ void idio_init_read ()
 {
     idio_module_table_register (idio_read_add_primitives, idio_final_read, NULL);
 
-    idio_read_reader_sym = IDIO_SYMBOLS_C_INTERN ("reader");
+    idio_read_reader_sym = IDIO_SYMBOL ("reader");
     idio_read_module = idio_module (idio_read_reader_sym);
 
-    IDIO name = IDIO_SYMBOLS_C_INTERN ("%idio-lexical-object");
+    IDIO name = IDIO_SYMBOL ("%idio-lexical-object");
     idio_lexobj_type = idio_struct_type (name,
 					 idio_S_nil,
-					 IDIO_LIST4 (IDIO_SYMBOLS_C_INTERN ("name"),
-						     IDIO_SYMBOLS_C_INTERN ("line"),
-						     IDIO_SYMBOLS_C_INTERN ("pos"),
-						     IDIO_SYMBOLS_C_INTERN ("expr")));
+					 IDIO_LIST4 (IDIO_SYMBOL ("name"),
+						     IDIO_SYMBOL ("line"),
+						     IDIO_SYMBOL ("pos"),
+						     IDIO_SYMBOL ("expr")));
     idio_module_set_symbol_value (name, idio_lexobj_type, idio_Idio_module);
 
     /*
@@ -4563,7 +4563,7 @@ void idio_init_read ()
      */
     idio_src_properties = IDIO_HASH_EQP (32 * 1024);
     idio_gc_add_weak_object (idio_src_properties);
-    name = IDIO_SYMBOLS_C_INTERN ("%idio-src-properties");
+    name = IDIO_SYMBOL ("%idio-src-properties");
     idio_module_set_symbol_value (name, idio_src_properties, idio_Idio_module);
 
     idio_read_bitset_buf_sh = idio_open_input_string_handle_C ("", 0);

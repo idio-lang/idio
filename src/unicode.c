@@ -848,7 +848,7 @@ void idio_init_unicode ()
 {
     idio_module_table_register (idio_unicode_add_primitives, NULL, NULL);
 
-    idio_unicode_module = idio_module (IDIO_SYMBOLS_C_INTERN ("unicode"));
+    idio_unicode_module = idio_module (IDIO_SYMBOL ("unicode"));
 
     idio_unicode_hash = idio_hash (1<<7, idio_unicode_C_eqp, idio_unicode_C_hash, idio_S_nil, idio_S_nil);
     idio_gc_protect_auto (idio_unicode_hash);

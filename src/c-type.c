@@ -3121,10 +3121,10 @@ void idio_init_c_type ()
 {
     idio_module_table_register (idio_c_type_add_primitives, NULL, NULL);
 
-    idio_C_module = idio_module (IDIO_SYMBOLS_C_INTERN ("C"));
+    idio_C_module = idio_module (IDIO_SYMBOL ("C"));
 
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("0u"), idio_C_uint (0U), idio_C_module);
-    idio_module_export_symbol_value (IDIO_SYMBOLS_C_INTERN ("0i"), idio_C_int (0), idio_C_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("0u"), idio_C_uint (0U), idio_C_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("0i"), idio_C_int (0), idio_C_module);
 
     idio_vtable_t *Cchar_vt        = idio_vtable (IDIO_TYPE_C_CHAR);
     idio_vtable_t *Cschar_vt       = idio_vtable (IDIO_TYPE_C_SCHAR);
