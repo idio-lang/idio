@@ -3919,7 +3919,7 @@ This is the `load` primitive.					\n\
 
     IDIO cm = IDIO_THREAD_MODULE (thr);
 
-    IDIO eenv = idio_evaluate_normal_eenv (cm);
+    IDIO eenv = idio_evaluate_normal_eenv (filename, cm);
 
     idio_gc_protect (eenv);
 

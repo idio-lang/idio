@@ -24,12 +24,12 @@ export (
 )
 import read expander operator codegen threading vm
 
-export-struct-accessors-only %eenv	aot? symbols values constants constants-hash module escapes src-exprs src-props byte-code
+export-struct-accessors-only %eenv	desc aot? symbols values constants constants-hash module escapes src-exprs src-props byte-code
 
 define (eenv-as-string eenv seen) {
   if (%eenv? eenv) {
     r := (open-output-string)
-    hprintf r "#<SI %%eenv "
+    hprintf r "#<SI %%eenv %s " (%eenv-desc eenv)
 
     aot := %eenv-aot? eenv
     hprintf r "aot?=%s " aot
@@ -179,13 +179,13 @@ define (meaning-constants-lookup-or-extend eenv name) {
   id := #f
 
   if (%eenv-aot? eenv) {
-    cs := %eenv-constants
+    cs := %eenv-constants eenv
 
     id = array-find-eqp cs name
     if (-1 eq id) {
-      id = array-size cs
-      array-push cs name
-      eprintf "mcloe %-20s %d\n" name id
+      id = array-length cs
+      array-push! cs name
+      eprintf "mcloe %-30s %d\n" name id
     }
   } {
     id = codegen-constants-lookup-or-extend eenv name
@@ -198,7 +198,7 @@ define (meaning-extend-values eenv) {
   vi := #f
 
   if (%eenv-aot? eenv) {
-    vs := %eenv-values
+    vs := %eenv-values eenv
 
     ;; NB Normally a vi of 0 indicates the symbol hasn't been defined
     ;; (yet) however these vi are placeholders.
@@ -207,7 +207,11 @@ define (meaning-extend-values eenv) {
       vi = ph vs
       vi = vi + 1
     }
-    set-%eenv-values! eenv (pair vi, vs)
+    set-%eenv-values! eenv (pair vi vs)
+
+    ;; In order that si, the index into the symbols table, correctly
+    ;; maps into this table we need to inject a dummy value
+    set-%eenv-symbols! eenv (pair (pair #f #f) (%eenv-symbols eenv))
   } {
     vi = (vm-extend-values)
   }
@@ -219,7 +223,7 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
   if (%eenv-aot? eenv) {
     st := %eenv-symbols eenv
 
-    sym-si := assq st name
+    sym-si := assq name st
     if (not sym-si) {
       ci := meaning-constants-lookup-or-extend eenv name
       vi := meaning-extend-values eenv
@@ -319,7 +323,7 @@ define (meaning-environ-extend src name val eenv) {
     st := %eenv-symbols eenv
 
     ci := meaning-constants-lookup-or-extend eenv name
-    vi := (vm-extend-values)
+    vi := meaning-extend-values eenv
 
     ;; I don't like these two statements.  They should be the concern
     ;; of the VM but there's no explicit instruction to the VM to
@@ -569,8 +573,8 @@ define (meaning-reference src name nametree flags eenv) {
    ((toplevel) {
      vi := si-vi si
      (if (vi gt 0)
-      (list I-VAL-REF vi) list I-SYM-REF
-      (eenv-symbol-index eenv si))
+      (list I-VAL-REF vi)
+      (list I-SYM-REF (eenv-symbol-index eenv si)))
    })
    ((dynamic) (list I-DYNAMIC-SYM-REF (eenv-symbol-index eenv si)))
    ((environ) (list I-ENVIRON-SYM-REF (eenv-symbol-index eenv si)))
@@ -1023,10 +1027,10 @@ define (meaning-define src name e nametree flags eenv) {
   scope :=  si-scope si
   ci := si-ci si
   vi := si-vi si
-  if (and (%eenv-aot? eenv)
+  if (and (not (%eenv-aot? eenv))
 	  (eq? 'toplevel scope)
 	  (0 eq vi)) {
-    vi = (vm-extend-values)
+    vi = meaning-extend-values eenv
     cm := %eenv-module eenv
 
     st := %eenv-symbols eenv
@@ -1042,37 +1046,65 @@ define (meaning-define src name e nametree flags eenv) {
 
 define (meaning-define-template src name e nametree flags eenv) {
 
+  if (pair? name) {
+    ;; (define-template (func arg) ...) =>
+    ;; (define-template func (function/name func (arg) ...))
+    e = list 'function/name (ph name) (pt name) e
+    name = ph name
+
+    meaning-copy-src-properties src e
+  }
+
+  ;; create an expander: (function/name {name-expander} (x e) (apply proc (pt x)))
+
+  ;; where proc is (function/name name (formal*) ...) from above,
+  ;; ie. e
+  pt-x := '(pt x)
+  meaning-copy-src-properties src pt-x
+
+  appl := list 'apply e pt-x
+  meaning-copy-src-properties src appl
+
+  docstr := sprintf "define-template: %s (x e)" name
+  expander := (list 'function/name
+		    (string->symbol (sprintf "%s-expander" name))
+		    '(x e)
+		    docstr
+		    appl)
+
+  meaning-copy-src-properties src expander
+
+  ;; In general (define-template a ...) means that "a" is associated
+  ;; with an expander and that expander takes the pt of the expression
+  ;; it is passed, "(a ...)" (ie. it skips over its own name).
+
+  ;; It happens that people (S9fES) say
+
+  ;; (define-template %b ...)
+  ;; (define-template b %b)
+
+  ;; (in particular where they are creating an enhanced version of b
+  ;; which may require using the existing b to define itself hence
+  ;; defining some other name, "%b", which can use "b" freely then
+  ;; redefine b to this new version)
+
+  ;; However, we can't just use the current value of "%b" in
+  ;; (define-template b %b) as this template-expander association
+  ;; means we are replacing the nominal definition of a template with
+  ;; an expander which takes two arguments and the body of which will
+  ;; take the pt of its first argument.  Left alone, expander "b" will
+  ;; take the pt then expander "%b" will take the pt....  "A Pair-Tail
+  ;; Too Far", one would say, in hindsight and thinking of the big
+  ;; budget movie potential.
+
+  ;; So catch the case where the value is already an expander and
+  ;; replace it with the (obvious?) assignment with some
+  ;; *expander-list* copying.
+
   if (and (symbol? e)
 	  (expander? e)) {
-    ;; In general (define-template a ...) means that "a" is associated
-    ;; with an expander and that expander takes the pt of the
-    ;; expression it is passed, "(a ...)" (ie. it skips over its own
-    ;; name).
+    install-expander/source! name (expander? e) expander
 
-    ;; It happens that people (S9fES) say
-
-    ;; (define-template %b ...)
-    ;; (define-template b %b)
-
-    ;; (in particular where they are creating an enhanced version of b
-    ;; which may require using the existing b to define itself hence
-    ;; defining some other name, "%b", which can use "b" freely then
-    ;; redefine b to this new version)
-
-    ;; However, we can't just use the current value of "%b" in
-    ;; (define-template b %b) as this template-expander association
-    ;; means we are replacing the nominal definition of a template
-    ;; with an expander which takes two arguments and the body of
-    ;; which will take the pt of its first argument.  Left alone,
-    ;; expander "b" will take the pt then expander "%b" will take the
-    ;; pt....  "A Pair-Tail Too Far", one would say, in hindsight and
-    ;; thinking of the big budget movie potential.
-
-    ;; So catch the case where the value is already an expander and
-    ;; replace it with the (obvious?) assignment with some
-    ;; *expander-list* copying.
-
-    copy-expander! name e
     meaning-assignment src name e nametree (define-scope 'toplevel flags) eenv
   } {
     ;; (define-template (name formal*) ...) =>
@@ -1086,20 +1118,6 @@ define (meaning-define-template src name e nametree flags eenv) {
 
       meaning-copy-src-properties src e
     }
-
-    ;; create an expander: (function/name {name-expander} (x e) (apply proc (pt x)))
-
-    ;; where proc is (function/name name (formal*) ...) from above,
-    ;; ie. e
-
-    docstr := sprintf "define-template: %s (x e)" name
-    expander := (list 'function/name
-		      (symbol->string (sprintf "%s-expander" name))
-		      '(x e)
-		      docstr
-		      (list 'apply e '(pt x)))
-
-    meaning-copy-src-properties src expander
 
     ;; XXX define-template bootstrap
 
@@ -1153,8 +1171,13 @@ define (meaning-define-template src name e nametree flags eenv) {
 
     st := %eenv-symbols eenv
 
-    sym-si := list name 'toplevel (length st) ci 0 ce docstr
-    set-%eenv-symbols! eenv (pair sym-si st)
+    sym-si := #f
+    if (%eenv-aot? eenv) {
+      sym-si = list name 'toplevel (length st) ci 0 ce docstr
+      set-%eenv-symbols! eenv (pair sym-si st)
+    } {
+      sym-si = list name 'toplevel ci ci 0 ce docstr
+    }
 
     set-symbol! name (pt sym-si) ce
 
@@ -2332,7 +2355,7 @@ define (meaning-escape-block src label be nametree flags eenv) {
   be = meaning-rewrite-body be-props be nametree
   meaning-copy-src-properties src be
 
-  escapes-eenv := idio-copy eenv
+  escapes-eenv := copy-value eenv 'shallow
   set-%eenv-escapes! escapes-eenv (pair label (%eenv-escapes eenv))
 
   bm := meaning-sequence be-props be nametree (clear-tailp flags) 'begin escapes-eenv
@@ -2372,22 +2395,24 @@ define (meaning-escape-label src label ve nametree flags eenv) {
 }
 
 ;; XXX is this the C code's "load e"?
-define (evaluate-include-file fh cs) {
-  c := Idio/read fh
+define (evaluate-include-file fh eenv) {
+  e := Idio/read fh
   if (not (eof? fh)) {
-    m := evaluate c
-    pc := codegen (current-thread) m cs
-    r := vm-run (current-thread) pc
-    evaluate-include-file fh cs
+    m := evaluate e eenv
+    pc := codegen m eenv
+    ;r := vm-run (current-thread) pc
+    evaluate-include-file fh eenv
   }
 }
 
 define (meaning-include src e nametree flags eenv) {
-  fh := open-input-file (find-lib e)
-  unwind-protect {
-    evaluate-include-file fh cs
-  } {
-    close-handle fh
+  if (%eenv-aot? eenv) (list I-NOP) {
+    fh := open-input-file (find-lib e)
+    unwind-protect {
+      evaluate-include-file fh eenv
+    } {
+      close-handle fh
+    }
   }
 }
 
@@ -2712,7 +2737,7 @@ define (meaning src e nametree flags eenv) {
 	 ;; Test Case: evaluation-errors/define-infix-op-nil.idio
 
 	 ;; (define-infix-operator)
-	 meaning-error-param src "no arguments" he
+	 meaning-error-param src "no arguments" e
        }
      })
 
@@ -2740,7 +2765,7 @@ define (meaning src e nametree flags eenv) {
 	 ;; Test Case: evaluation-errors/define-postfix-op-nil.idio
 
 	 ;; (define-postfix-operator)
-	 meaning-error-param src "no arguments" he
+	 meaning-error-param src "no arguments" e
        }
      })
 
@@ -3160,10 +3185,10 @@ environment `eenv` and return intermediate code for the code generator
   if (pair? eenv) {
     ee = ph eenv
   } {
-    ee = %evaluation-environment #t
+    ee = %evaluation-environment "evaluate" #t
   }
 
-  printf "evaluate src %s\n" src
+  ;;printf "evaluate src %s\n" src
 
   m := meaning src src #n no-flags ee
 

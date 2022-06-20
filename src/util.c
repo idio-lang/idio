@@ -2218,7 +2218,8 @@ IDIO idio_copy (IDIO o, int depth)
 		if (idio_isa_instance (o)) {
 		    return o;
 		} else if (idio_struct_instance_isa (o, idio_path_type) ||
-		    idio_struct_instance_isa (o, idio_lexobj_type)) {
+			   idio_struct_instance_isa (o, idio_lexobj_type) ||
+			   idio_struct_instance_isa (o, idio_evaluate_eenv_type)) {
 		    return idio_struct_instance_copy (o);
 		} else {
 		    /*

@@ -832,6 +832,7 @@ idio_xenv_t *idio_xenv ()
      * special case index 0, the standard VM tables
      */
     if (0 == idio_xenvs_size) {
+	IDIO_XENV_DESC (xenv)           = IDIO_STRING ("default execution environment");
 	IDIO_XENV_SYMBOLS (xenv)        = NULL;
 	IDIO_XENV_CONSTANTS (xenv)      = idio_vm_constants;
 	IDIO_XENV_CONSTANTS_HASH (xenv) = idio_vm_constants_hash;
@@ -839,6 +840,8 @@ idio_xenv_t *idio_xenv ()
 	IDIO_XENV_SRC_PROPS (xenv)      = NULL;
 	IDIO_XENV_VALUES (xenv)         = idio_vm_values;
 	IDIO_XENV_BYTE_CODE (xenv)      = idio_all_code;
+
+	idio_gc_protect_auto (IDIO_XENV_DESC (xenv));
     }
 
     idio_xenvs = idio_realloc (idio_xenvs, (idio_xenvs_size + 1) * sizeof (idio_xenv_t *));
@@ -6540,15 +6543,22 @@ void idio_vm_dump_symbols ()
 	    return;
 	}
 
+	idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
+
 	IDIO st = IDIO_XENV_SYMBOLS (idio_xenvs[xi]);
+	IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
 
 	idio_as_t al = idio_array_size (st);
-	fprintf (fp, "vm-symbols table #%2zu: %zd references into the constants table\n", xi, al);
+	fprintf (fp, "vm-symbols for xenv[%zu]: %zd references into the constants table\n", xi, al);
 	idio_as_t i;
 	for (i = 0 ; i < al; i++) {
-	    IDIO s = idio_array_ref_index (st, i);
+	    IDIO ci = idio_array_ref_index (st, i);
 	    fprintf (fp, "%6zd: ", i);
-	    idio_debug_FILE (fp, "%s\n", s);
+	    idio_debug_FILE (fp, "%5s ", ci);
+	    if (idio_isa_integer (ci)) {
+		idio_debug_FILE (fp, "%-30s", idio_array_ref_index (cs, IDIO_FIXNUM_VAL (ci)));
+	    }
+	    fprintf (fp, "\n");
 	}
 	fprintf (fp, "\n");
 
@@ -6684,11 +6694,13 @@ void idio_vm_dump_constants ()
 	    return;
 	}
 
+	idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
+
 	IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
 
 	idio_as_t al = idio_array_size (cs);
 
-	fprintf (fp, "constants table #%2zu: %zu constants\n", xi, al);
+	fprintf (fp, "constants for xenv[%zu]: %zu constants\n", xi, al);
 
 	idio_as_t i;
 	for (i = 0 ; i < al; i++) {
@@ -6764,10 +6776,12 @@ void idio_vm_dump_src_exprs ()
 	    return;
 	}
 
+	idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
+
 	IDIO ses = IDIO_XENV_SRC_EXPRS (idio_xenvs[xi]);
 
 	idio_as_t al = idio_array_size (ses);
-	fprintf (fp, "src-exprs table #%2zu: %zd source expressions\n", xi, al);
+	fprintf (fp, "src-exprs for xenv[%zu]: %zd source expressions\n", xi, al);
 	idio_as_t i;
 	for (i = 0 ; i < al; i++) {
 	    IDIO src = idio_array_ref_index (ses, i);
@@ -6795,18 +6809,33 @@ void idio_vm_dump_src_props ()
 	    return;
 	}
 
+	idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
+
 	if (xi) {
+	    IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
 	    IDIO sps = IDIO_XENV_SRC_PROPS (idio_xenvs[xi]);
 
+	    IDIO fnh = IDIO_HASH_EQP (8);
+
 	    idio_as_t al = idio_array_size (sps);
-	    fprintf (fp, "src-props table #%2zu: %zd source properties (ci line) where ci is a constants index\n", xi, al);
+	    fprintf (fp, "src-properties for xenv[%zu]: %zd source properties (ci line) where ci is a constants index\n", xi, al);
 	    idio_as_t i;
 	    for (i = 0 ; i < al; i++) {
 		IDIO p = idio_array_ref_index (sps, i);
 		fprintf (fp, "%6zd: ", i);
 
-		idio_debug_FILE (fp, "%s", IDIO_PAIR_H (p));
-		idio_debug_FILE (fp, ":line %s", IDIO_PAIR_HT (p));
+		if (idio_isa_pair (p)) {
+		    IDIO fi = IDIO_PAIR_H (p);
+		    IDIO fn = idio_hash_reference (fnh, fi, IDIO_LIST1 (idio_S_false));
+		    if (idio_S_false == fn) {
+			fn = idio_array_ref_index (cs, IDIO_FIXNUM_VAL (fi));
+			idio_hash_set (fnh, fi, fn);
+		    }
+		    idio_debug_FILE (fp, "%s", fn);
+		    idio_debug_FILE (fp, ":line %4s", IDIO_PAIR_HT (p));
+		} else {
+		    fprintf (fp, " %-25s", "<no lex tuple>");
+		}
 		fprintf (fp, "\n");
 	    }
 	} else {
@@ -7002,10 +7031,12 @@ void idio_vm_dump_values ()
 	    return;
 	}
 
+	idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
+
 	IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
 
 	idio_as_t al = idio_array_size (vs);
-	fprintf (fp, "vm-values table #%2zu: %zd\n", xi, al);
+	fprintf (fp, "values for xenv[%zu]: %zd values\n", xi, al);
 	idio_as_t i;
 	for (i = 0 ; i < al; i++) {
 	    IDIO v = idio_array_ref_index (vs, i);
@@ -7452,49 +7483,73 @@ void idio_vm_add_xenv_from_eenv (IDIO thr, IDIO eenv)
     idio_xenv_t *xe = idio_xenv ();
 
     /*
-     * XXX We need to idio_gc_protect() these elements as they are not
-     * in a GC-visible structure yet these tables are freed after the
-     * GC has mechanically free every allocated item including these
-     * things we are protecting.
+     * XXX We need to idio_gc_protect_auto() these elements as they
+     * are not in a GC-visible structure.
+     *
+     * Note, though, these tables are freed (see idio_final()) *after*
+     * the GC has mechanically free every allocated value including
+     * these things we are protecting.
      */
+    IDIO_XENV_DESC (xe)		  = idio_copy (idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_DESC),
+					       IDIO_COPY_SHALLOW);
+    idio_gc_protect_auto (IDIO_XENV_DESC (xe));
 
+    size_t st_len = 0;
     IDIO st = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_SYMBOLS);
-    IDIO sym_si = IDIO_PAIR_H (st);
-    size_t st_len = IDIO_FIXNUM_VAL (IDIO_PAIR_HTTT (sym_si));
-    IDIO_XENV_SYMBOLS (xe) = idio_array (st_len);
+    if (idio_isa_pair (st)) {
+	IDIO sym_si = IDIO_PAIR_H (st);
+	IDIO si = IDIO_PAIR_T (sym_si);
+	if (idio_isa_pair (si)) {
+	    st_len = IDIO_FIXNUM_VAL (IDIO_PAIR_HTT (sym_si));
+	}
+    }
+    IDIO_XENV_SYMBOLS (xe)        = idio_array (st_len);
     while (st != idio_S_nil) {
-	sym_si = IDIO_PAIR_H (st);
+	IDIO sym_si = IDIO_PAIR_H (st);
+
 	IDIO si = IDIO_PAIR_T (sym_si);
 
-	idio_array_insert_index (IDIO_XENV_SYMBOLS (xe),
-				 IDIO_SI_CI (si),
-				 IDIO_FIXNUM_VAL (IDIO_SI_SI (si)));
+	if (idio_isa_pair (si)) {
+	    idio_array_insert_index (IDIO_XENV_SYMBOLS (xe),
+				     IDIO_SI_CI (si),
+				     IDIO_FIXNUM_VAL (IDIO_SI_SI (si)));
+	} else {
+	    idio_debug ("xenv st %s\n", sym_si);
+	}
+
 	st = IDIO_PAIR_T (st);
     }
-    idio_gc_protect (IDIO_XENV_SYMBOLS (xe));
+    idio_gc_protect_auto (IDIO_XENV_SYMBOLS (xe));
 
     IDIO_XENV_CONSTANTS (xe)      = idio_copy (idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_CONSTANTS),
 					       IDIO_COPY_SHALLOW);
-    idio_gc_protect (IDIO_XENV_CONSTANTS (xe));
+    idio_gc_protect_auto (IDIO_XENV_CONSTANTS (xe));
 
     IDIO_XENV_CONSTANTS_HASH (xe) = idio_copy (idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_CONSTANTS_HASH),
 					       IDIO_COPY_SHALLOW);
-    idio_gc_protect (IDIO_XENV_CONSTANTS_HASH (xe));
+    idio_gc_protect_auto (IDIO_XENV_CONSTANTS_HASH (xe));
 
     IDIO_XENV_SRC_EXPRS (xe)      = idio_copy (idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_SRC_EXPRS),
 					       IDIO_COPY_SHALLOW);
-    idio_gc_protect (IDIO_XENV_SRC_EXPRS (xe));
+    idio_gc_protect_auto (IDIO_XENV_SRC_EXPRS (xe));
 
     IDIO_XENV_SRC_PROPS (xe)      = idio_copy (idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_SRC_PROPS),
 					       IDIO_COPY_SHALLOW);
-    idio_gc_protect (IDIO_XENV_SRC_PROPS (xe));
+    idio_gc_protect_auto (IDIO_XENV_SRC_PROPS (xe));
 
 
     /*
      * values is the same size as symbols with entries defaulting to 0
      */
-    IDIO_XENV_VALUES (xe)         = idio_array_dv (idio_array_size (IDIO_XENV_SYMBOLS (xe)), idio_fixnum (0));
-    idio_gc_protect (IDIO_XENV_VALUES (xe));
+    idio_as_t alen = idio_array_size (IDIO_XENV_SYMBOLS (xe));
+    IDIO_XENV_VALUES (xe)         = idio_array_dv (alen, idio_fixnum (0));
+    idio_gc_protect_auto (IDIO_XENV_VALUES (xe));
+
+    /*
+     * XXX dirty trick to make the array appear full-size as there's
+     * no official API
+     */
+    IDIO_ARRAY_USIZE (IDIO_XENV_VALUES (xe)) = alen;
 
     IDIO CTP_bc = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_BYTE_CODE);
     if (idio_CSI_idio_ia_s != IDIO_C_TYPE_POINTER_PTYPE (CTP_bc)) {

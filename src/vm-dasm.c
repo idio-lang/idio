@@ -276,7 +276,7 @@ void idio_vm_dasm (FILE *fp, size_t xi, idio_pc_t pc0, idio_pc_t pce)
 
     IDIO_IA_T bc = IDIO_XENV_BYTE_CODE (idio_xenvs[xi]);
 
-    fprintf (fp, "byte code table #%2zu: %6zd\n", xi, IDIO_IA_USIZE (bc));
+    fprintf (fp, "byte code for xenv[%zu]: %zd instruction bytes\n", xi, IDIO_IA_USIZE (bc));
 
     IDIO thr = idio_thread_current_thread ();
     IDIO ce = idio_thread_current_env ();
@@ -689,12 +689,16 @@ void idio_vm_dasm (FILE *fp, size_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO e = idio_vm_src_expr_ref (xi, gci);
 		IDIO lo = idio_vm_src_props_ref (xi, gci);
 
-		if (idio_S_unspec == lo) {
-		    IDIO_VM_DASM (" %-25s", "<no lexobj>");
-		} else {
-		    if (xi) {
+		if (xi) {
+		    if (idio_isa_pair (lo)) {
 			idio_debug_FILE (fp, " %s", IDIO_PAIR_H (lo));
 			idio_debug_FILE (fp, ":line %s", IDIO_PAIR_HT (lo));
+		    } else {
+			IDIO_VM_DASM (" %-25s", "<no lex tuple>");
+		    }
+		} else {
+		    if (idio_S_unspec == lo) {
+			IDIO_VM_DASM (" %-25s", "<no lexobj>");
 		    } else {
 			idio_debug_FILE (fp, " %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME));
 			idio_debug_FILE (fp, ":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE));
@@ -1412,6 +1416,8 @@ void idio_vm_dump_dasm ()
 	    perror ("fopen (idio-vm-dasm, w)");
 	    return;
 	}
+
+	idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
 
 	idio_vm_dasm (fp, xi, 0, 0);
 

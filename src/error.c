@@ -247,7 +247,7 @@ void idio_error_raise_cont (IDIO ct, IDIO args)
     IDIO_TYPE_ASSERT (list, args);
 
 #ifdef IDIO_DEBUG_X
-    fprintf (stderr, "\nIDIO_DEBUG: NOTICE: deliberate assert(0) raise-cont\n");
+    fprintf (stderr, "\n\nIDIO_DEBUG: NOTICE: deliberate assert(0) raise-cont ****\n\n");
     idio_debug ("%s\n", idio_struct_instance (ct, args));
     assert (0);
 #endif
@@ -265,7 +265,7 @@ void idio_error_raise_noncont (IDIO ct, IDIO args)
     IDIO_TYPE_ASSERT (list, args);
 
 #ifdef IDIO_DEBUG_X
-    fprintf (stderr, "\nIDIO_DEBUG: NOTICE: deliberate assert(0) raise-noncont\n");
+    fprintf (stderr, "\n\nIDIO_DEBUG: NOTICE: deliberate assert(0) raise-noncont ****\n\n");
     idio_debug ("%s\n", idio_struct_instance (ct, args));
     assert (0);
 #endif

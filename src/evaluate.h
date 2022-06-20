@@ -58,6 +58,8 @@
 /*
  * symbol information tuple:
  *
+ * For evaluation:
+ *
  * (scope si ci vi module string)
  *
  * nametree also gets in the mix
@@ -67,6 +69,13 @@
  *
  * (dynamic ci)
  * (environ ci)
+ *
+ * For runtime:
+ *
+ * (scope n/a gci gvi module string)
+ *
+ * Here, gci and gvi are, effectively, indexes into
+ * idio_xenvs[0].constants and idio_xenvs[0].values.
  */
 #define IDIO_SI_SCOPE(SI)	IDIO_PAIR_H(SI)
 #define IDIO_SI_SI(SI)		IDIO_PAIR_HT(SI)
@@ -82,6 +91,7 @@
  * Indexes into structures for direct references
  */
 typedef enum {
+    IDIO_EENV_ST_DESC,
     IDIO_EENV_ST_AOTP,
     IDIO_EENV_ST_SYMBOLS,
     IDIO_EENV_ST_VALUES,
@@ -103,6 +113,7 @@ typedef enum {
 #define IDIO_MEANING_EENV_ESCAPES(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ESCAPES)
 
 extern IDIO idio_evaluate_module;
+extern IDIO idio_evaluate_eenv_type;
 
 void idio_meaning_warning (char const *prefix, char const *msg, IDIO e);
 void idio_meaning_error_param_type (IDIO src, IDIO c_location, char const *msg, IDIO expr);
@@ -138,8 +149,8 @@ IDIO idio_operator_expand (IDIO e, int depth);
 
 IDIO idio_evaluate (IDIO src, IDIO eenv);
 IDIO idio_evaluate_func (IDIO src, IDIO eenv);
-IDIO idio_evaluate_eenv (IDIO aotp, IDIO module);
-IDIO idio_evaluate_normal_eenv (IDIO module);
+IDIO idio_evaluate_eenv (IDIO desc, IDIO aotp, IDIO module);
+IDIO idio_evaluate_normal_eenv (IDIO desc, IDIO module);
 
 void idio_init_evaluate ();
 

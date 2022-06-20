@@ -626,8 +626,8 @@ static idio_as_t idio_meaning_constants_lookup_or_extend (IDIO eenv, IDIO name)
     if (-1 == C_id) {
 	C_id = idio_array_size (cs);
 	idio_array_push (cs, name);
-	idio_debug ("imcloe %-20s", name);
-	fprintf (stderr, "%zu\n", C_id);
+	idio_debug ("imcloe %-30s", name);
+	fprintf (stderr, " %zu\n", C_id);
     }
 
     return C_id;
@@ -656,6 +656,15 @@ static idio_as_t idio_meaning_extend_values (IDIO eenv)
 	C_vi++;
     }
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_VALUES, idio_pair (idio_fixnum (C_vi), vs));
+
+    /*
+     * In order that si, the index into the symbols table, correctly
+     * maps into this table we need to inject a dummy value
+     */
+    idio_struct_instance_set_direct (eenv,
+				     IDIO_EENV_ST_SYMBOLS,
+				     idio_pair (idio_pair (idio_S_false, idio_S_false),
+						IDIO_MEANING_EENV_SYMBOLS (eenv)));
 
     return C_vi;
 }
@@ -744,6 +753,7 @@ static IDIO idio_meaning_find_environ_symbol (IDIO name, IDIO eenv)
  * IDIO_ADD_MODULE() and IDIO_EXPORT_MODULE() macros in
  * idio_X_add_primitives() for some C code, X.c
  */
+static IDIO predef_desc = idio_S_nil;
 static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDIO module, char const *cpp__FILE__, int cpp__LINE__)
 {
     IDIO_C_ASSERT (d);
@@ -758,7 +768,11 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
 	IDIO_MODULE_EXPORTS (module) = idio_pair (name, IDIO_MODULE_EXPORTS (module));
     }
 
-    IDIO eenv = idio_evaluate_normal_eenv (module);
+    if (idio_S_nil == predef_desc) {
+	predef_desc = IDIO_STRING ("predef");
+	idio_gc_protect_auto (predef_desc);
+    }
+    IDIO eenv = idio_evaluate_normal_eenv (predef_desc, module);
 
     IDIO si = idio_meaning_find_toplevel_symbol (name, eenv);
 
@@ -2172,7 +2186,8 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     /*
      * create an expander: (function/name {name-expander} (x e) (apply proc (pt x)))
      *
-     * where proc is (function/name name (formal*) ...) from above, ie. e
+     * where proc is (function/name name (formal*) ...) from above,
+     * ie. e
      */
     IDIO x_sym = IDIO_SYMBOL ("x");
     IDIO e_sym = IDIO_SYMBOL ("e");
@@ -4896,7 +4911,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 		 *
 		 * (define-infix-operator)
 		 */
-		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("define-infix-operator"), "no arguments", eh);
+		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("define-infix-operator"), "no arguments", e);
 
 		return idio_S_notreached;
 	    }
@@ -4940,7 +4955,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 		 *
 		 * (define-postfix-operator)
 		 */
-		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("define-postfix-operator"), "no arguments", eh);
+		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("define-postfix-operator"), "no arguments", e);
 
 		return idio_S_notreached;
 	    }
@@ -5604,11 +5619,13 @@ IDIO idio_evaluate_func (IDIO src, IDIO eenv)
     return idio_vm_invoke_C (IDIO_LIST3 (ev_func, src, eenv));
 }
 
-IDIO idio_evaluate_eenv (IDIO aotp, IDIO module)
+IDIO idio_evaluate_eenv (IDIO desc, IDIO aotp, IDIO module)
 {
+    IDIO_ASSERT (desc);
     IDIO_ASSERT (aotp);
     IDIO_ASSERT (module);
 
+    IDIO_TYPE_ASSERT (string, desc);
     IDIO_TYPE_ASSERT (boolean, aotp);
     IDIO_TYPE_ASSERT (module, module);
 
@@ -5617,6 +5634,7 @@ IDIO idio_evaluate_eenv (IDIO aotp, IDIO module)
 	idio_codegen_code_prologue (byte_code);
 	return idio_struct_instance (idio_evaluate_eenv_type,
 				     idio_listv (IDIO_EENV_ST_SIZE,
+						 desc,
 						 aotp,
 						 idio_S_nil, /* symbols */
 						 idio_S_nil, /* values */
@@ -5638,6 +5656,7 @@ IDIO idio_evaluate_eenv (IDIO aotp, IDIO module)
 
 	return idio_struct_instance (idio_evaluate_eenv_type,
 				     idio_listv (IDIO_EENV_ST_SIZE,
+						 desc,
 						 aotp,
 						 idio_S_nil, /* symbols */
 						 idio_S_nil, /* values */
@@ -5651,9 +5670,11 @@ IDIO idio_evaluate_eenv (IDIO aotp, IDIO module)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE1V_DS ("%evaluation-environment", evaluation_environment, (IDIO aotp, IDIO args), "aot? [module]", "\
+IDIO_DEFINE_PRIMITIVE2V_DS ("%evaluation-environment", evaluation_environment, (IDIO desc, IDIO aotp, IDIO args), "desc, aot? [module]", "\
 return an evaluation environ using `module` if supplied	\n\
 							\n\
+:param desc: description, usually file name		\n\
+:type desc: string					\n\
 :param aot?: pre-compile?				\n\
 :type aot?: boolean					\n\
 :param module: module defaults to the current module	\n\
@@ -5662,9 +5683,11 @@ return an evaluation environ using `module` if supplied	\n\
 :rtype: struct-instance					\n\
 ")
 {
+    IDIO_ASSERT (desc);
     IDIO_ASSERT (aotp);
     IDIO_ASSERT (args);
 
+    IDIO_USER_TYPE_ASSERT (string, desc);
     IDIO_USER_TYPE_ASSERT (boolean, aotp);
 
     IDIO module = idio_thread_current_module ();
@@ -5700,16 +5723,19 @@ return an evaluation environ using `module` if supplied	\n\
 
     }
 
-    return idio_evaluate_eenv (aotp, module);
+    return idio_evaluate_eenv (desc, aotp, module);
 }
 
-IDIO idio_evaluate_normal_eenv (IDIO module)
+IDIO idio_evaluate_normal_eenv (IDIO desc, IDIO module)
 {
+    IDIO_ASSERT (desc);
     IDIO_ASSERT (module);
 
+    assert (idio_isa_string (desc));
+    IDIO_TYPE_ASSERT (string, desc);
     IDIO_TYPE_ASSERT (module, module);
 
-    return idio_evaluate_eenv (idio_S_false, module);
+    return idio_evaluate_eenv (desc, idio_S_false, module);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("environ?", environp, (IDIO o), "o", "\
@@ -5833,6 +5859,7 @@ void idio_init_evaluate ()
     idio_evaluate_eenv_type = idio_struct_type (sym,
 						idio_S_nil,
 						idio_listv (IDIO_EENV_ST_SIZE,
+							    IDIO_SYMBOL ("desc"),
 							    IDIO_SYMBOL ("aot?"),
 							    IDIO_SYMBOL ("symbols"),
 							    IDIO_SYMBOL ("values"),

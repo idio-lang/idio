@@ -81,6 +81,10 @@ extern int idio_vm_virtualisation_WSL;
  *
  * The fields are:
  *
+ * * index - the xenv's index into idio_xenvs[]
+ *
+ * * desc - a descriptive string, usually a file name
+ *
  * * symbols - a map from a SYM_IREF index to the constants index
  *
  *	symbols represents each thing that requires an associated
@@ -136,6 +140,7 @@ extern int idio_vm_virtualisation_WSL;
  */
 typedef struct idio_xenv_s {
     size_t index;
+    IDIO desc;
     IDIO symbols;
     IDIO constants;
     IDIO constants_hash;
@@ -146,6 +151,7 @@ typedef struct idio_xenv_s {
 } idio_xenv_t;
 
 #define IDIO_XENV_INDEX(X)          ((X)->index)
+#define IDIO_XENV_DESC(X)           ((X)->desc)
 #define IDIO_XENV_SYMBOLS(X)        ((X)->symbols)
 #define IDIO_XENV_CONSTANTS(X)      ((X)->constants)
 #define IDIO_XENV_CONSTANTS_HASH(X) ((X)->constants_hash)

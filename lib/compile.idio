@@ -22,43 +22,45 @@ module compile
 export (
 	 compile-file
 )
-import vm codegen
-
-;; XXX slightly cautious around importing evaluate as it will override
-;; the primitive and we've not updated evaluate.idio yet
-eval := evaluate/evaluate
-require evaluate
+import evaluate codegen vm
 
 define (compile-file file & args) "
 " {
-  symbols := #n
-  constants := (vm-constants)
+  eenv := #n
 
   if (pair? args) {
-    symbols = ph args
-
-    if (pair? (pt args)) {
-      constants = pht args
-    }
+    eenv = ph args
+  } {
+    eenv = %evaluation-environment file #t
   }
 
-  eenv := evaluate/%evaluation-environment #t
+  printf "compile-file: file %s\n" file
 
-  printf "c eenv %s\n" eenv
+  printf "compile-file: eenv %s\n" eenv
   fh := open-input-file file
 
   all-m := #n
 
   loop :+ function #n {
     e := read fh
-    if (not (eof? fh)) {
-      ;printf "cf e %s\n" e
-      m := eval e eenv
-      ;printf "cf m %s\n" m
-      ;printf "cf eenv %s\n" eenv
+    if (not (eof-object? e)) {
+      printf "compile-file: e %s\n" e
+      m := #f
+      trap ^rt-function-error (function (c) {
+	condition-report "compile" c
+	sleep 10
+	m = list I-NOP
+	trap-return #f
+      }) {
+	m = evaluate e eenv
+      }
+      ;printf "compile-file: m %s\n" m
+      ;printf "compile-file: eenv %s\n" eenv
       all-m = pair m all-m
       codegen m eenv
       (loop)
+    } {
+      printf "compile-file: ?? e %s\n" e
     }
   }
 
@@ -69,17 +71,17 @@ define (compile-file file & args) "
   close-handle fh
 
   printf "\n"
-  symbols = evaluate/%eenv-symbols eenv
+  symbols := %eenv-symbols eenv
   while (pair? symbols) {
-    printf "c st %s\n" (ph symbols)
+    printf "compile-file: st %s\n" (ph symbols)
     symbols = pt symbols
   }
 
-  printf "c vs %s\n" (evaluate/%eenv-values eenv)
+  printf "compile-file: vs %s\n" (%eenv-values eenv)
 
-  printf "c cs %s\n" (evaluate/%eenv-constants eenv)
+  printf "compile-file: cs %s\n" (%eenv-constants eenv)
 
-  printf "c eenv %s\n" eenv
+  printf "compile-file: eenv %s\n" eenv
 
   all-m
 }

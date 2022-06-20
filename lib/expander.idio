@@ -116,7 +116,8 @@ define (a-e-map fn & l) {
   (cond
    ((null? (ph l)) #n)
    ((pair? (ph l)) {
-     if (and (eq? 'function (phh l))
+     if (and (or (eq? 'function/name (phh l))
+		 (eq? 'function (phh l)))
 	     (pair? (pth l))
 	     (pair? (ptth l))) {
        if (string? (phtth l)) {
@@ -163,7 +164,7 @@ define (initial-expander x e) {
 	  (pt expander) x
 	})
 	(else {
-	  (pt expander) x e
+	  apply (pt expander) x e
 	}))
      } {
        application-expander x e

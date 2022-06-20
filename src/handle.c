@@ -2310,7 +2310,7 @@ This is the `load-handle` primitive.				\n\
 
     IDIO cm = IDIO_THREAD_MODULE (thr);
 
-    IDIO eenv = idio_evaluate_normal_eenv (cm);
+    IDIO eenv = idio_evaluate_normal_eenv (IDIO_HANDLE_FILENAME (h), cm);
 
     idio_gc_protect (eenv);
 

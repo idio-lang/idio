@@ -300,7 +300,7 @@ void idio_init (void)
      * Not Art but idio_X_add_primitives() in env.c, vars.c are going
      * to use idio_default_eenv.
      */
-    idio_default_eenv = idio_evaluate_normal_eenv (idio_Idio_module);
+    idio_default_eenv = idio_evaluate_normal_eenv (IDIO_STRING ("default compilation unit"), idio_Idio_module);
     idio_gc_protect_auto (idio_default_eenv);
 
     idio_add_primitives ();
