@@ -1,0 +1,3 @@
+ -- etags regexps for IDIO_DEFINE_PRIMITIVE macros in C files
+
+{c}/IDIO_DEFINE_PRIMITIVE[0-9]V?\(_DS\)?[ \t]+("\([^"]+\)",/\2/
