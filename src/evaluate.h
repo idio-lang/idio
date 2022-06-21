@@ -109,6 +109,7 @@ typedef enum {
 #define IDIO_MEANING_EENV_SYMBOLS(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_SYMBOLS)
 #define IDIO_MEANING_EENV_VALUES(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_VALUES)
 #define IDIO_MEANING_EENV_CONSTANTS(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_CONSTANTS)
+#define IDIO_MEANING_EENV_CONSTANTS_HASH(E)	idio_struct_instance_ref_direct((E), IDIO_EENV_ST_CONSTANTS_HASH)
 #define IDIO_MEANING_EENV_MODULE(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_MODULE)
 #define IDIO_MEANING_EENV_ESCAPES(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ESCAPES)
 

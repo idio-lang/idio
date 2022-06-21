@@ -176,22 +176,33 @@ define (nt-param-i si)     (pht si)
 define (nt-param-j si)     (phtt si)
 
 define (meaning-constants-lookup-or-extend eenv name) {
-  id := #f
+  ci := -1
 
   if (%eenv-aot? eenv) {
     cs := %eenv-constants eenv
+    ch := %eenv-constants-hash eenv
 
-    id = array-find-eqp cs name
-    if (-1 eq id) {
-      id = array-length cs
+    if (not (null? name)) {
+      ci = hash-ref ch name #f
+
+      if (not ci) {
+	ci = array-find-eqp cs name
+      }
+    }
+
+    if (-1 eq ci) {
+      ci = array-length cs
       array-push! cs name
-      eprintf "mcloe %-30s %d\n" name id
+
+      if (not (null? name)) {
+	hash-set! ch name ci
+      }
     }
   } {
-    id = codegen-constants-lookup-or-extend eenv name
+    ci = codegen-constants-lookup-or-extend eenv name
   }
 
-  id
+  ci
 }
 
 define (meaning-extend-values eenv) {
@@ -210,7 +221,8 @@ define (meaning-extend-values eenv) {
     set-%eenv-values! eenv (pair vi vs)
 
     ;; In order that si, the index into the symbols table, correctly
-    ;; maps into this table we need to inject a dummy value
+    ;; maps into this table we need to inject a dummy value -- which
+    ;; must be a pair otherwise assq will fail
     set-%eenv-symbols! eenv (pair (pair #f #f) (%eenv-symbols eenv))
   } {
     vi = (vm-extend-values)
@@ -1162,24 +1174,25 @@ define (meaning-define-template src name e nametree flags eenv) {
 
     ;; Generate a ci/vi for name
 
+    si := meaning-find-toplevel-symbol name eenv
+
     ;; The ci is required so that the EXPANDER opcode can call
     ;; install-expander to overwrite the proc from the
     ;; install-expander/source! call we just made
     ci := meaning-constants-lookup-or-extend eenv name
 
-    ce := (current-env)
+    cm := (current-module)
 
     st := %eenv-symbols eenv
 
     sym-si := #f
     if (%eenv-aot? eenv) {
-      sym-si = list name 'toplevel (length st) ci 0 ce docstr
-      set-%eenv-symbols! eenv (pair sym-si st)
+      sym-si = list 'toplevel si ci 0 cm docstr
     } {
-      sym-si = list name 'toplevel ci ci 0 ce docstr
+      sym-si = list 'toplevel ci ci 0 cm docstr
     }
 
-    set-symbol! name (pt sym-si) ce
+    set-symbol! name sym-si cm
 
     list I-EXPANDER ci ma
   }

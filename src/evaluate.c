@@ -621,16 +621,30 @@ static idio_as_t idio_meaning_constants_lookup_or_extend (IDIO eenv, IDIO name)
     }
 
     IDIO cs = IDIO_MEANING_EENV_CONSTANTS (eenv);
+    IDIO ch = IDIO_MEANING_EENV_CONSTANTS_HASH (eenv);
 
-    idio_ai_t C_id = idio_array_find_eqp (cs, name, 0);
-    if (-1 == C_id) {
-	C_id = idio_array_size (cs);
-	idio_array_push (cs, name);
-	idio_debug ("imcloe %-30s", name);
-	fprintf (stderr, " %zu\n", C_id);
+    idio_ai_t C_ci = -1;
+
+    if (idio_S_nil != name) {
+	IDIO ci = idio_hash_reference (ch, name, IDIO_LIST1 (idio_S_false));
+
+	if (idio_S_false == ci) {
+	    C_ci = idio_array_find_eqp (cs, name, 0);
+	} else {
+	    C_ci = IDIO_FIXNUM_VAL (ci);
+	}
     }
 
-    return C_id;
+    if (-1 == C_ci) {
+	C_ci = idio_array_size (cs);
+	idio_array_push (cs, name);
+
+	if (idio_S_nil != name) {
+	    idio_hash_put (ch, name, idio_fixnum (C_ci));
+	}
+    }
+
+    return C_ci;
 }
 
 static idio_as_t idio_meaning_extend_values (IDIO eenv)
@@ -659,7 +673,8 @@ static idio_as_t idio_meaning_extend_values (IDIO eenv)
 
     /*
      * In order that si, the index into the symbols table, correctly
-     * maps into this table we need to inject a dummy value
+     * maps into this table we need to inject a dummy value -- which
+     * must be a pair otherwise assq will fail
      */
     idio_struct_instance_set_direct (eenv,
 				     IDIO_EENV_ST_SYMBOLS,
@@ -2368,6 +2383,8 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
 
     idio_install_expander_source (name, expander, expander);
 
+    IDIO si = idio_meaning_find_toplevel_symbol (name, eenv);
+
     /*
      * Generate a ci/vi for name.
      *
@@ -2378,16 +2395,26 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     idio_as_t mci = idio_meaning_constants_lookup_or_extend (eenv, name);
     IDIO fmci = idio_fixnum (mci);
 
-    IDIO ce = idio_thread_current_env ();
+    IDIO cm = idio_thread_current_module ();
 
-    idio_module_set_symbol (name,
-			    IDIO_LIST6 (idio_S_toplevel,
-					fmci,
-					fmci,
-					idio_fixnum (0),
-					ce,
-					docstr),
-			    ce);
+    IDIO sym_si = idio_S_false;
+    if (idio_S_true == IDIO_MEANING_EENV_AOT (eenv)) {
+	sym_si = IDIO_LIST6 (idio_S_toplevel,
+			     si,
+			     fmci,
+			     idio_fixnum (0),
+			     cm,
+			     docstr);
+    } else {
+	sym_si = IDIO_LIST6 (idio_S_toplevel,
+			     fmci,
+			     fmci,
+			     idio_fixnum (0),
+			     cm,
+			     docstr);
+    }
+
+    idio_module_set_symbol (name, sym_si, cm);
 
     return IDIO_LIST3 (IDIO_I_EXPANDER, idio_fixnum (mci), m_a);
 }
