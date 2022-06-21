@@ -101,6 +101,7 @@ typedef enum {
     IDIO_A_RESTORE_ALL_STATE,
 
     IDIO_A_CREATE_FUNCTION,	/* top level closure */
+    IDIO_A_CREATE_IFUNCTION,	/* top level closure */
     IDIO_A_CREATE_CLOSURE,
     IDIO_A_CREATE_ICLOSURE,
     IDIO_A_FUNCTION_INVOKE,

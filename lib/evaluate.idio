@@ -62,8 +62,8 @@ define (eenv-symbol-index eenv si) {
 
 define (meaning-src-location e) {
   lo := #f
-  if (pair? src) {
-    lo = hash-ref %idio-src-properties src #f
+  if (pair? e) {
+    lo = hash-ref %idio-src-properties e #f
   }
 
   if lo {
@@ -584,7 +584,8 @@ define (meaning-reference src name nametree flags eenv) {
    })
    ((toplevel) {
      vi := si-vi si
-     (if (vi gt 0)
+     (if (and (not (%eenv-aot? eenv))
+	      (vi gt 0))
       (list I-VAL-REF vi)
       (list I-SYM-REF (eenv-symbol-index eenv si)))
    })
@@ -621,8 +622,10 @@ define (meaning-function-reference src name nametree flags eenv) {
    })
    ((toplevel) {
      vi := si-vi si
-     (if (vi gt 0)
-      (list I-FUNCTION-VAL-REF vi) (list I-FUNCTION-SYM-REF (eenv-symbol-index eenv si)))
+     (if (and (not (%eenv-aot? eenv))
+	      (vi gt 0))
+      (list I-FUNCTION-VAL-REF vi)
+      (list I-FUNCTION-SYM-REF (eenv-symbol-index eenv si)))
    })
    ((dynamic) (list I-DYNAMIC-FUNCTION-SYM-REF (eenv-symbol-index eenv si)))
    ((environ) (list I-ENVIRON-SYM-REF (eenv-symbol-index eenv si)))
@@ -966,10 +969,11 @@ define (meaning-assignment src name e nametree flags eenv) {
 	ci = if (%eenv-aot? eenv) (si-si si) (si-ci si)
 	vi := si-vi si
 
-	if (0 eq vi) {
-	  assign = list I-SYM-SET src ci m
-	} {
+	if (and (not (%eenv-aot? eenv))
+		(vi gt 0)) {
 	  assign = list I-VAL-SET src vi m
+	} {
+	  assign = list I-SYM-SET src ci m
 	}
       })
       ((dynamic environ) {

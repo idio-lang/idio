@@ -6753,7 +6753,7 @@ IDIO idio_vm_src_props_ref (size_t xi, idio_as_t spi)
 	IDIO sps = IDIO_XENV_SRC_PROPS (idio_xenvs[xi]);
 
 	if (spi >= idio_array_size (sps)) {
-	    fprintf (stderr, "vm-src-props-ref: %zu > %zu\n", spi, idio_array_size (sps));
+	    fprintf (stderr, "vm-src-props-ref xi %zu: %zu > %zu\n", xi, spi, idio_array_size (sps));
 	    IDIO_C_ASSERT (0);
 	}
 

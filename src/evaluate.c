@@ -1387,6 +1387,8 @@ static IDIO idio_meaning_reference (IDIO src, IDIO name, IDIO nametree, int flag
 	return idio_S_notreached;
     }
 
+    int aot = idio_S_true == IDIO_MEANING_EENV_AOT (eenv);
+
     IDIO scope = IDIO_SI_SCOPE (si);
 
     if (idio_S_param == scope ||
@@ -1400,7 +1402,8 @@ static IDIO idio_meaning_reference (IDIO src, IDIO name, IDIO nametree, int flag
 	}
     } else if (idio_S_toplevel == scope) {
 	IDIO fgvi = IDIO_SI_VI (si);
-	if (IDIO_FIXNUM_VAL (fgvi) > 0) {
+	if (0 == aot &&
+	    IDIO_FIXNUM_VAL (fgvi) > 0) {
 	    return IDIO_LIST2 (IDIO_I_VAL_REF, fgvi);
 	} else {
 	    return IDIO_LIST2 (IDIO_I_SYM_REF, idio_meaning_eenv_symbol_index (eenv, si));
@@ -2005,6 +2008,8 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	return idio_S_notreached;
     }
 
+    int aot = idio_S_true == IDIO_MEANING_EENV_AOT (eenv);
+
     IDIO scope = IDIO_SI_SCOPE (si);
     IDIO fmci = idio_S_undef;
 
@@ -2027,10 +2032,11 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	}
 	IDIO fgvi = IDIO_SI_VI (si);
 
-	if (0 == IDIO_FIXNUM_VAL (fgvi)) {
-	    assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, fmci, m);
-	} else {
+	if (0 == aot &&
+	    IDIO_FIXNUM_VAL (fgvi) > 0) {
 	    assign = IDIO_LIST4 (IDIO_I_VAL_SET, src, fgvi, m);
+	} else {
+	    assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, fmci, m);
 	}
     } else if (idio_S_dynamic == scope ||
 	       idio_S_environ == scope) {
