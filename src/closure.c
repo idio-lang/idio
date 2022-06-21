@@ -51,6 +51,7 @@
 #include "primitive.h"
 #include "string-handle.h"
 #include "symbol.h"
+#include "thread.h"
 #include "util.h"
 #include "vm.h"
 #include "vtable.h"
@@ -66,7 +67,7 @@
  * Return:
  * Returns the closure.
  */
-IDIO idio_toplevel_closure (size_t xi, size_t const code_pc, size_t const code_len, IDIO frame, IDIO env, IDIO name, IDIO sigstr, IDIO docstr, IDIO srcloc)
+IDIO idio_toplevel_closure (size_t xi, size_t const code_pc, size_t const code_len, IDIO frame, IDIO env, IDIO name, IDIO sigstr, IDIO docstr, idio_as_t sei)
 {
     IDIO_C_ASSERT (code_pc);
     IDIO_C_ASSERT (code_len);
@@ -148,9 +149,20 @@ IDIO idio_toplevel_closure (size_t xi, size_t const code_pc, size_t const code_l
 	idio_set_property (c, idio_KW_docstr_raw, docstr);
     }
 
-    if (idio_S_nil != srcloc) {
-	idio_set_property (c, idio_KW_source, srcloc);
+    idio_set_property (c, idio_KW_src_expr, idio_vm_src_expr_ref (xi, sei));
+    IDIO props = idio_S_false;
+    IDIO sp = idio_vm_src_props_ref (xi, sei);
+    if (idio_isa_pair (sp)) {
+	IDIO fn = idio_vm_constants_ref (xi, IDIO_FIXNUM_VAL (IDIO_PAIR_H (sp)));
+
+	IDIO osh = idio_open_output_string_handle_C ();
+	idio_display (fn, osh);
+	idio_display_C (":line ", osh);
+	idio_display (IDIO_PAIR_HT (sp), osh);
+
+	props = idio_get_output_string (osh);
     }
+    idio_set_property (c, idio_KW_src_props, props);
 
     return c;
 }

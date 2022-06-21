@@ -1455,7 +1455,7 @@ define (meaning-fix-abstraction src name formal* arg-name* docstr e+ nametree fl
 
   m+ := meaning-sequence src e+ nt+ (set-tailp flags) 'begin eenv
 
-  list I-FIX-CLOSURE m+ name arity (meaning-nametree->list nt+) docstr (meaning-src-location src)
+  list I-FIX-CLOSURE m+ name arity (meaning-nametree->list nt+) docstr src
 }
 
 define (meaning-dotted-abstraction src name formal* vararg arg-name* docstr e+ nametree flags eenv) {
@@ -1466,7 +1466,7 @@ define (meaning-dotted-abstraction src name formal* vararg arg-name* docstr e+ n
 
   m+ := meaning-sequence src e+ nt+ (set-tailp flags) 'begin eenv
 
-  list I-NARY-CLOSURE m+ name arity (meaning-nametree->list nt+) docstr (meaning-src-location src)
+  list I-NARY-CLOSURE m+ name arity (meaning-nametree->list nt+) docstr src
 }
 
 define (meaning-rewrite-assign-anon-function src e) {

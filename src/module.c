@@ -2197,6 +2197,11 @@ void idio_final_module ()
 	    idio_debug_FILE (fp, "\nModule %s\n", module_name);
 
 	    /*
+	     * XXX which xenv?
+	     */
+	    size_t xi = IDIO_THREAD_XI (idio_thread_current_thread ());
+
+	    /*
 	     * Warn about mci/gci mis-matches
 	     */
 	    IDIO mcis = idio_hash_keys_to_list (IDIO_MODULE_VCI (module));
@@ -2224,10 +2229,7 @@ void idio_final_module ()
 		IDIO gvi = idio_hash_ref (IDIO_MODULE_VVI (module), mci);
 		if (idio_S_unspec != gvi) {
 		    idio_debug_FILE (fp, " %5s", mci);
-		    /*
-		     * XXX which xenv?
-		     */
-		    IDIO sym = idio_vm_constants_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (mci));
+		    IDIO sym = idio_vm_constants_ref (xi, IDIO_FIXNUM_VAL (mci));
 		    idio_debug_FILE (fp, " %-40s", sym);
 		    if (idio_S_false != idio_list_memq (sym, IDIO_MODULE_EXPORTS (module))) {
 			fprintf (fp, "E ");

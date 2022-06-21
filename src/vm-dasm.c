@@ -677,44 +677,26 @@ void idio_vm_dasm (FILE *fp, size_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_SRC_EXPR:
 	    {
-		idio_ai_t sci = idio_vm_get_varuint (bc, pcp);
+		idio_ai_t sei = idio_vm_get_varuint (bc, pcp);
 
-		IDIO_VM_DASM ("SRC-EXPR %zd", sci);
+		IDIO_VM_DASM ("SRC-EXPR %zd", sei);
 
-		IDIO e = idio_S_unspec;
+		IDIO e = idio_vm_src_expr_ref (xi, sei);
+		IDIO lo = idio_vm_src_props_ref (xi, sei);
 
-		if (xi) {
-		    e = idio_vm_src_expr_ref (xi, sci);
-		    IDIO lo = idio_vm_src_props_ref (xi, sci);
-
-		    if (idio_isa_pair (lo)) {
-			IDIO fi = IDIO_PAIR_H (lo);
-			IDIO fn = idio_hash_reference (fnh, fi, IDIO_LIST1 (idio_S_false));
-			if (idio_S_false == fn) {
-			    fn = idio_array_ref_index (cs, IDIO_FIXNUM_VAL (fi));
-			    idio_hash_set (fnh, fi, fn);
-			}
-			idio_debug_FILE (fp, " %s", fn);
-			idio_debug_FILE (fp, ":line %s", IDIO_PAIR_HT (lo));
-		    } else {
-			IDIO_VM_DASM (" %-25s", "<no lex tuple>");
+		if (idio_isa_pair (lo)) {
+		    IDIO fi = IDIO_PAIR_H (lo);
+		    IDIO fn = idio_hash_reference (fnh, fi, IDIO_LIST1 (idio_S_false));
+		    if (idio_S_false == fn) {
+			fn = idio_array_ref_index (cs, IDIO_FIXNUM_VAL (fi));
+			idio_hash_set (fnh, fi, fn);
 		    }
+		    idio_debug_FILE (fp, " %s", fn);
+		    idio_debug_FILE (fp, ":line %s", IDIO_PAIR_HT (lo));
 		} else {
-		    IDIO fsci = idio_fixnum (sci);
-		    IDIO fgci = idio_module_get_or_set_vci (ce, fsci);
-		    idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
-
-		    e = idio_vm_src_expr_ref (xi, gci);
-		    IDIO lo = idio_vm_src_props_ref (xi, gci);
-
-		    if (idio_S_unspec == lo) {
-			IDIO_VM_DASM (" %-25s", "<no lexobj>");
-		    } else {
-			idio_debug_FILE (fp, " %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME));
-			idio_debug_FILE (fp, ":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE));
-		    }
+		    IDIO_VM_DASM (" %-25s", "<no lex tuple>");
 		}
-		idio_debug_FILE (fp, "\n  %s", e);
+		idio_debug_FILE (fp, "\n  %.80s", e);
 	    }
 	    break;
 	case IDIO_A_POP_FUNCTION:
@@ -744,7 +726,7 @@ void idio_vm_dasm (FILE *fp, size_t xi, idio_pc_t pc0, idio_pc_t pce)
 		uint64_t nci  = idio_vm_get_varuint (bc, pcp);
 		uint64_t ssci = idio_vm_get_varuint (bc, pcp);
 		uint64_t dsci = idio_vm_get_varuint (bc, pcp);
-		uint64_t slci = idio_vm_get_varuint (bc, pcp);
+		uint64_t sei = idio_vm_get_varuint (bc, pcp);
 
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "CF@%" PRId64 "", pc + i);
@@ -796,19 +778,11 @@ void idio_vm_dasm (FILE *fp, size_t xi, idio_pc_t pc0, idio_pc_t pce)
 		}
 
 		/* srcloc lookup */
-		IDIO fslci = idio_fixnum (slci);
-		IDIO fgslci = idio_module_get_or_set_vci (ce, fslci);
-		IDIO sl = idio_S_nil;
-		if (idio_S_unspec != fgslci) {
-		    sl = idio_vm_dasm_constants_ref (xi, IDIO_FIXNUM_VAL (fgslci));
-		} else {
-		    fprintf (stderr, "vm cc doc: failed to find %" PRIu64 "\n", slci);
-		}
-		if (idio_S_nil != sl) {
-		    size = 0;
-		    ids = idio_as_string_safe (sl, &size, 1, 1);
-		    IDIO_VM_DASM ("\n  srcloc %s", ids);
-		    IDIO_GC_FREE (ids, size);
+		IDIO sp = idio_vm_src_props_ref (xi, sei);
+		if (idio_isa_pair (sp)) {
+		    IDIO fn = idio_vm_dasm_constants_ref (xi, IDIO_FIXNUM_VAL (IDIO_PAIR_H (sp)));
+		    idio_debug_FILE (fp, "\n  srcloc %s", fn);
+		    idio_debug_FILE (fp, ":line %s", IDIO_PAIR_HT (sp));
 		}
 	    }
 	    break;
@@ -819,7 +793,7 @@ void idio_vm_dasm (FILE *fp, size_t xi, idio_pc_t pc0, idio_pc_t pce)
 		uint64_t nci  = idio_vm_get_varuint (bc, pcp);
 		uint64_t ssci = idio_vm_get_varuint (bc, pcp);
 		uint64_t dsci = idio_vm_get_varuint (bc, pcp);
-		uint64_t slci = idio_vm_get_varuint (bc, pcp);
+		uint64_t sei = idio_vm_get_varuint (bc, pcp);
 
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "CF@%" PRId64 "", pc + i);
@@ -830,7 +804,7 @@ void idio_vm_dasm (FILE *fp, size_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO name = idio_vm_dasm_constants_ref (xi, nci);
 		size_t size = 0;
 		char *ids = idio_display_string (name, &size);
-		IDIO_VM_DASM ("\n  name %s", ids);
+		IDIO_VM_DASM ("\n  name   %s", ids);
 		IDIO_GC_FREE (ids, size);
 
 		/* sigstr lookup */
@@ -850,12 +824,11 @@ void idio_vm_dasm (FILE *fp, size_t xi, idio_pc_t pc0, idio_pc_t pce)
 		}
 
 		/* srcloc lookup */
-		IDIO sl = idio_vm_dasm_constants_ref (xi, slci);
-		if (idio_S_nil != sl) {
-		    size = 0;
-		    ids = idio_as_string_safe (sl, &size, 1, 1);
-		    IDIO_VM_DASM ("\n  srcloc %s", ids);
-		    IDIO_GC_FREE (ids, size);
+		IDIO sp = idio_vm_src_props_ref (xi, sei);
+		if (idio_isa_pair (sp)) {
+		    IDIO fn = idio_vm_dasm_constants_ref (xi, IDIO_FIXNUM_VAL (IDIO_PAIR_H (sp)));
+		    idio_debug_FILE (fp, "\n  srcloc %s", fn);
+		    idio_debug_FILE (fp, ":line %s", IDIO_PAIR_HT (sp));
 		}
 	    }
 	    break;

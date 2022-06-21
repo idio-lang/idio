@@ -180,26 +180,6 @@ void idio_meaning_warning (char const *prefix, char const *msg, IDIO e)
     idio_debug (": %s\n", e);
 }
 
-IDIO idio_meaning_src_location (IDIO e)
-{
-    IDIO_ASSERT (e);
-
-    if (idio_isa_pair (e)) {
-	IDIO lo = idio_hash_ref (idio_src_properties, e);
-	if (idio_S_unspec == lo){
-	    return idio_S_nil;
-	} else {
-	    IDIO sl = idio_open_output_string_handle_C ();
-	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME), sl);
-	    idio_display_C (":line ", sl);
-	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE), sl);
-	    return idio_get_output_string (sl);
-	}
-    } else {
-	return idio_S_nil;
-    }
-}
-
 static IDIO idio_meaning_error_location (IDIO src)
 {
     IDIO_ASSERT (src);
@@ -250,7 +230,7 @@ static void idio_meaning_base_error (IDIO src, IDIO c_location, IDIO msg, IDIO e
      * So, let's give the error subsystem a clue by copying what the
      * code generator does for normal calls.
      */
-    idio_as_t mci = idio_codegen_extend_src_constants (idio_default_eenv, src);
+    idio_as_t mci = idio_codegen_extend_src_exprs (idio_default_eenv, src);
     IDIO thr = idio_thread_current_thread ();
     IDIO_THREAD_EXPR (thr) = idio_fixnum (mci);
 
@@ -2917,7 +2897,7 @@ static IDIO idio_meaning_fix_abstraction (IDIO src, IDIO name, IDIO ns, IDIO for
 		       idio_fixnum (arity),
 		       idio_meaning_nametree_to_list (ent),
 		       docstr,
-		       idio_meaning_src_location (src));
+		       src);
 }
 
 static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO name, IDIO ns, IDIO n, IDIO formals, IDIO docstr, IDIO ep, IDIO nametree, int flags, IDIO eenv)
@@ -2949,7 +2929,7 @@ static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO name, IDIO ns, IDIO 
 		       idio_fixnum (arity),
 		       idio_meaning_nametree_to_list (ent),
 		       docstr,
-		       idio_meaning_src_location (src));
+		       src);
 }
 
 
@@ -5698,7 +5678,7 @@ IDIO idio_evaluate_eenv (IDIO desc, IDIO aotp, IDIO module)
 						 module,
 						 idio_S_nil, /* escapes */
 						 idio_vm_src_exprs,
-						 idio_array (0), /* src-props */
+						 idio_vm_src_props,
 						 CTP_byte_code));
     }
 }
