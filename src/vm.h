@@ -140,7 +140,7 @@ extern int idio_vm_virtualisation_WSL;
  * seeing a "VAL_IREF n" before we are certain to have set values[n].
  */
 typedef struct idio_xenv_s {
-    size_t index;
+    idio_xi_t index;
     IDIO desc;
     IDIO symbols;
     IDIO constants;
@@ -161,7 +161,7 @@ typedef struct idio_xenv_s {
 #define IDIO_XENV_VALUES(X)         ((X)->values)
 #define IDIO_XENV_BYTE_CODE(X)      ((X)->byte_code)
 
-extern size_t idio_xenvs_size;
+extern idio_xi_t idio_xenvs_size;
 extern idio_xenv_t **idio_xenvs;
 
 #define IDIO_THREAD_SYMBOLS(T)        IDIO_XENV_SYMBOLS (idio_xenvs[IDIO_THREAD_XI(T)])
@@ -179,31 +179,34 @@ void idio_vm_panic (IDIO thr, char const *m);
 void idio_vm_error (char const *msg, IDIO args, IDIO c_location);
 IDIO idio_vm_closure_name (IDIO c);
 
-#define IDIO_VM_RUN_C		0
-#define IDIO_VM_RUN_IDIO	1
+typedef enum {
+    IDIO_VM_RUN_C,
+    IDIO_VM_RUN_IDIO
+} idio_vm_run_enum;
 
 extern volatile sig_atomic_t idio_vm_signal_record[IDIO_LIBC_NSIG+1];
 void idio_vm_sa_signal (int signum);
 void idio_vm_signal_report ();
 
-IDIO idio_vm_run (IDIO thr, idio_pc_t pc, int caller);
+IDIO idio_vm_run (IDIO thr, idio_pc_t pc, idio_vm_run_enum caller);
 IDIO idio_vm_run_C (IDIO thr, idio_pc_t pc);
 
 void idio_vm_restore_continuation (IDIO k, IDIO val);
 void idio_vm_restore_exit (IDIO k, IDIO val);
+IDIO idio_vm_symbols_ref (idio_xi_t xi, idio_as_t si);
 idio_as_t idio_vm_extend_constants_direct (IDIO cs, IDIO ch, IDIO v);
 idio_as_t idio_vm_extend_default_constants (IDIO v);
-idio_as_t idio_vm_extend_constants (IDIO thr, IDIO v);
-IDIO idio_vm_constants_ref (size_t xi, idio_as_t gci);
-idio_ai_t idio_vm_constants_lookup (IDIO thr, IDIO v);
-idio_as_t idio_vm_constants_lookup_or_extend (IDIO thr, IDIO v);
-IDIO idio_vm_src_expr_ref (size_t xi, idio_as_t gci);
-IDIO idio_vm_src_props_ref (size_t xi, idio_as_t gci);
-idio_as_t idio_vm_extend_values (IDIO thr);
+idio_as_t idio_vm_extend_constants (idio_xi_t xi, IDIO v);
+IDIO idio_vm_constants_ref (idio_xi_t xi, idio_as_t gci);
+idio_ai_t idio_vm_constants_lookup (idio_xi_t xi, IDIO v);
+idio_as_t idio_vm_constants_lookup_or_extend (idio_xi_t xi, IDIO v);
+IDIO idio_vm_src_expr_ref (idio_xi_t xi, idio_as_t gci);
+IDIO idio_vm_src_props_ref (idio_xi_t xi, idio_as_t gci);
+idio_as_t idio_vm_extend_values (idio_xi_t xi);
 idio_as_t idio_vm_extend_default_values ();
-IDIO idio_vm_values_ref (size_t xi, idio_as_t gvi);
+IDIO idio_vm_values_ref (idio_xi_t xi, idio_as_t gvi);
 IDIO idio_vm_default_values_ref (idio_as_t gvi);
-void idio_vm_values_set (size_t xi, idio_as_t gvi, IDIO v);
+void idio_vm_values_set (idio_xi_t xi, idio_as_t gvi, IDIO v);
 void idio_vm_default_values_set (idio_as_t gvi, IDIO v);
 void idio_vm_decode_thread (IDIO thr);
 void idio_vm_decode_stack (IDIO thr, IDIO stack);

@@ -39,25 +39,27 @@ define (compile-file file & args) "
   printf "compile-file: eenv %s\n" eenv
   fh := open-input-file file
 
-  all-m := #n
+  all-pc0 := #n
 
   loop :+ function #n {
     e := read fh
     if (not (eof-object? e)) {
-      printf "compile-file: e %s\n" e
+      ;;printf "compile-file: e %s\n" e
       m := #f
-      trap ^rt-function-error (function (c) {
-	condition-report "compile" c
-	sleep 10
-	m = list I-NOP
-	trap-return #f
-      }) {
+      trap (^rt-parameter-error
+	    ^rt-function-error) (function (c) {
+	      condition-report "compile" c
+	      printf "...\n\n"
+	      sleep 2
+	      m = list I-NOP
+	      trap-return #f
+	    }) {
 	m = evaluate e eenv
       }
       ;printf "compile-file: m %s\n" m
       ;printf "compile-file: eenv %s\n" eenv
-      all-m = pair m all-m
-      codegen m eenv
+      pc0 := codegen m eenv
+      all-pc0 = pair pc0 all-pc0
       (loop)
     } {
       printf "compile-file: ?? e %s\n" e
@@ -66,24 +68,27 @@ define (compile-file file & args) "
 
   (loop)
 
-  %vm-add-xenv-from-eenv eenv
-
   close-handle fh
 
   printf "\n"
-  symbols := %eenv-symbols eenv
-  while (pair? symbols) {
-    printf "compile-file: st %s\n" (ph symbols)
-    symbols = pt symbols
+
+  %vm-add-xenv-from-eenv eenv (reverse! all-pc0)
+
+  if #f {
+    symbols := %eenv-symbols eenv
+    while (pair? symbols) {
+      printf "compile-file: st %s\n" (ph symbols)
+      symbols = pt symbols
+    }
+
+    printf "compile-file: vs %s\n" (%eenv-values eenv)
+
+    printf "compile-file: cs %s\n" (%eenv-constants eenv)
+
+    printf "compile-file: eenv %s\n" eenv
   }
 
-  printf "compile-file: vs %s\n" (%eenv-values eenv)
-
-  printf "compile-file: cs %s\n" (%eenv-constants eenv)
-
-  printf "compile-file: eenv %s\n" eenv
-
-  all-m
+  all-pc0
 }
 
 provide compile

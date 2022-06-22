@@ -243,7 +243,7 @@ char const *idio_vm_bytecode2string (int code)
 
 #define IDIO_VM_DASM(...)	{ fprintf (fp, __VA_ARGS__); }
 
-IDIO idio_vm_dasm_symbols_ref (size_t xi, idio_as_t si)
+IDIO idio_vm_dasm_symbols_ref (idio_xi_t xi, idio_as_t si)
 {
     IDIO st = IDIO_XENV_SYMBOLS (idio_xenvs[xi]);
     IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
@@ -263,14 +263,14 @@ IDIO idio_vm_dasm_symbols_ref (size_t xi, idio_as_t si)
     }
 }
 
-IDIO idio_vm_dasm_constants_ref (size_t xi, idio_as_t ci)
+IDIO idio_vm_dasm_constants_ref (idio_xi_t xi, idio_as_t ci)
 {
     IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
 
     return idio_array_ref_index (cs, ci);
 }
 
-void idio_vm_dasm (FILE *fp, size_t xi, idio_pc_t pc0, idio_pc_t pce)
+void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 {
     IDIO_C_ASSERT (fp);
 
@@ -877,7 +877,7 @@ void idio_vm_dasm (FILE *fp, size_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_FINISH:
 	    {
-		IDIO_VM_DASM ("FINISH");
+		IDIO_VM_DASM ("FINISH\n");
 	    }
 	    break;
 	case IDIO_A_ALLOCATE_FRAME1:
@@ -1435,7 +1435,7 @@ void idio_vm_dump_dasm ()
     fprintf (stderr, "vm-dasm ");
 #endif
 
-    for (size_t xi = 0; xi < idio_xenvs_size; xi++) {
+    for (idio_xi_t xi = 0; xi < idio_xenvs_size; xi++) {
 	char fn[40];
 	snprintf (fn, 40, "idio-vm-dasm.%zu", xi);
 

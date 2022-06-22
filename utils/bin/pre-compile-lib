@@ -50,9 +50,11 @@ for fn in (glob (append-string lib-dir "/*.idio")) {
 
 		;; job-control.idio gets messed up because | is already an operator
 		("*/job-control.idio" #f)
+
 		(else {
 		  compile-file fn
 		}))
+  printf "\n\n"
 	      
 }
 

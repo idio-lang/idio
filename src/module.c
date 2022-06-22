@@ -1108,7 +1108,7 @@ IDIO idio_module_direct_reference (IDIO name)
 		     * the same: the symbols M/S is not the same as
 		     * the symbol S.
 		     */
-		    idio_as_t mci = idio_vm_constants_lookup_or_extend (idio_thread_current_thread (),  name);
+		    idio_as_t mci = idio_vm_constants_lookup_or_extend (IDIO_THREAD_XI (idio_thread_current_thread ()),  name);
 		    r = IDIO_LIST3 (m_sym,
 				    s_sym,
 				    IDIO_LIST6 (IDIO_SI_SCOPE (si),
@@ -1757,6 +1757,8 @@ IDIO idio_module_set_symbol_value_thread (IDIO thr, IDIO symbol, IDIO value, IDI
     IDIO fmci;
     IDIO fgvi;
 
+    size_t xi = IDIO_THREAD_XI (thr);
+
     if (idio_S_unspec == si) {
 	/*
 	 * C init code will get us here without having been through
@@ -1765,10 +1767,10 @@ IDIO idio_module_set_symbol_value_thread (IDIO thr, IDIO symbol, IDIO value, IDI
 	 */
 	scope = idio_S_toplevel;
 
-	idio_as_t mci = idio_vm_constants_lookup_or_extend (thr, symbol);
+	idio_as_t mci = idio_vm_constants_lookup_or_extend (xi, symbol);
 	fmci = idio_fixnum (mci);
 
-	idio_as_t gvi = idio_vm_extend_values (thr);
+	idio_as_t gvi = idio_vm_extend_values (xi);
 	fgvi = idio_fixnum (gvi);
 
 	idio_hash_put (IDIO_MODULE_SYMBOLS (module),
@@ -1793,7 +1795,7 @@ IDIO idio_module_set_symbol_value_thread (IDIO thr, IDIO symbol, IDIO value, IDI
 	 * and then immediately set_symbol_value() which means the gvi
 	 * remains 0.
 	 */
-	gvi = idio_vm_extend_values (thr);
+	gvi = idio_vm_extend_values (0);
 	fgvi = idio_fixnum (gvi);
 	IDIO_SI_VI (si) = idio_fixnum (gvi);
     }
@@ -1965,11 +1967,13 @@ IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO modu
     IDIO fgvi;
 
     IDIO thr = idio_thread_current_thread ();
+    size_t xi = IDIO_THREAD_XI (thr);
 
     if (idio_S_unspec == si) {
-	idio_as_t mci = idio_vm_constants_lookup_or_extend (thr, symbol);
+	idio_as_t mci = idio_vm_constants_lookup_or_extend (xi, symbol);
 	scope = idio_S_computed;
-	idio_as_t gvi = idio_vm_extend_values (thr);
+
+	idio_as_t gvi = idio_vm_extend_values (xi);
 	fgvi = idio_fixnum (gvi);
 
 	idio_hash_put (IDIO_MODULE_SYMBOLS (module),
@@ -2199,7 +2203,7 @@ void idio_final_module ()
 	    /*
 	     * XXX which xenv?
 	     */
-	    size_t xi = IDIO_THREAD_XI (idio_thread_current_thread ());
+	    idio_xi_t xi = IDIO_THREAD_XI (idio_thread_current_thread ());
 
 	    /*
 	     * Warn about mci/gci mis-matches

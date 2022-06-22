@@ -624,6 +624,11 @@ typedef struct idio_hash_s {
  */
 typedef intptr_t idio_pc_t;
 
+/**
+ * typedef idio_xi_t - Idio VM execution environment index
+ */
+typedef uintptr_t idio_xi_t;
+
 /*
  * If we wanted to store the arity and varargs boolean of a closure
  * (for a possible thunk? predicate) without increasing the size of
@@ -653,7 +658,7 @@ typedef struct idio_closure_stats_s {
 
 typedef struct idio_closure_s {
     struct idio_s *grey;
-    size_t xi;			/* xenv index */
+    idio_xi_t xi;			/* xenv index */
     idio_pc_t code_pc;
     idio_pc_t code_len;
     struct idio_s *name;
@@ -924,7 +929,7 @@ typedef intptr_t idio_sp_t;
 
 typedef struct idio_thread_s {
     struct idio_s *grey;
-    size_t xi;			/* xenv index */
+    idio_xi_t xi;			/* xenv index */
     idio_pc_t pc;
     struct idio_s *stack;
     struct idio_s *val;
@@ -1025,6 +1030,7 @@ typedef struct idio_thread_s {
 typedef struct idio_continuation_s {
     struct idio_s *grey;
     idio_pc_t pc;
+    idio_xi_t xi;
     struct idio_s *stack;
     struct idio_s *frame;
     struct idio_s *env;
@@ -1042,6 +1048,7 @@ typedef struct idio_continuation_s {
 
 #define IDIO_CONTINUATION_GREY(K)		((K)->u.continuation->grey)
 #define IDIO_CONTINUATION_PC(K)			((K)->u.continuation->pc)
+#define IDIO_CONTINUATION_XI(K)			((K)->u.continuation->xi)
 #define IDIO_CONTINUATION_STACK(K)		((K)->u.continuation->stack)
 #define IDIO_CONTINUATION_FRAME(K)		((K)->u.continuation->frame)
 #define IDIO_CONTINUATION_ENV(K)		((K)->u.continuation->env)

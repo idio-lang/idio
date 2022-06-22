@@ -2800,7 +2800,9 @@ Generate the code for `m` using `eenv`		\n\
     }
     IDIO_IA_T byte_code = IDIO_C_TYPE_POINTER_P (CTP_bc);
 
-    idio_ia_push (byte_code, IDIO_A_RETURN);
+    if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv)) {
+	idio_ia_push (byte_code, IDIO_A_RETURN);
+    }
 
     return idio_fixnum (PC0);
 }

@@ -3209,8 +3209,6 @@ environment `eenv` and return intermediate code for the code generator
 
   m := meaning src src #n no-flags ee
 
-  printf "evaluate eenv %s\n\n" eenv
-
   list (list I-PUSH-ABORT m) (list I-POP-ABORT)
 }
 
