@@ -47,7 +47,8 @@ vm-error-load := {
     exp-tests := 1
 
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
-    trap (^runtime-error
+    trap (^rt-parameter-error
+	  ^runtime-error
 	  ^rt-command-error) (function (c) {
 	    ;eprintf "vm-error #%s: %s %s\n" n msg (idio-error-location c)
 	    test (idio-error-message c) msg
@@ -123,7 +124,11 @@ vm-error-load "vm-errors/IDIO-A-ARITYGEP-too-few.idio" "incorrect arity: 0 args 
 
 vm-error-load "vm-errors/idio-dasm-bad-type.idio" "bad parameter type: '#t' a constant is not a closure" ^rt-parameter-type-error
 
-vm-error-load "vm-errors/vm-run-bad-thread-type.idio" "bad parameter type: '#t' a constant is not a thread" ^rt-parameter-type-error
+vm-error-load "vm-errors/vm-run-bad-xi-value-1.idio" "vm-run xi='-1': should be non-negative" ^rt-parameter-value-error
+vm-error-load "vm-errors/vm-run-bad-xi-value-2.idio" "vm-run xi='98765': is too large" ^rt-parameter-value-error
+vm-error-load "vm-errors/vm-run-bad-xi-type.idio" "bad parameter type: '#t' a constant is not a fixnum|thread" ^rt-parameter-type-error
+vm-error-load "vm-errors/vm-run-bad-PC-value-1.idio" "vm-run PC='-1': should be non-negative" ^rt-parameter-value-error
+vm-error-load "vm-errors/vm-run-bad-PC-value-2.idio" "vm-run PC='987654321': is too large" ^rt-parameter-value-error
 vm-error-load "vm-errors/vm-run-bad-PC-type.idio" "bad parameter type: '#t' a constant is not a fixnum" ^rt-parameter-type-error
 
 vm-error-load "vm-errors/vm-values-ref-bignum-float.idio" "bad parameter type: '1.1e+0' a bignum is not a integer" ^rt-parameter-type-error
@@ -135,4 +140,4 @@ vm-error-load "vm-errors/run-in-thread-bad-thread-type.idio" "bad parameter type
 vm-error-load "vm-errors/run-in-thread-bad-func-type.idio" "bad parameter type: '#t' a constant is not a function" ^rt-parameter-type-error
 
 ;; all done?
-Tests? (vm-error0 + 35)
+Tests? (vm-error0 + 39)

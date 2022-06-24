@@ -43,7 +43,7 @@ typedef enum {
     IDIO_A_SHALLOW_ARGUMENT_SET1,
     IDIO_A_SHALLOW_ARGUMENT_SET2,
     IDIO_A_SHALLOW_ARGUMENT_SET3,
-    IDIO_A_SHALLOW_ARGUMENT_SET,
+    IDIO_A_SHALLOW_ARGUMENT_SET, /* 10 */
     IDIO_A_DEEP_ARGUMENT_SET,
 
     IDIO_A_SYM_REF,
@@ -55,7 +55,7 @@ typedef enum {
     IDIO_A_COMPUTED_SYM_REF,
     IDIO_A_COMPUTED_SYM_IREF,
 
-    IDIO_A_SYM_DEF,
+    IDIO_A_SYM_DEF,		/* 20 */
     IDIO_A_SYM_IDEF,
     IDIO_A_SYM_SET,
     IDIO_A_SYM_ISET,
@@ -66,7 +66,7 @@ typedef enum {
 
     IDIO_A_VAL_REF,
     IDIO_A_VAL_IREF,
-    IDIO_A_FUNCTION_VAL_REF,
+    IDIO_A_FUNCTION_VAL_REF,	/* 30 */
     IDIO_A_FUNCTION_VAL_IREF,
 
     IDIO_A_VAL_SET,
@@ -78,7 +78,7 @@ typedef enum {
     IDIO_A_PREDEFINED3,		/* not implemented */
     IDIO_A_PREDEFINED4,		/* not implemented */
     IDIO_A_PREDEFINED5,		/* not implemented */
-    IDIO_A_PREDEFINED6,		/* not implemented */
+    IDIO_A_PREDEFINED6,		/* not implemented */ /* 40 */
     IDIO_A_PREDEFINED7,		/* not implemented */
     IDIO_A_PREDEFINED8,		/* not implemented */
     IDIO_A_PREDEFINED,
@@ -90,7 +90,7 @@ typedef enum {
     IDIO_A_SHORT_JUMP_FALSE,
     IDIO_A_SHORT_JUMP_TRUE,
 
-    IDIO_A_PUSH_VALUE,
+    IDIO_A_PUSH_VALUE,		/* 50 */
     IDIO_A_POP_VALUE,
     IDIO_A_POP_REG1,
     IDIO_A_POP_REG2,
@@ -101,7 +101,7 @@ typedef enum {
     IDIO_A_RESTORE_ALL_STATE,
 
     IDIO_A_CREATE_FUNCTION,	/* top level closure */
-    IDIO_A_CREATE_IFUNCTION,	/* top level closure */
+    IDIO_A_CREATE_IFUNCTION,	/* top level closure */ /* 60 */
     IDIO_A_CREATE_CLOSURE,
     IDIO_A_CREATE_ICLOSURE,
     IDIO_A_FUNCTION_INVOKE,
@@ -112,7 +112,7 @@ typedef enum {
     IDIO_A_POP_ABORT,
 
     IDIO_A_ALLOCATE_FRAME1,
-    IDIO_A_ALLOCATE_FRAME2,
+    IDIO_A_ALLOCATE_FRAME2,	/* 70 */
     IDIO_A_ALLOCATE_FRAME3,
     IDIO_A_ALLOCATE_FRAME4,
     IDIO_A_ALLOCATE_FRAME5,
@@ -123,7 +123,7 @@ typedef enum {
     IDIO_A_POP_FRAME0,
     IDIO_A_POP_FRAME1,
     IDIO_A_POP_FRAME2,
-    IDIO_A_POP_FRAME3,
+    IDIO_A_POP_FRAME3,		/* 80 */
     IDIO_A_POP_FRAME,
 
     IDIO_A_LINK_FRAME,
@@ -136,7 +136,7 @@ typedef enum {
     IDIO_A_ARITY1P,
     IDIO_A_ARITY2P,
     IDIO_A_ARITY3P,
-    IDIO_A_ARITY4P,
+    IDIO_A_ARITY4P,		/* 90 */
     IDIO_A_ARITYEQP,
     IDIO_A_ARITYGEP,
 
@@ -147,7 +147,7 @@ typedef enum {
     IDIO_A_CONSTANT_2,
     IDIO_A_CONSTANT_3,
     IDIO_A_CONSTANT_4,
-    IDIO_A_FIXNUM,
+    IDIO_A_FIXNUM,		/* 100 */
     IDIO_A_NEG_FIXNUM,
     IDIO_A_CONSTANT,
     IDIO_A_NEG_CONSTANT,
@@ -158,7 +158,7 @@ typedef enum {
     IDIO_A_PRIMCALL1,
     IDIO_A_PRIMCALL2,
     IDIO_A_PRIMCALL3,		/* not implemented */
-    IDIO_A_PRIMCALL,		/* not implemented */
+    IDIO_A_PRIMCALL,		/* not implemented */ /* 110 */
 
     IDIO_A_SUPPRESS_RCSE,
     IDIO_A_POP_RCSE,
@@ -172,7 +172,7 @@ typedef enum {
     IDIO_A_POSTFIX_OPERATOR,
     IDIO_A_POSTFIX_IOPERATOR,
 
-    IDIO_A_PUSH_DYNAMIC,
+    IDIO_A_PUSH_DYNAMIC,	/* 120 */
     IDIO_A_PUSH_IDYNAMIC,
     IDIO_A_POP_DYNAMIC,
     IDIO_A_DYNAMIC_SYM_REF,
@@ -183,7 +183,7 @@ typedef enum {
     IDIO_A_PUSH_ENVIRON,
     IDIO_A_PUSH_IENVIRON,
     IDIO_A_POP_ENVIRON,
-    IDIO_A_ENVIRON_SYM_REF,
+    IDIO_A_ENVIRON_SYM_REF,	/* 130 */
     IDIO_A_ENVIRON_SYM_IREF,
 
     IDIO_A_NON_CONT_ERR,
@@ -195,7 +195,7 @@ typedef enum {
     IDIO_A_PUSH_IESCAPER,
     IDIO_A_POP_ESCAPER,
     IDIO_A_ESCAPER_LABEL_REF,
-    IDIO_A_ESCAPER_LABEL_IREF,
+    IDIO_A_ESCAPER_LABEL_IREF,	/* 140 */
 } idio_vm_a_enum;
 
 /*

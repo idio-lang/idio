@@ -86,11 +86,11 @@ extern int idio_vm_virtualisation_WSL;
  *
  * * desc - a descriptive string, usually a file name
  *
- * * symbols - a map from a SYM_IREF index to the constants index
+ * * symbols - a map from a SYM-IREF index to the constants index
  *
  *	symbols represents each thing that requires an associated
- *	value.  The evaluator chose a SYM_IREF (rather than a
- *	VAL_IREF) because we haven't seen the symbol *defined* in this
+ *	value.  The evaluator chose a SYM-IREF (rather than a
+ *	VAL-IREF) because we haven't seen the symbol *defined* in this
  *	module.  So it is either a forward lookup or a reference to a
  *	library function.  Probably.
  *
@@ -118,7 +118,7 @@ extern int idio_vm_virtualisation_WSL;
  * ie. si==2 which happens to be the fifth entry in the constants
  * table, ie. ci==4.
  *
- * The byte code will see "SYM_IREF 2".
+ * The byte code will see "SYM-IREF 2".
  *
  * Short-circuit: if values[si] is non-zero we've already looked this
  * symbol up and can use values[si].
@@ -129,15 +129,15 @@ extern int idio_vm_virtualisation_WSL;
  *
  * Now we need to lookup {printf} in our top level or the (exported)
  * names of our imports.  That will return us some symbol information,
- * (scope mci gvi module helpful-string).  If it failed we can add a
+ * (scope si ci gvi module helpful-string).  If it failed we can add a
  * new symbol information tuple which maps the symbol to itself,
  * cf. calling external programs, eg. ls(1).
  *
  * We can now set values[si] to gvi (from the symbol information).
  *
- * Obviously, "VAL_IREF n" can just blast away and use values[n].
+ * Obviously, "VAL-IREF n" can just blast away and use values[n].
  * Experience suggests that we've successfully arranged to avoid
- * seeing a "VAL_IREF n" before we are certain to have set values[n].
+ * seeing a "VAL-IREF n" before we are certain to have set values[n].
  */
 typedef struct idio_xenv_s {
     idio_xi_t index;
@@ -197,16 +197,18 @@ IDIO idio_vm_symbols_ref (idio_xi_t xi, idio_as_t si);
 idio_as_t idio_vm_extend_constants_direct (IDIO cs, IDIO ch, IDIO v);
 idio_as_t idio_vm_extend_default_constants (IDIO v);
 idio_as_t idio_vm_extend_constants (idio_xi_t xi, IDIO v);
-IDIO idio_vm_constants_ref (idio_xi_t xi, idio_as_t gci);
+IDIO idio_vm_constants_ref (idio_xi_t xi, idio_as_t ci);
 idio_ai_t idio_vm_constants_lookup (idio_xi_t xi, IDIO v);
 idio_as_t idio_vm_constants_lookup_or_extend (idio_xi_t xi, IDIO v);
-IDIO idio_vm_src_expr_ref (idio_xi_t xi, idio_as_t gci);
-IDIO idio_vm_src_props_ref (idio_xi_t xi, idio_as_t gci);
+IDIO idio_vm_src_expr_ref (idio_xi_t xi, idio_as_t ci);
+IDIO idio_vm_src_props_ref (idio_xi_t xi, idio_as_t ci);
 idio_as_t idio_vm_extend_values (idio_xi_t xi);
 idio_as_t idio_vm_extend_default_values ();
-IDIO idio_vm_values_ref (idio_xi_t xi, idio_as_t gvi);
+IDIO idio_vm_values_ref (idio_xi_t xi, idio_as_t vi);
+IDIO idio_vm_values_gref (idio_xi_t xi, idio_as_t vi);
 IDIO idio_vm_default_values_ref (idio_as_t gvi);
-void idio_vm_values_set (idio_xi_t xi, idio_as_t gvi, IDIO v);
+void idio_vm_values_set (idio_xi_t xi, idio_as_t vi, IDIO v);
+void idio_vm_values_gset (idio_xi_t xi, idio_as_t vi, IDIO v);
 void idio_vm_default_values_set (idio_as_t gvi, IDIO v);
 void idio_vm_decode_thread (IDIO thr);
 void idio_vm_decode_stack (IDIO thr, IDIO stack);
@@ -217,9 +219,9 @@ void idio_vm_dynamic_set (IDIO thr, idio_as_t msi, idio_as_t gvi, IDIO v);
 IDIO idio_vm_add_environ (IDIO m, IDIO ci, IDIO vi, IDIO note);
 IDIO idio_vm_environ_ref (IDIO thr, idio_as_t msi, idio_as_t gvi, IDIO args);
 void idio_vm_environ_set (IDIO thr, idio_as_t msi, idio_as_t gvi, IDIO v);
-IDIO idio_vm_computed_ref (IDIO thr, idio_as_t msi, idio_as_t gvi);
-IDIO idio_vm_computed_set (IDIO thr, idio_as_t msi, idio_as_t gvi, IDIO v);
-void idio_vm_computed_define (IDIO thr, idio_as_t msi, idio_as_t gvi, IDIO v);
+IDIO idio_vm_computed_ref (idio_xi_t xi, idio_as_t msi, idio_as_t gvi);
+IDIO idio_vm_computed_set (idio_xi_t xi, idio_as_t msi, idio_as_t gvi, IDIO v);
+void idio_vm_computed_define (idio_xi_t xi, idio_as_t msi, idio_as_t gvi, IDIO v);
 void idio_vm_push_abort (IDIO thr, IDIO krun);
 void idio_vm_pop_abort (IDIO thr);
 idio_sp_t idio_vm_find_abort_1 (IDIO thr);

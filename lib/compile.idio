@@ -24,26 +24,190 @@ export (
 )
 import evaluate codegen vm
 
+cache-dir := "__idio__"
+
+define (compile-file-writer file eenv pc) {
+  printf "compile-file-writer: %s\n" file
+
+  dn := dirname-pathname file
+  cdn := append-string dn "/" cache-dir
+  if (not (d? cdn)) {
+    mkdir cdn
+  }
+
+  ;; massage dir/foo.idio into dir/__idio__/foo.{asm_commit} where
+  ;; {asm_commit} tracks changes in src/vm-asm.h and keeps any of
+  ;; {REDACTED}'s casual behaviour from breaking things
+  bn := basename-pathname file
+  (regex-case
+   bn
+   ("(.*)\\.idio" {
+     bn = r.1
+   }))
+  cn := append-string cdn "/" bn "." IDIO_BUILD_ASM_COMMIT
+
+  with-output-to-file cn (function #n {
+    desc := %eenv-desc eenv
+
+    puts #S{
+; This is the execution environment for ${desc}
+}
+    if (not (equal? desc file)) {
+      puts #S{; found as ${file}
+}
+    }
+
+     puts #S{
+; The lib/compiler.idio commit used to create this file
+}
+
+    write IDIO_BUILD_COMPILER_COMMIT
+    puts "\n"
+
+    ;; An approximately RFC3339 timestamp
+    now := libc/strftime "%Y-%m-%dT%H:%M:%SZ%z" (libc/localtime)
+
+    puts #S{
+; This file was generated at
+}
+    write now
+    puts "\n"
+
+    puts #S{
+; The src/vm-asm.h commit used to create the byte code
+}
+
+    write IDIO_BUILD_ASM_COMMIT
+    puts "\n"
+
+    puts #S{
+; The checksum for the source file
+}
+
+    write (%eenv-chksum eenv)
+    puts "\n"
+
+    vs := %eenv-values eenv
+    vslen := (ph vs) + 1
+    alen := vslen
+    st := %eenv-symbols eenv
+    stlen := length st
+    if (stlen gt alen) {
+      alen = stlen
+    }
+
+    puts #S{
+; The symbol/value table sizes
+${alen}
+}
+
+    puts #S{
+; The symbol table entries
+( }
+
+    for sym-si in st {
+      si := pt sym-si
+      write (pair (si-si si) (si-ci si))
+      puts " "
+    }
+
+    puts #S{)
+}
+
+    cs := %eenv-constants eenv
+    puts #S{
+; The ${array-length cs} constants
+#\[ }
+
+    for c in cs {
+      write c
+      puts " "
+    }
+    puts #S{\]
+}
+
+    puts #S{
+; The initial program counter
+${pc}
+}
+
+    bc := %eenv-byte-code eenv
+    bs := idio-ia->string bc
+
+    puts #S{
+; The xenv byte code (${string-length bs} bytes)
+}
+
+    write bs
+    puts "\n\n"
+
+    ses := %eenv-src-exprs eenv
+    puts #S{
+; The ${array-length ses} source expressions
+#\[ }
+
+    for se in ses {
+      write se
+      puts " "
+    }
+    puts #S{\]
+}
+
+    sps := %eenv-src-props eenv
+    puts #S{
+; The ${array-length sps} source expression properties
+#\[ }
+
+    for sp in sps {
+      write sp
+      puts " "
+    }
+    puts #S{\]
+}
+
+    puts #S{
+; done
+}
+  })
+}
+
+; we want to subvert evaluate/meaning-include, which calls {load},
+; such that we continue processing.  We'll use compile-file-load for
+; that.
+compile-file-load := #f
+
 define (compile-file file & args) "
 " {
   eenv := #n
 
+  printf "compile-file: %s\n" file
+
   if (pair? args) {
     eenv = ph args
+    printf "compile-file: eenv %s\n" eenv
   } {
     eenv = %evaluation-environment file #t
   }
 
-  printf "compile-file: file %s\n" file
+  fn := file
+  if (not (f? fn)) {
+    fn = find-lib fn
+    printf "compile-file: %s\n" fn
+  }
 
-  printf "compile-file: eenv %s\n" eenv
-  fh := open-input-file file
+  set-%eenv-chksum! eenv (append-string "SHA256:" (ph (split-string (collect-output sha256sum fn))))
 
-  all-pc0 := #n
+  fh := open-input-file fn
+
+  orig-load := load
+  load = compile-file-load
+
+  all-m := #n
+  pc := #f
 
   loop :+ function #n {
     e := read fh
-    if (not (eof-object? e)) {
+    if (eof-object? e) #n {
       ;;printf "compile-file: e %s\n" e
       m := #f
       trap (^rt-parameter-error
@@ -54,41 +218,48 @@ define (compile-file file & args) "
 	      m = list I-NOP
 	      trap-return #f
 	    }) {
-	m = evaluate e eenv
+	      m = evaluate e eenv
       }
-      ;printf "compile-file: m %s\n" m
+      ;printf "compile-file: m #%s\n" (length (phth m))
       ;printf "compile-file: eenv %s\n" eenv
+
+      if m {
+	all-m = pair m all-m
+      }
       pc0 := codegen m eenv
-      all-pc0 = pair pc0 all-pc0
+      if (not pc) {
+	pc = pc0
+	;printf "compile-file: use  %4s / %4s\n" pc0 (idio-ia-length (%eenv-byte-code eenv))
+      } {
+	;printf "compile-file: skip %4s / %4s\n" pc0 (idio-ia-length (%eenv-byte-code eenv))
+	#t
+      }
+
       (loop)
-    } {
-      printf "compile-file: ?? e %s\n" e
     }
   }
 
   (loop)
 
+  load = orig-load
+
   close-handle fh
 
   printf "\n"
 
-  %vm-add-xenv-from-eenv eenv (reverse! all-pc0)
+  ;printf "compile-file: eenv %s\n" eenv
 
-  if #f {
-    symbols := %eenv-symbols eenv
-    while (pair? symbols) {
-      printf "compile-file: st %s\n" (ph symbols)
-      symbols = pt symbols
-    }
+  compile-file-writer fn eenv pc
 
-    printf "compile-file: vs %s\n" (%eenv-values eenv)
+  ;; return all-m to any recursive calls via evaluate/meaning-include
+  ;; which calls {load} which we renamed to be compile-file-load,
+  ;; below
+  all-m
+}
 
-    printf "compile-file: cs %s\n" (%eenv-constants eenv)
-
-    printf "compile-file: eenv %s\n" eenv
-  }
-
-  all-pc0
+define (compile-file-load file) {
+  printf "compile-file-load: %s\n" file
+  compile-file file
 }
 
 provide compile

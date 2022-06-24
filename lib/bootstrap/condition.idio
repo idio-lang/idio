@@ -476,7 +476,7 @@ type `ct`
 :type ct: condition type
 :param cb: callback handler
 :type cb: 3-ary function
-:return: #<unspec>
+:return: ``#<unspec>``
 
 `cb` will be invoked as :samp:`{cb} {c} iem cr-printf` where
 :samp:`{c}` is the condition instance, ``iem`` adds the standard
@@ -504,7 +504,7 @@ report.
 :type c: condition instance
 :param handle: print to handle, defaults to current error handle
 :type handle: handle, optional
-:return: #<unspec>
+:return: ``#<unspec>``
 
 The form of the report is not fixed and should not be relied upon.
 

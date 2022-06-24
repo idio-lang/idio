@@ -2973,7 +2973,7 @@ char *idio_constant_idio_as_C_string (IDIO v, size_t *sizep, idio_unicode_t form
     case IDIO_CONSTANT_EOF:				t = "#<eof>";				break;
     case IDIO_CONSTANT_TRUE:				t = "#t";				break;
     case IDIO_CONSTANT_FALSE:				t = "#f";				break;
-    case IDIO_CONSTANT_VOID:				t = "#<void>";				break;
+    case IDIO_CONSTANT_VOID:				t = "(void)";				break;
     case IDIO_CONSTANT_NAN:				t = "#<NaN>";				break;
 
 	/*

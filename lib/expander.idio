@@ -23,8 +23,8 @@ export (
 	 install-expander!
 	 install-expander/source!
 	 copy-expander!
+	 evaluate-expander-src-code
 	 evaluate-expander
-	 evaluate-expander-source
 	 template-expand
 	 template-expand*
 )
@@ -180,7 +180,12 @@ define (install-expander! id proc) {
   old := assq id *expander-list*
 
   if old {
-    set-pt! old proc
+    if (and (not (function? proc))
+	    (function? (pt old))) {
+      printf "WARNING: install-expander: not overwriting %s, a %s, with source code\n" id (type->string (pt old))
+      } {
+      set-pt! old proc
+    }
   } {
     *expander-list* = pair (pair id proc) *expander-list*
   }
@@ -216,17 +221,27 @@ define (copy-expander! new-id old-id) {
   }
 }
 
-define (evaluate-expander m cs) {
-  pc := codegen *expander-thread* m cs
-  vm-run *expander-thread* pc
+define (evaluate-expander-src-code e) {
+  printf "eesc\n"
+  pc := #f
+  printf "eesc: e  %s\n" e
+  m := evaluate/evaluate e *expander-eenv*
+  printf "eesc: m  %s\n" m
+  pc = codegen m *expander-eenv*
+  printf "eesc: pc %s\n" pc
+  %%vm-trace 1
+  r := vm-run *expander-thread* pc
+  %%vm-trace 0
+  r
 }
 
-define (evaluate-expander-source x e) {
+define (evaluate-expander x e) {
   initial-expander x e
 }
 
 define (template-expand e) {
-  initial-expander e single-expander
+  ;initial-expander e single-expander
+  evaluate-expander e single-expander
 }
 
 define (template-expand* e) {

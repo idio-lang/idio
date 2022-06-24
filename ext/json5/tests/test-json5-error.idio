@@ -74,7 +74,7 @@ json5-error-load "json5-errors/parse-string-bad-string-value.idio" "json5/parse-
 
 json5-error-load "json5-errors/generate-hash-bad-key-type.idio" "json5/generate member name='#t' a constant is not a JSON5-compatible value"
 
-json5-error-load "json5-errors/generate-bad-constant-value-1.idio" "json5/generate value='#<void>' a constant is not a JSON5-compatible value"
+json5-error-load "json5-errors/generate-bad-constant-value-1.idio" "json5/generate value='(void)' a constant is not a JSON5-compatible value"
 json5-error-load "json5-errors/generate-bad-constant-value-2.idio" "json5/generate value='a' a unicode is not a JSON5-compatible value"
 
 ; JSON5 only

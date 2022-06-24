@@ -250,7 +250,7 @@ IDIO idio_vm_dasm_symbols_ref (idio_xi_t xi, idio_as_t si)
 
     if (xi) {
 	if (si >= idio_array_size (st)) {
-	    fprintf (stderr, "si %zu > %zu\n", si, idio_array_size (st));
+	    fprintf (stderr, "dasm-sym-ref si %zu > %zu\n", si, idio_array_size (st));
 	    idio_debug ("st %s\n", st);
 	    return idio_S_undef;
 	    assert (0);
@@ -1274,7 +1274,12 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO fgci = idio_module_get_or_set_vci (ce, idio_fixnum (mci));
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, IDIO_FIXNUM_VAL (fgci));
 
-		IDIO_VM_DASM ("ENVIRON-SYM-REF %" PRIu64 " %s", mci, IDIO_SYMBOL_S (sym));
+		if (idio_isa_symbol (sym)) {
+		    IDIO_VM_DASM ("ENVIRON-SYM-REF %" PRIu64 " %s", mci, IDIO_SYMBOL_S (sym));
+		} else {
+		    IDIO_VM_DASM ("ENVIRON-SYM-REF %" PRIu64 " ?? %s", mci, idio_type2string (sym));
+		    idio_debug_FILE (fp, " %s", sym);
+		}
 	    }
 	    break;
 	case IDIO_A_ENVIRON_SYM_IREF:
@@ -1432,7 +1437,7 @@ current directory.  These may get overwritten when Idio stops.	\n\
 void idio_vm_dump_dasm ()
 {
 #ifdef IDIO_DEBUG
-    fprintf (stderr, "vm-dasm ");
+    fprintf (stderr, "vm-dasm[%zu] ", idio_xenvs_size);
 #endif
 
     for (idio_xi_t xi = 0; xi < idio_xenvs_size; xi++) {

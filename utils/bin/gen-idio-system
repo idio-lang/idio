@@ -216,6 +216,8 @@ unset IFS
 # git commit
 
 git_commit=$(git rev-parse --short=7 HEAD)
+git_asm_commit=$(git rev-parse --short=7 HEAD -- src/vm-asm.h)
+git_compiler_commit=$(git rev-parse --short=7 HEAD -- lib/compiler.idio)
 git_describe=$(git describe --tags || true)
 
 # dirty working directory?
@@ -224,9 +226,13 @@ git_describe=$(git describe --tags || true)
 if ! git diff-files --quiet --ignore-submodules -- ; then
     # unstaged changes in the working tree
     git_commit="${git_commit}*"
+    git_asm_commit="${git_asm_commit}*"
+    git_compiler_commit="${git_compiler_commit}*"
 elif ! git diff-index --cached --quiet HEAD --ignore-submodules -- ; then
     # uncommitted changes in the index
     git_commit="${git_commit}+"
+    git_asm_commit="${git_asm_commit}+"
+    git_compiler_commit="${git_compiler_commit}+"
 fi
 
 ######################################################################
@@ -271,6 +277,8 @@ cat <<EOF > ${var_header}
 #define ${var_MODULE}_SYSTEM_LIBDIR		"${libdir}/idio"
 #define ${var_MODULE}_SYSTEM_ARCH		"${MULTIARCH}"
 #define ${var_MODULE}_BUILD_COMMIT		"${git_commit}"
+#define ${var_MODULE}_BUILD_ASM_COMMIT		"${git_asm_commit}"
+#define ${var_MODULE}_BUILD_COMPILER_COMMIT	"${git_compiler_commit}"
 #define ${var_MODULE}_BUILD_DESCRIBE		"${git_describe}"
 
 #endif
@@ -309,6 +317,8 @@ ${var_MODULE}_SYSTEM_BINDIR		:= "${bindir}"
 ${var_MODULE}_SYSTEM_LIBDIR		:= "${libdir}/idio"
 ${var_MODULE}_SYSTEM_ARCH		:= "${MULTIARCH}"
 ${var_MODULE}_BUILD_COMMIT		:= "${git_commit}"
+${var_MODULE}_BUILD_ASM_COMMIT		:= "${git_asm_commit}"
+${var_MODULE}_BUILD_COMPILER_COMMIT	:= "${git_compiler_commit}"
 ${var_MODULE}_BUILD_DESCRIBE		:= "${git_describe}"
 ${var_MODULE}_BUILD_CC			:= "${CC}"
 ${var_MODULE}_BUILD_CC_PATH		:= "${CC_path}"

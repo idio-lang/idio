@@ -30,7 +30,7 @@ ifneq ($(MAKECMDGOALS),clean)
 include $(deps) Makefile.system
 endif
 
-# dummy versions if Makefile.system doesn't exist yet
+# dummy version of Makefile.system doesn't exist yet
 IDIO_SYSTEM_VERSION_MM		?= a.b
 IDIO_SYSTEM_VERSION_M		?= a
 
@@ -202,13 +202,18 @@ valgrind: local-install
 cppcheck:
 	cppcheck --force --enable=all .
 
+IDIO_SYSTEM = $(LIBDIR)/idio-system.idio
+
 # the include $(deps) means that, in effect, *.d are the first things
 # built and some of them require idio-system.h -- and %.d doesn't work
 env.d file-handle.d idio.d libc-api.d vars.d : idio-system.h
 $(deps) : idio-config.h
 
-idio-system.h Makefile.system $(LIBDIR)/system.idio : $(UTILSDIR)/bin/gen-idio-system $(sources) $(filter-out $(LIBDIR)/system.idio,$(isources)) $(SRCDIR)/version
-	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(LIBDIR)/system.idio
+$(IDIO_SYSTEM) : $(UTILSDIR)/bin/gen-idio-system src/vm-asm.h
+	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(IDIO_SYSTEM)
+
+idio-system.h Makefile.system $(IDIO_SYSTEM) : $(UTILSDIR)/bin/gen-idio-system $(sources) $(filter-out $(IDIO_SYSTEM),$(isources)) $(SRCDIR)/version
+	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(IDIO_SYSTEM)
 
 idio-config.h : $(UTILSDIR)/bin/gen-idio-config
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-config

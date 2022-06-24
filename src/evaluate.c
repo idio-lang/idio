@@ -1327,9 +1327,9 @@ void idio_meaning_copy_src_properties (IDIO src, IDIO dst)
 #ifdef IDIO_DEBUG
 		    if (idio_S_function_name == IDIO_PAIR_H (src) ||
 			idio_S_function == IDIO_PAIR_H (src)) {
-			idio_debug ("im_csp !!!! no src lo for\n src=%s\n", src);
+			idio_debug ("\n\nIDIO_DEBUG: FATAL: im_csp no src lo for\n src=%s\n", src);
 			idio_debug (" dst=%s\n", dst);
-			IDIO_C_ASSERT (0);
+			/* IDIO_C_ASSERT (0); */
 		    }
 #endif
 		} else {
@@ -2479,7 +2479,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
 
-	idio_copy_infix_operator (idio_thread_current_thread (), name, pri, e);
+	idio_copy_infix_operator (IDIO_THREAD_XI (idio_thread_current_thread ()), name, pri, e);
 	m = idio_meaning (sve, sve, nametree, flags, eenv);
     } else {
 	/*
@@ -2581,7 +2581,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
 
-	idio_copy_postfix_operator (idio_thread_current_thread (), name, pri, e);
+	idio_copy_postfix_operator (IDIO_THREAD_XI (idio_thread_current_thread ()), name, pri, e);
 	m = idio_meaning (sve, sve, nametree, flags, eenv);
     } else {
 	/*
@@ -5648,6 +5648,7 @@ IDIO idio_evaluate_eenv (IDIO desc, IDIO aotp, IDIO module)
 	return idio_struct_instance (idio_evaluate_eenv_type,
 				     idio_listv (IDIO_EENV_ST_SIZE,
 						 desc,
+						 idio_S_false, /* chksum */
 						 aotp,
 						 idio_S_nil, /* symbols */
 						 idio_S_nil, /* values */
@@ -5670,6 +5671,7 @@ IDIO idio_evaluate_eenv (IDIO desc, IDIO aotp, IDIO module)
 	return idio_struct_instance (idio_evaluate_eenv_type,
 				     idio_listv (IDIO_EENV_ST_SIZE,
 						 desc,
+						 idio_S_false, /* chksum */
 						 aotp,
 						 idio_S_nil, /* symbols */
 						 idio_S_nil, /* values */
@@ -5873,6 +5875,7 @@ void idio_init_evaluate ()
 						idio_S_nil,
 						idio_listv (IDIO_EENV_ST_SIZE,
 							    IDIO_SYMBOL ("desc"),
+							    IDIO_SYMBOL ("chksum"),
 							    IDIO_SYMBOL ("aot?"),
 							    IDIO_SYMBOL ("symbols"),
 							    IDIO_SYMBOL ("values"),

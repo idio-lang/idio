@@ -44,6 +44,7 @@
 #include "codegen.h"
 #include "error.h"
 #include "evaluate.h"
+#include "expander.h"
 #include "fixnum.h"
 #include "hash.h"
 #include "idio-string.h"
@@ -53,6 +54,7 @@
 #include "struct.h"
 #include "symbol.h"
 #include "thread.h"
+#include "unicode.h"
 #include "util.h"
 #include "vm-asm.h"
 #include "vm.h"
@@ -90,6 +92,7 @@ IDIO_IA_T idio_ia (size_t const asize)
 
     IDIO_IA_T ia = idio_alloc (sizeof (idio_ia_t));
     ia->ae = idio_alloc (sz * sizeof (IDIO_I));
+    ia->refcnt = 1;
     ia->asize = sz;
     ia->usize = 0;
 
@@ -99,8 +102,12 @@ IDIO_IA_T idio_ia (size_t const asize)
 void idio_ia_free (IDIO_IA_T ia)
 {
     if (ia) {
-	idio_free (ia->ae);
-	idio_free (ia);
+	IDIO_IA_REFCNT (ia)--;
+
+	if (0 == IDIO_IA_REFCNT (ia)) {
+	    idio_free (ia->ae);
+	    idio_free (ia);
+	}
     } else {
 	fprintf (stderr, "idio_ia_free: already freed ia %10p?\n", ia);
     }
@@ -301,6 +308,56 @@ IDIO_IA_T idio_ia_compute_64uint (uint64_t offset)
 #define IDIO_IA_PUSH_16UINT(n)    { IDIO_IA_T ia_p16 = idio_ia_compute_16uint (n);  idio_ia_append_free (ia, ia_p16); }
 #define IDIO_IA_PUSH_32UINT(n)    { IDIO_IA_T ia_p32 = idio_ia_compute_32uint (n);  idio_ia_append_free (ia, ia_p32); }
 #define IDIO_IA_PUSH_64UINT(n)    { IDIO_IA_T ia_p64 = idio_ia_compute_64uint (n);  idio_ia_append_free (ia, ia_p64); }
+
+IDIO_DEFINE_PRIMITIVE1_DS ("idio-ia-length", idio_ia_length, (IDIO ia), "ia", "\
+Return the number of opcodes in `ia`		\n\
+						\n\
+:param ia: byte code				\n\
+:type eenv: struct-idio-ia			\n\
+:return: length					\n\
+:type args: integer				\n\
+")
+{
+    IDIO_ASSERT (ia);
+
+    if (idio_CSI_idio_ia_s != IDIO_C_TYPE_POINTER_PTYPE (ia)) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_param_value_exp ("idio-ia-length", "ia", ia, "struct-idio-ia", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+    IDIO_IA_T bc = IDIO_C_TYPE_POINTER_P (ia);
+
+    return idio_integer (IDIO_IA_USIZE (bc));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("idio-ia->string", idio_ia2string, (IDIO ia), "ia", "\
+Return the byte code in `ia` as a string	\n\
+						\n\
+:param ia: byte code				\n\
+:type ia: struct-idio-ia			\n\
+:return: string					\n\
+:type args: string				\n\
+")
+{
+    IDIO_ASSERT (ia);
+
+    if (idio_CSI_idio_ia_s != IDIO_C_TYPE_POINTER_PTYPE (ia)) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_param_value_exp ("idio-ia->string", "ia", ia, "struct-idio-ia", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+    IDIO_IA_T bc = IDIO_C_TYPE_POINTER_P (ia);
+
+    IDIO os = idio_octet_string_C_len ((char const *) bc->ae, IDIO_IA_USIZE (bc));
+
+    return os;
+}
 
 idio_as_t idio_codegen_extend_values (IDIO eenv)
 {
@@ -3029,6 +3086,8 @@ static idio_codegen_symbol_t idio_codegen_symbols[] = {
 
 void idio_codegen_add_primitives ()
 {
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_codegen_module, idio_ia_length);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_codegen_module, idio_ia2string);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_codegen_module, codegen_constants_lookup_or_extend);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_codegen_module, codegen);
 }

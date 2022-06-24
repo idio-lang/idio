@@ -21,10 +21,12 @@ evaluate.idio
 module evaluate
 export (
 	 evaluate
+	 si-si
+	 si-ci
 )
 import read expander operator codegen threading vm
 
-export-struct-accessors-only %eenv	desc aot? symbols values constants constants-hash module escapes src-exprs src-props byte-code
+export-struct-accessors-only %eenv	desc chksum aot? symbols values constants constants-hash module escapes src-exprs src-props byte-code
 
 define (eenv-as-string eenv seen) {
   if (%eenv? eenv) {
@@ -42,6 +44,7 @@ define (eenv-as-string eenv seen) {
     }
     hprintf r "vs #%s " (length (%eenv-values eenv))
     hprintf r "se #%s " (array-length (%eenv-src-exprs eenv))
+    hprintf r "bc #%s " (idio-ia-length (%eenv-byte-code eenv))
     hprintf r ">"
     get-output-string r
   } #n
@@ -1082,6 +1085,7 @@ define (meaning-define-template src name e nametree flags eenv) {
   meaning-copy-src-properties src appl
 
   docstr := sprintf "define-template: %s (x e)" name
+
   expander := (list 'function/name
 		    (string->symbol (sprintf "%s-expander" name))
 		    '(x e)
@@ -2423,14 +2427,19 @@ define (evaluate-include-file fh eenv) {
 }
 
 define (meaning-include src e nametree flags eenv) {
-  if (%eenv-aot? eenv) (list I-NOP) {
-    fh := open-input-file (find-lib e)
-    unwind-protect {
-      evaluate-include-file fh eenv
-    } {
-      close-handle fh
-    }
+  lib := (find-lib e)
+  printf "include %s\n" lib
+  load lib
+  #*
+  fh := open-input-file lib
+  unwind-protect {
+    evaluate-include-file fh eenv
+  } {
+    close-handle fh
   }
+
+  list I-NOP
+  *#
 }
 
 define (meaning-expander src e nametree flags eenv) {
@@ -3187,27 +3196,27 @@ define (meaning src e nametree flags eenv) {
   }
 }
 
-define (evaluate src & eenv) "
+define (evaluate src & args) "
 evaluate Idio source code `src` in the context of evaluation
 environment `eenv` and return intermediate code for the code generator
 
 :param src: Idio source code
 :type src: Abstract Syntax Tree
 :param eenv: evaluation environment, defaults to a new instance
-:type eenv: struct-instance
+:type eenv: struct-instance, optional
 
 .. seealso: :ref:`
 " {
-  ee := #n
-  if (pair? eenv) {
-    ee = ph eenv
+  eenv := #n
+  if (pair? args) {
+    eenv = ph args
   } {
-    ee = %evaluation-environment "evaluate" #t
+    eenv = %evaluation-environment "evaluate" #t
   }
 
   ;;printf "evaluate src %s\n" src
 
-  m := meaning src src #n no-flags ee
+  m := meaning src src #n no-flags eenv
 
   list (list I-PUSH-ABORT m) (list I-POP-ABORT)
 }

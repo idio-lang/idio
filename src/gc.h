@@ -1527,12 +1527,11 @@ typedef struct idio_gc_s {
  * next (source code) statement, we need to have already byte compiled
  * the not-immediately-relevant code.  Which we can then copy.
  *
- * XXX These are reference counted for reasons to do with an
- * undiscovered bug^W^Wundocumented feature.
- *
- * Used in both codegen.c and vm.c.
+ * XXX These are reference counted as they are used in both codegen.c
+ * and vm.c.
  */
 typedef struct idio_ia_s {
+    int refcnt;
     idio_pc_t asize;		/* alloc()'d */
     idio_pc_t usize;		/* used */
     IDIO_I *ae;
@@ -1540,6 +1539,7 @@ typedef struct idio_ia_s {
 
 typedef idio_ia_t* IDIO_IA_T;
 
+#define IDIO_IA_REFCNT(A)	((A)->refcnt)
 #define IDIO_IA_ASIZE(A)	((A)->asize)
 #define IDIO_IA_USIZE(A)	((A)->usize)
 #define IDIO_IA_AE(A,i)		((A)->ae[i])

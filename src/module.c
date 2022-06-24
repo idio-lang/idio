@@ -1379,16 +1379,14 @@ or the current environment if no `mod` supplied			\n\
 }
 
 /*
- * idio_module_symbol_value will only look in the current module
+ * idio_module_symbol_value_xi() will only look in the current module
  */
-IDIO idio_module_symbol_value_thread (IDIO thr, IDIO symbol, IDIO m_or_n, IDIO args)
+IDIO idio_module_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO m_or_n, IDIO args)
 {
-    IDIO_ASSERT (thr);
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (m_or_n);
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (list, args);
 
@@ -1433,20 +1431,20 @@ IDIO idio_module_symbol_value_thread (IDIO thr, IDIO symbol, IDIO m_or_n, IDIO a
 	IDIO fgvi = IDIO_SI_VI (si);
 
 	if (idio_S_toplevel == scope) {
-	    r = idio_vm_values_ref (IDIO_THREAD_XI (thr), IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_values_gref (xi, IDIO_FIXNUM_VAL (fgvi));
 	} else if (idio_S_predef == scope) {
-	    r = idio_vm_values_ref (IDIO_THREAD_XI (thr), IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_values_gref (xi, IDIO_FIXNUM_VAL (fgvi));
 	} else if (idio_S_dynamic == scope) {
-	    r = idio_vm_dynamic_ref (thr, IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
+	    r = idio_vm_dynamic_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
 	} else if (idio_S_environ == scope) {
-	    r = idio_vm_environ_ref (thr, IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
+	    r = idio_vm_environ_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
 	} else if (idio_S_computed == scope) {
 	    /*
 	     * Code coverage
 	     *
 	     * Nobody looks one up, I guess.  I'm not sweating it.
 	     */
-	    r = idio_vm_computed_ref (thr, IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_computed_ref (xi, IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi));
 	} else {
 	    /*
 	     * Test Case: ??
@@ -1471,7 +1469,7 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n, IDIO args)
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (list, args);
 
-    return idio_module_symbol_value_thread (idio_thread_current_thread (), symbol, m_or_n, args);
+    return idio_module_symbol_value_xi (0, symbol, m_or_n, args);
 }
 
 IDIO idio_module_env_symbol_value (IDIO symbol, IDIO args)
@@ -1572,20 +1570,26 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
 	IDIO fgvi = IDIO_SI_VI (si);
 	idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
+	IDIO thr = idio_thread_current_thread ();
+	idio_xi_t xi = IDIO_THREAD_XI (thr);
+
 	if (gvi) {
 	    if (idio_S_toplevel == scope) {
-		r = idio_vm_values_ref (IDIO_THREAD_XI (idio_thread_current_thread ()), gvi);
+		/*
+		 * gvi is a global as we've just looked it up in si
+		 */
+		r = idio_vm_values_ref (0, gvi);
 	    } else if (idio_S_predef == scope) {
-		r = idio_vm_values_ref (IDIO_THREAD_XI (idio_thread_current_thread ()), gvi);
+		r = idio_vm_values_gref (xi, gvi);
 	    } else if (idio_S_dynamic == scope) {
 		/*
 		 * Code coverage
 		 *
 		 * Nobody looks one up, I guess.  I'm not sweating it.
 		 */
-		r = idio_vm_dynamic_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), gvi, args);
+		r = idio_vm_dynamic_ref (thr, IDIO_FIXNUM_VAL (fmci), gvi, args);
 	    } else if (idio_S_environ == scope) {
-		r = idio_vm_environ_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), gvi, args);
+		r = idio_vm_environ_ref (thr, IDIO_FIXNUM_VAL (fmci), gvi, args);
 	    } else if (idio_S_computed == scope) {
 		/*
 		 * Test Case: ??
@@ -1741,14 +1745,12 @@ set the information associated with symbol `sym` in module `mod` to `v`		\n\
     return idio_module_set_symbol (sym, v, mod);
 }
 
-IDIO idio_module_set_symbol_value_thread (IDIO thr, IDIO symbol, IDIO value, IDIO module)
+IDIO idio_module_set_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO value, IDIO module)
 {
-    IDIO_ASSERT (thr);
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (value);
     IDIO_ASSERT (module);
 
-    IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (module, module);
 
@@ -1756,8 +1758,6 @@ IDIO idio_module_set_symbol_value_thread (IDIO thr, IDIO symbol, IDIO value, IDI
     IDIO scope;
     IDIO fmci;
     IDIO fgvi;
-
-    size_t xi = IDIO_THREAD_XI (thr);
 
     if (idio_S_unspec == si) {
 	/*
@@ -1804,7 +1804,10 @@ IDIO idio_module_set_symbol_value_thread (IDIO thr, IDIO symbol, IDIO value, IDI
     idio_module_set_vvi (module, fmci, fgvi);
 
     if (idio_S_toplevel == scope) {
-	idio_vm_values_set (IDIO_THREAD_XI (thr), gvi, value);
+	/*
+	 * gvi is a global as we've just looked it up in si
+	 */
+	idio_vm_values_set (0, gvi, value);
     } else if (idio_S_dynamic == scope) {
 	/*
 	 * Code coverage
@@ -1820,7 +1823,7 @@ IDIO idio_module_set_symbol_value_thread (IDIO thr, IDIO symbol, IDIO value, IDI
 	 *
 	 * Nobody has set one, I guess.  I'm not sweating it.
 	 */
-	idio_vm_computed_set (idio_thread_current_thread (), mci, gvi, value);
+	idio_vm_computed_set (xi, mci, gvi, value);
     } else if (idio_S_predef == scope) {
 	/*
 	 * XXX
@@ -1853,7 +1856,7 @@ IDIO idio_module_set_symbol_value_thread (IDIO thr, IDIO symbol, IDIO value, IDI
 	 * can live with it for now.
 	 */
 	if (module != idio_operator_module) {
-	    IDIO cv = idio_vm_values_ref (IDIO_THREAD_XI (idio_thread_current_thread ()),  gvi);
+	    IDIO cv = idio_vm_values_gref (xi,  gvi);
 	    idio_debug ("PRIM %s/", IDIO_MODULE_NAME (module));
 	    idio_debug ("%s", symbol);
 	    idio_debug (" => %s", value);
@@ -1893,7 +1896,7 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (module, module);
 
-    return idio_module_set_symbol_value_thread (idio_thread_current_thread (), symbol, value, module);
+    return idio_module_set_symbol_value_xi (IDIO_THREAD_XI (idio_thread_current_thread ()), symbol, value, module);
 }
 
 /*

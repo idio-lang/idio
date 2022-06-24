@@ -671,7 +671,7 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
 
 define (update-status) "update the process status of any outstanding pids
 
-:return: #<unspec>
+:return: ``#<unspec>``
 " {
   waitany := function () {
     apply values (waitpid WAIT_ANY (WUNTRACED C/| WNOHANG))
@@ -723,7 +723,7 @@ define (format-job-info job msg) "display to stderr `msg` alongside job `job` de
 :param job: job
 :param msg: string
 
-:return: #<unspec>
+:return: ``#<unspec>``
 " {
   if %idio-interactive {
     jd := job-detail job
@@ -1024,7 +1024,7 @@ define (hangup-job job) "hangup job `job`
 
 :param job: job
 
-:return: #<unspec>
+:return: ``#<unspec>``
 
 Send the process group of `job` a SIGCONT then a SIGHUP
 " {
@@ -1092,7 +1092,7 @@ define (mark-job-as-running job) "mark job `job` as running
 
 :param job: job
 
-:return: #<unspec>
+:return: ``#<unspec>``
 
 In particular, mark job `job` as not stopped.
 " {
@@ -1114,7 +1114,7 @@ define (continue-job job foreground) "mark job `job` as running and foreground i
 :param job: job
 :param foreground: boolean
 
-:return: #<unspec>
+:return: ``#<unspec>``
 " {
   mark-job-as-running job
   if foreground {
@@ -1151,7 +1151,7 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
 :param outfile: to be used for stdout
 :param errfile: to be used for stderr
 
-:return: #<unspec>
+:return: ``#<unspec>``
 " {
   #*
 
@@ -1279,7 +1279,7 @@ define (%prep-process pgid infile outfile errfile foreground async-job) "prepare
 :param errfile: to be used for stderr
 :param foreground: place job in foreground
 
-:return: #<unspec>
+:return: ``#<unspec>``
 " {
   if (or %idio-interactive
 	 async-job) {
