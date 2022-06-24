@@ -105,7 +105,7 @@ to :manpage:`expect(1)`			\n\
 ")
 {
     IDIO_ASSERT (fd);
-    IDIO_ASSERT (file);
+    IDIO_ASSERT (msg);
 
     /*
      * Test Case: expect-errors/exp-send-human-bad-fd-type.idio
