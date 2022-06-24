@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -192,88 +192,189 @@ test (trim-path P) "a:b:c:d"
 ; simple
 P = "/a/b/c"
 
-test (normalize-pathname P) "/a/b/c"
+test (reduce-pathname P) "/a/b/c"
+
+; relative
+P = "a/b/c"
+
+test (reduce-pathname P) "a/b/c"
 
 ; prefix /
 P = "///a/b/c"
 
-test (normalize-pathname P) "/a/b/c"
+test (reduce-pathname P) "/a/b/c"
 
 ; infix /
 P = "/a///b/c"
 
-test (normalize-pathname P) "/a/b/c"
+test (reduce-pathname P) "/a/b/c"
 
 ; suffix /
 P = "/a/b/c///"
 
-test (normalize-pathname P) "/a/b/c"
+test (reduce-pathname P) "/a/b/c"
 
 ;;;;;;;;;;;;;;;
 
 ; simple .
 P = "/."
 
-test (normalize-pathname P) "/"
+test (reduce-pathname P) "/"
 
 ; prefix .
 P = "/./a/b/c"
 
-test (normalize-pathname P) "/a/b/c"
+test (reduce-pathname P) "/a/b/c"
 
 ; infix .
 P = "/a/b/./c"
 
-test (normalize-pathname P) "/a/b/c"
+test (reduce-pathname P) "/a/b/c"
 
 ; suffix .
 P = "/a/b/c/."
 
-test (normalize-pathname P) "/a/b/c"
+test (reduce-pathname P) "/a/b/c"
 
 ;;;;;;;;;;;;;;;
 
 ; simple ..
 P = "/.."
 
-test (normalize-pathname P) "/"
+test (reduce-pathname P) "/"
 
 ; prefix ..
 P = "/../a/b/c"
 
-test (normalize-pathname P) "/a/b/c"
+test (reduce-pathname P) "/a/b/c"
 
 ; infix ..
 P = "/a/b/../c"
 
-test (normalize-pathname P) "/a/c"
+test (reduce-pathname P) "/a/c"
 
 ; suffix ..
 P = "/a/b/c/.."
 
-test (normalize-pathname P) "/a/b"
+test (reduce-pathname P) "/a/b"
 
 ;;;;;;;;;;;;;;;
 
 ; multiple ..
 P = "/../.."
 
-test (normalize-pathname P) "/"
+test (reduce-pathname P) "/"
 
 ; prefix ..
 P = "/../../a/b/c"
 
-test (normalize-pathname P) "/a/b/c"
+test (reduce-pathname P) "/a/b/c"
 
 ; infix ../..
 P = "/a/b/../../c"
 
-test (normalize-pathname P) "/c"
+test (reduce-pathname P) "/c"
 
 ; suffix ../..
 P = "/a/b/c/../.."
 
-test (normalize-pathname P) "/a"
+test (reduce-pathname P) "/a"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; alternate sep
+P = ">a>b>c"
+
+test (reduce-pathname P :sep #\>) ">a>b>c"
+
+; prefix >
+P = ">>>a>b>c"
+
+test (reduce-pathname P :sep #\>) ">a>b>c"
+
+; infix >
+P = ">a>>>b>c"
+
+test (reduce-pathname P :sep #\>) ">a>b>c"
+
+; suffix >
+P = ">a>b>c>>>"
+
+test (reduce-pathname P :sep #\>) ">a>b>c"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; awkward
+P = "/"
+
+test (reduce-pathname P) "/"
+
+P = "///"
+
+test (reduce-pathname P) "/"
+
+P = ""
+
+test (reduce-pathname P) ""
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; normalize-pathname calls reduce-pathname so no need to retest that
+; part particularly
+P = "/a/b/c.d"
+
+test (normalize-pathname P) "/a/b/c.d"
+
+;; relative
+P = "a/b/c.d"
+
+test (normalize-pathname P) (append-string PWD "/" P)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; dirname-pathname calls reduce-pathname so no need to retest that
+; part particularly
+P = "/a/b/c.d"
+
+test (dirname-pathname P) "/a/b"
+
+;; relative
+P = "a/b/c.d"
+
+test (dirname-pathname P) "a/b"
+
+; in root
+P = "/c.d"
+
+test (dirname-pathname P) "/"
+
+; in PWD
+P = "c.d"
+
+test (dirname-pathname P) "."
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; basename-pathname calls reduce-pathname so no need to retest that
+; part particularly
+P = "/a/b/c.d"
+
+test (basename-pathname P) "c.d"
+
+; relative
+P = "a/b/c.d"
+
+test (basename-pathname P) "c.d"
+
+; in root
+P = "/c.d"
+
+test (basename-pathname P) "c.d"
+
+; no sep
+P = "c.d"
+
+test (basename-pathname P) "c.d"
 
 ;; all done?
-Tests? (path-functions0 + 45)
+Tests? (path-functions0 + 63)

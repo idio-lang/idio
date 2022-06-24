@@ -576,8 +576,8 @@ Append ``\"/usr/local/bin\"`` to :envvar:`PATH`, ``\"/usr/local/lib\"`` to
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-define* (normalize-pathname val (:sep sep "/")) "
-Normalize pathname `val` by:
+define* (reduce-pathname val (:sep sep #\/)) "
+Reduce pathname `val` by:
 
 * non-absolute pathnames are made absolute
 
@@ -585,40 +585,109 @@ Normalize pathname `val` by:
 
 :param val: the pathname to be normalized
 :type val: string
-:keyword :sep: the element separator, defaults to ``/``
-:type :sep: string, optional
+:keyword :sep: the element separator, defaults to ``#\/``
+:type :sep: unicode, optional
 
 " {
   r := #n
 
+  if ((string-length val) gt 0) {
+    str-sep := make-string 1 sep
+
+    for-each (function (e) {
+      (case e
+       (("")
+	;; "///foo" -> ("" "" "" "foo" )
+	#n)
+       ((".") #n)
+       (("..") {
+	 if (pair? r) {
+	   r = pt r
+	 }
+       })
+       (else {
+	 r = pair e r
+       }))
+    }) (split-string-exactly val str-sep)
+
+    r = reverse! r
+
+    if (null? r) {
+      if (eq? (string-ref val 0) sep) {
+	str-sep
+      } ""
+    } {
+      rs := join-string str-sep r
+      if (eq? (string-ref val 0) sep) {
+	append-string str-sep rs
+      } rs
+    }
+  } val
+}
+
+define* (normalize-pathname val (:sep sep #\/)) "
+Normalize pathname `val` by:
+
+* prefixing with PWD, if not an absolute pathname
+
+* calling :ref:`reduce-pathname <reduce-pathname>`
+
+:param val: the pathname to be normalized
+:type val: string
+:keyword :sep: the element separator, defaults to ``#\/``
+:type :sep: unicode, optional
+
+" {
+  r := #n
+
+  str-sep := make-string 1 sep
+
   if (not (and ((string-length val) gt 0)
-	       (eq? (string-ref val 0) #\/))) {
-    val = append-string PWD "/" val
+	       (eq? (string-ref val 0) sep))) {
+    val = append-string PWD str-sep val
   }
 
-  for-each (function (e) {
-    (case e
-     (("")
-      ;; "///foo" -> ("" "" "" "foo" )
-      #n)
-     ((".") #n)
-     (("..") {
-       if (pair? r) {
-	 r = pt r
-       }
-     })
-     (else {
-       r = pair e r
-     }))
-  }) (split-string-exactly val sep)
+  reduce-pathname val :sep sep
+}
 
-  r = reverse! r
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  if (null? r) {
-    "/"
-  } {
-    append-string "/" (join-string sep r)
-  }
+define* (dirname-pathname val (:sep sep #\/)) "
+Return the dirname of pathname `val`
+
+:param val: the pathname to be examined
+:type val: string
+:keyword :sep: the element separator, defaults to ``#\/``
+:type :sep: unicode, optional
+
+" {
+  val = reduce-pathname val :sep sep
+
+  i := string-rindex val sep
+  if i {
+    if (i eq 0) {
+      substring val 0 1
+    } {
+      substring val 0 i
+    }
+  } "."
+}
+
+define* (basename-pathname val (:sep sep #\/)) "
+Return the basename of pathname `val`
+
+:param val: the pathname to be examined
+:type val: string
+:keyword :sep: the element separator, defaults to ``#\/``
+:type :sep: unicode, optional
+
+" {
+  val = reduce-pathname val :sep sep
+
+  i := string-rindex val sep
+  if i {
+    substring val (i + 1)
+  } val
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
