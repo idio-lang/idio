@@ -12,7 +12,7 @@ MODULE_SYSTEM_VERSION_M		?= a
 include $(TOPDIR)/src/Makefile.common
 
 ifdef MAKE_DEBUG
-CDEBUG		:= -g
+CDEBUG		:= -DIDIO_DEBUG=3 -g
 else
 CDEBUG		:=
 endif
