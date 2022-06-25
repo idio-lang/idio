@@ -2721,10 +2721,10 @@ fd handle `fdh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
 }
 
 /*
- * Dynamic Library loader
+ * Dynamic Library "reader"
  *
  * Use a dummy "reader" as a placeholder/test with the actual loader
- * after this
+ * in idio_load_dl_library(), below
  */
 IDIO idio_dl_read (IDIO h)
 {
@@ -2748,13 +2748,14 @@ typedef struct idio_file_extension_s {
 } idio_file_extension_t;
 
 static idio_file_extension_t idio_file_extensions[] = {
-    { NULL,  NULL, IDIO_IDIO_EXT, idio_read, idio_evaluate_func },
-    { "lib", NULL, ".so",   idio_dl_read, idio_evaluate_func },
+    { NULL,         NULL, IDIO_IDIO_EXT, idio_read,    idio_evaluate_func },
+    { IDIO_LIB_DIR, NULL, IDIO_SO_EXT,   idio_dl_read, idio_evaluate_func },
 
     /*
+     * fallback case:
      * ext==NULL => check for file ~ ".idio$"
      */
-    { NULL,  NULL, NULL, idio_read, idio_evaluate_func },
+    { NULL,         NULL, NULL,          idio_read,    idio_evaluate_func },
     /* { ".scm", idio_scm_read, idio_scm_evaluate }, */
     { NULL, NULL, NULL, NULL, NULL }
 };
@@ -2969,16 +2970,16 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 
     IDIO r = idio_S_unspec;
 
+    /*
+     * There is the obvious race condition of substituting an
+     * alternative lib_idio between access(2) and the upcoming
+     * open(2).
+     */
     if (access (lib_idio, R_OK) == 0) {
 	IDIO lib_idio_I = idio_string_C_len (lib_idio, lib_idio_len);
 	IDIO thr = idio_thread_current_thread ();
 	idio_array_push (IDIO_THREAD_STACK (thr), lib_idio_I);
 
-	/*
-	 * There is the obvious race condition of substituting an
-	 * alternative lib_idio between access(2) and the upcoming
-	 * open(2).
-	 */
 	IDIO fh = idio_open_file_handle_C ("extension-load", lib_idio_I, lib_idio, lib_idio_len, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
 
 	idio_file_extension_t *fe = idio_file_extensions;
@@ -3110,8 +3111,8 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 	 * complex.  Unfortunately, we can't know for sure until we've
 	 * opened {dir}/{mod}/latest and read the contents.
 	 *
-	 * We can't do much other than take a decent punt, say, 10 bytes
-	 * worth, and see how we go.
+	 * We can't do much other than take a decent punt and read,
+	 * say, 10 bytes worth of latest, and see how we go.
 	 */
 	char const *mod = file;
 	size_t mod_len = file_len;
@@ -3160,12 +3161,13 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 	size_t max_ext_len = 0;
 	idio_file_extension_t *fe = idio_file_extensions;
 
-	for (;NULL != fe->reader;fe++) {
+	for (; NULL != fe->reader; fe++) {
+	    size_t el = 0;
 	    if (idio_dl_read == fe->reader) {
 		/*
 		 * /{mod}/{mod-ver}/{ARCH}/[prefix]{mod}[suffix][ext]
 		 */
-		size_t el = 1 + mod_len + 1 + 10 + 1 + (sizeof (IDIO_SYSTEM_ARCH) - 1) + 1;
+		el = 1 + mod_len + 1 + 10 + 1 + (sizeof (IDIO_SYSTEM_ARCH) - 1) + 1;
 		if (NULL != fe->prefix) {
 		    el += idio_strnlen (fe->prefix, PATH_MAX);
 		}
@@ -3177,24 +3179,21 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 		if (NULL != fe->ext) {
 		    el += idio_strnlen (fe->ext, PATH_MAX);
 		}
-
-		if (el > max_ext_len) {
-		    max_ext_len = el;
-		}
 	    } else if (NULL != fe->ext) {
 		/*
-		 * [prefix]{mod}[suffix][ext]
+		 * [prefix]{mod}[suffix]{ext}
 		 */
-		size_t el = idio_strnlen (fe->ext, PATH_MAX);
 		if (NULL != fe->prefix) {
 		    el += idio_strnlen (fe->prefix, PATH_MAX);
 		}
 		if (NULL != fe->suffix) {
 		    el += idio_strnlen (fe->suffix, PATH_MAX);
 		}
-		if (el > max_ext_len) {
-		    max_ext_len = el;
-		}
+		el += idio_strnlen (fe->ext, PATH_MAX);
+	    }
+
+	    if (el > max_ext_len) {
+		max_ext_len = el;
 	    }
 	}
 
@@ -3348,7 +3347,7 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 	    char *lne = libname + libnamelen;
 	    fe = idio_file_extensions;
 
-	    for (;NULL != fe->reader;fe++) {
+	    for (; NULL != fe->reader; fe++) {
 		if (NULL == fe->ext) {
 		    if (mod_ext_idio) {
 			memcpy (lne, file, file_len);
@@ -3591,6 +3590,7 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 			end[pl] = '\0';
 			end += pl;
 		    }
+
 		    memcpy (end, mod, mod_len);
 		    end[mod_len] = '\0';
 		    end += mod_len;
@@ -3601,6 +3601,7 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 			end[sl] = '\0';
 			end += sl;
 		    }
+
 		    size_t fel = idio_strnlen (fe->ext, PATH_MAX);
 		    memcpy (end, fe->ext, fel);
 		    end[fel] = '\0';
@@ -3724,6 +3725,79 @@ possible file name extensions			\n\
     return  r;
 }
 
+int idio_load_idio_cache (char *pathname, size_t pathname_len)
+{
+    IDIO_C_ASSERT (pathname);
+
+    /*
+     * There should be a dot after a slash (if there is a slash)
+     */
+    char *pathname_slash = memrchr (pathname, '/', pathname_len);
+    if (NULL == pathname_slash) {
+	pathname_slash = pathname;
+    }
+
+    char *pathname_dot = memrchr (pathname_slash, '.', pathname_len - (pathname_slash - pathname));
+
+    /* no dot no deal */
+    if (NULL == pathname_dot) {
+	fprintf (stderr, "no dot in %s\n", pathname);
+	return 0;
+    }
+
+    size_t iie_len = sizeof (IDIO_IDIO_EXT) - 1;
+    size_t dot_len = pathname_len - (pathname_dot - pathname);
+    if (dot_len != iie_len) {
+	fprintf (stderr, "len (%s) != len (%s) in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname);
+	return 0;
+    }
+
+    if (strncmp (pathname_dot, IDIO_IDIO_EXT, iie_len)) {
+	fprintf (stderr, "ext %s != %s in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname);
+	return 0;
+    }
+
+    /*
+     * /path/to/{mod}.idio
+     *
+     * /path/to/__idio__/{mod}.{ASM_COMMIT}
+     */
+    size_t cfn_len = pathname_len - iie_len;
+    size_t icd_len = sizeof (IDIO_CACHE_DIR) - 1;
+    size_t ibac_len = sizeof (IDIO_BUILD_ASM_COMMIT) - 1;
+    cfn_len += 1 + icd_len + 1 + ibac_len;
+
+    char cfn[cfn_len];
+    memcpy (cfn, pathname, pathname_len);
+    char *end = cfn + (pathname_slash - pathname) + 1;
+    memcpy (end, IDIO_CACHE_DIR, icd_len);
+    end += icd_len;
+    end[0] = '/';
+    end++;
+
+    size_t mod_len = pathname_dot - pathname_slash;
+    /*
+     * Cheeky!  Skips the slash but adds in the dot because mod_len is
+     * one too long
+     */
+    memcpy (end, pathname_slash + 1, mod_len);
+    end += mod_len;
+
+    memcpy (end, IDIO_BUILD_ASM_COMMIT, ibac_len);
+    end += ibac_len;
+
+    end[0] = '\0';
+
+    if (access (cfn, R_OK)) {
+	fprintf (stderr, "ENOENT %s\n", cfn);
+	return 0;
+    }
+
+    fprintf (stderr, "trying %s\n", cfn);
+
+    return 0;
+}
+
 IDIO idio_load_file_name (IDIO filename, IDIO eenv)
 {
     IDIO_ASSERT (filename);
@@ -3832,6 +3906,11 @@ IDIO idio_load_file_name (IDIO filename, IDIO eenv)
 			idio_array_push (IDIO_THREAD_STACK (thr), filename_ext);
 		    }
 
+		    /*
+		     * There is the obvious race condition of
+		     * substituting an alternative lfn between
+		     * access(2) and the upcoming open(2).
+		     */
 		    if (access (lfn, R_OK) == 0) {
 
 			if (idio_dl_read == reader) {
@@ -3851,35 +3930,64 @@ IDIO idio_load_file_name (IDIO filename, IDIO eenv)
 
 			    return r;
 			} else {
-			    /*
-			     * There is the obvious race condition of
-			     * substituting an alternative lfn between
-			     * access(2) and the upcoming open(2).
-			     */
-			    IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, lfn_len, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
+			    if (idio_load_idio_cache (lfn, lfn_len)) {
+				if (free_filename_C) {
+				    IDIO_GC_FREE (filename_C, filename_C_len);
+				}
 
-			    if (free_filename_C) {
-				IDIO_GC_FREE (filename_C, filename_C_len);
+				if (filename_ext != filename) {
+				    idio_array_pop (IDIO_THREAD_STACK (thr));
+				}
+
+				return idio_S_unspec;
+			    } else {
+				/*
+				 * If idio_open_file_handle_C() goes
+				 * boom then we'll have lost a few
+				 * bytes in filename_C.
+				 */
+				IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, lfn_len, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
+
+				/*
+				 * Tidy up before idio_load_handle_C()
+				 * which is much more likely to go
+				 * boom.
+				 */
+				if (free_filename_C) {
+				    IDIO_GC_FREE (filename_C, filename_C_len);
+				}
+
+				if (filename_ext != filename) {
+				    idio_array_pop (IDIO_THREAD_STACK (thr));
+				}
+
+				return idio_load_handle_C (fh, reader, evaluator, eenv);
 			    }
-
-			    if (filename_ext != filename) {
-				idio_array_pop (IDIO_THREAD_STACK (thr));
-			    }
-
-			    return idio_load_handle_C (fh, reader, evaluator, eenv);
 			}
 		    }
 		}
 	    }
 	}
     } else {
-	IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, lfn_len, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
+	if (idio_load_idio_cache (lfn, lfn_len)) {
+	    if (free_filename_C) {
+		IDIO_GC_FREE (filename_C, filename_C_len);
+	    }
 
-	if (free_filename_C) {
-	    IDIO_GC_FREE (filename_C, filename_C_len);
+	    return idio_S_unspec;
+	} else {
+	    /*
+	     * If idio_open_file_handle_C() goes boom then we'll have
+	     * lost a few bytes in filename_C.
+	     */
+	    IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, lfn_len, 0, IDIO_MODE_R, sizeof (IDIO_MODE_R) - 1, 0, 0);
+
+	    if (free_filename_C) {
+		IDIO_GC_FREE (filename_C, filename_C_len);
+	    }
+
+	    return idio_load_handle_C (fh, reader, evaluator, eenv);
 	}
-
-	return idio_load_handle_C (fh, reader, evaluator, eenv);
     }
 
     if (free_filename_C) {

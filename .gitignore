@@ -42,3 +42,4 @@ ext/*/gen
 *.gcov
 coverage.xml
 .local
+__idio__

@@ -8177,6 +8177,142 @@ Show the current trap tree.					\n\
     return idio_S_unspec;
 }
 
+idio_xi_t idio_vm_add_xenv (IDIO desc, IDIO symbols, IDIO constants, IDIO values, IDIO src_exprs, IDIO src_props, IDIO bs)
+{
+    IDIO_ASSERT (desc);
+    IDIO_ASSERT (symbols);
+    IDIO_ASSERT (constants);
+    IDIO_ASSERT (values);
+    IDIO_ASSERT (src_exprs);
+    IDIO_ASSERT (src_props);
+    IDIO_ASSERT (bs);
+
+    IDIO_TYPE_ASSERT (string, desc);
+    IDIO_TYPE_ASSERT (array, symbols);
+    IDIO_TYPE_ASSERT (array, constants);
+    IDIO_TYPE_ASSERT (array, values);
+    IDIO_TYPE_ASSERT (array, src_exprs);
+    IDIO_TYPE_ASSERT (array, src_props);
+    IDIO_TYPE_ASSERT (octet_string, bs);
+
+    idio_xenv_t *xe = idio_xenv ();
+
+    IDIO_XENV_DESC (xe)		  = idio_copy (desc, IDIO_COPY_SHALLOW);
+    idio_gc_protect_auto (IDIO_XENV_DESC (xe));
+
+    IDIO_XENV_SYMBOLS (xe)        = idio_copy (symbols, IDIO_COPY_SHALLOW);
+    idio_gc_protect_auto (IDIO_XENV_SYMBOLS (xe));
+
+    IDIO_XENV_CONSTANTS (xe)      = idio_copy (constants, IDIO_COPY_SHALLOW);
+    idio_gc_protect_auto (IDIO_XENV_CONSTANTS (xe));
+
+    IDIO_XENV_VALUES (xe)         = idio_copy (values, IDIO_COPY_SHALLOW);
+    idio_gc_protect_auto (IDIO_XENV_VALUES (xe));
+
+    IDIO_XENV_SRC_EXPRS (xe)      = idio_copy (src_exprs, IDIO_COPY_SHALLOW);
+    idio_gc_protect_auto (IDIO_XENV_SRC_EXPRS (xe));
+
+    IDIO_XENV_SRC_PROPS (xe)      = idio_copy (src_props, IDIO_COPY_SHALLOW);
+    idio_gc_protect_auto (IDIO_XENV_SRC_PROPS (xe));
+
+    idio_ai_t al = idio_array_size (constants);
+    IDIO_XENV_CONSTANTS_HASH (xe) = IDIO_HASH_EQP (al);
+    idio_gc_protect_auto (IDIO_XENV_CONSTANTS_HASH (xe));
+
+    idio_ai_t ai;
+
+    IDIO ch = IDIO_XENV_CONSTANTS_HASH (xe);
+    for (ai = 0; ai < al; ai++) {
+	IDIO v = idio_array_ref_index (constants, ai);
+	if (idio_S_nil != v) {
+	    idio_hash_set (ch, v, idio_fixnum (ai));
+	}
+    }
+
+    IDIO_XENV_BYTE_CODE (xe) = idio_codegen_string2idio_ia (bs);
+
+    return IDIO_XENV_INDEX (xe);
+}
+
+IDIO_DEFINE_PRIMITIVE0V_DS ("%vm-add-xenv", vm_add_xenv, (IDIO args), "desc symbols constants values src-exprs src-props byte-code pc", "\
+Add a new xenv derived from the arguments	\n\
+						\n\
+:param desc: a description			\n\
+:type desc: string				\n\
+:param symbols: symbols				\n\
+:type symbols: array				\n\
+:param constants: constants			\n\
+:type constants: array				\n\
+:param values: values				\n\
+:type values: array				\n\
+:param src-exprs: source expressions		\n\
+:type src-exprs: array				\n\
+:param src-props: source properties		\n\
+:type src-props: array				\n\
+:param byte-code: byte code			\n\
+:type byte-code: octet-string			\n\
+:param pc: the starting PC			\n\
+:type pc: fixnum				\n\
+:return: ``#<unspec>``				\n\
+")
+{
+    IDIO_ASSERT (args);
+
+    IDIO thr = idio_thread_current_thread ();
+    size_t n = idio_list_length (args);
+
+    if (n != 8) {
+	idio_vm_error_arity (0, thr, n, 8, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO desc      = idio_list_nth (args, 1, idio_S_nil);
+    IDIO symbols   = idio_list_nth (args, 2, idio_S_nil);
+    IDIO constants = idio_list_nth (args, 3, idio_S_nil);
+    IDIO values    = idio_list_nth (args, 4, idio_S_nil);
+    IDIO src_exprs = idio_list_nth (args, 5, idio_S_nil);
+    IDIO src_props = idio_list_nth (args, 6, idio_S_nil);
+    IDIO bs        = idio_list_nth (args, 7, idio_S_nil);
+    IDIO pc        = idio_list_nth (args, 8, idio_S_nil);
+
+    IDIO_USER_TYPE_ASSERT (string, desc);
+    IDIO_USER_TYPE_ASSERT (array, symbols);
+    IDIO_USER_TYPE_ASSERT (array, constants);
+    IDIO_USER_TYPE_ASSERT (array, values);
+    IDIO_USER_TYPE_ASSERT (array, src_exprs);
+    IDIO_USER_TYPE_ASSERT (array, src_props);
+    IDIO_USER_TYPE_ASSERT (octet_string, bs);
+    IDIO_USER_TYPE_ASSERT (integer, pc);
+
+    idio_pc_t opc = IDIO_THREAD_PC (thr);
+    idio_xi_t oxi = IDIO_THREAD_XI (thr);
+
+    idio_xi_t xi = idio_vm_add_xenv (desc, symbols, constants, values, src_exprs, src_props, bs);
+
+    idio_vm_preserve_all_state (thr);
+
+    IDIO_THREAD_XI (thr) = xi;
+
+    IDIO r = idio_S_unspec;
+
+    idio_pc_t C_pc = IDIO_FIXNUM_VAL (pc);
+
+    idio_vm_dump_dasm ();
+    fprintf (stderr, "\n\n%%vax running xi %zu @%zu\n", xi, C_pc);
+
+    r = idio_vm_run (thr, C_pc, IDIO_VM_RUN_C);
+
+    idio_debug ("%vax => %s\n", r);
+
+    idio_vm_restore_all_state (thr);
+
+    IDIO_THREAD_XI (thr) = oxi;
+    IDIO_THREAD_PC (thr) = opc;
+
+    return r;
+}
+
 idio_xi_t idio_vm_add_xenv_from_eenv (IDIO thr, IDIO eenv)
 {
     IDIO_ASSERT (thr);
@@ -8293,11 +8429,11 @@ idio_xi_t idio_vm_add_xenv_from_eenv (IDIO thr, IDIO eenv)
 
 IDIO_DEFINE_PRIMITIVE2_DS ("%vm-add-xenv-from-eenv", vm_add_xenv_from_eenv, (IDIO eenv, IDIO pc), "eenv pc", "\
 Add a new xenv derived from `eenv` with `pc`	\n\
-being the list of starting Pc			\n\
+being the starting PC				\n\
 						\n\
 :param eenv: an evaluation environment		\n\
 :type eenv: struct-instance			\n\
-:param pc: the starting Pc			\n\
+:param pc: the starting PC			\n\
 :type pc: fixnum				\n\
 :return: ``#<unspec>``				\n\
 ")
@@ -8325,7 +8461,6 @@ being the list of starting Pc			\n\
 
     idio_pc_t C_pc = IDIO_FIXNUM_VAL (pc);
 
-    idio_vm_dump_dasm ();
     fprintf (stderr, "\n\n%%vaxfe running xi %zu @%zu\n", xi, C_pc);
 
     r = idio_vm_run (thr, C_pc, IDIO_VM_RUN_C);
@@ -8691,6 +8826,7 @@ void idio_vm_add_primitives ()
     IDIO_ADD_PRIMITIVE (run_in_thread);
     IDIO_ADD_PRIMITIVE (vm_frame_tree);
     IDIO_ADD_PRIMITIVE (vm_trap_state);
+    IDIO_ADD_PRIMITIVE (vm_add_xenv);
     IDIO_ADD_PRIMITIVE (vm_add_xenv_from_eenv);
 }
 

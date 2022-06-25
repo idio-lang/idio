@@ -45,6 +45,7 @@
 #include "error.h"
 #include "evaluate.h"
 #include "expander.h"
+#include "file-handle.h"
 #include "fixnum.h"
 #include "hash.h"
 #include "idio-string.h"
@@ -61,6 +62,7 @@
 #include "vtable.h"
 
 static IDIO idio_codegen_module = idio_S_nil;
+IDIO idio_compile_module = idio_S_nil;
 IDIO_C_STRUCT_IDENT_DECL (idio_ia_s);
 
 static void idio_codegen_error_param_args (char const *m, IDIO mt, IDIO c_location)
@@ -357,6 +359,31 @@ Return the byte code in `ia` as a string	\n\
     IDIO os = idio_octet_string_C_len ((char const *) bc->ae, IDIO_IA_USIZE (bc));
 
     return os;
+}
+
+IDIO_IA_T idio_codegen_string2idio_ia (IDIO bs)
+{
+    IDIO_ASSERT (bs);
+
+    IDIO_TYPE_ASSERT (octet_string, bs);
+
+    size_t n = idio_string_len (bs);
+
+    IDIO_IA_T ia = idio_ia (n);
+
+    size_t size = 0;
+    char *C_bs = idio_string_as_C (bs, &size);
+
+    if (n != size) {
+	fprintf (stderr, "string->idio-ia: %zu != %zu\n", n, size);
+    }
+
+    memcpy ((char *) ia->ae, C_bs, n);
+    IDIO_IA_USIZE (ia) = n;
+
+    IDIO_GC_FREE (C_bs, size);
+
+    return ia;
 }
 
 idio_as_t idio_codegen_extend_values (IDIO eenv)
@@ -3097,6 +3124,7 @@ void idio_init_codegen ()
     idio_module_table_register (idio_codegen_add_primitives, NULL, NULL);
 
     idio_codegen_module = idio_module (IDIO_SYMBOL ("codegen"));
+    idio_compile_module = idio_module (IDIO_SYMBOL ("compile"));
 
     idio_codegen_symbol_t *cs = idio_codegen_symbols;
     for (; cs->name != NULL; cs++) {
@@ -3122,4 +3150,6 @@ void idio_init_codegen ()
 			    idio_vtable_create_method_simple (idio_constant_i_code_method_2string));
 
     IDIO_C_STRUCT_IDENT_DEF (IDIO_SYMBOL ("struct-idio-ia-s"), idio_S_nil, idio_ia_s, idio_fixnum (0));
+
+    idio_module_set_symbol_value (IDIO_SYMBOL ("*idio-cache-dir*"), IDIO_STRING (IDIO_CACHE_DIR), idio_compile_module);
 }

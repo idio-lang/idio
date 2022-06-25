@@ -3974,7 +3974,6 @@ static IDIO idio_meaning_application (IDIO src, IDIO fe, IDIO aes, IDIO nametree
 			     *
 			     * pair 1
 			     */
-			    idio_debug ("%s\n", si);
 			    idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "wrong arity for primitive", IDIO_LIST2 (fe, aes));
 
 			    return idio_S_notreached;

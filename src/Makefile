@@ -90,6 +90,9 @@ local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)
 	(cd $(EXTDIR)/expect/src; $(MAKE) local-install)
 	(cd $(EXTDIR)/empty/src; $(MAKE) local-install)
 
+pre-compile: $(LI_BINDIR)/idio
+	$(LI_BINDIR)/idio $(UTILSDIR)/bin/pre-compile-lib
+
 $(LI_BINDIR)/idio : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
 	ln -sf idio.${IDIO_SYSTEM_VERSION_MM} $@
 

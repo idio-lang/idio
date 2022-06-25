@@ -53,6 +53,9 @@ typedef struct idio_file_handle_stream_s {
 #define IDIO_FILE_HANDLE_COUNT(H)  IDIO_FILE_HANDLE_STREAM_COUNT((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 
 #define IDIO_IDIO_EXT	".idio"
+#define IDIO_SO_EXT	".so"
+#define IDIO_LIB_DIR	"lib"
+#define IDIO_CACHE_DIR	"__idio__"
 #define IDIO_MODE_R	"r"
 #define IDIO_MODE_RE	"re"
 #define IDIO_MODE_W	"w"

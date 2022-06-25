@@ -183,12 +183,14 @@ typedef enum {
 #define IDIO_I_POP_ABORT                ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_POP_ABORT))
 #define IDIO_I_NOP                      ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_NOP))
 
+extern IDIO idio_compile_module;
 extern IDIO_C_STRUCT_IDENT_DECL (idio_ia_s);
 
 IDIO_IA_T idio_ia (size_t n);
 void idio_ia_free (IDIO_IA_T ia);
 void idio_ia_copy (IDIO_IA_T iad, IDIO_IA_T ias);
 void idio_ia_push (IDIO_IA_T ia, IDIO_I ins);
+IDIO_IA_T idio_codegen_string2idio_ia (IDIO bs);
 idio_as_t idio_codegen_extend_constants (IDIO eenv, IDIO v);
 idio_ai_t idio_codegen_constants_lookup (IDIO eenv, IDIO v);
 idio_as_t idio_codegen_constants_lookup_or_extend (IDIO eenv, IDIO v);

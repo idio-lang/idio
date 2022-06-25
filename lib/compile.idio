@@ -21,16 +21,15 @@ compile.idio
 module compile
 export (
 	 compile-file
+	 compile-file-reader
 )
-import evaluate codegen vm
-
-cache-dir := "__idio__"
+import evaluate codegen vm job-control
 
 define (compile-file-writer file eenv pc) {
   printf "compile-file-writer: %s\n" file
 
   dn := dirname-pathname file
-  cdn := append-string dn "/" cache-dir
+  cdn := append-string dn "/" *idio-cache-dir*
   if (not (d? cdn)) {
     mkdir cdn
   }
@@ -105,7 +104,7 @@ ${alen}
 ; The symbol table entries
 ( }
 
-    for sym-si in st {
+    for sym-si in (reverse st) {
       si := pt sym-si
       write (pair (si-si si) (si-ci si))
       puts " "
@@ -144,13 +143,15 @@ ${pc}
     ses := %eenv-src-exprs eenv
     puts #S{
 ; The ${array-length ses} source expressions
-#\[ }
+#\[
+}
 
     for se in ses {
       write se
-      puts " "
+      puts "\n"
     }
-    puts #S{\]
+    puts #S{
+\]
 }
 
     sps := %eenv-src-props eenv
@@ -169,6 +170,175 @@ ${pc}
 ; done
 }
   })
+}
+
+define (compile-file-reader file) {
+  printf "compile-file-reader: %s\n" file
+
+  ;; /path/to/__idio__/{mod}.{ASM_COMMIT} where we shouldn't be here
+  ;; unless {ASM_COMMIT} in the file name matches
+  ;; IDIO_BUILD_ASM_COMMIT.  Although some intrepid user might call us
+  ;; direct.
+  chksum := #f
+  idio-file := file
+  (regex-case file
+	      (#S{(.*)/${*idio-cache-dir*}/(.+)\\.([^.]+)} {
+		idio-file = append-string r.1 "/" r.2 ".idio"
+		if (f? idio-file) {
+		  chksum = append-string "SHA256:" (ph (split-string (collect-output sha256sum idio-file)))
+		} {
+		  eprintf "cannot verify expected .idio source %s\n" idio-file
+		}
+	      }))
+
+
+
+  fh := open-input-file file
+
+  r := #t
+
+  idio-build-compiler-commit := read fh
+
+  if (not (equal? idio-build-compiler-commit IDIO_BUILD_COMPILER_COMMIT)) {
+    eprintf "compiler-commit %s != %s\n" idio-build-compiler-commit IDIO_BUILD_COMPILER_COMMIT
+    r = #f
+  }
+
+  if r {
+    now := read fh
+
+    if (not (string? now)) {
+      eprintf "now %s is not a string\n" now
+      r = #f
+    }
+  }
+
+  if r {
+    idio-build-asm-commit := read fh
+
+    if (not (equal? idio-build-asm-commit IDIO_BUILD_ASM_COMMIT)) {
+      eprintf "asm-commit %s != %s\n" idio-build-asm-commit IDIO_BUILD_ASM_COMMIT
+      r = #f
+    }
+  }
+
+  if r {
+    pc-chksum := read fh
+
+    if chksum {
+      if (not (equal? chksum pc-chksum)) {
+	eprintf "chksum %s != %s\n" pc-chksum chksum
+	r = #f
+      }
+    }
+  }
+
+  alen := #f
+  if r {
+    alen = read fh
+
+    if (not (integer? alen)) {
+      eprintf "alen %s is not an integer\n" alen
+      r = #f
+    }
+  }
+
+  ste := #f
+  if r {
+    ste = read fh
+
+    if (not (list? ste)) {
+      eprintf "symbol table entries is not a list\n" ste
+      r = #f
+    }
+  }
+
+  max-ci := 0
+  st := #f
+  if r {
+    st = make-array alen
+    for si-ci in ste {
+      ci := pt si-ci
+      array-set! st (ph si-ci) ci
+      if (ci gt max-ci) {
+	max-ci = ci
+      }
+    }
+  }
+
+  cs := #f
+  if r {
+    cs = read fh
+
+    if (not (array? cs)) {
+      eprintf "constants is not an array\n" cs
+      r = #f
+    } {
+      if (max-ci gt (array-length cs)) {
+	eprintf "constants is smaller (%d) than the largest symbol index (%d)\n" (array-length cs) max-ci
+	r = #f
+      }
+    }
+  }
+
+  pc := #f
+  if r {
+    pc = read fh
+
+    if (not (integer? pc)) {
+      eprintf "pc %s is not an integer\n" pc
+      r = #f
+    }
+  }
+
+  bs := #f
+  if r {
+    bs = read fh
+
+    if (not (octet-string? bs)) {
+      eprintf "byte code %s is not an octet string\n" pc
+      r = #f
+    } {
+      if (pc ge (string-length bs)) {
+	eprintf "pc is greater (%d) than the length of the byte code (%d)\n" pc (string-length bs)
+	r = #f
+      }
+    }
+  }
+
+  ses := #f
+  if r {
+    ses = read fh
+
+    if (not (array? ses)) {
+      eprintf "source code expressions %s is not an array\n" ses
+      r = #f
+    }
+  }
+
+  sps := #f
+  if r {
+    sps = read fh
+
+    if (not (array? sps)) {
+      eprintf "source code properties %s is not an array\n" ses
+      r = #f
+    } {
+      if ((array-length ses) ne (array-length sps)) {
+	eprintf "number ofsource code expressions (%d) does not match the number of source code properties (%d)\n" (array-length ses) (array-length sps)
+	r = #f
+      }
+    }
+  }
+
+  if r {
+    ;; phew!
+
+    vs := make-array alen 0
+    %vm-add-xenv idio-file st cs vs ses sps bs pc
+  }
+
+  r
 }
 
 ; we want to subvert evaluate/meaning-include, which calls {load},

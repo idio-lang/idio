@@ -45,17 +45,35 @@ printf "%s: working in %s\n" ARGV0 lib-dir
 for fn in (glob (append-string lib-dir "/*.idio")) {
   printf "Compiling %s\n" fn
   (pattern-case fn
-		;; bootstrap.idio includes everything else
-		("*/bootstrap.idio" #f)
+		;; Hmm, common theme?  function*/define* ?
 
-		;; job-control.idio gets messed up because | is already an operator
+		;; doc.idio
+		("*/doc.idio" #f)
+
+		;; evaluate.idio
+		;; bad parameter type: 'function*' a string is not a pair
+		("*/evaluate.idio" #f)
+
+		;; job-control.idio
+		;; ^evaluation-error message:"(define-infix-operator): no arguments
 		("*/job-control.idio" #f)
+
+		;; object.idio
+		;; ^rt-parameter-type-error:bad parameter type: '\n' a string is not a pair
+		("*/object.idio" #f)
+
+		;; path-functions.idio
+		;; ^rt-parameter-type-error:bad parameter type: '{some docstr}' a string is not a pair
+		("*/path-functions.idio" #f)
+
+		;; pty.idio
+		;; ^rt-function-arity-error:incorrect arity: 3 args for an arity-1 function
+		("*/pty.idio" #f)
 
 		(else {
 		  compile-file fn
 		}))
   printf "\n\n"
-	      
 }
 
 ;Local Variables:

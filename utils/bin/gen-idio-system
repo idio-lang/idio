@@ -215,9 +215,10 @@ unset IFS
 #
 # git commit
 
+git_toplevel=$(git rev-parse --show-toplevel)
 git_commit=$(git rev-parse --short=7 HEAD)
-git_asm_commit=$(git rev-parse --short=7 HEAD -- src/vm-asm.h)
-git_compiler_commit=$(git rev-parse --short=7 HEAD -- lib/compiler.idio)
+git_asm_commit=$(git log -n 1 --pretty=format:%h -- ${git_toplevel}/src/vm-asm.h)
+git_compiler_commit=$(git log -n 1 --pretty=format:%h -- ${git_toplevel}/lib/compile.idio)
 git_describe=$(git describe --tags || true)
 
 # dirty working directory?
