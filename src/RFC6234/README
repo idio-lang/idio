@@ -1,0 +1,22 @@
+
+ RFC 6234 - US Secure Hash Algorithms (SHA and SHA-based HMAC and HKDF)
+
+This is the "demonstration implementation of these secure hash
+functions in C" as extracted from Chapter 8 of the RFC.
+
+The source code is verbatim which requires that modern, zealous C
+compilers be restrained in their eagerness to find fault.  See
+Makefile for details.
+
+
+ Licencing
+
+The RFC's Copyright states:
+
+Code Components extracted from this document must include Simplified
+BSD License text as described in Section 4.e of the Trust Legal
+Provisions and are provided without warranty as described in the
+Simplified BSD License.
+
+All the source files refer to sha.h which includes the Simplified BSD
+Licence.
