@@ -18,6 +18,7 @@ core.*
 vgcore.*
 *.so
 *.so.*
+*.a
 *.orig
 vm-perf.log
 src/map

@@ -1,0 +1,145 @@
+;;
+;; Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-rfc6234.idio
+;;
+
+#*
+
+The main reason I added RFC6234 was accidental -- I found a reference
+to it on stackoverflow whilst rummaging about looking for a solution
+to running "sha256sum" portably.  To which the short answer is: we
+can't unless we write it ourselves which is where RFC6234 comes in
+handy as it provides a complete C implementation.
+
+Part of the problem lies in that:
+
+* shasum is a Perl program that does...stuff, and isn't on newer Red
+  Hat based platforms or BSD(?)
+
+* sha256sum isn't on all platforms
+
+* sha256 is the OpenBSD equivalent to sha256sum
+
+* Mac OS 10.5.8 doesn't have any of the above.  It doesn't even have
+  "openssl sha256", only sha1.
+
+On top of that, there's no consistency in the ordering of output
+terms.
+
+shatest.c in RFC6234 generates an uppercase output, most other systems
+generate lowercase output.
+
+I suppose the argument would be that the tools are per-platform
+self-consistent but their outputs fail to be cross-platform portable.
+
+You can see the mess in utils/bin/idio-shasum which I'll keep around
+for no good reason.
+
+In the meanwhile, we can perform some tests using the RFC6234 code
+which should be portable but just not necessarily confirmable on any
+given platform.  For example, Mac OS 10.5.8 cannot generate anything
+other than a SHA1 digest from the main distribution.
+
+The test results, then, were generated using shaXXXsum on some
+reasonable platform.
+
+*#
+
+module test/rfc6234
+
+rfc6234-0 := Tests
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; a simple string
+S := "abc"
+with-output-to-file testfile (function #n {
+  puts S
+})
+
+;; default is SHA256
+test (shasum-string S)             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+test (shasum-file testfile)        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+
+;; we'll only do the shasum-fd test once as shasum-file is a wrapper
+;; to it and more convenient to test with
+ofh := open-input-file testfile
+ofd := file-handle-fd ofh
+test (shasum-fd ofd)               "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+close-handle ofh
+
+test (shasum-string S 'SHA1)       "a9993e364706816aba3e25717850c26c9cd0d89d"
+test (shasum-file testfile 'SHA1)  "a9993e364706816aba3e25717850c26c9cd0d89d"
+
+test (shasum-string S 'SHA224)      "23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7"
+test (shasum-file testfile 'SHA224) "23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7"
+
+test (shasum-string S 'SHA256)      "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+test (shasum-file testfile 'SHA256) "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+
+test (shasum-string S 'SHA384)      "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7"
+test (shasum-file testfile 'SHA384) "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7"
+
+test (shasum-string S 'SHA512)      "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f"
+test (shasum-file testfile 'SHA512) "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f"
+
+;; now I'm bored of one-for-one testing of shasum-file as well...
+
+;; empty string -- see /dev/null later
+S := ""
+
+test (shasum-string S 'SHA1)   "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+test (shasum-string S 'SHA224) "d14a028c2a3a2bc9476102bb288234c415a2b01f828ea62ac5b3e42f"
+test (shasum-string S 'SHA256) "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+test (shasum-string S 'SHA384) "38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b"
+test (shasum-string S 'SHA512) "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+
+;; make a string with lots of unicode code points -- the string was
+;; written to a file (as above) and tested externally
+S := make-string 512 #U+127
+(do ((i 0 (i + 1)))
+ ((i ge 512) #t) {
+  string-set! S i (integer->unicode i)
+})
+
+#*
+with-output-to-file testfile (function #n {
+  puts S
+})
+
+exit 3
+*#
+
+test (shasum-string S 'SHA1)   "061da712acb42821147f7a5a111d363465583602"
+test (shasum-string S 'SHA224) "ac98c53b0b1e5ed905177878420ec321c6a81727bc1455fa0654f639"
+test (shasum-string S 'SHA256) "c55e875e9b63de68b9f4b2c210322affc06347402c819ffa806460949e81ade9"
+test (shasum-string S 'SHA384) "ff2f1678da5411a50271192c8c6f1b3481a671c2b4dc30f3da2bf6e7e686634b3e76e0b04767d0dbff0ee5e74a0ea087"
+test (shasum-string S 'SHA512) "a2e3249b6bc4f37770ddebe3c402fb19d01adbceee91470ff9870b9c7b28b667eaecb5fd41b03abcbdd5f48a36aa07b556237a114b9b2f1997497084a17116b1"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; /dev/null - shold be the same as "", above
+test (shasum-file "/dev/null" 'SHA1)   "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+test (shasum-file "/dev/null" 'SHA224) "d14a028c2a3a2bc9476102bb288234c415a2b01f828ea62ac5b3e42f"
+test (shasum-file "/dev/null" 'SHA256) "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+test (shasum-file "/dev/null" 'SHA384) "38b060a751ac96384cd9327eb1b1e36a21fdb71114be07434c0cc7bf63f6e1da274edebfe76f65fbd51ad2f14898b95b"
+test (shasum-file "/dev/null" 'SHA512) "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+
+;; all done?
+Tests? (rfc6234-0 + 28)

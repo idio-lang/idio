@@ -31,8 +31,11 @@ endif
 
 all : $(BINDIR)/idio
 
-$(BINDIR)/idio : $(objects) | $(BINDIR)
+$(BINDIR)/idio : $(objects) $(SRCDIR)/RFC6234/libsha.a | $(BINDIR)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+$(SRCDIR)/RFC6234/libsha.a :
+	$(MAKE) -C RFC6234 libsha.a
 
 $(BINDIR):
 	@mkdir -p $(BINDIR)

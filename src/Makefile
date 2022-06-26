@@ -5,8 +5,8 @@ CDEBUG		:= -O3 -UIDIO_DEBUG -UIDIO_VM_PROF
 else ifdef MAKE_DEBUG
 CDEBUG		:= -DIDIO_DEBUG=3 -g -DIDIO_VM_PROF
 else
-CDEBUG		:= 
-endif 
+CDEBUG		:=
+endif
 
 
 PROFLAGS	:=
@@ -77,7 +77,7 @@ verify: dist-clean
 	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(LI_BINDIR)/idio test
 	ls -l idio-valgrind.*
 
-doc : 
+doc :
 	rm -rf $(SRCKDOUTDIR)
 	(cd .. ; kernel-autodoc src $(SRCKDOUTDIR))
 	#cp $(SRCKDOUTDIR)/*_[ch].rst $(SRCDOCDIR)
@@ -93,10 +93,15 @@ local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)
 pre-compile: $(LI_BINDIR)/idio
 	$(LI_BINDIR)/idio $(UTILSDIR)/bin/pre-compile-lib
 
+$(SRCDIR)/rfc6234.o : $(SRCDIR)/RFC6234/libsha.a
+
+$(SRCDIR)/RFC6234/libsha.a :
+	$(MAKE) -C RFC6234 libsha.a
+
 $(LI_BINDIR)/idio : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
 	ln -sf idio.${IDIO_SYSTEM_VERSION_MM} $@
 
-$(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(objects) | Makefile.system $(LI_BINDIR) libc-api.h idio-system.h idio-config.h
+$(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(objects) $(SRCDIR)/RFC6234/libsha.a | Makefile.system $(LI_BINDIR) libc-api.h idio-system.h idio-config.h
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 $(LI_BINDIR) $(LI_LIBVERDIR) :
@@ -156,7 +161,7 @@ clean-system-install :
 lib%.so : %.o
 	$(CC) -shared -o $@ $^
 
-clean : build-clean clean-ext-src clean-ext-api run-clean edit-clean
+clean : build-clean clean-ext-src clean-ext-api clean-rfc6234 run-clean edit-clean
 	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system $(LIBDIR)/system.idio
 
 clean-ext-src: $(EXTDIR)/*/src
@@ -168,6 +173,9 @@ clean-ext-api: $(EXTDIR)/*/api
 	for dir in $^ ; do \
 	    (cd $${dir}; ${MAKE} clean) ; \
 	done
+
+clean-rfc6234:
+	$(MAKE) -C RFC6234 clean
 
 build-clean:
 	rm -f *.o *.d *.so map
@@ -209,11 +217,11 @@ IDIO_SYSTEM = $(LIBDIR)/idio-system.idio
 
 # the include $(deps) means that, in effect, *.d are the first things
 # built and some of them require idio-system.h -- and %.d doesn't work
-env.d file-handle.d idio.d libc-api.d vars.d : idio-system.h
+compile.d env.d file-handle.d idio.d libc-api.d vars.d : idio-system.h
 $(deps) : idio-config.h
 
-$(IDIO_SYSTEM) : $(UTILSDIR)/bin/gen-idio-system src/vm-asm.h
-	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(IDIO_SYSTEM)
+# $(IDIO_SYSTEM) : $(UTILSDIR)/bin/gen-idio-system src/vm-asm.h
+# 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(IDIO_SYSTEM)
 
 idio-system.h Makefile.system $(IDIO_SYSTEM) : $(UTILSDIR)/bin/gen-idio-system $(sources) $(filter-out $(IDIO_SYSTEM),$(isources)) $(SRCDIR)/version
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(IDIO_SYSTEM)

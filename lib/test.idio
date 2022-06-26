@@ -327,6 +327,8 @@ test-load "test-posix-regex-error.idio"
 test-load "test-posix-regex.idio"
 test-load "test-primitive-error.idio"
 test-load "test-primitive.idio"
+test-load "test-rfc6234-error.idio"
+test-load "test-rfc6234.idio"
 test-load "test-string-error.idio"
 test-load "test-string.idio"
 test-load "test-string-handle-error.idio"
@@ -399,7 +401,7 @@ test-load "test-job-control.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? (8077 - Skipped)
+Tests? (8114 - Skipped)
 
 if (e? testfile) (delete-file testfile)
 

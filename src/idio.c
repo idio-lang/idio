@@ -76,6 +76,7 @@
 #include "posix-regex.h"
 #include "primitive.h"
 #include "read.h"
+#include "rfc6234.h"
 #include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
@@ -292,6 +293,8 @@ void idio_init (void)
     idio_init_libc_wrap ();
     idio_init_libc_poll ();
     idio_init_posix_regex ();
+
+    idio_init_rfc6234 ();
 
     idio_init_command ();
     idio_init_job_control ();
