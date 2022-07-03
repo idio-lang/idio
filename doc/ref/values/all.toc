@@ -43,11 +43,17 @@
 (rst "executable-values" 0)
 (document Idio IDIO_VERSION)
 (document Idio IDIO_MM_VERSION)
+(document Idio IDIO_M_VERSION)
 (document Idio IDIO_SYSTEM_ARCH)
+(document Idio IDIO_SYSTEM_BINDIR)
+(document Idio IDIO_SYSTEM_LIBDIR)
 (document Idio IDIO_BUILD_DATE)
 (document Idio IDIO_BUILD_TIMESTAMP)
 (document Idio IDIO_BUILD_COMMIT)
 (document Idio IDIO_BUILD_DESCRIBE)
+(document Idio IDIO_BUILD_CC)
+(document Idio IDIO_BUILD_CC_PATH)
+(document Idio IDIO_BUILD_CC_VERSION)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;

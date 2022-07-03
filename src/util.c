@@ -2583,7 +2583,9 @@ print the string value of `o` according to `fmt` to	\n\
 							\n\
 There must be a single %s conversion specification	\n\
 							\n\
-idio-debug \"foo is %20s\n\" foo			\n\
+.. code-block:: idio					\n\
+							\n\
+   idio-debug \"foo is %-20s\\n\" foo			\n\
 							\n\
 :param fmt: :manpage:`printf(3)` format string		\n\
 :type fmt: string					\n\
