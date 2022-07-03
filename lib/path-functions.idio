@@ -585,7 +585,7 @@ Reduce pathname `val` by:
 
 :param val: the pathname to be normalized
 :type val: string
-:keyword :sep: the element separator, defaults to ``#\/``
+:keyword :sep: the element separator, defaults to ``#\\/``
 :type :sep: unicode, optional
 
 " {
@@ -634,7 +634,7 @@ Normalize pathname `val` by:
 
 :param val: the pathname to be normalized
 :type val: string
-:keyword :sep: the element separator, defaults to ``#\/``
+:keyword :sep: the element separator, defaults to ``#\\/``
 :type :sep: unicode, optional
 
 " {
@@ -657,7 +657,7 @@ Return the dirname of pathname `val`
 
 :param val: the pathname to be examined
 :type val: string
-:keyword :sep: the element separator, defaults to ``#\/``
+:keyword :sep: the element separator, defaults to ``#\\/``
 :type :sep: unicode, optional
 
 " {
@@ -678,7 +678,7 @@ Return the basename of pathname `val`
 
 :param val: the pathname to be examined
 :type val: string
-:keyword :sep: the element separator, defaults to ``#\/``
+:keyword :sep: the element separator, defaults to ``#\\/``
 :type :sep: unicode, optional
 
 " {

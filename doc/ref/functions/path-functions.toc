@@ -14,6 +14,9 @@
 (document Idio std-paths-unique)
 (document Idio all-paths)
 (document Idio all-paths-unique)
+(document Idio reduce-pathname)
 (document Idio normalize-pathname)
+(document Idio dirname-pathname)
+(document Idio basename-pathname)
 
 (document Idio path-modify)

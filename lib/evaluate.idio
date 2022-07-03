@@ -944,7 +944,7 @@ define (meaning-define-template src name e nametree escapes flags cs cm) {
 
     docstr := sprintf "define-template: %s (x e)" name
     expander := (list 'function/name
-		      (symbol->string (sprintf "%s-expander" name))
+		      (string->symbol (sprintf "%s-expander" name))
 		      '(x e)
 		      docstr
 		      (list 'apply e '(pt x)))
