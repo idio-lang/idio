@@ -3734,9 +3734,9 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 	    if (idio_S_unspec == lo){
 		idio_display (lo, lo_sh);
 	    } else {
-		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lo_sh);
+		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME), lo_sh);
 		idio_display_C (":line ", lo_sh);
-		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lo_sh);
+		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE), lo_sh);
 	    }
 	} else {
 	    idio_display (src, lo_sh);
@@ -3853,9 +3853,9 @@ static void idio_vm_primitive_call_trace (IDIO primdata, IDIO thr, int nargs)
 	    if (idio_S_unspec == lo){
 		idio_display (lo, lo_sh);
 	    } else {
-		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lo_sh);
+		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME), lo_sh);
 		idio_display_C (":line ", lo_sh);
-		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lo_sh);
+		idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE), lo_sh);
 	    }
 	} else {
 	    idio_display (src, lo_sh);
@@ -6523,8 +6523,8 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_pc_t pc0, idio_pc_t pce)
 		if (idio_S_unspec == lo) {
 		    IDIO_VM_DASM (" %-25s", "<no lexobj>");
 		} else {
-		    idio_debug_FILE (idio_dasm_FILE, " %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
-		    idio_debug_FILE (idio_dasm_FILE, ":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
+		    idio_debug_FILE (idio_dasm_FILE, " %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME));
+		    idio_debug_FILE (idio_dasm_FILE, ":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE));
 		}
 		idio_debug_FILE (idio_dasm_FILE, "\n  %s", e);
 	    }
@@ -7851,8 +7851,8 @@ void idio_vm_dump_src_constants ()
 	    fprintf (fp, "%50s", "<no src props>");
 	    idio_debug_FILE (fp, " - %s\n", src);
 	} else if (idio_isa_struct_instance (lo)) {
-	    idio_debug_FILE (fp, "%40s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
-	    idio_debug_FILE (fp, ":line %4s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
+	    idio_debug_FILE (fp, "%40s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME));
+	    idio_debug_FILE (fp, ":line %4s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE));
 	    idio_debug_FILE (fp, " - %s\n", src);
 	} else {
 	    fprintf (fp, "%50s", "<que?>");
@@ -8445,9 +8445,9 @@ IDIO idio_vm_source_location ()
 	    idio_display (expr, lsh);
 	    idio_display_C (">", lsh);
 	} else {
-	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lsh);
+	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME), lsh);
 	    idio_display_C (":line ", lsh);
-	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lsh);
+	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE), lsh);
 	}
     } else {
 	idio_display (fmci, lsh);

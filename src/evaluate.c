@@ -168,8 +168,8 @@ void idio_meaning_warning (char const *prefix, char const *msg, IDIO e)
 	if (idio_S_unspec == lo){
 	    fprintf (stderr, "<no lexobj>");
 	} else {
-	    idio_debug ("%s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
-	    idio_debug (":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
+	    idio_debug ("%s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME));
+	    idio_debug (":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE));
 	}
     }
 
@@ -186,9 +186,9 @@ IDIO idio_meaning_src_location (IDIO e)
 	    return idio_S_nil;
 	} else {
 	    IDIO sl = idio_open_output_string_handle_C ();
-	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), sl);
+	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME), sl);
 	    idio_display_C (":line ", sl);
-	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), sl);
+	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE), sl);
 	    return idio_get_output_string (sl);
 	}
     } else {
@@ -212,9 +212,9 @@ static IDIO idio_meaning_error_location (IDIO src)
     if (idio_S_nil == lo) {
 	idio_display_C ("<no lexobj> ", lsh);
     } else {
-	idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lsh);
+	idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_NAME), lsh);
 	idio_display_C (":line ", lsh);
-	idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lsh);
+	idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE), lsh);
     }
 
     return idio_get_output_string (lsh);
@@ -1080,7 +1080,7 @@ void idio_meaning_copy_src_properties (IDIO src, IDIO dst)
 #endif
 		} else {
 		    dlo = idio_copy (slo, IDIO_COPY_SHALLOW);
-		    idio_struct_instance_set_direct (dlo, IDIO_LEXOBJ_EXPR, dst);
+		    idio_struct_instance_set_direct (dlo, IDIO_LEXOBJ_ST_EXPR, dst);
 		    idio_hash_put (idio_src_properties, dst, dlo);
 		}
 	    }
