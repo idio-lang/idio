@@ -77,17 +77,17 @@
  * table of values for execution.
 
  * For non-local variables we can keep track of names we have seen in
- * each module.  Each new name is mapped into the VM's table of
+ * each module.  Each new module/name is mapped into the VM's table of
  * values.
 
  * Dynamic and environment variables are like regular names in modules
- * except we look them up differently (on the stack first)..
+ * except we look them up differently (on the stack first).
 
  * The order of lookup as we see a symbol is:
 
  * 1. local environments:
 
- *    these are a hierarchy of (flat) environments corresponing to a
+ *    these are a hierarchy of (flat) environments corresponding to a
  *    hierarchy of new scopes as new blocks are entered.  So we have
  *    lists of association lists of the formal parameter names to
  *    (name idio_S_param j) where j is the jth formal parameter in
@@ -141,7 +141,7 @@
  * which is the amalgamation of all the individual modules' toplevel
  * values.
 
- * During compilation we need to maintain the artiface of modules when
+ * During compilation we need to maintain the artifice of modules when
  * we lookup symbols in which case the values of the symbols of each
  * module will be a mapping to the toplevel description (nominally the
  * pair (idio_S_toplevel . i) where i is in the index into the
@@ -627,7 +627,7 @@ static idio_as_t idio_meaning_constants_lookup_or_extend (IDIO eenv, IDIO name)
     return C_ci;
 }
 
-static idio_as_t idio_meaning_extend_values (IDIO eenv)
+static idio_as_t idio_meaning_extend_tables (IDIO eenv)
 {
     IDIO_ASSERT (eenv);
 
@@ -644,12 +644,13 @@ static idio_as_t idio_meaning_extend_values (IDIO eenv)
      * (yet) however these vi are placeholders.
      */
     idio_ai_t C_vi = 0;
-    if (idio_isa_pair (vs)) {
-	IDIO vi = IDIO_PAIR_H (vs);
-	C_vi = IDIO_FIXNUM_VAL (vi);
+    if (idio_isa_fixnum (vs)) {
+	C_vi = IDIO_FIXNUM_VAL (vs);
 	C_vi++;
     }
-    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_VALUES, idio_pair (idio_fixnum (C_vi), vs));
+
+    IDIO vi = idio_fixnum (C_vi);
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_VALUES, vi);
 
     /*
      * In order that si, the index into the symbols table, correctly
@@ -658,7 +659,13 @@ static idio_as_t idio_meaning_extend_values (IDIO eenv)
      */
     idio_struct_instance_set_direct (eenv,
 				     IDIO_EENV_ST_SYMBOLS,
-				     idio_pair (idio_pair (idio_S_false, idio_S_false),
+				     idio_pair (IDIO_LIST7 (IDIO_SYMBOL ("dummy"),
+							    idio_S_toplevel,
+							    vi,
+							    idio_fixnum (9001),
+							    vi,
+							    IDIO_MEANING_EENV_MODULE (eenv),
+							    IDIO_STRING ("dummy")),
 						IDIO_MEANING_EENV_SYMBOLS (eenv)));
 
     return C_vi;
@@ -674,25 +681,42 @@ static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, IDIO scope, 
     IDIO_TYPE_ASSERT (struct_instance, eenv);
     IDIO_TYPE_ASSERT (symbol, scope);
 
+    IDIO lookup = idio_module_find_symbol_recurse (name, IDIO_MEANING_EENV_MODULE (eenv), recurse);
+
     if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv)) {
-	return idio_module_find_symbol_recurse (name, IDIO_MEANING_EENV_MODULE (eenv), recurse);
+	return lookup;
     }
 
     IDIO st = IDIO_MEANING_EENV_SYMBOLS (eenv);
-    IDIO sym_si = idio_list_assq (name, st);
-    if (idio_S_false == sym_si) {
-	idio_as_t C_si = idio_list_length (st);
-	idio_as_t C_ci = idio_meaning_constants_lookup_or_extend (eenv, name);
-	idio_as_t C_vi = idio_meaning_extend_values (eenv);
+    idio_as_t C_si = idio_list_length (st);
+    idio_as_t C_ci = idio_meaning_constants_lookup_or_extend (eenv, name);
+    idio_as_t C_vi = idio_meaning_extend_tables (eenv);
+
+    IDIO sym_si = idio_S_false;
+    if (idio_isa_pair (lookup) &&
+	idio_S_predef == IDIO_SI_SCOPE (lookup)) {
 	sym_si = IDIO_LIST7 (name,
-			     scope,
+			     IDIO_SI_SCOPE (lookup),
 			     idio_fixnum (C_si),
 			     idio_fixnum (C_ci),
 			     idio_fixnum (C_vi),
-			     IDIO_MEANING_EENV_MODULE (eenv),
-			     idio_meaning_precompilation_string);
-	idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SYMBOLS, idio_pair (sym_si, st));
+			     IDIO_SI_MODULE (lookup),
+			     IDIO_SI_DESCRIPTION (lookup));
+	idio_debug ("imfsr added/C %s\n", sym_si);
+    } else {
+	sym_si = idio_list_assq (name, st);
+	if (idio_S_false == sym_si) {
+	    sym_si = IDIO_LIST7 (name,
+				 scope,
+				 idio_fixnum (C_si),
+				 idio_fixnum (C_ci),
+				 idio_fixnum (C_vi),
+				 IDIO_MEANING_EENV_MODULE (eenv),
+				 idio_meaning_precompilation_string);
+	}
     }
+
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SYMBOLS, idio_pair (sym_si, st));
 
     return IDIO_PAIR_T (sym_si);
 }
@@ -802,7 +826,7 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
     IDIO fmci = idio_fixnum (mci);
     idio_module_set_vci (module, fmci, fmci);
 
-    idio_as_t gvi = idio_meaning_extend_values (eenv);
+    idio_as_t gvi = idio_meaning_extend_tables (eenv);
     IDIO fgvi = idio_fixnum (gvi);
 
     idio_module_set_vvi (module, fmci, fgvi);
@@ -968,7 +992,7 @@ IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO eenv)
     idio_as_t mci = idio_meaning_constants_lookup_or_extend (dynamic_eenv, name);
     IDIO fmci = idio_fixnum (mci);
 
-    idio_as_t gvi = idio_meaning_extend_values (dynamic_eenv);
+    idio_as_t gvi = idio_meaning_extend_tables (dynamic_eenv);
     IDIO fgvi = idio_fixnum (gvi);
 
     si = idio_vm_add_dynamic (idio_Idio_module, fmci, fgvi, idio_meaning_dynamic_extend_string);
@@ -1024,7 +1048,7 @@ IDIO idio_environ_extend (IDIO src, IDIO name, IDIO val, IDIO eenv)
     idio_as_t mci = idio_meaning_constants_lookup_or_extend (environ_eenv, name);
     IDIO fmci = idio_fixnum (mci);
 
-    idio_as_t gvi = idio_meaning_extend_values (environ_eenv);
+    idio_as_t gvi = idio_meaning_extend_tables (environ_eenv);
     IDIO fgvi = idio_fixnum (gvi);
 
     si = idio_vm_add_environ (idio_Idio_module, fmci, fgvi, idio_meaning_environ_extend_string);
@@ -1263,9 +1287,9 @@ static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int 
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (struct_instance, eenv);
 
-    IDIO r = idio_meaning_lexical_lookup (src, nametree, name);
+    IDIO si = idio_meaning_lexical_lookup (src, nametree, name);
 
-    if (idio_S_false == r) {
+    if (idio_S_false == si) {
 	IDIO scope = idio_meaning_flags_scope (flags);
 
 	/*
@@ -1275,27 +1299,27 @@ static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int 
 	 * Unless we're defining something in which case we mustn't
 	 * recurse...
 	 */
-        r = idio_meaning_find_symbol_recurse (name, eenv, scope, recurse);
+        si = idio_meaning_find_symbol_recurse (name, eenv, scope, recurse);
 
-	if (idio_S_false == r) {
+	if (idio_S_false == si) {
 
-	    r = idio_module_direct_reference (name);
+	    si = idio_module_direct_reference (name);
 
-	    if (idio_S_false != r) {
-		r = IDIO_PAIR_HTT (r);
-		idio_module_set_symbol (name, r, IDIO_MEANING_EENV_MODULE (eenv));
+	    if (idio_S_false != si) {
+		si = IDIO_PAIR_HTT (si);
+		idio_module_set_symbol (name, si, IDIO_MEANING_EENV_MODULE (eenv));
 	    } else {
 		/*
 		 * auto-extend the toplevel with this unknown variable
 		 * -- we should (eventually) see a definition for it
 		 */
 		idio_toplevel_extend (src, name, flags, eenv);
-		r = idio_meaning_find_toplevel_symbol (name, eenv);
+		si = idio_meaning_find_toplevel_symbol (name, eenv);
 	    }
 	}
     }
 
-    return r;
+    return si;
 }
 
 static IDIO idio_meaning_prefer_properties (IDIO e, IDIO src)
@@ -1395,7 +1419,11 @@ static IDIO idio_meaning_reference (IDIO src, IDIO name, IDIO nametree, int flag
     } else if (idio_S_computed == scope) {
 	return IDIO_LIST2 (IDIO_I_COMPUTED_SYM_REF, idio_meaning_eenv_symbol_index (eenv, si));
     } else if (idio_S_predef == scope) {
-	return IDIO_LIST2 (IDIO_I_PREDEFINED, IDIO_SI_VI (si));
+	if (aot) {
+	    return IDIO_LIST2 (IDIO_I_PREDEFINED, IDIO_SI_SI (si));
+	} else {
+	    return IDIO_LIST2 (IDIO_I_PREDEFINED, IDIO_SI_VI (si));
+	}
     } else {
 	/*
 	 * Shouldn't get here unless the if clauses above don't cover
@@ -1460,7 +1488,11 @@ static IDIO idio_meaning_function_reference (IDIO src, IDIO name, IDIO nametree,
     } else if (idio_S_computed == scope) {
 	return IDIO_LIST2 (IDIO_I_COMPUTED_SYM_REF, idio_meaning_eenv_symbol_index (eenv, si));
     } else if (idio_S_predef == scope) {
-	return IDIO_LIST2 (IDIO_I_PREDEFINED, IDIO_SI_VI (si));
+	if (aot) {
+	    return IDIO_LIST2 (IDIO_I_PREDEFINED, IDIO_SI_SI (si));
+	} else {
+	    return IDIO_LIST2 (IDIO_I_PREDEFINED, IDIO_SI_VI (si));
+	}
     } else {
 	/*
 	 * Shouldn't get here unless the if clauses above don't cover
@@ -2149,7 +2181,7 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, int
     if (idio_S_false == IDIO_MEANING_EENV_AOT (eenv) &&
 	idio_S_toplevel == scope &&
 	0 == IDIO_FIXNUM_VAL (fgvi)) {
-	idio_as_t gvi = idio_meaning_extend_values (eenv);
+	idio_as_t gvi = idio_meaning_extend_tables (eenv);
 	fgvi = idio_fixnum (gvi);
 	IDIO cm = IDIO_MEANING_EENV_MODULE (eenv);
 	si = IDIO_LIST6 (scope, fmci, fmci, fgvi, cm, idio_meaning_define_gvi0_string);
@@ -2386,7 +2418,7 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     IDIO sym_si = idio_S_false;
     if (idio_S_true == IDIO_MEANING_EENV_AOT (eenv)) {
 	sym_si = IDIO_LIST6 (idio_S_toplevel,
-			     si,
+			     IDIO_SI_SI (si),
 			     fmci,
 			     idio_fixnum (0),
 			     cm,
@@ -2432,17 +2464,27 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
     /*
      * Step 1: find the existing symbol for {name} or create a new one
      */
-    idio_as_t mci = idio_meaning_constants_lookup_or_extend (eenv, name);
+    IDIO operator_eenv = idio_struct_instance_copy (eenv);
+    idio_struct_instance_set_direct (operator_eenv, IDIO_EENV_ST_MODULE, idio_operator_module);
+
+    IDIO si = idio_meaning_find_toplevel_symbol (name, operator_eenv);
+
+    idio_as_t mci = idio_meaning_constants_lookup_or_extend (operator_eenv, name);
     IDIO fmci = idio_fixnum (mci);
 
-    idio_module_set_symbol (name,
-			    IDIO_LIST6 (idio_S_toplevel,
-					fmci,
-					fmci,
-					idio_fixnum (0),
-					idio_operator_module,
-					idio_meaning_define_infix_operator_string),
-			    idio_operator_module);
+    IDIO op_id = fmci;
+
+    if (idio_S_true == IDIO_MEANING_EENV_AOT (operator_eenv)) {
+	op_id = IDIO_SI_SI (si);
+    }
+    IDIO sym_si = IDIO_LIST6 (idio_S_toplevel,
+			      op_id,
+			      fmci,
+			      idio_fixnum (0),
+			      idio_operator_module,
+			      idio_meaning_define_infix_operator_string);
+
+    idio_module_set_symbol (name, sym_si, idio_operator_module);
 
     /*
      * Step 2: rework the expression into some appropriate code and
@@ -2480,7 +2522,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 	idio_meaning_copy_src_properties (src, sve);
 
 	idio_copy_infix_operator (IDIO_THREAD_XI (idio_thread_current_thread ()), name, pri, e);
-	m = idio_meaning (sve, sve, nametree, flags, eenv);
+	m = idio_meaning (sve, sve, nametree, flags, operator_eenv);
     } else {
 	/*
 	 * define-infix-operator X pri { ... }
@@ -2500,9 +2542,9 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 
 	idio_meaning_copy_src_properties (src, fe);
 
-	m = idio_meaning (fe, fe, nametree, flags, eenv);
+	m = idio_meaning (fe, fe, nametree, flags, operator_eenv);
     }
-    IDIO r = IDIO_LIST4 (IDIO_I_INFIX_OPERATOR, fmci, pri, m);
+    IDIO r = IDIO_LIST4 (IDIO_I_INFIX_OPERATOR, op_id, pri, m);
 
     return r;
 }
@@ -2534,17 +2576,27 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
     /*
      * Step 1: find the existing symbol for {name} or create a new one
      */
-    idio_as_t mci = idio_meaning_constants_lookup_or_extend (eenv, name);
+    IDIO operator_eenv = idio_struct_instance_copy (eenv);
+    idio_struct_instance_set_direct (operator_eenv, IDIO_EENV_ST_MODULE, idio_operator_module);
+
+    IDIO si = idio_meaning_find_toplevel_symbol (name, operator_eenv);
+
+    idio_as_t mci = idio_meaning_constants_lookup_or_extend (operator_eenv, name);
     IDIO fmci = idio_fixnum (mci);
 
-    idio_module_set_symbol (name,
-			    IDIO_LIST6 (idio_S_toplevel,
-					fmci,
-					fmci,
-					idio_fixnum (0),
-					idio_operator_module,
-					idio_meaning_define_postfix_operator_string),
-			    idio_operator_module);
+    IDIO op_id = fmci;
+
+    if (idio_S_true == IDIO_MEANING_EENV_AOT (operator_eenv)) {
+	op_id = IDIO_SI_SI (si);
+    }
+    IDIO sym_si = IDIO_LIST6 (idio_S_toplevel,
+			      op_id,
+			      fmci,
+			      idio_fixnum (0),
+			      idio_operator_module,
+			      idio_meaning_define_postfix_operator_string);
+
+    idio_module_set_symbol (name, sym_si, idio_operator_module);
 
     /*
      * Step 2: rework the expression into some appropriate code and
@@ -2582,7 +2634,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 	idio_meaning_copy_src_properties (src, sve);
 
 	idio_copy_postfix_operator (IDIO_THREAD_XI (idio_thread_current_thread ()), name, pri, e);
-	m = idio_meaning (sve, sve, nametree, flags, eenv);
+	m = idio_meaning (sve, sve, nametree, flags, operator_eenv);
     } else {
 	/*
 	 * define-postfix-operator X pri { ... }
@@ -2602,9 +2654,9 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 
 	idio_meaning_copy_src_properties (src, fe);
 
-	m = idio_meaning (fe, fe, nametree, flags, eenv);
+	m = idio_meaning (fe, fe, nametree, flags, operator_eenv);
     }
-    IDIO r = IDIO_LIST4 (IDIO_I_POSTFIX_OPERATOR, fmci, pri, m);
+    IDIO r = IDIO_LIST4 (IDIO_I_POSTFIX_OPERATOR, op_id, pri, m);
 
     return r;
 }
@@ -2891,13 +2943,20 @@ static IDIO idio_meaning_fix_abstraction (IDIO src, IDIO name, IDIO ns, IDIO for
 
     IDIO mp = idio_meaning_sequence (src, ep, ent, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, eenv);
 
-    return IDIO_LIST7 (IDIO_I_FIX_CLOSURE,
+    /*
+     * CREATE-FUNCTION is going to consume a vi which we create here
+     * so that subsequent references line up
+     */
+    idio_as_t vi = idio_meaning_extend_tables (eenv);
+
+    return IDIO_LIST8 (IDIO_I_FIX_CLOSURE,
 		       mp,
 		       name,
 		       idio_fixnum (arity),
 		       idio_meaning_nametree_to_list (ent),
 		       docstr,
-		       src);
+		       src,
+		       idio_fixnum (vi));
 }
 
 static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO name, IDIO ns, IDIO n, IDIO formals, IDIO docstr, IDIO ep, IDIO nametree, int flags, IDIO eenv)
@@ -2923,13 +2982,20 @@ static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO name, IDIO ns, IDIO 
 
     IDIO mp = idio_meaning_sequence (src, ep, ent, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, eenv);
 
-    return IDIO_LIST7 (IDIO_I_NARY_CLOSURE,
+    /*
+     * CREATE-FUNCTION is going to consume a vi which we create here
+     * so that subsequent references line up
+     */
+    idio_as_t vi = idio_meaning_extend_tables (eenv);
+
+    return IDIO_LIST8 (IDIO_I_NARY_CLOSURE,
 		       mp,
 		       name,
 		       idio_fixnum (arity),
 		       idio_meaning_nametree_to_list (ent),
 		       docstr,
-		       src);
+		       src,
+		       idio_fixnum (vi));
 }
 
 
@@ -3929,6 +3995,11 @@ static IDIO idio_meaning_regular_application (IDIO src, IDIO fe, IDIO aes, IDIO 
 
     int ams_flags = IDIO_MEANING_NOT_TAILP (flags);
 
+    if (idio_isa_pair (aes) &&
+	idio_S_nil != IDIO_PAIR_T (aes) &&
+	! idio_isa_pair (IDIO_PAIR_T (aes))) {
+	idio_debug ("mra ? %s\n", aes);
+    }
     IDIO ams = idio_meaning_arguments (src, aes, nametree, idio_list_length (aes), ams_flags, eenv);
 
     if (IDIO_MEANING_IS_TAILP (flags)) {

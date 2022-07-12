@@ -2200,6 +2200,10 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	fprintf (stderr, " e %ld.%06ld", td.tv_sec, td.tv_usec);
 #endif
 
+	if (handle_interactive) {
+	    idio_debug ("e %s\n", e);
+	    idio_debug ("m %s\n", m);
+	}
 	idio_pc_t pc = idio_codegen (thr, m, eenv);
 
 	r = idio_vm_run_C (thr, pc);
@@ -2306,6 +2310,7 @@ This is the `load-handle` primitive.				\n\
     IDIO_USER_TYPE_ASSERT (handle, h);
 
     IDIO thr = idio_thread_current_thread ();
+    idio_xi_t xi0 = IDIO_THREAD_XI (thr);
     idio_pc_t pc0 = IDIO_THREAD_PC (thr);
 
     IDIO cm = IDIO_THREAD_MODULE (thr);
@@ -2314,6 +2319,10 @@ This is the `load-handle` primitive.				\n\
 
     idio_gc_protect (eenv);
 
+    /*
+     * idio_evaluate_normal_eenv() implies XI==0
+     */
+    IDIO_THREAD_XI (thr) = 0;
     IDIO r = idio_load_handle (h, idio_read, idio_evaluate_func, eenv, 0);
 
     idio_gc_expose (eenv);
@@ -2322,6 +2331,7 @@ This is the `load-handle` primitive.				\n\
     if (pc == (idio_vm_FINISH_pc + 1)) {
 	IDIO_THREAD_PC (thr) = pc0;
     }
+    IDIO_THREAD_XI (thr) = xi0;
 
     return r;
 }

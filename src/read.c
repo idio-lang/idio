@@ -1988,7 +1988,7 @@ static IDIO idio_read_array (IDIO handle, IDIO lo, idio_unicode_t *ic, int depth
 {
     IDIO_ASSERT (handle);
 
-    IDIO l = idio_read_list (handle, lo, idio_T_lbracket, ic, IDIO_LIST_BRACKET (depth + 1));
+    IDIO l = idio_read_list (handle, lo, idio_T_lbracket, ic, IDIO_LIST_CONSTANT (IDIO_LIST_BRACKET (depth + 1)));
     return idio_list_to_array (l);
 }
 
@@ -2942,7 +2942,9 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
      * Note that (block expr1 expr2+) means we need to wrap a begin
      * round expr1 expr2+ -- unlike quasiquote!
      */
-    if (idio_S_nil == IDIO_PAIR_TT (e)) {
+    if (idio_isa_pair (e) &&
+	idio_isa_pair (IDIO_PAIR_T (e)) &&
+	idio_S_nil == IDIO_PAIR_TT (e)) {
 	IDIO r = IDIO_LIST2 (idio_S_quasiquote, IDIO_PAIR_HT (e));
 	idio_meaning_copy_src_properties (e, r);
 

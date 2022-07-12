@@ -216,9 +216,12 @@ unset IFS
 # git commit
 
 git_toplevel=$(git rev-parse --show-toplevel)
+git_asm_file=${git_toplevel}/src/vm-asm.h
+git_compiler_file=${git_toplevel}/src/compile.c
+
 git_commit=$(git rev-parse --short=7 HEAD)
-git_asm_commit=$(git log -n 1 --pretty=format:%h -- ${git_toplevel}/src/vm-asm.h)
-git_compiler_commit=$(git log -n 1 --pretty=format:%h -- ${git_toplevel}/lib/compile.idio)
+git_asm_commit=$(git log -n 1 --pretty=format:%h -- ${git_asm_file})
+git_compiler_commit=$(git log -n 1 --pretty=format:%h -- ${git_compiler_file})
 git_describe=$(git describe --tags || true)
 
 # dirty working directory?
@@ -227,12 +230,20 @@ git_describe=$(git describe --tags || true)
 if ! git diff-files --quiet --ignore-submodules -- ; then
     # unstaged changes in the working tree
     git_commit="${git_commit}*"
-    git_asm_commit="${git_asm_commit}*"
-    git_compiler_commit="${git_compiler_commit}*"
 elif ! git diff-index --cached --quiet HEAD --ignore-submodules -- ; then
     # uncommitted changes in the index
     git_commit="${git_commit}+"
+fi
+
+if ! git diff-files --quiet --ignore-submodules -- ${git_asm_file} ; then
+    git_asm_commit="${git_asm_commit}*"
+elif ! git diff-index --cached --quiet HEAD --ignore-submodules -- ${git_asm_file} ; then
     git_asm_commit="${git_asm_commit}+"
+fi
+
+if ! git diff-files --quiet --ignore-submodules -- ${git_compiler_file} ; then
+    git_compiler_commit="${git_compiler_commit}*"
+elif ! git diff-index --cached --quiet HEAD --ignore-submodules -- ${git_compiler_file} ; then
     git_compiler_commit="${git_compiler_commit}+"
 fi
 

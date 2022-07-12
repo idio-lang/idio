@@ -514,8 +514,7 @@ multiple lines.
 
   " {
     oh := (current-error-handle)
-    if (and (not (null? args))
-	    (pair? args)) {
+    if (pair? args) {
       oh = ph args
     }
 

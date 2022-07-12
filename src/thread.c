@@ -60,6 +60,8 @@ static IDIO idio_running_threads;
 static IDIO idio_running_thread = idio_S_nil;
 IDIO idio_threading_module = idio_S_nil;
 
+static IDIO_FLAGS_T idio_thread_id = 0;
+
 IDIO idio_thread_base (idio_as_t stack_size)
 {
     IDIO t = idio_gc_get (IDIO_TYPE_THREAD);
@@ -109,6 +111,8 @@ IDIO idio_thread_base (idio_as_t stack_size)
     IDIO_THREAD_ERROR_HANDLE (t) = idio_stderr_file_handle ();
     IDIO_THREAD_MODULE (t) = main_module;
     IDIO_THREAD_HOLES (t) = idio_S_nil;
+
+    IDIO_THREAD_FLAGS (t) = idio_thread_id++;
 
     return t;
 }
@@ -291,8 +295,9 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
      */
     seen = idio_pair (v, seen);
     idio_as_t sp = idio_array_size (IDIO_THREAD_STACK (v));
-    *sizep = idio_asprintf (&r, "#<THR %10p\n  pc=%6zd\n  sp/top=%2zd/",
+    *sizep = idio_asprintf (&r, "#<THR %10p\n  pc=[%zu]@%zd\n  sp/top=%2zd/",
 			    v,
+			    IDIO_THREAD_XI (v),
 			    IDIO_THREAD_PC (v),
 			    sp - 1);
 
@@ -452,9 +457,6 @@ void idio_init_first_thread ()
      * We also need the expander thread "early doors"
      */
     idio_expander_thread = idio_thread (40);
-
-    /* IDIO_THREAD_MODULE (idio_expander_thread) = idio_expander_module; */
-    IDIO_THREAD_PC (idio_expander_thread) = 1;
 
     IDIO ethr = IDIO_SYMBOL ("*expander-thread*");
     idio_module_set_symbol_value (ethr, idio_expander_thread, idio_expander_module);

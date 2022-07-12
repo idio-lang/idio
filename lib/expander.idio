@@ -116,23 +116,39 @@ define (a-e-map fn & l) {
   (cond
    ((null? (ph l)) #n)
    ((pair? (ph l)) {
-     if (and (or (eq? 'function/name (phh l))
-		 (eq? 'function (phh l)))
-	     (pair? (pth l))
-	     (pair? (ptth l))) {
-       if (string? (phtth l)) {
-	 ;; ((function formals docstr body))
-	 (append (list 'function (phth l))
-		 (list (apply a-e-map fn (pttth l))))
-       } {
-	 ;; ((function formals body))
-	 (append (list 'function (phth l))
-		 (list (apply a-e-map fn (ptth l))))
-       }
-     } {
-       (pair (apply fn		(map ph l))
-	     (apply a-e-map fn	(map pt l)))
-     }
+     (cond
+      ;; Here, check that (ph l) looks like a function definition and
+      ;; then check to see of there is a docstr -- noting that the
+      ;; body of a function could be a string, ie. there should be
+      ;; something after any putative docstr
+      ((eq? 'function/name (phh l)) {
+	def := ph l
+	;; (function/name name formals [docstr] body ...)
+	if (and ((length def) gt 4)
+		(string? (phttt def))) {
+	  (append (list (ph def) (pht def) (phtt def) (phttt def))
+		  (list (apply a-e-map fn (ptttt def))))
+	} {
+	  (append (list (ph def) (pht def) (phtt def))
+		  (list (apply a-e-map fn (pttt def))))
+	}
+      })
+      ((eq? 'function (phh l)) {
+	def := ph l
+	;; (function formals [docstr] body ...)
+	if (and ((length def) gt 3)
+		(string? (phtt def))) {
+	  (append (list (ph def) (pht def) (phtt def))
+		  (list (apply a-e-map fn (pttt def))))
+	} {
+	  (append (list (ph def) (pht def))
+		  (list (apply a-e-map fn (ptt def))))
+	}
+      })
+      (else {
+	(pair (apply fn		(map ph l))
+	      (apply a-e-map fn	(map pt l)))
+      }))
    })
    (else {
      apply fn l
@@ -182,13 +198,16 @@ define (install-expander! id proc) {
   if old {
     if (and (not (function? proc))
 	    (function? (pt old))) {
-      printf "WARNING: install-expander: not overwriting %s, a %s, with source code\n" id (type->string (pt old))
+      eprintf "WARNING: install-expander: not overwriting %s, a %s, with source code\n" id (type->string (pt old))
       } {
+      eprintf "i-e old\n%s\n%s\n" (pt old) proc
       set-pt! old proc
     }
   } {
     *expander-list* = pair (pair id proc) *expander-list*
   }
+
+  eprintf "i-e %s\n" (assq id *expander-list*)
 }
 
 define (install-expander/source! id proc src) {

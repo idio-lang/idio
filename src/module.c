@@ -663,7 +663,7 @@ Set the exports of `module` to `exports`	\n\
 	    /*
 	     * Test Case: module-errors/set-module-exports-bad-exports-arg-type.idio
 	     *
-	     * %set-module-exports! (find-moudle 'Idio) '(#t)
+	     * %set-module-exports! (find-module 'Idio) '(#t)
 	     */
 	    IDIO_USER_TYPE_ASSERT (symbol, e);
 	    el = IDIO_PAIR_T (el);
@@ -1133,11 +1133,14 @@ IDIO idio_module_direct_reference (IDIO name)
 IDIO_DEFINE_PRIMITIVE1_DS ("symbol-direct-reference", symbol_direct_reference, (IDIO sym), "sym", "\
 find evaluator details for symbol `sym`				\n\
 								\n\
-`sym` is of the form M/S					\n\
+`sym` is of the form ``M/S`` (module/symbol)			\n\
+								\n\
+If `sym` is of the form ``M/S-M/S`` the result will be for	\n\
+symbol ``S`` in the module ``M/S-M``.				\n\
 								\n\
 :param sym: symbol to find					\n\
 :type sym: symbol						\n\
-:return: evaluator details for `sym`				\n\
+:return: evaluator details for `sym` or ``#f``			\n\
 ")
 {
     IDIO_ASSERT (sym);
@@ -1431,9 +1434,9 @@ IDIO idio_module_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO m_or_n, IDIO a
 	IDIO fgvi = IDIO_SI_VI (si);
 
 	if (idio_S_toplevel == scope) {
-	    r = idio_vm_values_gref (xi, IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_values_gref (xi, IDIO_FIXNUM_VAL (fgvi), "symbol-value/toplevel");
 	} else if (idio_S_predef == scope) {
-	    r = idio_vm_values_gref (xi, IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_values_gref (xi, IDIO_FIXNUM_VAL (fgvi), "symbol-value/predef");
 	} else if (idio_S_dynamic == scope) {
 	    r = idio_vm_dynamic_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
 	} else if (idio_S_environ == scope) {
@@ -1580,7 +1583,7 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
 		 */
 		r = idio_vm_values_ref (0, gvi);
 	    } else if (idio_S_predef == scope) {
-		r = idio_vm_values_gref (xi, gvi);
+		r = idio_vm_values_gref (xi, gvi, "symbol-value-recurse/predef");
 	    } else if (idio_S_dynamic == scope) {
 		/*
 		 * Code coverage
@@ -1856,7 +1859,7 @@ IDIO idio_module_set_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO value, IDI
 	 * can live with it for now.
 	 */
 	if (module != idio_operator_module) {
-	    IDIO cv = idio_vm_values_gref (xi,  gvi);
+	    IDIO cv = idio_vm_values_gref (xi,  gvi, "set-symbol-value");
 	    idio_debug ("PRIM %s/", IDIO_MODULE_NAME (module));
 	    idio_debug ("%s", symbol);
 	    idio_debug (" => %s", value);
@@ -2265,10 +2268,10 @@ void idio_init_module ()
 
 #define IDIO_MODULE_STRING(c,s) idio_module_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_module_ ## c ## _string);
 
-    IDIO_MODULE_STRING (direct_reference, "idio-module-direct-reference");
-    IDIO_MODULE_STRING (set_symbol_value, "idio-module-set-symbol-value");
-    IDIO_MODULE_STRING (add_computed_symbol, "idio-module-add-computed-symbol");
-    IDIO_MODULE_STRING (init, "idio-module-init");
+    IDIO_MODULE_STRING (direct_reference, "idio_module_direct_reference");
+    IDIO_MODULE_STRING (set_symbol_value, "idio_module_set_symbol_value");
+    IDIO_MODULE_STRING (add_computed_symbol, "idio_module_add_computed_symbol");
+    IDIO_MODULE_STRING (init, "idio_module_init");
 
     /*
      * XXX Create the module vtable before creating any modules,

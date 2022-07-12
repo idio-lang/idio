@@ -65,11 +65,9 @@ typedef enum {
     IDIO_A_COMPUTED_SYM_IDEF,
 
     IDIO_A_VAL_REF,
-    IDIO_A_VAL_IREF,
-    IDIO_A_FUNCTION_VAL_REF,	/* 30 */
-    IDIO_A_FUNCTION_VAL_IREF,
+    IDIO_A_FUNCTION_VAL_REF,
 
-    IDIO_A_VAL_SET,
+    IDIO_A_VAL_SET,		/* 30 */
     IDIO_A_VAL_ISET,
 
     IDIO_A_PREDEFINED0,
@@ -78,10 +76,11 @@ typedef enum {
     IDIO_A_PREDEFINED3,		/* not implemented */
     IDIO_A_PREDEFINED4,		/* not implemented */
     IDIO_A_PREDEFINED5,		/* not implemented */
-    IDIO_A_PREDEFINED6,		/* not implemented */ /* 40 */
+    IDIO_A_PREDEFINED6,		/* not implemented */
     IDIO_A_PREDEFINED7,		/* not implemented */
-    IDIO_A_PREDEFINED8,		/* not implemented */
+    IDIO_A_PREDEFINED8,		/* not implemented */ /* 40 */
     IDIO_A_PREDEFINED,
+    IDIO_A_IPREDEFINED,
 
     IDIO_A_LONG_GOTO,
     IDIO_A_LONG_JUMP_FALSE,
@@ -90,8 +89,8 @@ typedef enum {
     IDIO_A_SHORT_JUMP_FALSE,
     IDIO_A_SHORT_JUMP_TRUE,
 
-    IDIO_A_PUSH_VALUE,		/* 50 */
-    IDIO_A_POP_VALUE,
+    IDIO_A_PUSH_VALUE,
+    IDIO_A_POP_VALUE,		/* 50 */
     IDIO_A_POP_REG1,
     IDIO_A_POP_REG2,
     IDIO_A_SRC_EXPR,
@@ -101,8 +100,8 @@ typedef enum {
     IDIO_A_RESTORE_ALL_STATE,
 
     IDIO_A_CREATE_FUNCTION,	/* top level closure */
-    IDIO_A_CREATE_IFUNCTION,	/* top level closure */ /* 60 */
-    IDIO_A_CREATE_CLOSURE,
+    IDIO_A_CREATE_IFUNCTION,	/* top level closure */
+    IDIO_A_CREATE_CLOSURE,	/* 60 */
     IDIO_A_CREATE_ICLOSURE,
     IDIO_A_FUNCTION_INVOKE,
     IDIO_A_FUNCTION_GOTO,
@@ -112,8 +111,8 @@ typedef enum {
     IDIO_A_POP_ABORT,
 
     IDIO_A_ALLOCATE_FRAME1,
-    IDIO_A_ALLOCATE_FRAME2,	/* 70 */
-    IDIO_A_ALLOCATE_FRAME3,
+    IDIO_A_ALLOCATE_FRAME2,
+    IDIO_A_ALLOCATE_FRAME3,	/* 70 */
     IDIO_A_ALLOCATE_FRAME4,
     IDIO_A_ALLOCATE_FRAME5,
     IDIO_A_ALLOCATE_FRAME,
@@ -123,8 +122,8 @@ typedef enum {
     IDIO_A_POP_FRAME0,
     IDIO_A_POP_FRAME1,
     IDIO_A_POP_FRAME2,
-    IDIO_A_POP_FRAME3,		/* 80 */
-    IDIO_A_POP_FRAME,
+    IDIO_A_POP_FRAME3,
+    IDIO_A_POP_FRAME,		/* 80 */
 
     IDIO_A_LINK_FRAME,
     IDIO_A_UNLINK_FRAME,
@@ -136,8 +135,8 @@ typedef enum {
     IDIO_A_ARITY1P,
     IDIO_A_ARITY2P,
     IDIO_A_ARITY3P,
-    IDIO_A_ARITY4P,		/* 90 */
-    IDIO_A_ARITYEQP,
+    IDIO_A_ARITY4P,
+    IDIO_A_ARITYEQP,		/* 90 */
     IDIO_A_ARITYGEP,
 
     IDIO_A_SHORT_NUMBER,	/* not implemented */
@@ -147,18 +146,19 @@ typedef enum {
     IDIO_A_CONSTANT_2,
     IDIO_A_CONSTANT_3,
     IDIO_A_CONSTANT_4,
-    IDIO_A_FIXNUM,		/* 100 */
-    IDIO_A_NEG_FIXNUM,
+    IDIO_A_FIXNUM,
+    IDIO_A_NEG_FIXNUM,		/* 100 */
     IDIO_A_CONSTANT,
     IDIO_A_NEG_CONSTANT,
     IDIO_A_UNICODE,
 
     IDIO_A_NOP,
     IDIO_A_PRIMCALL0,
+    IDIO_A_IPRIMCALL0,
     IDIO_A_PRIMCALL1,
+    IDIO_A_IPRIMCALL1,
     IDIO_A_PRIMCALL2,
-    IDIO_A_PRIMCALL3,		/* not implemented */
-    IDIO_A_PRIMCALL,		/* not implemented */ /* 110 */
+    IDIO_A_IPRIMCALL2,		/* 110 */
 
     IDIO_A_SUPPRESS_RCSE,
     IDIO_A_POP_RCSE,

@@ -193,6 +193,10 @@ IDIO idio_vm_run_C (IDIO thr, idio_pc_t pc);
 
 void idio_vm_restore_continuation (IDIO k, IDIO val);
 void idio_vm_restore_exit (IDIO k, IDIO val);
+
+void idio_vm_start_tracing ();
+void idio_vm_stop_tracing ();
+
 IDIO idio_vm_symbols_ref (idio_xi_t xi, idio_as_t si);
 idio_as_t idio_vm_extend_constants_direct (IDIO cs, IDIO ch, IDIO v);
 idio_as_t idio_vm_extend_default_constants (IDIO v);
@@ -205,7 +209,7 @@ IDIO idio_vm_src_props_ref (idio_xi_t xi, idio_as_t ci);
 idio_as_t idio_vm_extend_values (idio_xi_t xi);
 idio_as_t idio_vm_extend_default_values ();
 IDIO idio_vm_values_ref (idio_xi_t xi, idio_as_t vi);
-IDIO idio_vm_values_gref (idio_xi_t xi, idio_as_t vi);
+IDIO idio_vm_values_gref (idio_xi_t xi, idio_as_t vi, char *const op);
 IDIO idio_vm_default_values_ref (idio_as_t gvi);
 void idio_vm_values_set (idio_xi_t xi, idio_as_t vi, IDIO v);
 void idio_vm_values_gset (idio_xi_t xi, idio_as_t vi, IDIO v);
@@ -243,17 +247,18 @@ void idio_vm_prim_time (IDIO clos, struct timespec *ts0p, struct timespec *tsep,
 #endif
 IDIO idio_vm_invoke_C_thread (IDIO thr, IDIO command);
 IDIO idio_vm_invoke_C (IDIO command);
+IDIO idio_vm_run_xenv (idio_xi_t xi, idio_pc_t pc);
+idio_xi_t idio_vm_add_xenv (IDIO desc, IDIO symbols, IDIO constants, IDIO values, IDIO src_exprs, IDIO src_props, IDIO bs);
 IDIO idio_vm_source_location ();
 IDIO idio_vm_frame_tree (IDIO args);
 void idio_vm_trap_state (IDIO thr);
 
+IDIO idio_vm_iref2val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op);
 void idio_vm_thread_init (IDIO thr);
 void idio_vm_default_pc (IDIO thr);
 void idio_vm_thread_state (IDIO thr);
 
 time_t idio_vm_elapsed (void);
-
-void idio_vm_stop_tracing ();
 
 void idio_init_vm_values ();
 void idio_final_xenv ();

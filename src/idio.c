@@ -53,6 +53,7 @@
 #include "closure.h"
 #include "codegen.h"
 #include "command.h"
+#include "compile.h"
 #include "condition.h"
 #include "continuation.h"
 #include "env.h"
@@ -287,6 +288,7 @@ void idio_init (void)
     idio_init_vm ();
     idio_init_vm_dasm ();
     idio_init_codegen ();
+    idio_init_compile ();
     idio_init_continuation ();
     idio_init_object ();
 

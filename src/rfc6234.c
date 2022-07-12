@@ -223,7 +223,7 @@ shasum the string `s`			\n\
     return idio_rfc6234_shasum_string (s, alg);
 }
 
-IDIO idio_rfc6234_shasum_fd (char const *func, int fd, IDIO alg)
+char *idio_rfc6234_shasum_fd (char const *func, int fd, IDIO alg, int *rblp)
 {
     IDIO_ASSERT (alg);
 
@@ -248,7 +248,8 @@ IDIO idio_rfc6234_shasum_fd (char const *func, int fd, IDIO alg)
 	snprintf (em, 80, "%s shaReset Error %d", func, err);
 	idio_error_C (em, alg, IDIO_C_FUNC_LOCATION ());
 
-	return idio_S_notreached;
+	/* notreached */
+	return NULL;
     }
 
     char buf[BUFSIZ];
@@ -258,7 +259,8 @@ IDIO idio_rfc6234_shasum_fd (char const *func, int fd, IDIO alg)
 	if (-1 == read_r) {
 	    idio_error_system_errno (func, alg, IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
+	    /* notreached */
+	    return NULL;
 	}
 
 	if (0 == read_r) {
@@ -272,7 +274,8 @@ IDIO idio_rfc6234_shasum_fd (char const *func, int fd, IDIO alg)
 	    snprintf (em, 80, "%s shaInput Error %d", func, err);
 	    idio_error_C (em, alg, IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
+	    /* notreached */
+	    return NULL;
 	}
     }
 
@@ -283,7 +286,8 @@ IDIO idio_rfc6234_shasum_fd (char const *func, int fd, IDIO alg)
 	    snprintf (em, 80, "%s shaFinalBits Error %d", func, err);
 	    idio_error_C (em, alg, IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
+	    /* notreached */
+	    return NULL;
 	}
     }
 
@@ -296,18 +300,20 @@ IDIO idio_rfc6234_shasum_fd (char const *func, int fd, IDIO alg)
 	snprintf (em, 80, "%s shaResult Error %d, could not compute message digest", func, err);
 	idio_error_C (em, alg, IDIO_C_FUNC_LOCATION ());
 
-	return idio_S_notreached;
+	/* notreached */
+	return NULL;
     }
 
     /* hexify */
-    char r_buf[hashsize * 2];
+    *rblp = hashsize * 2;
+    char *r_buf = idio_alloc (*rblp);
     for (int i = 0; i < hashsize; i++) {
 	uint8_t c = Message_Digest[i];
 	r_buf[i*2]   = idio_hex_digits[(c & 0xf0) >> 4];
 	r_buf[i*2+1] = idio_hex_digits[(c & 0x0f)];
     }
 
-    return idio_string_C_len (r_buf, hashsize * 2);
+    return r_buf;
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("shasum-fd", rfc6234_shasum_fd, (IDIO fd, IDIO args), "fd [alg]", "\
@@ -342,7 +348,14 @@ shasum the contents from `fd`		\n\
 	IDIO_USER_TYPE_ASSERT (symbol, alg);
     }
 
-    return idio_rfc6234_shasum_fd ("shasum-fd", IDIO_C_TYPE_int (fd), alg);
+    int r_buf_len = 0;
+    char *r_buf = idio_rfc6234_shasum_fd ("shasum-fd", IDIO_C_TYPE_int (fd), alg, &r_buf_len);
+
+    IDIO r = idio_string_C_len (r_buf, r_buf_len);
+
+    IDIO_GC_FREE (r_buf, r_buf_len);
+
+    return r;
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("shasum-file", rfc6234_shasum_file, (IDIO file, IDIO args), "file [alg]", "\
@@ -379,9 +392,14 @@ shasum the contents of `file`		\n\
 
     IDIO fh = idio_file_handle_open_file ("shasum-file", file, idio_S_nil, IDIO_MODE_RE, sizeof (IDIO_MODE_RE) - 1);
 
-    IDIO r = idio_rfc6234_shasum_fd ("shasum-file", IDIO_FILE_HANDLE_FD (fh), alg);
+    int r_buf_len = 0;
+    char *r_buf = idio_rfc6234_shasum_fd ("shasum-file", IDIO_FILE_HANDLE_FD (fh), alg, &r_buf_len);
 
     idio_close_file_handle (fh);
+
+    IDIO r = idio_string_C_len (r_buf, r_buf_len);
+
+    IDIO_GC_FREE (r_buf, r_buf_len);
 
     return r;
 }

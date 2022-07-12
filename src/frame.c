@@ -149,6 +149,7 @@ IDIO idio_frame_fetch (IDIO fo, size_t const d, idio_fi_t const i)
     }
 
     if (i >= IDIO_FRAME_NALLOC (fo)) {
+	fprintf (stderr, "frame_fetch: %d >= %d\n", i, IDIO_FRAME_NALLOC (fo));
 	idio_vm_frame_tree (idio_S_nil);
 	idio_frame_error_range (fo, td, i, IDIO_C_FUNC_LOCATION ());
 

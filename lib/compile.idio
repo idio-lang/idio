@@ -21,7 +21,6 @@ compile.idio
 module compile
 export (
 	 compile-file
-	 compile-file-reader
 )
 import evaluate codegen vm job-control
 
@@ -87,7 +86,10 @@ define (compile-file-writer file eenv pc) {
     puts "\n"
 
     vs := %eenv-values eenv
-    vslen := (ph vs) + 1
+    vslen := 0
+    if vs {
+      vslen = vs + 1
+    }
     alen := vslen
     st := %eenv-symbols eenv
     stlen := length st
@@ -106,8 +108,11 @@ ${alen}
 
     for sym-si in (reverse st) {
       si := pt sym-si
-      write (pair (si-si si) (si-ci si))
-      puts " "
+      if (and (fixnum? (si-si si))
+	      (fixnum? (si-ci si))) {
+	write (pair (si-si si) (si-ci si))
+	puts " "
+      }
     }
 
     puts #S{)
@@ -141,20 +146,29 @@ ${pc}
     puts "\n\n"
 
     ses := %eenv-src-exprs eenv
+    ses-size := array-length ses
+    sps := %eenv-src-props eenv
     puts #S{
 ; The ${array-length ses} source expressions
 #\[
 }
 
-    for se in ses {
-      write se
+    #*
+    (do ((i 0 (i + 1)))
+     ((i ge ses-size) #t) {
+      if (null? (array-ref sps i)) {
+	write #n
+      } {
+	write #n ;printf "\"%s\"" (array-ref ses i)
+      }
       puts "\n"
-    }
+    })
+    *#
+
     puts #S{
 \]
 }
 
-    sps := %eenv-src-props eenv
     puts #S{
 ; The ${array-length sps} source expression properties
 #\[ }
@@ -163,6 +177,7 @@ ${pc}
       write sp
       puts " "
     }
+
     puts #S{\]
 }
 
@@ -172,179 +187,11 @@ ${pc}
   })
 }
 
-define (compile-file-reader file) {
-  printf "compile-file-reader: %s\n" file
-
-  ;; /path/to/__idio__/{mod}.{ASM_COMMIT} where we shouldn't be here
-  ;; unless {ASM_COMMIT} in the file name matches
-  ;; IDIO_BUILD_ASM_COMMIT.  Although some intrepid user might call us
-  ;; direct.
-  chksum := #f
-  idio-file := file
-  (regex-case file
-	      (#S{(.*)/${*idio-cache-dir*}/(.+)\\.([^.]+)} {
-		idio-file = append-string r.1 "/" r.2 ".idio"
-		if (f? idio-file) {
-		  chksum = append-string "SHA256:" (ph (split-string (collect-output sha256sum idio-file)))
-		} {
-		  eprintf "cannot verify expected .idio source %s\n" idio-file
-		}
-	      }))
-
-
-
-  fh := open-input-file file
-
-  r := #t
-
-  idio-build-compiler-commit := read fh
-
-  if (not (equal? idio-build-compiler-commit IDIO_BUILD_COMPILER_COMMIT)) {
-    eprintf "compiler-commit %s != %s\n" idio-build-compiler-commit IDIO_BUILD_COMPILER_COMMIT
-    r = #f
-  }
-
-  if r {
-    now := read fh
-
-    if (not (string? now)) {
-      eprintf "now %s is not a string\n" now
-      r = #f
-    }
-  }
-
-  if r {
-    idio-build-asm-commit := read fh
-
-    if (not (equal? idio-build-asm-commit IDIO_BUILD_ASM_COMMIT)) {
-      eprintf "asm-commit %s != %s\n" idio-build-asm-commit IDIO_BUILD_ASM_COMMIT
-      r = #f
-    }
-  }
-
-  if r {
-    pc-chksum := read fh
-
-    if chksum {
-      if (not (equal? chksum pc-chksum)) {
-	eprintf "chksum %s != %s\n" pc-chksum chksum
-	r = #f
-      }
-    }
-  }
-
-  alen := #f
-  if r {
-    alen = read fh
-
-    if (not (integer? alen)) {
-      eprintf "alen %s is not an integer\n" alen
-      r = #f
-    }
-  }
-
-  ste := #f
-  if r {
-    ste = read fh
-
-    if (not (list? ste)) {
-      eprintf "symbol table entries is not a list\n" ste
-      r = #f
-    }
-  }
-
-  max-ci := 0
-  st := #f
-  if r {
-    st = make-array alen
-    for si-ci in ste {
-      ci := pt si-ci
-      array-set! st (ph si-ci) ci
-      if (ci gt max-ci) {
-	max-ci = ci
-      }
-    }
-  }
-
-  cs := #f
-  if r {
-    cs = read fh
-
-    if (not (array? cs)) {
-      eprintf "constants is not an array\n" cs
-      r = #f
-    } {
-      if (max-ci gt (array-length cs)) {
-	eprintf "constants is smaller (%d) than the largest symbol index (%d)\n" (array-length cs) max-ci
-	r = #f
-      }
-    }
-  }
-
-  pc := #f
-  if r {
-    pc = read fh
-
-    if (not (integer? pc)) {
-      eprintf "pc %s is not an integer\n" pc
-      r = #f
-    }
-  }
-
-  bs := #f
-  if r {
-    bs = read fh
-
-    if (not (octet-string? bs)) {
-      eprintf "byte code %s is not an octet string\n" pc
-      r = #f
-    } {
-      if (pc ge (string-length bs)) {
-	eprintf "pc is greater (%d) than the length of the byte code (%d)\n" pc (string-length bs)
-	r = #f
-      }
-    }
-  }
-
-  ses := #f
-  if r {
-    ses = read fh
-
-    if (not (array? ses)) {
-      eprintf "source code expressions %s is not an array\n" ses
-      r = #f
-    }
-  }
-
-  sps := #f
-  if r {
-    sps = read fh
-
-    if (not (array? sps)) {
-      eprintf "source code properties %s is not an array\n" ses
-      r = #f
-    } {
-      if ((array-length ses) ne (array-length sps)) {
-	eprintf "number ofsource code expressions (%d) does not match the number of source code properties (%d)\n" (array-length ses) (array-length sps)
-	r = #f
-      }
-    }
-  }
-
-  if r {
-    ;; phew!
-
-    vs := make-array alen 0
-    %vm-add-xenv idio-file st cs vs ses sps bs pc
-  }
-
-  r
-}
-
 ; we want to subvert evaluate/meaning-include, which calls {load},
 ; such that we continue processing.  We'll use compile-file-load for
 ; that.
 compile-file-load := #f
+compile-file-load-eenv := #f
 
 define (compile-file file & args) "
 " {
@@ -354,7 +201,7 @@ define (compile-file file & args) "
 
   if (pair? args) {
     eenv = ph args
-    printf "compile-file: eenv %s\n" eenv
+    printf "compile-file: re-using eenv for %s\n" (%eenv-desc eenv)
   } {
     eenv = %evaluation-environment file #t
   }
@@ -362,18 +209,29 @@ define (compile-file file & args) "
   fn := file
   if (not (f? fn)) {
     fn = find-lib fn
-    printf "compile-file: %s\n" fn
+    printf "compile-file: find-lib %s\n" fn
   }
 
-  set-%eenv-chksum! eenv (append-string "SHA256:" (ph (split-string (collect-output sha256sum fn))))
+  ;; Careful, anything that includes something else doesn't want the
+  ;; something elses to overwrite the original's chksum
+  ;;
+  ;; The downside of this is that we don't guarantee the chksum for
+  ;; the included files...
+  if (not (string? (%eenv-chksum eenv))) {
+    set-%eenv-chksum! eenv (append-string "SHA256:" (shasum-file fn))
+  }
 
   fh := open-input-file fn
 
   orig-load := load
   load = compile-file-load
+  orig-cfl-eenv := compile-file-load-eenv
+  compile-file-load-eenv = eenv
 
   all-m := #n
-  pc := #f
+
+  ;; this should be 10 (until the prologue is changed)
+  pc0 := string-length (idio-ia->string (%eenv-byte-code eenv))
 
   loop :+ function #n {
     e := read fh
@@ -381,9 +239,10 @@ define (compile-file file & args) "
       ;;printf "compile-file: e %s\n" e
       m := #f
       trap (^rt-parameter-error
+	    ^idio-error
 	    ^rt-function-error) (function (c) {
 	      condition-report "compile" c
-	      printf "...\n\n"
+	      printf "sleep (2) ...\n\n"
 	      sleep 2
 	      m = list I-NOP
 	      trap-return #f
@@ -396,14 +255,8 @@ define (compile-file file & args) "
       if m {
 	all-m = pair m all-m
       }
-      pc0 := codegen m eenv
-      if (not pc) {
-	pc = pc0
-	;printf "compile-file: use  %4s / %4s\n" pc0 (idio-ia-length (%eenv-byte-code eenv))
-      } {
-	;printf "compile-file: skip %4s / %4s\n" pc0 (idio-ia-length (%eenv-byte-code eenv))
-	#t
-      }
+
+      pc := codegen m eenv
 
       (loop)
     }
@@ -412,14 +265,18 @@ define (compile-file file & args) "
   (loop)
 
   load = orig-load
+  compile-file-load-eenv = orig-cfl-eenv
 
   close-handle fh
 
   printf "\n"
 
+  ;dump-eenv eenv (append-string (basename-pathname file) ".st")
   ;printf "compile-file: eenv %s\n" eenv
 
-  compile-file-writer fn eenv pc
+  if (not (pair? args)) {
+    compile-file-writer fn eenv pc0
+  }
 
   ;; return all-m to any recursive calls via evaluate/meaning-include
   ;; which calls {load} which we renamed to be compile-file-load,
@@ -429,7 +286,7 @@ define (compile-file file & args) "
 
 define (compile-file-load file) {
   printf "compile-file-load: %s\n" file
-  compile-file file
+  compile-file file compile-file-load-eenv
 }
 
 provide compile

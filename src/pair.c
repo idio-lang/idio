@@ -1542,6 +1542,14 @@ char *idio_pair_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 		    size_t hs_size = 0;
 		    char *hs = idio_report_string (idio_list_head (IDIO_PAIR_T (v)), &hs_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
+		    if (idio_S_nil != IDIO_PAIR_TT (v)) {
+			/* Yikes! */
+			IDIO_STRCAT (r, sizep, " -RS-<< ");
+			size_t ts_size = 0;
+			char *ts = idio_report_string (IDIO_PAIR_TT (v), &ts_size, depth - 1, seen, 0);
+			IDIO_STRCAT_FREE (r, sizep, ts, ts_size);
+			IDIO_STRCAT (r, sizep, " >>-RS- ");
+		    }
 		} else {
 		    /*
 		     * Code coverage:
@@ -1642,6 +1650,14 @@ char *idio_pair_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO 
 		    size_t hs_size = 0;
 		    char *hs = idio_as_string (idio_list_head (IDIO_PAIR_T (v)), &hs_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
+		    if (idio_S_nil != IDIO_PAIR_TT (v)) {
+			/* Yikes! */
+			IDIO_STRCAT (r, sizep, " -CS-<< ");
+			size_t ts_size = 0;
+			char *ts = idio_report_string (IDIO_PAIR_TT (v), &ts_size, depth - 1, seen, 0);
+			IDIO_STRCAT_FREE (r, sizep, ts, ts_size);
+			IDIO_STRCAT (r, sizep, " >>-CS- ");
+		    }
 		} else {
 		    /*
 		     * Code coverage:

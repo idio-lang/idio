@@ -49,6 +49,7 @@
 
 #include "array.h"
 #include "c-type.h"
+#include "compile.h"
 #include "condition.h"
 #include "env.h"
 #include "error.h"
@@ -77,6 +78,7 @@ static IDIO idio_stdin = idio_S_nil;
 static IDIO idio_stdout = idio_S_nil;
 static IDIO idio_stderr = idio_S_nil;
 static IDIO idio_dl_handles = idio_S_nil;
+static IDIO idio_compile_file_reader_sym = idio_S_nil;
 
 static idio_handle_methods_t idio_file_handle_file_methods = {
     idio_free_file_handle,
@@ -3789,13 +3791,13 @@ int idio_load_idio_cache (char *pathname, size_t pathname_len)
     end[0] = '\0';
 
     if (access (cfn, R_OK)) {
-	fprintf (stderr, "ENOENT %s\n", cfn);
 	return 0;
     }
 
-    fprintf (stderr, "trying %s\n", cfn);
+    fprintf (stderr, "\nload-cache: trying %s\n", cfn);
+    IDIO I_cfn = idio_string_C_len (cfn, end - cfn);
 
-    return 0;
+    return idio_compile_file_reader (I_cfn, cfn, end - cfn);
 }
 
 IDIO idio_load_file_name (IDIO filename, IDIO eenv)
@@ -4023,6 +4025,7 @@ This is the `load` primitive.					\n\
     IDIO_USER_TYPE_ASSERT (string, filename);
 
     IDIO thr = idio_thread_current_thread ();
+    idio_xi_t xi0 = IDIO_THREAD_XI (thr);
     idio_pc_t pc0 = IDIO_THREAD_PC (thr);
 
     IDIO cm = IDIO_THREAD_MODULE (thr);
@@ -4031,6 +4034,10 @@ This is the `load` primitive.					\n\
 
     idio_gc_protect (eenv);
 
+    /*
+     * idio_evaluate_normal_eenv() implies XI==0
+     */
+    IDIO_THREAD_XI (thr) = 0;
     IDIO r = idio_load_file_name (filename, eenv);
 
     idio_gc_expose (eenv);
@@ -4039,6 +4046,7 @@ This is the `load` primitive.					\n\
     if (pc == (idio_vm_FINISH_pc + 1)) {
 	IDIO_THREAD_PC (thr) = pc0;
     }
+    IDIO_THREAD_XI (thr) = xi0;
 
     return r;
 }
@@ -4169,4 +4177,7 @@ void idio_init_file_handle ()
 
     idio_dl_handles = idio_pair (idio_S_nil, idio_S_nil);
     idio_gc_protect_auto (idio_dl_handles);
+
+    idio_compile_file_reader_sym = IDIO_SYMBOL ("compile-file-reader");
+    idio_gc_protect_auto (idio_compile_file_reader_sym);
 }

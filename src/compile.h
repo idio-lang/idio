@@ -16,23 +16,17 @@
  */
 
 /*
- * rfc6234.h
+ * compile.h
  *
  */
 
-#ifndef RFC6234_H
-#define RFC6234_H
+#ifndef COMPILE_H
+#define COMPILE_H
 
-#include "RFC6234/sha.h"
+extern IDIO idio_compile_module;
 
-extern IDIO idio_rfc6234_SHA1_sym;
-extern IDIO idio_rfc6234_SHA224_sym;
-extern IDIO idio_rfc6234_SHA256_sym;
-extern IDIO idio_rfc6234_SHA384_sym;
-extern IDIO idio_rfc6234_SHA512_sym;
-
-char *idio_rfc6234_shasum_fd (char const *func, int fd, IDIO alg, int *hashsize);
-void idio_init_rfc6234 ();
+int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len);
+void idio_init_compile ();
 
 #endif
 

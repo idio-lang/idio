@@ -335,7 +335,7 @@ char *idio_closure_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, ID
     }
 
     char *t;
-    size_t t_size = idio_asprintf (&t, "@%zd/%p/", IDIO_CLOSURE_CODE_PC (v), IDIO_CLOSURE_FRAME (v));
+    size_t t_size = idio_asprintf (&t, "[%zu]@%zd/%p/", IDIO_CLOSURE_XI (v), IDIO_CLOSURE_CODE_PC (v), IDIO_CLOSURE_FRAME (v));
     IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
     size_t mn_size = 0;
