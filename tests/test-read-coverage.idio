@@ -22,6 +22,8 @@
 ;; Technically we're not doing any tests but should improve the code
 ;; coverage by running these examples.
 
+read0 := Tests
+
 read-coverage-load := {
   n := 0
 
@@ -52,3 +54,23 @@ read-coverage-load "read-coverage/numbers.idio"
 read-coverage-load "read-coverage/bracket-block.idio"
 read-coverage-load "read-coverage/bignum-integer.idio"
 read-coverage-load "read-coverage/bitset-rbrace.idio"
+
+
+;; #=[] verbatim reader (ie. no operators are applied)
+
+; normally
+a := #[ 1 2 lt 3 4 ] ; #[ 1 (binary-lt 2 3) 4 ]
+test a.0 1
+test a.1 '(binary-lt 2 3)
+test a.2 4
+
+; when verbatim
+a := #=[ 1 2 lt 3 4 ] ; #[ 1 2 lt 3 4 ]
+test a.0 1
+test a.1 2
+test a.2 'lt
+test a.3 3
+test a.4 4
+
+;; all done?
+Tests? (read0 + 8)

@@ -106,7 +106,8 @@ IDIO idio_src_properties;
 #define IDIO_CHAR_ASTERISK	'*'
 #define IDIO_CHAR_HYPHEN_MINUS	'-'
 #define IDIO_CHAR_PLUS_SIGN	'+'
-#define IDIO_CHAR_PERIOD	'.'
+
+#define IDIO_CHAR_APPLY_OPERATORS	IDIO_CHAR_DOT
 
 #define IDIO_UNICODE_REPLACEMENT_CHARACTER 0xFFFD
 
@@ -214,9 +215,21 @@ IDIO idio_src_properties;
  * 2. expression splicing == unquotesplicing
  * 3. expression quoting
  * 4. escape char to prevent operator handling
+ *
+ * 5. apply operators, ie. not an interpolation character per se but
+ *    rather an expression of desire
+ *
+ *    Any value other than IDIO_CHAR_APPLY_OPERATORS implies no
+ *    application of operators.
  */
-idio_unicode_t idio_default_template_ic[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
-#define IDIO_TEMPLATE_IC 4
+idio_unicode_t idio_default_template_ic[] = {
+    IDIO_CHAR_DOLLARS,
+    IDIO_CHAR_AT,
+    IDIO_CHAR_SQUOTE,
+    IDIO_CHAR_BACKSLASH,
+    IDIO_CHAR_APPLY_OPERATORS
+};
+#define IDIO_TEMPLATE_IC 5
 
 /*
  * Default string interpolation characters:
@@ -980,6 +993,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, idio_unicod
 	return idio_S_notreached;
     }
 
+    int apply_operators = (ic[4] == IDIO_CHAR_APPLY_OPERATORS);
     IDIO r = idio_S_nil;
 
     for (;;) {
@@ -1104,43 +1118,46 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, idio_unicod
 	    }
 	}
 
-	IDIO op = idio_infix_operatorp (e);
+	if (apply_operators) {
+	    IDIO op = idio_infix_operatorp (e);
 
-	if (idio_S_false != op) {
-	    /* ( ... {op} <EOL>
-	     *   ... )
-	     */
+	    if (idio_S_false != op) {
+		/* ( ... {op} <EOL>
+		 *   ... )
+		 */
 
-	    /*
-	     * An operator cannot be in functional position although
-	     * several operators and functional names clash!  So, skip
-	     * if it's the first element in the list.
-	     */
-	    if (count > 0) {
-		IDIO lo = idio_read_1_expr (handle, ic, depth);
-		IDIO ne = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_EXPR);
-		while (idio_T_eol == ne) {
+		/*
+		 * An operator cannot be in functional position
+		 * although several operators and functional names
+		 * clash!  So, skip if it's the first element in the
+		 * list.
+		 */
+		if (count > 0) {
 		    IDIO lo = idio_read_1_expr (handle, ic, depth);
-		    ne = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_EXPR);
+		    IDIO ne = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_EXPR);
+		    while (idio_T_eol == ne) {
+			IDIO lo = idio_read_1_expr (handle, ic, depth);
+			ne = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_EXPR);
+		    }
+
+		    if (idio_eofp_handle (handle)) {
+			/*
+			 * Test Case: read-errors/op-eof.idio
+			 *
+			 * 1 +
+			 *
+			 * Nominally this is a dupe of the one in
+			 * idio_read_expr_line()
+			 */
+			idio_read_error_list_eof (handle, lo, IDIO_C_FUNC_LOCATION ());
+
+			return idio_S_notreached;
+		    }
+
+		    r = idio_pair (e, r);
+		    count++;
+		    e = ne;
 		}
-
-		if (idio_eofp_handle (handle)) {
-		    /*
-		     * Test Case: read-errors/op-eof.idio
-		     *
-		     * 1 +
-		     *
-		     * Nominally this is a dupe of the one in
-		     * idio_read_expr_line()
-		     */
-		    idio_read_error_list_eof (handle, lo, IDIO_C_FUNC_LOCATION ());
-
-		    return idio_S_notreached;
-		}
-
-		r = idio_pair (e, r);
-		count++;
-		e = ne;
 	    }
 	}
 
@@ -1149,7 +1166,8 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, idio_unicod
 
 	    if (closedel == e) {
 		r = idio_list_nreverse (r);
-		if (! (IDIO_LIST_QUOTE_P (depth) ||
+		if (apply_operators &&
+		    ! (IDIO_LIST_QUOTE_P (depth) ||
 		       IDIO_LIST_CONSTANT_P (depth))) {
 		    r = idio_operator_expand (r, 0);
 		}
@@ -3252,7 +3270,7 @@ static IDIO idio_read_number_C (IDIO handle, char const *str)
 		 */
 		return idio_S_nil;
 	    }
-	} else if (IDIO_CHAR_PERIOD == s[i] &&
+	} else if (IDIO_CHAR_DOT == s[i] &&
 		   ! has_period) {
 	    has_period = 1;
 	} else if (IDIO_CHAR_HASH == s[i] &&
@@ -3778,6 +3796,52 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t *ic, int depth, int
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_hash (handle, lo, ic, depth + 1));
 			return lo;
 
+			/* verbatim collections -- ie. no operators */
+		    case IDIO_CHAR_EQUALS:
+			{
+			    idio_unicode_t c2 = idio_getc_handle (handle);
+			    if (idio_eofp_handle (handle)) {
+				/*
+				 * Test Case: read-errors/hash-equals-format-eof.idio
+				 *
+				 * #=
+				 */
+				idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), "#=-format EOF");
+
+				return idio_S_notreached;
+			    }
+
+			    idio_unicode_t icv[IDIO_TEMPLATE_IC];
+			    for (int i = 0; i < IDIO_TEMPLATE_IC; i++) {
+				icv[i] = ic[i];
+			    }
+			    icv[4] = IDIO_CHAR_EXCLAMATION; /* anything but IDIO_CHAR_APPLY_OPERATORS */
+
+			    switch (c2) {
+			    case IDIO_CHAR_LBRACKET:
+				idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_array (handle, lo, icv, depth + 1));
+				return lo;
+			    default:
+				{
+				    /*
+				     * Test Case: read-errors/unexpected-hash-equals-format.idio
+				     *
+				     * #=^foo
+				     *
+				     * XXX Of course we run the risk
+				     * of someone introducing the #=^
+				     * format for vital purposes...
+				     */
+				    char em[BUFSIZ];
+				    idio_snprintf (em, BUFSIZ, "unexpected '#=%c' format (#= then %#02x)", c2, c2);
+
+				    idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), em);
+
+				    return idio_S_notreached;
+				}
+			    }
+			}
+
 			/* numbers and unicode */
 		    case 'B':
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_bitset (handle, lo, depth));
@@ -4102,6 +4166,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, idio_unicode_t *ic,
     int count = 0;
 
     int skipped = 0;
+    int apply_operators = (ic[4] == IDIO_CHAR_APPLY_OPERATORS);
 
     for (;;) {
 	IDIO lo = idio_read_1_expr_nl (handle, ic, depth, 1);
@@ -4118,7 +4183,8 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, idio_unicode_t *ic,
 		if (idio_S_nil == IDIO_PAIR_T (re)) {
 		    re = IDIO_PAIR_H (re);
 		} else {
-		    if (! (IDIO_LIST_QUOTE_P (depth) ||
+		    if (apply_operators &&
+			! (IDIO_LIST_QUOTE_P (depth) ||
 			   IDIO_LIST_CONSTANT_P (depth))) {
 			re = idio_operator_expand (re, 0);
 		    }
@@ -4142,8 +4208,9 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, idio_unicode_t *ic,
 		if (idio_S_nil == IDIO_PAIR_T (re)) {
 		    re = IDIO_PAIR_H (re);
 		} else {
-		    if (! (IDIO_LIST_QUOTE_P (depth) ||
-		       IDIO_LIST_CONSTANT_P (depth))) {
+		    if (apply_operators &&
+			! (IDIO_LIST_QUOTE_P (depth) ||
+			   IDIO_LIST_CONSTANT_P (depth))) {
 			re = idio_operator_expand (re, 0);
 		    }
 		    re = idio_read_unescape (re);
@@ -4167,8 +4234,9 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, idio_unicode_t *ic,
 		if (idio_S_nil == IDIO_PAIR_T (re)) {
 		    re = IDIO_PAIR_H (re);
 		} else {
-		    if (! (IDIO_LIST_QUOTE_P (depth) ||
-		       IDIO_LIST_CONSTANT_P (depth))) {
+		    if (apply_operators &&
+			! (IDIO_LIST_QUOTE_P (depth) ||
+			   IDIO_LIST_CONSTANT_P (depth))) {
 			re = idio_operator_expand (re, 0);
 		    }
 		    re = idio_read_unescape (re);
@@ -4187,43 +4255,46 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, idio_unicode_t *ic,
 	    }
 	} else {
 
-	    IDIO op = idio_infix_operatorp (expr);
+	    if (apply_operators) {
+		IDIO op = idio_infix_operatorp (expr);
 
-	    if (idio_S_false != op) {
-		/* ( ... {op} <EOL>
-		 *   ... )
-		 */
+		if (idio_S_false != op) {
+		    /* ( ... {op} <EOL>
+		     *   ... )
+		     */
 
-		/*
-		 * An operator cannot be in functional position although
-		 * several operators and functional names clash!  So, skip
-		 * if it's the first element in the list.
-		 */
-		if (count > 0) {
-		    IDIO lo = idio_read_1_expr (handle, ic, depth);
-		    IDIO ne = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_EXPR);
-		    while (idio_T_eol == ne) {
-			lo = idio_read_1_expr (handle, ic, depth);
-			ne = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_EXPR);
+		    /*
+		     * An operator cannot be in functional position
+		     * although several operators and functional names
+		     * clash!  So, skip if it's the first element in
+		     * the list.
+		     */
+		    if (count > 0) {
+			IDIO lo = idio_read_1_expr (handle, ic, depth);
+			IDIO ne = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_EXPR);
+			while (idio_T_eol == ne) {
+			    lo = idio_read_1_expr (handle, ic, depth);
+			    ne = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_EXPR);
+			}
+
+			if (idio_eofp_handle (handle)) {
+			    /*
+			     * Test Case: read-errors/op-eof.idio
+			     *
+			     * 1 +
+			     *
+			     * Nominally this is a dup of the one in
+			     * idio_read_list()
+			     */
+			    idio_read_error_list_eof (handle, lo, IDIO_C_FUNC_LOCATION ());
+
+			    return idio_S_notreached;
+			}
+
+			re = idio_pair (expr, re);
+			count++;
+			expr = ne;
 		    }
-
-		    if (idio_eofp_handle (handle)) {
-			/*
-			 * Test Case: read-errors/op-eof.idio
-			 *
-			 * 1 +
-			 *
-			 * Nominally this is a dup of the one in
-			 * idio_read_list()
-			 */
-			idio_read_error_list_eof (handle, lo, IDIO_C_FUNC_LOCATION ());
-
-			return idio_S_notreached;
-		    }
-
-		    re = idio_pair (expr, re);
-		    count++;
-		    expr = ne;
 		}
 	    }
 

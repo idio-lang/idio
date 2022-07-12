@@ -170,8 +170,8 @@ read-error-load "read-errors/istring-bad-delim.idio" "string: unexpected interpo
 read-error-load "read-errors/istring-eof.idio" "string: EOF" 1
 read-error-load "read-errors/istring-eof-emb.idio" "string: EOF" 2
 
-read-error-load "read-errors/template-too-many-ic.idio" "template: too many interpolation characters: #5: $ (0x24)" 1
-read-error-load "read-errors/template-too-many-ic-emb.idio" "template: too many interpolation characters: #5: $ (0x24)" 2
+read-error-load "read-errors/template-too-many-ic.idio" "template: too many interpolation characters: #6: $ (0x24)" 1
+read-error-load "read-errors/template-too-many-ic-emb.idio" "template: too many interpolation characters: #6: $ (0x24)" 2
 
 read-error-load "read-errors/template-eof.idio" "template: EOF" 1
 read-error-load "read-errors/template-eof-emb.idio" "template: EOF" 2
@@ -227,6 +227,10 @@ read-error-load "read-errors/unexpected-rbracket.idio" "unexpected ']'" 1
 read-error-load "read-errors/unexpected-rbracket-emb.idio" "unexpected ']'" 2
 
 read-error-load "read-errors/hash-format-eof.idio" "#-format EOF" 1
+read-error-load "read-errors/hash-equals-format-eof.idio" "#=-format EOF" 1
+
+read-error-load "read-errors/unexpected-hash-equals-format.idio" "unexpected '#=^' format (#= then 0x5e)" 1
+read-error-load "read-errors/unexpected-hash-equals-format-emb.idio" "unexpected '#=^' format (#= then 0x5e)" 2
 
 read-error-load "read-errors/exact-expected-number.idio" "number expected after #e: got symbol" 1
 read-error-load "read-errors/exact-expected-number-emb.idio" "number expected after #e: got symbol" 2
@@ -303,4 +307,4 @@ read-error-load "read-errors/op-eof.idio" "EOF in list" 3
 read-error-load "read-errors/op-eof-emb.idio" "EOF in list" 4
 
 ;; all done?
-Tests? (read-error0 + 232)
+Tests? (read-error0 + 238)
