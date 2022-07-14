@@ -247,8 +247,7 @@ suppress-exit-on-error! = #f
 ;; being root defeats some tests -- originally thought to be some
 ;; (GitLab) CI weirdness whereas it turns out to be about my Docker
 ;; ignorance
-C/0uid_t := C/integer-> 0 libc/uid_t
-running-as-root := C/== EUID C/0uid_t
+running-as-root := C/== EUID libc/0uid_t
 if running-as-root {
   eprintf "NOTICE: EUID/UID == %d/%d; EGID/GID == %d/%d: some tests will be skipped\n" EUID UID EGID GID
 }

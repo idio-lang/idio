@@ -1537,31 +1537,16 @@ char *idio_pair_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 		*sizep = idio_asprintf (&r, "#T{ ");
 	    }
 
-	    if (special) {
-		if (idio_isa_pair (IDIO_PAIR_T (v))) {
-		    size_t hs_size = 0;
-		    char *hs = idio_report_string (idio_list_head (IDIO_PAIR_T (v)), &hs_size, depth - 1, seen, 0);
-		    IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
-		    if (idio_S_nil != IDIO_PAIR_TT (v)) {
-			/* Yikes! */
-			IDIO_STRCAT (r, sizep, " -RS-<< ");
-			size_t ts_size = 0;
-			char *ts = idio_report_string (IDIO_PAIR_TT (v), &ts_size, depth - 1, seen, 0);
-			IDIO_STRCAT_FREE (r, sizep, ts, ts_size);
-			IDIO_STRCAT (r, sizep, " >>-RS- ");
-		    }
-		} else {
-		    /*
-		     * Code coverage:
-		     *
-		     * Probably shouldn't be called.  It
-		     * would require an improper list in a
-		     * template.  Coding error?
-		     */
-		    size_t ts_size = 0;
-		    char *ts = idio_report_string (IDIO_PAIR_T (v), &ts_size, depth - 1, seen, 0);
-		    IDIO_STRCAT_FREE (r, sizep, ts, ts_size);
-		}
+	    /*
+	     * See corresponding clause in idio_pair_as_C_string()
+	     * below.
+	     */
+	    if (special &&
+		idio_isa_pair (IDIO_PAIR_T (v)) &&
+		idio_S_nil == IDIO_PAIR_TT (v)) {
+		size_t hs_size = 0;
+		char *hs = idio_report_string (idio_list_head (IDIO_PAIR_T (v)), &hs_size, depth - 1, seen, 0);
+		IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
 
 		if (NULL != trail) {
 		    r = idio_strcat (r, sizep, trail, tlen);
@@ -1645,31 +1630,36 @@ char *idio_pair_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO 
 		*sizep = idio_asprintf (&r, "#T{ ");
 	    }
 
-	    if (special) {
-		if (idio_isa_pair (IDIO_PAIR_T (v))) {
-		    size_t hs_size = 0;
-		    char *hs = idio_as_string (idio_list_head (IDIO_PAIR_T (v)), &hs_size, depth - 1, seen, 0);
-		    IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
-		    if (idio_S_nil != IDIO_PAIR_TT (v)) {
-			/* Yikes! */
-			IDIO_STRCAT (r, sizep, " -CS-<< ");
-			size_t ts_size = 0;
-			char *ts = idio_report_string (IDIO_PAIR_TT (v), &ts_size, depth - 1, seen, 0);
-			IDIO_STRCAT_FREE (r, sizep, ts, ts_size);
-			IDIO_STRCAT (r, sizep, " >>-CS- ");
-		    }
-		} else {
-		    /*
-		     * Code coverage:
-		     *
-		     * Probably shouldn't be called.  It
-		     * would require an improper list in a
-		     * template.  Coding error?
-		     */
-		    size_t ts_size = 0;
-		    char *ts = idio_as_string (IDIO_PAIR_T (v), &ts_size, depth - 1, seen, 0);
-		    IDIO_STRCAT_FREE (r, sizep, ts, ts_size);
-		}
+	    /*
+	     * This bothered me before and still does now.  Broadly,
+	     * quoting quote.  OK, not something you'd ordinarily do
+	     * but, it turns out, lib/evaluate.idio does (but we'd
+	     * never used it before in anger until pre-compilation
+	     * running in parallel with this).
+	     *
+	     * The old code allowed #T{ '$x }, for x being the symbol
+	     * quote, to become ''#n, which isn't great, it turns out,
+	     * as it's more like (quote quote #n) which breaks a
+	     * presumption about the single argument to a special.
+	     * (And definitely not aided by this very code which
+	     * "cleverly" prints it differently!)
+	     *
+	     * Here we're more strict and if the "special" isn't
+	     * exactly one item then it will drop through and we'll
+	     * get the '(quote) that the eps-qq-expand code is
+	     * expecting.  It, in turn, is combined with several other
+	     * lists of terminal symbols to give the desired quoted
+	     * element.  (It all goes a bit Inception -- don't worry.)
+	     *
+	     * In the meanwhile, everything else doesn't fool about
+	     * like evaluate.idio and no-one else notices...
+	     */
+	    if (special &&
+		idio_isa_pair (IDIO_PAIR_T (v)) &&
+		idio_S_nil == IDIO_PAIR_TT (v)) {
+		size_t hs_size = 0;
+		char *hs = idio_as_string (idio_list_head (IDIO_PAIR_T (v)), &hs_size, depth - 1, seen, 0);
+		IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
 
 		if (NULL != trail) {
 		    r = idio_strcat (r, sizep, trail, tlen);
