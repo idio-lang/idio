@@ -3540,6 +3540,7 @@ void idio_init_libc_wrap ()
     idio_init_libc_api ();
 
     idio_module_export_symbol_value (IDIO_SYMBOL ("0pid_t"), idio_libc_pid_t (0), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("0uid_t"), idio_libc_uid_t (0), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("0gid_t"), idio_libc_gid_t (0), idio_libc_module);
 
     /* fcntl.h */

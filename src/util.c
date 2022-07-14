@@ -3167,6 +3167,7 @@ char *idio_constant_idio_as_C_string (IDIO v, size_t *sizep, idio_unicode_t form
     case IDIO_STACK_MARKER_RETURN:			t = "#<MARK return>";			break;
     case IDIO_STACK_MARKER_DYNAMIC:			t = "#<MARK dynamic>";			break;
     case IDIO_STACK_MARKER_ENVIRON:			t = "#<MARK environ>";			break;
+    case IDIO_STACK_MARKER_ABORT:			t = "#<MARK abort>";			break;
 
 	/*
 	 * There's a pretty strong argument that if idio_S_notreached
