@@ -235,7 +235,24 @@ static void idio_env_add_environ ()
      * SHELL
      */
 
-    idio_env_set_default_C (idio_env_PATH_sym, idio_env_PATH_default);
+    errno = 0;
+    size_t size_confstr_PATH = confstr (_CS_PATH, NULL, 0);
+    char *confstr_PATH = NULL;
+    if (0 == size_confstr_PATH) {
+	if (errno) {
+	    perror ("confstr (PATH)");
+	} else {
+	    fprintf (stderr, "confstr (PATH): no value?\n");
+	}
+	confstr_PATH = idio_env_PATH_default;
+    } else {
+	confstr_PATH = idio_alloc (size_confstr_PATH);
+	confstr (_CS_PATH, confstr_PATH, size_confstr_PATH);
+    }
+    idio_env_set_default_C (idio_env_PATH_sym, confstr_PATH);
+    if (size_confstr_PATH) {
+	IDIO_GC_FREE (confstr_PATH, size_confstr_PATH);
+    }
 
     /*
      * See comment in libc-wrap.c re: getcwd(3)
