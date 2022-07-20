@@ -2826,7 +2826,7 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 	 *
 	 * ??
 	 */
-	idio_file_handle_dynamic_load_error ("duplicate check", "already loaded", idio_string_C_len (mod, mod_len), idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_file_handle_dynamic_load_error ("duplicate module", "already loaded", idio_string_C_len (mod, mod_len), module, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

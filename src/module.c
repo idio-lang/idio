@@ -1346,7 +1346,7 @@ or the current environment if no `mod` supplied			\n\
 :type mod: module or module name, optional			\n\
 :param recurse: recurse into imported modules, defaults to ``#t``	\n\
 :type recurse: recurse, optional				\n\
-:return: evaluator details for `sym`				\n\
+:return: evaluator details for `sym` or ``#f``			\n\
 ")
 {
     IDIO_ASSERT (sym);
@@ -1769,21 +1769,13 @@ IDIO idio_module_set_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO value, IDI
 	 * symbols in this module.
 	 */
 	scope = idio_S_toplevel;
-
-	idio_as_t mci = idio_vm_constants_lookup_or_extend (xi, symbol);
-	fmci = idio_fixnum (mci);
-
-	idio_as_t gvi = idio_vm_extend_values (xi);
-	fgvi = idio_fixnum (gvi);
+	IDIO si = idio_vm_extend_tables (xi, symbol, scope, module, idio_module_set_symbol_value_string);
 
 	idio_hash_put (IDIO_MODULE_SYMBOLS (module),
 		       symbol,
-		       IDIO_LIST6 (scope,
-				   fmci,
-				   fmci,
-				   fgvi,
-				   module,
-				   idio_module_set_symbol_value_string));
+		       si);
+	fmci = IDIO_SI_CI (si);
+	fgvi = IDIO_SI_VI (si);
     } else {
 	scope = IDIO_SI_SCOPE (si);
 	fmci = IDIO_SI_CI (si);
@@ -1976,20 +1968,11 @@ IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO modu
     size_t xi = IDIO_THREAD_XI (thr);
 
     if (idio_S_unspec == si) {
-	idio_as_t mci = idio_vm_constants_lookup_or_extend (xi, symbol);
 	scope = idio_S_computed;
+	IDIO sym_si = idio_vm_extend_tables (xi, symbol, scope, module, idio_module_add_computed_symbol_string);
+	fgvi = IDIO_SI_VI (sym_si);
 
-	idio_as_t gvi = idio_vm_extend_values (xi);
-	fgvi = idio_fixnum (gvi);
-
-	idio_hash_put (IDIO_MODULE_SYMBOLS (module),
-		       symbol,
-		       IDIO_LIST6 (scope,
-				   idio_fixnum (mci),
-				   idio_fixnum (mci),
-				   fgvi,
-				   module,
-				   idio_module_add_computed_symbol_string));
+	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, sym_si);
     } else {
 	scope = IDIO_SI_SCOPE (si);
 	if (idio_S_computed != scope) {
@@ -2268,10 +2251,10 @@ void idio_init_module ()
 
 #define IDIO_MODULE_STRING(c,s) idio_module_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_module_ ## c ## _string);
 
-    IDIO_MODULE_STRING (direct_reference, "idio_module_direct_reference");
-    IDIO_MODULE_STRING (set_symbol_value, "idio_module_set_symbol_value");
+    IDIO_MODULE_STRING (direct_reference,    "idio_module_direct_reference");
+    IDIO_MODULE_STRING (set_symbol_value,    "idio_module_set_symbol_value");
     IDIO_MODULE_STRING (add_computed_symbol, "idio_module_add_computed_symbol");
-    IDIO_MODULE_STRING (init, "idio_module_init");
+    IDIO_MODULE_STRING (init,                "idio_module_init");
 
     /*
      * XXX Create the module vtable before creating any modules,
@@ -2302,29 +2285,13 @@ void idio_init_module ()
     IDIO Iname = IDIO_SYMBOL ("Idio");
     idio_Idio_module = idio_module (Iname);
     IDIO_MODULE_IMPORTS (idio_Idio_module) = idio_S_nil;
-    idio_as_t Im_gci = idio_vm_extend_default_constants (Iname);
-    idio_as_t Im_gvi = idio_vm_extend_default_values ();
+    IDIO Im_si = idio_vm_extend_tables (0, Iname, idio_S_toplevel, idio_Idio_module, idio_module_init_string);
 
-    idio_module_set_symbol (Iname,
-			    IDIO_LIST6 (idio_S_toplevel,
-					idio_fixnum (Im_gci),
-					idio_fixnum (Im_gci),
-					idio_fixnum (Im_gvi),
-					idio_Idio_module,
-					idio_module_init_string),
-			    idio_Idio_module);
+    idio_module_set_symbol (Iname, Im_si, idio_Idio_module);
 
     IDIO dname = IDIO_SYMBOL ("debugger");
     idio_debugger_module = idio_module (dname);
-    idio_as_t dm_gci = idio_vm_extend_default_constants (dname);
-    idio_as_t dm_gvi = idio_vm_extend_default_values ();
+    IDIO dm_si = idio_vm_extend_tables (0, dname, idio_S_toplevel, idio_Idio_module, idio_module_init_string);
 
-    idio_module_set_symbol (dname,
-			    IDIO_LIST6 (idio_S_toplevel,
-					idio_fixnum (dm_gci),
-					idio_fixnum (dm_gci),
-					idio_fixnum (dm_gvi),
-					idio_Idio_module,
-					idio_module_init_string),
-			    idio_Idio_module);
+    idio_module_set_symbol (dname, dm_si, idio_Idio_module);
 }

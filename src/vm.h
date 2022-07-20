@@ -249,6 +249,7 @@ IDIO idio_vm_invoke_C_thread (IDIO thr, IDIO command);
 IDIO idio_vm_invoke_C (IDIO command);
 IDIO idio_vm_run_xenv (idio_xi_t xi, idio_pc_t pc);
 idio_xi_t idio_vm_add_xenv (IDIO desc, IDIO symbols, IDIO constants, IDIO values, IDIO src_exprs, IDIO src_props, IDIO bs);
+idio_xi_t idio_vm_add_xenv_from_eenv (IDIO thr, IDIO eenv);
 IDIO idio_vm_source_location ();
 IDIO idio_vm_frame_tree (IDIO args);
 void idio_vm_trap_state (IDIO thr);
@@ -256,6 +257,7 @@ void idio_vm_trap_state (IDIO thr);
 IDIO idio_vm_iref2val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op);
 void idio_vm_thread_init (IDIO thr);
 void idio_vm_default_pc (IDIO thr);
+IDIO idio_vm_extend_tables (idio_xi_t xi, IDIO name, IDIO scope, IDIO module, IDIO desc);
 void idio_vm_thread_state (IDIO thr);
 
 time_t idio_vm_elapsed (void);

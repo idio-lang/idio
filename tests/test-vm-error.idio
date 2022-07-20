@@ -133,6 +133,7 @@ vm-error-load "vm-errors/vm-run-bad-PC-type.idio" "bad parameter type: '#t' a co
 
 vm-error-load "vm-errors/vm-values-ref-bignum-float.idio" "bad parameter type: '1.1e+0' a bignum is not a integer" ^rt-parameter-type-error
 vm-error-load "vm-errors/vm-values-ref-bad-type.idio" "bad parameter type: '#t' a constant is not a integer" ^rt-parameter-type-error
+vm-error-load "vm-errors/vm-values-ref-bad-xi-type.idio" "bad parameter type: '#t' a constant is not a fixnum" ^rt-parameter-type-error
 
 vm-error-load "vm-errors/exit-bad-type.idio" "bad parameter type: '#t' a constant is not a fixnum|C/int" ^rt-parameter-type-error
 

@@ -160,9 +160,9 @@ char *idio_continuation_as_C_string (IDIO v, size_t *sizep, idio_unicode_t forma
     }
 
 #ifdef IDIO_DEBUG
-    *sizep = idio_asprintf (&r, "#<K%s %10p ss=%zu PC=%td xi=%zu>", kind, v, kss, IDIO_CONTINUATION_PC (v), IDIO_CONTINUATION_XI (v));
+    *sizep = idio_asprintf (&r, "#<K%s %10p ss=%zu PC=[%zu]@%td>", kind, v, kss, IDIO_CONTINUATION_XI (v), IDIO_CONTINUATION_PC (v));
 #else
-    *sizep = idio_asprintf (&r, "#<K%s ss=%zu PC=%td xi=%zu>", kind, kss, IDIO_CONTINUATION_PC (v), IDIO_CONTINUATION_XI (v));
+    *sizep = idio_asprintf (&r, "#<K%s ss=%zu PC=[%zu]@%td>", kind, kss, IDIO_CONTINUATION_XI (v), IDIO_CONTINUATION_PC (v));
 #endif
 
     return r;

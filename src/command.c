@@ -1270,10 +1270,8 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
 						  idio_S_nil));
     idio_array_push (protected, proc);
 
-    idio_xi_t xi = IDIO_THREAD_XI (thr);
-
     IDIO cmd_sym;
-    cmd_sym = idio_module_symbol_value_xi (xi, idio_S_stdin_fileno, idio_libc_module, idio_S_nil);
+    cmd_sym = idio_module_symbol_value (idio_S_stdin_fileno, idio_libc_module, idio_S_nil);
     IDIO job_stdin = idio_vm_invoke_C (IDIO_LIST1 (cmd_sym));
     idio_array_push (protected, job_stdin);
 
@@ -1284,7 +1282,7 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
 	job_stdin_fd = idio_C_int (IDIO_FILE_HANDLE_FD (close_stdin));
     }
 
-    cmd_sym = idio_module_symbol_value_xi (xi, idio_S_stdout_fileno, idio_libc_module, idio_S_nil);
+    cmd_sym = idio_module_symbol_value (idio_S_stdout_fileno, idio_libc_module, idio_S_nil);
     IDIO job_stdout = idio_vm_invoke_C (IDIO_LIST1 (cmd_sym));
     idio_array_push (protected, job_stdout);
 
@@ -1294,7 +1292,7 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
 	job_stdout = IDIO_PAIR_H (job_stdout);
     }
 
-    cmd_sym = idio_module_symbol_value_xi (xi, idio_S_stderr_fileno, idio_libc_module, idio_S_nil);
+    cmd_sym = idio_module_symbol_value (idio_S_stderr_fileno, idio_libc_module, idio_S_nil);
     IDIO job_stderr = idio_vm_invoke_C (IDIO_LIST1 (cmd_sym));
     idio_array_push (protected, job_stderr);
 

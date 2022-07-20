@@ -80,6 +80,7 @@ IDIO idio_frame_allocate (idio_fi_t arityp1)
 
     IDIO_FRAME_NPARAMS (fo) = arityp1 - 1;
     IDIO_FRAME_NALLOC (fo) = arityp1;
+    IDIO_FRAME_XI (fo) = 0;
     IDIO_FRAME_NAMES (fo) = idio_S_nil;
 
     idio_fi_t i;
@@ -338,6 +339,10 @@ char *idio_frame_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO
     }
 
     if (idio_S_nil != IDIO_FRAME_NAMES (v)) {
+	char *xs;
+	size_t xs_size = idio_asprintf (&xs, "names=[%zu].", IDIO_FRAME_XI (v));
+	IDIO_STRCAT_FREE (r, sizep, xs, xs_size);
+
 	size_t n_size = 0;
 	char *n = idio_as_string (IDIO_FRAME_NAMES (v), &n_size, depth - 1, seen, 0);
 	IDIO_STRCAT_FREE (r, sizep, n, n_size);

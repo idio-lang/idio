@@ -1370,7 +1370,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 
 	    idio_codegen_compile (thr, ia, eenv, ms, depth + 1);
 
-	    IDIO_IA_PUSH1 (IDIO_A_LINK_FRAME);
+	    IDIO_IA_PUSH1 (aot ? IDIO_A_LINK_IFRAME : IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT (fci);
 
 	    idio_codegen_compile (thr, ia, eenv, mp, depth + 1);
@@ -1394,7 +1394,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 
 	    idio_codegen_compile (thr, ia, eenv, ms, depth + 1);
 
-	    IDIO_IA_PUSH1 (IDIO_A_LINK_FRAME);
+	    IDIO_IA_PUSH1 (aot ? IDIO_A_LINK_IFRAME : IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT (fci);
 
 	    idio_codegen_compile (thr, ia, eenv, mp, depth + 1);
@@ -1423,7 +1423,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 
 	    IDIO_CODEGEN_SRC_EXPR (ia, e, eenv);
 
-	    idio_ia_push (ia, IDIO_A_EXTEND_FRAME);
+	    idio_ia_push (ia, aot ? IDIO_A_EXTEND_IFRAME : IDIO_A_EXTEND_FRAME);
 	    IDIO_IA_PUSH_VARUINT (idio_list_length (formals));
 	    IDIO_IA_PUSH_VARUINT (fci);
 
@@ -1702,7 +1702,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 		break;
 	    }
 
-	    idio_ia_push (ia_tf, IDIO_A_LINK_FRAME);
+	    idio_ia_push (ia_tf, aot ? IDIO_A_LINK_IFRAME : IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT_BC (ia_tf, fci);
 
 	    idio_codegen_compile (thr, ia_tf, eenv, mp, depth + 1);
@@ -1832,7 +1832,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 	    idio_ia_push (ia_tf, IDIO_A_PACK_FRAME);
 	    IDIO_IA_PUSH_VARUINT_BC (ia_tf, IDIO_FIXNUM_VAL (arity));
 
-	    idio_ia_push (ia_tf, IDIO_A_LINK_FRAME);
+	    idio_ia_push (ia_tf, aot ? IDIO_A_LINK_IFRAME : IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT_BC (ia_tf, fci);
 
 	    idio_codegen_compile (thr, ia_tf, eenv, mp, depth + 1);
@@ -2735,25 +2735,48 @@ void idio_codegen_code_prologue (IDIO_IA_T ia)
     /*
      * Out of interest a PC on the stack is indistinguishable from any
      * other (fixnum) number.  However, the particular numbers for
-     * idio_vm_{CR,AR,IHR}_pc should be identifiable because of what
+     * idio_vm_{CHR,AR,IHR}_pc should be identifiable because of what
      * precedes them on the stack.
      *
      * In each case you'll see some combination of what part of the
      * VM's state has been preserved.  Where IDIO_A_RESTORE_STATE is
-     * used you'd expect to see instances of ENVIRON_SP, DYNAMIC_SP,
-     * TRAP_SP, FRAME and ENV; and all of those should be preceded by
-     * the real PC of the calling function: ie. <number:PC>
-     * <number:ESP> <number:DSP> <number:HSP> <#FRAME> <#module>
-     * {CR,AR}_pc.
+     * used you'd expect to see instances of (originally: ENVIRON_SP,
+     * DYNAMIC_SP, TRAP_SP and) FRAME and ENV; and all of those should
+     * be preceded by the real PC (and now XI) of the calling
+     * function: ie. (originally:
+     *
+     * <number:PC> <number:ESP> <number:DSP> <number:HSP> <#FRAME>
+     * <#module> {CHR,AR}_pc
+     *
+     * and now)
+     *
+     * <number:PC> <number:XI> <#FRAME> <#module> {CHR,AR}_pc
      *
      * That's not proof but a useful debugging aid.
+     * idio_vm_decode_stack() makes all these assumptions.
+     *
+     * I've toggled the nominal LiSP first two entries around.  It was
+     * NON-CONT-ERROR then FINISH however it transpires that, during
+     * development, under some $CIRCUMSTANCES the VM chooses to
+     * continue processing the current XI/PC rather than having
+     * necessarily restored to some original XI/PC.  That used to lead
+     * to some unexpected POP-TRAP etc., ie. we've walking into the
+     * CHR part of the prologue, which, whilst usually fatal (because
+     * there isn't a TRAP on the top of the stack) was a bit
+     * head-scratchy.  Here, now, at least, we fall over because we
+     * shouldn't ever get a NON-CONT-ERROR in normal operation so it's
+     * a more obvious clue that we've gone awry.
+     *
+     * We could have an IDIO_A_I_CANT_DO_THAT_DAVE opcode to catch
+     * this specifically but it seems a waste when it's really a
+     * (transient?) developer coding issue.
      */
 
-    idio_vm_NCE_pc = IDIO_IA_USIZE (ia); /* PC == 0 */
-    IDIO_IA_PUSH1 (IDIO_A_NON_CONT_ERR);
-
-    idio_vm_FINISH_pc = IDIO_IA_USIZE (ia); /* PC == 1 */
+    idio_vm_FINISH_pc = IDIO_IA_USIZE (ia); /* PC == 0 */
     IDIO_IA_PUSH1 (IDIO_A_FINISH);
+
+    idio_vm_NCE_pc = IDIO_IA_USIZE (ia); /* PC == 1 */
+    IDIO_IA_PUSH1 (IDIO_A_NON_CONT_ERR);
 
     idio_vm_CHR_pc = IDIO_IA_USIZE (ia); /* PC == 2 */
     IDIO_IA_PUSH3 (IDIO_A_POP_TRAP, IDIO_A_RESTORE_STATE, IDIO_A_RETURN);

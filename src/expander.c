@@ -109,15 +109,14 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, char c
     /*
      * We should only be being called from C idio_init_X() functions.
      */
-    idio_as_t mci = idio_vm_extend_default_constants (name);
-    IDIO fmci = idio_fixnum (mci);
-
-    idio_as_t gvi = idio_vm_extend_default_values ();
-    IDIO fgvi = idio_fixnum (gvi);
+    IDIO sym_si = idio_vm_extend_tables (0, name, idio_S_predef, module, idio_evaluator_extend_str);
+    IDIO fmci = IDIO_SI_CI (sym_si);
+    IDIO fgvi = IDIO_SI_VI (sym_si);
+    idio_as_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
     idio_module_set_vci (module, fmci, fmci);
     idio_module_set_vvi (module, fmci, fgvi);
-    idio_module_set_symbol (name, IDIO_LIST6 (idio_S_predef, fmci, fmci, fgvi, module, idio_evaluator_extend_str), module);
+    idio_module_set_symbol (name, sym_si, module);
 
     /*
      * idio_module_set_symbol_value() is a bit sniffy about setting
@@ -1134,10 +1133,6 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
 
     idio_xi_t xi0 = IDIO_THREAD_XI (ethr);
     idio_pc_t pc0 = IDIO_THREAD_PC (ethr);
-    if (idio_vm_FINISH_pc == pc0) {
-	fprintf (stderr, "i_e_o saving FINISH?\n");
-	sleep (10);
-    }
     idio_vm_default_pc (ethr);
 
     idio_apply (func, IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
@@ -1161,9 +1156,6 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
 	IDIO_THREAD_PC (ethr) = pc0;
     }
     idio_thread_set_current_thread (cthr);
-    /* idio_debug ("i_e_o A %s\n", cthr); */
-    /* idio_vm_thread_state (cthr); */
-    /* sleep (10); */
 
     /* idio_debug ("evaluate-operator: out: %s\n", r);      */
 

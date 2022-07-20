@@ -118,14 +118,37 @@ ${alen}
     puts #S{)
 }
 
+    ;; It's hard to avoid the (future) reader getting angsty about &
+    ;; in constants, notably, SRFI-115 and its use of & as a term (as
+    ;; a shorthand for the combining verb "and" -- which itself needs
+    ;; escaping in SRFI-115...).
+    ;;
+    ;; Here we substitute an escaped & for the future reader of the
+    ;; pre-compiled code's constants -- which requires some
+    ;; legerdemain for the current reader to be able to write out an
+    ;; escaped &.
+    esc-amp := string->symbol "\\&"
+    define (escaped-constant c) {
+      (cond
+       ((pair? c) (map escaped-constant c))
+       (else {
+	 (case c
+	  ((\&) esc-amp)
+	  (else c))
+       }))
+    }
+
     cs := %eenv-constants eenv
     puts #S{
 ; The ${array-length cs} constants
 #\[ }
 
+    i := 0
     for c in cs {
-      write c
-      puts " "
+      write (escaped-constant c)
+      puts " ; "
+      display* i
+      i = i + 1
     }
     puts #S{\]
 }

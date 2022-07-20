@@ -206,8 +206,6 @@ define (install-expander! id proc) {
   } {
     *expander-list* = pair (pair id proc) *expander-list*
   }
-
-  eprintf "i-e %s\n" (assq id *expander-list*)
 }
 
 define (install-expander/source! id proc src) {

@@ -291,16 +291,23 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
 
     st-sym-si = assq name st
     if (not st-sym-si) {
-      if (and (pair? name-si)
-	      (eq? 'predef (si-scope name-si))) {
-	ci := meaning-constants-lookup-or-extend eenv name
-	;; We don't care about the (future) vi right now just that we
-	;; reserve a slot for ourselves.  We'll continue to use the
-	;; running vi as we'll need to access the underlying primdata.
-	meaning-extend-tables eenv name (si-scope name-si) ci #f (si-module name-si) (si-description name-si) #f
-	st-sym-si = assq name (%eenv-symbols eenv)
-	vi-tail := (ptt (ptt st-sym-si))
-	set-ph! vi-tail (si-vi name-si)
+      ci := meaning-constants-lookup-or-extend eenv name
+      if (pair? name-si) {
+	meaning-extend-tables eenv name (si-scope name-si) ci #f (si-module name-si) "idio-precompilation" #f
+
+	if (eq? 'predef (si-scope name-si)) {
+	  ;; Notionally we don't care about the (future) vi right now
+	  ;; just that we reserve a slot for ourselves.
+	  ;;
+	  ;; However, we'll need use the running vi as later on we'll
+	  ;; need to access the underlying primdata.
+	  st-sym-si = assq name (%eenv-symbols eenv)
+
+	  ;; XXX no assignment to nth:
+	  ;st-sym-si.4 = (si-vi name-si)
+	  vi-tail := (ptt (ptt st-sym-si))
+	  set-ph! vi-tail (si-vi name-si)
+	}
       } {
 	; is name M/S ?
 	sdr := symbol-direct-reference name
@@ -323,15 +330,15 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
 	  if (eq? new-scope 'predef) {
 	    new-scope = 'toplevel
 	  }
-	  ci := meaning-constants-lookup-or-extend eenv name
+
 	  meaning-extend-tables eenv name new-scope ci #f (si-module si) (si-description si) #t
 	} {
-	  ci := meaning-constants-lookup-or-extend eenv name
+
 	  meaning-extend-tables eenv name scope ci #t #f "idio-precompilation" #f
 	}
-
-	st-sym-si = assq name (%eenv-symbols eenv)
       }
+
+      st-sym-si = assq name (%eenv-symbols eenv)
     }
 
     pt st-sym-si
@@ -653,10 +660,6 @@ define (meaning-reference src name nametree flags eenv) {
     meaning-error-static-unbound src name
   }
 
-  if (eq? name 'libc/errno) {
-    eprintf "XXX %s %s %s\n" (module-name (%eenv-module eenv)) name si
-  }
-
   scope := si-scope si
 
   (case scope
@@ -737,8 +740,8 @@ define (meaning-quotation src v nametree flags) {
   list I-CONSTANT-REF v
 }
 
-; a couple of helper functions from Alan Bawden's Quasiquotation in
-; Lisp paper -- reworked slightly
+; a couple of helper functions from Appendix A of Alan Bawden's
+; Quasiquotation in Lisp paper -- reworked slightly
 
 define (eps-qq-expand-list e) {
   (cond
@@ -1058,7 +1061,7 @@ define (meaning-assignment src name e nametree flags eenv) {
 	new-ci := meaning-toplevel-extend src name (define-scope 'toplevel flags) eenv
 
 	vi := si-vi si
-	set-symbol-value! name (vm-values-ref vi) cm
+	set-symbol-value! name (vm-values-ref vi 0) cm
 	assign = list I-SYM-SET src new-ci m
 	ci = new-ci
       })
@@ -1105,7 +1108,6 @@ define (meaning-define src name e nametree flags eenv) {
 
   if (not si) {
     ; shouldn't get here as unknowns are automatically made toplevel
-    printf "meaning-define: %s %s %s\n" name e eenv
     meaning-error-static-unbound src name
   }
 
@@ -1244,7 +1246,7 @@ define (meaning-define-template src name e nametree flags eenv) {
     ;; Generate a ci/vi for name
 
     si := meaning-find-toplevel-symbol name eenv
-    printf "define-template %-20s %s\n" name si
+
     ;; The ci is required so that the EXPANDER opcode can call
     ;; install-expander to overwrite the proc from the
     ;; install-expander/source! call we just made
@@ -1278,7 +1280,6 @@ define (meaning-define-infix-operator src name pri e nametree flags eenv) {
 
   ;; Step 1: find the existing symbol for {name} or create a new one
   si := meaning-find-toplevel-symbol name eenv
-  printf "infix-op %-10s %s\n" name si
 
   ci := meaning-constants-lookup-or-extend eenv name
   op-id := eenv-si eenv si
@@ -1286,7 +1287,6 @@ define (meaning-define-infix-operator src name pri e nametree flags eenv) {
   op-mod := find-module 'operator
   sym-si := list 'toplevel op-id ci 0 op-mod "define-infix-operator"
   set-symbol! name sym-si op-mod
-  printf "infix-op %-10s %s\n" name sym-si
 
   ;; Step 2: rework the expression into some appropriate code and
   ;; compile
@@ -1312,8 +1312,6 @@ define (meaning-define-infix-operator src name pri e nametree flags eenv) {
       m = meaning sve sve nametree flags eenv
     } {
       ;; Test Case: evaluation-errors/infix-op-not-an-operator.idio
-
-      printf "infix-op ! %s\n" name
 
       ;; define-infix-operator qqq 300 zzz
       meaning-evaluation-error src "not an operator" e
@@ -1352,14 +1350,12 @@ define (meaning-define-postfix-operator src name pri e nametree flags eenv) {
 
   ;; Step 1: find the existing symbol for {name} or create a new one
   si := meaning-find-toplevel-symbol name eenv
-  printf "postfix-op %-10s %s\n" name si
 
   op-id := eenv-si eenv si
 
   op-mod := find-module 'operator
   sym-si := list 'toplevel op-id ci 0 op-mod "define-postfix-operator"
   set-symbol! name sym-si op-mod
-  printf "postfix-op %-10s %s\n" name sym-si
 
   ;; Step 2: rework the expression into some appropriate code and
   ;; compile
@@ -2220,7 +2216,7 @@ Need to figure out run-in-thread too...
 *#
 
 define (meaning-primitive-application src fe ae* nametree flags arity si vi eenv) {
-  primdata := vm-values-ref vi
+  primdata := vm-values-ref vi 0
   if (not (primitive? primdata)) {
     error/type ^rt-parameter-value-error 'meaning-primitive-application "bad vi?" vi primdata
   }
@@ -2307,7 +2303,7 @@ define (meaning-application src fe ae* nametree flags eenv) {
        })
        ((eq? 'predef scope) {
 	 vi := si-vi si
-	 primdata := vm-values-ref vi
+	 primdata := vm-values-ref vi 0
 
 	 if (primitive? primdata) {
 	   arity := primitive-arity primdata
@@ -2467,8 +2463,7 @@ define (meaning-trap src ce he be nametree flags eenv) {
       if (pair? si) {
 	ci = eenv-si eenv si
       } {
-	eprintf "meaning-trap: condition name unknown: '%s'\n" c-sym
-	ci = meaning-toplevel-extend src c-sym (set-scope 'toplevel flags) eenv
+	error/type ^rt-parameter-value-error 'meaning-trap "condition name unknown" c-sym
       }
 
       pushs = pair (list I-PUSH-TRAP ci) pushs
@@ -2548,22 +2543,9 @@ define (evaluate-include-file fh eenv) {
 
 define (meaning-include src e nametree flags eenv) {
   lib := (find-lib e)
-  printf "meaning-include %s\n" lib
   load lib
-  #*
-  load-src := list 'load lib
-  meaning-copy-src-properties src load-src
-  meaning load-src load-src nametree flags eenv
-*#
-  #*
-  fh := open-input-file lib
-  unwind-protect {
-    evaluate-include-file fh eenv
-  } {
-    close-handle fh
-  }
 
-  *#
+  ;; we need to return some meaning
   list I-NOP
 }
 
@@ -3338,8 +3320,6 @@ environment `eenv` and return intermediate code for the code generator
   } {
     eenv = %evaluation-environment "evaluate" #t
   }
-
-  ;;printf "evaluate src %s\n" src
 
   m := meaning src src #n no-flags eenv
 

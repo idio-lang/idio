@@ -22,7 +22,7 @@
 #*
 
 The testing we're doing here is more akin to system testing than unit
-testing (which we reallly should have as well...).
+testing (which we really should have as well...).
 
 Suppose we want to test arithmetic addition:
 
@@ -377,7 +377,7 @@ if (null? extension-tests) {
     (regex-case
      etf
      ("(.*/tests)/([^/]+)$" {
-       eprintf "extension-tests: %s\n" r.1
+       printf "extension-tests: %s\n" r.1
        path-prepend 'IDIOLIB r.1
        test-load r.2
      })

@@ -2179,12 +2179,18 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
 	IDIO eosh = idio_open_output_string_handle_C ();
 
-	idio_display_C ("ABORT evaluate", eosh);
+	idio_display_C ("ABORT load-handle evaluate", eosh);
 
 	idio_vm_push_abort (thr, IDIO_LIST2 (eval_abort, idio_get_output_string (eosh)));
 
 	IDIO m = (*evaluator) (e, eenv);
 
+#ifdef IDIO_DEBUG_X
+	idio_debug ("load-handle e  %s\n", e);
+	idio_debug ("load-handle m  %s\n", m);
+	idio_debug ("load-handle st %s\n", IDIO_MEANING_EENV_SYMBOLS (eenv));
+	idio_debug ("load-handle cs %s\n", IDIO_MEANING_EENV_CONSTANTS (eenv));
+#endif
 	idio_vm_pop_abort (thr);
 
 #ifdef IDIO_LOAD_TIMING
@@ -2206,6 +2212,38 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	}
 	idio_pc_t pc = idio_codegen (thr, m, eenv);
 
+	/*
+	 * WARNING: if we've come in here from load-handle (and
+	 * possibly others) then idio_codegen(), above, will have
+	 * generated some new byte code and returned to us the
+	 * starting PC, 10 (ie. just after the prologue).
+	 *
+	 * If we are NOT in a new execution environment then the
+	 * chances are we'll be using an existing xi, probably that of
+	 * bootstrap.idio (because we were using the load-handle
+	 * closure defined in lib/bootstrap/module.idio) and this PC
+	 * of 10 will... re-run the bootstrap.  Oops.
+	 *
+	 * The symptoms of this are not necessarily obvious -- by and
+	 * large you would like to think we simply redefine everything
+	 * we defined the first time round.  However, on the way
+	 * *require-features* is reset to #n (and subsequently
+	 * pre-pended to as per bootstrap.idio) which means, for
+	 * example, we'll have lost the registeration of a previous
+	 * load of a shared library, say, empty, and any subsequent
+	 * attempt to reload it will be trapped and faulted as a
+	 * duplicated shared library load.
+	 *
+	 * This happens in the test suite where "empty" is
+	 * deliberately reloaded to generate the error in
+	 * test/test-file-handle-error.idio.  The re-running of
+	 * bootstrap.idio occurs in test/test-load-handle.idio and
+	 * therefore we've lost "empty" from *require-features* and
+	 * therefore we try to load it again for the actual extension
+	 * tests and it fails (with the dupicated shared library load
+	 * error).
+	 */
+	fprintf (stderr, "load-handle idio_vm_run_C (%zu, %zd)\n", IDIO_THREAD_XI (thr), pc);
 	r = idio_vm_run_C (thr, pc);
 
 	idio_sp_t sp = idio_array_size (stack);
@@ -2315,14 +2353,14 @@ This is the `load-handle` primitive.				\n\
 
     IDIO cm = IDIO_THREAD_MODULE (thr);
 
-    IDIO eenv = idio_evaluate_normal_eenv (IDIO_HANDLE_FILENAME (h), cm);
-
+    IDIO desc = idio_util_string (IDIO_MODULE_NAME (cm));
+    IDIO eenv = idio_evaluate_eenv (desc, idio_S_true, cm);
     idio_gc_protect (eenv);
 
-    /*
-     * idio_evaluate_normal_eenv() implies XI==0
-     */
-    IDIO_THREAD_XI (thr) = 0;
+    idio_xi_t xi = idio_vm_add_xenv_from_eenv (thr, eenv);
+
+    fprintf (stderr, "load-handle preserving [%zu]@%zd\n", xi0, pc0);
+    IDIO_THREAD_XI (thr) = xi;
     IDIO r = idio_load_handle (h, idio_read, idio_evaluate_func, eenv, 0);
 
     idio_gc_expose (eenv);

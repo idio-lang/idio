@@ -93,6 +93,9 @@ local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)
 pre-compile: $(LI_BINDIR)/idio
 	$(LI_BINDIR)/idio $(UTILSDIR)/bin/pre-compile-lib
 
+pre-compile-clean:
+	if [[ -d $(LI_LIBDIR) ]] ; then rm -rf $(shell find $(LI_LIBDIR) -name __idio__) ; fi
+
 $(SRCDIR)/rfc6234.o : $(SRCDIR)/RFC6234/libsha.a
 
 $(SRCDIR)/RFC6234/libsha.a :
@@ -161,7 +164,7 @@ clean-system-install :
 lib%.so : %.o
 	$(CC) -shared -o $@ $^
 
-clean : build-clean clean-ext-src clean-ext-api clean-rfc6234 run-clean edit-clean
+clean : build-clean clean-ext-src clean-ext-api clean-rfc6234 run-clean edit-clean pre-compile-clean
 	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system $(LIBDIR)/system.idio
 
 clean-ext-src: $(EXTDIR)/*/src

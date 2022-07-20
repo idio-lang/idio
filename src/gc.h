@@ -772,7 +772,8 @@ typedef struct idio_frame_s {
     struct idio_s *next;
     idio_fi_t nparams;		/* number in use */
     idio_fi_t nalloc;		/* number allocated */
-    struct idio_s *names;	/* a ref into vm_constants */
+    idio_xi_t xi;
+    struct idio_s *names;	/* a ref into vm_constants[xi] */
     struct idio_s* *args;
 } idio_frame_t;
 
@@ -780,6 +781,7 @@ typedef struct idio_frame_s {
 #define IDIO_FRAME_NEXT(F)	((F)->u.frame->next)
 #define IDIO_FRAME_NPARAMS(F)	((F)->u.frame->nparams)
 #define IDIO_FRAME_NALLOC(F)	((F)->u.frame->nalloc)
+#define IDIO_FRAME_XI(F)	((F)->u.frame->xi)
 #define IDIO_FRAME_NAMES(F)	((F)->u.frame->names)
 #define IDIO_FRAME_ARGS(F,i)	((F)->u.frame->args[i])
 #define IDIO_FRAME_FLAGS(F)	((F)->tflags)

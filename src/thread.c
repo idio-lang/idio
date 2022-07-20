@@ -295,7 +295,7 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
      */
     seen = idio_pair (v, seen);
     idio_as_t sp = idio_array_size (IDIO_THREAD_STACK (v));
-    *sizep = idio_asprintf (&r, "#<THR %10p\n  pc=[%zu]@%zd\n  sp/top=%2zd/",
+    *sizep = idio_asprintf (&r, "#<THR %10p\n      pc=[%zu]@%zd\n  sp/top=%2zd/",
 			    v,
 			    IDIO_THREAD_XI (v),
 			    IDIO_THREAD_PC (v),
@@ -305,12 +305,12 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
     char *t = idio_as_string (idio_array_top (IDIO_THREAD_STACK (v)), &t_size, 4, seen, 0);
     IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-    IDIO_STRCAT (r, sizep, "\n  val=");
+    IDIO_STRCAT (r, sizep, "\n     val=");
     t_size = 0;
     t = idio_as_string (IDIO_THREAD_VAL (v), &t_size, 4, seen, 0);
     IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-    IDIO_STRCAT (r, sizep, "\n  func=");
+    IDIO_STRCAT (r, sizep, "\n    func=");
     t_size = 0;
     t = idio_as_string (IDIO_THREAD_FUNC (v), &t_size, 1, seen, 0);
     IDIO_STRCAT_FREE (r, sizep, t, t_size);
@@ -318,10 +318,10 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	IDIO frame = IDIO_THREAD_FRAME (v);
 
 	if (idio_S_nil == frame) {
-	    IDIO_STRCAT (r, sizep, "\n  fr=nil");
+	    IDIO_STRCAT (r, sizep, "\n   frame=nil");
 	} else {
 	    char *es;
-	    size_t es_size = idio_asprintf (&es, "\n  fr=%10p n=%td ", frame, IDIO_FRAME_NPARAMS (frame));
+	    size_t es_size = idio_asprintf (&es, "\n   frame=%10p n=%td ", frame, IDIO_FRAME_NPARAMS (frame));
 	    IDIO_STRCAT_FREE (r, sizep, es, es_size);
 
 	    size_t f_size = 0;
@@ -330,29 +330,29 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	}
     }
 
-    IDIO_STRCAT (r, sizep, "\n  env=");
+    IDIO_STRCAT (r, sizep, "\n     env=");
     t_size = 0;
     t = idio_as_string (IDIO_THREAD_ENV (v), &t_size, 1, seen, 0);
     IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
     if (depth > 1) {
-	IDIO_STRCAT (r, sizep, "\n  fr=");
+	IDIO_STRCAT (r, sizep, "\n   frame=");
 	t_size = 0;
 	t = idio_as_string (IDIO_THREAD_FRAME (v), &t_size, 1, seen, 0);
 	IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 	if (depth > 2) {
-	    IDIO_STRCAT (r, sizep, "\n  reg1=");
+	    IDIO_STRCAT (r, sizep, "\n    reg1=");
 	    t_size = 0;
 	    t = idio_as_string (IDIO_THREAD_REG1 (v), &t_size, 1, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-	    IDIO_STRCAT (r, sizep, "\n  reg2=");
+	    IDIO_STRCAT (r, sizep, "\n    reg2=");
 	    t_size = 0;
 	    t = idio_as_string (IDIO_THREAD_REG2 (v), &t_size, 1, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-	    IDIO_STRCAT (r, sizep, "\n  expr=");
+	    IDIO_STRCAT (r, sizep, "\n    expr=");
 	    IDIO fsci = IDIO_THREAD_EXPR (v);
 	    if (idio_isa_fixnum (fsci)) {
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fsci);
@@ -365,17 +365,17 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 		IDIO_STRCAT_FREE (r, sizep, t, t_size);
 	    }
 
-	    IDIO_STRCAT (r, sizep, "\n  input_handle=");
+	    IDIO_STRCAT (r, sizep, "\n     i/h=");
 	    t_size = 0;
 	    t = idio_as_string (IDIO_THREAD_INPUT_HANDLE (v), &t_size, 1, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-	    IDIO_STRCAT (r, sizep, "\n  output_handle=");
+	    IDIO_STRCAT (r, sizep, "\n     o/h=");
 	    t_size = 0;
 	    t = idio_as_string (IDIO_THREAD_OUTPUT_HANDLE (v), &t_size, 1, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-	    IDIO_STRCAT (r, sizep, "\n  error_handle=");
+	    IDIO_STRCAT (r, sizep, "\n     e/h=");
 	    t_size = 0;
 	    t = idio_as_string (IDIO_THREAD_ERROR_HANDLE (v), &t_size, 1, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
@@ -386,12 +386,16 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 	    char *hs;
-	    size_t hs_size = idio_asprintf (&hs, "\n  holes=%zd ", idio_list_length (IDIO_THREAD_HOLES (v)));
+	    size_t hs_size = idio_asprintf (&hs, "\n   holes=%zd ", idio_list_length (IDIO_THREAD_HOLES (v)));
 	    IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
 
 	    t_size = 0;
 	    t = idio_as_string (IDIO_THREAD_HOLES (v), &t_size, 2, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+	    char *jbs;
+	    size_t jbs_size = idio_asprintf (&jbs, "\n  jmpbuf=%p", IDIO_THREAD_JMP_BUF (v));
+	    IDIO_STRCAT_FREE (r, sizep, jbs, jbs_size);
 	}
     }
     IDIO_STRCAT (r, sizep, ">");

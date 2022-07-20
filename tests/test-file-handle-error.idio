@@ -433,7 +433,7 @@ if parts {
   load "empty"
   filename = "empty"
 
-  extension-error-load "duplicate check: already loaded"
+  extension-error-load "duplicate module: already loaded"
 } {
   eprintf "test-file-handle-error: failed to match for empty.so in IDIOLIB=%s\n" IDIOLIB
   eprintf "looking for subdir=%s in (find-lib \"empty\")=%s\n" subdir (find-lib "empty")
