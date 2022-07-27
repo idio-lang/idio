@@ -2757,15 +2757,15 @@ void idio_codegen_code_prologue (IDIO_IA_T ia)
      *
      * I've toggled the nominal LiSP first two entries around.  It was
      * NON-CONT-ERROR then FINISH however it transpires that, during
-     * development, under some $CIRCUMSTANCES the VM chooses to
-     * continue processing the current XI/PC rather than having
-     * necessarily restored to some original XI/PC.  That used to lead
-     * to some unexpected POP-TRAP etc., ie. we've walking into the
-     * CHR part of the prologue, which, whilst usually fatal (because
-     * there isn't a TRAP on the top of the stack) was a bit
-     * head-scratchy.  Here, now, at least, we fall over because we
-     * shouldn't ever get a NON-CONT-ERROR in normal operation so it's
-     * a more obvious clue that we've gone awry.
+     * development, under $CIRCUMSTANCES the VM chooses to continue
+     * processing the current XI/PC rather than having necessarily
+     * restored to some original XI/PC.  That used to lead to some
+     * unexpected POP-TRAP etc., ie. we've walking into the CHR part
+     * of the prologue, which, whilst usually fatal (because there
+     * isn't a TRAP on the top of the stack) was a bit head-scratchy.
+     * Here, now, at least, we fall over because we shouldn't ever get
+     * a NON-CONT-ERROR in normal operation so it's a more obvious
+     * clue that we've gone awry.
      *
      * We could have an IDIO_A_I_CANT_DO_THAT_DAVE opcode to catch
      * this specifically but it seems a waste when it's really a

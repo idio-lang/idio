@@ -221,13 +221,14 @@ for fn in (append  (list (append-string lib-dir "/bootstrap.idio"))
 }
 *#
 
-for fn in (glob (append-string lib-dir "/*.idio")) {
-  printf "Compiling %s\n" fn
+for fn in (append (glob (append-string lib-dir "/*.idio"))
+		  #;(glob (append-string lib-dir "/*/*/*.idio"))) {
   (pattern-case fn
 		;; skip the bootstrap which we ran above
 		("*/bootstrap.idio" #f)
 
 		(else {
+		  printf "Compiling %s\n" fn
 		  compile-file fn
 		}))
   printf "\n\n"

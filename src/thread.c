@@ -295,8 +295,9 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
      */
     seen = idio_pair (v, seen);
     idio_as_t sp = idio_array_size (IDIO_THREAD_STACK (v));
-    *sizep = idio_asprintf (&r, "#<THR %10p\n      pc=[%zu]@%zd\n  sp/top=%2zd/",
+    *sizep = idio_asprintf (&r, "#<THR %10p #%d\n      pc=[%zu]@%zd\n  sp/top=%2zd/",
 			    v,
+			    IDIO_THREAD_FLAGS (v),
 			    IDIO_THREAD_XI (v),
 			    IDIO_THREAD_PC (v),
 			    sp - 1);

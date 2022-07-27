@@ -38,7 +38,7 @@ define (si-description si) (nth si 6)
 define (nt-param-i si)     (pht si)
 define (nt-param-j si)     (phtt si)
 
-export-struct-accessors-only %eenv	desc chksum aot? symbols values constants constants-hash module escapes src-exprs src-props byte-code
+export-struct-accessors-only %eenv	desc chksum aot? symbols st values vt constants constants-hash module escapes src-exprs src-props byte-code
 
 define (eenv-as-string eenv seen) {
   if (%eenv? eenv) {
@@ -217,21 +217,13 @@ define (meaning-constants-lookup-or-extend eenv name) {
   ci
 }
 
-define (meaning-extend-tables eenv & args) "
-args is (name scope ci use-vi? use-module? desc set-symbol?)
+define (meaning-extend-tables eenv name scope ci use-vi? module desc set-symbol?) "
+
 " {
-  if ((length args) ne 7) (error/type ^rt-parameter-value-error 'meaning-extend-tables "not enough args" args)
-
-  name        := ph args
-  scope       := pht args
-  ci          := phtt args
-  use-vi?     := nth args 4
-  use-module? := nth args 5
-  desc        := nth args 6
-  set-symbol? := nth args 7
-
   si := #f
   vi := #f
+
+  array-push! (%eenv-st eenv) ci
 
   if (%eenv-aot? eenv) {
     vs := %eenv-values eenv
@@ -250,21 +242,23 @@ args is (name scope ci use-vi? use-module? desc set-symbol?)
     vi = (vm-extend-values)
   }
 
-  module := (or use-module?
-		(%eenv-module eenv))
+  if (not module) {
+    module = (%eenv-module eenv)
+  }
+
+  used-vi := if use-vi? vi 0
+  array-push! (%eenv-vt eenv) used-vi
 
   sym-si := (list
 	     name
 	     scope
 	     si
 	     ci
-	     (if use-vi? vi 0)
+	     used-vi
 	     module
 	     desc)
 
-  set-%eenv-symbols! eenv (pair
-			   sym-si
-			   (%eenv-symbols eenv))
+  set-%eenv-symbols! eenv (pair sym-si (%eenv-symbols eenv))
 
   if set-symbol? {
     set-symbol! name (pt sym-si) module
@@ -281,15 +275,11 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
   ;; If we are pre-compiling then we want to return the name-si for
   ;; (what will be baseline) primitives otherwise they'll become like
   ;; the regular lookup of a function (via the execution environment
-  ;; symbol table) will a full function calling protocol (via frame
+  ;; symbol table) with a full function calling protocol (via frame
   ;; creation etc.).  If it's a (well known) primitive we should just
   ;; be calling it directly.
   if (%eenv-aot? eenv) {
-    st-sym-si := #f
-
-    st := %eenv-symbols eenv
-
-    st-sym-si = assq name st
+    st-sym-si := assq name (%eenv-symbols eenv)
     if (not st-sym-si) {
       ci := meaning-constants-lookup-or-extend eenv name
       if (pair? name-si) {
@@ -312,8 +302,8 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
 	; is name M/S ?
 	sdr := symbol-direct-reference name
 	if sdr {
-	  ;; (mod sym si)
-	  si := phtt sdr
+	  ;; (M S si)
+	  sdr-si := phtt sdr
 
 	  ;; The chances are that the existing scope, in sdr, is
 	  ;; 'predef, however if we reuse that then subsequent lookups
@@ -326,12 +316,12 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
 	  ;;
 	  ;; If it's a dynamic/environ/computed we want to retain that
 	  ;; information (as it generates different byte code).
-	  new-scope := si-scope si
+	  new-scope := si-scope sdr-si
 	  if (eq? new-scope 'predef) {
 	    new-scope = 'toplevel
 	  }
 
-	  meaning-extend-tables eenv name new-scope ci #f (si-module si) (si-description si) #t
+	  meaning-extend-tables eenv name new-scope ci #f (si-module sdr-si) (si-description sdr-si) #t
 	} {
 
 	  meaning-extend-tables eenv name scope ci #t #f "idio-precompilation" #f
@@ -408,7 +398,7 @@ define (meaning-toplevel-extend src name flags eenv) {
 define (meaning-environ-extend src name val eenv) {
   ;; All environ symbols live in the Idio module -- it doesn't make
   ;; any sense for environ symbols to be different in other modules as
-  ;; the stack (and environ(3P)), where environ varibales live, is
+  ;; the stack (and environ(3P)), where environ variables live, is
   ;; shared by all modules
   im := find-module 'Idio
 
@@ -605,7 +595,7 @@ define* (meaning-variable-info src nametree name flags eenv (recurse? #t)) {
       ; is name M/S ?
       sdr := symbol-direct-reference name
       if sdr {
-	;; (mod sym si))
+	;; (M S si))
 	si = phtt sdr
 	set-symbol! name si (%eenv-module eenv)
       } {
@@ -1004,7 +994,7 @@ define (meaning-assignment src name e nametree flags eenv) {
 
      m := meaning (mpp e src) e nametree mflags eenv
 
-     si := meaning-variable-info src nametree name flags eenv
+     si := meaning-variable-info src nametree name flags eenv (not (eval-flags-define flags))
 
      if (not si) {
        ; shouldn't get here as unknowns are automatically made toplevel
@@ -1120,7 +1110,7 @@ define (meaning-define src name e nametree flags eenv) {
 	  (eq? 'toplevel scope)
 	  (0 eq vi)) {
 
-    vi = meaning-extend-tables eenv name scope ci #t #f "meaning-define/gvi=0" #t
+    meaning-extend-tables eenv name scope ci #t #f "meaning-define/gvi=0" #t
   }
 
   meaning-assignment src name e nametree define-flags eenv
@@ -3312,7 +3302,7 @@ environment `eenv` and return intermediate code for the code generator
 :param eenv: evaluation environment, defaults to a new instance
 :type eenv: struct-instance, optional
 
-.. seealso: :ref:`
+.. seealso: :ref:`%evaluation-environment <evaluate/%evaluation-environment>`
 " {
   eenv := #n
   if (pair? args) {

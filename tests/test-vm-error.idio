@@ -141,4 +141,4 @@ vm-error-load "vm-errors/run-in-thread-bad-thread-type.idio" "bad parameter type
 vm-error-load "vm-errors/run-in-thread-bad-func-type.idio" "bad parameter type: '#t' a constant is not a function" ^rt-parameter-type-error
 
 ;; all done?
-Tests? (vm-error0 + 39)
+Tests? (vm-error0 + 40)

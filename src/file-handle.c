@@ -3743,19 +3743,19 @@ int idio_load_idio_cache (char *pathname, size_t pathname_len)
 
     /* no dot no deal */
     if (NULL == pathname_dot) {
-	fprintf (stderr, "no dot in %s\n", pathname);
+	/* fprintf (stderr, "no dot in %s\n", pathname); */
 	return 0;
     }
 
     size_t iie_len = sizeof (IDIO_IDIO_EXT) - 1;
     size_t dot_len = pathname_len - (pathname_dot - pathname);
     if (dot_len != iie_len) {
-	fprintf (stderr, "len (%s) != len (%s) in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname);
+	/* fprintf (stderr, "len (%s) != len (%s) in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname); */
 	return 0;
     }
 
     if (strncmp (pathname_dot, IDIO_IDIO_EXT, iie_len)) {
-	fprintf (stderr, "ext %s != %s in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname);
+	/* fprintf (stderr, "ext %s != %s in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname); */
 	return 0;
     }
 
@@ -3794,7 +3794,6 @@ int idio_load_idio_cache (char *pathname, size_t pathname_len)
 	return 0;
     }
 
-    fprintf (stderr, "\nload-cache: trying %s\n", cfn);
     IDIO I_cfn = idio_string_C_len (cfn, end - cfn);
 
     return idio_compile_file_reader (I_cfn, cfn, end - cfn);

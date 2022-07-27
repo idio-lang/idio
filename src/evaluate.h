@@ -91,24 +91,28 @@
  * Indexes into structures for direct references
  */
 typedef enum {
-    IDIO_EENV_ST_DESC,
+    IDIO_EENV_ST_DESC,		/* shared with xenv */
     IDIO_EENV_ST_CHKSUM,
     IDIO_EENV_ST_AOTP,
-    IDIO_EENV_ST_SYMBOLS,
-    IDIO_EENV_ST_VALUES,
-    IDIO_EENV_ST_CONSTANTS,
-    IDIO_EENV_ST_CONSTANTS_HASH,
+    IDIO_EENV_ST_SYMBOLS,	 /* alist of (symbol symbol-info) */
+    IDIO_EENV_ST_ST,		 /* symbol table for VM */
+    IDIO_EENV_ST_VALUES,	 /* # values required */
+    IDIO_EENV_ST_VT,		 /* value table for VM */
+    IDIO_EENV_ST_CONSTANTS,	 /* shared with xenv */
+    IDIO_EENV_ST_CONSTANTS_HASH, /* shared with xenv */
     IDIO_EENV_ST_MODULE,
     IDIO_EENV_ST_ESCAPES,
-    IDIO_EENV_ST_SRC_EXPRS,
-    IDIO_EENV_ST_SRC_PROPS,
-    IDIO_EENV_ST_BYTE_CODE,
+    IDIO_EENV_ST_SRC_EXPRS,	/* shared with xenv */
+    IDIO_EENV_ST_SRC_PROPS,	/* shared with xenv */
+    IDIO_EENV_ST_BYTE_CODE,	/* shared with xenv */
     IDIO_EENV_ST_SIZE,
 } idio_eenv_st_enum;
 
 #define IDIO_MEANING_EENV_AOT(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_AOTP)
 #define IDIO_MEANING_EENV_SYMBOLS(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_SYMBOLS)
+#define IDIO_MEANING_EENV_ST(E)			idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ST)
 #define IDIO_MEANING_EENV_VALUES(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_VALUES)
+#define IDIO_MEANING_EENV_VT(E)			idio_struct_instance_ref_direct((E), IDIO_EENV_ST_VT)
 #define IDIO_MEANING_EENV_CONSTANTS(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_CONSTANTS)
 #define IDIO_MEANING_EENV_CONSTANTS_HASH(E)	idio_struct_instance_ref_direct((E), IDIO_EENV_ST_CONSTANTS_HASH)
 #define IDIO_MEANING_EENV_MODULE(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_MODULE)

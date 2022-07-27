@@ -243,11 +243,11 @@ IDIO idio_evaluate_expander (IDIO x, IDIO e)
     idio_vm_default_pc (ethr);
 
     idio_initial_expander (x, e);
-    IDIO r = idio_vm_run_C (ethr, IDIO_THREAD_PC (ethr));
+    IDIO r = idio_vm_run_C (ethr, IDIO_THREAD_XI (ethr), IDIO_THREAD_PC (ethr));
 
     idio_pc_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
-	/* fprintf (stderr, "i_e_e restoring %x.[%zu]@%zu ([%zu]@%zu)\n", IDIO_THREAD_FLAGS (ethr), xi0, pc0, IDIO_THREAD_XI (ethr), pc); */
+	/* fprintf (stderr, "i_e_e restoring #%x [%zu]@%zu ([%zu]@%zu)\n", IDIO_THREAD_FLAGS (ethr), xi0, pc0, IDIO_THREAD_XI (ethr), pc); */
 	IDIO_THREAD_XI (ethr) = xi0;
 	IDIO_THREAD_PC (ethr) = pc0;
     }
@@ -868,7 +868,7 @@ IDIO idio_evaluate_expander_src_code (IDIO m, IDIO cs)
     idio_vm_default_pc (ethr);
 
     idio_pc_t cg_pc = idio_codegen (ethr, m, cs);
-    IDIO r = idio_vm_run_C (ethr, cg_pc);
+    IDIO r = idio_vm_run_C (ethr, IDIO_THREAD_XI (ethr), cg_pc);
 
     idio_pc_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -1125,9 +1125,7 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
 	return idio_S_notreached;
     }
     IDIO cthr = idio_thread_current_thread ();
-    /* idio_debug ("i_e_o B %s\n", cthr); */
     IDIO ethr = idio_expander_thread;
-    /* ethr = cthr; */
 
     idio_thread_set_current_thread (ethr);
 
@@ -1141,7 +1139,7 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     struct rusage prim_ru0;
     idio_vm_func_start (func, &prim_t0, &prim_ru0);
 #endif
-    IDIO r = idio_vm_run_C (ethr, IDIO_THREAD_PC (ethr));
+    IDIO r = idio_vm_run_C (ethr, IDIO_THREAD_XI (ethr), IDIO_THREAD_PC (ethr));
 #ifdef IDIO_VM_PROF
     struct timespec prim_te;
     struct rusage prim_rue;
@@ -1151,7 +1149,7 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
 
     idio_pc_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
-	/* fprintf (stderr, "i_e_o restoring %x.[%zu]@%zu ([%zu]@%zu)\n\n", IDIO_THREAD_FLAGS (ethr), xi0, pc0, IDIO_THREAD_XI (ethr), pc); */
+	/* fprintf (stderr, "i_e_o restoring #%x [%zu]@%zu ([%zu]@%zu)\n\n", IDIO_THREAD_FLAGS (ethr), xi0, pc0, IDIO_THREAD_XI (ethr), pc); */
 	IDIO_THREAD_XI (ethr) = xi0;
 	IDIO_THREAD_PC (ethr) = pc0;
     }

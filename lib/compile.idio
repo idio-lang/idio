@@ -25,7 +25,7 @@ export (
 import evaluate codegen vm job-control
 
 define (compile-file-writer file eenv pc) {
-  printf "compile-file-writer: %s\n" file
+  ;printf "compile-file-writer: %s\n" file
 
   dn := dirname-pathname file
   cdn := append-string dn "/" *idio-cache-dir*
@@ -220,7 +220,7 @@ define (compile-file file & args) "
 " {
   eenv := #n
 
-  printf "compile-file: %s\n" file
+  ;printf "compile-file: %s\n" file
 
   if (pair? args) {
     eenv = ph args
@@ -291,8 +291,6 @@ define (compile-file file & args) "
   compile-file-load-eenv = orig-cfl-eenv
 
   close-handle fh
-
-  printf "\n"
 
   ;dump-eenv eenv (append-string (basename-pathname file) ".st")
   ;printf "compile-file: eenv %s\n" eenv

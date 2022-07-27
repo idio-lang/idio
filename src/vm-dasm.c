@@ -429,7 +429,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO fgci = idio_module_get_or_set_vci (ce, fmci);
 		idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-		IDIO c = idio_vm_dasm_constants_ref (xi, gci);
+		IDIO c = idio_vm_dasm_constants_ref (0, gci);
 
 		IDIO_VM_DASM ("CONSTANT-REF %5zd", mci);
 		idio_debug_FILE (fp, " %s", c);
@@ -471,7 +471,9 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO kind = idio_vm_dasm_constants_ref (xi, IDIO_FIXNUM_VAL (fgkci));
 
 		if (idio_isa_symbol (sym)) {
-		    IDIO_VM_DASM ("SYM-DEF %" PRIu64 " %s as %s", mci, IDIO_SYMBOL_S (sym), IDIO_SYMBOL_S (kind));
+		    IDIO_VM_DASM ("SYM-DEF %" PRIu64 " ", mci);
+		    idio_debug_FILE (fp, "%s as ", sym);
+		    idio_debug_FILE (fp, "%s", kind);
 		} else {
 		    IDIO_VM_DASM ("SYM-DEF %" PRIu64 " ?? %s", mci, idio_type2string (sym));
 		    idio_debug_FILE (fp, " %s", sym);
@@ -487,7 +489,9 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO kind = idio_vm_dasm_constants_ref (xi, kci);
 
 		if (idio_isa_symbol (sym)) {
-		    IDIO_VM_DASM ("SYM-IDEF .%-4" PRIu64 " %s as %s", si, IDIO_SYMBOL_S (sym), IDIO_SYMBOL_S (kind));
+		    IDIO_VM_DASM ("SYM-IDEF .%-4" PRIu64 " ", si);
+		    idio_debug_FILE (fp, "%s as ", sym);
+		    idio_debug_FILE (fp, "%s", kind);
 		} else {
 		    IDIO_VM_DASM ("SYM-IDEF .%-4" PRIu64 " ?? isa %s;", si, idio_type2string (sym));
 		    idio_debug_FILE (fp, " == %s", sym);
@@ -502,7 +506,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, IDIO_FIXNUM_VAL (fgci));
 
 		if (idio_isa_symbol (sym)) {
-		    IDIO_VM_DASM ("SYM-SET %" PRIu64 " %s", mci, IDIO_SYMBOL_S (sym));
+		    IDIO_VM_DASM ("SYM-SET %" PRIu64 " ", mci);
+		    idio_debug_FILE (fp, "%s", sym);
 		} else {
 		    IDIO_VM_DASM ("SYM-SET %" PRIu64 " ?? %s", mci, idio_type2string (sym));
 		    idio_debug_FILE (fp, " %s", sym);
@@ -516,7 +521,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
 
 		if (idio_isa_symbol (sym)) {
-		    IDIO_VM_DASM ("SYM-ISET .%-4" PRIu64 " %s", si, IDIO_SYMBOL_S (sym));
+		    IDIO_VM_DASM ("SYM-ISET .%-4" PRIu64 " ", si);
+		    idio_debug_FILE (fp, "%s", sym);
 		} else {
 		    IDIO_VM_DASM ("SYM-ISET .%-4" PRIu64 " ?? %s", si, idio_type2string (sym));
 		    idio_debug_FILE (fp, " %s", sym);
@@ -1257,7 +1263,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO fgci = idio_module_get_or_set_vci (ce, idio_fixnum (mci));
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, IDIO_FIXNUM_VAL (fgci));
 
-		IDIO_VM_DASM ("PUSH-DYNAMIC %" PRIu64 " %s", mci, IDIO_SYMBOL_S (sym));
+		IDIO_VM_DASM ("PUSH-DYNAMIC %" PRIu64 " ", mci);
+		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
 	case IDIO_A_PUSH_IDYNAMIC:
@@ -1266,7 +1273,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, ci);
 
-		IDIO_VM_DASM ("PUSH-IDYNAMIC .%-4" PRIu64 " %s", ci, IDIO_SYMBOL_S (sym));
+		IDIO_VM_DASM ("PUSH-IDYNAMIC .%-4" PRIu64 " ", ci);
+		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
 	case IDIO_A_POP_DYNAMIC:
@@ -1282,7 +1290,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, IDIO_FIXNUM_VAL (fgci));
 
 		if (idio_isa_symbol (sym)) {
-		    IDIO_VM_DASM ("DYNAMIC-SYM-REF %" PRIu64 " %s", mci, IDIO_SYMBOL_S (sym));
+		    IDIO_VM_DASM ("DYNAMIC-SYM-REF %" PRIu64 " ", mci);
+		    idio_debug_FILE (fp, "%s", sym);
 		} else {
 		    IDIO_VM_DASM ("DYNAMIC-SYM-REF %" PRIu64 " ?? %s", mci, idio_type2string (sym));
 		    idio_debug_FILE (fp, " %s", sym);
@@ -1295,7 +1304,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
 
-		IDIO_VM_DASM ("DYNAMIC-SYM-IREF .%-4" PRIu64 " %s", si, IDIO_SYMBOL_S (sym));
+		IDIO_VM_DASM ("DYNAMIC-SYM-IREF .%-4" PRIu64 " ", si);
+		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
 	case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:
@@ -1305,7 +1315,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO fgci = idio_module_get_or_set_vci (ce, idio_fixnum (mci));
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, IDIO_FIXNUM_VAL (fgci));
 
-		IDIO_VM_DASM ("DYNAMIC-FUNCTION-SYM-REF %" PRIu64 " %s", mci, IDIO_SYMBOL_S (sym));
+		IDIO_VM_DASM ("DYNAMIC-FUNCTION-SYM-REF %" PRIu64 " ", mci);
+		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
 	case IDIO_A_DYNAMIC_FUNCTION_SYM_IREF:
@@ -1314,7 +1325,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
 
-		IDIO_VM_DASM ("DYNAMIC-FUNCTION-SYM-IREF .%-4" PRIu64 " %s", si, IDIO_SYMBOL_S (sym));
+		IDIO_VM_DASM ("DYNAMIC-FUNCTION-SYM-IREF .%-4" PRIu64 " ", si);
+		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
 	case IDIO_A_PUSH_ENVIRON:
@@ -1324,7 +1336,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO fgci = idio_module_get_or_set_vci (ce, idio_fixnum (mci));
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, IDIO_FIXNUM_VAL (fgci));
 
-		IDIO_VM_DASM ("PUSH-ENVIRON %" PRIu64 " %s", mci, IDIO_SYMBOL_S (sym));
+		IDIO_VM_DASM ("PUSH-ENVIRON %" PRIu64 " ", mci);
+		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
 	case IDIO_A_PUSH_IENVIRON:
@@ -1333,7 +1346,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, ci);
 
-		IDIO_VM_DASM ("PUSH-IENVIRON .%-4" PRIu64 " %s", ci, IDIO_SYMBOL_S (sym));
+		IDIO_VM_DASM ("PUSH-IENVIRON .%-4" PRIu64 " ", ci);
+		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
 	case IDIO_A_POP_ENVIRON:
@@ -1349,7 +1363,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, IDIO_FIXNUM_VAL (fgci));
 
 		if (idio_isa_symbol (sym)) {
-		    IDIO_VM_DASM ("ENVIRON-SYM-REF %" PRIu64 " %s", mci, IDIO_SYMBOL_S (sym));
+		    IDIO_VM_DASM ("ENVIRON-SYM-REF %" PRIu64 " ", mci);
+		    idio_debug_FILE (fp, "%s", sym);
 		} else {
 		    IDIO_VM_DASM ("ENVIRON-SYM-REF %" PRIu64 " ?? %s", mci, idio_type2string (sym));
 		    idio_debug_FILE (fp, " %s", sym);
@@ -1363,7 +1378,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
 
 		if (idio_isa_symbol (sym)) {
-		    IDIO_VM_DASM ("ENVIRON-SYM-IREF .%-4" PRIu64 " %s", si, IDIO_SYMBOL_S (sym));
+		    IDIO_VM_DASM ("ENVIRON-SYM-IREF .%-4" PRIu64 " ", si);
+		    idio_debug_FILE (fp, "%s", sym);
 		} else {
 		    IDIO_VM_DASM ("ENVIRON-SYM-IREF .%-4" PRIu64 " ?? %s", si, idio_type2string (sym));
 		    idio_debug_FILE (fp, " %s", sym);
@@ -1439,7 +1455,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		} else {
 		    pc = 0;
 		}
-		fprintf (stderr, "idio-vm-dasm: unexpected ins %3d @%zd\n", ins, pci);
+		fprintf (stderr, "idio-vm-dasm: unexpected ins %3d [%zu]@%zd\n", ins, xi, pci);
 		fprintf (stderr, "dumping from %zd to %zd\n", pc, pcm - 1);
 		if (pc % 10) {
 		    idio_pc_t pc1 = pc - (pc % 10);
@@ -1458,7 +1474,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO_VM_DASM ("-- ?? --\n");
 		continue;
 		return;
-		idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected instruction: %3d @%" PRId64 "\n", ins, pci);
+		idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected instruction: %3d [%zu]@%" PRId64 "\n", ins, xi, pci);
 
 		/* notreached */
 		return;

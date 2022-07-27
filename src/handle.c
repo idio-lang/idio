@@ -2051,7 +2051,7 @@ return the name associated with handle `handle`	\n\
     return IDIO_HANDLE_FILENAME (handle);
 }
 
-IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO eenv), IDIO eenv, int preserve)
+IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO eenv), IDIO eenv, idio_xi_t xi, idio_load_handle_preserve_enum preserve)
 {
     IDIO_ASSERT (h);
     IDIO_C_ASSERT (reader);
@@ -2131,10 +2131,9 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	    /*
 	     * Throw out some messages about any recently failed jobs
 	     */
-	    idio_vm_invoke_C (idio_module_symbol_value_xi (IDIO_THREAD_XI (thr),
-							   IDIO_SYMBOL ("do-job-notification"),
-							   idio_job_control_module,
-							   idio_S_nil));
+	    idio_vm_invoke_C (idio_module_symbol_value (IDIO_SYMBOL ("do-job-notification"),
+							idio_job_control_module,
+							idio_S_nil));
 
 	    /*
 	     * As we're interactive, make an attempt to flush stdout
@@ -2213,38 +2212,39 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	idio_pc_t pc = idio_codegen (thr, m, eenv);
 
 	/*
-	 * WARNING: if we've come in here from load-handle (and
-	 * possibly others) then idio_codegen(), above, will have
-	 * generated some new byte code and returned to us the
-	 * starting PC, 10 (ie. just after the prologue).
+	 * WARNING: if we've come in here from the primitive
+	 * load-handle (and possibly others) then, for the first
+	 * expression, idio_codegen(), above, will have generated some
+	 * new byte code and returned to us the starting PC, 10
+	 * (ie. just after the prologue).
 	 *
-	 * If we are NOT in a new execution environment then the
-	 * chances are we'll be using an existing xi, probably that of
-	 * bootstrap.idio (because we were using the load-handle
+	 * If we are NOT in a new execution environment then we'll be
+	 * using an existing xi and the chances are it's probably that
+	 * of bootstrap.idio (because we were using the load-handle
 	 * closure defined in lib/bootstrap/module.idio) and this PC
-	 * of 10 will... re-run the bootstrap.  Oops.
+	 * of 10 will... re-run the bootstrap.  Yay!  No, wait, d'oh!
 	 *
 	 * The symptoms of this are not necessarily obvious -- by and
 	 * large you would like to think we simply redefine everything
 	 * we defined the first time round.  However, on the way
-	 * *require-features* is reset to #n (and subsequently
-	 * pre-pended to as per bootstrap.idio) which means, for
-	 * example, we'll have lost the registeration of a previous
-	 * load of a shared library, say, empty, and any subsequent
-	 * attempt to reload it will be trapped and faulted as a
-	 * duplicated shared library load.
+	 * through, *require-features* is reset to #n (and
+	 * subsequently prepended to as per bootstrap.idio) which
+	 * means, for example, we will have lost the registration of a
+	 * previous load of a shared library, say, empty, and any
+	 * subsequent attempt to reload it will be trapped and faulted
+	 * as a duplicated shared library load.
 	 *
 	 * This happens in the test suite where "empty" is
 	 * deliberately reloaded to generate the error in
 	 * test/test-file-handle-error.idio.  The re-running of
-	 * bootstrap.idio occurs in test/test-load-handle.idio and
-	 * therefore we've lost "empty" from *require-features* and
-	 * therefore we try to load it again for the actual extension
-	 * tests and it fails (with the dupicated shared library load
+	 * bootstrap.idio occurs in calls to load-handle in
+	 * test/test-load-handle.idio and therefore we've lost "empty"
+	 * from *require-features* and therefore we will try to load
+	 * it again for the actual extension tests sometime later and
+	 * it will fail (with the duplicated shared library load
 	 * error).
 	 */
-	fprintf (stderr, "load-handle idio_vm_run_C (%zu, %zd)\n", IDIO_THREAD_XI (thr), pc);
-	r = idio_vm_run_C (thr, pc);
+	r = idio_vm_run_C (thr, xi, pc);
 
 	idio_sp_t sp = idio_array_size (stack);
 
@@ -2314,7 +2314,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	if (sp == sp0) {
 	    idio_array_pop (stack);
 	} else {
-	    fprintf (stderr, "load-handle: SP %zd != %zd\n", sp, sp0);
+	    fprintf (stderr, "load-handle: preserve: SP %zd != %zd\n", sp, sp0);
 	}
     }
 
@@ -2326,7 +2326,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
  */
 IDIO idio_load_handle_C (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO eenv), IDIO eenv)
 {
-    return idio_load_handle (h, reader, evaluator, eenv, 1);
+    return idio_load_handle (h, reader, evaluator, eenv, IDIO_THREAD_XI (idio_thread_current_thread ()), IDIO_LOAD_HANDLE_PRESERVE_HANDLE);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("load-handle", load_handle, (IDIO h), "handle", "\
@@ -2353,15 +2353,18 @@ This is the `load-handle` primitive.				\n\
 
     IDIO cm = IDIO_THREAD_MODULE (thr);
 
-    IDIO desc = idio_util_string (IDIO_MODULE_NAME (cm));
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display_C ("load-handle for ", dsh);
+    idio_display (IDIO_HANDLE_FILENAME (h), dsh);
+    idio_display_C (" in ", dsh);
+    idio_display (IDIO_MODULE_NAME (cm), dsh);
+    IDIO desc = idio_get_output_string (dsh);
     IDIO eenv = idio_evaluate_eenv (desc, idio_S_true, cm);
     idio_gc_protect (eenv);
 
     idio_xi_t xi = idio_vm_add_xenv_from_eenv (thr, eenv);
 
-    fprintf (stderr, "load-handle preserving [%zu]@%zd\n", xi0, pc0);
-    IDIO_THREAD_XI (thr) = xi;
-    IDIO r = idio_load_handle (h, idio_read, idio_evaluate_func, eenv, 0);
+    IDIO r = idio_load_handle (h, idio_read, idio_evaluate_func, eenv, xi, IDIO_LOAD_HANDLE_PRESERVE_NONE);
 
     idio_gc_expose (eenv);
 

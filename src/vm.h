@@ -188,8 +188,8 @@ extern volatile sig_atomic_t idio_vm_signal_record[IDIO_LIBC_NSIG+1];
 void idio_vm_sa_signal (int signum);
 void idio_vm_signal_report ();
 
-IDIO idio_vm_run (IDIO thr, idio_pc_t pc, idio_vm_run_enum caller);
-IDIO idio_vm_run_C (IDIO thr, idio_pc_t pc);
+IDIO idio_vm_run (IDIO thr, idio_xi_t xi, idio_pc_t pc, idio_vm_run_enum caller);
+IDIO idio_vm_run_C (IDIO thr, idio_xi_t xi, idio_pc_t pc);
 
 void idio_vm_restore_continuation (IDIO k, IDIO val);
 void idio_vm_restore_exit (IDIO k, IDIO val);
