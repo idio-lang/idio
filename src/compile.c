@@ -119,31 +119,41 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
      */
     char *file_dot = memrchr (file, '.', file_len);
     if (NULL == file_dot) {
+#ifdef IDIO_DEBUG
 	fprintf (stderr, "no dot in %s\n", file);
+#endif
 	return 0;
     }
 
     size_t ibac_len = sizeof (IDIO_BUILD_ASM_COMMIT) - 1;
     if ((size_t) (file_dot - file) < ibac_len) {
+#ifdef IDIO_DEBUG
 	fprintf (stderr, "not %zu after dot (%zu) in %s\n", ibac_len, file_dot - file, file);
+#endif
 	return 0;
     }
 
     char *file_slash = memrchr (file, '/', file_dot - file);
     if (NULL == file_slash) {
+#ifdef IDIO_DEBUG
 	fprintf (stderr, "no slash before dot in %s\n", file);
+#endif
 	return 0;
     }
 
     char *file_slash2 = memrchr (file, '/', file_slash - file);
     if (NULL == file_slash2) {
+#ifdef IDIO_DEBUG
 	fprintf (stderr, "no slash#2 before slash in %s\n", file);
+#endif
 	return 0;
     }
 
     size_t icd_len = sizeof (IDIO_CACHE_DIR) - 1;
     if (strncmp (file_slash2 + 1, IDIO_CACHE_DIR, icd_len)) {
+#ifdef IDIO_DEBUG
 	fprintf (stderr, "not %s between last two slashes in %s\n", IDIO_CACHE_DIR, file);
+#endif
 	return 0;
     }
 
@@ -215,11 +225,15 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
 
     if (! (idio_isa_string (ibcc) &&
 	   idio_compile_compare_strings (ibcc, IDIO_STATIC_STR_LEN (IDIO_BUILD_COMPILER_COMMIT)))) {
+#ifdef IDIO_DEBUG
 	idio_debug ("compiler-commit %s != ", ibcc);
 	fprintf (stderr, "%s\n", IDIO_BUILD_COMPILER_COMMIT);
+#endif
 	return 0;
     }
+#ifdef IDIO_COMPILE_FILE_READ
     idio_debug ("compiler-commit %s ", ibcc);
+#endif
 
     /*
      * when
@@ -229,10 +243,14 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
     IDIO when = idio_read (fh);
 
     if (! idio_isa_string (when)) {
+#ifdef IDIO_DEBUG
 	idio_debug ("when %s is not a string\n", when);
+#endif
 	return 0;
     }
+#ifdef IDIO_COMPILE_FILE_READ
     idio_debug ("when %s ", when);
+#endif
 
     /*
      * idio-build-asm-commit
@@ -244,11 +262,15 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
 
     if (! (idio_isa_string (ibac) &&
 	   idio_compile_compare_strings (ibac, IDIO_STATIC_STR_LEN (IDIO_BUILD_ASM_COMMIT)))) {
+#ifdef IDIO_DEBUG
 	idio_debug ("asm-commit %s != ", ibac);
 	fprintf (stderr, "%s\n", IDIO_BUILD_ASM_COMMIT);
+#endif
 	return 0;
     }
+#ifdef IDIO_COMPILE_FILE_READ
     idio_debug ("asm-commit %s\n", ibac);
+#endif
 
     /*
      * pre-compiler chksum
@@ -263,12 +285,16 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
     if (chksum_len) {
 	if (! (idio_isa_string (pc_chksum) &&
 	       idio_compile_compare_strings (pc_chksum, chksum, chksum_len))) {
+#ifdef IDIO_DEBUG
 	    idio_debug ("chksum %s != ", pc_chksum);
-	    fprintf (stderr, "%s\n", chksum);
+	    fprintf (stderr, "%s for %s\n", chksum, file);
+#endif
 	    return 0;
 	}
     }
+#ifdef IDIO_COMPILE_FILE_READ
     idio_debug ("pc-chksum %s\n", pc_chksum);
+#endif
 
     /*
      * array lengths
@@ -280,10 +306,14 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
     IDIO alen = idio_read (fh);
 
     if (! idio_isa_fixnum (alen)) {
+#ifdef IDIO_DEBUG
 	idio_debug ("alen %s is not a fixnum\n", alen);
+#endif
 	return 0;
     }
+#ifdef IDIO_COMPILE_FILE_READ
     idio_debug ("alen %s ", alen);
+#endif
 
     idio_as_t C_alen = IDIO_FIXNUM_VAL (alen);
 
@@ -293,10 +323,14 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
     IDIO ste = idio_read (fh);
 
     if (! (idio_isa_list (ste))) {
+#ifdef IDIO_DEBUG
 	idio_debug ("symbol table entries %s is not a list\n", ste);
+#endif
 	return 0;
     }
+#ifdef IDIO_COMPILE_FILE_READ
     fprintf (stderr, "ste #%zu ", idio_list_length (ste));
+#endif
 
     idio_as_t max_ci = 0;
     IDIO st = idio_array (C_alen);
@@ -317,7 +351,9 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
 	IDIO ci = IDIO_PAIR_T (si_ci);
 	if (idio_S_false != ci) {
 	    if (! idio_isa_fixnum (ci)) {
+#ifdef IDIO_DEBUG
 		idio_debug ("si-ci %s: ci is not a fixnum\n", si_ci);
+#endif
 		return 0;
 	    }
 	    idio_as_t C_ci = IDIO_FIXNUM_VAL (ci);
@@ -338,14 +374,20 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
     IDIO cs = idio_read (fh);
 
     if (! (idio_isa_array (cs))) {
+#ifdef IDIO_DEBUG
 	fprintf (stderr, "constants is not an array\n");
+#endif
 	return 0;
     }
+#ifdef IDIO_COMPILE_FILE_READ
     fprintf (stderr, "cs #%zu ", idio_array_size (cs));
+#endif
 
 
     if (max_ci >= idio_array_size (cs)) {
+#ifdef IDIO_DEBUG
 	fprintf (stderr, "constants is smaller (%zu) than the largest symbol index (%zu)\n", idio_array_size (cs), max_ci);
+#endif
 	return 0;
     }
 
@@ -357,10 +399,14 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
     IDIO pc = idio_read (fh);
 
     if (! idio_isa_fixnum (pc)) {
+#ifdef IDIO_DEBUG
 	idio_debug ("pc %s is not a fixnum\n", pc);
+#endif
 	return 0;
     }
+#ifdef IDIO_COMPILE_FILE_READ
     idio_debug ("pc %s ", pc);
+#endif
 
     idio_pc_t C_pc = IDIO_FIXNUM_VAL (pc);
 
@@ -370,13 +416,19 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
     IDIO bs = idio_read (fh);
 
     if (! idio_isa_octet_string (bs)) {
+#ifdef IDIO_DEBUG
 	idio_debug ("bs %s is not an octet string\n", bs);
+#endif
 	return 0;
     }
+#ifdef IDIO_COMPILE_FILE_READ
     fprintf (stderr, "bs #%zu ", idio_string_len (bs));
+#endif
 
     if (C_pc >= (ssize_t) idio_string_len (bs)) {
+#ifdef IDIO_DEBUG
 	fprintf (stderr, "pc is greater (%zu) than the length of the byte code (%zu)\n", C_pc, idio_string_len (bs));
+#endif
 	return 0;
     }
 
@@ -386,10 +438,14 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
     IDIO ses = idio_read (fh);
 
     if (! (idio_isa_array (ses))) {
+#ifdef IDIO_DEBUG
 	idio_debug ("source code expressions %s is not an array\n", ses);
+#endif
 	return 0;
     }
+#ifdef IDIO_COMPILE_FILE_READ
     fprintf (stderr, "ses #%zu ", idio_array_size (ses));
+#endif
 
     /*
      * source code properties
@@ -397,14 +453,19 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
     IDIO sps = idio_read (fh);
 
     if (! (idio_isa_array (sps))) {
+#ifdef IDIO_DEBUG
 	idio_debug ("source code properties %s is not an array\n", sps);
+#endif
 	return 0;
     }
+#ifdef IDIO_COMPILE_FILE_READ
     fprintf (stderr, "sps #%zu\n", idio_array_size (sps));
+#endif
 
     if (idio_array_size (ses) != idio_array_size (sps)) {
+#ifdef IDIO_COMPILE_FILE_READ
 	fprintf (stderr, "number of source code expressions (%zu) does not match the number of source code properties (%zu)\n", idio_array_size (ses), idio_array_size (sps));
-
+#endif
 	/* return 0; */
     }
 
@@ -417,7 +478,9 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
     IDIO_ARRAY_USIZE (vs) = C_alen;
 
     idio_xi_t xi = idio_vm_add_xenv (idio_string_C (ifn), st, cs, vs, ses, sps, bs);
+#ifdef IDIO_COMPILE_FILE_READ
     fprintf (stderr, "xi [%zu] for %s\n", xi, ifn);
+#endif
 
     idio_vm_run_xenv (xi, C_pc);
 
