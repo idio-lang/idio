@@ -5850,9 +5850,18 @@ IDIO idio_evaluate_eenv (IDIO desc, IDIO aotp, IDIO module)
     IDIO_TYPE_ASSERT (boolean, aotp);
     IDIO_TYPE_ASSERT (module, module);
 
+    /*
+     * Slightly annoyingly, idio_C_pointer_type(), used to wrap the
+     * generic IDIO_IA_T byte code, will free() the embedded pointer
+     * by default.  Which isn't great for the shared idio_all_code (or
+     * anything else).
+     */
     if (idio_S_true == aotp) {
 	IDIO_IA_T byte_code = idio_ia (1000);
 	idio_codegen_code_prologue (byte_code);
+	IDIO CPT_byte_code = idio_C_pointer_type (idio_CSI_idio_ia_s, byte_code);
+	IDIO_C_TYPE_POINTER_FREEP (CPT_byte_code) = 0;
+
 	return idio_struct_instance (idio_evaluate_eenv_type,
 				     idio_listv (IDIO_EENV_ST_SIZE,
 						 desc,
@@ -5868,15 +5877,10 @@ IDIO idio_evaluate_eenv (IDIO desc, IDIO aotp, IDIO module)
 						 idio_S_nil, /* escapes */
 						 idio_array (0), /* src-exprs */
 						 idio_array (0), /* src-props */
-						 idio_C_pointer_type (idio_CSI_idio_ia_s, byte_code)));
+						 CPT_byte_code));
     } else {
-	/*
-	 * Slightly annoyingly, idio_C_pointer_type() will free() the
-	 * embedded pointer by default.  Which isn't great for the
-	 * shared idio_all_code (or anything else).
-	 */
-	IDIO CTP_byte_code = idio_C_pointer_type (idio_CSI_idio_ia_s, idio_all_code);
-	IDIO_C_TYPE_POINTER_FREEP (CTP_byte_code) = 0;
+	IDIO CPT_byte_code = idio_C_pointer_type (idio_CSI_idio_ia_s, idio_all_code);
+	IDIO_C_TYPE_POINTER_FREEP (CPT_byte_code) = 0;
 
 	return idio_struct_instance (idio_evaluate_eenv_type,
 				     idio_listv (IDIO_EENV_ST_SIZE,
@@ -5893,7 +5897,7 @@ IDIO idio_evaluate_eenv (IDIO desc, IDIO aotp, IDIO module)
 						 idio_S_nil, /* escapes */
 						 idio_vm_src_exprs,
 						 idio_vm_src_props,
-						 CTP_byte_code));
+						 CPT_byte_code));
     }
 }
 
