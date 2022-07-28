@@ -734,8 +734,8 @@ static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, IDIO scope, 
 		 * right now just that we reserve a slot for
 		 * ourselves.
 		 *
-		 * However, we'll need use the running vi as later on
-		 * we'll need to access the underlying primdata.
+		 * However, we want the running vi as later on we'll
+		 * need to access the underlying primdata.
 		 */
 		st_sym_si = idio_list_assq (name, IDIO_MEANING_EENV_SYMBOLS (eenv));
 		IDIO vt_tail = IDIO_PAIR_TT (IDIO_PAIR_TT (st_sym_si));
@@ -763,7 +763,7 @@ static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, IDIO scope, 
 		 * 'predef, however if we reuse that then subsequent
 		 * lookups will try to run the 'predef code in
 		 * meaning-application which gets us in a mess for
-		 * pre-complication.
+		 * pre-compilation.
 		 *
 		 * From our future compiled code's perspective we're
 		 * looking up another 'toplevel (which will be
@@ -1403,19 +1403,19 @@ static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int 
 	 * NOTICE This must be a recursive lookup.  Otherwise we'll
 	 * not see any bindings in Idio.
 	 *
-	 * Unless we're defining something in which case we mustn't
-	 * recurse...
+	 * Unless we're defining something in which case we must NOT
+	 * recurse...although that's down to our caller to decide
 	 */
         si = idio_meaning_find_symbol_recurse (name, eenv, scope, recurse);
 
 	if (idio_S_false == si) {
 
 	    /* is name M/S ? */
-	    si = idio_module_direct_reference (name);
+	    IDIO sdr = idio_module_direct_reference (name);
 
-	    if (idio_isa_pair (si)) {
+	    if (idio_isa_pair (sdr)) {
 		/* (M S si) */
-		si = IDIO_PAIR_HTT (si);
+		si = IDIO_PAIR_HTT (sdr);
 		idio_module_set_symbol (name, si, IDIO_MEANING_EENV_MODULE (eenv));
 	    } else {
 		/*
@@ -1490,7 +1490,7 @@ static IDIO idio_meaning_reference (IDIO src, IDIO name, IDIO nametree, int flag
 
     IDIO si = idio_meaning_variable_info (src, nametree, name, flags, eenv, 1);
 
-    if (idio_S_unspec == si) {
+    if (! idio_isa_pair (si)) {
 	/*
 	 * shouldn't get here as unknowns are automatically
 	 * toplevel...
@@ -2481,6 +2481,8 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     /*
      * XXX define-template bootstrap
      *
+     * Option 1 (when I was dealing with file contents "all in one"):
+     *
      * We really want the entry in *expander-list* to be some compiled
      * code but we don't know what that code is yet because we have't
      * processed the source code of the expander -- we only invented
@@ -2492,14 +2494,22 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
      * lookup for the closure that was created via
      * idio_meaning_assignment().
      *
+     * Option 2 (noted at the time but not implemented):
+     *
      * As an alternative we could evaluate the source to the expander
      * now and install that code in *expander-list* directly -- but
      * watch out for embedded calls to regular functions defined in
      * the code (see comment above).
      *
+     * In fact, because the evaluator changed to
+     * expression-by-expression we effectively implement Option 2
+     * (which handles the regular function calls as well).
+     *
+     * Requirement either way:
+     *
      * As a further twist, we really need to embed a call to
-     * idio_install_expander in the *object* code too!  When
-     * someone in the future loads the object file containing this
+     * idio_install_expander in the *object* code too!  When someone
+     * in the future loads the object file containing this
      * define-template who will have called idio_install_expander?
      *
      * In summary: we need the expander in the here and now as someone
@@ -2508,6 +2518,9 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
      * users.
      */
 
+    /*
+     * this is a define at the toplevel and not tailp
+     */
     int mflags = IDIO_MEANING_NOT_TAILP (IDIO_MEANING_TEMPLATE (IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags))));
     IDIO m_a = idio_meaning_assignment (expander, name, expander, nametree, mflags, eenv);
 
@@ -2525,28 +2538,24 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     idio_as_t mci = idio_meaning_constants_lookup_or_extend (eenv, name);
     IDIO fmci = idio_fixnum (mci);
 
+    IDIO ex_id = fmci;
+
+    if (idio_S_true == IDIO_MEANING_EENV_AOT (eenv)) {
+	ex_id = IDIO_SI_SI (si);
+    }
+
     IDIO cm = idio_thread_current_module ();
 
-    IDIO sym_si = idio_S_false;
-    if (idio_S_true == IDIO_MEANING_EENV_AOT (eenv)) {
-	sym_si = IDIO_LIST6 (idio_S_toplevel,
-			     IDIO_SI_SI (si),
-			     fmci,
-			     idio_fixnum (0),
-			     cm,
-			     docstr);
-    } else {
-	sym_si = IDIO_LIST6 (idio_S_toplevel,
-			     fmci,
-			     fmci,
-			     idio_fixnum (0),
-			     cm,
-			     docstr);
-    }
+    IDIO sym_si = IDIO_LIST6 (idio_S_toplevel,
+			      ex_id,
+			      fmci,
+			      idio_fixnum (0),
+			      cm,
+			      docstr);
 
     idio_module_set_symbol (name, sym_si, cm);
 
-    return IDIO_LIST3 (IDIO_I_EXPANDER, idio_fixnum (mci), m_a);
+    return IDIO_LIST3 (IDIO_I_EXPANDER, ex_id, m_a);
 }
 
 static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, IDIO e, IDIO nametree, int flags, IDIO eenv)
@@ -2576,19 +2585,17 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
     /*
      * Step 1: find the existing symbol for {name} or create a new one
      */
-    IDIO operator_eenv = idio_struct_instance_copy (eenv);
-    idio_struct_instance_set_direct (operator_eenv, IDIO_EENV_ST_MODULE, idio_operator_module);
+    IDIO si = idio_meaning_find_toplevel_symbol (name, eenv);
 
-    IDIO si = idio_meaning_find_toplevel_symbol (name, operator_eenv);
-
-    idio_as_t mci = idio_meaning_constants_lookup_or_extend (operator_eenv, name);
+    idio_as_t mci = idio_meaning_constants_lookup_or_extend (eenv, name);
     IDIO fmci = idio_fixnum (mci);
 
     IDIO op_id = fmci;
 
-    if (idio_S_true == IDIO_MEANING_EENV_AOT (operator_eenv)) {
+    if (idio_S_true == IDIO_MEANING_EENV_AOT (eenv)) {
 	op_id = IDIO_SI_SI (si);
     }
+
     IDIO sym_si = IDIO_LIST6 (idio_S_toplevel,
 			      op_id,
 			      fmci,
@@ -2634,7 +2641,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 	idio_meaning_copy_src_properties (src, sve);
 
 	idio_copy_infix_operator (IDIO_THREAD_XI (idio_thread_current_thread ()), name, pri, e);
-	m = idio_meaning (sve, sve, nametree, flags, operator_eenv);
+	m = idio_meaning (sve, sve, nametree, flags, eenv);
     } else {
 	/*
 	 * define-infix-operator X pri { ... }
@@ -2654,7 +2661,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 
 	idio_meaning_copy_src_properties (src, fe);
 
-	m = idio_meaning (fe, fe, nametree, flags, operator_eenv);
+	m = idio_meaning (fe, fe, nametree, flags, eenv);
     }
     IDIO r = IDIO_LIST4 (IDIO_I_INFIX_OPERATOR, op_id, pri, m);
 
@@ -2688,17 +2695,14 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
     /*
      * Step 1: find the existing symbol for {name} or create a new one
      */
-    IDIO operator_eenv = idio_struct_instance_copy (eenv);
-    idio_struct_instance_set_direct (operator_eenv, IDIO_EENV_ST_MODULE, idio_operator_module);
+    IDIO si = idio_meaning_find_toplevel_symbol (name, eenv);
 
-    IDIO si = idio_meaning_find_toplevel_symbol (name, operator_eenv);
-
-    idio_as_t mci = idio_meaning_constants_lookup_or_extend (operator_eenv, name);
+    idio_as_t mci = idio_meaning_constants_lookup_or_extend (eenv, name);
     IDIO fmci = idio_fixnum (mci);
 
     IDIO op_id = fmci;
 
-    if (idio_S_true == IDIO_MEANING_EENV_AOT (operator_eenv)) {
+    if (idio_S_true == IDIO_MEANING_EENV_AOT (eenv)) {
 	op_id = IDIO_SI_SI (si);
     }
     IDIO sym_si = IDIO_LIST6 (idio_S_toplevel,
@@ -2746,7 +2750,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 	idio_meaning_copy_src_properties (src, sve);
 
 	idio_copy_postfix_operator (IDIO_THREAD_XI (idio_thread_current_thread ()), name, pri, e);
-	m = idio_meaning (sve, sve, nametree, flags, operator_eenv);
+	m = idio_meaning (sve, sve, nametree, flags, eenv);
     } else {
 	/*
 	 * define-postfix-operator X pri { ... }
@@ -2766,7 +2770,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 
 	idio_meaning_copy_src_properties (src, fe);
 
-	m = idio_meaning (fe, fe, nametree, flags, operator_eenv);
+	m = idio_meaning (fe, fe, nametree, flags, eenv);
     }
     IDIO r = IDIO_LIST4 (IDIO_I_POSTFIX_OPERATOR, op_id, pri, m);
 

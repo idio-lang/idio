@@ -289,14 +289,14 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
 	  ;; Notionally we don't care about the (future) vi right now
 	  ;; just that we reserve a slot for ourselves.
 	  ;;
-	  ;; However, we'll need use the running vi as later on we'll
-	  ;; need to access the underlying primdata.
+	  ;; However, we want the running vi as later on we'll need to
+	  ;; access the underlying primdata.
 	  st-sym-si = assq name (%eenv-symbols eenv)
 
 	  ;; XXX no assignment to nth:
 	  ;st-sym-si.4 = (si-vi name-si)
-	  vi-tail := (ptt (ptt st-sym-si))
-	  set-ph! vi-tail (si-vi name-si)
+	  vt-tail := (ptt (ptt st-sym-si))
+	  set-ph! vt-tail (si-vi name-si)
 	}
       } {
 	; is name M/S ?
@@ -308,7 +308,7 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
 	  ;; The chances are that the existing scope, in sdr, is
 	  ;; 'predef, however if we reuse that then subsequent lookups
 	  ;; will try to run the 'predef code in meaning-application
-	  ;; which gets us in a mess for pre-complication.
+	  ;; which gets us in a mess for pre-compilation.
 	  ;;
 	  ;; From our future compiled code's perspective we're looking
 	  ;; up another 'toplevel (which will be resolved in the
@@ -590,7 +590,13 @@ define* (meaning-variable-info src nametree name flags eenv (recurse? #t)) {
   si := meaning-lexical-lookup src nametree name
 
   if (not si) {
+    ;; NOTICE This must be a recursive lookup.  Otherwise we'll not
+    ;; see any bindings in Idio.
+    ;;
+    ;; Unless we're defining something in which case we must NOT
+    ;; recurse...although that's down to our caller to decide
     si = meaning-find-symbol-recurse name eenv (eval-flags-scope flags) recurse?
+
     if (not si) {
       ; is name M/S ?
       sdr := symbol-direct-reference name
@@ -1119,8 +1125,8 @@ define (meaning-define src name e nametree flags eenv) {
 define (meaning-define-template src name e nametree flags eenv) {
 
   if (pair? name) {
-    ;; (define-template (func arg) ...) =>
-    ;; (define-template func (function/name func (arg) ...))
+    ;; (define-template (func formal*) ...) =>
+    ;; (define-template func (function/name func (formal*) ...))
     e = list 'function/name (ph name) (pt name) e
     name = ph name
 
@@ -1180,18 +1186,6 @@ define (meaning-define-template src name e nametree flags eenv) {
 
     meaning-assignment src name e nametree (define-scope 'toplevel flags) eenv
   } {
-    ;; (define-template (name formal*) ...) =>
-    ;; (define-template name (function/name name (formal*) ...))
-    if (pair? name) {
-      e = (list 'function/name
-		(ph name)
-		(pt name)
-		e)
-      name = ph name
-
-      meaning-copy-src-properties src e
-    }
-
     ;; XXX define-template bootstrap
 
     ;; Option 1 (when I was dealing with file contents "all in one"):
@@ -1240,26 +1234,21 @@ define (meaning-define-template src name e nametree flags eenv) {
     ;; The ci is required so that the EXPANDER opcode can call
     ;; install-expander to overwrite the proc from the
     ;; install-expander/source! call we just made
-    ci := si-ci si
+    ci := meaning-constants-lookup-or-extend eenv name
+
+    ex-id := ci
+
+    if (%eenv-aot? eenv) {
+      ex-id = si-si si
+    }
 
     cm := (current-module)
 
-    st := %eenv-symbols eenv
-
-    sym-si := #f
-    if (%eenv-aot? eenv) {
-      sym-si = list 'toplevel (si-si si) ci 0 cm docstr
-    } {
-      sym-si = list 'toplevel ci ci 0 cm docstr
-    }
+    sym-si := list 'toplevel ex-id ci 0 cm docstr
 
     set-symbol! name sym-si cm
 
-    if (%eenv-aot? eenv) {
-      list I-EXPANDER (si-si si) ma
-      } {
-      list I-EXPANDER ci ma
-    }
+    list I-EXPANDER ex-id ma
   }
 }
 
@@ -1272,7 +1261,12 @@ define (meaning-define-infix-operator src name pri e nametree flags eenv) {
   si := meaning-find-toplevel-symbol name eenv
 
   ci := meaning-constants-lookup-or-extend eenv name
-  op-id := eenv-si eenv si
+
+  op-id := ci
+
+  if (%eenv-aot? eenv) {
+    op-id = si-si si
+  }
 
   op-mod := find-module 'operator
   sym-si := list 'toplevel op-id ci 0 op-mod "define-infix-operator"
@@ -1341,7 +1335,13 @@ define (meaning-define-postfix-operator src name pri e nametree flags eenv) {
   ;; Step 1: find the existing symbol for {name} or create a new one
   si := meaning-find-toplevel-symbol name eenv
 
-  op-id := eenv-si eenv si
+  ci := meaning-constants-lookup-or-extend eenv name
+
+  op-id := ci
+
+  if (%eenv-aot? eenv) {
+    op-id = si-si si
+  }
 
   op-mod := find-module 'operator
   sym-si := list 'toplevel op-id ci 0 op-mod "define-postfix-operator"
@@ -2345,9 +2345,9 @@ define (meaning-dynamic-let src name e e+ nametree flags eenv) {
 
   si := meaning-find-symbol-recurse name eenv 'dynamic #t
 
-  sym_idx := #f
+  sym-idx := #f
 
-  if si {
+  if (pair? si) {
     sym-idx = eenv-si eenv si
     if (%eenv-aot? eenv) {
       eprintf "WARNING: dynamic-extend: likely si clash\n"
@@ -2383,7 +2383,7 @@ define (meaning-environ-let src name e e+ nametree flags eenv) {
 
   sym-idx := #f
 
-  if si {
+  if (pair? si) {
     sym-idx = eenv-si eenv si
     if (%eenv-aot? eenv) {
       eprintf "WARNING: environ-extend: likely si clash\n"
@@ -2391,8 +2391,6 @@ define (meaning-environ-let src name e e+ nametree flags eenv) {
   } {
     sym-idx = meaning-toplevel-extend src name (set-scope 'environ flags) eenv
   }
-
-  sym-idx := eenv-si eenv si
 
   nt+ := meaning-nametree-dynamic-extend nametree name sym-idx 'environ
 
@@ -3310,6 +3308,10 @@ environment `eenv` and return intermediate code for the code generator
   } {
     eenv = %evaluation-environment "evaluate" #t
   }
+
+  ;; We must call this with the current module.  The previous
+  ;; expression (when run) may well have changed the current module.
+  set-%eenv-module! eenv (current-module)
 
   m := meaning src src #n no-flags eenv
 

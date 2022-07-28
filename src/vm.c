@@ -8931,7 +8931,7 @@ IDIO idio_vm_run_xenv (idio_xi_t xi, idio_pc_t pc)
     */
 
 #ifdef IDIO_VM_DIS
-    if (2001 == xi) {
+    if (2 == xi) {
 	idio_vm_dis = 1;
 	idio_vm_set_dasm_file (IDIO_LIST1 (IDIO_STRING ("idio-vm-trace")));
     }

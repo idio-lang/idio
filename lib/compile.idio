@@ -264,6 +264,7 @@ define (compile-file file & args) "
       trap (^rt-parameter-error
 	    ^idio-error
 	    ^rt-function-error) (function (c) {
+	      printf "In %s\n" fh
 	      condition-report "compile" c
 	      printf "sleep (2) ...\n\n"
 	      sleep 2

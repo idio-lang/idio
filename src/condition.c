@@ -936,7 +936,7 @@ does not return per se						\n\
 						      idio_debugger_module,
 						      idio_S_nil);
 
-	    if (idio_S_unspec != debugger) {
+	    if (idio_isa_function (debugger)) {
 		IDIO cmd = IDIO_LIST1 (debugger);
 
 		fprintf (stderr, "invoking debugger\n");
@@ -952,6 +952,8 @@ does not return per se						\n\
 		 *
 		 */
 		return r;
+	    } else {
+		idio_debug ("debug is %s: debugger invocation failed\n", debugger);
 	    }
 	} else {
 	    fprintf (stderr, "\ndefault-condition-handler: bootstrap incomplete\n");

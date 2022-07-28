@@ -1228,9 +1228,9 @@ IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	return idio_S_notreached;
     }
 
-    /* idio_debug ("im_fsr %s", IDIO_MODULE_NAME (module)); */
-    /* idio_debug ("/%s", symbol); */
-    /* fprintf (stderr, " recurse=%d\n", recurse); */
+    /* idio_debug ("im_fsr %-20s", symbol);  */
+    /* idio_debug ("from %-10s", IDIO_MODULE_NAME (module));  */
+    /* fprintf (stderr, " recurse=%d\n", recurse);  */
 
     IDIO si_cm = idio_S_false;
     if (recurse < 2) {
@@ -1428,7 +1428,7 @@ IDIO idio_module_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO m_or_n, IDIO a
 	r = IDIO_PAIR_H (args);
     }
 
-    if (idio_S_unspec != si) {
+    if (idio_isa_pair (si)) {
 	IDIO scope = IDIO_SI_SCOPE (si);
 	IDIO fmci = IDIO_SI_CI (si);
 	IDIO fgvi = IDIO_SI_VI (si);

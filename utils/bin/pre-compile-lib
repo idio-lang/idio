@@ -231,7 +231,7 @@ for fn in (append (glob (append-string lib-dir "/*.idio"))
 		  printf "Compiling %s\n" fn
 		  compile-file fn
 		}))
-  printf "\n\n"
+  printf "\n"
 }
 
 ;Local Variables:
