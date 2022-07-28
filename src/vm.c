@@ -9105,7 +9105,11 @@ idio_xi_t idio_vm_add_xenv_from_eenv (IDIO thr, IDIO eenv)
 	return 0;
     }
 
-    return idio_vm_add_xenv (desc, symbols, constants, values, src_exprs, src_props, CTP_bc);
+    idio_xi_t xi = idio_vm_add_xenv (desc, symbols, constants, values, src_exprs, src_props, CTP_bc);
+
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_XI, idio_fixnum (xi));
+
+    return xi;
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("%vm-add-xenv-from-eenv", vm_add_xenv_from_eenv, (IDIO eenv, IDIO pc), "eenv pc", "\
@@ -9676,7 +9680,7 @@ void idio_init_vm ()
     /*
      * Careful analysis:
      *
-     * grep CONSTANT-I?REF idio-vm-dasm* | sed 's/.*[0-9]: //' | sort | uniq -c | sort -n | tail -40
+     * egrep CONSTANT-I?REF idio-vm-dasm* | sed -E 's/.*[0-9]: CONSTANT-I?REF +\.?[0-9]+ //' | sort | uniq -c | sort -n | tail -40
      *
      * suggests that, for common terms, to keep the ci varuints used
      * by these references to one byte (in practice, <240 -- see

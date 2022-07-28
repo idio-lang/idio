@@ -4029,14 +4029,10 @@ This is the `load` primitive.					\n\
 
     IDIO cm = IDIO_THREAD_MODULE (thr);
 
-    IDIO eenv = idio_evaluate_normal_eenv (filename, cm);
+    IDIO eenv = idio_evaluate_eenv (thr, filename, idio_S_false, cm);
 
     idio_gc_protect (eenv);
 
-    /*
-     * idio_evaluate_normal_eenv() implies XI==0
-     */
-    IDIO_THREAD_XI (thr) = 0;
     IDIO r = idio_load_file_name (filename, eenv);
 
     idio_gc_expose (eenv);

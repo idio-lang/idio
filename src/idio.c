@@ -310,11 +310,6 @@ void idio_init (void)
 
     idio_module_set_symbol_value (IDIO_SYMBOL ("*expander-eenv*"),
 				  idio_default_eenv,
-				  /*
-				  idio_evaluate_eenv (IDIO_STRING ("expander"),
-						      idio_S_true,
-						      idio_expander_module),
-				  */
 				  idio_expander_module);
 
     idio_add_primitives ();

@@ -5840,15 +5840,19 @@ IDIO idio_evaluate_func (IDIO src, IDIO eenv)
     return idio_vm_invoke_C (IDIO_LIST3 (ev_func, src, eenv));
 }
 
-IDIO idio_evaluate_eenv (IDIO desc, IDIO aotp, IDIO module)
+IDIO idio_evaluate_eenv (IDIO thr, IDIO desc, IDIO aotp, IDIO module)
 {
+    IDIO_ASSERT (thr);
     IDIO_ASSERT (desc);
     IDIO_ASSERT (aotp);
     IDIO_ASSERT (module);
 
+    IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (string, desc);
     IDIO_TYPE_ASSERT (boolean, aotp);
     IDIO_TYPE_ASSERT (module, module);
+
+    IDIO eenv = idio_S_false;
 
     /*
      * Slightly annoyingly, idio_C_pointer_type(), used to wrap the
@@ -5862,7 +5866,7 @@ IDIO idio_evaluate_eenv (IDIO desc, IDIO aotp, IDIO module)
 	IDIO CPT_byte_code = idio_C_pointer_type (idio_CSI_idio_ia_s, byte_code);
 	IDIO_C_TYPE_POINTER_FREEP (CPT_byte_code) = 0;
 
-	return idio_struct_instance (idio_evaluate_eenv_type,
+	eenv = idio_struct_instance (idio_evaluate_eenv_type,
 				     idio_listv (IDIO_EENV_ST_SIZE,
 						 desc,
 						 idio_S_false, /* chksum */
@@ -5877,12 +5881,16 @@ IDIO idio_evaluate_eenv (IDIO desc, IDIO aotp, IDIO module)
 						 idio_S_nil, /* escapes */
 						 idio_array (0), /* src-exprs */
 						 idio_array (0), /* src-props */
-						 CPT_byte_code));
+						 CPT_byte_code,
+						 idio_S_false /* xi */
+					 ));
+
+	idio_vm_add_xenv_from_eenv (thr, eenv);
     } else {
 	IDIO CPT_byte_code = idio_C_pointer_type (idio_CSI_idio_ia_s, idio_all_code);
 	IDIO_C_TYPE_POINTER_FREEP (CPT_byte_code) = 0;
 
-	return idio_struct_instance (idio_evaluate_eenv_type,
+	eenv = idio_struct_instance (idio_evaluate_eenv_type,
 				     idio_listv (IDIO_EENV_ST_SIZE,
 						 desc,
 						 idio_S_false, /* chksum */
@@ -5897,8 +5905,12 @@ IDIO idio_evaluate_eenv (IDIO desc, IDIO aotp, IDIO module)
 						 idio_S_nil, /* escapes */
 						 idio_vm_src_exprs,
 						 idio_vm_src_props,
-						 CPT_byte_code));
+						 CPT_byte_code,
+						 idio_fixnum (0) /* xi */
+					 ));
     }
+
+    return eenv;
 }
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("%evaluation-environment", evaluation_environment, (IDIO desc, IDIO aotp, IDIO args), "desc, aot? [module]", "\
@@ -5954,7 +5966,7 @@ return an evaluation environ using `module` if supplied	\n\
 
     }
 
-    return idio_evaluate_eenv (desc, aotp, module);
+    return idio_evaluate_eenv (idio_thread_current_thread (), desc, aotp, module);
 }
 
 IDIO idio_evaluate_normal_eenv (IDIO desc, IDIO module)
@@ -5962,11 +5974,10 @@ IDIO idio_evaluate_normal_eenv (IDIO desc, IDIO module)
     IDIO_ASSERT (desc);
     IDIO_ASSERT (module);
 
-    assert (idio_isa_string (desc));
     IDIO_TYPE_ASSERT (string, desc);
     IDIO_TYPE_ASSERT (module, module);
 
-    return idio_evaluate_eenv (desc, idio_S_false, module);
+    return idio_evaluate_eenv (idio_thread_current_thread (), desc, idio_S_false, module);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("environ?", environp, (IDIO o), "o", "\
@@ -6124,7 +6135,8 @@ void idio_init_evaluate ()
 							    IDIO_SYMBOL ("escapes"),
 							    IDIO_SYMBOL ("src-exprs"),
 							    IDIO_SYMBOL ("src-props"),
-							    IDIO_SYMBOL ("byte-code")));
+							    IDIO_SYMBOL ("byte-code"),
+							    IDIO_SYMBOL ("xi")));
     idio_module_set_symbol_value (sym, idio_evaluate_eenv_type, idio_evaluate_module);
 }
 

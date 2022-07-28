@@ -2051,7 +2051,7 @@ return the name associated with handle `handle`	\n\
     return IDIO_HANDLE_FILENAME (handle);
 }
 
-IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO eenv), IDIO eenv, idio_xi_t xi, idio_load_handle_preserve_enum preserve)
+IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO eenv), IDIO eenv, idio_load_handle_preserve_enum preserve)
 {
     IDIO_ASSERT (h);
     IDIO_C_ASSERT (reader);
@@ -2119,6 +2119,11 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     IDIO e = idio_S_nil;
     IDIO r = idio_S_nil;
 
+    IDIO fxi = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_XI);
+    IDIO_TYPE_ASSERT (fixnum, fxi);
+
+    idio_xi_t xi = IDIO_FIXNUM_VAL (fxi);
+
     for (;;) {
 	IDIO cm = idio_thread_current_module ();
 	IDIO oh;
@@ -2184,12 +2189,6 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
 	IDIO m = (*evaluator) (e, eenv);
 
-#ifdef IDIO_DEBUG_X
-	idio_debug ("load-handle e  %s\n", e);
-	idio_debug ("load-handle m  %s\n", m);
-	idio_debug ("load-handle st %s\n", IDIO_MEANING_EENV_SYMBOLS (eenv));
-	idio_debug ("load-handle cs %s\n", IDIO_MEANING_EENV_CONSTANTS (eenv));
-#endif
 	idio_vm_pop_abort (thr);
 
 #ifdef IDIO_LOAD_TIMING
@@ -2205,10 +2204,6 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	fprintf (stderr, " e %ld.%06ld", td.tv_sec, td.tv_usec);
 #endif
 
-	if (handle_interactive) {
-	    idio_debug ("e %s\n", e);
-	    idio_debug ("m %s\n", m);
-	}
 	idio_pc_t pc = idio_codegen (thr, m, eenv);
 
 	/*
@@ -2326,7 +2321,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
  */
 IDIO idio_load_handle_C (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO eenv), IDIO eenv)
 {
-    return idio_load_handle (h, reader, evaluator, eenv, IDIO_THREAD_XI (idio_thread_current_thread ()), IDIO_LOAD_HANDLE_PRESERVE_HANDLE);
+    return idio_load_handle (h, reader, evaluator, eenv, IDIO_LOAD_HANDLE_PRESERVE_HANDLE);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("load-handle", load_handle, (IDIO h), "handle", "\
@@ -2359,12 +2354,10 @@ This is the `load-handle` primitive.				\n\
     idio_display_C (" in ", dsh);
     idio_display (IDIO_MODULE_NAME (cm), dsh);
     IDIO desc = idio_get_output_string (dsh);
-    IDIO eenv = idio_evaluate_eenv (desc, idio_S_true, cm);
+    IDIO eenv = idio_evaluate_eenv (thr, desc, idio_S_true, cm);
     idio_gc_protect (eenv);
 
-    idio_xi_t xi = idio_vm_add_xenv_from_eenv (thr, eenv);
-
-    IDIO r = idio_load_handle (h, idio_read, idio_evaluate_func, eenv, xi, IDIO_LOAD_HANDLE_PRESERVE_NONE);
+    IDIO r = idio_load_handle (h, idio_read, idio_evaluate_func, eenv, IDIO_LOAD_HANDLE_PRESERVE_NONE);
 
     idio_gc_expose (eenv);
 

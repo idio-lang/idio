@@ -68,8 +68,8 @@ typedef enum {
     IDIO_LOAD_HANDLE_PRESERVE_HANDLE,
 } idio_load_handle_preserve_enum;
 
-IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs, idio_xi_t xi, idio_load_handle_preserve_enum preserve);
-IDIO idio_load_handle_C (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs);
+IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO eenv), IDIO eenv, idio_load_handle_preserve_enum preserve);
+IDIO idio_load_handle_C (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO eenv), IDIO eenv);
 
 char *idio_handle_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_handle_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);

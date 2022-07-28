@@ -105,6 +105,7 @@ typedef enum {
     IDIO_EENV_ST_SRC_EXPRS,	/* shared with xenv */
     IDIO_EENV_ST_SRC_PROPS,	/* shared with xenv */
     IDIO_EENV_ST_BYTE_CODE,	/* shared with xenv */
+    IDIO_EENV_ST_XI,		/* set when imported as xenv */
     IDIO_EENV_ST_SIZE,
 } idio_eenv_st_enum;
 
@@ -155,7 +156,7 @@ IDIO idio_operator_expand (IDIO e, int depth);
 
 IDIO idio_evaluate (IDIO src, IDIO eenv);
 IDIO idio_evaluate_func (IDIO src, IDIO eenv);
-IDIO idio_evaluate_eenv (IDIO desc, IDIO aotp, IDIO module);
+IDIO idio_evaluate_eenv (IDIO thr, IDIO desc, IDIO aotp, IDIO module);
 IDIO idio_evaluate_normal_eenv (IDIO desc, IDIO module);
 
 void idio_init_evaluate ();
