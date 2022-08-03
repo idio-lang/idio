@@ -2,6 +2,7 @@
 
 (document libc 0gid_t)
 (document libc 0pid_t)
+(document libc 0uid_t)
 (document libc BUFSIZ)
 (document libc CHAR_MAX)
 (document libc CHAR_MIN)

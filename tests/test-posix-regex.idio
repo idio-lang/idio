@@ -129,9 +129,6 @@ test (array->list (regexec crx "ab1\nab2" 'REG_NOTEOL)) '("b1" "b1")
 (cond-expand
  (libc/REG_STARTEND {
    regexec crx "" 'REG_STARTEND
- })
- (else {
-   posix-regex-skipped = posix-regex-skipped + 1
  }))
 
 ;; REG_VERBOSE gives us some details on the matches

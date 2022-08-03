@@ -65,6 +65,7 @@ export (
 
 	 exp-send
 	 exp-wait
+	 exp-spawn-sync
 )
 
 import libc
@@ -512,7 +513,7 @@ exp-match-after functions (with a simple assignment if no clauses are
 passed).
 
 exp-case, itself, can assign to exp-match then call exp-match-before,
-exp-match and exp-match after at the appropriate points.
+exp-match and exp-match-after at the appropriate points.
 
 *#
 
@@ -1529,6 +1530,77 @@ returned will be a list of individual result lists.
      }
      r
    }))
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Bah!  On some systems spawning two processes is fine but expecting
+;; them to immediately have data available is, apparently, not so
+;; reasonable.  Something, something, OS process scheduling?  We need
+;; to get everything sync'ed up.
+;;
+;; As the whole problem with calling poll/select with all of the
+;; spawned processes at once is that not all of the processes are
+;; ready to generate output -- and poll/select will happily return
+;; with what they *do* have -- then what we must do is process each
+;; one individually, thus giving the OS a chance to schedule them in.
+;;
+;; I suppose that this might be seen as a generic problem in which
+;; case this code ought to intuit a bit more about input vs output
+;; streams.
+;;
+;; In the meanwhile, the following works for the test suite where
+;; we've multiple spawned processes running at once and intend to read
+;; from them "simultaneously."
+
+define* (exp-spawn-sync (spawn-id spawn-id) (timeout exp-timeout))"
+wait for the spawned processes to be \"ready\"
+
+:param spawn-id: the spawn-id(s) to use, defaults to :ref:`spawn-id <expect/spawn-id>`
+:type spawn-id: a list of :ref:`expect/struct-spawn <expect/struct-spawn>`
+:param timeout: timeout per spawn-id (in seconds), defaults to :ref:`exp-timeout <expect/exp-timeout>`
+:type timeout: integer
+:return: unspecified
+:rtype: unspecified
+
+If you spawn multiple processes on a transiently/mechanically
+under-resourced system where a subsequent :ref:`exp-case
+<expect/exp-case>` is intended to test patterns against all processes
+it is quite possible that one or more of the spawned processes will
+not (yet) have been scheduled to run by the operating system before
+the ``exp-case`` starts.
+
+:manpage:`poll(2)`/:manpage:`select(2)` will quite happily return with
+what is available from those processes that have been scheduled
+leaving the possibility of missing data from not yet ready processes.
+
+``exp-spawn-sync`` will test each of the spawn-ids in `spawn-id` in
+turn for a response which will give the operating system an
+opportunity to schedule the process in.  The response could be that
+the is output available to be read, there is no output or an error has
+occurred -- however, at least a response is ready.
+
+There should be no need to use ``exp-spawn-sync`` for single-instance
+spawn-ids as the following ``exp-case`` provides the same
+functionality implicitly.
+
+``exp-spawn-sync`` is only of use where multiple spawn-ids are
+expected to be tested against simultaneously.
+
+" {
+  for sid in spawn-id {
+    mfd := struct-spawn-mfd sid
+    if mfd {
+      (cond-expand
+       (IDIO_CAN_POLL_DEVICE {
+	 poller := libc/make-poller (list mfd libc/POLLIN)
+	 libc/poller-poll poller (timeout * 1000)
+       })
+       (else {
+	 libc/select (list mfd) #n #n (timeout * 1000000)
+       }))
+    }
+  }
 }
 
 provide expect

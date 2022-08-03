@@ -387,7 +387,7 @@ string `str` where `rx` was compiled using		\n\
 The `flags` are:	 			\n\
 ``REG_NOTBOL``		 			\n\
 ``REG_NOTEOL``		 			\n\
-``REG_STARTEND`` (if supported)			\n\
+``REG_STARTEND`` (if supported, see below)	\n\
 						\n\
 ``REG_VERBOSE`` return verbose results		\n\
 						\n\
@@ -399,7 +399,7 @@ If a subexpression in `rx` matched the corresponding 	\n\
 array element will be the matched string.	\n\
 						\n\
 If a subexpression in `rx` did not match the 	\n\
-corresponding array element will be ``#f``	.	\n\
+corresponding array element will be ``#f``.	\n\
 						\n\
 :param rx: compiled regular expression		\n\
 :type rx: C/pointer				\n\
@@ -418,6 +418,11 @@ element of the array is a list of the matched	\n\
 sub-expression, its starting offset and its	\n\
 ending offset plus one (suitable for		\n\
 :ref:`substring <substring>`).			\n\
+						\n\
+``REG_STARTEND`` (if supported)	is a valid	\n\
+:lname:`C` flag and accepted here but is	\n\
+ignored as there is no means to pre-supply	\n\
+``pmatch[0]`` (see :manpage:`regexec(3)`).	\n\
 ")
 {
     IDIO_ASSERT (rx);

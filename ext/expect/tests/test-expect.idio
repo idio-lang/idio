@@ -35,7 +35,7 @@ spawn auto-exit
 
 (exp-case
  (:eof {
-   test #t #t
+   test 'eof 'eof
  }))
 
 (exp-wait)
@@ -43,7 +43,7 @@ spawn auto-exit
 ;; EOF in exp-case-before
 (exp-case-before
  (:eof {
-   test #t #t
+   test 'eof-before 'eof-before
  }))
 
 spawn auto-exit
@@ -57,7 +57,7 @@ spawn auto-exit
 ;; EOF in exp-case-after
 (exp-case-after
  (:eof {
-   test #t #t
+   test 'eof-after 'eof-after
  }))
 
 spawn auto-exit
@@ -107,18 +107,18 @@ exp-timeout = 1
 
 (exp-case
  ("wrote line 1 to stdout" {
-   test #t #t
+   test 'line1 'line1
    (exp-continue)
  })
  (:timeout {
-   test #t #t
+   test 'timeout 'timeout
  }))
 
 exp-timeout = 10
 
 (exp-case
  ("wrote line 2 to stdout" {
-   test #t #t
+   test 'line2 'line2
    (exp-continue)
  })
  (:timeout {
@@ -174,7 +174,7 @@ spawn auto-exit -o 10
 (exp-case-after
  ("wrote" 'match-after)
  (:eof {
-   test #t #t
+   test 'eof-after 'eof-after
  }))
 
 test (exp-case
@@ -199,7 +199,7 @@ test (exp-case) 'match-after
 (exp-case-after
  ("wrote" 'match-after)
  (:eof {
-   test #t #t
+   test 'eof-after 'eof-after
  }))
 
 {
@@ -210,7 +210,7 @@ test (exp-case) 'match-after
   (exp-case-after
    ("wrote" 'match-inside-after)
    (:eof {
-     test #t #t
+     test 'eof-after 'eof-after
    }))
 
   test (exp-case
@@ -240,7 +240,7 @@ test (exp-case) 'match-after
 ;; revert exp-case-after to its "free" test
 (exp-case-after
  (:eof {
-   test #t #t
+   test 'eof-after 'eof-after
  }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -308,10 +308,10 @@ rm testfile
 spawn-id = #n
 
 ;; a list of one spawn-id
-spawn echo "foo"
+spawn echo "FOO"
 (exp-case
- ("o" {
-   test prefix "f"
+ ("O" {
+   test prefix "F"
  }))
 (exp-wait)
 
@@ -320,6 +320,8 @@ spawn-id = #n
 
 spawn echo "foo"
 spawn echo "bar"
+
+(exp-spawn-sync)
 
 ;; exp-case will cause a single read from each spawned process --
 ;; hopefully the terminal can buffer the four output characters from
@@ -352,7 +354,7 @@ spawn echo "bar"
 ;; get both EOF
 (exp-case
  (:eof {
-   test #t #t				; twice
+   test 'eof*2 'eof*2				; twice
  }))
 
 (exp-wait)
@@ -361,21 +363,23 @@ spawn echo "bar"
 ;; at once by calling exp-continue
 spawn-id = #n
 
-spawn echo "foo"
-spawn echo "bar"
+spawn echo "abc"
+spawn echo "def"
+
+(exp-spawn-sync)
 
 ;; madness...
 (exp-case
- ("oo" {
-   test prefix "f"			; once
+ ("bc" {
+   test prefix "a"			; once
    (exp-continue)
  })
- ("ar" {
-   test prefix "b"			; once
+ ("ef" {
+   test prefix "d"			; once
    (exp-continue)
  })
  (:eof {
-   test #t #t				; twice
+   test 'eof 'eof			; twice
 
    ;; No (exp-continue) as we'll be called twice for these simple
    ;; processes.  Hopefully.
@@ -385,21 +389,23 @@ spawn echo "bar"
 
 ;; What if we forget to clear spawn-id?  Let's run through the same
 ;; again with the previous spawn-ids still in the list.
-spawn echo "foo"
-spawn echo "bar"
+spawn echo "ijk"
+spawn echo "lmn"
+
+(exp-spawn-sync)
 
 ;; madness...
 (exp-case
- ("oo" {
-   test prefix "f"			; once
+ ("jk" {
+   test prefix "i"			; once
    (exp-continue)
  })
- ("ar" {
-   test prefix "b"			; once
+ ("mn" {
+   test prefix "l"			; once
    (exp-continue)
  })
  (:eof {
-   test #t #t				; twice
+   test 'eof 'eof			; twice
 
    ;; No (exp-continue) as we'll be called twice for these simple
    ;; processes.  Hopefully.
@@ -416,9 +422,14 @@ spawn-id = #n
 spawn echo "foo"
 spawn auto-exit -r 1
 
+;; XXX the spawn-sync timeout will be hit for the auto-exit because it
+;; isn't ever going to be ready to write something out.  Knowing that,
+;; we won't wait for it and we can just sync on the previous sids.
+exp-spawn-sync (pt spawn-id)
+
 (exp-case
  (:eof {
-   test #t #t				; once for the echo
+   test 'eof 'eof			; once for the echo
  }))
 
 ;; send a message to auto-exit, at the head of the list
@@ -426,7 +437,7 @@ exp-send "hello" :cr #t :spawn-id (ph spawn-id)
 
 (exp-case
  (:eof {
-   test #t #t				; once for auto-exit
+   test 'eof 'eof			; once for auto-exit
  }))
 
 (exp-wait)
