@@ -3727,9 +3727,12 @@ possible file name extensions			\n\
     return  r;
 }
 
-int idio_load_idio_cache (char *pathname, size_t pathname_len)
+int idio_load_idio_cache (char *pathname, size_t pathname_len, IDIO eenv)
 {
     IDIO_C_ASSERT (pathname);
+    IDIO_ASSERT (eenv);
+
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
 
     /*
      * There should be a dot after a slash (if there is a slash)
@@ -3796,7 +3799,7 @@ int idio_load_idio_cache (char *pathname, size_t pathname_len)
 
     IDIO I_cfn = idio_string_C_len (cfn, end - cfn);
 
-    return idio_compile_file_reader (I_cfn, cfn, end - cfn);
+    return idio_compile_file_reader (eenv, I_cfn, cfn, end - cfn);
 }
 
 IDIO idio_load_file_name (IDIO filename, IDIO eenv)
@@ -3931,7 +3934,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO eenv)
 
 			    return r;
 			} else {
-			    if (idio_load_idio_cache (lfn, lfn_len)) {
+			    if (idio_load_idio_cache (lfn, lfn_len, eenv)) {
 				if (free_filename_C) {
 				    IDIO_GC_FREE (filename_C, filename_C_len);
 				}
@@ -3970,7 +3973,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO eenv)
 	    }
 	}
     } else {
-	if (idio_load_idio_cache (lfn, lfn_len)) {
+	if (idio_load_idio_cache (lfn, lfn_len, eenv)) {
 	    if (free_filename_C) {
 		IDIO_GC_FREE (filename_C, filename_C_len);
 	    }
@@ -4029,7 +4032,13 @@ This is the `load` primitive.					\n\
 
     IDIO cm = IDIO_THREAD_MODULE (thr);
 
-    IDIO eenv = idio_evaluate_eenv (thr, filename, idio_S_false, cm);
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (IDIO_MODULE_NAME (cm), dsh);
+    idio_display_C ("> load ", dsh);
+    idio_display (filename, dsh);
+    IDIO desc = idio_get_output_string (dsh);
+
+    IDIO eenv = idio_evaluate_eenv (thr, desc, idio_S_true, cm);
 
     idio_gc_protect (eenv);
 

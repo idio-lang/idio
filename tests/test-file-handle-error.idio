@@ -19,6 +19,10 @@
 ;; test-file-handle-error.idio
 ;;
 
+module tests/file-handle-errors
+export fd
+import libc
+
 file-handle-error0 := Tests
 file-handle-error-skipped := 0
 

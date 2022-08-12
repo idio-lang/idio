@@ -45,6 +45,7 @@
 
 #include "array.h"
 #include "bignum.h"
+#include "closure.h"
 #include "codegen.h"
 #include "condition.h"
 #include "continuation.h"
@@ -2136,9 +2137,15 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	    /*
 	     * Throw out some messages about any recently failed jobs
 	     */
-	    idio_vm_invoke_C (idio_module_symbol_value (IDIO_SYMBOL ("do-job-notification"),
-							idio_job_control_module,
-							idio_S_nil));
+	    IDIO djn = idio_module_symbol_value (IDIO_SYMBOL ("do-job-notification"),
+						 idio_job_control_module,
+						 idio_S_nil);
+
+	    if (idio_isa_function (djn)) {
+		idio_vm_invoke_C (djn);
+	    } else {
+		idio_debug ("WARNING: interactive: do-job-notification is %s\n", djn);
+	    }
 
 	    /*
 	     * As we're interactive, make an attempt to flush stdout
@@ -2349,10 +2356,9 @@ This is the `load-handle` primitive.				\n\
     IDIO cm = IDIO_THREAD_MODULE (thr);
 
     IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display_C ("load-handle for ", dsh);
-    idio_display (IDIO_HANDLE_FILENAME (h), dsh);
-    idio_display_C (" in ", dsh);
     idio_display (IDIO_MODULE_NAME (cm), dsh);
+    idio_display_C ("> load-handle for ", dsh);
+    idio_display (IDIO_HANDLE_FILENAME (h), dsh);
     IDIO desc = idio_get_output_string (dsh);
     IDIO eenv = idio_evaluate_eenv (thr, desc, idio_S_true, cm);
     idio_gc_protect (eenv);

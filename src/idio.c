@@ -666,7 +666,10 @@ int main (int argc, char **argv, char **envp)
 
     idio_vm_push_abort (thr, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
-    idio_load_file_name (IDIO_STRING ("bootstrap"), idio_default_eenv);
+    IDIO eenv = idio_default_eenv;
+    eenv = idio_evaluate_eenv (idio_thread_current_thread (), IDIO_STRING ("bootstrap"), idio_S_true, idio_thread_current_module ());
+    idio_gc_protect (eenv);
+    idio_load_file_name (IDIO_STRING ("bootstrap"), eenv);
 
     idio_gc_collect_all ("post-bootstrap");
     idio_add_terminal_signals ();
@@ -674,7 +677,7 @@ int main (int argc, char **argv, char **envp)
 
     /*
      * Dig out the (post-bootstrap) definition of "load" which will
-     * now be continuation and module aware.
+     * now be continuation- and module-aware.
      */
     IDIO load = idio_module_symbol_value_xi (IDIO_THREAD_XI (thr),
 					     idio_S_load,

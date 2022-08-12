@@ -208,12 +208,12 @@ define-template (define-class name & args) {
   ;;
   ;; XXX remember to quote the slot name!
   #T{
-    define $name (make-class '$name (map class-instance '$supers) (list $@(map (function (slot) {
+    define $name (make-class '$name (map class-instance '$supers) (list $@(map (function/name define-class/slots (slot) {
       (cond
        ((pair? slot) #T{
 	 (list
 	  '$(ph slot)
-	  $@(map (function (e) #T{ $e }) (pt slot)))
+	  $@(map (function/name define-class/slot-args (e) #T{ $e }) (pt slot)))
        })
        (else #T{
 	 '$slot
@@ -290,7 +290,7 @@ list of parameters.
 
 The formal parameter names will be prefixed with ``next-method``.
 " {
-  loop :+ function (a*) {
+  loop :+ function/name compute-method-formals/loop (a*) {
     if (pair? a*) {
       pair (if (pair? (ph a*)) (phh a*) (ph a*)) (loop (pt a*))
     } a*
@@ -331,7 +331,7 @@ define (compute-new-methods gf m) {
 
   ;; Tiny CLOS uses collect-if and every and some dynamic predicates.
   ;; STklos hunts down the list for a match and stamps over it.
-  loop :+ function (m*) {
+  loop :+ function/name compute-new-methods/loop (m*) {
     if (null? m*) {
       ;; no duplicate specializers so prefix method* with m
       pair m method*
@@ -411,7 +411,7 @@ define-template (define-method args & body) {
 ;; some Tiny CLOS utilities (from support.scm)
 
 define (TC/last l) {
-  loop :+ function (l) {
+  loop :+ function/name TC/last/loop (l) {
     (cond
      ((null? l)      #f)
      ((null? (pt l)) (ph l))
@@ -422,7 +422,7 @@ define (TC/last l) {
 }
 
 define (TC/every test & lists) {
-  scan :+ function (tails) {
+  scan :+ function/name TC/every/scan (tails) {
     if (any-null? tails) #t {
       (and (apply test (ph-of tails))
 	   (scan (pt-of tails)))
@@ -441,7 +441,7 @@ define (TC/collect-if test? list) {
 
 ;; initargs is (... :kw val ...)
 define (TC/get-keyword-arg initargs name & args) {
-  scan :+ function (initarg*) {
+  scan :+ function/name TC/get-keyword-arg/scan (initarg*) {
     (cond
      ((null? initarg*) {
        if (pair? args) (ph args) {
@@ -467,7 +467,7 @@ define (TC/get-keyword-arg initargs name & args) {
 ;; get multiple items meaning the result can be #n (saving a default
 ;; value)
 define (TC/get-keyword-args initargs name) {
-  scan :+ function (a*) {
+  scan :+ function/name TC/get-keyword-args/scan (a*) {
     (cond
      ((null? a*) #n)
      ((null? (pt a*)) {
@@ -641,7 +641,7 @@ The following method is defined:
 ; same way: it special cases invocation of generics in the invocation
 ; protocol.
 
-%set-instance-proc! compute-apply-generic (function (gf) {
+%set-instance-proc! compute-apply-generic (function/name compute-apply-generic (gf) {
   m := ph (generic-methods gf)
   ;; func next-method args
   (method-procedure m) #f gf
@@ -669,14 +669,14 @@ define-method (compute-apply-generic (gf <generic>)) {
 define-method (compute-methods (gf <generic>)) {
   (function/name compute-methods/generic (args) {
     cpl-args := %cpl-args args ; map (function (arg) (class-cpl (class-of arg))) args
-    applicable := TC/collect-if (function (m) {
+    applicable := TC/collect-if (function/name compute-methods/generic/collect-if/applicable (m) {
       ;TC/every TC/applicable? (method-specializers m) args
       TC/every TC/cpl-applicable? (method-specializers m) cpl-args
     }) (generic-methods gf)
 
     if ((length applicable) gt 1) {
       cmms? := compute-method-more-specific? gf
-      sort applicable (function (m1 m2) {
+      sort applicable (function/name compute-methods/generic/sort/applicable (m1 m2) {
 	cmms? m1 m2 args
       })
     } applicable
@@ -686,7 +686,7 @@ define-method (compute-methods (gf <generic>)) {
 define-method (compute-method-more-specific? (gf <generic>)) {
   (function/name compute-method-more-specific?/generic (m1 m2 args) {
     cpl-args := %cpl-args args ; map (function (arg) (class-cpl (class-of arg))) args
-    loop :+ function (ms1 ms2 ca*) {
+    loop :+ function/name compute-method-more-specific?/generic/loop (ms1 ms2 ca*) {
       (cond
        ((and (null? ms1)
 	     (null? ms2)) {
@@ -725,8 +725,8 @@ define-method (compute-method-more-specific? (gf <generic>)) {
 define-method (compute-apply-methods (gf <generic>)) {
   (function/name compute-apply-methods/generic (method* args) {
     ;; one-step returns a thunk!
-    one-step :+ function (m*) {
-      (function/name one-step/generic a {
+    one-step :+ function/name compute-apply-methods/generic/one-step (m*) {
+      (function/name compute-apply-methods/generic/one-step/impl a {
 	if (not (null? a)) {
 	  eprintf "WARNING: one-step thunk invoked with a=%@ args=%s\n" a args
 	}
@@ -753,7 +753,7 @@ define-method (compute-apply-methods (gf <generic>)) {
 ;; initialize
 
 define-method (initialize (obj <object>) initargs) {
-  fold-left (function (i init-slot) {
+  fold-left (function/name initialize/object/fold-left (i init-slot) {
     %slot-set-direct! obj i (apply init-slot initargs)
     i + 1
   }) 0 (map pht (class-getters-n-setters (class-of obj)))
@@ -775,7 +775,7 @@ define-method (initialize (cl <class>) initargs) {
   ;; Slight weirdness:
   ;; * s	=> (s)
   ;; * (s)	=> (s :initarg :s)
-  slot-set! cl 'direct-slots  (map (function (s) {
+  slot-set! cl 'direct-slots  (map (function/name initialize/class/slot-set! (s) {
     if (pair? s) {
       ;; if the slot is given as a pair then ensure there is a
       ;; :initarg declared...
@@ -796,7 +796,7 @@ define-method (initialize (cl <class>) initargs) {
   ;; set up slot initialization and accessors
 
   gns := #n
-  fold-left (function (i slot) {
+  fold-left (function/name initialize/class/fold-left (i slot) {
     ;; slot is (name ...)
     ;; gns is (... (name init-func getter) ...)
     gns = pair (pair (ph slot) (compute-getter-and-setter cl slot i)) gns
@@ -814,7 +814,7 @@ define-method (initialize (gf <generic>) initargs) {
   slot-set! gf 'name	      (TC/get-keyword-arg initargs :name (gensym 'gf))
   slot-set! gf 'documentation (TC/get-keyword-arg initargs :documentation #n)
   slot-set! gf 'methods       #n
-  %set-instance-proc! gf (function/name instance-proc/generic args {
+  %set-instance-proc! gf (function/name initialize/generic/%set-instance-proc! args {
     ;; Test Case: object-errors/initialize-generic-no-methods.idio
     ;;
     ;; gf := make-instance <generic> :name 'foo
@@ -835,7 +835,7 @@ define (allocate-helper cl allocator) {
   gns* := class-getters-n-setters cl
   inst := allocator cl (length gns*)
 
-  fold-left (function (i gns) {
+  fold-left (function/name allocate-helper/fold-left (i gns) {
     if (pair? gns) {
       ;; gns is (name init-func :initkw getter) and we want to apply
       ;; init-func, ie. (init-func)
@@ -893,7 +893,7 @@ The following method is defined:
   define (any? p? l) {
     (and (pair? l)
 	 {
-	   loop :+ function (h t) {
+	   loop :+ function/name compute-cpl/class/any?/loop (h t) {
 	     if (pair? t) {
 	       (or (p? h)
 		   (loop (ph t) (pt t)))
@@ -907,7 +907,7 @@ The following method is defined:
   define (every? p? l) {
     (or (null? l)
 	 {
-	   loop :+ function (h t) {
+	   loop :+ function/name compute-cpl/class/every?/loop (h t) {
 	     if (null? t) (p? h) {
 	       (and (p? h)
 		    (loop (ph t) (pt t)))
@@ -976,12 +976,12 @@ The following method is defined:
 * ``(<class>)``
 
 " {
-  collect :+ function (to-do r) {
+  collect :+ function/name compute-slots/class/collect (to-do r) {
     if (null? to-do) (reverse! r) {
       current := ph to-do
       name := ph current
       others := #n
-      remaining-to-do := TC/collect-if (function (o) {
+      remaining-to-do := TC/collect-if (function/name compute-slots/class/collect/rem-to-do (o) {
 	if (eq? (ph o) name) {
 	  others = pair o others
 	  #f
@@ -1013,7 +1013,7 @@ define-method (compute-getter-and-setter (cl <class>) slot index) {
   no-initargs := pair 'no 'initargs
 
   ;; getarg stops on the first match
-  getarg :+ function (args initargs) {
+  getarg :+ function/name compute-getter-and-setter/class/getarg (args initargs) {
     if (null? initargs) no-initargs {
       arg := TC/get-keyword-arg args (ph initargs) no-initargs
       if (eq? arg no-initargs) (getarg args (pt initargs)) arg
@@ -1029,7 +1029,7 @@ define-method (compute-getter-and-setter (cl <class>) slot index) {
   ;; :initarg and init
   ;;
   ;; init-slot will be applied to the initargs passed to make-instance
-  init-slot := function args {
+  init-slot := function/name compute-getter-and-setter/class/init-slot args {
     arg := getarg args initargs
     if (eq? arg no-initargs) {
       apply init args

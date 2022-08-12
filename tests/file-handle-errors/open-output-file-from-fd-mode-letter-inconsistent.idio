@@ -5,6 +5,6 @@ rm testfile
 touch testfile
 fh := open-output-file testfile
 
-; XXX use {fd} so it is closed on our return
-fd = libc/dup (file-handle-fd fh)
-open-output-file-from-fd fd "bob" "r"
+; XXX use {tests/file-handle-errors/fd} so it is closed on our return
+tests/file-handle-errors/fd = libc/dup (file-handle-fd fh)
+open-output-file-from-fd tests/file-handle-errors/fd "bob" "r"

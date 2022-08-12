@@ -43,18 +43,22 @@
 #include "idio.h"
 
 #include "array.h"
+#include "c-type.h"
+#include "codegen.h"
 #include "compile.h"
 #include "error.h"
 #include "evaluate.h"
 #include "expander.h"
 #include "file-handle.h"
 #include "fixnum.h"
+#include "handle.h"
 #include "hash.h"
 #include "idio-string.h"
 #include "module.h"
 #include "pair.h"
 #include "read.h"
 #include "rfc6234.h"
+#include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
 #include "thread.h"
@@ -104,10 +108,14 @@ int idio_compile_compare_strings (IDIO is, char const *cs, size_t C_size)
     return r;
 }
 
-int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
+int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_len)
 {
+    IDIO_ASSERT (eenv);
     IDIO_ASSERT (I_file);
     IDIO_C_ASSERT (file);
+
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
+    IDIO_TYPE_ASSERT (string, I_file);
 
     /*
      * /path/to/__idio__/{mod}.{ASM_COMMIT} where we shouldn't be here
@@ -213,7 +221,6 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
 	I_file = idio_string_C_len (file, file_len);
     }
     IDIO fh = idio_open_file_handle_C ("open-input-file", I_file, file, file_len, 0, IDIO_MODE_RE, sizeof (IDIO_MODE_RE) - 1, 0, 0);
-    /* IDIO fh = idio_file_handle_open_file ("open-input-file", file, idio_S_nil, IDIO_MODE_RE, sizeof (IDIO_MODE_RE) - 1); */
 
     /*
      * idio-build-compiler-commit
@@ -346,7 +353,13 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
 	}
 	idio_as_t C_si = IDIO_FIXNUM_VAL (si);
 
-	assert (C_si < C_alen);
+	if (C_si >= C_alen) {
+#ifdef IDIO_DEBUG
+	    idio_debug ("symbol table entry %s is too large: ", si_ci);
+	    fprintf (stderr, "%zu >= %zu\n", C_si, C_alen);
+#endif
+	    return 0;
+	}
 
 	IDIO ci = IDIO_PAIR_T (si_ci);
 	if (idio_S_false != ci) {
@@ -477,10 +490,39 @@ int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len)
     /* enable all array elements */
     IDIO_ARRAY_USIZE (vs) = C_alen;
 
-    idio_xi_t xi = idio_vm_add_xenv (idio_string_C (ifn), st, cs, vs, ses, sps, bs);
+    idio_ai_t al = idio_array_size (cs);
+    /*
+     * IDIO_HASH_EQP doesn't like a zero length hash so set it to be 1
+     */
+    IDIO ch = IDIO_HASH_EQP (al ? al : 1);
+
+    idio_ai_t ai;
+
+    for (ai = 0; ai < al; ai++) {
+	IDIO v = idio_array_ref_index (cs, ai);
+	if (idio_S_nil != v) {
+	    idio_hash_set (ch, v, idio_fixnum (ai));
+	}
+    }
+
+    idio_xi_t xi = idio_vm_add_xenv (idio_string_C (ifn), st, cs, ch, vs, ses, sps, bs);
 #ifdef IDIO_COMPILE_FILE_READ
     fprintf (stderr, "xi [%zu] for %s\n", xi, ifn);
 #endif
+
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_ST,  IDIO_XENV_ST (idio_xenvs[xi]));
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_VT,  IDIO_XENV_VT (idio_xenvs[xi]));
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_CS,  IDIO_XENV_CS (idio_xenvs[xi]));
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_CH,  IDIO_XENV_CH (idio_xenvs[xi]));
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SES, IDIO_XENV_SES (idio_xenvs[xi]));
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SPS, IDIO_XENV_SPS (idio_xenvs[xi]));
+
+    IDIO CPT_byte_code = idio_C_pointer_type (idio_CSI_idio_ia_s,  IDIO_XENV_BYTE_CODE (idio_xenvs[xi]));
+    IDIO_C_TYPE_POINTER_FREEP (CPT_byte_code) = 0;
+
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_BYTE_CODE, CPT_byte_code);
+
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_XI, idio_fixnum (xi));
 
     idio_vm_run_xenv (xi, C_pc);
 
@@ -505,7 +547,18 @@ Read and run the execution environment in `file`	\n\
     size_t file_len = 0;
     char *C_file = idio_string_as_C (file, &file_len);
 
-    if (idio_compile_file_reader (file, C_file, file_len)) {
+    IDIO thr = idio_thread_current_thread ();
+    IDIO cm = IDIO_THREAD_MODULE (thr);
+
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (IDIO_MODULE_NAME (cm), dsh);
+    idio_display_C ("> compile-file-reader ", dsh);
+    idio_display (file, dsh);
+    IDIO desc = idio_get_output_string (dsh);
+
+    IDIO eenv = idio_evaluate_eenv (thr, desc, idio_S_true, cm);
+
+    if (idio_compile_file_reader (eenv, file, C_file, file_len)) {
 	r = idio_S_true;
     }
 

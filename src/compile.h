@@ -25,7 +25,7 @@
 
 extern IDIO idio_compile_module;
 
-int idio_compile_file_reader (IDIO I_file, char *file, size_t file_len);
+int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_len);
 void idio_init_compile ();
 
 #endif

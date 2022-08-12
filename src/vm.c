@@ -336,6 +336,7 @@ static IDIO idio_vm_SYM_IDEF_string = idio_S_nil;
 static IDIO idio_vm_SYM_DEF_gvi0_string = idio_S_nil;
 static IDIO idio_vm_SYM_IDEF_gvi0_string = idio_S_nil;
 static IDIO idio_vm_SYM_SET_string = idio_S_nil;
+static IDIO idio_vm_SYM_ISET_gvi0_string = idio_S_nil;
 static IDIO idio_vm_COMPUTED_SYM_DEF_string = idio_S_nil;
 static IDIO idio_vm_COMPUTED_SYM_IDEF_string = idio_S_nil;
 static IDIO idio_vm_COMPUTED_SYM_IDEF_gvi0_string = idio_S_nil;
@@ -376,7 +377,9 @@ void idio_vm_dump_all ()
     idio_vm_dump_dasm ();
     idio_vm_dump_symbols ();
     idio_vm_dump_constants ();
+    /*
     idio_vm_dump_src_exprs ();
+    */
     idio_vm_dump_src_props ();
 
     /*
@@ -851,15 +854,16 @@ idio_xenv_t *idio_xenv ()
      */
     if (0 == idio_xenvs_size) {
 	IDIO_XENV_DESC (xenv)           = IDIO_STRING ("default execution environment");
-	IDIO_XENV_SYMBOLS (xenv)        = NULL;
-	IDIO_XENV_CONSTANTS (xenv)      = idio_vm_constants;
-	IDIO_XENV_CONSTANTS_HASH (xenv) = idio_vm_constants_hash;
-	IDIO_XENV_SRC_EXPRS (xenv)      = idio_vm_src_exprs;
-	IDIO_XENV_SRC_PROPS (xenv)      = idio_vm_src_props;
-	IDIO_XENV_VALUES (xenv)         = idio_vm_values;
+	IDIO_XENV_ST (xenv)             = idio_array (0);
+	IDIO_XENV_CS (xenv)      = idio_vm_constants;
+	IDIO_XENV_CH (xenv) = idio_vm_constants_hash;
+	IDIO_XENV_SES (xenv)      = idio_vm_src_exprs;
+	IDIO_XENV_SPS (xenv)      = idio_vm_src_props;
+	IDIO_XENV_VT (xenv)             = idio_vm_values;
 	IDIO_XENV_BYTE_CODE (xenv)      = idio_all_code;
 
 	idio_gc_protect_auto (IDIO_XENV_DESC (xenv));
+	idio_gc_protect_auto (IDIO_XENV_ST (xenv));
     }
 
     idio_xenvs = idio_realloc (idio_xenvs, (idio_xenvs_size + 1) * sizeof (idio_xenv_t *));
@@ -899,20 +903,20 @@ idio_xi_t idio_new_xenv (IDIO desc)
     idio_xenv_t *xenv = idio_xenv ();
 
     IDIO_XENV_DESC (xenv)           = desc;
-    IDIO_XENV_SYMBOLS (xenv)        = idio_array (0);
-    IDIO_XENV_CONSTANTS (xenv)      = idio_array (0);
-    IDIO_XENV_CONSTANTS_HASH (xenv) = IDIO_HASH_EQP (8);
-    IDIO_XENV_SRC_EXPRS (xenv)      = idio_array (0);
-    IDIO_XENV_SRC_PROPS (xenv)      = idio_array (0);
-    IDIO_XENV_VALUES (xenv)         = idio_array (0);
+    IDIO_XENV_ST (xenv)             = idio_array (0);
+    IDIO_XENV_CS (xenv)      = idio_array (0);
+    IDIO_XENV_CH (xenv) = IDIO_HASH_EQP (8);
+    IDIO_XENV_SES (xenv)      = idio_array (0);
+    IDIO_XENV_SPS (xenv)      = idio_array (0);
+    IDIO_XENV_VT (xenv)             = idio_array (0);
 
     idio_gc_protect_auto (IDIO_XENV_DESC (xenv));
-    idio_gc_protect_auto (IDIO_XENV_SYMBOLS (xenv));
-    idio_gc_protect_auto (IDIO_XENV_CONSTANTS (xenv));
-    idio_gc_protect_auto (IDIO_XENV_CONSTANTS_HASH (xenv));
-    idio_gc_protect_auto (IDIO_XENV_SRC_EXPRS (xenv));
-    idio_gc_protect_auto (IDIO_XENV_SRC_PROPS (xenv));
-    idio_gc_protect_auto (IDIO_XENV_VALUES (xenv));
+    idio_gc_protect_auto (IDIO_XENV_ST (xenv));
+    idio_gc_protect_auto (IDIO_XENV_CS (xenv));
+    idio_gc_protect_auto (IDIO_XENV_CH (xenv));
+    idio_gc_protect_auto (IDIO_XENV_SES (xenv));
+    idio_gc_protect_auto (IDIO_XENV_SPS (xenv));
+    idio_gc_protect_auto (IDIO_XENV_VT (xenv));
 
     IDIO_XENV_BYTE_CODE (xenv)      = idio_ia (100);
     idio_codegen_code_prologue (IDIO_XENV_BYTE_CODE (xenv));
@@ -942,8 +946,6 @@ static void idio_vm_invoke (IDIO thr, IDIO func, idio_vm_invoke_enum tailp);
 static uint64_t idio_vm_read_fixuint (IDIO_IA_T bc, int const n, size_t const offset)
 {
     IDIO_C_ASSERT (n < 9 && n > 0);
-
-    /* fprintf (stderr, "ivrf: %d %zd\n", n, offset); */
 
     int i;
     uint64_t r = 0;
@@ -1619,7 +1621,6 @@ static void idio_vm_invoke (IDIO thr, IDIO func, idio_vm_invoke_enum tailp)
 	    IDIO last = IDIO_FRAME_ARGS (val, IDIO_FRAME_NPARAMS (val));
 	    /* IDIO_FRAME_NPARAMS (val) -= 1; */
 
-	    /* fprintf (stderr, "iv-invoke %20s %2zd\n", IDIO_PRIMITIVE_NAME (func), IDIO_FRAME_NPARAMS (val)); */
 	    if (idio_S_nil != last) {
 		/*
 		 * Test Case: ??
@@ -1910,6 +1911,24 @@ IDIO idio_vm_invoke_C_thread (IDIO thr, IDIO command)
     IDIO_ASSERT (command);
 
     IDIO_TYPE_ASSERT (thread, thr);
+
+    switch ((intptr_t) command & IDIO_TYPE_MASK) {
+    case IDIO_TYPE_FIXNUM_MARK:
+    case IDIO_TYPE_CONSTANT_MARK:
+    case IDIO_TYPE_PLACEHOLDER_MARK:
+	{
+	    /*
+	     * Test Case: ??
+	     *
+	     * coding error
+	     */
+	    idio_vm_error_function_invoke ("cannot invoke constant type", IDIO_LIST1 (command), IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    default:
+	break;
+    }
 
     idio_xi_t xi0 = IDIO_THREAD_XI (thr);
     idio_pc_t pc0 = IDIO_THREAD_PC (thr);
@@ -2217,8 +2236,8 @@ void idio_vm_dynamic_set (IDIO thr, idio_as_t mci, idio_as_t gvi, IDIO v)
 	     * dynamic values, as they appear on the stack, can only
 	     * be in xi==0
 	     */
-	    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[0]);
-	    idio_array_insert_index (vs, v, gvi);
+	    IDIO vs0 = IDIO_XENV_VT (idio_xenvs[0]);
+	    idio_array_insert_index (vs0, v, gvi);
 	    break;
 	}
     }
@@ -2241,7 +2260,7 @@ IDIO idio_vm_add_environ (IDIO m, IDIO ci, IDIO vi, IDIO note)
     return IDIO_LIST6 (idio_S_environ, ci, ci, vi, m, note);
 }
 
-static void idio_vm_push_environ (IDIO thr, idio_as_t mci, idio_as_t gvi, IDIO val)
+static void idio_vm_push_environ (IDIO thr, idio_as_t gvi, IDIO val)
 {
     IDIO_ASSERT (thr);
     IDIO_ASSERT (val);
@@ -2370,8 +2389,8 @@ void idio_vm_environ_set (IDIO thr, idio_as_t mci, idio_as_t gvi, IDIO v)
 	     * environ values, as they appear on the stack, can only
 	     * be in xi==0
 	     */
-	    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[0]);
-	    idio_array_insert_index (vs, v, gvi);
+	    IDIO vs0 = IDIO_XENV_VT (idio_xenvs[0]);
+	    idio_array_insert_index (vs0, v, gvi);
 	    break;
 	}
     }
@@ -2379,7 +2398,7 @@ void idio_vm_environ_set (IDIO thr, idio_as_t mci, idio_as_t gvi, IDIO v)
 
 IDIO idio_vm_computed_ref (idio_xi_t xi, idio_as_t mci, idio_as_t vi)
 {
-    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
+    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
     IDIO gns = idio_array_ref_index (vs, vi);
 
     if (idio_isa_pair (gns)) {
@@ -2456,7 +2475,7 @@ IDIO idio_vm_computed_set (idio_xi_t xi, idio_as_t mci, idio_as_t vi, IDIO v)
 {
     IDIO_ASSERT (v);
 
-    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
+    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
     IDIO gns = idio_array_ref_index (vs, vi);
 
     if (idio_isa_pair (gns)) {
@@ -2536,7 +2555,8 @@ void idio_vm_computed_define (idio_xi_t xi, idio_as_t mci, idio_as_t gvi, IDIO v
 
     IDIO_TYPE_ASSERT (pair, v);
 
-    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
+    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
+
     idio_array_insert_index (vs, v, gvi);
 }
 
@@ -2984,6 +3004,7 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR, int re
 	IDIO ftrap_sp_next = idio_array_ref_index (stack, trap_sp - 3);
 
 	IDIO trap_ct_sym = idio_vm_constants_ref (0, (idio_ai_t) IDIO_FIXNUM_VAL (trap_ct_mci));
+
 	IDIO trap_ct = idio_module_symbol_value_recurse (trap_ct_sym, IDIO_THREAD_ENV (thr), idio_S_nil);
 
 	if (! idio_isa_struct_type (trap_ct)) {
@@ -4465,20 +4486,33 @@ void idio_vm_update_ins_time (IDIO_I ins, struct timespec ins_t0)
 }
 #endif
 
-IDIO idio_vm_iref2val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op)
+/*
+ * Ensure we have a gvi
+ */
+typedef enum {
+    IDIO_VM_IREF_MDR_UNDEF_FATAL,
+    IDIO_VM_IREF_MDR_UNDEF_NEW,
+} idio_vm_iref_enum;
+
+idio_as_t idio_vm_iref (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, IDIO def, idio_vm_iref_enum mode)
 {
     IDIO_ASSERT (thr);
     IDIO_C_ASSERT (op);
+    IDIO_ASSERT (def);
 
     IDIO_TYPE_ASSERT (thread, thr);
 
-    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
+    IDIO_VM_RUN_DIS ("%-17s   .%-4" PRIu64 " ", op, si);
+
+    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
     IDIO fgvi = idio_array_ref_index (vs, si);
     idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
     if (0 == gvi) {
 	IDIO sym = idio_vm_symbols_ref (xi, si);
 	IDIO_TYPE_ASSERT (symbol, sym);
+
+	IDIO_VM_RUN_DIS ("%-20s ", IDIO_SYMBOL_S (sym));
 
 	IDIO fsi = idio_fixnum (si);
 	IDIO ce = idio_thread_current_env ();
@@ -4554,14 +4588,52 @@ IDIO idio_vm_iref2val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op)
 
 	if (0 == gvi) {
 	    /* missing => symbol of itself */
+
 	    gvi = idio_vm_extend_values (0);
 	    fgvi = idio_fixnum (gvi);
-	    idio_vm_values_set (0, gvi, sym);
-	}
+	    idio_vm_values_set (xi, si, fgvi);
 
-	if (xi) {
-	    idio_array_set (vs, fsi, fgvi);
+	    idio_vm_values_set (0, gvi, sym);
+
+	    IDIO_VM_RUN_DIS ("=> [0].%-4" PRIu64 " ", gvi);
+
+	    idio_as_t gci = idio_vm_constants_lookup_or_extend (0, sym);
+	    IDIO fgci = idio_fixnum (gci);
+
+	    IDIO fmci = fgci;
+	    if (xi) {
+		fmci = fsi;
+	    }
+	    si_ce = IDIO_LIST6 (idio_S_toplevel, fmci, fgci, fgvi, ce, def);
+	    idio_module_set_symbol (sym, si_ce, ce);
+	} else if (xi) {
+	    IDIO_VM_RUN_DIS ("== [0].%-4" PRIu64 " ", gvi);
+
+	    idio_vm_values_set (xi, si, fgvi);
 	}
+    }
+
+    return gvi;
+}
+
+IDIO idio_vm_iref_val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, idio_vm_iref_val_enum mode)
+{
+    IDIO_ASSERT (thr);
+    IDIO_C_ASSERT (op);
+
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
+    IDIO fgvi = idio_array_ref_index (vs, si);
+    idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
+
+    if (0 == gvi) {
+	idio_vm_iref_enum flag = IDIO_VM_IREF_MDR_UNDEF_FATAL;
+	if (IDIO_VM_IREF_VAL_UNDEF_SYM == mode) {
+	    flag = IDIO_VM_IREF_MDR_UNDEF_NEW;
+	}
+	gvi = idio_vm_iref (thr, xi, si, op, idio_S_false, flag);
+	fgvi = idio_fixnum (gvi);
     }
 
     IDIO val = idio_vm_values_ref (0, gvi);
@@ -4570,19 +4642,86 @@ IDIO idio_vm_iref2val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op)
 	IDIO sym = idio_vm_symbols_ref (xi, si);
 	IDIO_TYPE_ASSERT (symbol, sym);
 
-	IDIO fsi = idio_fixnum (si);
-	/*
-	 * Test Case: ??
-	 *
-	 * It means that the VM's global table of values has undefined
-	 * values in it.  Which can't be a good thing.
-	 */
-	idio_error_runtime_unbound (fsi, fgvi, sym, IDIO_C_FUNC_LOCATION_S (op));
+	if (IDIO_VM_IREF_VAL_UNDEF_SYM == mode) {
+	    idio_vm_values_set (0, gvi, sym);
+	    val = sym;
+	} else {
+	    IDIO fsi = idio_fixnum (si);
+	    /*
+	     * Test Case: ??
+	     *
+	     * It means that the VM's global table of values has
+	     * undefined values in it.  Which can't be a good thing.
+	     */
+	    idio_error_runtime_unbound (fsi, fgvi, sym, IDIO_C_FUNC_LOCATION_S (op));
 
-	return idio_S_notreached;
+	    return idio_S_notreached;
+	}
     }
 
+    /*
+#ifdef IDIO_VM_DIS
+    idio_debug_FILE (idio_dasm_FILE, "%-20.60s ", val);
+#endif
+    */
+
     return val;
+}
+
+void idio_vm_iset_val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, IDIO def, IDIO val)
+{
+    IDIO_ASSERT (thr);
+    IDIO_C_ASSERT (op);
+    IDIO_ASSERT (def);
+
+    IDIO_TYPE_ASSERT (thread, thr);
+    IDIO_TYPE_ASSERT (string, def);
+
+    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
+    IDIO fgvi = idio_array_ref_index (vs, si);
+    idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
+
+    if (0 == gvi) {
+	gvi = idio_vm_iref (thr, xi, si, op, def, IDIO_VM_IREF_MDR_UNDEF_NEW);
+    }
+
+    /*
+     * Overwriting predefs should be banned -- except that it's pretty
+     * useful to improve/embellish the basic C implementation.
+     *
+     * If we do overwrite a predef we must update the symbol's info in
+     * order that future aspirants do not treat this closure as a
+     * primitive (and things go subtly wrong in the VM).
+     */
+    IDIO sym = idio_vm_symbols_ref (xi, si);
+    IDIO_TYPE_ASSERT (symbol, sym);
+
+    IDIO ce = idio_thread_current_env ();
+    IDIO si_ce = idio_module_find_symbol (sym, ce);
+
+    if (idio_isa_pair (si_ce) &&
+	idio_S_predef == IDIO_SI_SCOPE (si_ce) &&
+	! idio_isa_primitive (val)) {
+	gvi = idio_vm_extend_values (0);
+	fgvi = idio_fixnum (gvi);
+
+	IDIO eenv = IDIO_XENV_EENV (idio_xenvs[xi]);
+
+	idio_as_t vi = idio_meaning_extend_tables (eenv,
+						   sym,
+						   idio_S_toplevel,
+						   IDIO_SI_CI (si_ce),
+						   0,
+						   ce,
+						   def,
+						   1);
+
+	si_ce = idio_module_find_symbol (sym, ce);
+
+	idio_vm_values_set (xi, vi, fgvi);
+    }
+
+    idio_vm_values_set (0, gvi, val);
 }
 
 int idio_vm_run1 (IDIO thr)
@@ -4782,16 +4921,9 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t si = IDIO_VM_FETCH_REF (thr, bc);
 
-#if IDIO_DEBUG
-	    IDIO sym = idio_vm_symbols_ref (xi, si);
-	    IDIO_TYPE_ASSERT (symbol, sym);
-
-	    IDIO_VM_RUN_DIS ("%-17s   .%-4" PRIu64 " %-20s ", "SYM-IREF", si, IDIO_SYMBOL_S (sym));
-#else
 	    IDIO_VM_RUN_DIS ("%-17s   .%-4" PRIu64 " ", "SYM-IREF", si);
-#endif
 
-	    IDIO_THREAD_VAL (thr) = idio_vm_iref2val (thr, xi, si, "SYM-IREF");
+	    IDIO_THREAD_VAL (thr) = idio_vm_iref_val (thr, xi, si, "SYM-IREF", IDIO_VM_IREF_VAL_UNDEF_SYM);
 	}
 	break;
     case IDIO_A_FUNCTION_SYM_REF:
@@ -4885,7 +5017,7 @@ int idio_vm_run1 (IDIO thr)
 
 	    IDIO_VM_RUN_DIS ("%-17s   .%-4" PRIu64 " ", "FUNCTION-SYM-IREF", si);
 
-	    IDIO_THREAD_VAL (thr) = idio_vm_iref2val (thr, xi, si, "FUNCTION-SYM-IREF");
+	    IDIO_THREAD_VAL (thr) = idio_vm_iref_val (thr, xi, si, "FUNCTION-SYM-IREF", IDIO_VM_IREF_VAL_UNDEF_SYM);
 	}
 	break;
     case IDIO_A_CONSTANT_REF:
@@ -4977,7 +5109,7 @@ int idio_vm_run1 (IDIO thr)
 
 	    IDIO c = idio_vm_constants_ref (xi, ci);
 
-	    IDIO_VM_RUN_DIS ("%-17s   .%" PRIu64 " ", "CONSTANT-IREF", ci);
+	    IDIO_VM_RUN_DIS ("%-17s   .%-4" PRIu64 " ", "CONSTANT-IREF", ci);
 #ifdef IDIO_VM_DIS
 	    if (idio_vm_dis) {
 		idio_debug_FILE (idio_dasm_FILE, "%.80s", c);
@@ -5093,7 +5225,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("%-17s   .%-4" PRIu64 " ", "COMPUTED-SYM-IREF", si);
 #endif
 
-	    IDIO gns = idio_vm_iref2val (thr, xi, si, "COMPUTED-SYM-IREF");
+	    IDIO gns = idio_vm_iref_val (thr, xi, si, "COMPUTED-SYM-IREF", IDIO_VM_IREF_VAL_UNDEF_FATAL);
 	    IDIO_THREAD_VAL (thr) = idio_vm_computed_iref (gns, si);
 	}
 	break;
@@ -5147,8 +5279,8 @@ int idio_vm_run1 (IDIO thr)
 	     * We could call idio_vm_symbols_ref() but we might need
 	     * the intermediate values in a minute
 	     */
-	    IDIO st = IDIO_XENV_SYMBOLS (idio_xenvs[xi]);
-	    IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
+	    IDIO st = IDIO_XENV_ST (idio_xenvs[xi]);
+	    IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
 
 	    IDIO fci = idio_array_ref_index (st, si);
 
@@ -5186,28 +5318,16 @@ int idio_vm_run1 (IDIO thr)
 		    gvi = idio_vm_extend_values (0);
 		    fgvi = idio_fixnum (gvi);
 
-		    si_ce = IDIO_LIST6 (kind,
-					fsi,
-					IDIO_SI_CI (si_ce),
-					fgvi,
-					ce,
-					idio_vm_SYM_IDEF_gvi0_string);
-		    idio_module_set_symbol (sym, si_ce, ce);
+		    IDIO_SI_VI (si_ce) = fgvi;
+		    IDIO_SI_DESCRIPTION (si_ce) = idio_vm_SYM_IDEF_gvi0_string;
 		}
 	    }
 
-	    IDIO_VM_RUN_DIS ("[0].%" PRIu64 " ", gvi);
-
 	    /*
-	    fprintf (stderr, "%-17s   [%zu].%-4zu => [0].%-4zu ", "SYM-IDEF", xi, si, gvi);
-	    idio_debug ("%s/", IDIO_MODULE_NAME (ce));
-	    idio_debug ("%s ", sym);
-	    idio_debug ("cm=%s\n", IDIO_MODULE_NAME (IDIO_THREAD_MODULE (thr)));
+	    idio_debug ("%s\n", si_ce);
 	    */
-	    if (xi) {
-		IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
-		idio_array_set (vs, fsi, fgvi);
-	    }
+
+	    IDIO_VM_RUN_DIS ("[0].%" PRIu64 " ", gvi);
 	}
 	break;
     case IDIO_A_SYM_SET:
@@ -5272,55 +5392,7 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t si = IDIO_VM_FETCH_REF (thr, bc);
 
-	    IDIO sym = idio_vm_symbols_ref (xi, si);
-	    IDIO_TYPE_ASSERT (symbol, sym);
-
-	    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
-	    IDIO fgvi = idio_array_ref_index (vs, si);
-
-	    idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
-
-	    IDIO_VM_RUN_DIS ("%-17s   .%-4" PRIu64 " %-20s ", "SYM-ISET", si, IDIO_SYMBOL_S (sym));
-
-	    if (gvi) {
-		idio_vm_values_set (0, gvi, IDIO_THREAD_VAL (thr));
-
-		IDIO ce = idio_thread_current_env ();
-		IDIO si_ce = idio_module_find_symbol (sym, ce);
-		if (idio_S_false != si_ce &&
-		    idio_S_predef == IDIO_SI_SCOPE (si_ce) &&
-		    ! idio_isa_primitive (IDIO_THREAD_VAL (thr))) {
-		    /*
-		    idio_debug ("SYM-ISET %s -> toplevel", IDIO_SI_SCOPE (si_ce));
-		    idio_debug (" for %-20s", sym);
-		    idio_debug (" == %s\n", IDIO_THREAD_VAL (thr));
-		    */
-		    IDIO_SI_SCOPE (si_ce) = idio_S_toplevel;
-		}
-	    } else {
-		/*
-		 * Test Case: ??
-		 *
-		 * Coding error.
-		 */
-		IDIO ce = idio_thread_current_env ();
-		IDIO si_ce = idio_module_find_symbol (sym, ce);
-		idio_debug ("SYM-ISET: UNBOUND sym=%s", sym);
-		idio_debug (" ce=%s\n", IDIO_MODULE_NAME (ce));
-		idio_debug (" si_ce=%s\n", si_ce);
-		idio_debug (" MI=%s\n", IDIO_MODULE_IMPORTS (ce));
-
-		IDIO sym_si = idio_module_find_symbol_recurse (sym, ce, 1);
-		idio_debug (" si=%s\n", sym_si);
-
-		idio_error_runtime_unbound (idio_fixnum (si), fgvi, sym, IDIO_C_FUNC_LOCATION_S ("SYM-ISET"));
-		idio_vm_panic (thr, "SYM-ISET: no gvi!");
-
-		/* notreached */
-		return 0;
-	    }
-
-	    IDIO_VM_RUN_DIS ("[0].%" PRIu64 " ", gvi);
+	    idio_vm_iset_val (thr, xi, si, "SYM-ISET", idio_vm_SYM_ISET_gvi0_string, IDIO_THREAD_VAL (thr));
 	}
 	break;
     case IDIO_A_COMPUTED_SYM_SET:
@@ -5365,7 +5437,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("%-17s   .%-4" PRIu64 " ", "COMPUTED-SYM-ISET", si);
 #endif
 
-	    IDIO gns = idio_vm_iref2val (thr, xi, si, "COMPUTED-SYM-ISET");
+	    IDIO gns = idio_vm_iref_val (thr, xi, si, "COMPUTED-SYM-ISET", IDIO_VM_IREF_VAL_UNDEF_FATAL);
 	    IDIO val = IDIO_THREAD_VAL (thr);
 	    IDIO_THREAD_VAL (thr) = idio_vm_computed_iset (gns, si, val);
 	}
@@ -5426,14 +5498,18 @@ int idio_vm_run1 (IDIO thr)
 
 		gvi = idio_vm_extend_values (0);
 		fgvi = idio_fixnum (gvi);
+		idio_vm_values_set (xi, si, fgvi);
 
 		si_ce = IDIO_LIST6 (idio_S_toplevel, fsi, fgci, fgvi, ce, idio_vm_COMPUTED_SYM_IDEF_string);
 		idio_module_set_symbol (sym, si_ce, ce);
 	    } else {
 		fgvi = IDIO_SI_VI (si_ce);
-		if (0 == IDIO_FIXNUM_VAL (fgvi)) {
+		gvi = IDIO_FIXNUM_VAL (fgvi);
+
+		if (0 == gvi) {
 		    gvi = idio_vm_extend_values (0);
 		    fgvi = idio_fixnum (gvi);
+		    idio_vm_values_set (xi, si, fgvi);
 
 		    si_ce = IDIO_LIST6 (idio_S_toplevel,
 					fsi,
@@ -5447,11 +5523,8 @@ int idio_vm_run1 (IDIO thr)
 
 	    IDIO_VM_RUN_DIS ("[0].%" PRIu64 " ", gvi);
 
-	    fprintf (stderr, "%-17s   [%zu].%-4zu => [0].%-4zu ", "COMPUTED-SYM-IDEF", xi, si, gvi);
-	    idio_debug ("%s\n", sym);
-
 	    if (xi) {
-		IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
+		IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
 		idio_array_set (vs, fsi, fgvi);
 	    }
 
@@ -5516,10 +5589,7 @@ int idio_vm_run1 (IDIO thr)
 		if (0 == gvi) {
 		    gvi = idio_vm_extend_values (0);
 		    fgvi = idio_fixnum (gvi);
-
-		    if (xi) {
-			idio_vm_values_set (xi, vi, fgvi);
-		    }
+		    idio_vm_values_set (xi, vi, fgvi);
 		}
 
 		IDIO_VM_RUN_DIS ("[0].%" PRIu64 " ", gvi);
@@ -5552,7 +5622,13 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t vi = idio_vm_fetch_varuint (bc, thr);
 	    IDIO pd = idio_vm_values_ref (0, vi);
-	    IDIO_VM_RUN_DIS ("%-17s   %" PRIu64 " %-20s", "PREDEFINED", vi, IDIO_PRIMITIVE_NAME (pd));
+	    IDIO_VM_RUN_DIS ("%-17s   %" PRIu64 " ", "PREDEFINED", vi);
+	    if (idio_isa_primitive (pd)) {
+		IDIO_VM_RUN_DIS ("%-20s", IDIO_PRIMITIVE_NAME (pd));
+	    } else {
+		IDIO_VM_RUN_DIS ("isa %-20s ??", idio_type2string (pd));
+		IDIO_TYPE_ASSERT (primitive, pd);
+	    }
 	    IDIO_THREAD_VAL (thr) = pd;
 	}
 	break;
@@ -5560,11 +5636,11 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t vi = idio_vm_fetch_varuint (bc, thr);
 	    IDIO_VM_RUN_DIS ("%-17s   .%-4" PRIu64 " ", "IPREDEFINED", vi);
-	    IDIO pd = idio_vm_iref2val (thr, xi, vi, "IPREDEFINED");
+	    IDIO pd = idio_vm_iref_val (thr, 0, vi, "IPREDEFINED", IDIO_VM_IREF_VAL_UNDEF_FATAL);
 	    if (idio_isa_primitive (pd)) {
 		IDIO_VM_RUN_DIS ("%-20s", IDIO_PRIMITIVE_NAME (pd));
 	    } else {
-		IDIO_VM_RUN_DIS ("%-20s", idio_type2string (pd));
+		IDIO_VM_RUN_DIS ("isa %-20s ??", idio_type2string (pd));
 		IDIO_TYPE_ASSERT (primitive, pd);
 	    }
 	    IDIO_THREAD_VAL (thr) = pd;
@@ -6432,25 +6508,27 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_PRIMCALL0:
 	{
 	    uint64_t vi = idio_vm_fetch_varuint (bc, thr);
-	    IDIO primdata = idio_vm_values_ref (xi, vi);
+
+	    IDIO pd = idio_vm_values_ref (xi, vi);
+	    IDIO_TYPE_ASSERT (primitive, pd);
 	    /*
 	     * XXX see comment in idio_meaning_primitive_application()
 	     * for setting *func*
 	     */
-	    IDIO_THREAD_FUNC (thr) = primdata;
-	    IDIO_VM_RUN_DIS ("PRIMITIVE/0 %" PRIu64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
-	    idio_vm_primitive_call_trace (primdata, thr, 0);
+	    IDIO_THREAD_FUNC (thr) = pd;
+	    IDIO_VM_RUN_DIS ("PRIMITIVE/0 %" PRIu64 " %s", vi, IDIO_PRIMITIVE_NAME (pd));
+	    idio_vm_primitive_call_trace (pd, thr, 0);
 #ifdef IDIO_VM_PROF
 	    struct timespec prim_t0;
 	    struct rusage prim_ru0;
-	    idio_vm_func_start (primdata, &prim_t0, &prim_ru0);
+	    idio_vm_func_start (pd, &prim_t0, &prim_ru0);
 #endif
-	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) ();
+	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (pd) ();
 #ifdef IDIO_VM_PROF
 	    struct timespec prim_te;
 	    struct rusage prim_rue;
-	    idio_vm_func_stop (primdata, &prim_te, &prim_rue);
-	    idio_vm_prim_time (primdata, &prim_t0, &prim_te, &prim_ru0, &prim_rue);
+	    idio_vm_func_stop (pd, &prim_te, &prim_rue);
+	    idio_vm_prim_time (pd, &prim_t0, &prim_te, &prim_ru0, &prim_rue);
 #endif
 	    idio_vm_primitive_result_trace (thr);
 	}
@@ -6459,14 +6537,14 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t si = idio_vm_fetch_varuint (bc, thr);
 
-	    IDIO pd = idio_vm_iref2val (thr, xi, si, "IPRIMITIVE/0");
+	    IDIO pd = idio_vm_iref_val (thr, xi, si, "IPRIMITIVE/0", IDIO_VM_IREF_VAL_UNDEF_FATAL);
 	    IDIO_TYPE_ASSERT (primitive, pd);
 	    /*
 	     * XXX see comment in idio_meaning_primitive_application()
 	     * for setting *func*
 	     */
 	    IDIO_THREAD_FUNC (thr) = pd;
-	    IDIO_VM_RUN_DIS ("IPRIMITIVE/0 .%-4" PRIu64 " %s", si, IDIO_PRIMITIVE_NAME (pd));
+	    IDIO_VM_RUN_DIS ("PRIMITIVE/0 .%-4" PRIu64 " %s", si, IDIO_PRIMITIVE_NAME (pd));
 	    idio_vm_primitive_call_trace (pd, thr, 0);
 #ifdef IDIO_VM_PROF
 	    struct timespec prim_t0;
@@ -6486,25 +6564,27 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_PRIMCALL1:
 	{
 	    uint64_t vi = idio_vm_fetch_varuint (bc, thr);
-	    IDIO primdata = idio_vm_values_ref (xi, vi);
+
+	    IDIO pd = idio_vm_values_ref (xi, vi);
+	    IDIO_TYPE_ASSERT (primitive, pd);
 	    /*
 	     * XXX see comment in idio_meaning_primitive_application()
 	     * for setting *func*
 	     */
-	    IDIO_THREAD_FUNC (thr) = primdata;
-	    IDIO_VM_RUN_DIS ("PRIMITIVE/1 %" PRIu64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
-	    idio_vm_primitive_call_trace (primdata, thr, 1);
+	    IDIO_THREAD_FUNC (thr) = pd;
+	    IDIO_VM_RUN_DIS ("PRIMITIVE/1 %" PRIu64 " %s", vi, IDIO_PRIMITIVE_NAME (pd));
+	    idio_vm_primitive_call_trace (pd, thr, 1);
 #ifdef IDIO_VM_PROF
 	    struct timespec prim_t0;
 	    struct rusage prim_ru0;
-	    idio_vm_func_start (primdata, &prim_t0, &prim_ru0);
+	    idio_vm_func_start (pd, &prim_t0, &prim_ru0);
 #endif
-	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) (IDIO_THREAD_VAL (thr));
+	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (pd) (IDIO_THREAD_VAL (thr));
 #ifdef IDIO_VM_PROF
 	    struct timespec prim_te;
 	    struct rusage prim_rue;
-	    idio_vm_func_stop (primdata, &prim_te, &prim_rue);
-	    idio_vm_prim_time (primdata, &prim_t0, &prim_te, &prim_ru0, &prim_rue);
+	    idio_vm_func_stop (pd, &prim_te, &prim_rue);
+	    idio_vm_prim_time (pd, &prim_t0, &prim_te, &prim_ru0, &prim_rue);
 #endif
 	    idio_vm_primitive_result_trace (thr);
 	}
@@ -6513,15 +6593,15 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t si = idio_vm_fetch_varuint (bc, thr);
 
-	    IDIO pd = idio_vm_iref2val (thr, xi, si, "IPRIMITIVE/1");
+	    IDIO pd = idio_vm_iref_val (thr, xi, si, "IPRIMITIVE/1", IDIO_VM_IREF_VAL_UNDEF_FATAL);
 	    IDIO_TYPE_ASSERT (primitive, pd);
 	    /*
 	     * XXX see comment in idio_meaning_primitive_application()
 	     * for setting *func*
 	     */
 	    IDIO_THREAD_FUNC (thr) = pd;
-	    IDIO_VM_RUN_DIS ("IPRIMITIVE/1 .%-4" PRIu64 " %s", si, IDIO_PRIMITIVE_NAME (pd));
-	    idio_vm_primitive_call_trace (pd, thr, 0);
+	    IDIO_VM_RUN_DIS ("PRIMITIVE/1 .%-4" PRIu64 " %s", si, IDIO_PRIMITIVE_NAME (pd));
+	    idio_vm_primitive_call_trace (pd, thr, 1);
 #ifdef IDIO_VM_PROF
 	    struct timespec prim_t0;
 	    struct rusage prim_ru0;
@@ -6540,25 +6620,27 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_PRIMCALL2:
 	{
 	    uint64_t vi = idio_vm_fetch_varuint (bc, thr);
-	    IDIO primdata = idio_vm_values_ref (xi, vi);
+
+	    IDIO pd = idio_vm_values_ref (xi, vi);
+	    IDIO_TYPE_ASSERT (primitive, pd);
 	    /*
 	     * XXX see comment in idio_meaning_primitive_application()
 	     * for setting *func*
 	     */
-	    IDIO_THREAD_FUNC (thr) = primdata;
-	    IDIO_VM_RUN_DIS ("PRIMITIVE/2 %" PRIu64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
-	    idio_vm_primitive_call_trace (primdata, thr, 2);
+	    IDIO_THREAD_FUNC (thr) = pd;
+	    IDIO_VM_RUN_DIS ("PRIMITIVE/2 %" PRIu64 " %s", vi, IDIO_PRIMITIVE_NAME (pd));
+	    idio_vm_primitive_call_trace (pd, thr, 2);
 #ifdef IDIO_VM_PROF
 	    struct timespec prim_t0;
 	    struct rusage prim_ru0;
-	    idio_vm_func_start (primdata, &prim_t0, &prim_ru0);
+	    idio_vm_func_start (pd, &prim_t0, &prim_ru0);
 #endif
-	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
+	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (pd) (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
 #ifdef IDIO_VM_PROF
 	    struct timespec prim_te;
 	    struct rusage prim_rue;
-	    idio_vm_func_stop (primdata, &prim_te, &prim_rue);
-	    idio_vm_prim_time (primdata, &prim_t0, &prim_te, &prim_ru0, &prim_rue);
+	    idio_vm_func_stop (pd, &prim_te, &prim_rue);
+	    idio_vm_prim_time (pd, &prim_t0, &prim_te, &prim_ru0, &prim_rue);
 #endif
 	    idio_vm_primitive_result_trace (thr);
 	}
@@ -6567,15 +6649,15 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t si = idio_vm_fetch_varuint (bc, thr);
 
-	    IDIO pd = idio_vm_iref2val (thr, xi, si, "IPRIMITIVE/2");
+	    IDIO pd = idio_vm_iref_val (thr, xi, si, "IPRIMITIVE/2", IDIO_VM_IREF_VAL_UNDEF_FATAL);
 	    IDIO_TYPE_ASSERT (primitive, pd);
 	    /*
 	     * XXX see comment in idio_meaning_primitive_application()
 	     * for setting *func*
 	     */
 	    IDIO_THREAD_FUNC (thr) = pd;
-	    IDIO_VM_RUN_DIS ("IPRIMITIVE/2 .%-4" PRIu64 " %s", si, IDIO_PRIMITIVE_NAME (pd));
-	    idio_vm_primitive_call_trace (pd, thr, 0);
+	    IDIO_VM_RUN_DIS ("PRIMITIVE/2 .%-4" PRIu64 " %s", si, IDIO_PRIMITIVE_NAME (pd));
+	    idio_vm_primitive_call_trace (pd, thr, 2);
 #ifdef IDIO_VM_PROF
 	    struct timespec prim_t0;
 	    struct rusage prim_ru0;
@@ -6646,7 +6728,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO sym = idio_vm_symbols_ref (xi, si);
 	    IDIO_TYPE_ASSERT (symbol, sym);
 
-	    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
+	    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
 	    IDIO fgvi = idio_array_ref_index (vs, si);
 	    idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
@@ -6667,6 +6749,7 @@ int idio_vm_run1 (IDIO thr)
 		    IDIO fsi = idio_fixnum (si);
 		    gvi = idio_vm_extend_values (0);
 		    fgvi = idio_fixnum (gvi);
+		    idio_vm_values_set (xi, si, fgvi);
 
 		    si_ce = IDIO_LIST6 (idio_S_toplevel, fsi, fci, fgvi, ce, idio_vm_IEXPANDER_string);
 		    idio_module_set_symbol (sym, si_ce, ce);
@@ -6726,7 +6809,7 @@ int idio_vm_run1 (IDIO thr)
 
 	    IDIO sym = idio_vm_symbols_ref (xi, si);
 
-	    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
+	    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
 	    IDIO fgvi = idio_array_ref_index (vs, si);
 	    idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
@@ -6745,6 +6828,7 @@ int idio_vm_run1 (IDIO thr)
 		    IDIO fsi = idio_fixnum (si);
 		    gvi = idio_vm_extend_values (0);
 		    fgvi = idio_fixnum (gvi);
+		    idio_vm_values_set (xi, si, fgvi);
 
 		    si_op = IDIO_LIST6 (idio_S_toplevel, fsi, fci, fgvi, idio_operator_module, idio_vm_INFIX_IOPERATOR_string);
 		    idio_module_set_symbol (sym, si_op, idio_operator_module);
@@ -6803,7 +6887,7 @@ int idio_vm_run1 (IDIO thr)
 
 	    IDIO sym = idio_vm_symbols_ref (xi, si);
 
-	    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
+	    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
 	    IDIO fgvi = idio_array_ref_index (vs, si);
 	    idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
@@ -6822,6 +6906,7 @@ int idio_vm_run1 (IDIO thr)
 		    IDIO fsi = idio_fixnum (si);
 		    gvi = idio_vm_extend_values (0);
 		    fgvi = idio_fixnum (gvi);
+		    idio_vm_values_set (xi, si, fgvi);
 
 		    si_op = IDIO_LIST6 (idio_S_toplevel, fsi, fci, fgvi, idio_operator_module, idio_vm_POSTFIX_IOPERATOR_string);
 		    idio_module_set_symbol (sym, si_op, idio_operator_module);
@@ -6850,6 +6935,16 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
+    case IDIO_A_PUSH_IDYNAMIC:
+	{
+	    uint64_t si = IDIO_VM_FETCH_REF (thr, bc);
+
+	    IDIO_VM_RUN_DIS ("PUSH-IDYNAMIC %" PRIu64 " ", si);
+
+	    idio_ai_t gvi = idio_vm_iref (thr, xi, si, "PUSH-IDYNAMIC", IDIO_STRING ("PUSH-IDYNAMIC"), IDIO_VM_IREF_MDR_UNDEF_FATAL);
+	    idio_vm_push_dynamic (thr, gvi, IDIO_THREAD_VAL (thr));
+	}
+	break;
     case IDIO_A_POP_DYNAMIC:
 	{
 	    IDIO_VM_RUN_DIS ("POP-DYNAMIC");
@@ -6873,58 +6968,7 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t si = IDIO_VM_FETCH_REF (thr, bc);
 
-	    IDIO sym = idio_vm_symbols_ref (xi, si);
-	    IDIO_TYPE_ASSERT (symbol, sym);
-
-	    IDIO_VM_RUN_DIS ("DYNAMIC-SYM-IREF .%-4" PRIu64 " ", si);
-
-	    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
-	    IDIO fgvi = idio_array_ref_index (vs, si);
-	    idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
-
-	    if (0 == gvi) {
-		IDIO fsi = idio_fixnum (si);
-		IDIO ce = idio_thread_current_env ();
-		IDIO si_ce = idio_module_find_symbol_recurse (sym, ce, 1);
-
-		if (idio_S_false == si_ce) {
-		    /*
-		     * Test Case: ??
-		     *
-		     * Coding error.
-		     */
-		    idio_error_runtime_unbound (fsi, fgvi, sym, IDIO_C_FUNC_LOCATION_S ("DYNAMIC-SYM-IREF"));
-
-		    /* notreached */
-		    return 0;
-		} else {
-		    fgvi = IDIO_SI_VI (si_ce);
-		    gvi = IDIO_FIXNUM_VAL (fgvi);
-		}
-
-		if (0 == gvi) {
-		    /*
-		     * Test Case: ??
-		     *
-		     * Coding error.
-		     */
-		    idio_error_runtime_unbound (fsi, fgvi, sym, IDIO_C_FUNC_LOCATION_S ("DYNAMIC-SYM-IREF"));
-
-		    /* notreached */
-		    return 0;
-		}
-
-		/* fprintf (stderr, "DYNAMIC-SYM-IREF s [%zu].%-4zu => [0].%-4zu\n", xi, si, gvi); */
-		if (xi) {
-		    idio_array_set (vs, fsi, fgvi);
-		}
-	    }
-
-	    IDIO_VM_RUN_DIS ("[0].%-4" PRIu64 " %-20s ", gvi, IDIO_SYMBOL_S (sym));
-
-	    /* fprintf (stderr, "DYNAMIC-SYM-IREF r [%zu].%-4zu => [0].%-4zu ", xi, si, gvi); */
-	    /* idio_debug ("%s\n", sym); */
-
+	    idio_ai_t gvi = idio_vm_iref (thr, xi, si, "DYNAMIC-SYM-IREF", IDIO_STRING ("DYNAMIC-SYM-IREF"), IDIO_VM_IREF_MDR_UNDEF_FATAL);
 	    IDIO_THREAD_VAL (thr) = idio_vm_dynamic_ref (thr, si, gvi, idio_S_nil);
 	}
 	break;
@@ -6941,6 +6985,14 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
+    case IDIO_A_DYNAMIC_FUNCTION_SYM_IREF:
+	{
+	    uint64_t si = IDIO_VM_FETCH_REF (thr, bc);
+
+	    idio_ai_t gvi = idio_vm_iref (thr, xi, si, "DYNAMIC-FUNCTION-SYM-IREF", IDIO_STRING ("DYNAMIC-FUNCTION-SYM-IREF"), IDIO_VM_IREF_MDR_UNDEF_FATAL);
+	    IDIO_THREAD_VAL (thr) = idio_vm_dynamic_ref (thr, si, gvi, idio_S_nil);
+	}
+	break;
     case IDIO_A_PUSH_ENVIRON:
 	{
 	    uint64_t mci = IDIO_VM_FETCH_REF (thr, bc);
@@ -6948,10 +7000,20 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("PUSH-ENVIRON ci %" PRIu64 " vi %" PRIu64, mci, gvi);
 
 	    if (gvi) {
-		idio_vm_push_environ (thr, mci, gvi, IDIO_THREAD_VAL (thr));
+		idio_vm_push_environ (thr, gvi, IDIO_THREAD_VAL (thr));
 	    } else {
 		idio_vm_panic (thr, "PUSH-ENVIRON: no gvi!");
 	    }
+	}
+	break;
+    case IDIO_A_PUSH_IENVIRON:
+	{
+	    uint64_t si = IDIO_VM_FETCH_REF (thr, bc);
+
+	    IDIO_VM_RUN_DIS ("PUSH-IENVIRON %" PRIu64 " ", si);
+
+	    idio_ai_t gvi = idio_vm_iref (thr, xi, si, "PUSH-IENVIRON", IDIO_STRING ("PUSH-IENVIRON"), IDIO_VM_IREF_MDR_UNDEF_FATAL);
+	    idio_vm_push_environ (thr, gvi, IDIO_THREAD_VAL (thr));
 	}
 	break;
     case IDIO_A_POP_ENVIRON:
@@ -6977,54 +7039,7 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t si = IDIO_VM_FETCH_REF (thr, bc);
 
-	    IDIO sym = idio_vm_symbols_ref (xi, si);
-	    IDIO_TYPE_ASSERT (symbol, sym);
-
-	    IDIO_VM_RUN_DIS ("ENVIRON-SYM-IREF .%-4" PRIu64 " ", si);
-
-	    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
-	    IDIO fgvi = idio_array_ref_index (vs, si);
-	    idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
-
-	    if (0 == gvi) {
-		IDIO fsi = idio_fixnum (si);
-		IDIO ce = idio_thread_current_env ();
-		IDIO si_ce = idio_module_find_symbol_recurse (sym, ce, 1);
-
-		if (idio_S_false == si_ce) {
-		    /*
-		     * Test Case: ??
-		     *
-		     * Coding error.
-		     */
-		    idio_error_runtime_unbound (fsi, fgvi, sym, IDIO_C_FUNC_LOCATION_S ("ENVIRON-SYM-IREF"));
-
-		    /* notreached */
-		    return 0;
-		} else {
-		    fgvi = IDIO_SI_VI (si_ce);
-		    gvi = IDIO_FIXNUM_VAL (fgvi);
-		}
-
-		if (0 == gvi) {
-		    /*
-		     * Test Case: ??
-		     *
-		     * Coding error.
-		     */
-		    idio_error_runtime_unbound (fsi, fgvi, sym, IDIO_C_FUNC_LOCATION_S ("ENVIRON-SYM-IREF"));
-
-		    /* notreached */
-		    return 0;
-		}
-
-		if (xi) {
-		    idio_array_set (vs, fsi, fgvi);
-		}
-	    }
-
-	    IDIO_VM_RUN_DIS ("[0].%-4" PRIu64 " %-20s ", gvi, IDIO_SYMBOL_S (sym));
-
+	    idio_ai_t gvi = idio_vm_iref (thr, xi, si, "ENVIRON-SYM-IREF", IDIO_STRING ("ENVIRON-SYM-IREF"), IDIO_VM_IREF_MDR_UNDEF_FATAL);
 	    IDIO_THREAD_VAL (thr) = idio_vm_environ_ref (thr, si, gvi, idio_S_nil);
 	}
 	break;
@@ -7077,34 +7092,29 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t si = IDIO_VM_FETCH_REF (thr, bc);
 
-	    IDIO_VM_RUN_DIS ("PUSH-ITRAP %" PRIu64, si);
+	    IDIO_VM_RUN_DIS ("PUSH-ITRAP %" PRIu64 " ", si);
 
 	    /*
-	     * The "value" is the gci for this symbol, ie. the global
-	     * constant index (not our execution environment constant
-	     * index).
+	     * Annoyingly, if anything in the codebase tries to access
+	     * {si} in this execution environment (eg. it tries to
+	     * raise this condition in a test) they will (probably)
+	     * set its value to be something.  Which is of no use to
+	     * us as we want the gci for this symbol, ie. the global
+	     * constant index.
+	     *
+	     * We'll have to look it up each time.
 	     */
-	    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
-	    IDIO fgci = idio_array_ref_index (vs, si);
-	    idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
+	    IDIO st = IDIO_XENV_ST (idio_xenvs[xi]);
+	    IDIO fci = idio_array_ref_index (st, si);
+	    idio_as_t ci = IDIO_FIXNUM_VAL (fci);
 
-	    if (0 == gci) {
-		IDIO fsi = idio_fixnum (si);
-		IDIO st = IDIO_XENV_SYMBOLS (idio_xenvs[xi]);
-		IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
+	    IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
+	    IDIO sym = idio_array_ref_index (cs, ci);
 
-		IDIO fci = idio_array_ref_index (st, si);
-		idio_as_t ci = IDIO_FIXNUM_VAL (fci);
+	    idio_ai_t gci = idio_vm_constants_lookup_or_extend (0, sym);
+	    IDIO fgci = idio_fixnum (gci);
 
-		IDIO sym = idio_array_ref_index (cs, ci);
-
-		idio_as_t gci = idio_vm_constants_lookup_or_extend (0, sym);
-		IDIO fgci = idio_fixnum (gci);
-
-		if (xi) {
-		    idio_array_set (vs, fsi, fgci);
-		}
-	    }
+	    IDIO_VM_RUN_DIS (" %" PRIu64 " ", gci);
 
 	    idio_vm_push_trap (thr, IDIO_THREAD_VAL (thr), fgci, 0);
 	}
@@ -7882,14 +7892,65 @@ run code at `PC` in xenv `xi`			\n\
 
 IDIO idio_vm_symbols_ref (idio_xi_t xi, idio_as_t si)
 {
-    IDIO st = IDIO_XENV_SYMBOLS (idio_xenvs[xi]);
+    IDIO st = IDIO_XENV_ST (idio_xenvs[xi]);
 
     IDIO fci = idio_array_ref_index (st, si);
     IDIO_TYPE_ASSERT (fixnum, fci);
 
-    IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
+    IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
 
     return idio_array_ref_index (cs, IDIO_FIXNUM_VAL (fci));
+}
+
+void idio_vm_symbols_set (idio_xi_t xi, idio_as_t si, IDIO ci)
+{
+    IDIO_ASSERT (ci);
+
+    IDIO_TYPE_ASSERT (fixnum, ci);
+
+    IDIO st = IDIO_XENV_ST (idio_xenvs[xi]);
+    idio_array_insert_index (st, ci, si);
+}
+
+void idio_vm_dump_xenv_symbols (idio_xi_t xi)
+{
+    char fn[40];
+    snprintf (fn, 40, "idio-vm-symbols.%zu", xi);
+    FILE *fp = fopen (fn, "w");
+    if (NULL == fp) {
+	perror ("fopen (idio-vm-symbols, w)");
+	return;
+    }
+
+    idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
+
+    IDIO st = IDIO_XENV_ST (idio_xenvs[xi]);
+    IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
+
+    idio_as_t al = idio_array_size (st);
+    fprintf (fp, "vm-symbols for xenv[%zu]: %zd references into the constants table\n", xi, al);
+    fprintf (fp, " %-6.6s %-5.5s %s\n", "si", "ci", "constant");
+    fprintf (fp, " %6.6s %5.5s %s\n", "------", "-----", "--------");
+
+    idio_as_t i;
+    for (i = 0 ; i < al; i++) {
+	IDIO ci = idio_array_ref_index (st, i);
+	fprintf (fp, " %-6zu ", i);
+	if (idio_S_false != ci) {
+	    idio_debug_FILE (fp, "%-5s ", ci);
+	} else {
+	    fprintf (fp, "%-5s ", "-");
+	}
+	if (idio_isa_integer (ci)) {
+	    idio_debug_FILE (fp, "%-30s", idio_array_ref_index (cs, IDIO_FIXNUM_VAL (ci)));
+	} else {
+	    fprintf (fp, "%s ", "-");
+	}
+	fprintf (fp, "\n");
+    }
+    fprintf (fp, "\n");
+
+    fclose (fp);
 }
 
 void idio_vm_dump_symbols ()
@@ -7902,43 +7963,7 @@ void idio_vm_dump_symbols ()
      * No symbols in xi 0
      */
     for (idio_xi_t xi = 1; xi < idio_xenvs_size; xi++) {
-	char fn[40];
-	snprintf (fn, 40, "idio-vm-symbols.%zu", xi);
-	FILE *fp = fopen (fn, "w");
-	if (NULL == fp) {
-	    perror ("fopen (idio-vm-symbols, w)");
-	    return;
-	}
-
-	idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
-
-	IDIO st = IDIO_XENV_SYMBOLS (idio_xenvs[xi]);
-	IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
-
-	idio_as_t al = idio_array_size (st);
-	fprintf (fp, "vm-symbols for xenv[%zu]: %zd references into the constants table\n", xi, al);
-	fprintf (fp, " %-6.6s %-5.5s %s\n", "si", "ci", "constant");
-	fprintf (fp, " %6.6s %5.5s %s\n", "------", "-----", "--------");
-
-	idio_as_t i;
-	for (i = 0 ; i < al; i++) {
-	    IDIO ci = idio_array_ref_index (st, i);
-	    fprintf (fp, " %-6zu ", i);
-	    if (idio_S_false != ci) {
-		idio_debug_FILE (fp, "%-5s ", ci);
-	    } else {
-		fprintf (fp, "%-5s ", "-");
-	    }
-	    if (idio_isa_integer (ci)) {
-		idio_debug_FILE (fp, "%-30s", idio_array_ref_index (cs, IDIO_FIXNUM_VAL (ci)));
-	    } else {
-		fprintf (fp, "%s ", "-");
-	    }
-	    fprintf (fp, "\n");
-	}
-	fprintf (fp, "\n");
-
-	fclose (fp);
+	idio_vm_dump_xenv_symbols (xi);
     }
 }
 
@@ -7955,13 +7980,13 @@ idio_as_t idio_vm_extend_constants_direct (IDIO cs, IDIO ch, IDIO v)
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (hash, ch);
 
-    idio_as_t gci = idio_array_size (cs);
+    idio_as_t ci = idio_array_size (cs);
     idio_array_push (cs, v);
     if (idio_S_nil != v) {
-	idio_hash_put (ch, v, idio_fixnum (gci));
+	idio_hash_put (ch, v, idio_fixnum (ci));
     }
 
-    return gci;
+    return ci;
 }
 
 /*
@@ -7983,21 +8008,15 @@ idio_as_t idio_vm_extend_constants (idio_xi_t xi, IDIO v)
 {
     IDIO_ASSERT (v);
 
-    IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
-    IDIO ch = IDIO_XENV_CONSTANTS_HASH (idio_xenvs[xi]);
+    IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
+    IDIO ch = IDIO_XENV_CH (idio_xenvs[xi]);
 
     return idio_vm_extend_constants_direct (cs, ch, v);
-    idio_as_t gci = idio_array_size (cs);
-    idio_array_push (cs, v);
-    if (idio_S_nil != v) {
-	idio_hash_put (ch, v, idio_fixnum (gci));
-    }
-    return gci;
 }
 
 IDIO idio_vm_constants_ref (idio_xi_t xi, idio_as_t ci)
 {
-    IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
+    IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
 
     return idio_array_ref_index (cs, ci);
 }
@@ -8006,7 +8025,7 @@ idio_ai_t idio_vm_constants_lookup (idio_xi_t xi, IDIO name)
 {
     IDIO_ASSERT (name);
 
-    IDIO ch = IDIO_XENV_CONSTANTS_HASH (idio_xenvs[xi]);
+    IDIO ch = IDIO_XENV_CH (idio_xenvs[xi]);
 
     if (idio_S_nil != name) {
 	IDIO fgci = idio_hash_ref (ch, name);
@@ -8021,7 +8040,7 @@ idio_ai_t idio_vm_constants_lookup (idio_xi_t xi, IDIO name)
      * This should only be for #n and we should have put that in slot
      * 0...
      */
-    IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
+    IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
     return idio_array_find_eqp (cs, name, 0);
 }
 
@@ -8037,6 +8056,41 @@ idio_as_t idio_vm_constants_lookup_or_extend (idio_xi_t xi, IDIO name)
     return gci;
 }
 
+void idio_vm_dump_xenv_constants (idio_xi_t xi)
+{
+    char fn[40];
+    snprintf (fn, 40, "idio-vm-constants.%zu", xi);
+
+    FILE *fp = fopen (fn, "w");
+    if (NULL == fp) {
+	perror ("fopen (idio-vm-constants, w)");
+	return;
+    }
+
+    idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
+
+    IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
+
+    idio_as_t al = idio_array_size (cs);
+
+    fprintf (fp, "constants for xenv[%zu]: %zu constants\n", xi, al);
+    fprintf (fp, "%6.6s  %-20.20s %s\n", "ci", "type", "constant");
+    fprintf (fp, "%6.6s  %-20.20s %s\n", "--", "----", "--------");
+
+    idio_as_t i;
+    for (i = 0 ; i < al; i++) {
+	IDIO c = idio_array_ref_index (cs, i);
+	fprintf (fp, "%6zd: ", i);
+	size_t size = 0;
+	char *cs = idio_as_string_safe (c, &size, 40, 1);
+	fprintf (fp, "%-20s %s\n", idio_type2string (c), cs);
+	IDIO_GC_FREE (cs, size);
+    }
+    fprintf (fp, "\n");
+
+    fclose (fp);
+}
+
 void idio_vm_dump_constants ()
 {
 #ifdef IDIO_DEBUG
@@ -8044,37 +8098,7 @@ void idio_vm_dump_constants ()
 #endif
 
     for (idio_xi_t xi = 0; xi < idio_xenvs_size; xi++) {
-	char fn[40];
-	snprintf (fn, 40, "idio-vm-constants.%zu", xi);
-
-	FILE *fp = fopen (fn, "w");
-	if (NULL == fp) {
-	    perror ("fopen (idio-vm-constants, w)");
-	    return;
-	}
-
-	idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
-
-	IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
-
-	idio_as_t al = idio_array_size (cs);
-
-	fprintf (fp, "constants for xenv[%zu]: %zu constants\n", xi, al);
-	fprintf (fp, "%6.6s  %-20.20s %s\n", "ci", "type", "constant");
-	fprintf (fp, "%6.6s  %-20.20s %s\n", "--", "----", "--------");
-
-	idio_as_t i;
-	for (i = 0 ; i < al; i++) {
-	    IDIO c = idio_array_ref_index (cs, i);
-	    fprintf (fp, "%6zd: ", i);
-	    size_t size = 0;
-	    char *cs = idio_as_string_safe (c, &size, 40, 1);
-	    fprintf (fp, "%-20s %s\n", idio_type2string (c), cs);
-	    IDIO_GC_FREE (cs, size);
-	}
-	fprintf (fp, "\n");
-
-	fclose (fp);
+	idio_vm_dump_xenv_constants (xi);
     }
 }
 
@@ -8090,7 +8114,7 @@ Return the current vm constants array.		\n\
 
 IDIO idio_vm_src_expr_ref (idio_xi_t xi, idio_as_t sei)
 {
-    IDIO ses = IDIO_XENV_SRC_EXPRS (idio_xenvs[xi]);
+    IDIO ses = IDIO_XENV_SES (idio_xenvs[xi]);
 
     if (sei >= idio_array_size (ses)) {
 	return idio_S_false;
@@ -8101,13 +8125,41 @@ IDIO idio_vm_src_expr_ref (idio_xi_t xi, idio_as_t sei)
 
 IDIO idio_vm_src_props_ref (idio_xi_t xi, idio_as_t spi)
 {
-    IDIO sps = IDIO_XENV_SRC_PROPS (idio_xenvs[xi]);
+    IDIO sps = IDIO_XENV_SPS (idio_xenvs[xi]);
 
     if (spi >= idio_array_size (sps)) {
 	return idio_S_false;
     }
 
     return idio_array_ref_index (sps, spi);
+}
+
+void idio_vm_dump_xenv_src_exprs (idio_xi_t xi)
+{
+    char fn[40];
+    snprintf (fn, 40, "idio-src-exprs.%zu", xi);
+    FILE *fp = fopen (fn, "w");
+    if (NULL == fp) {
+	perror ("fopen (idio-src-exprs, w)");
+	return;
+    }
+
+    idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
+
+    IDIO ses = IDIO_XENV_SES (idio_xenvs[xi]);
+
+    idio_as_t al = idio_array_size (ses);
+    fprintf (fp, "src-exprs for xenv[%zu]: %zd source expressions\n", xi, al);
+
+    idio_as_t i;
+    for (i = 0 ; i < al; i++) {
+	IDIO src = idio_array_ref_index (ses, i);
+	fprintf (fp, "%6zd: ", i);
+	idio_debug_FILE (fp, "%s\n", src);
+    }
+    fprintf (fp, "\n");
+
+    fclose (fp);
 }
 
 void idio_vm_dump_src_exprs ()
@@ -8117,31 +8169,51 @@ void idio_vm_dump_src_exprs ()
 #endif
 
     for (idio_xi_t xi = 0; xi < idio_xenvs_size; xi++) {
-	char fn[40];
-	snprintf (fn, 40, "idio-src-exprs.%zu", xi);
-	FILE *fp = fopen (fn, "w");
-	if (NULL == fp) {
-	    perror ("fopen (idio-src-exprs, w)");
-	    return;
-	}
+	idio_vm_dump_xenv_src_exprs (xi);
+    }
+}
 
-	idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
+void idio_vm_dump_xenv_src_props (idio_xi_t xi)
+{
+    char fn[40];
+    snprintf (fn, 40, "idio-src-props.%zu", xi);
+    FILE *fp = fopen (fn, "w");
+    if (NULL == fp) {
+	perror ("fopen (idio-src-props, w)");
+	return;
+    }
 
-	IDIO ses = IDIO_XENV_SRC_EXPRS (idio_xenvs[xi]);
+    idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
 
-	idio_as_t al = idio_array_size (ses);
-	fprintf (fp, "src-exprs for xenv[%zu]: %zd source expressions\n", xi, al);
+    IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
+    IDIO sps = IDIO_XENV_SPS (idio_xenvs[xi]);
 
-	idio_as_t i;
-	for (i = 0 ; i < al; i++) {
-	    IDIO src = idio_array_ref_index (ses, i);
-	    fprintf (fp, "%6zd: ", i);
-	    idio_debug_FILE (fp, "%s\n", src);
+    IDIO fnh = IDIO_HASH_EQP (8);
+
+    idio_as_t al = idio_array_size (sps);
+    fprintf (fp, "src-properties for xenv[%zu]: %zd source properties\n", xi, al);
+
+    idio_as_t i;
+    for (i = 0 ; i < al; i++) {
+	IDIO p = idio_array_ref_index (sps, i);
+	fprintf (fp, "%6zd: ", i);
+
+	if (idio_isa_pair (p)) {
+	    IDIO fi = IDIO_PAIR_H (p);
+	    IDIO fn = idio_hash_reference (fnh, fi, IDIO_LIST1 (idio_S_false));
+	    if (idio_S_false == fn) {
+		fn = idio_array_ref_index (cs, IDIO_FIXNUM_VAL (fi));
+		idio_hash_set (fnh, fi, fn);
+	    }
+	    idio_debug_FILE (fp, "%s", fn);
+	    idio_debug_FILE (fp, ":line %4s", IDIO_PAIR_HT (p));
+	} else {
+	    fprintf (fp, " %-25s", "<no lex tuple>");
 	}
 	fprintf (fp, "\n");
-
-	fclose (fp);
     }
+
+    fclose (fp);
 }
 
 void idio_vm_dump_src_props ()
@@ -8151,45 +8223,7 @@ void idio_vm_dump_src_props ()
 #endif
 
     for (idio_xi_t xi = 0; xi < idio_xenvs_size; xi++) {
-	char fn[40];
-	snprintf (fn, 40, "idio-src-props.%zu", xi);
-	FILE *fp = fopen (fn, "w");
-	if (NULL == fp) {
-	    perror ("fopen (idio-src-props, w)");
-	    return;
-	}
-
-	idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
-
-	IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
-	IDIO sps = IDIO_XENV_SRC_PROPS (idio_xenvs[xi]);
-
-	IDIO fnh = IDIO_HASH_EQP (8);
-
-	idio_as_t al = idio_array_size (sps);
-	fprintf (fp, "src-properties for xenv[%zu]: %zd source properties\n", xi, al);
-
-	idio_as_t i;
-	for (i = 0 ; i < al; i++) {
-	    IDIO p = idio_array_ref_index (sps, i);
-	    fprintf (fp, "%6zd: ", i);
-
-	    if (idio_isa_pair (p)) {
-		IDIO fi = IDIO_PAIR_H (p);
-		IDIO fn = idio_hash_reference (fnh, fi, IDIO_LIST1 (idio_S_false));
-		if (idio_S_false == fn) {
-		    fn = idio_array_ref_index (cs, IDIO_FIXNUM_VAL (fi));
-		    idio_hash_set (fnh, fi, fn);
-		}
-		idio_debug_FILE (fp, "%s", fn);
-		idio_debug_FILE (fp, ":line %4s", IDIO_PAIR_HT (p));
-	    } else {
-		fprintf (fp, " %-25s", "<no lex tuple>");
-	    }
-	    fprintf (fp, "\n");
-	}
-
-	fclose (fp);
+	idio_vm_dump_xenv_src_props (xi);
     }
 }
 
@@ -8205,7 +8239,7 @@ Return the current vm source constants array.	\n\
 
 idio_as_t idio_vm_extend_values (idio_xi_t xi)
 {
-    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
+    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
 
     idio_as_t i = idio_array_size (vs);
     idio_array_push (vs, idio_S_undef);
@@ -8240,7 +8274,7 @@ idio_as_t idio_vm_extend_default_values ()
 IDIO idio_vm_values_ref (idio_xi_t xi, idio_as_t vi)
 {
     if (vi) {
-	IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
+	IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
 	IDIO v = idio_array_ref_index (vs, vi);
 
 	if (idio_isa_struct_instance (v)) {
@@ -8354,29 +8388,85 @@ IDIO idio_vm_default_values_ref (idio_as_t gvi)
 
 void idio_vm_values_set (idio_xi_t xi, idio_as_t vi, IDIO v)
 {
-    IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
-
+    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
     idio_array_insert_index (vs, v, vi);
-}
-
-void idio_vm_values_gset (idio_xi_t xi, idio_as_t vi, IDIO v)
-{
-    if (xi) {
-	IDIO gvi = idio_vm_values_ref (xi, vi);
-	fprintf (stderr, "vmv-gset [%zu].%-4zu => ", xi, vi);
-	IDIO_TYPE_ASSERT (fixnum, gvi);
-	vi = IDIO_FIXNUM_VAL (gvi);
-	fprintf (stderr, "[0].%-4zu\n", vi);
-
-	xi = 0;
-    }
-
-    idio_vm_values_set (xi, vi, v);
 }
 
 void idio_vm_default_values_set (idio_as_t gvi, IDIO v)
 {
     return idio_vm_values_set (0, gvi, v);
+}
+
+void idio_vm_dump_xenv_values (idio_xi_t xi)
+{
+    IDIO Rx = IDIO_SYMBOL ("Rx");
+
+    char fn[40];
+    snprintf (fn, 40, "idio-vm-values.%zu", xi);
+    FILE *fp = fopen (fn, "w");
+    if (NULL == fp) {
+	perror ("fopen (idio-vm-values, w)");
+	return;
+    }
+
+    idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
+
+    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
+    IDIO vs0 = IDIO_XENV_VT (idio_xenvs[0]);
+
+    idio_as_t al = idio_array_size (vs);
+    fprintf (fp, "values for xenv[%zu]: %zd values\n", xi, al);
+    fprintf (fp, "%6.6s  %4.4s %-20.20s %s\n", "vi", "gvi", "type", "value");
+    fprintf (fp, "%6.6s  %4.4s %-20.20s %s\n", "--", "---", "----", "-----");
+
+    idio_as_t i;
+    for (i = 0 ; i < al; i++) {
+	fprintf (fp, "%6zd: ", i);
+	IDIO fgvi = idio_array_ref_index (vs, i);
+
+	idio_as_t gvi = 0;
+	if (xi) {
+	    gvi = IDIO_FIXNUM_VAL (fgvi);
+	} else {
+	    gvi = i;
+	}
+	fprintf (fp, "%4zd ", gvi);
+
+	if (gvi) {
+	    IDIO v = idio_array_ref_index (vs0, gvi);
+
+	    size_t size = 0;
+	    char *vs = NULL;
+	    if (idio_src_properties == v) {
+		/*
+		 * This is tens of thousands of
+		 *
+		 * e -> struct {file, line, e}
+		 *
+		 * entries.  It takes millions of calls to implement and
+		 * seconds to print!
+		 */
+		vs = idio_as_string_safe (v, &size, 0, 1);
+	    } else if (idio_isa_struct_instance (v) &&
+		       (IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (v)) == Rx)) {
+		/*
+		 * These objects are a little bit recursive and can easily
+		 * become 100+MB when printed (to a depth of 40...)
+		 */
+		vs = idio_as_string_safe (v, &size, 4, 1);
+	    } else {
+		vs = idio_as_string_safe (v, &size, 40, 1);
+	    }
+	    fprintf (fp, "%-20s %s", idio_type2string (v), vs);
+	    IDIO_GC_FREE (vs, size);
+	} else {
+	    fprintf (fp, "%-20s %s", "-", "-");
+	}
+	fprintf (fp, "\n");
+    }
+    fprintf (fp, "\n");
+
+    fclose (fp);
 }
 
 void idio_vm_dump_values ()
@@ -8392,75 +8482,8 @@ void idio_vm_dump_values ()
      */
     idio_gc_pause ("vm-dump-values");
 
-    IDIO Rx = IDIO_SYMBOL ("Rx");
-
     for (idio_xi_t xi = 0; xi < idio_xenvs_size; xi++) {
-	char fn[40];
-	snprintf (fn, 40, "idio-vm-values.%zu", xi);
-	FILE *fp = fopen (fn, "w");
-	if (NULL == fp) {
-	    perror ("fopen (idio-vm-values, w)");
-	    return;
-	}
-
-	idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
-
-	IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
-	IDIO vs0 = IDIO_XENV_VALUES (idio_xenvs[0]);
-
-	idio_as_t al = idio_array_size (vs);
-	fprintf (fp, "values for xenv[%zu]: %zd values\n", xi, al);
-	fprintf (fp, "%6.6s  %4.4s %-20.20s %s\n", "vi", "gvi", "type", "value");
-	fprintf (fp, "%6.6s  %4.4s %-20.20s %s\n", "--", "---", "----", "-----");
-
-	idio_as_t i;
-	for (i = 0 ; i < al; i++) {
-	    fprintf (fp, "%6zd: ", i);
-	    IDIO fgvi = idio_array_ref_index (vs, i);
-
-	    idio_as_t gvi = 0;
-	    if (xi) {
-		gvi = IDIO_FIXNUM_VAL (fgvi);
-	    } else {
-		gvi = i;
-	    }
-	    fprintf (fp, "%4zd ", gvi);
-
-	    if (gvi) {
-		IDIO v = idio_array_ref_index (vs0, gvi);
-
-		size_t size = 0;
-		char *vs = NULL;
-		if (idio_src_properties == v) {
-		    /*
-		     * This is tens of thousands of
-		     *
-		     * e -> struct {file, line, e}
-		     *
-		     * entries.  It takes millions of calls to implement and
-		     * seconds to print!
-		     */
-		    vs = idio_as_string_safe (v, &size, 0, 1);
-		} else if (idio_isa_struct_instance (v) &&
-			   (IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (v)) == Rx)) {
-		    /*
-		     * These objects are a little bit recursive and can easily
-		     * become 100+MB when printed (to a depth of 40...)
-		     */
-		    vs = idio_as_string_safe (v, &size, 4, 1);
-		} else {
-		    vs = idio_as_string_safe (v, &size, 40, 1);
-		}
-		fprintf (fp, "%-20s %s", idio_type2string (v), vs);
-		IDIO_GC_FREE (vs, size);
-	    } else {
-		fprintf (fp, "%-20s %s", "-", "-");
-	    }
-	    fprintf (fp, "\n");
-	}
-	fprintf (fp, "\n");
-
-	fclose (fp);
+	idio_vm_dump_xenv_values (xi);
     }
 
     idio_gc_resume ("vm-dump-values");
@@ -8488,6 +8511,9 @@ IDIO idio_vm_extend_tables (idio_xi_t xi, IDIO name, IDIO scope, IDIO module, ID
 
     IDIO si = idio_S_false;
     if (xi) {
+	idio_vm_symbols_set (xi, vi, fci);
+	idio_vm_values_set (xi, vi, fgvi);
+
 	/* fsi == fvi for xi > 0 */
 	si = IDIO_LIST6 (scope, fvi, fci, fgvi, module, desc);
     } else {
@@ -8514,7 +8540,7 @@ void idio_vm_thread_state (IDIO thr)
     IDIO frame = IDIO_THREAD_FRAME (thr);
     while (idio_S_nil != frame) {
 	idio_xi_t frame_xi = IDIO_FRAME_XI (frame);
-	IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[frame_xi]);
+	IDIO cs = IDIO_XENV_CS (idio_xenvs[frame_xi]);
 	idio_as_t ncs = idio_array_size (cs);
 
 	IDIO faci = IDIO_FRAME_NAMES (frame);
@@ -8767,7 +8793,7 @@ IDIO idio_vm_frame_tree (IDIO args)
 	}
 
 	idio_xi_t frame_xi = IDIO_FRAME_XI (frame);
-	IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[frame_xi]);
+	IDIO cs = IDIO_XENV_CS (idio_xenvs[frame_xi]);
 	idio_as_t ncs = idio_array_size (cs);
 
 	IDIO faci = IDIO_FRAME_NAMES (frame);
@@ -8923,13 +8949,6 @@ IDIO idio_vm_run_xenv (idio_xi_t xi, idio_pc_t pc)
 
     IDIO r = idio_S_unspec;
 
-    /*
-    idio_vm_dump_dasm ();
-    idio_vm_dump_symbols ();
-    idio_vm_dump_constants ();
-    idio_vm_dump_values ();
-    */
-
 #ifdef IDIO_VM_DIS
     if (2 == xi) {
 	idio_vm_dis = 1;
@@ -8946,24 +8965,28 @@ IDIO idio_vm_run_xenv (idio_xi_t xi, idio_pc_t pc)
     return r;
 }
 
-idio_xi_t idio_vm_add_xenv (IDIO desc, IDIO symbols, IDIO constants, IDIO values, IDIO src_exprs, IDIO src_props, IDIO bc)
+idio_xi_t idio_vm_add_xenv (IDIO desc, IDIO st, IDIO cs, IDIO ch, IDIO vt, IDIO ses, IDIO sps, IDIO bc)
 {
     IDIO_ASSERT (desc);
-    IDIO_ASSERT (symbols);
-    IDIO_ASSERT (constants);
-    IDIO_ASSERT (values);
-    IDIO_ASSERT (src_exprs);
-    IDIO_ASSERT (src_props);
+    IDIO_ASSERT (st);
+    IDIO_ASSERT (cs);
+    IDIO_ASSERT (ch);
+    IDIO_ASSERT (vt);
+    IDIO_ASSERT (ses);
+    IDIO_ASSERT (sps);
     IDIO_ASSERT (bc);
 
     IDIO_TYPE_ASSERT (string, desc);
-    IDIO_TYPE_ASSERT (array, symbols);
-    IDIO_TYPE_ASSERT (array, constants);
-    IDIO_TYPE_ASSERT (array, values);
-    IDIO_TYPE_ASSERT (array, src_exprs);
-    IDIO_TYPE_ASSERT (array, src_props);
+    IDIO_TYPE_ASSERT (array, st);
+    IDIO_TYPE_ASSERT (array, cs);
+    IDIO_TYPE_ASSERT (hash, ch);
+    IDIO_TYPE_ASSERT (array, vt);
+    IDIO_TYPE_ASSERT (array, ses);
+    IDIO_TYPE_ASSERT (array, sps);
 
     idio_xenv_t *xe = idio_xenv ();
+
+    IDIO_XENV_EENV (xe)		  = idio_S_nil;
 
     /*
      * XXX We need to idio_gc_protect_auto() these elements as they
@@ -8973,40 +8996,26 @@ idio_xi_t idio_vm_add_xenv (IDIO desc, IDIO symbols, IDIO constants, IDIO values
      * the GC has mechanically free every allocated value including
      * these things we are protecting.
      */
-    IDIO_XENV_DESC (xe)		  = desc; /* idio_copy (desc, IDIO_COPY_SHALLOW); */
+    IDIO_XENV_DESC (xe) = desc;
     idio_gc_protect_auto (IDIO_XENV_DESC (xe));
 
-    IDIO_XENV_SYMBOLS (xe)        = symbols; /* idio_copy (symbols, IDIO_COPY_SHALLOW); */
-    idio_gc_protect_auto (IDIO_XENV_SYMBOLS (xe));
+    IDIO_XENV_ST (xe)   = st;
+    idio_gc_protect_auto (IDIO_XENV_ST (xe));
 
-    IDIO_XENV_CONSTANTS (xe)      = constants; /* idio_copy (constants, IDIO_COPY_SHALLOW); */
-    idio_gc_protect_auto (IDIO_XENV_CONSTANTS (xe));
+    IDIO_XENV_CS (xe)   = cs;
+    idio_gc_protect_auto (IDIO_XENV_CS (xe));
 
-    IDIO_XENV_VALUES (xe)         = values; /* idio_copy (values, IDIO_COPY_SHALLOW); */
-    idio_gc_protect_auto (IDIO_XENV_VALUES (xe));
+    IDIO_XENV_CH (xe)   = ch;
+    idio_gc_protect_auto (IDIO_XENV_CH (xe));
 
-    IDIO_XENV_SRC_EXPRS (xe)      = src_exprs; /* idio_copy (src_exprs, IDIO_COPY_SHALLOW); */
-    idio_gc_protect_auto (IDIO_XENV_SRC_EXPRS (xe));
+    IDIO_XENV_VT (xe)   = vt;
+    idio_gc_protect_auto (IDIO_XENV_VT (xe));
 
-    IDIO_XENV_SRC_PROPS (xe)      = src_props; /* idio_copy (src_props, IDIO_COPY_SHALLOW); */
-    idio_gc_protect_auto (IDIO_XENV_SRC_PROPS (xe));
+    IDIO_XENV_SES (xe)  = ses;
+    idio_gc_protect_auto (IDIO_XENV_SES (xe));
 
-    idio_ai_t al = idio_array_size (constants);
-    /*
-     * IDIO_HASH_EQP doesn't like a zero length hash so set it to be 1
-     */
-    IDIO_XENV_CONSTANTS_HASH (xe) = IDIO_HASH_EQP (al ? al : 1);
-    idio_gc_protect_auto (IDIO_XENV_CONSTANTS_HASH (xe));
-
-    idio_ai_t ai;
-
-    IDIO ch = IDIO_XENV_CONSTANTS_HASH (xe);
-    for (ai = 0; ai < al; ai++) {
-	IDIO v = idio_array_ref_index (constants, ai);
-	if (idio_S_nil != v) {
-	    idio_hash_set (ch, v, idio_fixnum (ai));
-	}
-    }
+    IDIO_XENV_SPS (xe)  = sps;
+    idio_gc_protect_auto (IDIO_XENV_SPS (xe));
 
     if (idio_isa_octet_string (bc)) {
 	IDIO_XENV_BYTE_CODE (xe) = idio_codegen_string2idio_ia (bc);
@@ -9023,21 +9032,23 @@ idio_xi_t idio_vm_add_xenv (IDIO desc, IDIO symbols, IDIO constants, IDIO values
     return IDIO_XENV_INDEX (xe);
 }
 
-IDIO_DEFINE_PRIMITIVE0V_DS ("%vm-add-xenv", vm_add_xenv, (IDIO args), "desc symbols constants values src-exprs src-props byte-code pc", "\
+IDIO_DEFINE_PRIMITIVE0V_DS ("%vm-add-xenv", vm_add_xenv, (IDIO args), "desc st cs ch vt ses sps byte-code pc", "\
 Add a new xenv derived from the arguments	\n\
 						\n\
 :param desc: a description			\n\
 :type desc: string				\n\
-:param symbols: symbols				\n\
-:type symbols: array				\n\
-:param constants: constants			\n\
-:type constants: array				\n\
-:param values: values				\n\
-:type values: array				\n\
-:param src-exprs: source expressions		\n\
-:type src-exprs: array				\n\
-:param src-props: source properties		\n\
-:type src-props: array				\n\
+:param st: symbol table				\n\
+:type st: array					\n\
+:param cs: constants				\n\
+:type cs: array					\n\
+:param cs: constants hash			\n\
+:type cs: hash					\n\
+:param vt: value tables				\n\
+:type vt: array					\n\
+:param ses: source expressions			\n\
+:type ses: array				\n\
+:param sps: source properties			\n\
+:type sps: array				\n\
 :param byte-code: byte code			\n\
 :type byte-code: octet-string			\n\
 :param pc: the starting PC			\n\
@@ -9056,25 +9067,27 @@ Add a new xenv derived from the arguments	\n\
 	return idio_S_notreached;
     }
 
-    IDIO desc      = idio_list_nth (args, 1, idio_S_nil);
-    IDIO symbols   = idio_list_nth (args, 2, idio_S_nil);
-    IDIO constants = idio_list_nth (args, 3, idio_S_nil);
-    IDIO values    = idio_list_nth (args, 4, idio_S_nil);
-    IDIO src_exprs = idio_list_nth (args, 5, idio_S_nil);
-    IDIO src_props = idio_list_nth (args, 6, idio_S_nil);
-    IDIO bs        = idio_list_nth (args, 7, idio_S_nil);
-    IDIO pc        = idio_list_nth (args, 8, idio_S_nil);
+    IDIO desc = idio_list_nth (args, 1, idio_S_nil);
+    IDIO st   = idio_list_nth (args, 2, idio_S_nil);
+    IDIO cs   = idio_list_nth (args, 3, idio_S_nil);
+    IDIO ch   = idio_list_nth (args, 4, idio_S_nil);
+    IDIO vt   = idio_list_nth (args, 5, idio_S_nil);
+    IDIO ses  = idio_list_nth (args, 6, idio_S_nil);
+    IDIO sps  = idio_list_nth (args, 7, idio_S_nil);
+    IDIO bs   = idio_list_nth (args, 8, idio_S_nil);
+    IDIO pc   = idio_list_nth (args, 9, idio_S_nil);
 
     IDIO_USER_TYPE_ASSERT (string, desc);
-    IDIO_USER_TYPE_ASSERT (array, symbols);
-    IDIO_USER_TYPE_ASSERT (array, constants);
-    IDIO_USER_TYPE_ASSERT (array, values);
-    IDIO_USER_TYPE_ASSERT (array, src_exprs);
-    IDIO_USER_TYPE_ASSERT (array, src_props);
+    IDIO_USER_TYPE_ASSERT (array, st);
+    IDIO_USER_TYPE_ASSERT (array, cs);
+    IDIO_USER_TYPE_ASSERT (hash, ch);
+    IDIO_USER_TYPE_ASSERT (array, vt);
+    IDIO_USER_TYPE_ASSERT (array, ses);
+    IDIO_USER_TYPE_ASSERT (array, sps);
     IDIO_USER_TYPE_ASSERT (octet_string, bs);
     IDIO_USER_TYPE_ASSERT (integer, pc);
 
-    idio_xi_t xi = idio_vm_add_xenv (desc, symbols, constants, values, src_exprs, src_props, bs);
+    idio_xi_t xi = idio_vm_add_xenv (desc, st, cs, ch, vt, ses, sps, bs);
 
     return idio_fixnum (xi);
 }
@@ -9087,12 +9100,13 @@ idio_xi_t idio_vm_add_xenv_from_eenv (IDIO thr, IDIO eenv)
     IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (struct_instance, eenv);
 
-    IDIO desc      = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_DESC);
-    IDIO symbols   = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_ST);
-    IDIO values    = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_VT);
-    IDIO constants = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_CONSTANTS);
-    IDIO src_exprs = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_SRC_EXPRS);
-    IDIO src_props = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_SRC_PROPS);
+    IDIO desc = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_DESC);
+    IDIO st   = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_ST);
+    IDIO vt   = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_VT);
+    IDIO cs   = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_CS);
+    IDIO ch   = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_CH);
+    IDIO ses  = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_SES);
+    IDIO sps  = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_SPS);
 
     IDIO CTP_bc    = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_BYTE_CODE);
     if (idio_CSI_idio_ia_s != IDIO_C_TYPE_POINTER_PTYPE (CTP_bc)) {
@@ -9105,7 +9119,9 @@ idio_xi_t idio_vm_add_xenv_from_eenv (IDIO thr, IDIO eenv)
 	return 0;
     }
 
-    idio_xi_t xi = idio_vm_add_xenv (desc, symbols, constants, values, src_exprs, src_props, CTP_bc);
+    idio_xi_t xi = idio_vm_add_xenv (desc, st, cs, ch, vt, ses, sps, CTP_bc);
+
+    IDIO_XENV_EENV (idio_xenvs[xi]) = eenv;
 
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_XI, idio_fixnum (xi));
 
@@ -9156,6 +9172,24 @@ being the starting PC				\n\
     IDIO_THREAD_PC (thr) = opc;
 
     return r;
+}
+
+void idio_vm_dump_xenv (idio_xi_t xi)
+{
+#ifdef IDIO_DEBUG
+    fprintf (stderr, "vm-xenv [%zu] ", xi);
+#endif
+
+    idio_vm_dump_xenv_dasm (xi);
+    idio_vm_dump_xenv_symbols (xi);
+    idio_vm_dump_xenv_constants (xi);
+    /*
+    idio_vm_dump_xenv_src_exprs (xi);
+    */
+    idio_vm_dump_xenv_src_props (xi);
+    /*
+    idio_vm_dump_xenv_values (xi);
+    */
 }
 
 /*
@@ -9449,6 +9483,7 @@ void idio_init_vm_values ()
     IDIO_VM_STRING (SYM_DEF_gvi0,          "SYM-DEF/gvi=0");
     IDIO_VM_STRING (SYM_IDEF_gvi0,         "SYM-IDEF/gvi=0");
     IDIO_VM_STRING (SYM_SET,               "SYM-SET");
+    IDIO_VM_STRING (SYM_ISET_gvi0,         "SYM-ISET/gvi=0");
     IDIO_VM_STRING (COMPUTED_SYM_DEF,      "COMPUTED-SYM-DEF");
     IDIO_VM_STRING (COMPUTED_SYM_IDEF,     "COMPUTED-SYM-IDEF");
     IDIO_VM_STRING (COMPUTED_SYM_IDEF_gvi0, "COMPUTED-SYM-IDEF/gvi=0");
@@ -9567,7 +9602,9 @@ void idio_final_vm ()
 	    idio_vm_reporting = 1;
 	    idio_vm_dump_symbols ();
 	    idio_vm_dump_constants ();
+	    /*
 	    idio_vm_dump_src_exprs ();
+	    */
 	    idio_vm_dump_src_props ();
 	    idio_vm_dump_values ();
 
@@ -9577,9 +9614,9 @@ void idio_final_vm ()
 #endif
 	    for (idio_xi_t xi = 0; xi < idio_xenvs_size; xi++) {
 		IDIO_IA_T bc = IDIO_XENV_BYTE_CODE (idio_xenvs[xi]);
-		IDIO st = IDIO_XENV_SYMBOLS (idio_xenvs[xi]);
-		IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
-		IDIO vs = IDIO_XENV_VALUES (idio_xenvs[xi]);
+		IDIO st = IDIO_XENV_ST (idio_xenvs[xi]);
+		IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
+		IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
 
 		fprintf (idio_vm_perf_FILE, "final-vm: #%2zu\n", xi);
 		fprintf (idio_vm_perf_FILE, "  %zu instruction bytes\n", IDIO_IA_USIZE (bc));

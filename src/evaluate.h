@@ -96,28 +96,26 @@ typedef enum {
     IDIO_EENV_ST_AOTP,
     IDIO_EENV_ST_SYMBOLS,	 /* alist of (symbol symbol-info) */
     IDIO_EENV_ST_ST,		 /* symbol table for VM */
-    IDIO_EENV_ST_VALUES,	 /* # values required */
     IDIO_EENV_ST_VT,		 /* value table for VM */
-    IDIO_EENV_ST_CONSTANTS,	 /* shared with xenv */
-    IDIO_EENV_ST_CONSTANTS_HASH, /* shared with xenv */
+    IDIO_EENV_ST_CS,	 /* shared with xenv */
+    IDIO_EENV_ST_CH, /* shared with xenv */
     IDIO_EENV_ST_MODULE,
     IDIO_EENV_ST_ESCAPES,
-    IDIO_EENV_ST_SRC_EXPRS,	/* shared with xenv */
-    IDIO_EENV_ST_SRC_PROPS,	/* shared with xenv */
+    IDIO_EENV_ST_SES,	/* shared with xenv */
+    IDIO_EENV_ST_SPS,	/* shared with xenv */
     IDIO_EENV_ST_BYTE_CODE,	/* shared with xenv */
     IDIO_EENV_ST_XI,		/* set when imported as xenv */
     IDIO_EENV_ST_SIZE,
 } idio_eenv_st_enum;
 
-#define IDIO_MEANING_EENV_AOT(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_AOTP)
-#define IDIO_MEANING_EENV_SYMBOLS(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_SYMBOLS)
-#define IDIO_MEANING_EENV_ST(E)			idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ST)
-#define IDIO_MEANING_EENV_VALUES(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_VALUES)
-#define IDIO_MEANING_EENV_VT(E)			idio_struct_instance_ref_direct((E), IDIO_EENV_ST_VT)
-#define IDIO_MEANING_EENV_CONSTANTS(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_CONSTANTS)
-#define IDIO_MEANING_EENV_CONSTANTS_HASH(E)	idio_struct_instance_ref_direct((E), IDIO_EENV_ST_CONSTANTS_HASH)
-#define IDIO_MEANING_EENV_MODULE(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_MODULE)
-#define IDIO_MEANING_EENV_ESCAPES(E)		idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ESCAPES)
+#define IDIO_MEANING_EENV_AOT(E)     idio_struct_instance_ref_direct((E), IDIO_EENV_ST_AOTP)
+#define IDIO_MEANING_EENV_SYMBOLS(E) idio_struct_instance_ref_direct((E), IDIO_EENV_ST_SYMBOLS)
+#define IDIO_MEANING_EENV_ST(E)      idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ST)
+#define IDIO_MEANING_EENV_VT(E)      idio_struct_instance_ref_direct((E), IDIO_EENV_ST_VT)
+#define IDIO_MEANING_EENV_CS(E)      idio_struct_instance_ref_direct((E), IDIO_EENV_ST_CS)
+#define IDIO_MEANING_EENV_CH(E)      idio_struct_instance_ref_direct((E), IDIO_EENV_ST_CH)
+#define IDIO_MEANING_EENV_MODULE(E)  idio_struct_instance_ref_direct((E), IDIO_EENV_ST_MODULE)
+#define IDIO_MEANING_EENV_ESCAPES(E) idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ESCAPES)
 
 extern IDIO idio_evaluate_module;
 extern IDIO idio_evaluate_eenv_type;
@@ -128,8 +126,8 @@ void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char const *msg, 
 void idio_meaning_error_static_redefine (IDIO lo, IDIO c_location, char const *msg, IDIO name, IDIO cv, IDIO new);
 void idio_meaning_error_static_arity (IDIO lo, IDIO c_location, char const *msg, IDIO args);
 
-void idio_meaning_add_description (IDIO sym, IDIO desc);
-IDIO idio_meaning_get_description (IDIO sym);
+idio_as_t idio_meaning_extend_tables (IDIO eenv, IDIO name, IDIO scope, IDIO ci, int use_vi, IDIO module, IDIO desc, int set_symbol);
+
 IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, char const *cpp__FILE__, int cpp__LINE__);
 IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, char const *cpp__FILE__, int cpp__LINE__);
 IDIO idio_add_primitive (idio_primitive_desc_t *d, char const *cpp__FILE__, int cpp__LINE__);

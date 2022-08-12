@@ -186,10 +186,12 @@ char const *idio_vm_bytecode2string (int code)
     case IDIO_A_POP_FRAME:                 r = "A-POP-FRAME";                 break;
 
     case IDIO_A_LINK_FRAME:                r = "A-LINK-FRAME";                break;
+    case IDIO_A_LINK_IFRAME:               r = "A-LINK-IFRAME";               break;
     case IDIO_A_UNLINK_FRAME:              r = "A-UNLINK-FRAME";              break;
     case IDIO_A_PACK_FRAME:                r = "A-PACK-FRAME";                break;
     case IDIO_A_POP_LIST_FRAME:            r = "A-POP-LIST-FRAME";            break;
     case IDIO_A_EXTEND_FRAME:              r = "A-EXTEND-FRAME";              break;
+    case IDIO_A_EXTEND_IFRAME:             r = "A-EXTEND-IFRAME";             break;
 
     case IDIO_A_ARITY1P:                   r = "A-ARITY1P";                   break;
     case IDIO_A_ARITY2P:                   r = "A-ARITY2P";                   break;
@@ -267,19 +269,23 @@ char const *idio_vm_bytecode2string (int code)
 
 IDIO idio_vm_dasm_symbols_ref (idio_xi_t xi, idio_as_t si)
 {
-    IDIO st = IDIO_XENV_SYMBOLS (idio_xenvs[xi]);
-    IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
+    IDIO st = IDIO_XENV_ST (idio_xenvs[xi]);
+    IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
 
     if (xi) {
 	if (si >= idio_array_size (st)) {
-	    fprintf (stderr, "dasm-sym-ref si %zu > %zu\n", si, idio_array_size (st));
+	    fprintf (stderr, "dasm-sym-ref [%zu].%zd > %zu\n", xi, si, idio_array_size (st));
 	    idio_debug ("st %s\n", st);
 	    return idio_S_undef;
 	    assert (0);
 	}
 	IDIO fci = idio_array_ref_index (st, si);
 
-	return idio_array_ref_index (cs, IDIO_FIXNUM_VAL (fci));
+	if (idio_isa_fixnum (fci)) {
+	    return idio_array_ref_index (cs, IDIO_FIXNUM_VAL (fci));
+	} else {
+	    return idio_S_unspec;
+	}
     } else {
 	return idio_array_ref_index (cs, si);
     }
@@ -287,7 +293,7 @@ IDIO idio_vm_dasm_symbols_ref (idio_xi_t xi, idio_as_t si)
 
 IDIO idio_vm_dasm_constants_ref (idio_xi_t xi, idio_as_t ci)
 {
-    IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
+    IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
 
     return idio_array_ref_index (cs, ci);
 }
@@ -312,7 +318,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	idio_vm_panic (thr, "vm-dasm: bad PC!");
     }
 
-    IDIO cs = IDIO_XENV_CONSTANTS (idio_xenvs[xi]);
+    IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
     IDIO fnh = IDIO_HASH_EQP (8);
     IDIO hints = IDIO_HASH_EQP (256);
 
@@ -400,8 +406,14 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
 
-		IDIO_VM_DASM ("SYM-IREF .%-4" PRIu64 "", si);
-		idio_debug_FILE (fp, " %s", sym);
+		IDIO_VM_DASM ("SYM-IREF .%-4" PRIu64 " ", si);
+
+		if (idio_isa_symbol (sym)) {
+		    idio_debug_FILE (fp, " %s", sym);
+		} else {
+		    IDIO_VM_DASM (" ?? %s", idio_type2string (sym));
+		    idio_debug_FILE (fp, " %s", sym);
+		}
 	    }
 	    break;
 	case IDIO_A_FUNCTION_SYM_REF:
@@ -614,11 +626,12 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_IPREDEFINED:
 	    {
 		uint64_t si = idio_vm_get_varuint (bc, pcp);
-		IDIO pd = idio_vm_iref2val (thr, xi, si, "IPREDEFINED");
+		IDIO pd = idio_vm_iref_val (thr, xi, si, "IPREDEFINED", IDIO_VM_IREF_VAL_UNDEF_FATAL);
 		if (idio_isa_primitive (pd)) {
 		    IDIO_VM_DASM ("IPREDEFINED %" PRIu64 " PRIM %-20s", si, IDIO_PRIMITIVE_NAME (pd));
 		} else {
-		    IDIO_VM_DASM ("IPREDEFINED %" PRIu64 " PRIM %-20s", si, idio_type2string (pd));
+		    IDIO_VM_DASM ("IPREDEFINED %" PRIu64 " PRIM isa %s = ", si, idio_type2string (pd));
+		    idio_debug_FILE (fp, "%s ??", pd);
 		}
 	    }
 	    break;
@@ -1524,6 +1537,29 @@ current directory.  These may get overwritten when Idio stops.	\n\
     return idio_S_unspec;
 }
 
+void idio_vm_dump_xenv_dasm (idio_xi_t xi)
+{
+    char fn[40];
+    snprintf (fn, 40, "idio-vm-dasm.%zu", xi);
+
+    FILE *fp = fopen (fn, "w");
+    if (NULL == fp) {
+	perror ("fopen (idio-vm-dasm, w)");
+	return;
+    }
+    /*
+     * Debugging by dropping out the dasm so far can be risky so
+     * linebuffer the output for max info.
+     */
+    setlinebuf (fp);
+
+    idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
+
+    idio_vm_dasm (fp, xi, 0, 0);
+
+    fclose (fp);
+}
+
 void idio_vm_dump_dasm ()
 {
 #ifdef IDIO_DEBUG
@@ -1531,25 +1567,7 @@ void idio_vm_dump_dasm ()
 #endif
 
     for (idio_xi_t xi = 0; xi < idio_xenvs_size; xi++) {
-	char fn[40];
-	snprintf (fn, 40, "idio-vm-dasm.%zu", xi);
-
-	FILE *fp = fopen (fn, "w");
-	if (NULL == fp) {
-	    perror ("fopen (idio-vm-dasm, w)");
-	    return;
-	}
-	/*
-	 * Debugging by dropping out the dasm so far can be risky so
-	 * linebuffer the output for max info.
-	 */
-	setlinebuf (fp);
-
-	idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
-
-	idio_vm_dasm (fp, xi, 0, 0);
-
-	fclose (fp);
+	idio_vm_dump_xenv_dasm (xi);
     }
 }
 

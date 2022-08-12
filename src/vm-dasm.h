@@ -28,6 +28,7 @@
 
 char const *idio_vm_bytecode2string (int code);
 void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce);
+void idio_vm_dump_xenv_dasm (idio_xi_t xi);
 void idio_vm_dump_dasm ();
 
 void idio_init_vm_dasm ();

@@ -1430,11 +1430,12 @@ IDIO idio_module_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO m_or_n, IDIO a
 
     if (idio_isa_pair (si)) {
 	IDIO scope = IDIO_SI_SCOPE (si);
+	IDIO sym_idx = IDIO_SI_SI (si);
 	IDIO fmci = IDIO_SI_CI (si);
 	IDIO fgvi = IDIO_SI_VI (si);
 
 	if (idio_S_toplevel == scope) {
-	    r = idio_vm_values_gref (xi, IDIO_FIXNUM_VAL (fgvi), "symbol-value/toplevel");
+	    r = idio_vm_values_gref (xi, xi ? IDIO_FIXNUM_VAL (sym_idx) : IDIO_FIXNUM_VAL (fgvi), "symbol-value/toplevel");
 	} else if (idio_S_predef == scope) {
 	    r = idio_vm_values_gref (xi, IDIO_FIXNUM_VAL (fgvi), "symbol-value/predef");
 	} else if (idio_S_dynamic == scope) {
@@ -1790,8 +1791,13 @@ IDIO idio_module_set_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO value, IDI
 	 * and then immediately set_symbol_value() which means the gvi
 	 * remains 0.
 	 */
+	IDIO sym_idx = IDIO_SI_SI (si);
+	
 	gvi = idio_vm_extend_values (0);
 	fgvi = idio_fixnum (gvi);
+	if (xi) {
+	    idio_vm_values_set (xi, IDIO_FIXNUM_VAL (sym_idx), fgvi);
+	}
 	IDIO_SI_VI (si) = idio_fixnum (gvi);
     }
 
