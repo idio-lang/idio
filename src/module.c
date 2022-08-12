@@ -2183,63 +2183,32 @@ void idio_final_module ()
 	    return;
 	}
 
-	fprintf (fp, " %5s %-40s%.2s %5s\n", "MCI", "symbol", "Exported", "VVI");
+	fprintf (fp, " %5s %5s %-40s%.2s %5s\n", "SI", "CI", "symbol", "Exported", "GVI");
 
 	IDIO module_names = idio_hash_keys_to_list (idio_modules_hash);
-	int first = 1;
-	int comma = 0;
-	int printed = 0;
 	while (idio_S_nil != module_names) {
 	    IDIO module_name = IDIO_PAIR_H (module_names);
 	    IDIO module = idio_hash_ref (idio_modules_hash, module_name);
 
 	    idio_debug_FILE (fp, "\nModule %s\n", module_name);
 
-	    /*
-	     * XXX which xenv?
-	     */
-	    idio_xi_t xi = IDIO_THREAD_XI (idio_thread_current_thread ());
+	    IDIO symbols = idio_hash_keys_to_list (IDIO_MODULE_SYMBOLS (module));
+	    while (idio_S_nil != symbols) {
+		IDIO sym = IDIO_PAIR_H (symbols);
+		IDIO si = idio_hash_ref (IDIO_MODULE_SYMBOLS (module), sym);
 
-	    /*
-	     * Warn about mci/gci mis-matches
-	     */
-	    IDIO mcis = idio_hash_keys_to_list (IDIO_MODULE_VCI (module));
-	    while (idio_S_nil != mcis) {
-		IDIO mci = IDIO_PAIR_H (mcis);
-		IDIO gci = idio_hash_ref (IDIO_MODULE_VCI (module), mci);
-		if (mci != gci) {
-		    if (first) {
-			first = 0;
-			printed = 1;
-			idio_debug ("module %s: ", module_name);
-		    }
-		    if (comma) {
-			fprintf (stderr, ", ");
-		    }
-		    idio_debug ("%s != ", mci);
-		    idio_debug ("%s", gci);
-		    comma = 1;
+		idio_debug_FILE (fp, " %5s", IDIO_SI_SI (si));
+		idio_debug_FILE (fp, " %5s", IDIO_SI_CI (si));
+		idio_debug_FILE (fp, " %-40s", sym);
+		if (idio_S_false != idio_list_memq (sym, IDIO_MODULE_EXPORTS (module))) {
+		    fprintf (fp, "E ");
+		} else {
+		    fprintf (fp, "  ");
 		}
+		idio_debug_FILE (fp, " %5s", IDIO_SI_VI (si));
+		fprintf (fp, "\n");
 
-		if (printed) {
-		    fprintf (stderr, "\n");
-		}
-
-		IDIO gvi = idio_hash_ref (IDIO_MODULE_VVI (module), mci);
-		if (idio_S_unspec != gvi) {
-		    idio_debug_FILE (fp, " %5s", mci);
-		    IDIO sym = idio_vm_constants_ref (xi, IDIO_FIXNUM_VAL (mci));
-		    idio_debug_FILE (fp, " %-40s", sym);
-		    if (idio_S_false != idio_list_memq (sym, IDIO_MODULE_EXPORTS (module))) {
-			fprintf (fp, "E ");
-		    } else {
-			fprintf (fp, "  ");
-		    }
-		    idio_debug_FILE (fp, " %5s", gvi);
-		    fprintf (fp, "\n");
-		}
-
-		mcis = IDIO_PAIR_T (mcis);
+		symbols = IDIO_PAIR_T (symbols);
 	    }
 
 	    module_names = IDIO_PAIR_T (module_names);
