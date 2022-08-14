@@ -2844,6 +2844,8 @@ Not strictly useful at the moment.  You might want to use	\n\
     struct utsname *utsnamep = idio_alloc (sizeof (struct utsname));
 
     if (uname (utsnamep) == -1) {
+	idio_free (utsnamep);
+
 	/*
 	 * Test Case: ??
 	 *
@@ -2879,6 +2881,8 @@ is available for reference as ``libc/CLK_TCK``.			\n\
     clock_t times_r = times (tmsp);
 
     if ((clock_t) -1 == times_r) {
+	idio_free (tmsp);
+
 	/*
 	 * Test Case: ??
 	 *
@@ -3068,6 +3072,8 @@ a wrapper to libc :manpage:`tcgetattr(3)`			\n\
     int tcgetattr_r = tcgetattr (C_fd, termiosp);
 
     if (-1 == tcgetattr_r) {
+	idio_free (termiosp);
+
 	/*
 	 * Test Case: libc-wrap-errors/tcgetattr-bad-fd.idio
 	 *
@@ -3357,6 +3363,8 @@ a wrapper to libc :manpage:`stat(2)`		\n\
     }
 
     if (-1 == stat_r) {
+	idio_free (statp);
+
 	/*
 	 * Test Case: libc-wrap-errors/stat-empty-pathname.idio
 	 *
@@ -3929,6 +3937,8 @@ If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
     IDIO r;
 
     if (-1 == n) {
+	idio_free (buf);
+
 	/*
 	 * Test Case: ??
 	 */
@@ -3979,6 +3989,8 @@ a wrapper to libc :manpage:`pipe(2)`			       \n\
     int pipe_r = pipe (pipefd);
 
     if (-1 == pipe_r) {
+	idio_free (pipefd);
+
 	/*
 	 * Test Case: ??
 	 *
@@ -4223,6 +4235,8 @@ and `nsec` can be a ``C/long`` | fixnum | bignum	\n\
 	     */
 	    completed = idio_S_false;
 	} else {
+	    idio_free (C_rem);
+
 	    idio_error_system_errno ("nanosleep", req, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -4573,6 +4587,8 @@ a wrapper to libc :manpage:`lstat(2)`		\n\
     }
 
     if (-1 == lstat_r) {
+	idio_free (statp);
+
 	/*
 	 * Test Case: libc-wrap-errors/lstat-empty-pathname.idio
 	 *
@@ -4898,6 +4914,8 @@ a wrapper to libc :manpage:`gettimeofday(2)`			\n\
     struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
 
     if (-1 == gettimeofday (tvp, NULL)) {
+	idio_free (tvp);
+
 	/*
 	 * Test Case: ??
 	 *
@@ -4989,6 +5007,8 @@ The parameter `who` refers to ``libc/RUSAGE_SELF`` or		\n\
     struct rusage *rusagep = (struct rusage *) idio_alloc (sizeof (struct rusage));
 
     if (-1 == getrusage (C_who, rusagep)) {
+	idio_free (rusagep);
+
 	/*
 	 * Test Case:  libc-wrap-errors/getrusage-bad-who.idio
 	 *
@@ -5004,8 +5024,6 @@ The parameter `who` refers to ``libc/RUSAGE_SELF`` or		\n\
 	 *
 	 * getrusage (C/integer-> 15)
 	 */
-
-	idio_free (rusagep);
 
 	idio_error_system_errno ("getrusage", who, IDIO_C_FUNC_LOCATION ());
 
@@ -5045,6 +5063,8 @@ The resource names follow C conventions such as			\n\
     struct rlimit *rlimp = idio_alloc (sizeof (struct rlimit));
 
     if (getrlimit (C_resource, rlimp) == -1) {
+	idio_free (rlimp);
+
 	/*
 	 * Test Case:  libc-wrap-errors/getrlimit-bad-rlim.idio
 	 *
@@ -5120,6 +5140,8 @@ a wrapper to libc getpwuid(3)		\n\
 		    idio_gc_collect_all ("getpwuid");
 		    break;
 		default:
+		    idio_free (pwd);
+
 		    /*
 		     * Test Case: ??
 		     */
@@ -5145,6 +5167,8 @@ a wrapper to libc getpwuid(3)		\n\
 		    idio_gc_collect_all ("getpwuid");
 		    break;
 		default:
+		    idio_free (pwd);
+
 		    /*
 		     * Test Case: ??
 		     */
@@ -5234,6 +5258,8 @@ a wrapper to libc getpwnam(3)		\n\
 		    idio_gc_collect_all ("getpwnam");
 		    break;
 		default:
+		    idio_free (pwd);
+
 		    /*
 		     * Test Case: ??
 		     */
@@ -5259,6 +5285,8 @@ a wrapper to libc getpwnam(3)		\n\
 		    idio_gc_collect_all ("getpwnam");
 		    break;
 		default:
+		    idio_free (pwd);
+
 		    /*
 		     * Test Case: ??
 		     */
@@ -5407,6 +5435,8 @@ a wrapper to libc getgrgid(3)		\n\
 		    idio_gc_collect_all ("getgrgid");
 		    break;
 		default:
+		    idio_free (grp);
+
 		    /*
 		     * Test Case: ??
 		     */
@@ -5432,6 +5462,8 @@ a wrapper to libc getgrgid(3)		\n\
 		    idio_gc_collect_all ("getgrgid");
 		    break;
 		default:
+		    idio_free (grp);
+
 		    /*
 		     * Test Case: ??
 		     */
@@ -5519,6 +5551,8 @@ a wrapper to libc getgrnam(3)		\n\
 		    idio_gc_collect_all ("getgrnam");
 		    break;
 		default:
+		    idio_free (grp);
+
 		    /*
 		     * Test Case: ??
 		     */
@@ -5544,6 +5578,8 @@ a wrapper to libc getgrnam(3)		\n\
 		    idio_gc_collect_all ("getgrnam");
 		    break;
 		default:
+		    idio_free (grp);
+
 		    /*
 		     * Test Case: ??
 		     */
@@ -5681,6 +5717,8 @@ a wrapper to libc :manpage:`fstat(2)`		\n\
     int fstat_r = fstat (C_fd, statp);
 
     if (-1 == fstat_r) {
+	idio_free (statp);
+
 	/*
 	 * Test Case: libc-wrap-errors/fstat-bad-fd.idio
 	 *

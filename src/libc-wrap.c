@@ -3673,6 +3673,8 @@ void idio_init_libc_wrap ()
      */
     struct utsname *up = idio_alloc (sizeof (struct utsname));
     if (uname (up) == -1) {
+	idio_free (up);
+
 	/*
 	 * Test Case: ??
 	 *
@@ -3694,6 +3696,8 @@ void idio_init_libc_wrap ()
     /* idio_add_feature (idio_string_C (up->version)); */
     idio_add_feature_ps (IDIO_STATIC_STR_LEN ("uname/machine/"), up->machine, sizeof (up->machine) - 1);
     idio_add_feature_pi (IDIO_STATIC_STR_LEN ("sizeof/pointer/"), sizeof (void *) * CHAR_BIT);
+
+    idio_free (up);
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, UID_get);
     seti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, UID_set);
@@ -3741,6 +3745,8 @@ void idio_init_libc_wrap ()
 
     int ng = getgroups (ngroups, grp_list);
     if (-1 == ng) {
+	idio_free (grp_list);
+
 	/*
 	 * Test Case: ??
 	 *
@@ -3753,6 +3759,8 @@ void idio_init_libc_wrap ()
     }
 
     if (ngroups != ng) {
+	idio_free (grp_list);
+
 	/*
 	 * Test Case: ??
 	 *
