@@ -1065,7 +1065,7 @@ does not return per se						\n\
 	if (asp) {
 	    IDIO stack = IDIO_THREAD_STACK (thr);
 #ifdef IDIO_DEBUG
-	    fprintf (stderr, "restart-condition-handler: ABORT stack from %jd to %jd\n", idio_array_size (stack), asp + 1);
+	    fprintf (stderr, "restart-condition-handler: ABORT stack from %zd to %zd\n", idio_array_size (stack), asp + 1);
 #endif
 	    IDIO krun = idio_array_ref_index (stack, asp - 1);
 	    IDIO_ARRAY_USIZE (stack) = asp + 1;
@@ -1142,7 +1142,7 @@ Does not return.						\n\
     if (asp) {
 	IDIO stack = IDIO_THREAD_STACK (thr);
 #ifdef IDIO_DEBUG
-	fprintf (stderr, "reset-condition-handler: ABORT stack from %jd to %jd\n", idio_array_size (stack), asp + 1);
+	fprintf (stderr, "reset-condition-handler: ABORT stack from %zd to %zd\n", idio_array_size (stack), asp + 1);
 #endif
 	IDIO krun = idio_array_ref_index (stack, asp - 1);
 	IDIO_ARRAY_USIZE (stack) = asp + 1;
