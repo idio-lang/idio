@@ -6001,7 +6001,7 @@ int idio_vm_run1 (IDIO thr)
 	    if (asp) {
 		IDIO stack = IDIO_THREAD_STACK (thr);
 #ifdef IDIO_DEBUG
-		fprintf (stderr, "NON-CONT-ERR: ABORT stack from %jd to %jd\n", idio_array_size (stack), asp + 1);
+		fprintf (stderr, "NON-CONT-ERR: ABORT stack from %zd to %zd\n", idio_array_size (stack), asp + 1);
 #endif
 		IDIO krun = idio_array_ref_index (stack, asp - 1);
 		IDIO_ARRAY_USIZE (stack) = asp + 1;
@@ -7614,7 +7614,7 @@ IDIO idio_vm_run (IDIO thr, idio_pc_t pc, int caller)
 	    if (asp) {
 		IDIO stack = IDIO_THREAD_STACK (thr);
 #ifdef IDIO_DEBUG
-		fprintf (stderr, "vm-run: bail: ABORT stack from %jd to %jd\n", idio_array_size (stack), asp + 1);
+		fprintf (stderr, "vm-run: bail: ABORT stack from %zd to %zd\n", idio_array_size (stack), asp + 1);
 #endif
 		IDIO krun = idio_array_ref_index (stack, asp - 1);
 		IDIO_ARRAY_USIZE (stack) = asp + 1;
