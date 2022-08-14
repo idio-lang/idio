@@ -2026,6 +2026,8 @@ launch a pipeline of `job_controls`			\n\
     struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
 
     if (-1 == gettimeofday (tvp, NULL)) {
+	idio_free (tvp);
+
 	idio_error_system_errno ("gettimeofday", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -2034,6 +2036,8 @@ launch a pipeline of `job_controls`			\n\
     struct rusage *rusage_selfp = (struct rusage *) idio_alloc (sizeof (struct rusage));
 
     if (-1 == getrusage (RUSAGE_SELF, rusage_selfp)) {
+	idio_free (rusage_selfp);
+
 	idio_error_system_errno ("getrusage", idio_C_int (RUSAGE_SELF), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -2042,6 +2046,8 @@ launch a pipeline of `job_controls`			\n\
     struct rusage *rusage_childrenp = (struct rusage *) idio_alloc (sizeof (struct rusage));
 
     if (-1 == getrusage (RUSAGE_CHILDREN, rusage_childrenp)) {
+	idio_free (rusage_childrenp);
+
 	idio_error_system_errno ("getrusage", idio_C_int (RUSAGE_CHILDREN), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
