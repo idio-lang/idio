@@ -500,9 +500,9 @@ void * idio_malloc_realloc (void *cp, size_t size)
 	if (op->ov_magic == IDIO_MALLOC_MAGIC_FREE) {
 	    fprintf (stderr, "im-realloc: already freed??\n");
 	} else {
-	    fprintf (stderr, "im-realloc: magic is %#x??\n", op->ov_magic);
+	    fprintf (stderr, "im-realloc: magic %#x != %#x\n", op->ov_magic, IDIO_MALLOC_MAGIC_ALLOC);
 	}
-	assert (0);
+	assert (op->ov_magic == IDIO_MALLOC_MAGIC_ALLOC);
     }
 
     IDIO_C_ASSERT (op->ov_rmagic == IDIO_MALLOC_RMAGIC);
