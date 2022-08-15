@@ -118,12 +118,14 @@ void *idio_alloc (size_t const s)
 
 void *idio_realloc (void *p, size_t const s)
 {
+    void *np;
+
 #ifdef IDIO_MALLOC
-    p = idio_malloc_realloc (p, s);
+    np = idio_malloc_realloc (p, s);
 #else
-    p = realloc (p, s);
+    np = realloc (p, s);
 #endif
-    if (NULL == p) {
+    if (NULL == np) {
 	/*
 	 * Test Case: ??
 	 */
@@ -133,7 +135,7 @@ void *idio_realloc (void *p, size_t const s)
 	return NULL;
     }
 
-    return p;
+    return np;
 }
 
 /*
@@ -262,6 +264,13 @@ void idio_gc_alloc (void **p, size_t const size)
     *p = idio_alloc (size);
     idio_gc->stats.nbytes += size;
     idio_gc->stats.tbytes += size;
+}
+
+void *idio_gc_realloc (void *p, size_t const size)
+{
+    idio_gc->stats.nbytes += size;
+    idio_gc->stats.tbytes += size;
+    return idio_realloc (p, size);
 }
 
 IDIO idio_clone_base (IDIO o)

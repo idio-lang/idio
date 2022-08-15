@@ -150,6 +150,8 @@ void idio_assign_array (IDIO a, idio_as_t asize, IDIO dv)
 {
     IDIO_ASSERT (a);
     IDIO_C_ASSERT (asize);
+    IDIO_ASSERT (dv);
+
     IDIO_TYPE_ASSERT (array, a);
 
     IDIO_GC_ALLOC (a->u.array, sizeof (idio_array_t));
@@ -222,35 +224,40 @@ void idio_free_array (IDIO a)
     IDIO_GC_FREE (a->u.array, sizeof (idio_array_t));
 }
 
-void idio_resize_array (IDIO a)
+void idio_resize_array_to (IDIO a, idio_as_t nsize)
 {
     IDIO_ASSERT (a);
+    IDIO_C_ASSERT (nsize);
+
     IDIO_TYPE_ASSERT (array, a);
 
     IDIO_ASSERT_NOT_CONST (array, a);
 
-    idio_array_t *oarray = a->u.array;
-    idio_as_t oasize = IDIO_ARRAY_ASIZE (a);
-    idio_as_t ousize = IDIO_ARRAY_USIZE (a);
-    idio_as_t nsize = oasize << 1;
+    IDIO_GC_REALLOC (a->u.array->ae, nsize * sizeof (IDIO));
 
-    idio_assign_array (a, nsize, IDIO_ARRAY_DV (a));
+    IDIO_ARRAY_ASIZE (a) = nsize;
 
     idio_as_t i;
-    for (i = 0 ; i < oarray->usize; i++) {
-	idio_array_insert_index (a, oarray->ae[i], i);
+    for (i = IDIO_ARRAY_USIZE (a); i < nsize; i++) {
+	IDIO_ARRAY_AE (a, i) = IDIO_ARRAY_DV (a);
+    }
+}
+
+void idio_resize_array (IDIO a)
+{
+    IDIO_ASSERT (a);
+
+    IDIO_TYPE_ASSERT (array, a);
+
+    IDIO_ASSERT_NOT_CONST (array, a);
+
+    idio_as_t oasize = IDIO_ARRAY_ASIZE (a);
+    idio_as_t nsize = oasize + 1024;
+    if (oasize < 1024) {
+	nsize = oasize << 1;
     }
 
-    /* pad with default value */
-    for (;i < IDIO_ARRAY_ASIZE (a); i++) {
-	idio_array_insert_index (a, IDIO_ARRAY_DV (a), i);
-    }
-
-    /* all the inserts above will have mucked usize up */
-    IDIO_ARRAY_USIZE (a) = ousize;
-
-    IDIO_GC_FREE (oarray->ae, oasize * sizeof (IDIO));
-    IDIO_GC_FREE (oarray, sizeof (idio_array_t));
+    idio_resize_array_to (a, nsize);
 }
 
 /**

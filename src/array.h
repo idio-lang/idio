@@ -28,6 +28,7 @@ IDIO idio_array_dv (idio_as_t size, IDIO dv);
 IDIO idio_array (idio_as_t size);
 int idio_isa_array (IDIO a);
 void idio_free_array (IDIO a);
+void idio_resize_array_to (IDIO a, idio_as_t nsize);
 void idio_resize_array (IDIO a);
 idio_as_t idio_array_size (IDIO a);
 void idio_array_insert_index (IDIO a, IDIO io, idio_ai_t index);

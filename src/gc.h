@@ -1542,6 +1542,8 @@ void idio_gc_free (void *p, size_t size);
 void *idio_realloc (void *p, size_t s);
 IDIO idio_gc_get (idio_type_e type);
 void idio_gc_alloc (void **p, size_t size);
+void *idio_gc_realloc (void *p, size_t size);
+
 /**
  * IDIO_GC_ALLOC() - normalised call to allocate ``IDIO`` value data
  * @p: pointer to be set
@@ -1552,6 +1554,7 @@ void idio_gc_alloc (void **p, size_t size);
  * value.
  */
 #define IDIO_GC_ALLOC(p,s)	(idio_gc_alloc ((void **)&(p), s))
+#define IDIO_GC_REALLOC(p,s)	((p) = idio_gc_realloc ((void *)(p), s))
 #define IDIO_GC_FREE(p,s)	(idio_gc_free ((void *)(p), s))
 
 IDIO idio_clone_base (IDIO o);
