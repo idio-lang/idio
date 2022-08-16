@@ -81,9 +81,9 @@ extern char **environ;
 char *idio_env_PATH_default = "/bin:/usr/bin";
 char *idio_env_IDIOLIB_default = NULL;
 size_t idio_env_IDIOLIB_default_len;
-IDIO idio_env_IDIOLIB_sym;
-IDIO idio_env_PATH_sym;
-IDIO idio_env_PWD_sym;
+IDIO idio_S_IDIOLIB;
+IDIO idio_S_PATH;
+IDIO idio_S_PWD;
 
 /*
  * Code coverage:
@@ -249,7 +249,7 @@ static void idio_env_add_environ ()
 	confstr_PATH = idio_alloc (size_confstr_PATH);
 	confstr (_CS_PATH, confstr_PATH, size_confstr_PATH);
     }
-    idio_env_set_default_C (idio_env_PATH_sym, confstr_PATH);
+    idio_env_set_default_C (idio_S_PATH, confstr_PATH);
     if (size_confstr_PATH) {
 	IDIO_GC_FREE (confstr_PATH, size_confstr_PATH);
     }
@@ -276,7 +276,7 @@ static void idio_env_add_environ ()
     }
 
     IDIO cwd = idio_pathname_C (C_cwd);
-    if (idio_env_set_default (idio_env_PWD_sym, cwd) == 0) {
+    if (idio_env_set_default (idio_S_PWD, cwd) == 0) {
 	/*
 	 * On Mac OS X (Mavericks):
 	 *
@@ -295,7 +295,7 @@ static void idio_env_add_environ ()
 	 * So, if we didn't create a new variable in
 	 * idio_env_set_default() then set the value regardless now.
 	 */
-	idio_module_env_set_symbol_value (idio_env_PWD_sym, cwd);
+	idio_module_env_set_symbol_value (idio_S_PWD, cwd);
     }
 
     /*
@@ -814,7 +814,7 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
 	     */
 	    int in_place = 0;
 
-	    IDIO idiolib = idio_module_env_symbol_value (idio_env_IDIOLIB_sym, IDIO_LIST1 (idio_S_false));
+	    IDIO idiolib = idio_module_env_symbol_value (idio_S_IDIOLIB, IDIO_LIST1 (idio_S_false));
 
 	    size_t idiolib_C_len = 0;
 	    char *idiolib_C = NULL;
@@ -845,7 +845,7 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
 		     */
 		    IDIO_GC_FREE (idiolib_C, idiolib_C_len);
 
-		    idio_env_format_error ("bootstrap", "contains an ASCII NUL", idio_env_IDIOLIB_sym, idiolib, IDIO_C_FUNC_LOCATION ());
+		    idio_env_format_error ("bootstrap", "contains an ASCII NUL", idio_S_IDIOLIB, idiolib, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
 		    return;
@@ -917,9 +917,9 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
 
 		IDIO I_ni = idio_string_C_len (ni, ni_len);
 		if (idio_S_false == idiolib) {
-		    idio_env_set_default (idio_env_IDIOLIB_sym, I_ni);
+		    idio_env_set_default (idio_S_IDIOLIB, I_ni);
 		} else {
-		    idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, I_ni);
+		    idio_module_env_set_symbol_value (idio_S_IDIOLIB, I_ni);
 		}
 		idio_free (ni);
 	    }
@@ -1006,9 +1006,9 @@ void idio_init_env ()
 {
     idio_module_table_register (idio_env_add_primitives, idio_final_env, NULL);
 
-    idio_env_IDIOLIB_sym = IDIO_SYMBOL ("IDIOLIB");
-    idio_env_PATH_sym = IDIO_SYMBOL ("PATH");
-    idio_env_PWD_sym = IDIO_SYMBOL ("PWD");
+    idio_S_IDIOLIB = IDIO_SYMBOL ("IDIOLIB");
+    idio_S_PATH    = IDIO_SYMBOL ("PATH");
+    idio_S_PWD     = IDIO_SYMBOL ("PWD");
 
     /*
      * /usr/lib/{pkg} was pretty universal -- now, not so much.

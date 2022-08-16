@@ -759,7 +759,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	 * Test Case: ??
 	 */
 	fprintf (stderr, "[%d]fcntl %d (%s) => %d\n", getpid (), fd, idio_type2string (ifd), errno);
-	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, IDIO_SYMBOL ("F_GETFL")), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, idio_S_F_GETFL), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -841,7 +841,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	/*
 	 * Test Case: ??
 	 */
-	idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, IDIO_SYMBOL ("F_SETFL"), idio_C_int (req_fs_flags)), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, idio_S_F_SETFL, idio_C_int (req_fs_flags)), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -871,7 +871,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	/*
 	 * Test Case: ??
 	 */
-	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, IDIO_SYMBOL ("F_GETFD")), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, idio_S_F_GETFD), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -914,7 +914,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	     IDIO_STATE_BOOTSTRAP == idio_state)) {
 	    perror ("fcntl F_SETFD");
 	} else {
-	    idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, IDIO_SYMBOL ("F_SETFD"), idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, idio_S_F_SETFD, idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1397,7 +1397,7 @@ IDIO idio_open_file_handle_C (char const *func, IDIO filename, char const *pathn
 	     IDIO_STATE_BOOTSTRAP == idio_state)) {
 	    perror ("fcntl F_SETFD");
 	} else {
-	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), IDIO_SYMBOL ("F_SETFD"), idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), idio_S_F_SETFD, idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2709,7 +2709,7 @@ fd handle `fdh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
 	     *
 	     * Not sure how to provoke this...
 	     */
-	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), IDIO_SYMBOL ("F_SETFD"), IDIO_SYMBOL ("FD_CLOEXEC")), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), idio_S_F_SETFD, IDIO_SYMBOL ("FD_CLOEXEC")), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -3008,7 +3008,7 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
     IDIO_C_ASSERT (file);
     IDIO_C_ASSERT (file_len > 0);
 
-    IDIO IDIOLIB = idio_module_current_symbol_value_recurse (idio_env_IDIOLIB_sym, idio_S_nil);
+    IDIO IDIOLIB = idio_module_current_symbol_value_recurse (idio_S_IDIOLIB, idio_S_nil);
 
     /*
      * idiolib is the start of the current IDIOLIB pathname element --
@@ -3050,7 +3050,7 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 	     */
 	    IDIO_GC_FREE (idiolib_copy_C, idiolib_copy_C_len);
 
-	    idio_env_format_error ("libfile-find", "contains an ASCII NUL", idio_env_IDIOLIB_sym, IDIOLIB, IDIO_C_FUNC_LOCATION ());
+	    idio_env_format_error ("libfile-find", "contains an ASCII NUL", idio_S_IDIOLIB, IDIOLIB, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return NULL;

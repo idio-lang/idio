@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021, 2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -23,10 +23,10 @@
 #ifndef VARS_H
 #define VARS_H
 
-extern IDIO idio_vars_IFS_sym;
-extern IDIO idio_vars_suppress_exit_on_error_sym;
-extern IDIO idio_vars_suppress_pipefail_sym;
-extern IDIO idio_vars_suppress_async_command_report_sym;
+extern IDIO idio_S_IFS;
+extern IDIO idio_S_suppress_exit_on_error;
+extern IDIO idio_S_suppress_pipefail;
+extern IDIO idio_S_suppress_async_command_report;
 
 void idio_init_vars ();
 

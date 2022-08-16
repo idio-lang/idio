@@ -934,8 +934,8 @@ int main (int argc, char **argv, char **envp)
 	if (idio_job_control_tty_isatty) {
 	    idio_job_control_set_interactive (idio_job_control_tty_isatty);
 
-	    idio_module_set_symbol_value (idio_vars_suppress_pipefail_sym, idio_S_true, idio_Idio_module);
-	    idio_module_set_symbol_value (idio_vars_suppress_exit_on_error_sym, idio_S_true, idio_Idio_module);
+	    idio_module_set_symbol_value (idio_S_suppress_pipefail, idio_S_true, idio_Idio_module);
+	    idio_module_set_symbol_value (idio_S_suppress_exit_on_error, idio_S_true, idio_Idio_module);
 
 	    if (import_debugger) {
 		IDIO lsh = idio_open_input_string_handle_C (IDIO_STATIC_STR_LEN ("import debugger"));

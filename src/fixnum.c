@@ -60,6 +60,8 @@
 #include "vm.h"
 #include "vtable.h"
 
+IDIO idio_fixnum0;
+
 static void idio_fixnum_divide_by_zero_error (IDIO nums, IDIO c_location)
 {
     IDIO_ASSERT (nums);
@@ -1532,5 +1534,7 @@ void idio_init_fixnum ()
     idio_vtable_add_method (f_vt,
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_fixnum_method_2string));
+
+    idio_fixnum0 = idio_fixnum (0);
 }
 

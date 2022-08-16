@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -25,8 +25,8 @@
 
 extern char *idio_env_PATH_default;
 extern char *idio_env_IDIOLIB_default;
-extern IDIO idio_env_PATH_sym;
-extern IDIO idio_env_IDIOLIB_sym;
+extern IDIO idio_S_PATH;
+extern IDIO idio_S_IDIOLIB;
 
 void idio_env_format_error (char const *circumstance, char const *msg, IDIO name, IDIO val, IDIO c_location);
 

@@ -97,6 +97,14 @@ IDIO idio_libc_open_flag_names = idio_S_nil;
 
 static long idio_SC_CLK_TCK = 0;
 
+static IDIO idio_S_mtd;
+IDIO idio_S_F_GETFL;
+IDIO idio_S_F_SETFL;
+IDIO idio_S_F_GETFD;
+IDIO idio_S_F_SETFD;
+
+IDIO idio_str_np_prefix;
+
 void idio_libc_format_error (char const *msg, IDIO name, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
@@ -551,10 +559,10 @@ IDIO idio_libc_proc_subst_named_pipe (int into)
      * now I need it again here...  Poor FreeBSD, we'll need to go the
      * long way round.
      */
-    IDIO mtd_cmd = IDIO_LIST2 (idio_module_symbol_value (IDIO_SYMBOL ("make-tmp-dir"),
+    IDIO mtd_cmd = IDIO_LIST2 (idio_module_symbol_value (idio_S_mtd,
 							idio_libc_module,
 							 idio_S_nil),
-			       IDIO_STRING ("idio-np-"));
+			       idio_str_np_prefix);
 
     IDIO td = idio_vm_invoke_C (idio_thread_current_thread (), mtd_cmd);
 
@@ -681,7 +689,7 @@ This exists to avoid :ref:`close <libc/close>` reacting to	\n\
 	/*
 	 * Test Case: ??
 	 */
-	idio_error_system_errno ("close-if-open/fcntl", IDIO_LIST2 (fd, IDIO_SYMBOL ("F_GETFD")), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("close-if-open/fcntl", IDIO_LIST2 (fd, idio_S_F_GETFD), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -3551,10 +3559,15 @@ void idio_init_libc_wrap ()
     idio_add_module_feature (idio_libc_module, sym);
     idio_module_export_symbol_value (sym, idio_C_int (F_DUPFD_CLOEXEC), idio_libc_module);
 #endif
-    idio_module_export_symbol_value (IDIO_SYMBOL ("F_GETFD"), idio_C_int (F_GETFD), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("F_SETFD"), idio_C_int (F_SETFD), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("F_GETFL"), idio_C_int (F_GETFL), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("F_SETFL"), idio_C_int (F_SETFL), idio_libc_module);
+    idio_S_F_GETFL = IDIO_SYMBOL ("F_GETFL");
+    idio_S_F_SETFL = IDIO_SYMBOL ("F_SETFL");
+    idio_S_F_GETFD = IDIO_SYMBOL ("F_GETFD");
+    idio_S_F_SETFD = IDIO_SYMBOL ("F_SETFD");
+
+    idio_module_export_symbol_value (idio_S_F_GETFD, idio_C_int (F_GETFD), idio_libc_module);
+    idio_module_export_symbol_value (idio_S_F_SETFD, idio_C_int (F_SETFD), idio_libc_module);
+    idio_module_export_symbol_value (idio_S_F_GETFL, idio_C_int (F_GETFL), idio_libc_module);
+    idio_module_export_symbol_value (idio_S_F_SETFL, idio_C_int (F_SETFL), idio_libc_module);
 
     /* limits.h */
     idio_module_export_symbol_value (IDIO_SYMBOL ("CHAR_MIN"), idio_C_char (CHAR_MIN), idio_libc_module);
@@ -3801,6 +3814,11 @@ void idio_init_libc_wrap ()
 #ifdef IDIO_CAN_POLL_DEVICE
     idio_add_feature (IDIO_SYMBOL ("IDIO_CAN_POLL_DEVICE"));
 #endif
+
+    idio_S_mtd = IDIO_SYMBOL ("make-tmp-dir");
+
+    idio_str_np_prefix = IDIO_STRING ("idio-np-");
+    idio_gc_protect_auto (idio_str_np_prefix);
 }
 
 /* Local Variables: */

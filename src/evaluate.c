@@ -148,7 +148,6 @@
  */
 
 IDIO idio_evaluate_module = idio_S_nil;
-static IDIO idio_evaluate_evaluate_sym = idio_S_nil;
 static IDIO idio_meaning_predef_extend_string = idio_S_nil;
 static IDIO idio_meaning_toplevel_extend_string = idio_S_nil;
 static IDIO idio_meaning_dynamic_extend_string = idio_S_nil;
@@ -156,6 +155,13 @@ static IDIO idio_meaning_environ_extend_string = idio_S_nil;
 static IDIO idio_meaning_define_gvi0_string = idio_S_nil;
 static IDIO idio_meaning_define_infix_operator_string = idio_S_nil;
 static IDIO idio_meaning_define_postfix_operator_string = idio_S_nil;
+
+static IDIO idio_S_evaluate;
+static IDIO idio_S_list2array;
+static IDIO idio_S_x;
+static IDIO idio_S_e;
+static IDIO idio_S_find_module;
+static IDIO idio_S_symbol_value;
 
 void idio_meaning_warning (char const *prefix, char const *msg, IDIO e)
 {
@@ -255,7 +261,7 @@ static void idio_meaning_base_error (IDIO src, IDIO c_location, IDIO msg, IDIO e
      * function call indicated and it must be a valid invocable entity
      * so idio_vm_restore_all_state() doesn't complain.
      */
-    IDIO_THREAD_FUNC (thr) = IDIO_SYMBOL ("evaluate");
+    IDIO_THREAD_FUNC (thr) = idio_S_evaluate;
 
     IDIO lsh;
     IDIO dsh;
@@ -684,7 +690,7 @@ IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO cs, IDIO cm)
      * NB a vi of 0 indicates an unresolved value index to be resolved
      * (based on the current set of imports) during runtime
      */
-    idio_module_set_symbol (name, IDIO_LIST5 (scope, fmci, idio_fixnum (0), cm, idio_meaning_toplevel_extend_string), cm);
+    idio_module_set_symbol (name, IDIO_LIST5 (scope, fmci, idio_fixnum0, cm, idio_meaning_toplevel_extend_string), cm);
 
     return fmci;
 }
@@ -964,7 +970,7 @@ static IDIO idio_meaning_nametree_extend_locals (IDIO nametree, IDIO names)
 	    /*
 	     * a thunk
 	     */
-	    alist = IDIO_LIST3 (idio_S_false, idio_S_param, idio_fixnum (0));
+	    alist = IDIO_LIST3 (idio_S_false, idio_S_param, idio_fixnum0);
 	    break;
 	} else {
 	    IDIO first = IDIO_PAIR_H (ns);
@@ -1455,7 +1461,7 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
     } else if (idio_isa_array (e)) {
 	IDIO iatl = idio_array_to_list (e);
 
-	r = IDIO_LIST2 (IDIO_SYMBOL ("list->array"), idio_meaning_dequasiquote (iatl, iatl, level, indent + 1));
+	r = IDIO_LIST2 (idio_S_list2array, idio_meaning_dequasiquote (iatl, iatl, level, indent + 1));
     } else if (idio_isa_symbol (e)) {
 	r = IDIO_LIST2 (idio_S_quote, e);
     } else {
@@ -1945,16 +1951,13 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
      *
      * where proc is (function/name name (formal*) ...) from above, ie. e
      */
-    IDIO x_sym = IDIO_SYMBOL ("x");
-    IDIO e_sym = IDIO_SYMBOL ("e");
-
-    IDIO pt_x = IDIO_LIST2 (idio_S_pt, x_sym);
+    IDIO pt_x = IDIO_LIST2 (idio_S_pt, idio_S_x);
     idio_meaning_copy_src_properties (src, pt_x);
 
     IDIO appl = IDIO_LIST3 (idio_S_apply, e, pt_x);
     idio_meaning_copy_src_properties (src, appl);
 
-    IDIO bindings = IDIO_LIST2 (x_sym, e_sym);
+    IDIO bindings = IDIO_LIST2 (idio_S_x, idio_S_e);
 
     IDIO nsh  = idio_open_output_string_handle_C ();
     idio_display (name, nsh);
@@ -2136,7 +2139,7 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
 
     IDIO ce = idio_thread_current_env ();
 
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, fmci, idio_fixnum (0), ce, docstr), ce);
+    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, fmci, idio_fixnum0, ce, docstr), ce);
 
     return IDIO_LIST3 (IDIO_I_EXPANDER, idio_fixnum (mci), m_a);
 }
@@ -2178,7 +2181,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
     idio_module_set_symbol (name,
 			    IDIO_LIST5 (idio_S_toplevel,
 					fmci,
-					idio_fixnum (0),
+					idio_fixnum0,
 					idio_operator_module,
 					idio_meaning_define_infix_operator_string),
 			    idio_operator_module);
@@ -2209,11 +2212,11 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 	    return idio_S_notreached;
 	}
 
-	IDIO find_module = IDIO_LIST2 (IDIO_SYMBOL ("find-module"),
+	IDIO find_module = IDIO_LIST2 (idio_S_find_module,
 				       IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module)));
 	idio_meaning_copy_src_properties (src, find_module);
 
-	IDIO sve = IDIO_LIST3 (IDIO_SYMBOL ("symbol-value"),
+	IDIO sve = IDIO_LIST3 (idio_S_symbol_value,
 			       IDIO_LIST2 (idio_S_quote, e),
 			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
@@ -2283,7 +2286,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
     idio_module_set_symbol (name,
 			    IDIO_LIST5 (idio_S_toplevel,
 					fmci,
-					idio_fixnum (0),
+					idio_fixnum0,
 					idio_operator_module,
 					idio_meaning_define_postfix_operator_string),
 			    idio_operator_module);
@@ -2314,11 +2317,11 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 	    return idio_S_notreached;
 	}
 
-	IDIO find_module = IDIO_LIST2 (IDIO_SYMBOL ("find-module"),
+	IDIO find_module = IDIO_LIST2 (idio_S_find_module,
 				       IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module)));
 	idio_meaning_copy_src_properties (src, find_module);
 
-	IDIO sve = IDIO_LIST3 (IDIO_SYMBOL ("symbol-value"),
+	IDIO sve = IDIO_LIST3 (idio_S_symbol_value,
 			       IDIO_LIST2 (idio_S_quote, e),
 			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
@@ -5409,7 +5412,7 @@ IDIO idio_evaluate_func (IDIO src, IDIO cs)
     IDIO_ASSERT (src);
     IDIO_ASSERT (cs);
 
-    IDIO ev_func = idio_module_symbol_value (idio_evaluate_evaluate_sym,
+    IDIO ev_func = idio_module_symbol_value (idio_S_evaluate,
 					     idio_evaluate_module,
 					     IDIO_LIST1 (idio_S_false));
 
@@ -5505,8 +5508,8 @@ void idio_init_evaluate ()
 {
     idio_module_table_register (idio_evaluate_add_primitives, NULL, NULL);
 
-    idio_evaluate_evaluate_sym = IDIO_SYMBOL ("evaluate");
-    idio_evaluate_module = idio_module (idio_evaluate_evaluate_sym);
+    idio_S_evaluate     = IDIO_SYMBOL ("evaluate");
+    idio_evaluate_module = idio_module (idio_S_evaluate);
 
 #define IDIO_MEANING_STRING(c,s) idio_meaning_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_meaning_ ## c ## _string);
 
@@ -5517,6 +5520,12 @@ void idio_init_evaluate ()
     IDIO_MEANING_STRING (define_gvi0, "idio-meaning-define/gvi=0");
     IDIO_MEANING_STRING (define_infix_operator, "idio-meaning-define-infix-operator");
     IDIO_MEANING_STRING (define_postfix_operator, "idio-meaning-define-postfix-operator");
+
+    idio_S_list2array   = IDIO_SYMBOL ("list->array");
+    idio_S_x            = IDIO_SYMBOL ("x");
+    idio_S_e            = IDIO_SYMBOL ("e");
+    idio_S_find_module  = IDIO_SYMBOL ("find-module");
+    idio_S_symbol_value = IDIO_SYMBOL ("symbol-value");
 }
 
 /* Local Variables: */

@@ -178,6 +178,9 @@ IDIO idio_condition_define_condition3_string = idio_S_nil;
 
 IDIO idio_condition_define_condition0_dynamic_string = idio_S_nil;
 
+static IDIO idio_S_condition_report;
+static IDIO idio_S_debug;
+
 IDIO_DEFINE_PRIMITIVE2V_DS ("make-condition-type", make_condition_type, (IDIO name, IDIO parent, IDIO fields), "name parent fields", "\
 make a new condition type			\n\
 						\n\
@@ -616,7 +619,7 @@ IDIO idio_condition_exit_on_error (IDIO c)
 		int st_C = IDIO_C_TYPE_int (st);
 
 		if (st_C) {
-		    IDIO seoe = idio_module_current_symbol_value_recurse_defined (idio_vars_suppress_exit_on_error_sym);
+		    IDIO seoe = idio_module_current_symbol_value_recurse_defined (idio_S_suppress_exit_on_error);
 
 		    if (idio_S_false == seoe) {
 			exit (st_C);
@@ -632,7 +635,7 @@ IDIO idio_condition_exit_on_error (IDIO c)
 	    if (idio_isa_C_int (sig)) {
 		int sig_C = IDIO_C_TYPE_int (sig);
 
-		IDIO seoe = idio_module_current_symbol_value_recurse_defined (idio_vars_suppress_exit_on_error_sym);
+		IDIO seoe = idio_module_current_symbol_value_recurse_defined (idio_S_suppress_exit_on_error);
 
 		if (idio_S_false == seoe) {
 		    kill (getpid (), sig_C);
@@ -697,7 +700,7 @@ void idio_condition_report (char const *prefix, IDIO c)
     memcpy (pid_prefix + prefix_len, pid, pid_len);
     pid_prefix[prefix_len + pid_len] = '\0';
 
-    IDIO cr_cmd = IDIO_LIST4 (idio_module_symbol_value (IDIO_SYMBOL ("condition-report"),
+    IDIO cr_cmd = IDIO_LIST4 (idio_module_symbol_value (idio_S_condition_report,
 							idio_Idio_module,
 							idio_S_nil),
 			      idio_string_C_len (pid_prefix, prefix_len + pid_len),
@@ -777,7 +780,7 @@ asynchronous processes						\n\
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
     if (idio_struct_type_isa (sit, idio_condition_rt_async_command_status_error_type)) {
-	IDIO sacr = idio_module_current_symbol_value_recurse_defined (idio_vars_suppress_async_command_report_sym);
+	IDIO sacr = idio_module_current_symbol_value_recurse_defined (idio_S_suppress_async_command_report);
 
 	if (idio_S_false == sacr) {
 	    idio_condition_report ("default-racse-handler: this async job result has been ignored", c);
@@ -934,7 +937,7 @@ does not return per se						\n\
 	idio_condition_report ("default-condition-handler", c);
 
 	if (IDIO_STATE_RUNNING == idio_state) {
-	    IDIO debugger = idio_module_symbol_value (IDIO_SYMBOL ("debug"),
+	    IDIO debugger = idio_module_symbol_value (idio_S_debug,
 						      idio_debugger_module,
 						      idio_S_nil);
 
@@ -1356,5 +1359,8 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_slot_not_found_error_type, "^rt-slot-not-found-error", idio_condition_rt_instance_error_type, "slot");
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_signal_type, IDIO_CONDITION_RT_SIGNAL_TYPE_NAME, idio_condition_error_type, "signum");
+
+    idio_S_condition_report = IDIO_SYMBOL ("condition-report");
+    idio_S_debug            = IDIO_SYMBOL ("debug");
 }
 

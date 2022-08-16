@@ -3170,7 +3170,7 @@ single delimiter.					\n\
 
     IDIO delim;
     if (idio_S_nil == args) {
-	delim = idio_module_current_symbol_value_recurse_defined (idio_vars_IFS_sym);
+	delim = idio_module_current_symbol_value_recurse_defined (idio_S_IFS);
     } else {
 	delim = IDIO_PAIR_H (args);
     }
@@ -3215,7 +3215,7 @@ separate delimiters.					\n\
 
     IDIO delim;
     if (idio_S_nil == args) {
-	delim = idio_module_current_symbol_value_recurse_defined (idio_vars_IFS_sym);
+	delim = idio_module_current_symbol_value_recurse_defined (idio_S_IFS);
     } else {
 	delim = IDIO_PAIR_H (args);
     }
@@ -3256,7 +3256,7 @@ single delimiter.					\n\
      */
     IDIO_USER_TYPE_ASSERT (string, in);
 
-    IDIO delim = idio_module_current_symbol_value_recurse_defined (idio_vars_IFS_sym);
+    IDIO delim = idio_module_current_symbol_value_recurse_defined (idio_S_IFS);
 
     /*
      * Test Case: string-errors/fields-bad-IFS-type.idio

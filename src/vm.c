@@ -329,6 +329,7 @@ static IDIO idio_vm_COMPUTED_SYM_DEF_string = idio_S_nil;
 static IDIO idio_vm_EXPANDER_string = idio_S_nil;
 static IDIO idio_vm_INFIX_OPERATOR_string = idio_S_nil;
 static IDIO idio_vm_POSTFIX_OPERATOR_string = idio_S_nil;
+static IDIO idio_vm_anon_string = idio_S_nil;
 
 static idio_as_t idio_vm_get_or_create_vvi (idio_as_t mci);
 
@@ -458,7 +459,7 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t const given, size_
     if (idio_isa_closure (func)) {
 	name = idio_ref_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 	if (idio_S_nil == name) {
-	    name = IDIO_STRING ("-anon-");
+	    name = idio_vm_anon_string;
 	}
     } else if (idio_isa_primitive (func)) {
 	name = idio_string_C_len (IDIO_PRIMITIVE_NAME (func), IDIO_PRIMITIVE_NAME_LEN (func));
@@ -530,7 +531,7 @@ static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t const give
     if (idio_isa_closure (func)) {
 	name = idio_ref_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 	if (idio_S_nil == name) {
-	    name = IDIO_STRING ("-anon-");
+	    name = idio_vm_anon_string;
 	}
     } else if (idio_isa_primitive (func)) {
 	name = idio_string_C_len (IDIO_PRIMITIVE_NAME (func), IDIO_PRIMITIVE_NAME_LEN (func));
@@ -5594,7 +5595,7 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_CONSTANT_0:
 	{
 	    IDIO_VM_RUN_DIS ("CONSTANT 0");
-	    IDIO_THREAD_VAL (thr) = idio_fixnum (0);
+	    IDIO_THREAD_VAL (thr) = idio_fixnum0;
 	}
 	break;
     case IDIO_A_CONSTANT_1:
@@ -7128,7 +7129,7 @@ void idio_vm_thread_init (IDIO thr)
      * Hence preset *func* and *expr* to values that are restorable
      */
     IDIO_THREAD_FUNC (thr) = idio_S_load;
-    IDIO_THREAD_EXPR (thr) = idio_fixnum (0);
+    IDIO_THREAD_EXPR (thr) = idio_fixnum0;
 
     idio_sp_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
 
@@ -8714,6 +8715,8 @@ void idio_init_vm_values ()
     IDIO_VM_STRING (EXPANDER, "EXPANDER");
     IDIO_VM_STRING (INFIX_OPERATOR, "INFIX-OPERATOR");
     IDIO_VM_STRING (POSTFIX_OPERATOR, "POSTFIX-OPERATOR");
+
+    IDIO_VM_STRING (anon, "-anon-");
 }
 
 typedef struct idio_vm_symbol_s {

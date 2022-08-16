@@ -1602,8 +1602,8 @@ IDIO idio_libc_struct_timespec_as_string (struct timespec *timespecp)
      * more correct form of %ld.%.*ld using some precision
      */
     int prec = 9;
-    if (idio_S_nil != idio_print_conversion_precision_sym) {
-	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+    if (idio_S_nil != idio_S_idio_print_conversion_precision) {
+	IDIO ipcp = idio_module_symbol_value (idio_S_idio_print_conversion_precision,
 					      idio_Idio_module,
 					      IDIO_LIST1 (idio_S_false));
 
@@ -2050,8 +2050,8 @@ IDIO idio_libc_struct_timeval_as_string (struct timeval *timevalp)
      * precision
      */
     int prec = 6;
-    if (idio_S_nil != idio_print_conversion_precision_sym) {
-	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+    if (idio_S_nil != idio_S_idio_print_conversion_precision) {
+	IDIO ipcp = idio_module_symbol_value (idio_S_idio_print_conversion_precision,
 					      idio_Idio_module,
 					      IDIO_LIST1 (idio_S_false));
 
@@ -2732,9 +2732,9 @@ Options will be IORed together			     \n\
 		 * Either way it feels like we're in the wrong, not
 		 * erroring.
 		 */
-		IDIO known_pids = idio_module_symbol_value (idio_job_control_known_pids_sym, idio_job_control_module, idio_S_nil);
+		IDIO known_pids = idio_module_symbol_value (idio_S_idio_known_pids, idio_job_control_module, idio_S_nil);
 
-		IDIO stray_pids = idio_module_symbol_value (idio_job_control_stray_pids_sym, idio_job_control_module, idio_S_nil);
+		IDIO stray_pids = idio_module_symbol_value (idio_S_idio_stray_pids, idio_job_control_module, idio_S_nil);
 
 		if (C_pid > 0) {
 		    IDIO spid = idio_hash_ref (known_pids, pid);

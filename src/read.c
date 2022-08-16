@@ -67,7 +67,7 @@
 #include "vtable.h"
 
 IDIO idio_read_module;
-IDIO idio_read_reader_sym;
+IDIO idio_S_reader;
 IDIO idio_lexobj_type;
 IDIO idio_src_properties;
 
@@ -4622,8 +4622,8 @@ void idio_init_read ()
 {
     idio_module_table_register (idio_read_add_primitives, idio_final_read, NULL);
 
-    idio_read_reader_sym = IDIO_SYMBOL ("reader");
-    idio_read_module = idio_module (idio_read_reader_sym);
+    idio_S_reader = IDIO_SYMBOL ("reader");
+    idio_read_module = idio_module (idio_S_reader);
 
     IDIO name = IDIO_SYMBOL ("%idio-lexical-object");
     idio_lexobj_type = idio_struct_type (name,

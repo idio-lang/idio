@@ -2692,8 +2692,8 @@ char *idio_bignum_integer_as_string (IDIO bn, size_t *sizep)
      */
 
     unsigned int prec = 0;
-    if (idio_S_nil != idio_print_conversion_precision_sym) {
-	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+    if (idio_S_nil != idio_S_idio_print_conversion_precision) {
+	IDIO ipcp = idio_module_symbol_value (idio_S_idio_print_conversion_precision,
 					      idio_Idio_module,
 					      IDIO_LIST1 (idio_S_false));
 
@@ -2860,8 +2860,8 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
     }
 
     idio_unicode_t format = IDIO_BIGNUM_CONVERSION_FORMAT_SCHEME;
-    if (idio_S_nil != idio_print_conversion_format_sym) {
-	IDIO ipcf = idio_module_symbol_value (idio_print_conversion_format_sym,
+    if (idio_S_nil != idio_S_idio_print_conversion_format) {
+	IDIO ipcf = idio_module_symbol_value (idio_S_idio_print_conversion_format,
 					      idio_Idio_module,
 					      IDIO_LIST1 (idio_S_false));
 
@@ -2918,8 +2918,8 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
      * The default precision for both e and f formats is 6
      */
     unsigned int prec = 6;
-    if (idio_S_nil != idio_print_conversion_precision_sym) {
-	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+    if (idio_S_nil != idio_S_idio_print_conversion_precision) {
+	IDIO ipcp = idio_module_symbol_value (idio_S_idio_print_conversion_precision,
 					      idio_Idio_module,
 					      IDIO_LIST1 (idio_S_false));
 
@@ -4344,7 +4344,7 @@ return the exponent of `n`			\n\
     IDIO r = idio_S_unspec;
 
     if (IDIO_BIGNUM_INTEGER_P (n)) {
-        r = idio_fixnum (0);
+        r = idio_fixnum0;
     } else {
 	IDIO_BE_T exp = IDIO_BIGNUM_EXP (n);
 	r = idio_integer (exp);

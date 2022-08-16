@@ -85,7 +85,7 @@ IDIO idio_thread_base (idio_as_t stack_size)
     IDIO_THREAD_FUNC (t) = idio_S_unspec;
     IDIO_THREAD_REG1 (t) = idio_S_unspec;
     IDIO_THREAD_REG2 (t) = idio_S_unspec;
-    IDIO_THREAD_EXPR (t) = idio_fixnum (0);
+    IDIO_THREAD_EXPR (t) = idio_fixnum0;
     IDIO_THREAD_INPUT_HANDLE (t) = idio_stdin_file_handle ();
     IDIO_THREAD_OUTPUT_HANDLE (t) = idio_stdout_file_handle ();
     IDIO_THREAD_ERROR_HANDLE (t) = idio_stderr_file_handle ();

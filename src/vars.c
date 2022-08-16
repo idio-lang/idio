@@ -54,12 +54,12 @@
 #include "symbol.h"
 #include "vm.h"
 
-IDIO idio_vars_IFS_sym;
+IDIO idio_S_IFS;
 #define IDIO_VARS_IFS_DEFAULT	" \t\n"
 
-IDIO idio_vars_suppress_exit_on_error_sym;
-IDIO idio_vars_suppress_pipefail_sym;
-IDIO idio_vars_suppress_async_command_report_sym;
+IDIO idio_S_suppress_exit_on_error;
+IDIO idio_S_suppress_pipefail;
+IDIO idio_S_suppress_async_command_report;
 
 static int idio_vars_set_dynamic_default (IDIO name, IDIO val)
 {
@@ -229,10 +229,10 @@ void idio_vars_add_primitives ()
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, suppress_rcse_get);
     idio_module_export_computed_symbol (IDIO_SYMBOL ("%suppress-rcse"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_command_module);
 
-    idio_vars_set_dynamic_default (idio_vars_IFS_sym, IDIO_STRING (IDIO_VARS_IFS_DEFAULT));
-    idio_vars_set_dynamic_default (idio_vars_suppress_exit_on_error_sym, idio_S_false);
-    idio_vars_set_dynamic_default (idio_vars_suppress_pipefail_sym, idio_S_false);
-    idio_vars_set_dynamic_default (idio_vars_suppress_async_command_report_sym, idio_S_false);
+    idio_vars_set_dynamic_default (idio_S_IFS, IDIO_STRING (IDIO_VARS_IFS_DEFAULT));
+    idio_vars_set_dynamic_default (idio_S_suppress_exit_on_error, idio_S_false);
+    idio_vars_set_dynamic_default (idio_S_suppress_pipefail, idio_S_false);
+    idio_vars_set_dynamic_default (idio_S_suppress_async_command_report, idio_S_false);
 }
 
 void idio_final_vars ()
@@ -243,9 +243,9 @@ void idio_init_vars ()
 {
     idio_module_table_register (idio_vars_add_primitives, idio_final_vars, NULL);
 
-    idio_vars_IFS_sym                           = IDIO_SYMBOL ("IFS");
-    idio_vars_suppress_exit_on_error_sym        = IDIO_SYMBOL ("suppress-exit-on-error!");
-    idio_vars_suppress_pipefail_sym             = IDIO_SYMBOL ("suppress-pipefail!");
-    idio_vars_suppress_async_command_report_sym = IDIO_SYMBOL ("suppress-async-command-report!");
+    idio_S_IFS                           = IDIO_SYMBOL ("IFS");
+    idio_S_suppress_exit_on_error        = IDIO_SYMBOL ("suppress-exit-on-error!");
+    idio_S_suppress_pipefail             = IDIO_SYMBOL ("suppress-pipefail!");
+    idio_S_suppress_async_command_report = IDIO_SYMBOL ("suppress-async-command-report!");
 }
 
