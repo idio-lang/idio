@@ -96,7 +96,7 @@ IDIO idio_thread_base (idio_as_t stack_size)
     IDIO_THREAD_FUNC (t) = idio_S_load;
     IDIO_THREAD_REG1 (t) = idio_S_unspec;
     IDIO_THREAD_REG2 (t) = idio_S_unspec;
-    IDIO_THREAD_EXPR (t) = idio_fixnum (0);
+    IDIO_THREAD_EXPR (t) = idio_fixnum (0); /* too early for idio_fixnum0 */
 
     /*
      * Arguably these should be idio_thread_current_X_handle() but

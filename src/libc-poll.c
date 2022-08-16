@@ -1162,7 +1162,7 @@ void idio_init_libc_poll ()
     idio_libc_set_poll_names ();
 
     IDIO struct_name = IDIO_SYMBOL ("libc/struct-idio-libc-poller-s");
-    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_S_nil, idio_libc_poller_s, idio_fixnum (0));
+    IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_S_nil, idio_libc_poller_s, idio_fixnum0);
 }
 
 /* Local Variables: */

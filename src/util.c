@@ -74,8 +74,8 @@
 #include "vm.h"
 #include "vtable.h"
 
-IDIO idio_print_conversion_format_sym = idio_S_nil;
-IDIO idio_print_conversion_precision_sym = idio_S_nil;
+IDIO idio_S_idio_print_conversion_format = idio_S_nil;
+IDIO idio_S_idio_print_conversion_precision = idio_S_nil;
 static IDIO idio_features;
 
 #ifdef IDIO_DEBUG
@@ -1194,8 +1194,8 @@ idio_unicode_t idio_util_string_format (idio_unicode_t format)
 {
     IDIO ipcf = idio_S_false;
 
-    if (idio_S_nil != idio_print_conversion_format_sym) {
-	ipcf = idio_module_symbol_value (idio_print_conversion_format_sym,
+    if (idio_S_nil != idio_S_idio_print_conversion_format) {
+	ipcf = idio_module_symbol_value (idio_S_idio_print_conversion_format,
 					 idio_Idio_module,
 					 IDIO_LIST1 (idio_S_false));
 
@@ -1276,8 +1276,8 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
     IDIO ipcf = idio_S_false;
 
     if (first &&
-	idio_S_nil != idio_print_conversion_format_sym) {
-	ipcf = idio_module_symbol_value (idio_print_conversion_format_sym,
+	idio_S_nil != idio_S_idio_print_conversion_format) {
+	ipcf = idio_module_symbol_value (idio_S_idio_print_conversion_format,
 					 idio_Idio_module,
 					 IDIO_LIST1 (idio_S_false));
 
@@ -3169,16 +3169,16 @@ void idio_final_util ()
      * whether they are set first -- a side-effect from printing
      * during startup.
      */
-    idio_print_conversion_format_sym = idio_S_nil;
-    idio_print_conversion_precision_sym = idio_S_nil;
+    idio_S_idio_print_conversion_format = idio_S_nil;
+    idio_S_idio_print_conversion_precision = idio_S_nil;
 }
 
 void idio_init_util ()
 {
     idio_module_table_register (idio_util_add_primitives, idio_final_util, NULL);
 
-    idio_print_conversion_format_sym = IDIO_SYMBOL ("idio-print-conversion-format");
-    idio_print_conversion_precision_sym = IDIO_SYMBOL ("idio-print-conversion-precision");
+    idio_S_idio_print_conversion_format = IDIO_SYMBOL ("idio-print-conversion-format");
+    idio_S_idio_print_conversion_precision = IDIO_SYMBOL ("idio-print-conversion-precision");
 
     idio_features = IDIO_SYMBOL ("*idio-features*");
     idio_module_set_symbol_value (idio_features, idio_S_nil, idio_Idio_module);

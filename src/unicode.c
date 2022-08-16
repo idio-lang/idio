@@ -280,8 +280,8 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 
     int prec = 0;
     if (use_prec &&
-	idio_S_nil != idio_print_conversion_precision_sym) {
-	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+	idio_S_nil != idio_S_idio_print_conversion_precision) {
+	IDIO ipcp = idio_module_symbol_value (idio_S_idio_print_conversion_precision,
 					      idio_Idio_module,
 					      IDIO_LIST1 (idio_S_false));
 

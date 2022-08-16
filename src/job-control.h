@@ -73,11 +73,12 @@ extern int idio_job_control_interactive;
 extern pid_t idio_job_control_cmd_pid;
 extern IDIO idio_job_control_process_type;
 extern IDIO idio_job_control_job_type;
-extern IDIO idio_job_control_known_pids_sym;
-extern IDIO idio_job_control_stray_pids_sym;
+extern IDIO idio_S_idio_known_pids;
+extern IDIO idio_S_idio_stray_pids;
 extern IDIO idio_S_stdin_fileno;
 extern IDIO idio_S_stdout_fileno;
 extern IDIO idio_S_stderr_fileno;
+extern IDIO idio_S_djn;
 
 IDIO idio_job_control_SIGHUP_signal_handler ();
 IDIO idio_job_control_SIGCHLD_signal_handler ();

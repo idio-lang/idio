@@ -64,15 +64,15 @@ IDIO idio_operator_module = idio_S_nil;
 
 static IDIO idio_evaluator_extend_str;
 
-static IDIO idio_expander_list_sym = idio_S_nil;
-static IDIO idio_expander_list_src_sym = idio_S_nil;
+static IDIO idio_S_expander_list = idio_S_nil;
+static IDIO idio_S_expander_list_src = idio_S_nil;
 IDIO idio_expander_thread = idio_S_nil;
 idio_xi_t idio_expander_xi;
 
-static IDIO idio_infix_operator_list_sym = idio_S_nil;
-static IDIO idio_infix_operator_group_sym = idio_S_nil;
-static IDIO idio_postfix_operator_list_sym = idio_S_nil;
-static IDIO idio_postfix_operator_group_sym = idio_S_nil;
+static IDIO idio_S_infix_operator_list = idio_S_nil;
+static IDIO idio_S_infix_operator_group = idio_S_nil;
+static IDIO idio_S_postfix_operator_list = idio_S_nil;
+static IDIO idio_S_postfix_operator_group = idio_S_nil;
 
 static IDIO idio_initial_expander (IDIO x, IDIO e);
 
@@ -214,14 +214,14 @@ void idio_dump_expander_list (IDIO x)
 {
     IDIO_ASSERT (x);
 
-    idio_dump_opex_list (x, idio_expander_list_sym, idio_expander_list_src_sym, idio_expander_module);
+    idio_dump_opex_list (x, idio_S_expander_list, idio_S_expander_list_src, idio_expander_module);
 }
 
 void idio_dump_infix_operator_list (IDIO x)
 {
     IDIO_ASSERT (x);
 
-    idio_dump_opex_list (x, idio_infix_operator_list_sym, idio_infix_operator_group_sym, idio_operator_module);
+    idio_dump_opex_list (x, idio_S_infix_operator_list, idio_S_infix_operator_group, idio_operator_module);
 }
 
 IDIO idio_evaluate_expander (IDIO x, IDIO e)
@@ -670,7 +670,7 @@ IDIO idio_expanderp (IDIO name)
       return idio_S_false;
     }
 
-    IDIO expander_list = idio_module_symbol_value (idio_expander_list_sym, idio_expander_module, idio_S_nil);
+    IDIO expander_list = idio_module_symbol_value (idio_S_expander_list, idio_expander_module, idio_S_nil);
 
     IDIO assq = idio_list_assq (name, expander_list);
 
@@ -808,12 +808,12 @@ void idio_install_expander (idio_xi_t xi, IDIO id, IDIO proc)
 
     IDIO_TYPE_ASSERT (symbol, id);
 
-    IDIO el = idio_module_symbol_value_xi (0, idio_expander_list_sym, idio_expander_module, idio_S_nil);
+    IDIO el = idio_module_symbol_value_xi (0, idio_S_expander_list, idio_expander_module, idio_S_nil);
     IDIO old = idio_list_assq (id, el);
 
     if (idio_S_false == old) {
 	idio_module_set_symbol_value_xi (0,
-					 idio_expander_list_sym,
+					 idio_S_expander_list,
 					 idio_pair (idio_pair (id, proc),
 						    el),
 					 idio_expander_module);
@@ -838,10 +838,10 @@ void idio_install_expander_source (IDIO id, IDIO proc, IDIO code)
 
     idio_install_expander (xi, id, proc);
 
-    IDIO els = idio_module_symbol_value (idio_expander_list_src_sym, idio_expander_module, idio_S_nil);
+    IDIO els = idio_module_symbol_value (idio_S_expander_list_src, idio_expander_module, idio_S_nil);
     IDIO old = idio_list_assq (id, els);
     if (idio_S_false == old) {
-	idio_module_set_symbol_value (idio_expander_list_src_sym,
+	idio_module_set_symbol_value (idio_S_expander_list_src,
 				      idio_pair (idio_pair (id, code),
 						 els),
 				      idio_expander_module);
@@ -884,15 +884,15 @@ IDIO idio_evaluate_expander_src_code (IDIO m, IDIO cs)
 
 /* static void idio_push_expander (IDIO id, IDIO proc) */
 /* { */
-/*     idio_module_set_symbol_value (idio_expander_list_sym, */
+/*     idio_module_set_symbol_value (idio_S_expander_list, */
 /* 				  idio_pair (idio_pair (id, proc), */
-/* 					     idio_module_symbol_value (idio_expander_list_sym, idio_expander_module)), */
+/* 					     idio_module_symbol_value (idio_S_expander_list, idio_expander_module)), */
 /* 				  idio_expander_module); */
 /* } */
 
 /* static void idio_delete_expander (IDIO id) */
 /* { */
-/*     IDIO el = idio_module_symbol_value (idio_expander_list_sym, idio_expander_module); */
+/*     IDIO el = idio_module_symbol_value (idio_S_expander_list, idio_expander_module); */
 /*     IDIO prv = idio_S_false; */
 
 /*     for (;;) { */
@@ -900,7 +900,7 @@ IDIO idio_evaluate_expander_src_code (IDIO m, IDIO cs)
 /* 	    return; */
 /* 	} else if (idio_eqp (IDIO_PAIR_HH (el)), id)) { */
 /* 	    if (idio_S_false == prv) { */
-/* 		idio_module_set_symbol_value (idio_expander_list_sym, */
+/* 		idio_module_set_symbol_value (idio_S_expander_list, */
 /* 					      IDIO_PAIR_T (el), */
 /* 					      idio_expander_module); */
 /* 		return; */
@@ -1170,7 +1170,7 @@ void idio_install_infix_operator (idio_xi_t xi, IDIO id, IDIO proc, int pri)
     /* idio_debug ("op install %s", id); */
     /* idio_debug (" as %s\n", proc); */
 
-    idio_install_operator (xi, id, proc, pri, idio_infix_operator_list_sym, idio_infix_operator_group_sym);
+    idio_install_operator (xi, id, proc, pri, idio_S_infix_operator_list, idio_S_infix_operator_group);
 }
 
 void idio_copy_infix_operator (idio_xi_t xi, IDIO new_id, IDIO fpri, IDIO old_id)
@@ -1182,7 +1182,7 @@ void idio_copy_infix_operator (idio_xi_t xi, IDIO new_id, IDIO fpri, IDIO old_id
     IDIO_TYPE_ASSERT (symbol, new_id);
     IDIO_TYPE_ASSERT (symbol, old_id);
 
-    idio_copy_operator (xi, new_id, fpri, old_id, idio_infix_operator_list_sym, idio_infix_operator_group_sym);
+    idio_copy_operator (xi, new_id, fpri, old_id, idio_S_infix_operator_list, idio_S_infix_operator_group);
 }
 
 IDIO idio_evaluate_infix_operator_src_code (IDIO m, IDIO cs)
@@ -1244,7 +1244,7 @@ IDIO idio_infix_operatorp (IDIO name)
 {
     IDIO_ASSERT (name);
 
-    return idio_common_operatorp (name, idio_infix_operator_list_sym);
+    return idio_common_operatorp (name, idio_S_infix_operator_list);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("infix-operator?", infix_operatorp, (IDIO o), "o", "\
@@ -1269,7 +1269,7 @@ void idio_install_postfix_operator (idio_xi_t xi, IDIO id, IDIO proc, int pri)
     /* idio_debug ("op install %s", id); */
     /* idio_debug (" as %s\n", proc); */
 
-    idio_install_operator (xi, id, proc, pri, idio_postfix_operator_list_sym, idio_postfix_operator_group_sym);
+    idio_install_operator (xi, id, proc, pri, idio_S_postfix_operator_list, idio_S_postfix_operator_group);
 }
 
 void idio_copy_postfix_operator (idio_xi_t xi, IDIO new_id, IDIO fpri, IDIO old_id)
@@ -1281,7 +1281,7 @@ void idio_copy_postfix_operator (idio_xi_t xi, IDIO new_id, IDIO fpri, IDIO old_
     IDIO_TYPE_ASSERT (symbol, new_id);
     IDIO_TYPE_ASSERT (symbol, old_id);
 
-    idio_copy_operator (xi, new_id, fpri, old_id, idio_postfix_operator_list_sym, idio_postfix_operator_group_sym);
+    idio_copy_operator (xi, new_id, fpri, old_id, idio_S_postfix_operator_list, idio_S_postfix_operator_group);
 }
 
 IDIO idio_evaluate_postfix_operator_src_code (IDIO m, IDIO cs)
@@ -1314,7 +1314,7 @@ IDIO idio_postfix_operatorp (IDIO name)
 {
     IDIO_ASSERT (name);
 
-    return idio_common_operatorp (name, idio_postfix_operator_list_sym);
+    return idio_common_operatorp (name, idio_S_postfix_operator_list);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("postfix-operator?", postfix_operatorp, (IDIO o), "o", "\
@@ -1405,7 +1405,7 @@ IDIO idio_infix_operator_expand (IDIO e, int depth)
 
     /* idio_debug ("infix-operator-expand:   %s\n", e); */
 
-    IDIO og = idio_module_symbol_value (idio_infix_operator_group_sym, idio_operator_module, idio_S_nil);
+    IDIO og = idio_module_symbol_value (idio_S_infix_operator_group, idio_operator_module, idio_S_nil);
     return idio_common_operator_expand (e, depth, og);
 }
 
@@ -1424,7 +1424,7 @@ IDIO idio_postfix_operator_expand (IDIO e, int depth)
 
     /* idio_debug ("postfix-operator-expand:   %s\n", e); */
 
-    IDIO og = idio_module_symbol_value (idio_postfix_operator_group_sym, idio_operator_module, idio_S_nil);
+    IDIO og = idio_module_symbol_value (idio_S_postfix_operator_group, idio_operator_module, idio_S_nil);
     return idio_common_operator_expand (e, depth, og);
 }
 
@@ -1546,24 +1546,24 @@ void idio_init_expander ()
     idio_evaluator_extend_str = IDIO_STRING ("idio_evaluator_extend");
     idio_gc_protect_auto (idio_evaluator_extend_str);
 
-    idio_expander_list_sym = IDIO_SYMBOL ("*expander-list*");
-    idio_module_set_symbol_value (idio_expander_list_sym, idio_S_nil, idio_expander_module);
+    idio_S_expander_list = IDIO_SYMBOL ("*expander-list*");
+    idio_module_set_symbol_value (idio_S_expander_list, idio_S_nil, idio_expander_module);
 
-    idio_expander_list_src_sym = IDIO_SYMBOL ("*expander-list-src*");
-    idio_module_set_symbol_value (idio_expander_list_src_sym, idio_S_nil, idio_expander_module);
+    idio_S_expander_list_src = IDIO_SYMBOL ("*expander-list-src*");
+    idio_module_set_symbol_value (idio_S_expander_list_src, idio_S_nil, idio_expander_module);
 
     idio_operator_module = idio_module (IDIO_SYMBOL ("operator"));
 
-    idio_infix_operator_list_sym = IDIO_SYMBOL ("*infix-operator-list*");
-    idio_module_set_symbol_value (idio_infix_operator_list_sym, idio_S_nil, idio_operator_module);
+    idio_S_infix_operator_list = IDIO_SYMBOL ("*infix-operator-list*");
+    idio_module_set_symbol_value (idio_S_infix_operator_list, idio_S_nil, idio_operator_module);
 
-    idio_infix_operator_group_sym = IDIO_SYMBOL ("*infix-operator-group*");
-    idio_module_set_symbol_value (idio_infix_operator_group_sym, idio_S_nil, idio_operator_module);
+    idio_S_infix_operator_group = IDIO_SYMBOL ("*infix-operator-group*");
+    idio_module_set_symbol_value (idio_S_infix_operator_group, idio_S_nil, idio_operator_module);
 
-    idio_postfix_operator_list_sym = IDIO_SYMBOL ("*postfix-operator-list*");
-    idio_module_set_symbol_value (idio_postfix_operator_list_sym, idio_S_nil, idio_operator_module);
+    idio_S_postfix_operator_list = IDIO_SYMBOL ("*postfix-operator-list*");
+    idio_module_set_symbol_value (idio_S_postfix_operator_list, idio_S_nil, idio_operator_module);
 
-    idio_postfix_operator_group_sym = IDIO_SYMBOL ("*postfix-operator-group*");
-    idio_module_set_symbol_value (idio_postfix_operator_group_sym, idio_S_nil, idio_operator_module);
+    idio_S_postfix_operator_group = IDIO_SYMBOL ("*postfix-operator-group*");
+    idio_module_set_symbol_value (idio_S_postfix_operator_group, idio_S_nil, idio_operator_module);
 }
 

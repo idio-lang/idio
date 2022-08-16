@@ -96,11 +96,13 @@ pid_t idio_job_control_cmd_pid;
 
 IDIO idio_job_control_process_type;
 IDIO idio_job_control_job_type;
-static IDIO idio_job_control_jobs_sym;
-static IDIO idio_job_control_last_job;
-IDIO idio_job_control_known_pids_sym;
-IDIO idio_job_control_stray_pids_sym;
+static IDIO idio_S_idio_jobs;
+static IDIO idio_S_last_job;
+IDIO idio_S_idio_known_pids;
+IDIO idio_S_idio_stray_pids;
 
+static IDIO idio_S_psj;
+static IDIO idio_S_idio_pgid;
 static IDIO idio_S_background_job;
 static IDIO idio_S_foreground_job;
 static IDIO idio_S_wait_for_job;
@@ -108,8 +110,10 @@ IDIO idio_S_stdin_fileno;
 IDIO idio_S_stdout_fileno;
 IDIO idio_S_stderr_fileno;
 
-static IDIO idio_job_control_default_child_handler_sym;
-static IDIO idio_job_control_djn_sym;
+static IDIO idio_S_default_child_handler;
+IDIO idio_S_djn;
+
+static IDIO idio_str_job_failed;
 
 static void idio_job_control_error_exec (char **argv, char **envp, IDIO c_location)
 {
@@ -477,7 +481,7 @@ static int idio_job_control_mark_process_status (pid_t pid, int status)
 	 * Some arbitrary process has a status update so we need to
 	 * dig it out.
 	 */
-	IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
+	IDIO jobs = idio_module_symbol_value (idio_S_idio_jobs, idio_job_control_module, idio_S_nil);
 	while (idio_S_nil != jobs) {
 	    IDIO job = IDIO_PAIR_H (jobs);
 
@@ -625,7 +629,7 @@ static IDIO idio_job_control_wait_for_job (IDIO job)
 	IDIO raised = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_RAISED);
 	if (idio_S_false == raised) {
 	    IDIO c = idio_struct_instance (idio_condition_rt_command_status_error_type,
-					   IDIO_LIST4 (IDIO_STRING ("C/job failed"),
+					   IDIO_LIST4 (idio_str_job_failed,
 						       IDIO_C_FUNC_LOCATION (),
 						       job,
 						       idio_job_control_job_status (job)));
@@ -734,9 +738,9 @@ void idio_job_control_do_job_notification ()
      */
     idio_job_control_update_status ();
 
-    IDIO ps_jobs = idio_module_symbol_value (IDIO_SYMBOL ("%%process-substitution-jobs"), idio_job_control_module, idio_S_nil);
+    IDIO ps_jobs = idio_module_symbol_value (idio_S_psj, idio_job_control_module, idio_S_nil);
 
-    IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
+    IDIO jobs = idio_module_symbol_value (idio_S_idio_jobs, idio_job_control_module, idio_S_nil);
     IDIO njobs = idio_S_nil;
 
     while (idio_S_nil != jobs) {
@@ -828,7 +832,7 @@ void idio_job_control_do_job_notification ()
 	jobs = IDIO_PAIR_T (jobs);
     }
 
-    idio_module_set_symbol_value (idio_job_control_jobs_sym, njobs, idio_job_control_module);
+    idio_module_set_symbol_value (idio_S_idio_jobs, njobs, idio_job_control_module);
 
     /*
      * Scheduling the failed-jobs code here in C-land breaks the stack
@@ -1025,7 +1029,7 @@ static IDIO idio_job_control_background_job (IDIO job, int cont)
     /*
      * A backgrounded job is always successful
      */
-    return idio_fixnum (0);
+    return idio_fixnum0;
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("background-job", background_job, (IDIO job, IDIO icont), "job cont", "\
@@ -1140,7 +1144,7 @@ Send the process group of `job` a SIGCONT then a SIGHUP\n\
 
 IDIO idio_job_control_SIGHUP_signal_handler ()
 {
-    IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
+    IDIO jobs = idio_module_symbol_value (idio_S_idio_jobs, idio_job_control_module, idio_S_nil);
     if (idio_S_nil != jobs) {
 	if (idio_job_control_interactive) {
 	    fprintf (stderr, "HUP: outstanding jobs: ");
@@ -1172,7 +1176,7 @@ IDIO idio_job_control_SIGHUP_signal_handler ()
 
 IDIO idio_job_control_SIGTERM_stopped_jobs ()
 {
-    IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
+    IDIO jobs = idio_module_symbol_value (idio_S_idio_jobs, idio_job_control_module, idio_S_nil);
     if (idio_S_nil != jobs) {
 	if (idio_job_control_interactive) {
 	    fprintf (stderr, "%6d: ijc SIGTERM: outstanding jobs: ", getpid());
@@ -1197,7 +1201,7 @@ IDIO idio_job_control_SIGTERM_stopped_jobs ()
 	 * In the time it takes us to shutdown jobs we may get
 	 * ^rt-async-command-status-errors
 	 */
-	idio_module_set_symbol_value (idio_vars_suppress_async_command_report_sym, idio_S_true, idio_Idio_module);
+	idio_module_set_symbol_value (idio_S_suppress_async_command_report, idio_S_true, idio_Idio_module);
 
 	while (idio_S_nil != jobs) {
 	    IDIO job = IDIO_PAIR_H (jobs);
@@ -1248,7 +1252,7 @@ IDIO idio_job_control_SIGCHLD_signal_handler ()
     /*
      * do-job-notification is a thunk so we can call it direct
      */
-    IDIO r = idio_vm_invoke_C (idio_module_symbol_value (idio_job_control_djn_sym,
+    IDIO r = idio_vm_invoke_C (idio_module_symbol_value (idio_S_djn,
 							 idio_job_control_module,
 							 idio_S_nil));
 
@@ -1606,7 +1610,7 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
 	    return;
 	} else if (0 == pid) {
 	    idio_condition_set_default_handler (idio_condition_idio_error_type,
-						idio_module_symbol_value (idio_job_control_default_child_handler_sym,
+						idio_module_symbol_value (idio_S_default_child_handler,
 									  idio_job_control_module,
 									  idio_S_nil));
 
@@ -1724,10 +1728,10 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
      */
 
     if (idio_S_false == job_async) {
-	IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
-	idio_module_set_symbol_value (idio_job_control_jobs_sym, idio_pair (job, jobs), idio_job_control_module);
+	IDIO jobs = idio_module_symbol_value (idio_S_idio_jobs, idio_job_control_module, idio_S_nil);
+	idio_module_set_symbol_value (idio_S_idio_jobs, idio_pair (job, jobs), idio_job_control_module);
 
-	idio_module_set_symbol_value (idio_job_control_last_job, job, idio_job_control_module);
+	idio_module_set_symbol_value (idio_S_last_job, job, idio_job_control_module);
 
 	/*
 	 * Even launching a single process we can get caught with
@@ -1760,7 +1764,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 	    return idio_S_notreached;
 	} else if (0 == pid) {
 	    idio_condition_set_default_handler (idio_condition_idio_error_type,
-						idio_module_symbol_value (idio_job_control_default_child_handler_sym,
+						idio_module_symbol_value (idio_S_default_child_handler,
 									  idio_job_control_module,
 									  idio_S_nil));
 
@@ -2138,7 +2142,7 @@ void idio_job_control_set_interactive (int interactive)
 	    }
 	}
 
-	idio_module_set_symbol_value (IDIO_SYMBOL ("%idio-pgid"),
+	idio_module_set_symbol_value (idio_S_idio_pgid,
 				      idio_libc_pid_t (idio_job_control_pgid),
 				      idio_job_control_module);
 
@@ -2209,6 +2213,7 @@ void idio_init_job_control ()
 
     idio_job_control_module = idio_module (IDIO_SYMBOL ("job-control"));
 
+    idio_S_psj            = IDIO_SYMBOL ("%%process-substitution-jobs");
     idio_S_background_job = IDIO_SYMBOL ("background-job");
     idio_S_exit           = IDIO_SYMBOL ("exit");
     idio_S_foreground_job = IDIO_SYMBOL ("foreground-job");
@@ -2311,19 +2316,19 @@ void idio_init_job_control ()
      * variables which we should avoid.
      */
     idio_job_control_pgid = getpgrp ();
-    sym = IDIO_SYMBOL ("%idio-pgid");
-    idio_module_set_symbol_value (sym,
+    idio_S_idio_pgid = IDIO_SYMBOL ("%idio-pgid");
+    idio_module_set_symbol_value (idio_S_idio_pgid,
 				  idio_libc_pid_t (idio_job_control_pgid),
 				  idio_job_control_module);
-    v = idio_module_symbol_value (sym,
+    v = idio_module_symbol_value (idio_S_idio_pgid,
 				  idio_job_control_module,
 				  idio_S_nil);
     IDIO_FLAGS (v) |= IDIO_FLAG_CONST;
 
-    idio_job_control_jobs_sym = IDIO_SYMBOL ("%idio-jobs");
-    idio_module_set_symbol_value (idio_job_control_jobs_sym, idio_S_nil, idio_job_control_module);
-    idio_job_control_last_job = IDIO_SYMBOL ("%%last-job");
-    idio_module_set_symbol_value (idio_job_control_last_job, idio_S_nil, idio_job_control_module);
+    idio_S_idio_jobs = IDIO_SYMBOL ("%idio-jobs");
+    idio_module_set_symbol_value (idio_S_idio_jobs, idio_S_nil, idio_job_control_module);
+    idio_S_last_job = IDIO_SYMBOL ("%%last-job");
+    idio_module_set_symbol_value (idio_S_last_job, idio_S_nil, idio_job_control_module);
 
     /*
      * Job Control is not the only mechanism that will fork&exec child
@@ -2332,11 +2337,11 @@ void idio_init_job_control ()
      *
      * So we need a mechanism to handle these other known processes.
      */
-    idio_job_control_known_pids_sym = IDIO_SYMBOL ("%idio-known-pids");
-    idio_module_set_symbol_value (idio_job_control_known_pids_sym, IDIO_HASH_EQP (4), idio_job_control_module);
+    idio_S_idio_known_pids = IDIO_SYMBOL ("%idio-known-pids");
+    idio_module_set_symbol_value (idio_S_idio_known_pids, IDIO_HASH_EQP (4), idio_job_control_module);
 
-    idio_job_control_stray_pids_sym = IDIO_SYMBOL ("%idio-stray-pids");
-    idio_module_set_symbol_value (idio_job_control_stray_pids_sym, IDIO_HASH_EQP (4), idio_job_control_module);
+    idio_S_idio_stray_pids = IDIO_SYMBOL ("%idio-stray-pids");
+    idio_module_set_symbol_value (idio_S_idio_stray_pids, IDIO_HASH_EQP (4), idio_job_control_module);
 
     sym = IDIO_SYMBOL ("%idio-process");
     idio_job_control_process_type = idio_struct_type (sym,
@@ -2372,7 +2377,10 @@ void idio_init_job_control ()
 							      IDIO_SYMBOL ("set-exit-status")));
     idio_module_set_symbol_value (sym, idio_job_control_job_type, idio_job_control_module);
 
-    idio_job_control_default_child_handler_sym = IDIO_SYMBOL ("default-child-handler");
-    idio_job_control_djn_sym = IDIO_SYMBOL ("do-job-notification");
+    idio_S_default_child_handler = IDIO_SYMBOL ("default-child-handler");
+    idio_S_djn = IDIO_SYMBOL ("do-job-notification");
+
+    idio_str_job_failed = IDIO_STRING ("C/job failed");
+    idio_gc_protect_auto (idio_str_job_failed);
 }
 

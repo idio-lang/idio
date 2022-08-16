@@ -36,6 +36,11 @@
 extern IDIO idio_libc_module;
 extern IDIO idio_libc_struct_stat;
 
+extern IDIO idio_S_F_GETFL;
+extern IDIO idio_S_F_SETFL;
+extern IDIO idio_S_F_GETFD;
+extern IDIO idio_S_F_SETFD;
+
 #define IDIO_STRUCT_STAT_DEV		0
 #define IDIO_STRUCT_STAT_INO		1
 #define IDIO_STRUCT_STAT_MODE		2

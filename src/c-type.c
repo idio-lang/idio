@@ -1153,8 +1153,8 @@ size_t idio_C_type_format_string_len (int type, char *fmt, idio_unicode_t cs)
 	     * g formats is 6
 	     */
 	    int prec = 6;
-	    if (idio_S_nil != idio_print_conversion_precision_sym) {
-		IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+	    if (idio_S_nil != idio_S_idio_print_conversion_precision) {
+		IDIO ipcp = idio_module_symbol_value (idio_S_idio_print_conversion_precision,
 						      idio_Idio_module,
 						      IDIO_LIST1 (idio_S_false));
 
@@ -1232,8 +1232,8 @@ char *idio_C_type_format_string (int type)
 {
     IDIO ipcf = idio_S_false;
 
-    if (idio_S_nil != idio_print_conversion_format_sym) {
-	ipcf = idio_module_symbol_value (idio_print_conversion_format_sym,
+    if (idio_S_nil != idio_S_idio_print_conversion_format) {
+	ipcf = idio_module_symbol_value (idio_S_idio_print_conversion_format,
 					 idio_Idio_module,
 					 IDIO_LIST1 (idio_S_false));
 

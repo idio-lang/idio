@@ -425,9 +425,9 @@ void idio_malloc_free (void *cp)
 	if (op->ov_magic == IDIO_MALLOC_MAGIC_FREE) {
 	    fprintf (stderr, "im-free: already freed??\n");
 	} else {
-	    fprintf (stderr, "im-free: magic is %#x??\n", op->ov_magic);
+	    fprintf (stderr, "im-free: magic %#x != %#x\n", op->ov_magic, IDIO_MALLOC_MAGIC_ALLOC);
 	}
-	assert (0);
+	assert (op->ov_magic == IDIO_MALLOC_MAGIC_ALLOC);
     }
 
     IDIO_C_ASSERT(op->ov_rmagic == IDIO_MALLOC_RMAGIC);
@@ -445,7 +445,7 @@ void idio_malloc_free (void *cp)
     register idio_alloc_t reqd_size = IDIO_MALLOC_SIZE (op->ov_size);
     if (reqd_size > idio_malloc_bucket_sizes[bucket]) {
 	fprintf (stderr, "im-free: %" IDIO_PRIa " (%" IDIO_PRIa ") > bucket[%2d] == %" IDIO_PRIa "\n", reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
-	IDIO_C_ASSERT (0);
+	IDIO_C_ASSERT (reqd_size <= idio_malloc_bucket_sizes[bucket]);
     }
 
     if (bucket >= idio_malloc_pagesz_bucket) {
@@ -520,7 +520,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
     register idio_alloc_t reqd_size = IDIO_MALLOC_SIZE (op->ov_size);
     if (reqd_size > idio_malloc_bucket_sizes[bucket]) {
 	fprintf (stderr, "im-realloc: %" IDIO_PRIa " (%" IDIO_PRIa ") > bucket[%2d] == %" IDIO_PRIa "\n", reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
-	IDIO_C_ASSERT (0);
+	IDIO_C_ASSERT (reqd_size <= idio_malloc_bucket_sizes[bucket]);
     }
 
     if (size == (size_t) op->ov_size) {

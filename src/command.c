@@ -420,7 +420,7 @@ char *idio_command_find_exe_C (char const *command, size_t const cmdlen, size_t 
 
     *lenp = 0;
 
-    IDIO PATH = idio_module_current_symbol_value_recurse (idio_env_PATH_sym, idio_S_nil);
+    IDIO PATH = idio_module_current_symbol_value_recurse (idio_S_PATH, idio_S_nil);
 
     int free_path_C = 0;
     char *path_C = NULL;
@@ -453,7 +453,7 @@ char *idio_command_find_exe_C (char const *command, size_t const cmdlen, size_t 
 	 * PATH :* join-string (make-string 1 #U+0) '("hello" "world")
 	 * (env)
 	 */
-	path_C = idio_command_string_C (idio_env_PATH_sym, PATH, &plen, "find-exe", &free_path_C, IDIO_C_FUNC_LOCATION ());
+	path_C = idio_command_string_C (idio_S_PATH, PATH, &plen, "find-exe", &free_path_C, IDIO_C_FUNC_LOCATION ());
 
 	path = path_C;
 	pathe = path + idio_string_len (PATH);

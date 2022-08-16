@@ -46,8 +46,8 @@ typedef enum {
 
 #define IDIO_PRINT_CONVERSION_FORMAT_s		0x73
 
-extern IDIO idio_print_conversion_format_sym;
-extern IDIO idio_print_conversion_precision_sym;
+extern IDIO idio_S_idio_print_conversion_format;
+extern IDIO idio_S_idio_print_conversion_precision;
 
 int idio_type (IDIO o);
 char const *idio_type2string (IDIO o);

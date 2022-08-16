@@ -346,6 +346,7 @@ static IDIO idio_vm_INFIX_OPERATOR_string = idio_S_nil;
 static IDIO idio_vm_INFIX_IOPERATOR_string = idio_S_nil;
 static IDIO idio_vm_POSTFIX_OPERATOR_string = idio_S_nil;
 static IDIO idio_vm_POSTFIX_IOPERATOR_string = idio_S_nil;
+static IDIO idio_vm_anon_string = idio_S_nil;
 
 static idio_as_t idio_vm_get_or_create_vvi (IDIO thr, idio_as_t mci);
 
@@ -511,7 +512,7 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t const given, size_
     if (idio_isa_closure (func)) {
 	name = idio_ref_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 	if (idio_S_nil == name) {
-	    name = IDIO_STRING ("-anon-");
+	    name = idio_vm_anon_string;
 	}
     } else if (idio_isa_primitive (func)) {
 	name = idio_string_C_len (IDIO_PRIMITIVE_NAME (func), IDIO_PRIMITIVE_NAME_LEN (func));
@@ -583,7 +584,7 @@ static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t const give
     if (idio_isa_closure (func)) {
 	name = idio_ref_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 	if (idio_S_nil == name) {
-	    name = IDIO_STRING ("-anon-");
+	    name = idio_vm_anon_string;
 	}
     } else if (idio_isa_primitive (func)) {
 	name = idio_string_C_len (IDIO_PRIMITIVE_NAME (func), IDIO_PRIMITIVE_NAME_LEN (func));
@@ -6381,7 +6382,7 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_CONSTANT_0:
 	{
 	    IDIO_VM_RUN_DIS ("CONSTANT 0");
-	    IDIO_THREAD_VAL (thr) = idio_fixnum (0);
+	    IDIO_THREAD_VAL (thr) = idio_fixnum0;
 	}
 	break;
     case IDIO_A_CONSTANT_1:
@@ -9493,6 +9494,8 @@ void idio_init_vm_values ()
     IDIO_VM_STRING (INFIX_IOPERATOR,       "INFIX-IOPERATOR");
     IDIO_VM_STRING (POSTFIX_OPERATOR,      "POSTFIX-OPERATOR");
     IDIO_VM_STRING (POSTFIX_IOPERATOR,     "POSTFIX-IOPERATOR");
+
+    IDIO_VM_STRING (anon,                  "-anon-");
 
     idio_all_code = idio_ia (500000);
 

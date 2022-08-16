@@ -61,17 +61,17 @@
 #include "util.h"
 #include "vm.h"
 
-IDIO idio_posix_regex_REG_BASIC_sym;
-IDIO idio_posix_regex_REG_EXTENDED_sym;
-IDIO idio_posix_regex_REG_ICASE_sym;
-IDIO idio_posix_regex_REG_NOSUB_sym;
-IDIO idio_posix_regex_REG_NEWLINE_sym;
-IDIO idio_posix_regex_REG_NOTBOL_sym;
-IDIO idio_posix_regex_REG_NOTEOL_sym;
+static IDIO idio_S_REG_BASIC;
+static IDIO idio_S_REG_EXTENDED;
+static IDIO idio_S_REG_ICASE;
+static IDIO idio_S_REG_NOSUB;
+static IDIO idio_S_REG_NEWLINE;
+static IDIO idio_S_REG_NOTBOL;
+static IDIO idio_S_REG_NOTEOL;
 #ifdef IDIO_HAVE_REG_STARTEND
-IDIO idio_posix_regex_REG_STARTEND_sym;
+static IDIO idio_S_REG_STARTEND;
 #endif
-IDIO idio_posix_regex_REG_VERBOSE_sym;
+static IDIO idio_S_REG_VERBOSE;
 
 /*
  * Technically, never returns
@@ -127,18 +127,18 @@ IDIO idio_posix_regex_regcomp (IDIO rx, IDIO flags)
     while (idio_S_nil != flags) {
 	IDIO flag = IDIO_PAIR_H (flags);
 	if (idio_isa_symbol (flag)) {
-	    if (idio_posix_regex_REG_BASIC_sym == flag) {
+	    if (idio_S_REG_BASIC == flag) {
 		cflags &= ~REG_EXTENDED;
-	    } else if (idio_posix_regex_REG_EXTENDED_sym == flag) {
+	    } else if (idio_S_REG_EXTENDED == flag) {
 		cflags |= REG_EXTENDED;
-	    } else if (idio_posix_regex_REG_ICASE_sym == flag) {
+	    } else if (idio_S_REG_ICASE == flag) {
 		cflags |= REG_ICASE;
-	    } else if (idio_posix_regex_REG_NOSUB_sym == flag) {
+	    } else if (idio_S_REG_NOSUB == flag) {
 		/*
 		 * XXX We *always* collect sub-expressions!
 		 */
 		/* cflags |= REG_NOSUB; */
-	    } else if (idio_posix_regex_REG_NEWLINE_sym == flag) {
+	    } else if (idio_S_REG_NEWLINE == flag) {
 		cflags |= REG_NEWLINE;
 	    } else {
 		/*
@@ -276,19 +276,19 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
     while (idio_S_nil != flags) {
 	IDIO flag = IDIO_PAIR_H (flags);
 	if (idio_isa_symbol (flag)) {
-	    if (idio_posix_regex_REG_NOTBOL_sym == flag) {
+	    if (idio_S_REG_NOTBOL == flag) {
 		eflags |= REG_NOTBOL;
-	    } else if (idio_posix_regex_REG_NOTEOL_sym == flag) {
+	    } else if (idio_S_REG_NOTEOL == flag) {
 		eflags |= REG_NOTEOL;
 #ifdef IDIO_HAVE_REG_STARTEND
-	    } else if (idio_posix_regex_REG_STARTEND_sym == flag) {
+	    } else if (idio_S_REG_STARTEND == flag) {
 		/*
 		 * We don't support this anyway as we're not in a
 		 * position to pre-set pmatch[0]
 		 */
 		/* eflags |= REG_STARTEND; */
 #endif
-	    } else if (idio_posix_regex_REG_VERBOSE_sym == flag) {
+	    } else if (idio_S_REG_VERBOSE == flag) {
 		verbose = 1;
 	    } else {
 		/*
@@ -465,16 +465,16 @@ void idio_init_posix_regex ()
      * XXX REG_BASIC is not a thing in regex.h however we could do
      * with a "not-REG_EXTENDED" flag
      */
-    idio_posix_regex_REG_BASIC_sym    = IDIO_SYMBOL ("REG_BASIC");
-    idio_posix_regex_REG_EXTENDED_sym = IDIO_SYMBOL ("REG_EXTENDED");
-    idio_posix_regex_REG_ICASE_sym    = IDIO_SYMBOL ("REG_ICASE");
-    idio_posix_regex_REG_NOSUB_sym    = IDIO_SYMBOL ("REG_NOSUB");
-    idio_posix_regex_REG_NEWLINE_sym  = IDIO_SYMBOL ("REG_NEWLINE");
-    idio_posix_regex_REG_NOTBOL_sym   = IDIO_SYMBOL ("REG_NOTBOL");
-    idio_posix_regex_REG_NOTEOL_sym   = IDIO_SYMBOL ("REG_NOTEOL");
+    idio_S_REG_BASIC    = IDIO_SYMBOL ("REG_BASIC");
+    idio_S_REG_EXTENDED = IDIO_SYMBOL ("REG_EXTENDED");
+    idio_S_REG_ICASE    = IDIO_SYMBOL ("REG_ICASE");
+    idio_S_REG_NOSUB    = IDIO_SYMBOL ("REG_NOSUB");
+    idio_S_REG_NEWLINE  = IDIO_SYMBOL ("REG_NEWLINE");
+    idio_S_REG_NOTBOL   = IDIO_SYMBOL ("REG_NOTBOL");
+    idio_S_REG_NOTEOL   = IDIO_SYMBOL ("REG_NOTEOL");
 #ifdef IDIO_HAVE_REG_STARTEND
-    idio_posix_regex_REG_STARTEND_sym = IDIO_SYMBOL ("REG_STARTEND");
-    idio_add_module_feature (idio_libc_module, idio_posix_regex_REG_STARTEND_sym);
+    idio_S_REG_STARTEND = IDIO_SYMBOL ("REG_STARTEND");
+    idio_add_module_feature (idio_libc_module, idio_S_REG_STARTEND);
 #endif
-    idio_posix_regex_REG_VERBOSE_sym  = IDIO_SYMBOL ("REG_VERBOSE");
+    idio_S_REG_VERBOSE  = IDIO_SYMBOL ("REG_VERBOSE");
 }
