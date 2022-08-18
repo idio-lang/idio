@@ -856,7 +856,7 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
 	idio_as_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
 	if (gvi) {
-	    fprintf (stderr, "\n**** gvi %zd\n", gvi);
+	    fprintf (stderr, "\n**** predef-extend gvi %zd\n", gvi);
 	    kill (getpid (), SIGINT);
 	    /*
 	     * Should only be called in C bootstrap

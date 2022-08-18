@@ -70,10 +70,10 @@
 #include "vm.h"
 
 /*
- * We use these *_condition_type_mci in idio_vm_init_thread() to
+ * We use these *_condition_type_gci in idio_vm_init_thread() to
  * bootstrap the base trap handlers
  */
-IDIO idio_condition_condition_type_mci;
+IDIO idio_condition_condition_type_gci;
 
 /* SRFI-36 */
 IDIO idio_condition_condition_type;
@@ -1232,13 +1232,13 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_error_type, "^error", idio_condition_condition_type);
 
     /*
-     * We want the fmci of ^condition for the *-condition-handler(s)
+     * We want the fgci of ^condition for the *-condition-handler(s)
      * which means we have to repeat a couple of the actions of the
      * IDIO_DEFINE_CONDITION0 macro.
      */
     IDIO sym = IDIO_SYMBOL (IDIO_CONDITION_CONDITION_TYPE_NAME);
     idio_as_t gci = idio_vm_extend_default_constants (sym);
-    idio_condition_condition_type_mci = idio_fixnum (gci);
+    idio_condition_condition_type_gci = idio_fixnum (gci);
 
     /* Idio */
     IDIO_DEFINE_CONDITION3 (idio_condition_idio_error_type, "^idio-error", idio_condition_error_type, "message", "location", "detail");

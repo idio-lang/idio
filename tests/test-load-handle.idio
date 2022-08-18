@@ -54,8 +54,7 @@ XXX weird namespace feature
 
 If we are not in the Idio module then any command in the following
 cont-expr will be subject to each word being treated as a new symbol
--- and getting a warning about it.  See the code in
-idio_vm_get_or_create_vvi().
+-- and getting a warning about it.
 
 It will, however, still get run -- as unknown symbols are thrown at
 the execve() mechanisms.

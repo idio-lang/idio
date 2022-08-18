@@ -92,169 +92,142 @@ char const *idio_vm_bytecode2string (int code)
     char *r;
 
     switch (code) {
-    case IDIO_A_SHALLOW_ARGUMENT_REF0:     r = "A-SHALLOW-ARGUMENT-REF0";     break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF1:     r = "A-SHALLOW-ARGUMENT-REF1";     break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF2:     r = "A-SHALLOW-ARGUMENT-REF2";     break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF3:     r = "A-SHALLOW-ARGUMENT-REF3";     break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF:      r = "A-SHALLOW-ARGUMENT-REF";      break;
-    case IDIO_A_DEEP_ARGUMENT_REF:         r = "A-DEEP-ARGUMENT-REF";         break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF0:    r = "A-SHALLOW-ARGUMENT-REF0";    break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF1:    r = "A-SHALLOW-ARGUMENT-REF1";    break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF2:    r = "A-SHALLOW-ARGUMENT-REF2";    break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF3:    r = "A-SHALLOW-ARGUMENT-REF3";    break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF:     r = "A-SHALLOW-ARGUMENT-REF";     break;
+    case IDIO_A_DEEP_ARGUMENT_REF:        r = "A-DEEP-ARGUMENT-REF";        break;
 
-    case IDIO_A_SHALLOW_ARGUMENT_SET0:     r = "A-SHALLOW-ARGUMENT-SET0";     break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET1:     r = "A-SHALLOW-ARGUMENT-SET1";     break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET2:     r = "A-SHALLOW-ARGUMENT-SET2";     break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET3:     r = "A-SHALLOW-ARGUMENT-SET3";     break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET:      r = "A-SHALLOW-ARGUMENT-SET";      break;
-    case IDIO_A_DEEP_ARGUMENT_SET:         r = "A-DEEP-ARGUMENT-SET";         break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET0:    r = "A-SHALLOW-ARGUMENT-SET0";    break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET1:    r = "A-SHALLOW-ARGUMENT-SET1";    break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET2:    r = "A-SHALLOW-ARGUMENT-SET2";    break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET3:    r = "A-SHALLOW-ARGUMENT-SET3";    break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET:     r = "A-SHALLOW-ARGUMENT-SET";     break;
+    case IDIO_A_DEEP_ARGUMENT_SET:        r = "A-DEEP-ARGUMENT-SET";        break;
 
-    case IDIO_A_SYM_REF:                   r = "A-SYM-REF";                   break;
-    case IDIO_A_SYM_IREF:                  r = "A-SYM-IREF";                  break;
-    case IDIO_A_FUNCTION_SYM_REF:          r = "A-FUNCTION-SYM-REF";          break;
-    case IDIO_A_FUNCTION_SYM_IREF:         r = "A-FUNCTION-SYM-IREF";         break;
-    case IDIO_A_CONSTANT_REF:              r = "A-CONSTANT-REF";              break;
-    case IDIO_A_CONSTANT_IREF:             r = "A-CONSTANT-IREF";             break;
-    case IDIO_A_COMPUTED_SYM_REF:          r = "A-COMPUTED-SYM-REF";          break;
-    case IDIO_A_COMPUTED_SYM_IREF:         r = "A-COMPUTED-SYM-IREF";         break;
+    case IDIO_A_SYM_REF:                  r = "A-SYM-REF";                  break;
+    case IDIO_A_FUNCTION_SYM_REF:         r = "A-FUNCTION-SYM-REF";         break;
+    case IDIO_A_CONSTANT_REF:             r = "A-CONSTANT-REF";             break;
+    case IDIO_A_COMPUTED_SYM_REF:         r = "A-COMPUTED-SYM-REF";         break;
 
-    case IDIO_A_SYM_DEF:                   r = "A-SYM-DEF";                   break;
-    case IDIO_A_SYM_IDEF:                  r = "A-SYM-IDEF";                  break;
-    case IDIO_A_SYM_SET:                   r = "A-SYM-SET";                   break;
-    case IDIO_A_SYM_ISET:                  r = "A-SYM-ISET";                  break;
-    case IDIO_A_COMPUTED_SYM_SET:          r = "A-COMPUTED-SYM-SET";          break;
-    case IDIO_A_COMPUTED_SYM_ISET:         r = "A-COMPUTED-SYM-ISET";         break;
-    case IDIO_A_COMPUTED_SYM_DEF:          r = "A-COMPUTED-SYM-DEF";          break;
-    case IDIO_A_COMPUTED_SYM_IDEF:         r = "A-COMPUTED-SYM-IDEF";         break;
+    case IDIO_A_SYM_DEF:                  r = "A-SYM-DEF";                  break;
+    case IDIO_A_SYM_SET:                  r = "A-SYM-SET";                  break;
+    case IDIO_A_COMPUTED_SYM_SET:         r = "A-COMPUTED-SYM-SET";         break;
+    case IDIO_A_COMPUTED_SYM_DEF:         r = "A-COMPUTED-SYM-DEF";         break;
 
-    case IDIO_A_VAL_REF:                   r = "A-VAL-REF";                   break;
-    case IDIO_A_FUNCTION_VAL_REF:          r = "A-FUNCTION-VAL-REF";          break;
+    case IDIO_A_VAL_REF:                  r = "A-VAL-REF";                  break;
+    case IDIO_A_FUNCTION_VAL_REF:         r = "A-FUNCTION-VAL-REF";         break;
 
-    case IDIO_A_VAL_SET:                   r = "A-VAL-SET";                   break;
-    case IDIO_A_VAL_ISET:                  r = "A-VAL-ISET";                  break;
+    case IDIO_A_VAL_SET:                  r = "A-VAL-SET";                  break;
 
-    case IDIO_A_PREDEFINED0:               r = "A-PREDEFINED0";               break;
-    case IDIO_A_PREDEFINED1:               r = "A-PREDEFINED1";               break;
-    case IDIO_A_PREDEFINED2:               r = "A-PREDEFINED2";               break;
-    case IDIO_A_PREDEFINED3:               r = "A-PREDEFINED3";               break;
-    case IDIO_A_PREDEFINED4:               r = "A-PREDEFINED4";               break;
-    case IDIO_A_PREDEFINED5:               r = "A-PREDEFINED5";               break;
-    case IDIO_A_PREDEFINED6:               r = "A-PREDEFINED6";               break;
-    case IDIO_A_PREDEFINED7:               r = "A-PREDEFINED7";               break;
-    case IDIO_A_PREDEFINED8:               r = "A-PREDEFINED8";               break;
-    case IDIO_A_PREDEFINED:                r = "A-PREDEFINED";                break;
-    case IDIO_A_IPREDEFINED:               r = "A-IPREDEFINED";               break;
+    case IDIO_A_PREDEFINED0:              r = "A-PREDEFINED0";              break;
+    case IDIO_A_PREDEFINED1:              r = "A-PREDEFINED1";              break;
+    case IDIO_A_PREDEFINED2:              r = "A-PREDEFINED2";              break;
+    case IDIO_A_PREDEFINED3:              r = "A-PREDEFINED3";              break;
+    case IDIO_A_PREDEFINED4:              r = "A-PREDEFINED4";              break;
+    case IDIO_A_PREDEFINED5:              r = "A-PREDEFINED5";              break;
+    case IDIO_A_PREDEFINED6:              r = "A-PREDEFINED6";              break;
+    case IDIO_A_PREDEFINED7:              r = "A-PREDEFINED7";              break;
+    case IDIO_A_PREDEFINED8:              r = "A-PREDEFINED8";              break;
+    case IDIO_A_PREDEFINED:               r = "A-PREDEFINED";               break;
 
-    case IDIO_A_LONG_GOTO:                 r = "A-LONG-GOTO";                 break;
-    case IDIO_A_LONG_JUMP_FALSE:           r = "A-LONG-JUMP-FALSE";           break;
-    case IDIO_A_LONG_JUMP_TRUE:            r = "A-LONG-JUMP-TRUE";            break;
-    case IDIO_A_SHORT_GOTO:                r = "A-SHORT-GOTO";                break;
-    case IDIO_A_SHORT_JUMP_FALSE:          r = "A-SHORT-JUMP-FALSE";          break;
-    case IDIO_A_SHORT_JUMP_TRUE:           r = "A-SHORT-JUMP-TRUE";           break;
+    case IDIO_A_LONG_GOTO:                r = "A-LONG-GOTO";                break;
+    case IDIO_A_LONG_JUMP_FALSE:          r = "A-LONG-JUMP-FALSE";          break;
+    case IDIO_A_LONG_JUMP_TRUE:           r = "A-LONG-JUMP-TRUE";           break;
+    case IDIO_A_SHORT_GOTO:               r = "A-SHORT-GOTO";               break;
+    case IDIO_A_SHORT_JUMP_FALSE:         r = "A-SHORT-JUMP-FALSE";         break;
+    case IDIO_A_SHORT_JUMP_TRUE:          r = "A-SHORT-JUMP-TRUE";          break;
 
-    case IDIO_A_PUSH_VALUE:                r = "A-PUSH-VALUE";                break;
-    case IDIO_A_POP_VALUE:                 r = "A-POP-VALUE";                 break;
-    case IDIO_A_POP_REG1:                  r = "A-POP-REG1";                  break;
-    case IDIO_A_POP_REG2:                  r = "A-POP-REG2";                  break;
-    case IDIO_A_SRC_EXPR:                  r = "A-SRC-EXPR";                  break;
-    case IDIO_A_POP_FUNCTION:              r = "A-POP-FUNCTION";              break;
-    case IDIO_A_PRESERVE_STATE:            r = "A-PRESERVE-STATE";            break;
-    case IDIO_A_RESTORE_STATE:             r = "A-RESTORE-STATE";             break;
-    case IDIO_A_RESTORE_ALL_STATE:         r = "A-RESTORE-ALL-STATE";         break;
+    case IDIO_A_PUSH_VALUE:               r = "A-PUSH-VALUE";               break;
+    case IDIO_A_POP_VALUE:                r = "A-POP-VALUE";                break;
+    case IDIO_A_POP_REG1:                 r = "A-POP-REG1";                 break;
+    case IDIO_A_POP_REG2:                 r = "A-POP-REG2";                 break;
+    case IDIO_A_SRC_EXPR:                 r = "A-SRC-EXPR";                 break;
+    case IDIO_A_POP_FUNCTION:             r = "A-POP-FUNCTION";             break;
+    case IDIO_A_PRESERVE_STATE:           r = "A-PRESERVE-STATE";           break;
+    case IDIO_A_RESTORE_STATE:            r = "A-RESTORE-STATE";            break;
+    case IDIO_A_RESTORE_ALL_STATE:        r = "A-RESTORE-ALL-STATE";        break;
 
-    case IDIO_A_CREATE_FUNCTION:           r = "A-CREATE-FUNCTION";           break;
-    case IDIO_A_CREATE_IFUNCTION:          r = "A-CREATE-IFUNCTION";          break;
-    case IDIO_A_CREATE_CLOSURE:            r = "A-CREATE-CLOSURE";            break;
-    case IDIO_A_CREATE_ICLOSURE:           r = "A-CREATE-ICLOSURE";           break;
-    case IDIO_A_FUNCTION_INVOKE:           r = "A-FUNCTION-INVOKE";           break;
-    case IDIO_A_FUNCTION_GOTO:             r = "A-FUNCTION-GOTO";             break;
-    case IDIO_A_RETURN:                    r = "A-RETURN";                    break;
-    case IDIO_A_FINISH:                    r = "A-FINISH";                    break;
-    case IDIO_A_PUSH_ABORT:                r = "A-PUSH-ABORT";                break;
-    case IDIO_A_POP_ABORT:                 r = "A-POP-ABORT";                 break;
+    case IDIO_A_CREATE_FUNCTION:          r = "A-CREATE-FUNCTION";          break;
+    case IDIO_A_CREATE_CLOSURE:           r = "A-CREATE-CLOSURE";           break;
+    case IDIO_A_FUNCTION_INVOKE:          r = "A-FUNCTION-INVOKE";          break;
+    case IDIO_A_FUNCTION_GOTO:            r = "A-FUNCTION-GOTO";            break;
+    case IDIO_A_RETURN:                   r = "A-RETURN";                   break;
+    case IDIO_A_FINISH:                   r = "A-FINISH";                   break;
+    case IDIO_A_PUSH_ABORT:               r = "A-PUSH-ABORT";               break;
+    case IDIO_A_POP_ABORT:                r = "A-POP-ABORT";                break;
 
-    case IDIO_A_ALLOCATE_FRAME1:           r = "A-ALLOCATE-FRAME1";           break;
-    case IDIO_A_ALLOCATE_FRAME2:           r = "A-ALLOCATE-FRAME2";           break;
-    case IDIO_A_ALLOCATE_FRAME3:           r = "A-ALLOCATE-FRAME3";           break;
-    case IDIO_A_ALLOCATE_FRAME4:           r = "A-ALLOCATE-FRAME4";           break;
-    case IDIO_A_ALLOCATE_FRAME5:           r = "A-ALLOCATE-FRAME5";           break;
-    case IDIO_A_ALLOCATE_FRAME:            r = "A-ALLOCATE-FRAME";            break;
-    case IDIO_A_ALLOCATE_DOTTED_FRAME:     r = "A-ALLOCATE-DOTTED-FRAME";     break;
-    case IDIO_A_REUSE_FRAME:               r = "A-REUSE-FRAME";               break;
+    case IDIO_A_ALLOCATE_FRAME1:          r = "A-ALLOCATE-FRAME1";          break;
+    case IDIO_A_ALLOCATE_FRAME2:          r = "A-ALLOCATE-FRAME2";          break;
+    case IDIO_A_ALLOCATE_FRAME3:          r = "A-ALLOCATE-FRAME3";          break;
+    case IDIO_A_ALLOCATE_FRAME4:          r = "A-ALLOCATE-FRAME4";          break;
+    case IDIO_A_ALLOCATE_FRAME5:          r = "A-ALLOCATE-FRAME5";          break;
+    case IDIO_A_ALLOCATE_FRAME:           r = "A-ALLOCATE-FRAME";           break;
+    case IDIO_A_ALLOCATE_DOTTED_FRAME:    r = "A-ALLOCATE-DOTTED-FRAME";    break;
+    case IDIO_A_REUSE_FRAME:              r = "A-REUSE-FRAME";              break;
 
-    case IDIO_A_POP_FRAME0:                r = "A-POP-FRAME0";                break;
-    case IDIO_A_POP_FRAME1:                r = "A-POP-FRAME1";                break;
-    case IDIO_A_POP_FRAME2:                r = "A-POP-FRAME2";                break;
-    case IDIO_A_POP_FRAME3:                r = "A-POP-FRAME3";                break;
-    case IDIO_A_POP_FRAME:                 r = "A-POP-FRAME";                 break;
+    case IDIO_A_POP_FRAME0:               r = "A-POP-FRAME0";               break;
+    case IDIO_A_POP_FRAME1:               r = "A-POP-FRAME1";               break;
+    case IDIO_A_POP_FRAME2:               r = "A-POP-FRAME2";               break;
+    case IDIO_A_POP_FRAME3:               r = "A-POP-FRAME3";               break;
+    case IDIO_A_POP_FRAME:                r = "A-POP-FRAME";                break;
 
-    case IDIO_A_LINK_FRAME:                r = "A-LINK-FRAME";                break;
-    case IDIO_A_LINK_IFRAME:               r = "A-LINK-IFRAME";               break;
-    case IDIO_A_UNLINK_FRAME:              r = "A-UNLINK-FRAME";              break;
-    case IDIO_A_PACK_FRAME:                r = "A-PACK-FRAME";                break;
-    case IDIO_A_POP_LIST_FRAME:            r = "A-POP-LIST-FRAME";            break;
-    case IDIO_A_EXTEND_FRAME:              r = "A-EXTEND-FRAME";              break;
-    case IDIO_A_EXTEND_IFRAME:             r = "A-EXTEND-IFRAME";             break;
+    case IDIO_A_LINK_FRAME:               r = "A-LINK-FRAME";               break;
+    case IDIO_A_UNLINK_FRAME:             r = "A-UNLINK-FRAME";             break;
+    case IDIO_A_PACK_FRAME:               r = "A-PACK-FRAME";               break;
+    case IDIO_A_POP_LIST_FRAME:           r = "A-POP-LIST-FRAME";           break;
+    case IDIO_A_EXTEND_FRAME:             r = "A-EXTEND-FRAME";             break;
 
-    case IDIO_A_ARITY1P:                   r = "A-ARITY1P";                   break;
-    case IDIO_A_ARITY2P:                   r = "A-ARITY2P";                   break;
-    case IDIO_A_ARITY3P:                   r = "A-ARITY3P";                   break;
-    case IDIO_A_ARITY4P:                   r = "A-ARITY4P";                   break;
-    case IDIO_A_ARITYEQP:                  r = "A-ARITYEQP";                  break;
-    case IDIO_A_ARITYGEP:                  r = "A-ARITYGEP";                  break;
+    case IDIO_A_ARITY1P:                  r = "A-ARITY1P";                  break;
+    case IDIO_A_ARITY2P:                  r = "A-ARITY2P";                  break;
+    case IDIO_A_ARITY3P:                  r = "A-ARITY3P";                  break;
+    case IDIO_A_ARITY4P:                  r = "A-ARITY4P";                  break;
+    case IDIO_A_ARITYEQP:                 r = "A-ARITYEQP";                 break;
+    case IDIO_A_ARITYGEP:                 r = "A-ARITYGEP";                 break;
 
-    case IDIO_A_SHORT_NUMBER:              r = "A-SHORT-NUMBER";              break;
-    case IDIO_A_SHORT_NEG_NUMBER:          r = "A-SHORT-NEG-NUMBER";          break;
-    case IDIO_A_CONSTANT_0:                r = "A-CONSTANT-0";                break;
-    case IDIO_A_CONSTANT_1:                r = "A-CONSTANT-1";                break;
-    case IDIO_A_CONSTANT_2:                r = "A-CONSTANT-2";                break;
-    case IDIO_A_CONSTANT_3:                r = "A-CONSTANT-3";                break;
-    case IDIO_A_CONSTANT_4:                r = "A-CONSTANT-4";                break;
-    case IDIO_A_FIXNUM:                    r = "A-FIXNUM";                    break;
-    case IDIO_A_NEG_FIXNUM:                r = "A-NEG-FIXNUM";                break;
-    case IDIO_A_CONSTANT:                  r = "A-CONSTANT";                  break;
-    case IDIO_A_NEG_CONSTANT:              r = "A-NEG-CONSTANT";              break;
-    case IDIO_A_UNICODE:                   r = "A-UNICODE";                   break;
+    case IDIO_A_SHORT_NUMBER:             r = "A-SHORT-NUMBER";             break;
+    case IDIO_A_SHORT_NEG_NUMBER:         r = "A-SHORT-NEG-NUMBER";         break;
+    case IDIO_A_CONSTANT_0:               r = "A-CONSTANT-0";               break;
+    case IDIO_A_CONSTANT_1:               r = "A-CONSTANT-1";               break;
+    case IDIO_A_CONSTANT_2:               r = "A-CONSTANT-2";               break;
+    case IDIO_A_CONSTANT_3:               r = "A-CONSTANT-3";               break;
+    case IDIO_A_CONSTANT_4:               r = "A-CONSTANT-4";               break;
+    case IDIO_A_FIXNUM:                   r = "A-FIXNUM";                   break;
+    case IDIO_A_NEG_FIXNUM:               r = "A-NEG-FIXNUM";               break;
+    case IDIO_A_CONSTANT:                 r = "A-CONSTANT";                 break;
+    case IDIO_A_NEG_CONSTANT:             r = "A-NEG-CONSTANT";             break;
+    case IDIO_A_UNICODE:                  r = "A-UNICODE";                  break;
 
-    case IDIO_A_NOP:                       r = "A-NOP";                       break;
-    case IDIO_A_PRIMCALL0:                 r = "A-PRIMCALL0";                 break;
-    case IDIO_A_IPRIMCALL0:                r = "A-IPRIMCALL0";                break;
-    case IDIO_A_PRIMCALL1:                 r = "A-PRIMCALL1";                 break;
-    case IDIO_A_IPRIMCALL1:                r = "A-IPRIMCALL1";                break;
-    case IDIO_A_PRIMCALL2:                 r = "A-PRIMCALL2";                 break;
-    case IDIO_A_IPRIMCALL2:                r = "A-IPRIMCALL2";                break;
+    case IDIO_A_NOP:                      r = "A-NOP";                      break;
+    case IDIO_A_PRIMCALL0:                r = "A-PRIMCALL0";                break;
+    case IDIO_A_PRIMCALL1:                r = "A-PRIMCALL1";                break;
+    case IDIO_A_PRIMCALL2:                r = "A-PRIMCALL2";                break;
 
-    case IDIO_A_SUPPRESS_RCSE:             r = "A-SUPPRESS-RCSE";             break;
-    case IDIO_A_POP_RCSE:                  r = "A-POP-RCSE";                  break;
+    case IDIO_A_SUPPRESS_RCSE:            r = "A-SUPPRESS-RCSE";            break;
+    case IDIO_A_POP_RCSE:                 r = "A-POP-RCSE";                 break;
 
-    case IDIO_A_NOT:                       r = "A-NOT";                       break;
+    case IDIO_A_NOT:                      r = "A-NOT";                      break;
 
-    case IDIO_A_EXPANDER:                  r = "A-EXPANDER";                  break;
-    case IDIO_A_IEXPANDER:                 r = "A-IEXPANDER";                 break;
-    case IDIO_A_INFIX_OPERATOR:            r = "A-INFIX-OPERATOR";            break;
-    case IDIO_A_INFIX_IOPERATOR:           r = "A-INFIX-IOPERATOR";           break;
-    case IDIO_A_POSTFIX_OPERATOR:          r = "A-POSTFIX-OPERATOR";          break;
-    case IDIO_A_POSTFIX_IOPERATOR:         r = "A-POSTFIX-IOPERATOR";         break;
+    case IDIO_A_EXPANDER:                 r = "A-EXPANDER";                 break;
+    case IDIO_A_INFIX_OPERATOR:           r = "A-INFIX-OPERATOR";           break;
+    case IDIO_A_POSTFIX_OPERATOR:         r = "A-POSTFIX-OPERATOR";         break;
 
-    case IDIO_A_PUSH_DYNAMIC:              r = "A-PUSH-DYNAMIC";              break;
-    case IDIO_A_PUSH_IDYNAMIC:             r = "A-PUSH-IDYNAMIC";             break;
-    case IDIO_A_POP_DYNAMIC:               r = "A-POP-DYNAMIC";               break;
-    case IDIO_A_DYNAMIC_SYM_REF:           r = "A-DYNAMIC-SYM-REF";           break;
-    case IDIO_A_DYNAMIC_SYM_IREF:          r = "A-DYNAMIC-SYM-IREF";          break;
-    case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:  r = "A-DYNAMIC-FUNCTION-SYM-REF";  break;
-    case IDIO_A_DYNAMIC_FUNCTION_SYM_IREF: r = "A-DYNAMIC-FUNCTION-SYM-IREF"; break;
+    case IDIO_A_PUSH_DYNAMIC:             r = "A-PUSH-DYNAMIC";             break;
+    case IDIO_A_POP_DYNAMIC:              r = "A-POP-DYNAMIC";              break;
+    case IDIO_A_DYNAMIC_SYM_REF:          r = "A-DYNAMIC-SYM-REF";          break;
+    case IDIO_A_DYNAMIC_FUNCTION_SYM_REF: r = "A-DYNAMIC-FUNCTION-SYM-REF"; break;
 
-    case IDIO_A_PUSH_ENVIRON:              r = "A-PUSH-ENVIRON";              break;
-    case IDIO_A_PUSH_IENVIRON:             r = "A-PUSH-IENVIRON";             break;
-    case IDIO_A_POP_ENVIRON:               r = "A-POP-ENVIRON";               break;
-    case IDIO_A_ENVIRON_SYM_REF:           r = "A-ENVIRON-SYM-REF";           break;
-    case IDIO_A_ENVIRON_SYM_IREF:          r = "A-ENVIRON-SYM-IREF";          break;
+    case IDIO_A_PUSH_ENVIRON:             r = "A-PUSH-ENVIRON";             break;
+    case IDIO_A_POP_ENVIRON:              r = "A-POP-ENVIRON";              break;
+    case IDIO_A_ENVIRON_SYM_REF:          r = "A-ENVIRON-SYM-REF";          break;
 
-    case IDIO_A_NON_CONT_ERR:              r = "A-NON-CONT-ERR";              break;
-    case IDIO_A_PUSH_TRAP:                 r = "A-PUSH-TRAP";                 break;
-    case IDIO_A_PUSH_ITRAP:                r = "A-PUSH-ITRAP";                break;
-    case IDIO_A_POP_TRAP:                  r = "A-POP-TRAP";                  break;
+    case IDIO_A_NON_CONT_ERR:             r = "A-NON-CONT-ERR";             break;
+    case IDIO_A_PUSH_TRAP:                r = "A-PUSH-TRAP";                break;
+    case IDIO_A_POP_TRAP:                 r = "A-POP-TRAP";                 break;
 
-    case IDIO_A_PUSH_ESCAPER:              r = "A-PUSH-ESCAPER";              break;
-    case IDIO_A_PUSH_IESCAPER:             r = "A-PUSH-IESCAPER";             break;
-    case IDIO_A_POP_ESCAPER:               r = "A-POP-ESCAPER";               break;
+    case IDIO_A_PUSH_ESCAPER:             r = "A-PUSH-ESCAPER";             break;
+    case IDIO_A_POP_ESCAPER:              r = "A-POP-ESCAPER";              break;
 
     default:
 	/* fprintf (stderr, "idio_vm_bytecode2string: unexpected bytecode %d\n", code); */
@@ -357,6 +330,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_SHALLOW_ARGUMENT_REF:
 	    {
 		uint64_t j = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("SHALLOW-ARGUMENT-REF %" PRIu64 "", j);
 	    }
 	    break;
@@ -364,6 +338,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    {
 		uint64_t i = idio_vm_get_varuint (bc, pcp);
 		uint64_t j = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("DEEP-ARGUMENT-REF %" PRIu64 " %" PRIu64 "", i, j);
 	    }
 	    break;
@@ -382,6 +357,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_SHALLOW_ARGUMENT_SET:
 	    {
 		uint64_t i = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("SHALLOW-ARGUMENT-SET %" PRIu64 "", i);
 	    }
 	    break;
@@ -389,23 +365,17 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    {
 		uint64_t i = idio_vm_get_varuint (bc, pcp);
 		uint64_t j = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("DEEP-ARGUMENT-SET %" PRIu64 " %" PRIu64 "", i, j);
 	    }
 	    break;
 	case IDIO_A_SYM_REF:
 	    {
-		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
-
-		IDIO_VM_DASM ("SYM-REF %" PRIu64 "", mci);
-	    }
-	    break;
-	case IDIO_A_SYM_IREF:
-	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
 
-		IDIO_VM_DASM ("SYM-IREF .%-4" PRIu64 " ", si);
+		IDIO_VM_DASM ("SYM-REF .%-4" PRIu64 " ", si);
 
 		if (idio_isa_symbol (sym)) {
 		    idio_debug_FILE (fp, " %s", sym);
@@ -417,46 +387,32 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_FUNCTION_SYM_REF:
 	    {
-		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
-
-		IDIO_VM_DASM ("FUNCTION-SYM-REF %" PRIu64 "", mci);
-	    }
-	    break;
-	case IDIO_A_FUNCTION_SYM_IREF:
-	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
 
-		IDIO_VM_DASM ("FUNCTION-SYM-IREF .%-4" PRIu64 "", si);
+		IDIO_VM_DASM ("FUNCTION-SYM-REF .%-4" PRIu64 "", si);
 		idio_debug_FILE (fp, " %s", sym);
 	    }
 	    break;
-	case IDIO_A_CONSTANT_IREF:
+	case IDIO_A_CONSTANT_REF:
 	    {
 		idio_ai_t ci = idio_vm_get_varuint (bc, pcp);
 
 		IDIO c = idio_vm_dasm_constants_ref (xi, ci);
 
-		IDIO_VM_DASM ("CONSTANT-IREF .%-4" PRIu64 "", ci);
+		IDIO_VM_DASM ("CONSTANT-REF .%-4" PRIu64 "", ci);
 		idio_debug_FILE (fp, " %s", c);
 	    }
 	    break;
 	case IDIO_A_COMPUTED_SYM_REF:
 	    {
-		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
-
-		IDIO_VM_DASM ("COMPUTED-SYM-REF %" PRIu64 "", mci);
-	    }
-	    break;
-	case IDIO_A_COMPUTED_SYM_IREF:
-	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("COMPUTED-SYM-IREF .%-4" PRIu64 "", si);
+		IDIO_VM_DASM ("COMPUTED-SYM-REF .%-4" PRIu64 "", si);
 	    }
 	    break;
-	case IDIO_A_SYM_IDEF:
+	case IDIO_A_SYM_DEF:
 	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 		uint64_t kci = idio_vm_get_varuint (bc, pcp);
@@ -465,84 +421,63 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO kind = idio_vm_dasm_constants_ref (xi, kci);
 
 		if (idio_isa_symbol (sym)) {
-		    IDIO_VM_DASM ("SYM-IDEF .%-4" PRIu64 " ", si);
+		    IDIO_VM_DASM ("SYM-DEF .%-4" PRIu64 " ", si);
 		    idio_debug_FILE (fp, "%s as ", sym);
 		    idio_debug_FILE (fp, "%s", kind);
 		} else {
-		    IDIO_VM_DASM ("SYM-IDEF .%-4" PRIu64 " ?? isa %s;", si, idio_type2string (sym));
+		    IDIO_VM_DASM ("SYM-DEF .%-4" PRIu64 " ?? isa %s;", si, idio_type2string (sym));
 		    idio_debug_FILE (fp, " == %s", sym);
 		}
 	    }
 	    break;
-	case IDIO_A_SYM_ISET:
+	case IDIO_A_SYM_SET:
 	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
 
 		if (idio_isa_symbol (sym)) {
-		    IDIO_VM_DASM ("SYM-ISET .%-4" PRIu64 " ", si);
+		    IDIO_VM_DASM ("SYM-SET .%-4" PRIu64 " ", si);
 		    idio_debug_FILE (fp, "%s", sym);
 		} else {
-		    IDIO_VM_DASM ("SYM-ISET .%-4" PRIu64 " ?? %s", si, idio_type2string (sym));
+		    IDIO_VM_DASM ("SYM-SET .%-4" PRIu64 " ?? %s", si, idio_type2string (sym));
 		    idio_debug_FILE (fp, " %s", sym);
 		}
 	    }
 	    break;
 	case IDIO_A_COMPUTED_SYM_SET:
 	    {
-		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
-
-		IDIO_VM_DASM ("COMPUTED-SYM-SET %" PRIu64 "", mci);
-	    }
-	    break;
-	case IDIO_A_COMPUTED_SYM_ISET:
-	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("COMPUTED-SYM-ISET .%-4" PRIu64 "", si);
+		IDIO_VM_DASM ("COMPUTED-SYM-SET .%-4" PRIu64 "", si);
 	    }
 	    break;
 	case IDIO_A_COMPUTED_SYM_DEF:
 	    {
-		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
-
-		IDIO_VM_DASM ("COMPUTED-SYM-DEF %" PRIu64 "", mci);
-	    }
-	    break;
-	case IDIO_A_COMPUTED_SYM_IDEF:
-	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("COMPUTED-SYM-IDEF .%-4" PRIu64 "", si);
+		IDIO_VM_DASM ("COMPUTED-SYM-DEF .%-4" PRIu64 "", si);
 	    }
 	    break;
 	case IDIO_A_VAL_REF:
 	    {
-		uint64_t gvi = IDIO_VM_GET_REF (bc, pcp);
+		uint64_t vi = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("VAL-REF %" PRIu64 "", gvi);
+		IDIO_VM_DASM ("VAL-REF .%-4" PRIu64 "", vi);
 	    }
 	    break;
 	case IDIO_A_FUNCTION_VAL_REF:
 	    {
-		uint64_t gvi = IDIO_VM_GET_REF (bc, pcp);
+		uint64_t vi = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("FUNCTION-VAL-REF %" PRIu64 "", gvi);
+		IDIO_VM_DASM ("FUNCTION-VAL-REF .%-4" PRIu64 "", vi);
 	    }
 	    break;
 	case IDIO_A_VAL_SET:
 	    {
-		uint64_t gvi = IDIO_VM_GET_REF (bc, pcp);
-
-		IDIO_VM_DASM ("VAL-SET %" PRIu64, gvi);
-	    }
-	    break;
-	case IDIO_A_VAL_ISET:
-	    {
 		uint64_t vi = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("VAL-ISET .%-4" PRIu64, vi);
+		IDIO_VM_DASM ("VAL-SET .%-4" PRIu64, vi);
 	    }
 	    break;
 	case IDIO_A_PREDEFINED0:
@@ -562,23 +497,13 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_PREDEFINED:
 	    {
-		uint64_t vi = idio_vm_get_varuint (bc, pcp);
-		IDIO pd = idio_vm_values_ref (0, vi);
+		uint64_t gvi = idio_vm_get_varuint (bc, pcp);
+
+		IDIO pd = idio_vm_iref_val (thr, 0, gvi, "PREDEFINED", IDIO_VM_IREF_VAL_UNDEF_FATAL);
 		if (idio_isa_primitive (pd)) {
-		    IDIO_VM_DASM ("PREDEFINED %" PRIu64 " PRIM %-20s", vi, IDIO_PRIMITIVE_NAME (pd));
+		    IDIO_VM_DASM ("PREDEFINED .%-4" PRIu64 " PRIM %-20s", gvi, IDIO_PRIMITIVE_NAME (pd));
 		} else {
-		    IDIO_VM_DASM ("PREDEFINED %" PRIu64 " %s", vi, idio_type2string (pd));
-		}
-	    }
-	    break;
-	case IDIO_A_IPREDEFINED:
-	    {
-		uint64_t si = idio_vm_get_varuint (bc, pcp);
-		IDIO pd = idio_vm_iref_val (thr, xi, si, "IPREDEFINED", IDIO_VM_IREF_VAL_UNDEF_FATAL);
-		if (idio_isa_primitive (pd)) {
-		    IDIO_VM_DASM ("IPREDEFINED %" PRIu64 " PRIM %-20s", si, IDIO_PRIMITIVE_NAME (pd));
-		} else {
-		    IDIO_VM_DASM ("IPREDEFINED %" PRIu64 " PRIM isa %s = ", si, idio_type2string (pd));
+		    IDIO_VM_DASM ("PREDEFINED .%-4" PRIu64 " PRIM isa %s = ", gvi, idio_type2string (pd));
 		    idio_debug_FILE (fp, "%s ??", pd);
 		}
 	    }
@@ -586,6 +511,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_LONG_GOTO:
 	    {
 		uint64_t i = idio_vm_get_varuint (bc, pcp);
+
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "LG@%" PRIu64 "", pc + i);
 		idio_hash_put (hints, idio_fixnum (pc + i), idio_symbols_C_intern (h, hlen));
@@ -595,6 +521,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_LONG_JUMP_FALSE:
 	    {
 		uint64_t i = idio_vm_get_varuint (bc, pcp);
+
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "LJF@%" PRIu64 "", pc + i);
 		idio_hash_put (hints, idio_fixnum (pc + i), idio_symbols_C_intern (h, hlen));
@@ -604,6 +531,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_LONG_JUMP_TRUE:
 	    {
 		uint64_t i = idio_vm_get_varuint (bc, pcp);
+
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "LJT@%" PRIu64 "", pc + i);
 		idio_hash_put (hints, idio_fixnum (pc + i), idio_symbols_C_intern (h, hlen));
@@ -613,6 +541,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_SHORT_GOTO:
 	    {
 		IDIO_I i = IDIO_IA_GET_NEXT (bc, pcp);
+
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "SG@%zd", pc + i);
 		idio_hash_put (hints, idio_fixnum (pc + i), idio_symbols_C_intern (h, hlen));
@@ -622,6 +551,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_SHORT_JUMP_FALSE:
 	    {
 		IDIO_I i = IDIO_IA_GET_NEXT (bc, pcp);
+
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "SJF@%zd", pc + i);
 		idio_hash_put (hints, idio_fixnum (pc + i), idio_symbols_C_intern (h, hlen));
@@ -631,6 +561,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_SHORT_JUMP_TRUE:
 	    {
 		IDIO_I i = IDIO_IA_GET_NEXT (bc, pcp);
+
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "SJT@%zd", pc + i);
 		idio_hash_put (hints, idio_fixnum (pc + i), idio_symbols_C_intern (h, hlen));
@@ -659,9 +590,9 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_SRC_EXPR:
 	    {
-		idio_ai_t sei = idio_vm_get_varuint (bc, pcp);
+		uint64_t sei = idio_vm_get_varuint (bc, pcp);
 
-		IDIO_VM_DASM ("SRC-EXPR %zd", sei);
+		IDIO_VM_DASM ("SRC-EXPR .%-4" PRIu64 " ", sei);
 
 		IDIO e = idio_vm_src_expr_ref (xi, sei);
 		IDIO lo = idio_vm_src_props_ref (xi, sei);
@@ -703,7 +634,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO_VM_DASM ("RESTORE-ALL-STATE");
 	    }
 	    break;
-	case IDIO_A_CREATE_IFUNCTION:
+	case IDIO_A_CREATE_FUNCTION:
 	    {
 		uint64_t i = idio_vm_get_varuint (bc, pcp);
 		uint64_t code_len = idio_vm_get_varuint (bc, pcp);
@@ -715,7 +646,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "CF@%" PRIu64 "", pc + i);
 		idio_hash_put (hints, idio_fixnum (pc + i), idio_symbols_C_intern (h, hlen));
-		IDIO_VM_DASM ("CREATE-IFUNCTION @ +%" PRIu64 " %s RETURN @%" PRIu64 "", i, h, pc + i + code_len - 1);
+		IDIO_VM_DASM ("CREATE-FUNCTION @ +%" PRIu64 " %s RETURN @%" PRIu64 "", i, h, pc + i + code_len - 1);
 
 		/* name lookup */
 		IDIO name = idio_vm_dasm_constants_ref (xi, nci);
@@ -751,16 +682,9 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_CREATE_CLOSURE:
 	    {
-		uint64_t gvi = IDIO_VM_GET_REF (bc, pcp);
-
-		IDIO_VM_DASM ("CREATE-CLOSURE %" PRIu64, gvi);
-	    }
-	    break;
-	case IDIO_A_CREATE_ICLOSURE:
-	    {
 		uint64_t vi = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("CREATE-ICLOSURE .%-4" PRIu64, vi);
+		IDIO_VM_DASM ("CREATE-CLOSURE .%-4" PRIu64, vi);
 	    }
 	    break;
 	case IDIO_A_FUNCTION_INVOKE:
@@ -781,6 +705,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_PUSH_ABORT:
 	    {
 		uint64_t o = idio_vm_get_varuint (bc, pcp);
+
 		char h[BUFSIZ];
 		size_t hlen = idio_snprintf (h, BUFSIZ, "A@%" PRIu64 "", pc + o);
 		idio_hash_put (hints, idio_fixnum (pc + o), idio_symbols_C_intern (h, hlen));
@@ -826,18 +751,21 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_ALLOCATE_FRAME:
 	    {
 		uint64_t i = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("ALLOCATE-FRAME %" PRIu64, i);
 	    }
 	    break;
 	case IDIO_A_ALLOCATE_DOTTED_FRAME:
 	    {
 		uint64_t arity = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("ALLOCATE-DOTTED-FRAME %" PRIu64, arity);
 	    }
 	    break;
 	case IDIO_A_REUSE_FRAME:
 	    {
 		uint64_t i = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("REUSE-FRAME %" PRIu64, i);
 	    }
 	    break;
@@ -864,22 +792,16 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_POP_FRAME:
 	    {
 		uint64_t rank = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("POP-FRAME %" PRIu64 "", rank);
 	    }
 	    break;
 	case IDIO_A_LINK_FRAME:
 	    {
-		uint64_t ssci = idio_vm_get_varuint (bc, pcp);
-		IDIO names = idio_vm_dasm_constants_ref (xi, ssci);
-		IDIO_VM_DASM ("LINK-FRAME sci=%" PRIu64, ssci);
-		idio_debug_FILE (fp, " %s", names);
-	    }
-	    break;
-	case IDIO_A_LINK_IFRAME:
-	    {
 		uint64_t si = idio_vm_get_varuint (bc, pcp);
+
 		IDIO names = idio_vm_dasm_constants_ref (xi, si);
-		IDIO_VM_DASM ("LINK-IFRAME si=%" PRIu64, si);
+		IDIO_VM_DASM ("LINK-FRAME .%-4" PRIu64, si);
 		idio_debug_FILE (fp, " %s", names);
 	    }
 	    break;
@@ -891,6 +813,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_PACK_FRAME:
 	    {
 		uint64_t arity = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("PACK-FRAME %" PRIu64 "", arity);
 	    }
 	    break;
@@ -904,20 +827,11 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_EXTEND_FRAME:
 	    {
 		uint64_t alloc = idio_vm_get_varuint (bc, pcp);
-		uint64_t ssci = idio_vm_get_varuint (bc, pcp);
-		IDIO names = idio_vm_dasm_constants_ref (xi, ssci);
-
-		IDIO_VM_DASM ("EXTEND-FRAME %" PRIu64 " sci=%" PRIu64, alloc, ssci);
-		idio_debug_FILE (fp, " %s", names);
-	    }
-	    break;
-	case IDIO_A_EXTEND_IFRAME:
-	    {
-		uint64_t alloc = idio_vm_get_varuint (bc, pcp);
 		uint64_t si = idio_vm_get_varuint (bc, pcp);
+
 		IDIO names = idio_vm_dasm_constants_ref (xi, si);
 
-		IDIO_VM_DASM ("EXTEND-IFRAME %" PRIu64 " si=%" PRIu64, alloc, si);
+		IDIO_VM_DASM ("EXTEND-FRAME %2" PRIu64 " .%-4" PRIu64, alloc, si);
 		idio_debug_FILE (fp, " %s", names);
 	    }
 	    break;
@@ -944,12 +858,14 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_ARITYEQP:
 	    {
 		uint64_t arityp1 = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("ARITY=? %" PRIu64 "", arityp1);
 	    }
 	    break;
 	case IDIO_A_ARITYGEP:
 	    {
 		uint64_t arityp1 = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("ARITY>=? %" PRIu64 "", arityp1);
 	    }
 	    break;
@@ -981,12 +897,14 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_FIXNUM:
 	    {
 		uint64_t v = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("FIXNUM %" PRIu64 "", v);
 	    }
 	    break;
 	case IDIO_A_NEG_FIXNUM:
 	    {
 		int64_t v = idio_vm_get_varuint (bc, pcp);
+
 		v = -v;
 		IDIO_VM_DASM ("NEG-FIXNUM %" PRId64 "", v);
 	    }
@@ -994,6 +912,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_CONSTANT:
 	    {
 		uint64_t v = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("CONSTANT     %5" PRIu64 "", v);
 		size_t size = 0;
 		char *ids = idio_display_string (IDIO_CONSTANT_IDIO ((intptr_t) v), &size);
@@ -1004,6 +923,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_NEG_CONSTANT:
 	    {
 		int64_t v = idio_vm_get_varuint (bc, pcp);
+
 		v = -v;
 		IDIO_VM_DASM ("NEG-CONSTANT   %6" PRId64 "", v);
 		size_t size = 0;
@@ -1015,6 +935,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_UNICODE:
 	    {
 		uint64_t v = idio_vm_get_varuint (bc, pcp);
+
 		IDIO_VM_DASM ("UNICODE #U+%04" PRIX64 "", v);
 	    }
 	    break;
@@ -1025,68 +946,26 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_PRIMCALL0:
 	    {
-		uint64_t vi = idio_vm_get_varuint (bc, pcp);
-		if (xi) {
-		    IDIO_VM_DASM ("PRIMITIVE/0 %" PRIu64, vi);
-		} else {
-		    IDIO primdata = idio_vm_values_ref (xi, vi);
-		    IDIO_VM_DASM ("PRIMITIVE/0 %" PRIu64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
-		}
-	    }
-	    break;
-	case IDIO_A_IPRIMCALL0:
-	    {
-		uint64_t vi = idio_vm_get_varuint (bc, pcp);
-		if (xi) {
-		    IDIO_VM_DASM ("IPRIMITIVE/0 .%-4" PRIu64, vi);
-		} else {
-		    IDIO primdata = idio_vm_values_ref (xi, vi);
-		    IDIO_VM_DASM ("IPRIMITIVE/0 .%-4" PRIu64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
-		}
+		uint64_t si = idio_vm_get_varuint (bc, pcp);
+
+		IDIO pd = idio_vm_iref_val (thr, xi, si, "PRIMITIVE/0", IDIO_VM_IREF_VAL_UNDEF_FATAL);
+		IDIO_VM_DASM ("PRIMITIVE/0 .%-4" PRIu64 " %s", si, IDIO_PRIMITIVE_NAME (pd));
 	    }
 	    break;
 	case IDIO_A_PRIMCALL1:
 	    {
-		uint64_t vi = idio_vm_get_varuint (bc, pcp);
-		if (xi) {
-		    IDIO_VM_DASM ("PRIMITIVE/1 %" PRIu64, vi);
-		} else {
-		    IDIO primdata = idio_vm_values_ref (xi, vi);
-		    IDIO_VM_DASM ("PRIMITIVE/1 %" PRIu64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
-		}
-	    }
-	    break;
-	case IDIO_A_IPRIMCALL1:
-	    {
-		uint64_t vi = idio_vm_get_varuint (bc, pcp);
-		if (xi) {
-		    IDIO_VM_DASM ("IPRIMITIVE/1 .%-4" PRIu64, vi);
-		} else {
-		    IDIO primdata = idio_vm_values_ref (xi, vi);
-		    IDIO_VM_DASM ("IPRIMITIVE/1 .%-4" PRIu64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
-		}
+		uint64_t si = idio_vm_get_varuint (bc, pcp);
+
+		IDIO pd = idio_vm_iref_val (thr, xi, si, "PRIMITIVE/1", IDIO_VM_IREF_VAL_UNDEF_FATAL);
+		IDIO_VM_DASM ("PRIMITIVE/1 .%-4" PRIu64 " %s", si, IDIO_PRIMITIVE_NAME (pd));
 	    }
 	    break;
 	case IDIO_A_PRIMCALL2:
 	    {
-		uint64_t vi = idio_vm_get_varuint (bc, pcp);
-		if (xi) {
-		    IDIO_VM_DASM ("PRIMITIVE/2 %" PRIu64, vi);
-		} else {
-		    IDIO primdata = idio_vm_values_ref (xi, vi);
-		    IDIO_VM_DASM ("PRIMITIVE/2 %" PRIu64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
-		}
-	    }
-	    break;
-	case IDIO_A_IPRIMCALL2:
-	    {
-		uint64_t vi = idio_vm_get_varuint (bc, pcp);
-		if (xi) {
-		    IDIO_VM_DASM ("IPRIMITIVE/2 .%-4" PRIu64, vi);
-		} else {
-		    IDIO primdata = idio_vm_values_ref (xi, vi);
-		    IDIO_VM_DASM ("IPRIMITIVE/2 .%-4" PRIu64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
-		}
+		uint64_t si = idio_vm_get_varuint (bc, pcp);
+
+		IDIO pd = idio_vm_iref_val (thr, xi, si, "PRIMITIVE/2", IDIO_VM_IREF_VAL_UNDEF_FATAL);
+		IDIO_VM_DASM ("PRIMITIVE/2 .%-4" PRIu64 " %s", si, IDIO_PRIMITIVE_NAME (pd));
 	    }
 	    break;
 	case IDIO_A_SUPPRESS_RCSE:
@@ -1100,32 +979,17 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_EXPANDER:
 	    {
-		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
-
-		IDIO_VM_DASM ("EXPANDER %" PRIu64 "", mci);
-	    }
-	    break;
-	case IDIO_A_IEXPANDER:
-	    {
 		uint64_t ci = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("IEXPANDER .%-4" PRIu64 "", ci);
+		IDIO_VM_DASM ("EXPANDER .%-4" PRIu64 "", ci);
 	    }
 	    break;
 	case IDIO_A_INFIX_OPERATOR:
 	    {
-		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
-		uint64_t pri = idio_vm_get_varuint (bc, pcp);
-
-		IDIO_VM_DASM ("INFIX-OPERATOR %" PRIu64 " pri %4" PRIu64 "", mci, pri);
-	    }
-	    break;
-	case IDIO_A_INFIX_IOPERATOR:
-	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 		uint64_t pri = idio_vm_get_varuint (bc, pcp);
 
-		IDIO_VM_DASM ("INFIX-IOPERATOR .%-4" PRIu64 " pri %4" PRIu64 " ", si, pri);
+		IDIO_VM_DASM ("INFIX-OPERATOR .%-4" PRIu64 " pri %4" PRIu64 " ", si, pri);
 		IDIO sym = idio_vm_symbols_ref (xi, si);
 		IDIO_TYPE_ASSERT (symbol, sym);
 		idio_debug_FILE (fp, "%s", sym);
@@ -1133,30 +997,22 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_POSTFIX_OPERATOR:
 	    {
-		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
-		uint64_t pri = idio_vm_get_varuint (bc, pcp);
-
-		IDIO_VM_DASM ("POSTFIX-OPERATOR %" PRIu64 " pri %4" PRIu64 "", mci, pri);
-	    }
-	    break;
-	case IDIO_A_POSTFIX_IOPERATOR:
-	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 		uint64_t pri = idio_vm_get_varuint (bc, pcp);
 
-		IDIO_VM_DASM ("POSTFIX-IOPERATOR .%-4" PRIu64 " pri %4" PRIu64 " ", si, pri);
+		IDIO_VM_DASM ("POSTFIX-OPERATOR .%-4" PRIu64 " pri %4" PRIu64 " ", si, pri);
 		IDIO sym = idio_vm_symbols_ref (xi, si);
 		IDIO_TYPE_ASSERT (symbol, sym);
 		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
-	case IDIO_A_PUSH_IDYNAMIC:
+	case IDIO_A_PUSH_DYNAMIC:
 	    {
 		uint64_t ci = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, ci);
 
-		IDIO_VM_DASM ("PUSH-IDYNAMIC .%-4" PRIu64 " ", ci);
+		IDIO_VM_DASM ("PUSH-DYNAMIC .%-4" PRIu64 " ", ci);
 		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
@@ -1165,33 +1021,33 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO_VM_DASM ("POP-DYNAMIC");
 	    }
 	    break;
-	case IDIO_A_DYNAMIC_SYM_IREF:
+	case IDIO_A_DYNAMIC_SYM_REF:
 	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
 
-		IDIO_VM_DASM ("DYNAMIC-SYM-IREF .%-4" PRIu64 " ", si);
+		IDIO_VM_DASM ("DYNAMIC-SYM-REF .%-4" PRIu64 " ", si);
 		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
-	case IDIO_A_DYNAMIC_FUNCTION_SYM_IREF:
+	case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:
 	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
 
-		IDIO_VM_DASM ("DYNAMIC-FUNCTION-SYM-IREF .%-4" PRIu64 " ", si);
+		IDIO_VM_DASM ("DYNAMIC-FUNCTION-SYM-REF .%-4" PRIu64 " ", si);
 		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
-	case IDIO_A_PUSH_IENVIRON:
+	case IDIO_A_PUSH_ENVIRON:
 	    {
 		uint64_t ci = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, ci);
 
-		IDIO_VM_DASM ("PUSH-IENVIRON .%-4" PRIu64 " ", ci);
+		IDIO_VM_DASM ("PUSH-ENVIRON .%-4" PRIu64 " ", ci);
 		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
@@ -1200,17 +1056,17 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO_VM_DASM ("POP-ENVIRON");
 	    }
 	    break;
-	case IDIO_A_ENVIRON_SYM_IREF:
+	case IDIO_A_ENVIRON_SYM_REF:
 	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
 
 		if (idio_isa_symbol (sym)) {
-		    IDIO_VM_DASM ("ENVIRON-SYM-IREF .%-4" PRIu64 " ", si);
+		    IDIO_VM_DASM ("ENVIRON-SYM-REF .%-4" PRIu64 " ", si);
 		    idio_debug_FILE (fp, "%s", sym);
 		} else {
-		    IDIO_VM_DASM ("ENVIRON-SYM-IREF .%-4" PRIu64 " ?? %s", si, idio_type2string (sym));
+		    IDIO_VM_DASM ("ENVIRON-SYM-REF .%-4" PRIu64 " ?? %s", si, idio_type2string (sym));
 		    idio_debug_FILE (fp, " %s", sym);
 		}
 	    }
@@ -1222,16 +1078,9 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_PUSH_TRAP:
 	    {
-		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
-
-		IDIO_VM_DASM ("PUSH-TRAP %" PRIu64, mci);
-	    }
-	    break;
-	case IDIO_A_PUSH_ITRAP:
-	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("PUSH-ITRAP .%-4" PRIu64, si);
+		IDIO_VM_DASM ("PUSH-TRAP .%-4" PRIu64, si);
 	    }
 	    break;
 	case IDIO_A_POP_TRAP:
@@ -1241,18 +1090,10 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_PUSH_ESCAPER:
 	    {
-		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
-		uint64_t offset = idio_vm_get_varuint (bc, pcp);
-
-		IDIO_VM_DASM ("PUSH-ESCAPER %" PRIu64 " -> %" PRIu64, mci, pc + offset + 1);
-	    }
-	    break;
-	case IDIO_A_PUSH_IESCAPER:
-	    {
 		uint64_t ci = IDIO_VM_GET_REF (bc, pcp);
 		uint64_t offset = idio_vm_get_varuint (bc, pcp);
 
-		IDIO_VM_DASM ("PUSH-IESCAPER .%-4" PRIu64 " -> %" PRIu64, ci, pc + offset + 1);
+		IDIO_VM_DASM ("PUSH-ESCAPER .%-4" PRIu64 " -> %" PRIu64, ci, pc + offset + 1);
 	    }
 	    break;
 	case IDIO_A_POP_ESCAPER:
@@ -1262,9 +1103,9 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_ESCAPER_LABEL_REF:
 	    {
-		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
+		uint64_t gci = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("ESCAPER-LABEL-REF %" PRIu64, mci);
+		IDIO_VM_DASM ("ESCAPER-LABEL-REF %" PRIu64, gci);
 	    }
 	    break;
 	default:

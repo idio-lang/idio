@@ -112,7 +112,7 @@ extern IDIO idio_condition_define_condition0_dynamic_string;
 	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 
-extern IDIO idio_condition_condition_type_mci;
+extern IDIO idio_condition_condition_type_gci;
 
 extern IDIO idio_condition_condition_type;
 extern IDIO idio_condition_error_type;
