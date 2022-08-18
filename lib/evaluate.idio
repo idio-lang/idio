@@ -38,24 +38,17 @@ define (si-description si) (nth si 6)
 define (nt-param-i si)     (pht si)
 define (nt-param-j si)     (phtt si)
 
-export-struct-accessors-only %eenv	desc chksum aot? symbols st vt cs ch module escapes ses sps byte-code
+export-struct-accessors-only %eenv	desc chksum symbols st vt cs ch module escapes ses sps byte-code
 
 define (eenv-as-string eenv seen) {
   if (%eenv? eenv) {
     r := (open-output-string)
     hprintf r "#<SI %%eenv %s " (%eenv-desc eenv)
 
-    aot := %eenv-aot? eenv
-    hprintf r "aot?=%s " aot
-    if aot {
-      hprintf r "st #%s " (length (%eenv-symbols eenv))
-      hprintf r "ct #%s " (array-length (%eenv-cs eenv))
-    } {
-      hprintf r "st #%s " (length (%eenv-symbols eenv))
-      hprintf r "ct #%s " (array-length (%eenv-cs eenv))
-    }
-    hprintf r "vt #%s " (length (%eenv-vt eenv))
-    hprintf r "se #%s " (array-length (%eenv-ses eenv))
+    hprintf r "st #%s " (length (%eenv-symbols eenv))
+    hprintf r "ct #%s " (array-length (%eenv-cs eenv))
+    hprintf r "vt #%s " (array-length (%eenv-vt eenv))
+    hprintf r "sp #%s " (array-length (%eenv-sps eenv))
     hprintf r "bc #%s " (idio-ia-length (%eenv-byte-code eenv))
     hprintf r ">"
     get-output-string r
@@ -77,10 +70,6 @@ define (dump-eenv eenv file) {
   loop (reverse (%eenv-symbols eenv))
 
   close-handle fh
-}
-
-define (meaning-eenv-si eenv si) {
-  if (%eenv-aot? eenv) (si-si si) (si-ci si)
 }
 
 define (meaning-src-location e) {
@@ -190,28 +179,24 @@ define (define-scope scope flags) {
 define (meaning-constants-lookup-or-extend eenv name) {
   ci := -1
 
-  if (%eenv-aot? eenv) {
-    cs := %eenv-cs eenv
-    ch := %eenv-ch eenv
+  cs := %eenv-cs eenv
+  ch := %eenv-ch eenv
+
+  if (not (null? name)) {
+    ci = hash-ref ch name #f
+
+    if (not ci) {
+      ci = array-find-eqp cs name
+    }
+  }
+
+  if (-1 eq ci) {
+    ci = array-length cs
+    array-push! cs name
 
     if (not (null? name)) {
-      ci = hash-ref ch name #f
-
-      if (not ci) {
-	ci = array-find-eqp cs name
-      }
+      hash-set! ch name ci
     }
-
-    if (-1 eq ci) {
-      ci = array-length cs
-      array-push! cs name
-
-      if (not (null? name)) {
-	hash-set! ch name ci
-      }
-    }
-  } {
-    ci = codegen-constants-lookup-or-extend eenv name
   }
 
   ci
@@ -226,13 +211,8 @@ define (meaning-extend-tables eenv name scope ci use-vi? module desc set-symbol?
   array-push! (%eenv-st eenv) ci
 
   vt := %eenv-vt eenv
-  if (%eenv-aot? eenv) {
-    vi = array-length vt
-    si = vi
-  } {
-    si = length (%eenv-symbols eenv)
-    vi = (vm-extend-values)
-  }
+  vi = array-length vt
+  si = vi
 
   if (not module) {
     module = (%eenv-module eenv)
@@ -262,79 +242,72 @@ define (meaning-extend-tables eenv name scope ci use-vi? module desc set-symbol?
 define (meaning-find-symbol-recurse name eenv scope recurse) {
   name-si := find-symbol name (%eenv-module eenv) recurse
 
-  ;; If we're not pre-compiling then return the name-si.
-  ;;
-  ;; If we are pre-compiling then we want to return the name-si for
-  ;; (what will be baseline) primitives otherwise they'll become like
-  ;; the regular lookup of a function (via the execution environment
-  ;; symbol table) with a full function calling protocol (via frame
-  ;; creation etc.).  If it's a (well known) primitive we should just
-  ;; be calling it directly.
-  if (%eenv-aot? eenv) {
-    symbols-sym-si := assq name (%eenv-symbols eenv)
-    if (not symbols-sym-si) {
-      ci := meaning-constants-lookup-or-extend eenv name
-      if (pair? name-si) {
-	scope = si-scope name-si
-	meaning-extend-tables eenv name scope ci #f (si-module name-si) "idio-precompilation" #f
+  ;; We want to return the name-si for (what will be baseline)
+  ;; primitives otherwise they'll become like the regular lookup of a
+  ;; function (via the execution environment symbol table) with a full
+  ;; function calling protocol (via frame creation etc.).  If it's a
+  ;; (well known) primitive we should just be calling it directly.
+  symbols-sym-si := assq name (%eenv-symbols eenv)
+  if (not symbols-sym-si) {
+    ci := meaning-constants-lookup-or-extend eenv name
+    if (pair? name-si) {
+      scope = si-scope name-si
+      meaning-extend-tables eenv name scope ci #f (si-module name-si) "idio-precompilation" #f
 
-	if (eq? 'predef scope) {
-	  ;; Notionally we don't care about the (future) vi right now
-	  ;; just that we reserve a slot for ourselves.
-	  ;;
-	  ;; However, we want the running vi as later on we'll need to
-	  ;; access the underlying primdata.
-	  symbols-sym-si = assq name (%eenv-symbols eenv)
-	  symbols-si := pt symbols-sym-si
+      if (eq? 'predef scope) {
+	;; Notionally we don't care about the (future) vi right now
+	;; just that we reserve a slot for ourselves.
+	;;
+	;; However, we want the running vi as later on we'll need to
+	;; access the underlying primdata.
+	symbols-sym-si = assq name (%eenv-symbols eenv)
+	symbols-si := pt symbols-sym-si
 
-	  ;; XXX no assignment to nth:
-	  ;symbols-sym-si.4 = (si-vi name-si)
-	  vi-tail := pttt symbols-si
-	  predef-vi := si-vi name-si
-	  set-ph! vi-tail predef-vi
+	;; XXX no assignment to nth:
+	;symbols-sym-si.4 = (si-vi name-si)
+	vi-tail := pttt symbols-si
+	predef-vi := si-vi name-si
+	set-ph! vi-tail predef-vi
 
-	  ;; also change the vt entry
-	  vt := %eenv-vt eenv
-	  sym-idx := si-si symbols-si
-	  vt.sym-idx = predef-vi
-	}
-      } {
-	; is name M/S ?
-	sdr := symbol-direct-reference name
-	if sdr {
-	  ;; (M S si)
-	  sdr-si := phtt sdr
-
-	  ;; The chances are that the existing scope, in sdr, is
-	  ;; 'predef, however if we reuse that then subsequent lookups
-	  ;; will try to run the 'predef code in meaning-application
-	  ;; which gets us in a mess for pre-compilation.
-	  ;;
-	  ;; From our future compiled code's perspective we're looking
-	  ;; up another 'toplevel (which will be resolved in the
-	  ;; running code into the predef).
-	  ;;
-	  ;; If it's a dynamic/environ/computed we want to retain that
-	  ;; information (as it generates different byte code).
-	  new-scope := si-scope sdr-si
-	  if (eq? new-scope 'predef) {
-	    new-scope = 'toplevel
-	  }
-
-	  meaning-extend-tables eenv name new-scope ci #f (si-module sdr-si) (si-description sdr-si) #t
-	} {
-
-	  meaning-extend-tables eenv name scope ci #t #f "idio-precompilation" #f
-	}
+	;; also change the vt entry
+	vt := %eenv-vt eenv
+	sym-idx := si-si symbols-si
+	vt.sym-idx = predef-vi
       }
+    } {
+      ; is name M/S ?
+      sdr := symbol-direct-reference name
+      if sdr {
+	;; (M S si)
+	sdr-si := phtt sdr
 
-      symbols-sym-si = assq name (%eenv-symbols eenv)
+	;; The chances are that the existing scope, in sdr, is
+	;; 'predef, however if we reuse that then subsequent lookups
+	;; will try to run the 'predef code in meaning-application
+	;; which gets us in a mess for pre-compilation.
+	;;
+	;; From our future compiled code's perspective we're looking
+	;; up another 'toplevel (which will be resolved in the
+	;; running code into the predef).
+	;;
+	;; If it's a dynamic/environ/computed we want to retain that
+	;; information (as it generates different byte code).
+	new-scope := si-scope sdr-si
+	if (eq? new-scope 'predef) {
+	  new-scope = 'toplevel
+	}
+
+	meaning-extend-tables eenv name new-scope ci #f (si-module sdr-si) (si-description sdr-si) #t
+      } {
+
+	meaning-extend-tables eenv name scope ci #t #f "idio-precompilation" #f
+      }
     }
 
-    pt symbols-sym-si
-  } {
-    name-si
+    symbols-sym-si = assq name (%eenv-symbols eenv)
   }
+
+  pt symbols-sym-si
 }
 
 define (meaning-find-symbol name eenv scope) {
@@ -372,7 +345,7 @@ define (meaning-toplevel-extend src name flags eenv) {
     if (not (eq? cur-scope scope)) {
       meaning-error-static-redefine src "toplevel-extend: type change" name si scope
     } {
-      meaning-eenv-si eenv si
+      si-si si
     }
   } {
     (cond-expand
@@ -410,19 +383,13 @@ define (meaning-environ-extend src name val eenv) {
     if (not (eq? cur-scope 'environ)) {
       meaning-error-static-redefine src "environ-extend: type change" name si cur-scope
     } {
-      meaning-eenv-si eenv si
+      si-si si
     }
   } {
     st := %eenv-symbols eenv
 
     ci := meaning-constants-lookup-or-extend eenv name
     vi := meaning-extend-tables eenv name 'environ ci #t #f "meaning-environ-extend" #t
-
-    ;; I don't like these two statements.  They should be the concern
-    ;; of the VM but there's no explicit instruction to the VM to
-    ;; create an environ variable.  Perhaps there should be?
-    set-module-vci! 'Idio ci ci
-    set-module-vvi! 'Idio ci vi
 
     set-symbol-value! name val im
 
@@ -668,14 +635,11 @@ define (meaning-reference src name nametree flags eenv) {
    })
    ((toplevel) {
      vi := si-vi si
-     (if (and (not (%eenv-aot? eenv))
-	      (vi gt 0))
-      (list I-VAL-REF vi)
-      (list I-SYM-REF (meaning-eenv-si eenv si)))
+     (list I-SYM-REF (si-si si))
    })
-   ((dynamic) (list I-DYNAMIC-SYM-REF (meaning-eenv-si eenv si)))
-   ((environ) (list I-ENVIRON-SYM-REF (meaning-eenv-si eenv si)))
-   ((computed) (list I-COMPUTED-SYM-REF (meaning-eenv-si eenv si)))
+   ((dynamic) (list I-DYNAMIC-SYM-REF (si-si si)))
+   ((environ) (list I-ENVIRON-SYM-REF (si-si si)))
+   ((computed) (list I-COMPUTED-SYM-REF (si-si si)))
    ((predef) {
      list I-PREDEFINED (si-vi si)
    })
@@ -706,14 +670,11 @@ define (meaning-function-reference src name nametree flags eenv) {
    })
    ((toplevel) {
      vi := si-vi si
-     (if (and (not (%eenv-aot? eenv))
-	      (vi gt 0))
-      (list I-FUNCTION-VAL-REF vi)
-      (list I-FUNCTION-SYM-REF (meaning-eenv-si eenv si)))
+     (list I-FUNCTION-SYM-REF (si-si si))
    })
-   ((dynamic) (list I-DYNAMIC-FUNCTION-SYM-REF (meaning-eenv-si eenv si)))
-   ((environ) (list I-ENVIRON-SYM-REF (meaning-eenv-si eenv si)))
-   ((computed) (list I-COMPUTED-SYM-REF (meaning-eenv-si eenv si)))
+   ((dynamic) (list I-DYNAMIC-FUNCTION-SYM-REF (si-si si)))
+   ((environ) (list I-ENVIRON-SYM-REF (si-si si)))
+   ((computed) (list I-COMPUTED-SYM-REF (si-si si)))
    ((predef) {
      list I-PREDEFINED (si-vi si)
    })
@@ -1033,18 +994,13 @@ define (meaning-assignment src name e nametree flags eenv) {
       ((toplevel) {
 	vi := si-vi si
 
-	if (and (not (%eenv-aot? eenv))
-		(vi gt 0)) {
-	  assign = list I-VAL-SET src vi m
-	} {
-	  assign = list I-SYM-SET src (meaning-eenv-si eenv si) m
-	}
+	assign = list I-SYM-SET src (si-si si) m
       })
       ((dynamic environ) {
-	assign = list I-SYM-SET src (meaning-eenv-si eenv si) m
+	assign = list I-SYM-SET src (si-si si) m
       })
       ((computed) {
-	sym-idx := meaning-eenv-si eenv si
+	sym-idx := si-si si
 
 	if (eval-flags-define flags) {
 	  i-code = (list (list I-SYM-DEF name scope sym-idx)
@@ -1070,7 +1026,7 @@ define (meaning-assignment src name e nametree flags eenv) {
      (cond
       (i-code i-code)
       ((eval-flags-define flags)
-       (list (list I-SYM-DEF name scope (meaning-eenv-si eenv si))
+       (list (list I-SYM-DEF name scope (si-si si))
 	     assign))
       (else assign))
    })
@@ -1110,14 +1066,8 @@ define (meaning-define src name e nametree flags eenv) {
   ;; if the act of looking the variable up auto-created it then
   ;; actually give it a value slot as this *is* the definition of it
   scope :=  si-scope si
-  ci := meaning-eenv-si eenv si
+  ci := si-si si
   vi := si-vi si
-  if (and (not (%eenv-aot? eenv))
-	  (eq? 'toplevel scope)
-	  (0 eq vi)) {
-
-    meaning-extend-tables eenv name scope ci #t #f "meaning-define/gvi=0" #t
-  }
 
   meaning-assignment src name e nametree define-flags eenv
 }
@@ -1236,11 +1186,7 @@ define (meaning-define-template src name e nametree flags eenv) {
     ;; install-expander/source! call we just made
     ci := meaning-constants-lookup-or-extend eenv name
 
-    ex-id := ci
-
-    if (%eenv-aot? eenv) {
-      ex-id = si-si si
-    }
+    ex-id := si-si si
 
     cm := (current-module)
 
@@ -1262,11 +1208,7 @@ define (meaning-define-infix-operator src name pri e nametree flags eenv) {
 
   ci := meaning-constants-lookup-or-extend eenv name
 
-  op-id := ci
-
-  if (%eenv-aot? eenv) {
-    op-id = si-si si
-  }
+  op-id := si-si si
 
   op-mod := find-module 'operator
   sym-si := list 'toplevel op-id ci 0 op-mod "define-infix-operator"
@@ -1287,11 +1229,7 @@ define (meaning-define-infix-operator src name pri e nametree flags eenv) {
       sve := #T{ symbol-value '$e (find-module 'operator) }
       meaning-copy-src-properties src sve
 
-      if (%eenv-aot? eenv) {
-	pre-compilation-restore-operator! name pri 'infix
-      } {
-	copy-infix-operator! name pri e
-      }
+      pre-compilation-restore-operator! name pri 'infix
 
       m = meaning sve sve nametree flags eenv
     } {
@@ -1317,9 +1255,7 @@ define (meaning-define-infix-operator src name pri e nametree flags eenv) {
 		e)
     meaning-copy-src-properties src fe
 
-    if (%eenv-aot? eenv) {
-      pre-compilation-restore-operator! name pri 'infix
-    }
+    pre-compilation-restore-operator! name pri 'infix
 
     m = meaning fe fe nametree flags eenv
   }
@@ -1337,11 +1273,7 @@ define (meaning-define-postfix-operator src name pri e nametree flags eenv) {
 
   ci := meaning-constants-lookup-or-extend eenv name
 
-  op-id := ci
-
-  if (%eenv-aot? eenv) {
-    op-id = si-si si
-  }
+  op-id := si-si si
 
   op-mod := find-module 'operator
   sym-si := list 'toplevel op-id ci 0 op-mod "define-postfix-operator"
@@ -1362,11 +1294,8 @@ define (meaning-define-postfix-operator src name pri e nametree flags eenv) {
       sve := #T{ symbol-value '$e (find-module 'operator) }
       meaning-copy-src-properties src sve
 
-      if (%eenv-aot? eenv) {
-	pre-compilation-restore-operator! name pri 'postfix
-      } {
-	copy-postfix-operator! name pri e
-	}
+      pre-compilation-restore-operator! name pri 'postfix
+
       m = meaning sve sve nametree flags eenv
     } {
       ;; Test Case: evaluation-errors/postfix-op-not-an-operator.idio
@@ -1391,9 +1320,7 @@ define (meaning-define-postfix-operator src name pri e nametree flags eenv) {
 		e)
     meaning-copy-src-properties src fe
 
-    if (%eenv-aot? eenv) {
-      pre-compilation-restore-operator! name pri 'postfix
-    }
+    pre-compilation-restore-operator! name pri 'postfix
 
     m = meaning fe fe nametree flags eenv
   }
@@ -2207,10 +2134,7 @@ Need to figure out run-in-thread too...
 
 define (meaning-primitive-application src fe ae* nametree flags arity si vi eenv) {
   primdata := vm-values-ref vi 0
-  pd-vi := vi
-  if (%eenv-aot? eenv) {
-    pd-vi = si
-  }
+  pd-vi := si
 
   if (not (primitive? primdata)) {
     error/type ^rt-parameter-value-error 'meaning-primitive-application "bad vi?" vi primdata
@@ -2274,52 +2198,25 @@ define (meaning-application src fe ae* nametree flags eenv) {
     if (pair? si) {
       scope := si-scope si
 
-      (cond
-       ((%eenv-aot? eenv) {
-	 if (eq? 'predef scope) {
-	   ;; we used the running vi of the primitive whereas the code
-	   ;; generator should use si for pre-compilation
-	   primdata := symbol-value fe (%eenv-module eenv)
+      if (eq? 'predef scope) {
+	;; we used the running vi of the primitive whereas the code
+	;; generator should use si for pre-compilation
+	primdata := symbol-value fe (%eenv-module eenv)
 
-	   arity := primitive-arity primdata
-	   n-args := length ae*
+	arity := primitive-arity primdata
+	n-args := length ae*
 
-	   if (or (and (primitive-varargs? primdata)
-		       (n-args ge arity))
-	       (n-args eq arity)) {
-	     i-code = meaning-primitive-application src fe ae* nametree flags arity (si-si si) (si-vi si) eenv
-	   } {
-	     ;; Test Case: evaluation-errors/primitive-arity.idio
+	if (or (and (primitive-varargs? primdata)
+		    (n-args ge arity))
+	    (n-args eq arity)) {
+	  i-code = meaning-primitive-application src fe ae* nametree flags arity (si-si si) (si-vi si) eenv
+	} {
+	  ;; Test Case: evaluation-errors/primitive-arity.idio
 
-	     ;; pair 1
-	     meaning-evaluation-error src "wrong arity for primitive" (list fe ae*)
-	   }
-	 }
-       })
-       ((eq? 'predef scope) {
-	 vi := si-vi si
-	 primdata := vm-values-ref vi 0
-
-	 if (primitive? primdata) {
-	   arity := primitive-arity primdata
-	   n-args := length ae*
-
-	   if (or (and (primitive-varargs? primdata)
-		       (n-args ge arity))
-	       (n-args eq arity)) {
-	     i-code = meaning-primitive-application src fe ae* nametree flags arity vi vi eenv
-	   } {
-	     ;; Test Case: evaluation-errors/primitive-arity.idio
-
-	     ;; pair 1
-	     meaning-evaluation-error src "wrong arity for primitive" (list fe ae*)
-	   }
-	 } {
-	   ;; Can we get here?  We'd need to be a predef but those are
-	   ;; all, uh, primitives.  Developer error?
-	   meaning-evaluation-error src "BAD application: not a primitive" fe
-	 }
-       }))
+	  ;; pair 1
+	  meaning-evaluation-error src "wrong arity for primitive" (list fe ae*)
+	}
+      }
     }
   }
 
@@ -2353,10 +2250,7 @@ define (meaning-dynamic-let src name e e+ nametree flags eenv) {
   sym-idx := #f
 
   if (pair? si) {
-    sym-idx = meaning-eenv-si eenv si
-    if (%eenv-aot? eenv) {
-      eprintf "WARNING: dynamic-extend: likely si clash\n"
-    }
+    sym-idx = si-si si
   } {
     sym-idx = meaning-toplevel-extend src name (set-scope 'dynamic flags) eenv
   }
@@ -2389,10 +2283,7 @@ define (meaning-environ-let src name e e+ nametree flags eenv) {
   sym-idx := #f
 
   if (pair? si) {
-    sym-idx = meaning-eenv-si eenv si
-    if (%eenv-aot? eenv) {
-      eprintf "WARNING: environ-extend: likely si clash\n"
-    }
+    sym-idx = si-si si
   } {
     sym-idx = meaning-toplevel-extend src name (set-scope 'environ flags) eenv
   }
@@ -2454,7 +2345,7 @@ define (meaning-trap src ce he be nametree flags eenv) {
 
       si := meaning-find-symbol-recurse c-sym eenv 'toplevel #t
       if (pair? si) {
-	ci = meaning-eenv-si eenv si
+	ci = si-si si
       } {
 	error/type ^rt-parameter-value-error 'meaning-trap "condition name unknown" c-sym
       }

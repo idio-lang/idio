@@ -556,7 +556,7 @@ Read and run the execution environment in `file`	\n\
     idio_display (file, dsh);
     IDIO desc = idio_get_output_string (dsh);
 
-    IDIO eenv = idio_evaluate_eenv (thr, desc, idio_S_true, cm);
+    IDIO eenv = idio_evaluate_eenv (thr, desc, cm);
 
     if (idio_compile_file_reader (eenv, file, C_file, file_len)) {
 	r = idio_S_true;

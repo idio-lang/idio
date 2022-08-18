@@ -4038,7 +4038,7 @@ This is the `load` primitive.					\n\
     idio_display (filename, dsh);
     IDIO desc = idio_get_output_string (dsh);
 
-    IDIO eenv = idio_evaluate_eenv (thr, desc, idio_S_true, cm);
+    IDIO eenv = idio_evaluate_eenv (thr, desc, cm);
 
     idio_gc_protect (eenv);
 

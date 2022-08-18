@@ -139,7 +139,7 @@ static int idio_env_set_default (IDIO name, IDIO val)
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (string, val);
 
-    IDIO ENV = idio_module_env_symbol_value (name, IDIO_LIST1 (idio_S_false));
+    IDIO ENV = idio_module_symbol_value (name, idio_Idio_module, IDIO_LIST1 (idio_S_false));
     if (idio_S_false == ENV) {
 	/*
 	 * Code coverage:
@@ -814,7 +814,7 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
 	     */
 	    int in_place = 0;
 
-	    IDIO idiolib = idio_module_env_symbol_value (idio_S_IDIOLIB, IDIO_LIST1 (idio_S_false));
+	    IDIO idiolib = idio_module_symbol_value (idio_S_IDIOLIB, idio_Idio_module, IDIO_LIST1 (idio_S_false));
 
 	    size_t idiolib_C_len = 0;
 	    char *idiolib_C = NULL;

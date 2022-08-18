@@ -162,7 +162,10 @@ static void idio_module_unbound_name_error (IDIO symbol, IDIO module, IDIO c_loc
     IDIO dsh;
     idio_error_init (&msh, &lsh, &dsh, c_location);
 
-    idio_display_C ("symbol unbound in module", msh);
+    idio_display_C ("symbol '", msh);
+    idio_display (symbol, msh);
+    idio_display_C ("' unbound in module ", msh);
+    idio_display (IDIO_MODULE_NAME (module), msh);
 
     idio_error_raise_cont (idio_condition_rt_module_symbol_unbound_error_type,
 			   IDIO_LIST5 (idio_get_output_string (msh),
@@ -233,8 +236,6 @@ IDIO idio_module (IDIO name)
     }
     IDIO_MODULE_IMPORTS (mo) = imports;
     IDIO_MODULE_SYMBOLS (mo) = IDIO_HASH_EQP (1<<4);
-    IDIO_MODULE_VCI (mo) = IDIO_HASH_EQP (1<<4);
-    IDIO_MODULE_VVI (mo) = IDIO_HASH_EQP (1<<4);
 
     idio_hash_put (idio_modules_hash, name, mo);
 
@@ -255,205 +256,6 @@ void idio_free_module (IDIO mo)
     IDIO_TYPE_ASSERT (module, mo);
 
     IDIO_GC_FREE (mo->u.module, sizeof (idio_module_t));
-}
-
-IDIO idio_module_get_vci (IDIO module, IDIO mci)
-{
-    IDIO_ASSERT (module);
-    IDIO_ASSERT (mci);
-
-    IDIO_TYPE_ASSERT (module, module);
-    IDIO_TYPE_ASSERT (fixnum, mci);
-
-    return idio_hash_ref (IDIO_MODULE_VCI (module), mci);
-}
-
-IDIO idio_module_set_vci (IDIO module, IDIO mci, IDIO gci)
-{
-    IDIO_ASSERT (module);
-    IDIO_ASSERT (mci);
-    IDIO_ASSERT (gci);
-
-    IDIO_TYPE_ASSERT (module, module);
-    IDIO_TYPE_ASSERT (fixnum, mci);
-    IDIO_TYPE_ASSERT (fixnum, gci);
-
-    return idio_hash_put (IDIO_MODULE_VCI (module), mci, gci);
-}
-
-/*
- * Full code coverage:
- *
- * Requires more squirrelly effort using evaluate.idio than I care to
- * expend.
- */
-IDIO_DEFINE_PRIMITIVE3_DS ("set-module-vci!", set_module_vci, (IDIO m_or_n, IDIO mci, IDIO gci), "module mci gci", "\
-Associate `mci` with `gci` in `module`			\n\
-							\n\
-:param module: module to use				\n\
-:type module: module or symbol				\n\
-:param mci: module ci					\n\
-:type mci: fixnum					\n\
-:param gci: global ci					\n\
-:type gci: fixnum					\n\
-:return: mci						\n\
-:rtype: fixnum						\n\
-")
-{
-    IDIO_ASSERT (m_or_n);
-    IDIO_ASSERT (mci);
-    IDIO_ASSERT (gci);
-
-    /*
-     * Test Case: module-errors/set-module-vci-bad-mci-type.idio
-     *
-     * set-module-vci! #t #t #t
-     */
-    IDIO_USER_TYPE_ASSERT (fixnum, mci);
-    /*
-     * Test Case: module-errors/set-module-vci-bad-gci-type.idio
-     *
-     * set-module-vci! #t 1 #t
-     */
-    IDIO_USER_TYPE_ASSERT (fixnum, gci);
-
-    IDIO module = idio_S_undef;
-
-    if (idio_isa_module (m_or_n)) {
-	module = m_or_n;
-    } else if (idio_isa_symbol (m_or_n)) {
-	module = idio_hash_ref (idio_modules_hash, m_or_n);
-
-	if (idio_S_unspec == module) {
-	    /*
-	     * Test Case: module-errors/set-module-vci-unbound.idio
-	     *
-	     * set-module-vci! (gensym) 1 1
-	     */
-	    idio_module_unbound_error (m_or_n, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
-	}
-    } else {
-	/*
-	 * Test Case: module-errors/set-module-vci-bad-module-type.idio
-	 *
-	 * set-module-vci! #t 1 1
-	 */
-	idio_error_param_type ("module|symbol", m_or_n, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    return idio_module_set_vci (module, mci, gci);
-}
-
-IDIO idio_module_get_or_set_vci (IDIO module, IDIO mci)
-{
-    IDIO_ASSERT (module);
-    IDIO_ASSERT (mci);
-
-    IDIO_TYPE_ASSERT (module, module);
-    IDIO_TYPE_ASSERT (fixnum, mci);
-
-    IDIO r = idio_module_get_vci (module, mci);
-
-    if (idio_S_unspec == r) {
-	r = idio_module_set_vci (module, mci, mci);
-    }
-
-    return r;
-}
-
-IDIO idio_module_get_vvi (IDIO module, IDIO mci)
-{
-    IDIO_ASSERT (module);
-    IDIO_ASSERT (mci);
-
-    IDIO_TYPE_ASSERT (module, module);
-    IDIO_TYPE_ASSERT (fixnum, mci);
-
-    return idio_hash_ref (IDIO_MODULE_VVI (module), mci);
-}
-
-IDIO idio_module_set_vvi (IDIO module, IDIO mci, IDIO gvi)
-{
-    IDIO_ASSERT (module);
-    IDIO_ASSERT (mci);
-    IDIO_ASSERT (gvi);
-
-    IDIO_TYPE_ASSERT (module, module);
-    IDIO_TYPE_ASSERT (fixnum, mci);
-    IDIO_TYPE_ASSERT (fixnum, gvi);
-
-    return idio_hash_put (IDIO_MODULE_VVI (module), mci, gvi);
-}
-
-/*
- * Full code coverage:
- *
- * Requires more squirrelly effort using evaluate.idio than I care to
- * expend.
- */
-IDIO_DEFINE_PRIMITIVE3_DS ("set-module-vvi!", set_module_vvi, (IDIO m_or_n, IDIO mci, IDIO gvi), "module mci gvi", "\
-Assoviate `mci` with `gvi` in `module`			\n\
-							\n\
-:param module: module to use				\n\
-:type module: module or symbol				\n\
-:param mci: module ci					\n\
-:type mci: fixnum					\n\
-:param gvi: global vi					\n\
-:type gvi: fixnum					\n\
-:return: mci						\n\
-:rtype: fixnum						\n\
-")
-{
-    IDIO_ASSERT (m_or_n);
-    IDIO_ASSERT (mci);
-    IDIO_ASSERT (gvi);
-
-    /*
-     * Test Case: module-errors/set-module-vvi-bad-mci-type.idio
-     *
-     * set-module-vvi! #t #t #t
-     */
-    IDIO_USER_TYPE_ASSERT (fixnum, mci);
-    /*
-     * Test Case: module-errors/set-module-vvi-bad-gvi-type.idio
-     *
-     * set-module-vvi! #t 1 #t
-     */
-    IDIO_USER_TYPE_ASSERT (fixnum, gvi);
-
-    IDIO module = idio_S_undef;
-
-    if (idio_isa_module (m_or_n)) {
-	module = m_or_n;
-    } else if (idio_isa_symbol (m_or_n)) {
-	module = idio_hash_ref (idio_modules_hash, m_or_n);
-
-	if (idio_S_unspec == module) {
-	    /*
-	     * Test Case: module-errors/set-module-vvi-unbound.idio
-	     *
-	     * set-module-vvi! (gensym) 1 1
-	     */
-	    idio_module_unbound_error (m_or_n, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
-	}
-    } else {
-	/*
-	 * Test Case: module-errors/set-module-vvi-bad-type.idio
-	 *
-	 * set-module-vvi! #t 1 1
-	 */
-	idio_error_param_type ("module|symbol", m_or_n, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    return idio_module_set_vvi (module, mci, gvi);
 }
 
 IDIO idio_module_find_module (IDIO name)
@@ -1104,16 +906,16 @@ IDIO idio_module_direct_reference (IDIO name)
 		if (idio_S_false != si) {
 		    /*
 		     * Our result si should look similar to the result
-		     * we've just found except that the mci cannot be
+		     * we've just found except that the ci cannot be
 		     * the same: the symbols M/S is not the same as
 		     * the symbol S.
 		     */
-		    idio_as_t mci = idio_vm_constants_lookup_or_extend (IDIO_THREAD_XI (idio_thread_current_thread ()),  name);
+		    idio_as_t ci = idio_vm_constants_lookup_or_extend (IDIO_THREAD_XI (idio_thread_current_thread ()),  name);
 		    r = IDIO_LIST3 (m_sym,
 				    s_sym,
 				    IDIO_LIST6 (IDIO_SI_SCOPE (si),
-						idio_fixnum (mci),
-						idio_fixnum (mci),
+						IDIO_SI_SI (si),
+						idio_fixnum (ci),
 						IDIO_SI_VI (si),
 						mod,
 						idio_module_direct_reference_string));
@@ -1190,7 +992,7 @@ IDIO idio_module_find_symbol_recurse_imports (IDIO symbol, IDIO imported_module,
  *
  * 0 - look in this module only -- see idio_module_find_symbol()
  * 1 - look in this module and imports
- * 2 - look in imports only -- see idio_vm_get_or_create_vvi()
+ * 2 - look in imports only
  */
 IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 {
@@ -1430,25 +1232,35 @@ IDIO idio_module_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO m_or_n, IDIO a
 
     if (idio_isa_pair (si)) {
 	IDIO scope = IDIO_SI_SCOPE (si);
-	IDIO sym_idx = IDIO_SI_SI (si);
-	IDIO fmci = IDIO_SI_CI (si);
+	IDIO fci = IDIO_SI_CI (si);
 	IDIO fgvi = IDIO_SI_VI (si);
+	idio_as_t gvi = IDIO_FIXNUM_VAL (fgvi);
+
+	if (0 == gvi) {
+	    /*
+	     * Test case: ??
+	     *
+	     */
+	    idio_module_unbound_name_error (symbol, module, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
 
 	if (idio_S_toplevel == scope) {
-	    r = idio_vm_values_gref (xi, xi ? IDIO_FIXNUM_VAL (sym_idx) : IDIO_FIXNUM_VAL (fgvi), "symbol-value/toplevel");
+	    r = idio_vm_values_gref (0, gvi, "symbol-value/toplevel");
 	} else if (idio_S_predef == scope) {
-	    r = idio_vm_values_gref (xi, IDIO_FIXNUM_VAL (fgvi), "symbol-value/predef");
+	    r = idio_vm_values_gref (0, gvi, "symbol-value/predef");
 	} else if (idio_S_dynamic == scope) {
-	    r = idio_vm_dynamic_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
+	    r = idio_vm_dynamic_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fci), gvi, args);
 	} else if (idio_S_environ == scope) {
-	    r = idio_vm_environ_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
+	    r = idio_vm_environ_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fci), gvi, args);
 	} else if (idio_S_computed == scope) {
 	    /*
 	     * Code coverage
 	     *
 	     * Nobody looks one up, I guess.  I'm not sweating it.
 	     */
-	    r = idio_vm_computed_ref (xi, IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_computed_ref (xi, IDIO_FIXNUM_VAL (fci), gvi);
 	} else {
 	    /*
 	     * Test Case: ??
@@ -1520,7 +1332,7 @@ Return the value of `sym` in `mod` or `default` if supplied	\n\
      */
     IDIO_USER_TYPE_ASSERT (list, args);
 
-    return idio_module_symbol_value (symbol, m_or_n, args);
+    return idio_module_symbol_value_xi (IDIO_THREAD_XI (idio_thread_current_thread ()), symbol, m_or_n, args);
 }
 
 IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
@@ -1570,7 +1382,7 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
 
     if (idio_S_false != si) {
 	IDIO scope = IDIO_SI_SCOPE (si);
-	IDIO fmci = IDIO_SI_CI (si);
+	IDIO fci = IDIO_SI_CI (si);
 	IDIO fgvi = IDIO_SI_VI (si);
 	idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
@@ -1591,9 +1403,9 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
 		 *
 		 * Nobody looks one up, I guess.  I'm not sweating it.
 		 */
-		r = idio_vm_dynamic_ref (thr, IDIO_FIXNUM_VAL (fmci), gvi, args);
+		r = idio_vm_dynamic_ref (thr, IDIO_FIXNUM_VAL (fci), gvi, args);
 	    } else if (idio_S_environ == scope) {
-		r = idio_vm_environ_ref (thr, IDIO_FIXNUM_VAL (fmci), gvi, args);
+		r = idio_vm_environ_ref (thr, IDIO_FIXNUM_VAL (fci), gvi, args);
 	    } else if (idio_S_computed == scope) {
 		/*
 		 * Test Case: ??
@@ -1760,7 +1572,7 @@ IDIO idio_module_set_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO value, IDI
 
     IDIO si = idio_hash_ref (IDIO_MODULE_SYMBOLS (module), symbol);
     IDIO scope;
-    IDIO fmci;
+    IDIO fci;
     IDIO fgvi;
 
     if (idio_S_unspec == si) {
@@ -1775,15 +1587,15 @@ IDIO idio_module_set_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO value, IDI
 	idio_hash_put (IDIO_MODULE_SYMBOLS (module),
 		       symbol,
 		       si);
-	fmci = IDIO_SI_CI (si);
+	fci = IDIO_SI_CI (si);
 	fgvi = IDIO_SI_VI (si);
     } else {
 	scope = IDIO_SI_SCOPE (si);
-	fmci = IDIO_SI_CI (si);
+	fci = IDIO_SI_CI (si);
 	fgvi = IDIO_SI_VI (si);
     }
 
-    idio_ai_t mci = IDIO_FIXNUM_VAL (fmci);
+    idio_ai_t ci = IDIO_FIXNUM_VAL (fci);
     idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
     if (0 == gvi) {
 	/*
@@ -1801,9 +1613,6 @@ IDIO idio_module_set_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO value, IDI
 	IDIO_SI_VI (si) = idio_fixnum (gvi);
     }
 
-    idio_module_set_vci (module, fmci, fmci);
-    idio_module_set_vvi (module, fmci, fgvi);
-
     if (idio_S_toplevel == scope) {
 	/*
 	 * gvi is a global as we've just looked it up in si
@@ -1815,16 +1624,16 @@ IDIO idio_module_set_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO value, IDI
 	 *
 	 * Nobody has set one, I guess.  I'm not sweating it.
 	 */
-	idio_vm_dynamic_set (idio_thread_current_thread (), mci, gvi, value);
+	idio_vm_dynamic_set (idio_thread_current_thread (), ci, gvi, value);
     } else if (idio_S_environ == scope) {
-	idio_vm_environ_set (idio_thread_current_thread (), mci, gvi, value);
+	idio_vm_environ_set (idio_thread_current_thread (), ci, gvi, value);
     } else if (idio_S_computed == scope) {
 	/*
 	 * Code coverage
 	 *
 	 * Nobody has set one, I guess.  I'm not sweating it.
 	 */
-	idio_vm_computed_set (xi, mci, gvi, value);
+	idio_vm_computed_set (xi, ci, gvi, value);
     } else if (idio_S_predef == scope) {
 	/*
 	 * XXX
@@ -2026,8 +1835,6 @@ print the internal details of `module`		\n\
     idio_debug ("  exports: %s\n", IDIO_MODULE_EXPORTS (mo));
     idio_debug ("  imports: %s\n", IDIO_MODULE_IMPORTS (mo));
     idio_debug ("  symbols: %s\n", IDIO_MODULE_SYMBOLS (mo));
-    idio_debug ("  vci: %s\n", IDIO_MODULE_VCI (mo));
-    idio_debug ("  vvi: %s\n", IDIO_MODULE_VVI (mo));
 
     return idio_S_unspec;
 }
@@ -2153,8 +1960,6 @@ void idio_module_add_primitives ()
     IDIO_ADD_PRIMITIVE (all_modules);
 
     IDIO_ADD_MODULE_PRIMITIVE (idio_evaluate_module, symbol_direct_reference);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_evaluate_module, set_module_vci);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_evaluate_module, set_module_vvi);
     /*
      * find-symbol is used in doc.idio which can access it through
      * evaluate/find-symbol

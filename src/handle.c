@@ -2360,7 +2360,7 @@ This is the `load-handle` primitive.				\n\
     idio_display_C ("> load-handle for ", dsh);
     idio_display (IDIO_HANDLE_FILENAME (h), dsh);
     IDIO desc = idio_get_output_string (dsh);
-    IDIO eenv = idio_evaluate_eenv (thr, desc, idio_S_true, cm);
+    IDIO eenv = idio_evaluate_eenv (thr, desc, cm);
     idio_gc_protect (eenv);
 
     IDIO r = idio_load_handle (h, idio_read, idio_evaluate_func, eenv, IDIO_LOAD_HANDLE_PRESERVE_NONE);

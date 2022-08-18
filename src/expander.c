@@ -110,12 +110,9 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, char c
      * We should only be being called from C idio_init_X() functions.
      */
     IDIO sym_si = idio_vm_extend_tables (0, name, idio_S_predef, module, idio_evaluator_extend_str);
-    IDIO fmci = IDIO_SI_CI (sym_si);
     IDIO fgvi = IDIO_SI_VI (sym_si);
     idio_as_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
-    idio_module_set_vci (module, fmci, fmci);
-    idio_module_set_vvi (module, fmci, fgvi);
     idio_module_set_symbol (name, sym_si, module);
 
     /*
@@ -957,7 +954,7 @@ void idio_install_operator (idio_xi_t xi, IDIO id, IDIO proc, int pri, IDIO ol_s
 	IDIO_C_ASSERT (0);
     }
 
-    idio_module_set_symbol_value_xi (0, id, proc, idio_operator_module);
+    idio_module_set_symbol_value_xi (xi, id, proc, idio_operator_module);
 
     IDIO ol = idio_module_symbol_value_xi (0, ol_sym, idio_operator_module, idio_S_nil);
     IDIO op = idio_list_assq (id, ol);

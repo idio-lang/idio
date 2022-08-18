@@ -497,7 +497,7 @@ void idio_hash_resize (IDIO h, int larger)
 
     if (m > 10) {
 	fprintf (stderr, "h %p %d hc %6zu os %6zu md %4zu -> ns %6zu ", h, larger, hcount, osize, m, nsize);
-	if (h == idio_vm_constants_hash) {
+	if (h == idio_vm_ch) {
 	    fprintf (stderr, "vm-constants");
 	}
 	fprintf (stderr, "\n");

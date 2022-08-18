@@ -46,10 +46,11 @@
 #endif
 
 extern IDIO idio_vm_module;
-extern IDIO idio_vm_constants;
-extern IDIO idio_vm_constants_hash;
-extern IDIO idio_vm_src_exprs;
-extern IDIO idio_vm_src_props;
+extern IDIO idio_vm_st;
+extern IDIO idio_vm_cs;
+extern IDIO idio_vm_ch;
+extern IDIO idio_vm_ses;
+extern IDIO idio_vm_sps;
 extern IDIO idio_vm_krun;
 extern int idio_vm_reports;
 extern int idio_vm_reporting;
@@ -264,10 +265,10 @@ void idio_vm_default_values_set (idio_as_t gvi, IDIO v);
 void idio_vm_decode_thread (IDIO thr);
 void idio_vm_decode_stack (IDIO thr, IDIO stack);
 void idio_vm_reset_thread (IDIO thr, int verbose);
-IDIO idio_vm_add_dynamic (IDIO m, IDIO ci, IDIO vi, IDIO note);
+IDIO idio_vm_add_dynamic (IDIO si, IDIO ci, IDIO vi, IDIO m, IDIO note);
 IDIO idio_vm_dynamic_ref (IDIO thr, idio_as_t msi, idio_as_t gvi, IDIO args);
 void idio_vm_dynamic_set (IDIO thr, idio_as_t msi, idio_as_t gvi, IDIO v);
-IDIO idio_vm_add_environ (IDIO m, IDIO ci, IDIO vi, IDIO note);
+IDIO idio_vm_add_environ (IDIO si, IDIO ci, IDIO vi, IDIO m, IDIO note);
 IDIO idio_vm_environ_ref (IDIO thr, idio_as_t msi, idio_as_t gvi, IDIO args);
 void idio_vm_environ_set (IDIO thr, idio_as_t msi, idio_as_t gvi, IDIO v);
 IDIO idio_vm_computed_ref (idio_xi_t xi, idio_as_t msi, idio_as_t gvi);

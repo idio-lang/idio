@@ -1,5 +1,0 @@
-
-module evaluate
-
-set-module-vci! #t #t #t
-

@@ -41,7 +41,9 @@ evaluation-error-load := {
     exp-tests := 1
 
     ;eprintf "loading #%s %s\n" n filename
-    trap ^evaluation-error (function (c) {
+    trap (^st-variable-error
+	  ^rt-parameter-type-error
+	  ^evaluation-error) (function (c) {
       ;eprintf "evaluation-error #%s: %s %s\n" n msg c
       test (idio-error-message c) msg
       
@@ -143,5 +145,8 @@ evaluation-error-load "evaluation-errors/trap-condition-handler-nil.idio" "(%tra
 evaluation-error-load "evaluation-errors/include-nil.idio" "include: no argument"
 evaluation-error-load "evaluation-errors/template-expand-nil.idio" "template-expand: no argument"
 
+evaluation-error-load "evaluation-errors/evaluation-environment-bad-module-value.idio" "unbound"
+evaluation-error-load "evaluation-errors/evaluation-environment-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module|symbol"
+
 ;; all done?
-Tests? (evaluation-error0 + 69)
+Tests? (evaluation-error0 + 71)

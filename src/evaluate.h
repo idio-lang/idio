@@ -93,7 +93,6 @@
 typedef enum {
     IDIO_EENV_ST_DESC,		/* shared with xenv */
     IDIO_EENV_ST_CHKSUM,
-    IDIO_EENV_ST_AOTP,
     IDIO_EENV_ST_SYMBOLS,	 /* alist of (symbol symbol-info) */
     IDIO_EENV_ST_ST,		 /* symbol table for VM */
     IDIO_EENV_ST_VT,		 /* value table for VM */
@@ -108,7 +107,6 @@ typedef enum {
     IDIO_EENV_ST_SIZE,
 } idio_eenv_st_enum;
 
-#define IDIO_MEANING_EENV_AOT(E)     idio_struct_instance_ref_direct((E), IDIO_EENV_ST_AOTP)
 #define IDIO_MEANING_EENV_SYMBOLS(E) idio_struct_instance_ref_direct((E), IDIO_EENV_ST_SYMBOLS)
 #define IDIO_MEANING_EENV_ST(E)      idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ST)
 #define IDIO_MEANING_EENV_VT(E)      idio_struct_instance_ref_direct((E), IDIO_EENV_ST_VT)
@@ -126,7 +124,7 @@ void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char const *msg, 
 void idio_meaning_error_static_redefine (IDIO lo, IDIO c_location, char const *msg, IDIO name, IDIO cv, IDIO new);
 void idio_meaning_error_static_arity (IDIO lo, IDIO c_location, char const *msg, IDIO args);
 
-idio_as_t idio_meaning_extend_tables (IDIO eenv, IDIO name, IDIO scope, IDIO ci, int use_vi, IDIO module, IDIO desc, int set_symbol);
+idio_as_t idio_meaning_extend_tables (IDIO eenv, IDIO name, IDIO scope, IDIO ci, IDIO module, IDIO desc, int set_symbol);
 
 IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, char const *cpp__FILE__, int cpp__LINE__);
 IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, char const *cpp__FILE__, int cpp__LINE__);
@@ -154,8 +152,7 @@ IDIO idio_operator_expand (IDIO e, int depth);
 
 IDIO idio_evaluate (IDIO src, IDIO eenv);
 IDIO idio_evaluate_func (IDIO src, IDIO eenv);
-IDIO idio_evaluate_eenv (IDIO thr, IDIO desc, IDIO aotp, IDIO module);
-IDIO idio_evaluate_normal_eenv (IDIO desc, IDIO module);
+IDIO idio_evaluate_eenv (IDIO thr, IDIO desc, IDIO module);
 
 void idio_init_evaluate ();
 

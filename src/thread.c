@@ -50,6 +50,7 @@
 #include "idio-string.h"
 #include "module.h"
 #include "pair.h"
+#include "string-handle.h"
 #include "symbol.h"
 #include "thread.h"
 #include "util.h"
@@ -354,17 +355,27 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 	    IDIO_STRCAT (r, sizep, "\n    expr=");
-	    IDIO fsci = IDIO_THREAD_EXPR (v);
-	    if (idio_isa_fixnum (fsci)) {
-		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fsci);
-		intptr_t gci = IDIO_FIXNUM_VAL (fgci);
 
-		IDIO src = idio_vm_src_expr_ref (IDIO_THREAD_XI (idio_thread_current_thread ()), gci);
+	    IDIO lsh = idio_open_output_string_handle_C ();
+	    IDIO fsei = IDIO_THREAD_EXPR (v);
+	    idio_xi_t xi = IDIO_THREAD_XI (v);
+	    if (idio_isa_fixnum (fsei)) {
+		IDIO sp = idio_vm_src_props_ref (xi, IDIO_FIXNUM_VAL (fsei));
 
-		t_size = 0;
-		t = idio_as_string (src, &t_size, 4, seen, 0);
-		IDIO_STRCAT_FREE (r, sizep, t, t_size);
+		if (idio_isa_pair (sp)) {
+		    IDIO fn = idio_vm_constants_ref (xi, IDIO_FIXNUM_VAL (IDIO_PAIR_H (sp)));
+		    idio_display (fn, lsh);
+		    idio_display_C (":line ", lsh);
+		    idio_display (IDIO_PAIR_HT (sp), lsh);
+		} else {
+		    idio_display_C ("<no source properties>", lsh);
+		}
+	    } else {
+		idio_display (fsei, lsh);
 	    }
+	    t_size = 0;
+	    t = idio_as_string (idio_get_output_string (lsh), &t_size, 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 	    IDIO_STRCAT (r, sizep, "\n     i/h=");
 	    t_size = 0;

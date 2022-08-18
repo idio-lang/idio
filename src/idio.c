@@ -305,7 +305,9 @@ void idio_init (void)
      * Not Art but idio_X_add_primitives() in env.c, vars.c are going
      * to use idio_default_eenv.
      */
-    idio_default_eenv = idio_evaluate_normal_eenv (IDIO_STRING ("default compilation unit"), idio_Idio_module);
+    idio_default_eenv = idio_evaluate_eenv (idio_thread_current_thread (),
+					    IDIO_STRING ("default compilation unit"),
+					    idio_Idio_module);
     idio_gc_protect_auto (idio_default_eenv);
 
     idio_module_set_symbol_value (IDIO_SYMBOL ("*expander-eenv*"),
@@ -667,7 +669,9 @@ int main (int argc, char **argv, char **envp)
     idio_vm_push_abort (thr, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
     IDIO eenv = idio_default_eenv;
-    eenv = idio_evaluate_eenv (idio_thread_current_thread (), IDIO_STRING ("bootstrap"), idio_S_true, idio_thread_current_module ());
+    eenv = idio_evaluate_eenv (idio_thread_current_thread (),
+			       IDIO_STRING ("bootstrap"),
+			       idio_thread_current_module ());
     idio_gc_protect (eenv);
     idio_load_file_name (IDIO_STRING ("bootstrap"), eenv);
 

@@ -2163,6 +2163,19 @@ void idio_job_control_set_interactive (int interactive)
 
 void idio_job_control_add_primitives ()
 {
+    /*
+     * The Idio-visible %idio-interactive should be read-only.
+     * However, we actually play some tricks with it like disabling
+     * during {load} so we don't get plagued with job failure
+     * messages.  So it should be a (read-only) computed variable.
+     */
+    IDIO geti;
+    geti = IDIO_ADD_PRIMITIVE (interactivep);
+    idio_module_add_computed_symbol (IDIO_SYMBOL ("%idio-interactive"),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
+				     idio_S_nil,
+				     idio_job_control_module);
+
     IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_is_stopped);
     IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_is_completed);
     IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_failed);
@@ -2285,19 +2298,6 @@ void idio_init_job_control ()
 				  idio_job_control_module);
 
     idio_job_control_cmd_pid = idio_job_control_pid;
-
-    /*
-     * The Idio-visible %idio-interactive should be read-only.
-     * However, we actually play some tricks with it like disabling
-     * during {load} so we don't get plagued with job failure
-     * messages.  So it should be a (read-only) computed variable.
-     */
-    IDIO geti;
-    geti = IDIO_ADD_PRIMITIVE (interactivep);
-    idio_module_add_computed_symbol (IDIO_SYMBOL ("%idio-interactive"),
-				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
-				     idio_S_nil,
-				     idio_job_control_module);
 
     /*
      * Not noted in the Job Control docs is that if we are launched

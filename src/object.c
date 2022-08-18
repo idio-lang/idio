@@ -1823,17 +1823,6 @@ void idio_object_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_object_module, slot_set_direct);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_object_module, dump_instance);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_object_module, cpl_args);
-}
-
-void idio_final_object ()
-{
-}
-
-void idio_init_object ()
-{
-    idio_module_table_register (idio_object_add_primitives, idio_final_object, NULL);
-
-    idio_object_module = idio_module (IDIO_SYMBOL ("object"));
 
     IDIO vi;
     vi = IDIO_ADD_MODULE_PRIMITIVE (idio_object_module, invoke_instance_in_error);
@@ -2026,4 +2015,15 @@ void idio_init_object ()
 
     IDIO_EXPORT_PROCEDURE_CLASS (idio_closure_inst, "<closure>");
     IDIO_EXPORT_PROCEDURE_CLASS (idio_primitive_inst, "<primitive>");
+}
+
+void idio_final_object ()
+{
+}
+
+void idio_init_object ()
+{
+    idio_module_table_register (idio_object_add_primitives, idio_final_object, NULL);
+
+    idio_object_module = idio_module (IDIO_SYMBOL ("object"));
 }
