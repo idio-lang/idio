@@ -4056,11 +4056,6 @@ static IDIO idio_meaning_regular_application (IDIO src, IDIO fe, IDIO aes, IDIO 
 
     int ams_flags = IDIO_MEANING_NOT_TAILP (flags);
 
-    if (idio_isa_pair (aes) &&
-	idio_S_nil != IDIO_PAIR_T (aes) &&
-	! idio_isa_pair (IDIO_PAIR_T (aes))) {
-	idio_debug ("mra ? %s\n", aes);
-    }
     IDIO ams = idio_meaning_arguments (src, aes, nametree, idio_list_length (aes), ams_flags, eenv);
 
     if (IDIO_MEANING_IS_TAILP (flags)) {
@@ -4925,7 +4920,6 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 		    IDIO eth = IDIO_PAIR_H (et);
 		    if (idio_isa_pair (eth) &&
 			idio_S_block == IDIO_PAIR_H (eth)) {
-			idio_debug ("cond %s\n", e);
 			et = IDIO_PAIR_T (eth);
 		    }
 		}
@@ -6024,6 +6018,8 @@ void idio_init_evaluate ()
 
     idio_evaluate_eenv_map = IDIO_HASH_EQP (8);
     idio_gc_protect_auto (idio_evaluate_eenv_map);
+
+    idio_module_set_symbol_value (IDIO_SYMBOL ("%%eenv-map"), idio_evaluate_eenv_map, idio_evaluate_module);
 }
 
 /* Local Variables: */

@@ -202,31 +202,26 @@ define (meaning-constants-lookup-or-extend eenv name) {
   ci
 }
 
-define (meaning-extend-tables eenv name scope ci use-vi? module desc set-symbol?) "
+define (meaning-extend-tables eenv name scope ci module desc set-symbol?) "
 
 " {
-  si := #f
-  vi := #f
-
   array-push! (%eenv-st eenv) ci
 
   vt := %eenv-vt eenv
-  vi = array-length vt
-  si = vi
+  vi := array-length vt
 
   if (not module) {
     module = (%eenv-module eenv)
   }
 
-  used-vi := if use-vi? vi 0
-  array-push! vt used-vi
+  array-push! vt 0
 
   sym-si := (list
 	     name
 	     scope
-	     si
+	     vi
 	     ci
-	     used-vi
+	     0
 	     module
 	     desc)
 
@@ -248,11 +243,14 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
   ;; function calling protocol (via frame creation etc.).  If it's a
   ;; (well known) primitive we should just be calling it directly.
   symbols-sym-si := assq name (%eenv-symbols eenv)
+
   if (not symbols-sym-si) {
     ci := meaning-constants-lookup-or-extend eenv name
+
     if (pair? name-si) {
       scope = si-scope name-si
-      meaning-extend-tables eenv name scope ci #f (si-module name-si) "idio-precompilation" #f
+
+      meaning-extend-tables eenv name scope ci (si-module name-si) "idio-precompilation" #f
 
       if (eq? 'predef scope) {
 	;; Notionally we don't care about the (future) vi right now
@@ -263,11 +261,8 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
 	symbols-sym-si = assq name (%eenv-symbols eenv)
 	symbols-si := pt symbols-sym-si
 
-	;; XXX no assignment to nth:
-	;symbols-sym-si.4 = (si-vi name-si)
-	vi-tail := pttt symbols-si
 	predef-vi := si-vi name-si
-	set-ph! vi-tail predef-vi
+	symbols-si.4 = predef-vi
 
 	;; also change the vt entry
 	vt := %eenv-vt eenv
@@ -297,10 +292,10 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
 	  new-scope = 'toplevel
 	}
 
-	meaning-extend-tables eenv name new-scope ci #f (si-module sdr-si) (si-description sdr-si) #t
+	meaning-extend-tables eenv name new-scope ci (si-module sdr-si) (si-description sdr-si) #t
       } {
 
-	meaning-extend-tables eenv name scope ci #t #f "idio-precompilation" #f
+	meaning-extend-tables eenv name scope ci #f "idio-precompilation" #f
       }
     }
 
@@ -360,9 +355,11 @@ define (meaning-toplevel-extend src name flags eenv) {
 
     ;; NB a vi of 0 indicates an unresolved value index to be resolved
     ;; (based on the current set of imports) during runtime
-    meaning-extend-tables eenv name scope ci #f #f "meaning-toplevel-extend" #t
+    meaning-extend-tables eenv name scope ci #f "meaning-toplevel-extend" #t
 
-    ci
+    si = meaning-find-symbol name eenv scope
+
+    si-si si
   }
 }
 
@@ -374,8 +371,11 @@ define (meaning-environ-extend src name val eenv) {
   ;; the stack (and environ(3P)), where environ variables live, is
   ;; shared by all modules
   im := find-module 'Idio
+  environ-eenv := hash-ref %%eenv-map im
 
-  si := meaning-find-environ-symbol name
+  si := meaning-find-environ-symbol name environ-eenv
+
+  gvi := 0
 
   if (pair? si) {
     cur-scope := si-scope si
@@ -383,18 +383,20 @@ define (meaning-environ-extend src name val eenv) {
     if (not (eq? cur-scope 'environ)) {
       meaning-error-static-redefine src "environ-extend: type change" name si cur-scope
     } {
-      si-si si
+      gvi = si-vi si
     }
-  } {
-    st := %eenv-symbols eenv
-
-    ci := meaning-constants-lookup-or-extend eenv name
-    vi := meaning-extend-tables eenv name 'environ ci #t #f "meaning-environ-extend" #t
-
-    set-symbol-value! name val im
-
-    ci
   }
+
+  if (eq? vi 0) {
+    ci := meaning-constants-lookup-or-extend environ-eenv name
+    meaning-extend-tables environ-eenv name 'environ ci #f "meaning-environ-extend" #t
+
+    si = meaning-find-environ-symbol name environ-eenv
+  }
+
+  set-symbol-value! name val im
+
+  si
 }
 
 #*
@@ -567,6 +569,7 @@ define* (meaning-variable-info src nametree name flags eenv (recurse? #t)) {
     if (not si) {
       ; is name M/S ?
       sdr := symbol-direct-reference name
+
       if sdr {
 	;; (M S si))
 	si = phtt sdr
@@ -633,16 +636,11 @@ define (meaning-reference src name nametree flags eenv) {
       (list I-DEEP-ARGUMENT-REF i j)
       (list I-SHALLOW-ARGUMENT-REF j))
    })
-   ((toplevel) {
-     vi := si-vi si
-     (list I-SYM-REF (si-si si))
-   })
-   ((dynamic) (list I-DYNAMIC-SYM-REF (si-si si)))
-   ((environ) (list I-ENVIRON-SYM-REF (si-si si)))
+   ((toplevel) (list I-SYM-REF          (si-si si)))
+   ((dynamic)  (list I-DYNAMIC-SYM-REF  (si-si si)))
+   ((environ)  (list I-ENVIRON-SYM-REF  (si-si si)))
    ((computed) (list I-COMPUTED-SYM-REF (si-si si)))
-   ((predef) {
-     list I-PREDEFINED (si-vi si)
-   })
+   ((predef)   (list I-PREDEFINED       (si-vi si)))
    (else {
      ;; Shouldn't get here unless the if clauses above don't
      ;; cover everything.  Developer error?
@@ -651,7 +649,7 @@ define (meaning-reference src name nametree flags eenv) {
 }
 
 define (meaning-function-reference src name nametree flags eenv) {
-  si := meaning-variable-info src nametree name (define-scope 'toplevel flags) eenv
+  si := meaning-variable-info src nametree name (set-scope 'toplevel flags) eenv
 
   if (not si) {
     ; shouldn't get here as unknowns are automatically made toplevel
@@ -668,16 +666,11 @@ define (meaning-function-reference src name nametree flags eenv) {
       (list I-DEEP-ARGUMENT-REF i j)
       (list I-SHALLOW-ARGUMENT-REF j))
    })
-   ((toplevel) {
-     vi := si-vi si
-     (list I-FUNCTION-SYM-REF (si-si si))
-   })
-   ((dynamic) (list I-DYNAMIC-FUNCTION-SYM-REF (si-si si)))
-   ((environ) (list I-ENVIRON-SYM-REF (si-si si)))
-   ((computed) (list I-COMPUTED-SYM-REF (si-si si)))
-   ((predef) {
-     list I-PREDEFINED (si-vi si)
-   })
+   ((toplevel) (list I-FUNCTION-SYM-REF         (si-si si)))
+   ((dynamic)  (list I-DYNAMIC-FUNCTION-SYM-REF (si-si si)))
+   ((environ)  (list I-ENVIRON-SYM-REF          (si-si si)))
+   ((computed) (list I-COMPUTED-SYM-REF         (si-si si)))
+   ((predef)   (list I-PREDEFINED		(si-vi si)))
    (else {
      ;; Shouldn't get here unless the if clauses above don't
      ;; cover everything.  Developer error?
@@ -992,8 +985,6 @@ define (meaning-assignment src name e nametree flags eenv) {
 	}
       })
       ((toplevel) {
-	vi := si-vi si
-
 	assign = list I-SYM-SET src (si-si si) m
       })
       ((dynamic environ) {
@@ -1013,9 +1004,8 @@ define (meaning-assignment src name e nametree flags eenv) {
 	new-ci := meaning-toplevel-extend src name (define-scope 'toplevel flags) eenv
 
 	vi := si-vi si
-	set-symbol-value! name (vm-values-ref vi 0) cm
+	set-symbol-value! name (vm-values-ref vi 0) (%eenv-module eenv)
 	assign = list I-SYM-SET src new-ci m
-	ci = new-ci
       })
       (else {
 	;; Shouldn't get here unless the if clauses above don't
@@ -1066,8 +1056,17 @@ define (meaning-define src name e nametree flags eenv) {
   ;; if the act of looking the variable up auto-created it then
   ;; actually give it a value slot as this *is* the definition of it
   scope :=  si-scope si
-  ci := si-si si
+  ci := si-ci si
   vi := si-vi si
+
+  if (and (eq? 'toplevel scope)
+	  (eq? 0 vi)) {
+    meaning-extend-tables eenv name scope ci #f "meaning-define/gvi=0" #t
+
+    si = find-symbol name (%eenv-module eenv) #f
+
+    si.4 = (vm-extend-values)
+  }
 
   meaning-assignment src name e nametree define-flags eenv
 }
@@ -1400,15 +1399,19 @@ define (meaning*-single-sequence src e nametree flags eenv) {
 }
 
 define (meaning*-multiple-sequence src e e+ nametree flags keyword eenv) {
-  m := meaning (mpp e src) e nametree (clear-tailp flags) eenv
-
   ;; The C code handles meaning*-multiple-sequence directly in
-  ;; meaning-sequence by using a while loop (to avoid recursion)
-  ;; which, as a side-effect, means it can identify the trailing #n in
-  ;; a list
+  ;; idio_meaning_sequence() by using a while loop (to avoid
+  ;; recursion) which, as a side-effect, means it can identify the
+  ;; trailing #n in a list
   ;;
   ;; We'll have to test for #n first and set up the arguments for the
   ;; I-cmd accordingly
+  seq-flags := clear-tailp flags
+  if (null? e+) {
+    seq-flags = flags
+  }
+  m := meaning (mpp e src) e nametree seq-flags eenv
+
   args := list (eval-flags-tailp flags) m
   if (pair? e+) {
     args = append args (list (meaning-sequence src e+ nametree flags keyword eenv))
@@ -1458,7 +1461,7 @@ define (meaning-fix-abstraction src name formal* arg-name* docstr e+ nametree fl
   ;;
   ;; Do not give this entry a name as it is not for this symbol but a
   ;; side-effect of CREATE-IFUNCTION.
-  vi := meaning-extend-tables eenv #f 'toplevel #f #f #f "fix-abstraction" #f
+  vi := meaning-extend-tables eenv #f 'toplevel #f #f "fix-abstraction" #f
 
   list I-FIX-CLOSURE m+ name arity (meaning-nametree->list nt+) docstr src vi
 }
@@ -1476,7 +1479,7 @@ define (meaning-dotted-abstraction src name formal* vararg arg-name* docstr e+ n
   ;;
   ;; Do not give this entry a name as it is not for this symbol but a
   ;; side-effect of CREATE-IFUNCTION.
-  vi := meaning-extend-tables eenv #f 'toplevel #f #f #f "dotted-abstraction" #f
+  vi := meaning-extend-tables eenv #f 'toplevel #f #f "dotted-abstraction" #f
 
   list I-NARY-CLOSURE m+ name arity (meaning-nametree->list nt+) docstr src vi
 }
