@@ -408,7 +408,7 @@ if parts {
     ls -l "foo-bar"
     exit 1
   }
-  arch-dir := nth dirs 1
+  arch-dir := nth dirs 0
   arch-dir-0 := append-string arch-dir ".0"
   mv arch-dir arch-dir-0
 

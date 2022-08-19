@@ -1527,17 +1527,17 @@ define-template (pipeline kind cmds) {
       (cond
        ((eq? $use-w-pipe 'named) {
 	 named-pipe := (libc/proc-subst-named-pipe-into)
-	 $pipeline-w-phn = (nth named-pipe 4)
+	 $pipeline-w-phn = (nth named-pipe 3)
 	 ;; true named pipes will not have opened an fd so substitute the name
-	 $pipeline-r-fdn = (or (nth named-pipe 1)
-			       (nth named-pipe 3))
+	 $pipeline-r-fdn = (or (nth named-pipe 0)
+			       (nth named-pipe 2))
 
 	 (cond
-	  ((nth named-pipe 2) {
-	    $proc-subst-job = job-control/make-%process-substitution-job #f (nth named-pipe 2) #f #f #f
+	  ((nth named-pipe 1) {
+	    $proc-subst-job = job-control/make-%process-substitution-job #f (nth named-pipe 1) #f #f #f
 	  })
 	  (else {
-	    $proc-subst-job = job-control/make-%process-substitution-job #f #f (nth named-pipe 4) (nth named-pipe 5) #f
+	    $proc-subst-job = job-control/make-%process-substitution-job #f #f (nth named-pipe 3) (nth named-pipe 4) #f
 	  }))
        })
        ($use-w-pipe {
@@ -1562,17 +1562,17 @@ define-template (pipeline kind cmds) {
       (cond
        ((eq? $use-r-pipe 'named) {
 	 named-pipe := (libc/proc-subst-named-pipe-from)
-	 $pipeline-r-phn = (nth named-pipe 3)
+	 $pipeline-r-phn = (nth named-pipe 2)
 	 ;; true named pipes will not have opened an fd so substitute the name
-	 $pipeline-w-fdn = (or (nth named-pipe 2)
-			       (nth named-pipe 4))
+	 $pipeline-w-fdn = (or (nth named-pipe 1)
+			       (nth named-pipe 3))
 
 	 (cond
-	  ((nth named-pipe 1) {
-	    $proc-subst-job = job-control/make-%process-substitution-job #t (nth named-pipe 1) #f #f #f
+	  ((nth named-pipe 0) {
+	    $proc-subst-job = job-control/make-%process-substitution-job #t (nth named-pipe 0) #f #f #f
 	  })
 	  (else {
-	    $proc-subst-job = job-control/make-%process-substitution-job #t #f (nth named-pipe 3) (nth named-pipe 5) #f
+	    $proc-subst-job = job-control/make-%process-substitution-job #t #f (nth named-pipe 2) (nth named-pipe 4) #f
 	  }))
        })
        ($use-r-pipe {

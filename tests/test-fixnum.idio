@@ -189,17 +189,17 @@ test (* FIXNUM-MAX 2 2) (FIXNUM-MAX * 4)
 ;; comparisons
 define-template (cmp-test op & results) {
   #T{
-    test ($op 1 1) $(nth results 1)
-    test ($op 1 0) $(nth results 2)
-    test ($op 1 -1) $(nth results 3)
+    test ($op 1 1)   $(nth results 0)
+    test ($op 1 0)   $(nth results 1)
+    test ($op 1 -1)  $(nth results 2)
 
-    test ($op 0 1) $(nth results 4)
-    test ($op 0 0) $(nth results 5)
-    test ($op 0 -1) $(nth results 6)
+    test ($op 0 1)   $(nth results 3)
+    test ($op 0 0)   $(nth results 4)
+    test ($op 0 -1)  $(nth results 5)
 
-    test ($op -1 1) $(nth results 7)
-    test ($op -1 0) $(nth results 8)
-    test ($op -1 -1) $(nth results 9)
+    test ($op -1 1)  $(nth results 6)
+    test ($op -1 0)  $(nth results 7)
+    test ($op -1 -1) $(nth results 8)
   }
 }
 

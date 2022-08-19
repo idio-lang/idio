@@ -8090,15 +8090,15 @@ Add a new xenv derived from the arguments	\n\
 	return idio_S_notreached;
     }
 
-    IDIO desc = idio_list_nth (args, 1, idio_S_nil);
-    IDIO st   = idio_list_nth (args, 2, idio_S_nil);
-    IDIO cs   = idio_list_nth (args, 3, idio_S_nil);
-    IDIO ch   = idio_list_nth (args, 4, idio_S_nil);
-    IDIO vt   = idio_list_nth (args, 5, idio_S_nil);
-    IDIO ses  = idio_list_nth (args, 6, idio_S_nil);
-    IDIO sps  = idio_list_nth (args, 7, idio_S_nil);
-    IDIO bs   = idio_list_nth (args, 8, idio_S_nil);
-    IDIO pc   = idio_list_nth (args, 9, idio_S_nil);
+    IDIO desc = idio_list_nth (args, 0, idio_S_nil);
+    IDIO st   = idio_list_nth (args, 1, idio_S_nil);
+    IDIO cs   = idio_list_nth (args, 2, idio_S_nil);
+    IDIO ch   = idio_list_nth (args, 3, idio_S_nil);
+    IDIO vt   = idio_list_nth (args, 4, idio_S_nil);
+    IDIO ses  = idio_list_nth (args, 5, idio_S_nil);
+    IDIO sps  = idio_list_nth (args, 6, idio_S_nil);
+    IDIO bs   = idio_list_nth (args, 7, idio_S_nil);
+    IDIO pc   = idio_list_nth (args, 8, idio_S_nil);
 
     IDIO_USER_TYPE_ASSERT (string, desc);
     IDIO_USER_TYPE_ASSERT (array, st);

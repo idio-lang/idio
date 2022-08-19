@@ -146,7 +146,7 @@ pair-error-load "pair-errors/nth-bad-index-type.idio" "bad parameter type: '#t' 
 pair-error-load "pair-errors/set-nth-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
 pair-error-load "pair-errors/set-nth-bad-index-type.idio" "bad parameter type: '#t' a constant is not a integer"
 pair-error-load "pair-errors/set-nth-neg-index-too-large.idio" "set-nth! n='-4': negative index too large"
-pair-error-load "pair-errors/set-nth-index-too-large.idio" "set-nth! n='4': index too large"
+pair-error-load "pair-errors/set-nth-index-too-large.idio" "set-nth! n='3': index too large"
 
 ;; all done?
 Tests? (pair-error0 + 54)

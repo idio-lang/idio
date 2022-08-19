@@ -31,9 +31,9 @@ import read expander operator codegen threading vm
 define (si-scope si)       (ph si)
 define (si-si si)          (pht si)
 define (si-ci si)          (phtt si)
-define (si-vi si)          (nth si 4)
-define (si-module si)      (nth si 5)
-define (si-description si) (nth si 6)
+define (si-vi si)          (nth si 3)
+define (si-module si)      (nth si 4)
+define (si-description si) (nth si 5)
 
 define (nt-param-i si)     (pht si)
 define (nt-param-j si)     (phtt si)
@@ -262,7 +262,7 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
 	symbols-si := pt symbols-sym-si
 
 	predef-vi := si-vi name-si
-	symbols-si.4 = predef-vi
+	symbols-si.3 = predef-vi
 
 	;; also change the vt entry
 	vt := %eenv-vt eenv
@@ -1065,7 +1065,7 @@ define (meaning-define src name e nametree flags eenv) {
 
     si = find-symbol name (%eenv-module eenv) #f
 
-    si.4 = (vm-extend-values)
+    si.3 = (vm-extend-values)
   }
 
   meaning-assignment src name e nametree define-flags eenv

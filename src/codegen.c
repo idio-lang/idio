@@ -1528,13 +1528,13 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 		return;
 	    }
 
-	    IDIO mp      = idio_list_nth (mt, 1, idio_S_nil);
-	    IDIO name    = idio_list_nth (mt, 2, idio_S_nil);
-	    IDIO arity   = idio_list_nth (mt, 3, idio_S_nil);
-	    IDIO formals = idio_list_nth (mt, 4, idio_S_nil);
-	    IDIO docstr  = idio_list_nth (mt, 5, idio_S_nil);
-	    IDIO src     = idio_list_nth (mt, 6, idio_S_nil);
-	    IDIO vi      = idio_list_nth (mt, 7, idio_S_nil);
+	    IDIO mp      = idio_list_nth (mt, 0, idio_S_nil);
+	    IDIO name    = idio_list_nth (mt, 1, idio_S_nil);
+	    IDIO arity   = idio_list_nth (mt, 2, idio_S_nil);
+	    IDIO formals = idio_list_nth (mt, 3, idio_S_nil);
+	    IDIO docstr  = idio_list_nth (mt, 4, idio_S_nil);
+	    IDIO src     = idio_list_nth (mt, 5, idio_S_nil);
+	    IDIO vi      = idio_list_nth (mt, 6, idio_S_nil);
 
 	    if (! idio_isa_fixnum (arity)) {
 		idio_codegen_error_param_type ("fixnum", arity, IDIO_C_FUNC_LOCATION_S ("FIX-CLOSURE"));
@@ -1768,13 +1768,13 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 		return;
 	    }
 
-	    IDIO mp      = idio_list_nth (mt, 1, idio_S_nil);
-	    IDIO name    = idio_list_nth (mt, 2, idio_S_nil);
-	    IDIO arity   = idio_list_nth (mt, 3, idio_S_nil);
-	    IDIO formals = idio_list_nth (mt, 4, idio_S_nil);
-	    IDIO docstr  = idio_list_nth (mt, 5, idio_S_nil);
-	    IDIO src     = idio_list_nth (mt, 6, idio_S_nil);
-	    IDIO vi      = idio_list_nth (mt, 7, idio_S_nil);
+	    IDIO mp      = idio_list_nth (mt, 0, idio_S_nil);
+	    IDIO name    = idio_list_nth (mt, 1, idio_S_nil);
+	    IDIO arity   = idio_list_nth (mt, 2, idio_S_nil);
+	    IDIO formals = idio_list_nth (mt, 3, idio_S_nil);
+	    IDIO docstr  = idio_list_nth (mt, 4, idio_S_nil);
+	    IDIO src     = idio_list_nth (mt, 5, idio_S_nil);
+	    IDIO vi      = idio_list_nth (mt, 6, idio_S_nil);
 
 	    if (! idio_isa_fixnum (arity)) {
 		idio_codegen_error_param_type ("fixnum", arity, IDIO_C_FUNC_LOCATION_S ("NARY-CLOSURE"));

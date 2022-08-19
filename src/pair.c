@@ -1437,7 +1437,7 @@ IDIO idio_list_nth (IDIO l, intmax_t C_n, IDIO args)
     }
 
     while (idio_S_nil != l) {
-	if (1 == C_n) {
+	if (0 == C_n) {
 	    r = IDIO_PAIR_H (l);
 	    break;
 	}
@@ -1460,6 +1460,11 @@ return the nth (`n`) element from list `l`		\n\
 :type default: value, optional				\n\
 :return: the element or `default`			\n\
 :rtype: any						\n\
+							\n\
+``nth`` uses 0-based indexing.				\n\
+							\n\
+`n` can be negative to access the n\\ :sup:`th` from	\n\
+the end of the list with ``-1`` being the last element.	\n\
 ")
 {
     IDIO_ASSERT (l);
@@ -1472,6 +1477,7 @@ return the nth (`n`) element from list `l`		\n\
      * nth #t #t
      */
     IDIO_USER_TYPE_ASSERT (list, l);
+    ssize_t C_max = idio_list_length (l);
 
     intmax_t C_n = -1;
 
@@ -1490,6 +1496,28 @@ return the nth (`n`) element from list `l`		\n\
 	return idio_S_notreached;
     }
 
+    /*
+     * Complications: accessing out of bounds gets {default}/#n
+     */
+
+    IDIO r = idio_S_nil;
+
+    if (idio_isa_pair (args)) {
+	r = IDIO_PAIR_H (args);
+    }
+
+    if (C_n < 0) {
+	C_n += C_max;
+
+	if (C_n < 0) {
+	    return r;
+	}
+    }
+
+    if (C_n >= C_max) {
+	return r;
+    }
+
     return idio_list_nth (l, C_n, args);
 }
 
@@ -1501,7 +1529,7 @@ IDIO idio_list_set_nth (IDIO l, intmax_t C_n, IDIO val)
     IDIO_TYPE_ASSERT (list, l);
 
     while (idio_S_nil != l) {
-	if (1 == C_n) {
+	if (0 == C_n) {
 	    IDIO_PAIR_H (l) = val;
 	    break;
 	}
@@ -1523,6 +1551,12 @@ set the nth (`n`) element in list `l`			\n\
 :param val: value to assign				\n\
 :type val: any						\n\
 :return: ``#<unspec>``					\n\
+							\n\
+							\n\
+``set-nth!`` uses 0-based indexing.			\n\
+							\n\
+`n` can be negative to set the n\\ :sup:`th` from the	\n\
+end of the list with ``-1`` being the last element.	\n\
 ")
 {
     IDIO_ASSERT (l);
@@ -1554,16 +1588,10 @@ set the nth (`n`) element in list `l`			\n\
 	return idio_S_notreached;
     }
 
-    /*
-     * Complications: nth is indexed from 1
-     *
-     * Also, why not allow array-style negative indices?
-     */
-
     if (C_n < 0) {
-	C_n += C_max + 1;
+	C_n += C_max;
 
-	if (C_n < 1) {
+	if (C_n < 0) {
 	    /*
 	     * Test Case: pair-errors/set-nth-bad-index-value.idio
 	     *
@@ -1575,11 +1603,11 @@ set the nth (`n`) element in list `l`			\n\
 	}
     }
 
-    if (C_n > C_max) {
+    if (C_n >= C_max) {
 	/*
 	 * Test Case: pair-errors/set-nth-bad-index-value.idio
 	 *
-	 * set-nth '(1 2 3) 4 #t
+	 * set-nth '(1 2 3) 3 #t
 	 */
 	idio_error_param_value_msg ("set-nth!", "n", I_n, "index too large", IDIO_C_FUNC_LOCATION ());
 
