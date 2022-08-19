@@ -452,8 +452,8 @@ What we want to do is, broadly, three things:
       => (function (r) {
 	set-struct-spawn-matched! spawn-id #t
 	r0 := r.0
-	prefix := substring (struct-spawn-buffer spawn-id) 0 r0.2
-	set-struct-spawn-buffer! (substring (struct-spawn-buffer spawn-id) r0.3)
+	prefix := substring (struct-spawn-buffer spawn-id) 0 r0.1
+	set-struct-spawn-buffer! (substring (struct-spawn-buffer spawn-id) r0.2)
 
 	((function (spawn-id r prefix) {
 	  ...
@@ -463,8 +463,8 @@ What we want to do is, broadly, three things:
       => (function (r) {
 	set-struct-spawn-matched! spawn-id #t
 	r0 := r.0
-	prefix := substring (struct-spawn-buffer spawn-id) 0 r0.2
-	set-struct-spawn-buffer! (substring (struct-spawn-buffer spawn-id) r0.3)
+	prefix := substring (struct-spawn-buffer spawn-id) 0 r0.1
+	set-struct-spawn-buffer! (substring (struct-spawn-buffer spawn-id) r0.2)
 
 	((function (spawn-id r prefix) {
 	  ...
@@ -657,8 +657,8 @@ define (process-args exp-regcomps i re-kind re-flags a*) "
 	     r := pht sid-r
 	     set-struct-spawn-matched! sid #t
 	     r0 := array-ref r 0
-	     prefix := substring (struct-spawn-buffer sid) 0 r0.2
-	     set-struct-spawn-buffer! sid (substring (struct-spawn-buffer sid) r0.3)
+	     prefix := substring (struct-spawn-buffer sid) 0 r0.1
+	     set-struct-spawn-buffer! sid (substring (struct-spawn-buffer sid) r0.2)
 
 	     ((function (spawn-id r prefix)
 	      $@(pt a*)) sid r prefix)

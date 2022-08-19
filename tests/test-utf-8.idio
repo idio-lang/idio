@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -104,9 +104,9 @@ test str.6 #\w
 ;; '("he" "o[NUL]wor" "d")
 sa := split-string str "l"
 
-test (string-length sa.1) 2
-test (string-length sa.2) 5
-sa2 := sa.2
+test (string-length sa.0) 2
+test (string-length sa.1) 5
+sa2 := sa.1
 test sa2.0 #\o
 test sa2.1 #U+0
 test sa2.2 #\w

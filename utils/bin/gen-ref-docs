@@ -209,7 +209,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 	 ;; (document C \> \gt)
 	 sym-fn := sym
 	 if (gt (length p) 3) {
-	   sym-fn = nth p 4
+	   sym-fn = nth p 3
 	 }
 
 	 mod-str := mod-name mod sym

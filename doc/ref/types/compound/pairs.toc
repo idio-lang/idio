@@ -20,6 +20,7 @@
 (document Idio list-ref)
 (document Idio list-tail)
 (document Idio nth)
+(document Idio set-nth!)
 
 (rst "pair-accessors" 0)
 (document Idio phh)

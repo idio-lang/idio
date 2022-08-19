@@ -76,7 +76,7 @@ spawn auto-exit -o 1
 
 (exp-case
  (:re "wrote line ([[:digit:]]) to stdout" {
-   test r.1 .1 "1"
+   test r.1 .0 "1"
    (exp-continue)
  }))
 
@@ -88,7 +88,7 @@ spawn auto-exit -o 1
 re := "wrote line ([[:digit:]]) to stdout"
 (exp-case
  (:re re {
-   test r.1 .1 "1"
+   test r.1 .0 "1"
    (exp-continue)
  }))
 
@@ -137,8 +137,8 @@ exp-send "hello" :cr #t
 
 (exp-case
  (:re "read #([[:digit:]]) '(.*)'" {
-   test r.1 .1 "1"
-   test r.2 .1 "hello"
+   test r.1 .0 "1"
+   test r.2 .0 "hello"
    ;(exp-continue)
  }))
 
@@ -146,8 +146,8 @@ exp-send "world" :slow #t :cr #t
 
 (exp-case
  (:re "read #([[:digit:]]) '(.*)'" {
-   test r.1 .1 "2"
-   test r.2 .1 "world"
+   test r.1 .0 "2"
+   test r.2 .0 "world"
    ;(exp-continue)
  }))
 
@@ -155,8 +155,8 @@ exp-send "hello world" :human #t :cr #t
 
 (exp-case
  (:re "read #([[:digit:]]) '(.*)'" {
-   test r.1 .1 "3"
-   test r.2 .1 "hello world"
+   test r.1 .0 "3"
+   test r.2 .0 "hello world"
    (exp-continue)
  }))
 

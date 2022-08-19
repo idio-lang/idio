@@ -434,17 +434,17 @@ define-template (C-s-cmp-test op type & results) {
     $v0  := C/number->  0 $type
     $v-1 := C/number-> -1 $type
 
-    test ($op $v1 $v1) $(nth results 1)
-    test ($op $v1 $v0) $(nth results 2)
-    test ($op $v1 $v-1) $(nth results 3)
+    test ($op $v1 $v1)   $(nth results 0)
+    test ($op $v1 $v0)   $(nth results 1)
+    test ($op $v1 $v-1)  $(nth results 2)
 
-    test ($op $v0 $v1) $(nth results 4)
-    test ($op $v0 $v0) $(nth results 5)
-    test ($op $v0 $v-1) $(nth results 6)
+    test ($op $v0 $v1)   $(nth results 3)
+    test ($op $v0 $v0)   $(nth results 4)
+    test ($op $v0 $v-1)  $(nth results 5)
 
-    test ($op $v-1 $v1) $(nth results 7)
-    test ($op $v-1 $v0) $(nth results 8)
-    test ($op $v-1 $v-1) $(nth results 9)
+    test ($op $v-1 $v1)  $(nth results 6)
+    test ($op $v-1 $v0)  $(nth results 7)
+    test ($op $v-1 $v-1) $(nth results 8)
   }
 }
 
@@ -453,11 +453,11 @@ define-template (C-u-cmp-test op type & results) {
     $v1 := C/number-> 1 $type
     $v0 := C/number-> 0 $type
 
-    test ($op $v1 $v1) $(nth results 1)
-    test ($op $v1 $v0) $(nth results 2)
+    test ($op $v1 $v1) $(nth results 0)
+    test ($op $v1 $v0) $(nth results 1)
 
-    test ($op $v0 $v1) $(nth results 3)
-    test ($op $v0 $v0) $(nth results 4)
+    test ($op $v0 $v1) $(nth results 2)
+    test ($op $v0 $v0) $(nth results 3)
   }
 }
 
@@ -465,7 +465,7 @@ define-template (C-c-cmp-test op type & results) {
   if has-signed-char {
     #T{
       c-type-skipped = c-type-skipped + 5
-      C-u-cmp-test $op $type $(nth results 1) $(nth results 2) $(nth results 4) $(nth results 5)
+      C-u-cmp-test $op $type $(nth results 0) $(nth results 1) $(nth results 3) $(nth results 4)
     }
   } {
     #T{

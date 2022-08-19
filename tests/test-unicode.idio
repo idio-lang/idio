@@ -256,9 +256,9 @@ test str.6 #\w
 ;; '("he" "o[NUL]wor" "d")
 sa := split-string str "l"
 
-test (string-length sa.1) 2
-test (string-length sa.2) 5
-sa2 := sa.2
+test (string-length sa.0) 2
+test (string-length sa.1) 5
+sa2 := sa.1
 test sa2.0 #\o
 test sa2.1 #U+0
 test sa2.2 #\w
@@ -289,9 +289,9 @@ str = join-string delim '("hello" "world")
 test (string-length str) 11
 sa = split-string str "l"
 
-test (string-length sa.1) 2
-test (string-length sa.2) 5
-sa2 := sa.2
+test (string-length sa.0) 2
+test (string-length sa.1) 5
+sa2 := sa.1
 test sa2.0 #\o
 test sa2.1 #U+0127
 test sa2.2 #\w
@@ -312,9 +312,9 @@ str = join-string delim '("hello" "world")
 test (string-length str) 11
 sa = split-string str "l"
 
-test (string-length sa.1) 2
-test (string-length sa.2) 5
-sa2 := sa.2
+test (string-length sa.0) 2
+test (string-length sa.1) 5
+sa2 := sa.1
 test sa2.0 #\o
 test sa2.1 #U+1FBF8
 test sa2.2 #\w
@@ -468,16 +468,16 @@ str = join-string delim '("hello" "world") ; str is 2-byte because of delim
 test (string-length str) 11
 test str "helloħworld"
 sa = split-string str delim
-test sa.1 "hello"			; sa.1 is a 2-byte string
-test sa.2 "world"			; sa.2 is a 2-byte string
+test sa.0 "hello"			; sa.1 is a 2-byte string
+test sa.1 "world"			; sa.2 is a 2-byte string
 
 ; again for a substring of str
 ss = substring str 1 ((string-length str) - 1)
 test (string-length ss) 9
 test ss "elloħworl"
 sa = split-string ss delim
-test sa.1 "ello"
-test sa.2 "worl"
+test sa.0 "ello"
+test sa.1 "worl"
 
 ; 4-byte delim in (nominally) 1-byte strings
 c = #U+1FBF8
@@ -486,8 +486,8 @@ str = join-string delim '("hello" "world") ; str is 4-byte because of delim
 test (string-length str) 11
 test str "hello🯸world"
 sa = split-string str delim
-test sa.1 "hello"			; sa.1 is a 4-byte string
-test sa.2 "world"			; sa.2 is a 4-byte string
+test sa.0 "hello"			; sa.1 is a 4-byte string
+test sa.1 "world"			; sa.2 is a 4-byte string
 
 ; again for a substring of str
 ss = "bad data"
@@ -495,8 +495,8 @@ ss = substring str 1 ((string-length str) - 1)
 test (string-length ss) 9
 test ss "ello🯸worl"
 sa = split-string ss delim
-test sa.1 "ello"
-test sa.2 "worl"
+test sa.0 "ello"
+test sa.1 "worl"
 
 ;; Unicode variable names
 
