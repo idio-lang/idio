@@ -2088,7 +2088,7 @@ IDIO idio_util_method_set_value_index (idio_vtable_method_t *m, IDIO v, ...)
 	/*
 	 * Test Case: ??
 	 */
-	idio_error_param_value_msg_only ("set_value-index!", "method->data", "should be a function", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_msg_only ("set-value-index!", "method->data", "should be a function", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
