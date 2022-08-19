@@ -102,6 +102,7 @@
 ;; standard setters
 set! (setter ph)				set-ph!
 set! (setter pt)				set-pt!
+set! (setter nth)				set-nth!
 
 ;; the . operator uses value-index so it needs a setter which, as a
 ;; side-effect, will call the set-value-index! methods for arrays,
