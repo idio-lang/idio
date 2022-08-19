@@ -1500,8 +1500,6 @@ IDIO idio_list_set_nth (IDIO l, intmax_t C_n, IDIO val)
 
     IDIO_TYPE_ASSERT (list, l);
 
-    IDIO_TYPE_ASSERT (list, args);
-
     while (idio_S_nil != l) {
 	if (1 == C_n) {
 	    IDIO_PAIR_H (l) = val;
