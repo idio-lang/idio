@@ -1459,7 +1459,7 @@ return the nth (`n`) element from list `l`		\n\
 :param default: value to return if not found, defaults to ``#n``	\n\
 :type default: value, optional				\n\
 :return: the element or `default`			\n\
-:rtype: array						\n\
+:rtype: any						\n\
 ")
 {
     IDIO_ASSERT (l);
@@ -1491,6 +1491,104 @@ return the nth (`n`) element from list `l`		\n\
     }
 
     return idio_list_nth (l, C_n, args);
+}
+
+IDIO idio_list_set_nth (IDIO l, intmax_t C_n, IDIO val)
+{
+    IDIO_ASSERT (l);
+    IDIO_ASSERT (val);
+
+    IDIO_TYPE_ASSERT (list, l);
+
+    IDIO_TYPE_ASSERT (list, args);
+
+    while (idio_S_nil != l) {
+	if (1 == C_n) {
+	    IDIO_PAIR_H (l) = val;
+	    break;
+	}
+
+	C_n--;
+	l = IDIO_PAIR_T (l);
+    }
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE3_DS ("set-nth!", set_nth, (IDIO l, IDIO I_n, IDIO val), "l n val", "\
+set the nth (`n`) element in list `l`			\n\
+							\n\
+:param l: list						\n\
+:type orig: list					\n\
+:param n: nth element					\n\
+:type n: integer					\n\
+:param val: value to assign				\n\
+:type val: any						\n\
+:return: ``#<unspec>``					\n\
+")
+{
+    IDIO_ASSERT (l);
+    IDIO_ASSERT (I_n);
+    IDIO_ASSERT (val);
+
+    /*
+     * Test Case: pair-errors/set-nth-bad-list-type.idio
+     *
+     * set-nth! #t #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (list, l);
+    ssize_t C_max = idio_list_length (l);
+
+    intmax_t C_n = -1;
+
+    if (idio_isa_fixnum (I_n)) {
+	C_n = (intmax_t) IDIO_FIXNUM_VAL (I_n);
+    } else if (idio_isa_integer_bignum (I_n)) {
+	C_n = idio_bignum_ptrdiff_t_value (I_n);
+    } else {
+	/*
+	 * Test Case: pair-errors/set-nth-bad-index-type.idio
+	 *
+	 * set-nth '(1 2 3) #t #t
+	 */
+	idio_error_param_type ("integer", I_n, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Complications: nth is indexed from 1
+     *
+     * Also, why not allow array-style negative indices?
+     */
+
+    if (C_n < 0) {
+	C_n += C_max + 1;
+
+	if (C_n < 1) {
+	    /*
+	     * Test Case: pair-errors/set-nth-bad-index-value.idio
+	     *
+	     * set-nth '(1 2 3) -4 #t
+	     */
+	    idio_error_param_value_msg ("set-nth!", "n", I_n, "negative index too large", IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
+    if (C_n > C_max) {
+	/*
+	 * Test Case: pair-errors/set-nth-bad-index-value.idio
+	 *
+	 * set-nth '(1 2 3) 4 #t
+	 */
+	idio_error_param_value_msg ("set-nth!", "n", I_n, "index too large", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_list_set_nth (l, C_n, val);
 }
 
 char *idio_pair_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
@@ -1758,12 +1856,18 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (assoc);
     IDIO_ADD_PRIMITIVE (list2array);
 
-    IDIO ref = IDIO_ADD_PRIMITIVE (nth);
     idio_vtable_t *p_vt = idio_vtable (IDIO_TYPE_PAIR);
+    IDIO ref = IDIO_ADD_PRIMITIVE (nth);
     idio_vtable_add_method (p_vt,
 			    idio_S_value_index,
 			    idio_vtable_create_method_value (idio_util_method_value_index,
 							     idio_vm_values_ref (IDIO_FIXNUM_VAL (ref))));
+
+    IDIO set = IDIO_ADD_PRIMITIVE (set_nth);
+    idio_vtable_add_method (p_vt,
+			    idio_S_set_value_index,
+			    idio_vtable_create_method_value (idio_util_method_set_value_index,
+							     idio_vm_values_ref (IDIO_FIXNUM_VAL (set))));
 }
 
 void idio_init_pair ()

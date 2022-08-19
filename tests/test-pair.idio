@@ -53,9 +53,31 @@ test (assoc 3 '((1 2) #n (3 4))) #f
 test (assoc 3 '((1 2) (3 4))) '(3 4)
 test (assoc 5 '((1 2) (3 4))) #f
 
-test (nth '(1 2 3) 1.0) 1
-test (nth '(1 2 3) 1 #t) 1
-test (nth '(1 2 3) 4 #t) #t
+nth-list := '(1 2 3)
+test (nth nth-list 1.0) 1
+test (nth nth-list 1 #t) 1
+test (nth nth-list 4 #t) #t
+
+;; test start middle and end
+set-nth! nth-list 1   'a
+test (nth nth-list 1) 'a
+set-nth! nth-list 2   'b
+test (nth nth-list 2) 'b
+set-nth! nth-list 3   'c
+test (nth nth-list 3) 'c
+
+;; test start middle and end with negative indices
+set-nth! nth-list -1  'C
+test (nth nth-list 3) 'C
+set-nth! nth-list -2  'B
+test (nth nth-list 2) 'B
+set-nth! nth-list -3  'A
+test (nth nth-list 1) 'A
+
+;; value-index and set-value-index
+test nth-list.1 'A
+nth-list.1 = 10
+test nth-list.1 10
 
 ;; all done?
-Tests? (pair0 + 33)
+Tests? (pair0 + 41)
