@@ -102,9 +102,13 @@
 ;; standard setters
 set! (setter ph)				set-ph!
 set! (setter pt)				set-pt!
-set! (setter nth)				set-nth!
 
 ;; the . operator uses value-index so it needs a setter which, as a
 ;; side-effect, will call the set-value-index! methods for arrays,
 ;; hashes, strings and struct-instances.
 set! (setter value-index)			set-value-index!
+
+;; Other setters are defined through vtable entries, in particular
+;; using the idio_util_method_set_value_index method.
+;; set-value-index! uses this in a fallback mode if a nominal :setter
+;; property has not been set against the "getter" function.
