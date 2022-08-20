@@ -589,7 +589,7 @@ define* (meaning-variable-info src nametree name flags eenv (recurse? #t)) {
 
 define (meaning-prefer-properties e src) {
   if (and (pair? e)
-	  (hash-ref %idio-src-properties src #f)) {
+	  (hash-ref %idio-src-properties e #f)) {
     e
   } {
     src
@@ -944,6 +944,7 @@ define (meaning-assignment src name e nametree flags eenv) {
      args := pt name
 
      setter := list 'setter (ph name)
+     meaning-copy-src-properties src setter
 
      se := append (list setter) args (list e)
 
@@ -1074,8 +1075,8 @@ define (meaning-define src name e nametree flags eenv) {
 define (meaning-define-template src name e nametree flags eenv) {
 
   if (pair? name) {
-    ;; (define-template (func formal*) ...) =>
-    ;; (define-template func (function/name func (formal*) ...))
+    ;; (define-template (name formal*) ...) =>
+    ;; (define-template name (function/name name (formal*) ...))
     e = list 'function/name (ph name) (pt name) e
     name = ph name
 
@@ -1230,7 +1231,7 @@ define (meaning-define-infix-operator src name pri e nametree flags eenv) {
 
       pre-compilation-restore-operator! name pri 'infix
 
-      m = meaning sve sve nametree flags eenv
+      m = meaning src sve nametree flags eenv
     } {
       ;; Test Case: evaluation-errors/infix-op-not-an-operator.idio
 
@@ -1256,7 +1257,7 @@ define (meaning-define-infix-operator src name pri e nametree flags eenv) {
 
     pre-compilation-restore-operator! name pri 'infix
 
-    m = meaning fe fe nametree flags eenv
+    m = meaning src fe nametree flags eenv
   }
 
   list I-INFIX-OPERATOR op-id pri m
@@ -1295,7 +1296,7 @@ define (meaning-define-postfix-operator src name pri e nametree flags eenv) {
 
       pre-compilation-restore-operator! name pri 'postfix
 
-      m = meaning sve sve nametree flags eenv
+      m = meaning src sve nametree flags eenv
     } {
       ;; Test Case: evaluation-errors/postfix-op-not-an-operator.idio
 
@@ -1321,7 +1322,7 @@ define (meaning-define-postfix-operator src name pri e nametree flags eenv) {
 
     pre-compilation-restore-operator! name pri 'postfix
 
-    m = meaning fe fe nametree flags eenv
+    m = meaning src fe nametree flags eenv
   }
 
   list I-POSTFIX-OPERATOR op-id pri m
@@ -1406,21 +1407,28 @@ define (meaning*-multiple-sequence src e e+ nametree flags keyword eenv) {
   ;;
   ;; We'll have to test for #n first and set up the arguments for the
   ;; I-cmd accordingly
-  seq-flags := clear-tailp flags
-  if (null? e+) {
-    seq-flags = flags
-  }
-  m := meaning (mpp e src) e nametree seq-flags eenv
 
-  args := list (eval-flags-tailp flags) m
-  if (pair? e+) {
-    args = append args (list (meaning-sequence src e+ nametree flags keyword eenv))
+  loop :+ function (e e+ r) {
+    seq-flags := clear-tailp flags
+    if (null? e+) {
+      seq-flags = flags
+    }
+
+    m := meaning (mpp e src) e nametree seq-flags eenv
+
+    if (pair? e+) {
+      loop (ph e+) (pt e+) (pair m r)
+    } {
+      pair m r
+    }
   }
+
+  m+ := reverse! (loop e e+ #n)
 
   (case keyword
-   ((begin)		(pair I-BEGIN args))
-   ((and)		(pair I-AND   args))
-   ((or)		(pair I-OR    args))
+   ((begin)		(append (list I-BEGIN (eval-flags-tailp flags)) m+))
+   ((and)		(append (list I-AND   (eval-flags-tailp flags)) m+))
+   ((or)		(append (list I-OR    (eval-flags-tailp flags)) m+))
    (else
     ;; Shouldn't get here unless the clauses above don't cover
     ;; everything.  Developer error?
@@ -1634,6 +1642,7 @@ define (meaning-rewrite-body src e nametree) {
 	  }
 
 	  body := meaning-rewrite-body (mpp cur src) (pt l) nametree
+	  meaning-copy-src-properties cur body
 
 	  if (null? body) {
 	    ;; what if value-expr has side-effects?
@@ -1642,6 +1651,7 @@ define (meaning-rewrite-body src e nametree) {
 	  } {
 
 	    body-seq := append (list 'begin) body
+	    meaning-copy-src-properties cur body-seq
 
 	    r-cur := false
 
@@ -1787,7 +1797,7 @@ define (meaning-rewrite-body-letrec src e nametree) {
 	   (eq? 'begin (ph cur))) {
        ;; redundant begin
        new-l := append (pt cur) (pt l)
-       meaning-copy-src-properties src new-l
+       meaning-copy-src-properties cur new-l
        loop new-l defs r
      })
 
@@ -1948,7 +1958,7 @@ define (meaning-block src e* nametree flags eenv) {
   e* = meaning-rewrite-body (mpp e* src) e* nametree
   meaning-copy-src-properties src e*
 
-  meaning-sequence e* e* nametree flags 'begin eenv
+  meaning-sequence (mpp e* src) e* nametree flags 'begin eenv
 }
 
 define (meaning-some-arguments src ae ae* nametree arity flags eenv) {
@@ -1973,14 +1983,13 @@ define (meaning-arguments src ae* nametree arity flags eenv) {
 }
 
 define (meaning-fix-closed-application src formal* body ae* nametree flags eenv) {
-  props := mpp body src
-  body = meaning-rewrite-body props body nametree
+  body = meaning-rewrite-body (mpp body src) body nametree
   meaning-copy-src-properties src body
 
   am* := meaning-arguments src ae* nametree (length ae*) (clear-tailp flags) eenv
   nt+ := meaning-nametree-extend-params nametree formal*
 
-  mbody := meaning-sequence props body nt+ flags 'begin eenv
+  mbody := meaning-sequence (mpp body src) body nt+ flags 'begin eenv
 
   if (eval-flags-tailp flags) {
     list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+)
@@ -2014,8 +2023,7 @@ define (meaning-dotted-arguments src ae* nametree nargs arity flags eenv) {
 }
 
 define (meaning-dotted-closed-application src formal* vararg body ae* nametree flags eenv) {
-  props := mpp body src
-  body = meaning-rewrite-body props body nametree
+  body = meaning-rewrite-body (mpp body src) body nametree
   meaning-copy-src-properties src body
 
   am* := meaning-dotted-arguments src ae* nametree (length ae*) (length formal*) (clear-tailp flags) eenv
@@ -2023,7 +2031,7 @@ define (meaning-dotted-closed-application src formal* vararg body ae* nametree f
   fix-formal* := append formal* (list vararg)
   nt+ := meaning-nametree-extend-vparams nametree fix-formal*
 
-  mbody := meaning-sequence props body nt+ flags 'begin eenv
+  mbody := meaning-sequence (mpp body src) body nt+ flags 'begin eenv
 
   if (eval-flags-tailp flags) {
     list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+)
@@ -2090,15 +2098,14 @@ define (meaning-closed-application src fe ae* nametree flags eenv) {
 }
 
 define (meaning-local-application src n ae body nametree flags eenv) {
-  body-props := mpp body src
-  body = meaning-rewrite-body body-props body nametree
+  body = meaning-rewrite-body (mpp body src) body nametree
   meaning-copy-src-properties src body
 
   am := meaning (mpp ae src) ae nametree (clear-tailp flags) eenv
 
   nt+ := meaning-nametree-extend-locals nametree (list n)
 
-  mbody := meaning-sequence body-props body nt+ flags 'begin eenv
+  mbody := meaning-sequence (mpp body src) body nt+ flags 'begin eenv
 
   ll := meaning-lexical-lookup src nt+ n
 
@@ -2156,12 +2163,12 @@ define (meaning-primitive-application src fe ae* nametree flags arity si vi eenv
        i-code = list I-PRIMCALL0 src A-PRIMCALL0 pd-vi
      })
      ((1) {
-       m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree (clear-tailp flags) eenv
+       m1 := meaning (mpp (ph  ae*) src) (ph  ae*) nametree (clear-tailp flags) eenv
 
        i-code = list I-PRIMCALL1 src A-PRIMCALL1 m1 pd-vi
      })
      ((2) {
-       m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree (clear-tailp flags) eenv
+       m1 := meaning (mpp (ph  ae*) src) (ph  ae*) nametree (clear-tailp flags) eenv
        m2 := meaning (mpp (pht ae*) src) (pht ae*) nametree (clear-tailp flags) eenv
 
        ;; XXX run-in-thread?
@@ -2321,11 +2328,10 @@ define (meaning-computed-reference src name nametree flags eenv) {
 ;; the handler in *val* then the body code then a matching sequence of
 ;; POP-TRAP statements.
 define (meaning-trap src ce he be nametree flags eenv) {
-  he-props := mpp he src
-  he = meaning-rewrite-body he-props he nametree
+  he = meaning-rewrite-body (mpp he src) he nametree
   meaning-copy-src-properties src he
 
-  hm := meaning he-props he nametree (clear-tailp flags) eenv
+  hm := meaning (mpp he src) he nametree (clear-tailp flags) eenv
 
   ;; if the condition expression is not a list then make it one
   if (not (pair? ce)) {
@@ -2362,11 +2368,10 @@ define (meaning-trap src ce he be nametree flags eenv) {
 
   c-loop ce
 
-  be-props := mpp be src
-  be = meaning-rewrite-body be-props be nametree
+  be = meaning-rewrite-body (mpp be src) be nametree
   meaning-copy-src-properties src be
 
-  bm := meaning-sequence be-props be nametree (clear-tailp flags) 'begin eenv
+  bm := meaning-sequence (mpp be src) be nametree (clear-tailp flags) 'begin eenv
 
   append (list hm) pushs (list bm) pops
 }
@@ -2374,14 +2379,13 @@ define (meaning-trap src ce he be nametree flags eenv) {
 define (meaning-escape-block src label be nametree flags eenv) {
   ci := meaning-constants-lookup-or-extend eenv label
 
-  be-props := mpp be src
-  be = meaning-rewrite-body be-props be nametree
+  be = meaning-rewrite-body (mpp be src) be nametree
   meaning-copy-src-properties src be
 
   escapes-eenv := copy-value eenv 'shallow
   set-%eenv-escapes! escapes-eenv (pair label (%eenv-escapes eenv))
 
-  bm := meaning-sequence be-props be nametree (clear-tailp flags) 'begin escapes-eenv
+  bm := meaning-sequence (mpp be src) be nametree (clear-tailp flags) 'begin escapes-eenv
 
   (list (list I-PUSH-ESCAPER ci bm)
 	(list I-POP-ESCAPER))
@@ -3153,10 +3157,12 @@ define (meaning src e nametree flags eenv) {
 		 (expander? he)) {
 	   meaning-expander src e nametree flags eenv
 	 } {
-	   meaning-application src he te nametree flags eenv
+	   meaning-copy-src-properties src e
+	   meaning-application e he te nametree flags eenv
 	 }
        } {
-	 meaning-application src he te nametree flags eenv
+	 meaning-copy-src-properties src e
+	 meaning-application e he te nametree flags eenv
        }
      }))
   } {

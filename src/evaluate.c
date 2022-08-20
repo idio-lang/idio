@@ -856,8 +856,6 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
 	idio_as_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
 	if (gvi) {
-	    fprintf (stderr, "\n**** predef-extend gvi %zd\n", gvi);
-	    kill (getpid (), SIGINT);
 	    /*
 	     * Should only be called in C bootstrap
 	     */
@@ -1797,8 +1795,6 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
 	r = e;
     }
 
-    idio_meaning_copy_src_properties (src, r);
-
     return r;
 }
 
@@ -1822,6 +1818,7 @@ static IDIO idio_meaning_quasiquotation (IDIO src, IDIO e, IDIO nametree, int fl
      * when the code is *applied*.
      */
     IDIO dq = idio_meaning_dequasiquote (src, e, 0, 0);
+    idio_meaning_copy_src_properties (src, dq);
 
     return idio_meaning (dq, dq, nametree, flags, eenv);
 }
@@ -2042,6 +2039,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	IDIO args = IDIO_PAIR_T (name);
 
 	IDIO setter = IDIO_LIST2 (idio_S_setter, IDIO_PAIR_H (name));
+	idio_meaning_copy_src_properties (src, setter);
 
 	/*
 	 * Nominally we could do with an append3() function here but
@@ -2567,7 +2565,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 	idio_meaning_copy_src_properties (src, sve);
 
 	idio_copy_infix_operator (IDIO_THREAD_XI (idio_thread_current_thread ()), name, pri, e);
-	m = idio_meaning (sve, sve, nametree, flags, eenv);
+	m = idio_meaning (src, sve, nametree, flags, eenv);
     } else {
 	/*
 	 * define-infix-operator X pri { ... }
@@ -2587,7 +2585,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 
 	idio_meaning_copy_src_properties (src, fe);
 
-	m = idio_meaning (fe, fe, nametree, flags, eenv);
+	m = idio_meaning (src, fe, nametree, flags, eenv);
     }
     IDIO r = IDIO_LIST4 (IDIO_I_INFIX_OPERATOR, sym_idx, pri, m);
 
@@ -2673,7 +2671,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 	idio_meaning_copy_src_properties (src, sve);
 
 	idio_copy_postfix_operator (IDIO_THREAD_XI (idio_thread_current_thread ()), name, pri, e);
-	m = idio_meaning (sve, sve, nametree, flags, eenv);
+	m = idio_meaning (src, sve, nametree, flags, eenv);
     } else {
 	/*
 	 * define-postfix-operator X pri { ... }
@@ -2693,7 +2691,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 
 	idio_meaning_copy_src_properties (src, fe);
 
-	m = idio_meaning (fe, fe, nametree, flags, eenv);
+	m = idio_meaning (src, fe, nametree, flags, eenv);
     }
     IDIO r = IDIO_LIST4 (IDIO_I_POSTFIX_OPERATOR, sym_idx, pri, m);
 
@@ -2948,6 +2946,7 @@ static IDIO idio_meaning_sequence (IDIO src, IDIO ep, IDIO nametree, int flags, 
 	    }
 
 	    r = idio_list_append2 (IDIO_LIST1 (tailp), r);
+
 	    return idio_pair (c, r);
 	} else {
 	    return idio_meanings_single_sequence (IDIO_MPP (eph, src), eph, nametree, flags, eenv);
@@ -3163,6 +3162,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
 	    idio_S_begin == IDIO_PAIR_H (cur)) {
 	    /*  redundant begin */
 	    l = idio_list_append2 (IDIO_PAIR_T (cur), IDIO_PAIR_T (l));
+	    idio_meaning_copy_src_properties (cur, l);
 	    continue;
 	} else if (idio_isa_pair (cur) &&
 		   (idio_S_define == IDIO_PAIR_H (cur) ||
