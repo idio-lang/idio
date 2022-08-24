@@ -340,6 +340,11 @@ void idio_remove_terminal_signals ();
 
 void idio_final ()
 {
+    if (IDIO_STATE_SHUTDOWN == idio_state) {
+	fprintf (stderr, "idio_final: already shutting down? => assert (0)\n");
+	assert (0);
+    }
+
     idio_remove_terminal_signals ();
     idio_state = IDIO_STATE_SHUTDOWN;
 
