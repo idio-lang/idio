@@ -510,6 +510,8 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
     fprintf (stderr, "xi [%zu] for %s\n", xi, ifn);
 #endif
 
+    IDIO_XENV_EENV (idio_xenvs[xi]) = eenv;
+
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_ST,  IDIO_XENV_ST (idio_xenvs[xi]));
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_VT,  IDIO_XENV_VT (idio_xenvs[xi]));
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_CS,  IDIO_XENV_CS (idio_xenvs[xi]));

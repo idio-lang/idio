@@ -38,7 +38,7 @@ define (si-description si) (nth si 5)
 define (nt-param-i si)     (pht si)
 define (nt-param-j si)     (phtt si)
 
-export-struct-accessors-only %eenv	desc chksum symbols st vt cs ch module escapes ses sps byte-code
+export-struct-accessors-only %eenv	desc aot? chksum symbols st vt cs ch module escapes ses sps byte-code
 
 define (eenv-as-string eenv seen) {
   if (%eenv? eenv) {
@@ -640,7 +640,7 @@ define (meaning-reference src name nametree flags eenv) {
    ((dynamic)  (list I-DYNAMIC-SYM-REF  (si-si si)))
    ((environ)  (list I-ENVIRON-SYM-REF  (si-si si)))
    ((computed) (list I-COMPUTED-SYM-REF (si-si si)))
-   ((predef)   (list I-PREDEFINED       (si-vi si)))
+   ((predef)   (list I-PREDEFINED       (si-si si)))
    (else {
      ;; Shouldn't get here unless the if clauses above don't
      ;; cover everything.  Developer error?
@@ -670,7 +670,7 @@ define (meaning-function-reference src name nametree flags eenv) {
    ((dynamic)  (list I-DYNAMIC-FUNCTION-SYM-REF (si-si si)))
    ((environ)  (list I-ENVIRON-SYM-REF          (si-si si)))
    ((computed) (list I-COMPUTED-SYM-REF         (si-si si)))
-   ((predef)   (list I-PREDEFINED		(si-vi si)))
+   ((predef)   (list I-PREDEFINED		(si-si si)))
    (else {
      ;; Shouldn't get here unless the if clauses above don't
      ;; cover everything.  Developer error?
@@ -1061,12 +1061,14 @@ define (meaning-define src name e nametree flags eenv) {
   vi := si-vi si
 
   if (and (eq? 'toplevel scope)
-	  (eq? 0 vi)) {
+	  (eq? 0 vi)
+	  (not (%eenv-aot? eenv))) {
     meaning-extend-tables eenv name scope ci #f "meaning-define/gvi=0" #t
 
     si = find-symbol name (%eenv-module eenv) #f
 
     si.3 = (vm-extend-values)
+
   }
 
   meaning-assignment src name e nametree define-flags eenv
@@ -1203,14 +1205,16 @@ define (meaning-define-infix-operator src name pri e nametree flags eenv) {
     meaning-evaluation-error src "positive priority" pri
   }
 
-  ;; Step 1: find the existing symbol for {name} or create a new one
-  si := meaning-find-toplevel-symbol name eenv
+  op-mod := find-module 'operator
+  op-eenv := hash-ref %%eenv-map op-mod
 
-  ci := meaning-constants-lookup-or-extend eenv name
+  ;; Step 1: find the existing symbol for {name} or create a new one
+  si := meaning-find-toplevel-symbol name op-eenv
+
+  ci := meaning-constants-lookup-or-extend op-eenv name
 
   op-id := si-si si
 
-  op-mod := find-module 'operator
   sym-si := list 'toplevel op-id ci 0 op-mod "define-infix-operator"
   set-symbol! name sym-si op-mod
 
@@ -1268,14 +1272,16 @@ define (meaning-define-postfix-operator src name pri e nametree flags eenv) {
     meaning-evaluation-error src "positive priority" pri
   }
 
-  ;; Step 1: find the existing symbol for {name} or create a new one
-  si := meaning-find-toplevel-symbol name eenv
+  op-mod := find-module 'operator
+  op-eenv := hash-ref %%eenv-map op-mod
 
-  ci := meaning-constants-lookup-or-extend eenv name
+  ;; Step 1: find the existing symbol for {name} or create a new one
+  si := meaning-find-toplevel-symbol name op-eenv
+
+  ci := meaning-constants-lookup-or-extend op-eenv name
 
   op-id := si-si si
 
-  op-mod := find-module 'operator
   sym-si := list 'toplevel op-id ci 0 op-mod "define-postfix-operator"
   set-symbol! name sym-si op-mod
 
@@ -1653,7 +1659,7 @@ define (meaning-rewrite-body src e nametree) {
 	    body-seq := append (list 'begin) body
 	    meaning-copy-src-properties cur body-seq
 
-	    r-cur := false
+	    r-cur := #f
 
 	    (cond
 	     ((eq? 'let assign) {
@@ -1970,7 +1976,7 @@ define (meaning-some-arguments src ae ae* nametree arity flags eenv) {
   list I-STORE-ARGUMENT am am* rank
 }
 
-define (meaning-no-argument src nametree arity flags cs) {
+define (meaning-no-argument src nametree arity flags eenv) {
   list I-ALLOCATE-FRAME arity
 }
 
@@ -1978,7 +1984,7 @@ define (meaning-arguments src ae* nametree arity flags eenv) {
   if (pair? ae*) {
     meaning-some-arguments src (ph ae*) (pt ae*) nametree arity flags eenv
   } {
-    meaning-no-argument src nametree arity flags cs
+    meaning-no-argument src nametree arity flags eenv
   }
 }
 
@@ -2010,7 +2016,7 @@ define (meaning-some-dotted-arguments src ae ae* nametree nargs arity flags eenv
   }
 }
 
-define (meaning-no-dotted-argument src nametree nargs arity flags cs) {
+define (meaning-no-dotted-argument src nametree nargs arity flags eenv) {
   list I-ALLOCATE-FRAME arity
 }
 
@@ -2018,7 +2024,7 @@ define (meaning-dotted-arguments src ae* nametree nargs arity flags eenv) {
   if (pair? ae*) {
     meaning-some-dotted-arguments src (ph ae*) (pt ae*) nametree nargs arity flags eenv
   } {
-    meaning-no-dotted-argument src nametree nargs arity flags cs
+    meaning-no-dotted-argument src nametree nargs arity flags eenv
   }
 }
 
@@ -2233,7 +2239,8 @@ define (meaning-application src fe ae* nametree flags eenv) {
   if i-code i-code {
     ;; check for a closed application
     if (and (pair? fe)
-	    (eq? 'function (ph fe))) {
+	    (or (eq? 'function (ph fe))
+		(eq? 'function/name (ph fe)))) {
       ;; check for a documentation string and forge one to
       ;; help debugging
       if (not (string? (phtt fe))) {
@@ -2243,6 +2250,10 @@ define (meaning-application src fe ae* nametree flags eenv) {
 
       meaning-closed-application src fe ae* nametree flags eenv
     } {
+      if (pair? fe) {
+	;; (symbol-value 'load 'Idio) filename
+	meaning-copy-src-properties src fe
+      }
       meaning-regular-application src fe ae* nametree flags eenv
     }
   }

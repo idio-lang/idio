@@ -508,13 +508,14 @@ idio_as_t idio_codegen_extend_src_exprs (IDIO eenv, IDIO src)
 			     idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE));
 	} else {
 #ifdef IDIO_DEBUG
-	    fprintf (stderr, "no src_properties for entry #%-4zd ", idio_array_size (sps));
+	    fprintf (stderr, "icese: no src_properties for entry .%-4zd ", idio_array_size (sps));
 	    idio_debug ("%.80s\n", src);
 #endif
 	}
     } else {
 #ifdef IDIO_DEBUG
-	fprintf (stderr, "no src for entry #%zd\n", idio_array_size (sps));
+	fprintf (stderr, "icese: src is not a pair for entry .%-4zd ", idio_array_size (sps));
+	idio_debug ("%s\n", src);
 #endif
     }
     idio_array_push (sps, sp);

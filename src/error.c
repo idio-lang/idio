@@ -247,7 +247,7 @@ void idio_error_raise_cont (IDIO ct, IDIO args)
     IDIO_TYPE_ASSERT (list, args);
 
 #ifdef IDIO_GDB_DEBUG
-    fprintf (stderr, "\n\nIDIO_DEBUG: NOTICE: deliberate assert(0) raise-cont ****\n\n");
+    fprintf (stderr, "\n\nIDIO_GDB_DEBUG: NOTICE: deliberate assert(0) raise-cont ****\n\n");
     idio_debug ("%s\n", idio_struct_instance (ct, args));
     kill (getpid (), SIGINT);
 #endif
@@ -265,7 +265,7 @@ void idio_error_raise_noncont (IDIO ct, IDIO args)
     IDIO_TYPE_ASSERT (list, args);
 
 #ifdef IDIO_GDB_DEBUG
-    fprintf (stderr, "\n\nIDIO_DEBUG: NOTICE: deliberate assert(0) raise-noncont ****\n\n");
+    fprintf (stderr, "\n\nIDIO_GDB_DEBUG: NOTICE: deliberate assert(0) raise-noncont ****\n\n");
     idio_debug ("%s\n", idio_struct_instance (ct, args));
     kill (getpid (), SIGINT);
 #endif

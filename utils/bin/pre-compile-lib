@@ -212,17 +212,8 @@ define (pre-compilation-restore-operator! name pri kind) {
 }
 
 compile-file (append-string lib-dir "/bootstrap.idio")
-#*
-for fn in (append  (list (append-string lib-dir "/bootstrap.idio"))
-		   (glob (append-string lib-dir "/bootstrap/*.idio"))) {
-  printf "Compiling %s\n" fn
-  compile-file fn
-  printf "\n\n"
-}
-*#
 
-for fn in (append (glob (append-string lib-dir "/*.idio"))
-		  #;(glob (append-string lib-dir "/*/*/*.idio"))) {
+for fn in (glob (append-string lib-dir "/*.idio")) {
   (pattern-case fn
 		;; skip the bootstrap which we ran above
 		("*/bootstrap.idio" #f)

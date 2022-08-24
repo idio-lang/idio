@@ -278,13 +278,10 @@ void idio_final_vm ();
 
 void idio_vm_dump_all ()
 {
-    idio_vm_dump_dasm ();
-    idio_vm_dump_symbols ();
     idio_vm_dump_constants ();
-    /*
-    idio_vm_dump_src_exprs ();
-    */
+    idio_vm_dump_symbols ();
     idio_vm_dump_src_props ();
+    idio_vm_dump_dasm ();
 
     /*
      * XXX idio_vm_dump_values() will potentially call (*a lot* of)
@@ -4220,68 +4217,28 @@ idio_as_t idio_vm_iref (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, ID
 	IDIO si_ce = idio_module_find_symbol_recurse (sym, ce, 1);
 
 	if (idio_S_false == si_ce) {
-	    IDIO mdr = idio_module_direct_reference (sym);
-
-	    if (idio_S_false == mdr) {
-		/*
-		 * Squirrelly bootstrap.  "import object" calls a
-		 * primitive in object but the import hasn't completed
-		 * and so object is not on the list of imports for
-		 * idio_module_find_symbol_recurse(), above.
-		 */
-		IDIO si_mod = idio_module_find_symbol_recurse (sym, IDIO_THREAD_MODULE (thr), 1);
-
-		if (idio_S_false == si_mod) {
-		    /*
-		     * This happens for:
-		     *
-		     * * first use of a name:
-		     *
-		     *   - require path-functions
-		     *
-		     *   - (function? struct-utsname-set!)
-		     *
-		     *     as part of a test to see if the setter has
-		     *     been defined (ans: no)
-		     *
-		     *   - (false)
-		     *
-		     *     external command name (and arguments)
-		     *
-		     * Leaving no easy way to identify a genuine
-		     * failure.  Which is annoying.
-		     *
-		     * In practice we'll fall through to the missing
-		     * clause.
-		     */
-		} else {
-		    fgvi = IDIO_SI_VI (si_mod);
-		    gvi = IDIO_FIXNUM_VAL (fgvi);
-		    si_ce = si_mod; /* for printing, below */
-		}
-		/*
-		 * If we failed to look it up (by hook or by crook)
-		 * we'll now fall through to the missing clause
-		 */
-	    } else {
-		/* (mod sym si) */
-		si_ce = IDIO_PAIR_HTT (mdr);
-
-		fgvi = IDIO_SI_VI (si_ce);
-		gvi = IDIO_FIXNUM_VAL (fgvi);
-
-		if (0 == gvi) {
-		    /*
-		     * Test Case: ??
-		     *
-		     * Coding error.
-		     */
-		    idio_error_runtime_unbound (fsi, fgvi, sym, IDIO_C_FUNC_LOCATION_S (op));
-
-		    /* notreached */
-		    return 0;
-		}
-	    }
+	    /*
+	     * This happens for:
+	     *
+	     * * first use of a name:
+	     *
+	     *   - require path-functions
+	     *
+	     *   - (function? struct-utsname-set!)
+	     *
+	     *     as part of a test to see if the setter has
+	     *     been defined (ans: no)
+	     *
+	     *   - (false)
+	     *
+	     *     external command name (and arguments)
+	     *
+	     * Leaving no easy way to identify a genuine failure.
+	     * Which is annoying.
+	     *
+	     * If we failed to look it up (by hook or by crook) we'll
+	     * now fall through to the missing clause
+	     */
 	} else {
 	    fgvi = IDIO_SI_VI (si_ce);
 	    gvi = IDIO_FIXNUM_VAL (fgvi);
@@ -4296,12 +4253,18 @@ idio_as_t idio_vm_iref (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, ID
 
 	    idio_vm_values_set (0, gvi, sym);
 
+	    /*
+	    fprintf (stderr, "%-17s iref     [%zu].%-4zd [0].%-4zd ", op, xi, si, gvi);
+	    idio_debug ("%-10s ", IDIO_MODULE_NAME (ce));
+	    idio_debug ("%-20s\n", sym);
+	    */
+
 	    IDIO_VM_RUN_DIS ("=> [0].%-4" PRIu64 " ", gvi);
 
-	    idio_as_t gci = idio_vm_constants_lookup_or_extend (0, sym);
-	    IDIO fgci = idio_fixnum (gci);
+	    idio_as_t ci = idio_vm_constants_lookup_or_extend (xi, sym);
+	    IDIO fci = idio_fixnum (ci);
 
-	    si_ce = IDIO_LIST6 (idio_S_toplevel, fsi, fgci, fgvi, ce, def);
+	    si_ce = IDIO_LIST6 (idio_S_toplevel, fsi, fci, fgvi, ce, def);
 	    idio_module_set_symbol (sym, si_ce, ce);
 	} else if (xi) {
 	    IDIO_VM_RUN_DIS ("== [0].%-4" PRIu64 " ", gvi);
@@ -4345,6 +4308,13 @@ IDIO idio_vm_iref_val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, idi
 
 	if (IDIO_VM_IREF_VAL_UNDEF_SYM == mode) {
 	    idio_vm_values_set (0, gvi, sym);
+
+	    /*
+	    fprintf (stderr, "%-17s iref_val undef->sym [%zu].%-4zd [0].%-4zd ", op, xi, si, gvi);
+	    idio_debug ("%-20s ", sym);
+	    idio_debug ("%s\n", idio_module_find_symbol_recurse (sym, IDIO_THREAD_ENV (thr), 1));
+	    */
+
 	    val = sym;
 	} else {
 	    IDIO fsi = idio_fixnum (si);
@@ -4359,12 +4329,6 @@ IDIO idio_vm_iref_val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, idi
 	    return idio_S_notreached;
 	}
     }
-
-    /*
-#ifdef IDIO_VM_DIS
-    idio_debug_FILE (idio_dasm_FILE, "%-20.60s ", val);
-#endif
-    */
 
     return val;
 }
@@ -4886,15 +4850,22 @@ int idio_vm_run1 (IDIO thr)
 	break;
     case IDIO_A_PREDEFINED:
 	{
-	    uint64_t gvi = idio_vm_fetch_varuint (bc, thr);
+	    uint64_t si = idio_vm_fetch_varuint (bc, thr);
 
-	    IDIO_VM_RUN_DIS ("%-17s   .%-4" PRIu64 " ", "PREDEFINED", gvi);
+	    IDIO_VM_RUN_DIS ("%-17s   .%-4" PRIu64 " ", "PREDEFINED", si);
 
-	    IDIO pd = idio_vm_iref_val (thr, 0, gvi, "PREDEFINED", IDIO_VM_IREF_VAL_UNDEF_FATAL);
+	    IDIO pd = idio_vm_iref_val (thr, xi, si, "PREDEFINED", IDIO_VM_IREF_VAL_UNDEF_FATAL);
 	    if (idio_isa_primitive (pd)) {
 		IDIO_VM_RUN_DIS ("%-20s", IDIO_PRIMITIVE_NAME (pd));
 	    } else {
-		IDIO_VM_RUN_DIS ("isa %-20s ??", idio_type2string (pd));
+		IDIO_VM_RUN_DIS ("!! isa %-20s !!", idio_type2string (pd));
+		fprintf (stderr, "%-17s   .%-4" PRIu64 " ", "PREDEFINED", si);
+		IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
+		IDIO fgvi = idio_array_ref_index (vs, si);
+		IDIO_TYPE_ASSERT (fixnum, fgvi);
+		idio_as_t gvi = IDIO_FIXNUM_VAL (fgvi);
+		fprintf (stderr, "[0].%-4zd ", gvi);
+		fprintf (stderr, "[%zu]@%zd\n", xi, pc);
 		IDIO_TYPE_ASSERT (primitive, pd);
 	    }
 	    IDIO_THREAD_VAL (thr) = pd;
@@ -5901,9 +5872,9 @@ int idio_vm_run1 (IDIO thr)
 
 	    IDIO_VM_RUN_DIS ("INFIX-OPERATOR .%-4" PRIu64 " pri %4" PRIu64 " ", si, pri);
 
-	    IDIO sym = idio_vm_symbols_ref (xi, si);
+	    IDIO sym = idio_vm_symbols_ref (idio_operator_xi, si);
 
-	    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
+	    IDIO vs = IDIO_XENV_VT (idio_xenvs[idio_operator_xi]);
 	    IDIO fgvi = idio_array_ref_index (vs, si);
 	    idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
@@ -5916,13 +5887,13 @@ int idio_vm_run1 (IDIO thr)
 		    fprintf (stderr, ".%-4" PRIu64 " undefined?  setting...\n", si);
 		    */
 
-		    idio_as_t ci = idio_vm_constants_lookup_or_extend (xi, sym);
+		    idio_as_t ci = idio_vm_constants_lookup_or_extend (idio_operator_xi, sym);
 		    IDIO fci = idio_fixnum (ci);
 
 		    IDIO fsi = idio_fixnum (si);
 		    gvi = idio_vm_extend_values (0);
 		    fgvi = idio_fixnum (gvi);
-		    idio_vm_values_set (xi, si, fgvi);
+		    idio_vm_values_set (idio_operator_xi, si, fgvi);
 
 		    si_op = IDIO_LIST6 (idio_S_toplevel, fsi, fci, fgvi, idio_operator_module, idio_vm_INFIX_OPERATOR_string);
 		    idio_module_set_symbol (sym, si_op, idio_operator_module);
@@ -5935,7 +5906,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("[0].%" PRIu64 " ", gvi);
 
 	    IDIO val = IDIO_THREAD_VAL (thr);
-	    idio_install_infix_operator (xi, sym, val, pri);
+	    idio_install_infix_operator (idio_operator_xi, sym, val, pri);
 	}
 	break;
     case IDIO_A_POSTFIX_OPERATOR:
@@ -5945,9 +5916,9 @@ int idio_vm_run1 (IDIO thr)
 
 	    IDIO_VM_RUN_DIS ("POSTFIX-OPERATOR .%-4" PRIu64 " pri %4" PRIu64 " ", si, pri);
 
-	    IDIO sym = idio_vm_symbols_ref (xi, si);
+	    IDIO sym = idio_vm_symbols_ref (idio_operator_xi, si);
 
-	    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
+	    IDIO vs = IDIO_XENV_VT (idio_xenvs[idio_operator_xi]);
 	    IDIO fgvi = idio_array_ref_index (vs, si);
 	    idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
@@ -5960,13 +5931,13 @@ int idio_vm_run1 (IDIO thr)
 		    fprintf (stderr, ".%-4" PRIu64 " undefined?  setting...\n", si);
 		    */
 
-		    idio_as_t ci = idio_vm_constants_lookup_or_extend (xi, sym);
+		    idio_as_t ci = idio_vm_constants_lookup_or_extend (idio_operator_xi, sym);
 		    IDIO fci = idio_fixnum (ci);
 
 		    IDIO fsi = idio_fixnum (si);
 		    gvi = idio_vm_extend_values (0);
 		    fgvi = idio_fixnum (gvi);
-		    idio_vm_values_set (xi, si, fgvi);
+		    idio_vm_values_set (idio_operator_xi, si, fgvi);
 
 		    si_op = IDIO_LIST6 (idio_S_toplevel, fsi, fci, fgvi, idio_operator_module, idio_vm_POSTFIX_OPERATOR_string);
 		    idio_module_set_symbol (sym, si_op, idio_operator_module);
@@ -5979,7 +5950,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("[0].%" PRIu64 " ", gvi);
 
 	    IDIO val = IDIO_THREAD_VAL (thr);
-	    idio_install_postfix_operator (xi, sym, val, pri);
+	    idio_install_postfix_operator (idio_operator_xi, sym, val, pri);
 	}
 	break;
     case IDIO_A_PUSH_DYNAMIC:
@@ -8845,4 +8816,9 @@ void idio_init_vm ()
     idio_module_set_symbol_value (IDIO_SYMBOL ("*expander-xi*"),
 				  idio_fixnum (idio_expander_xi),
 				  idio_expander_module);
+
+    idio_operator_xi = idio_new_xenv (IDIO_STRING ("operator"));
+    idio_module_set_symbol_value (IDIO_SYMBOL ("*operator-xi*"),
+				  idio_fixnum (idio_operator_xi),
+				  idio_operator_module);
 }

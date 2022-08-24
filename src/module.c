@@ -1030,23 +1030,17 @@ IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	return idio_S_notreached;
     }
 
-    /* idio_debug ("im_fsr %-20s", symbol);  */
-    /* idio_debug ("from %-10s", IDIO_MODULE_NAME (module));  */
-    /* fprintf (stderr, " recurse=%d\n", recurse);  */
-
     IDIO si_cm = idio_S_false;
     if (recurse < 2) {
 	si_cm = idio_hash_ref (IDIO_MODULE_SYMBOLS (module), symbol);
 	if (idio_S_unspec == si_cm) {
 	    si_cm = idio_S_false;
 	}
-    } else {
-	/* idio_debug ("im_fsr %s", IDIO_MODULE_NAME (module));  */
-	/* idio_debug ("/%s", symbol);  */
-	/* fprintf (stderr, " recurse > 1\n");  */
     }
 
+    int found = 0;
     if (idio_S_false != si_cm) {
+	found = 1;
 	/*
 	 * NB a vi of 0 indicates an unresolved value index to be
 	 * resolved (based on the current set of imports) during
@@ -1063,13 +1057,17 @@ IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	    idio_S_dynamic == scope) {
 	    if (0 == gvi) {
 		if (recurse) {
-		    si_cm = idio_S_false;
+		    found = 0;
+		    /*
+		    idio_debug ("imfsr skip %s ", symbol);
+		    idio_debug ("%s\n", si_cm);
+		    */
 		}
 	    }
 	}
     }
 
-    if (idio_S_false == si_cm &&
+    if (0 == found &&
 	recurse) {
 	IDIO imports = IDIO_MODULE_IMPORTS (module);
 	for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
@@ -1102,20 +1100,50 @@ IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 		idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
 		if (gvi > 0) {
-		    si_cm = si_mi;
-		    /*
-		     * Lookup resolved, copy it for next time.
-		     */
-		    idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, si_cm);
+		    found = 1;
+		    if (idio_S_false == si_cm) {
+			si_cm = si_mi;
+			idio_module_set_symbol (symbol, si_cm, module);
+			/*
+			idio_debug ("imfsr copy %-10s ", IDIO_MODULE_NAME (module));
+			idio_debug ("%-20s ", symbol);
+			idio_debug ("== %s\n", si_cm);
+			*/
+		    } else {
+			IDIO_SI_VI (si_cm) = IDIO_SI_VI (si_mi);
+			/*
+			idio_debug ("imfsr gvi  %s ", symbol);
+			idio_debug ("%s\n", si_cm);
+			*/
+		    }
 		    break;
 		}
 	    }
 	}
     }
 
-    /* idio_debug ("im_fsr %s", IDIO_MODULE_NAME (module));  */
-    /* idio_debug ("/%s", symbol);  */
-    /* idio_debug (" => si_cm=%s\n", si_cm);  */
+    if (0 == found) {
+	IDIO mdr = idio_module_direct_reference (symbol);
+
+	if (idio_S_false != mdr) {
+	    /* (mod sym si) */
+	    IDIO si = IDIO_PAIR_HTT (mdr);
+
+	    IDIO fgvi = IDIO_SI_VI (si);
+	    idio_as_t gvi = IDIO_FIXNUM_VAL (fgvi);
+
+	    if (gvi) {
+		si_cm = si;
+		idio_module_set_symbol (symbol, si_cm, module);
+		/*
+		idio_debug ("imfsr mdr  %-10s ", IDIO_MODULE_NAME (module));
+		idio_debug ("%-20s ", symbol);
+		idio_debug ("== %s\n", si_cm);
+		*/
+	    }
+	}
+    }
+
     return si_cm;
 }
 

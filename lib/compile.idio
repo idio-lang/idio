@@ -85,25 +85,17 @@ define (compile-file-writer file eenv pc) {
     write (%eenv-chksum eenv)
     puts "\n"
 
-    vs := %eenv-values eenv
-    vslen := 0
-    if vs {
-      vslen = vs + 1
-    }
-    alen := vslen
-    st := %eenv-symbols eenv
-    stlen := length st
-    if (stlen gt alen) {
-      alen = stlen
-    }
+    alen := array-length (%eenv-vt eenv)
 
     puts #S{
 ; The symbol/value table sizes
 ${alen}
 }
 
+    st := %eenv-symbols eenv
+
     puts #S{
-; The symbol table entries
+; The symbol table entries (si & ci)
 ( }
 
     for sym-si in (reverse st) {
@@ -138,7 +130,7 @@ ${alen}
        }))
     }
 
-    cs := %eenv-constants eenv
+    cs := %eenv-cs eenv
     puts #S{
 ; The ${array-length cs} constants
 #\[ }
@@ -168,32 +160,14 @@ ${pc}
     write bs
     puts "\n\n"
 
-    ses := %eenv-src-exprs eenv
-    ses-size := array-length ses
-    sps := %eenv-src-props eenv
     puts #S{
-; The ${array-length ses} source expressions
-#\[
+; The 0 source expression properties
+#\[ \]
 }
 
-    #*
-    (do ((i 0 (i + 1)))
-     ((i ge ses-size) #t) {
-      if (null? (array-ref sps i)) {
-	write #n
-      } {
-	write #n ;printf "\"%s\"" (array-ref ses i)
-      }
-      puts "\n"
-    })
-    *#
-
+    sps := %eenv-sps eenv
     puts #S{
-\]
-}
-
-    puts #S{
-; The ${array-length sps} source expression properties
+; The ${array-length sps} source expression properties (ci line)
 #\[ }
 
     for sp in sps {
@@ -226,7 +200,8 @@ define (compile-file file & args) "
     eenv = ph args
     printf "compile-file: re-using eenv for %s\n" (%eenv-desc eenv)
   } {
-    eenv = %evaluation-environment file #t
+    eenv = %evaluation-environment file
+    set-%eenv-aot?! eenv #t
   }
 
   fn := file

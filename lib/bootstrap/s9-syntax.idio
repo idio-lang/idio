@@ -341,7 +341,7 @@ define-template define-syntax {
      ((not (keywords-ok? (pht rules)))		(error/type ^rt-parameter-value-error name "syntax-rules: malformed keyword list" (pht rules)))
      ((not (rules-ok? (ptt rules)))		(error/type ^rt-syntax-error name "syntax-rules: invalid clause in rules" (ptt rules)))
      (else {
-       app := (gensym args)
+       app := (gensym 'args)
        default := #T{ ((else (error/type ^rt-syntax-error '$name "invalid syntax" $app))) }
 
        #T{
