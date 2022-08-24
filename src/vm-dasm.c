@@ -1183,15 +1183,14 @@ current directory.  These may get overwritten when Idio stops.	\n\
 {
     IDIO_ASSERT (args);
 
-    idio_pc_t pc0 = 0;
-    idio_pc_t pce = 0;
-
     if (idio_isa_pair (args)) {
 	IDIO c = IDIO_PAIR_H (args);
 	if (idio_isa_closure (c)) {
-	    pc0 = IDIO_CLOSURE_CODE_PC (c);
-	    pce = pc0 + IDIO_CLOSURE_CODE_LEN (c);
-	    fprintf (stderr, "NOTICE: unable to dump a specific closure: %zu, %zu\n", pc0, pce);
+	    idio_pc_t pc0 = IDIO_CLOSURE_CODE_PC (c);
+	    idio_pc_t pce = pc0 + IDIO_CLOSURE_CODE_LEN (c);
+	    idio_xi_t xi = IDIO_CLOSURE_XI (c);
+	    idio_vm_dasm (stderr, xi, pc0, pce);
+	    return idio_S_unspec;
 	} else {
 	    /*
 	     * Test Case: vm-errors/idio-dasm-bad-type.idio
@@ -1259,6 +1258,6 @@ void idio_final_vm_dasm ()
 
 void idio_init_vm_dasm ()
 {
-    idio_module_table_register (idio_vm_dasm_add_primitives, idio_final_vm_dasm, NULL);
+    idio_module_table_register (idio_vm_dasm_add_primitives, NULL, NULL);
 }
 
