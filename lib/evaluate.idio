@@ -573,15 +573,15 @@ define* (meaning-variable-info src nametree name flags eenv (recurse? #t)) {
       newer-si := find-symbol name (%eenv-module eenv) #f
 
       if (and newer-si
-	      (eq? 'toplevel (si-scope newer-si)) {
-		;; extend toplevel of this eenv
-		meaning-toplevel-extend src name flags eenv
+	      (eq? 'toplevel (si-scope newer-si))) {
+	;; extend toplevel of this eenv
+	meaning-toplevel-extend src name flags eenv
 
-		;; meaning-toplevel-extend only returns a ci
-		si = meaning-find-toplevel-symbol name eenv
+	;; meaning-toplevel-extend only returns a ci
+	si = meaning-find-toplevel-symbol name eenv
 
-		;; overwrite the gvi
-		si.3 = si-vi newer-si
+	;; overwrite the gvi
+	si.3 = si-vi newer-si
       }
     }
   } {
