@@ -235,8 +235,6 @@ define (meaning-extend-tables eenv name scope ci module desc set-symbol?) "
 }
 
 define (meaning-find-symbol-recurse name eenv scope recurse) {
-  name-si := find-symbol name (%eenv-module eenv) recurse
-
   ;; We want to return the name-si for (what will be baseline)
   ;; primitives otherwise they'll become like the regular lookup of a
   ;; function (via the execution environment symbol table) with a full
@@ -246,6 +244,8 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
 
   if (not symbols-sym-si) {
     ci := meaning-constants-lookup-or-extend eenv name
+
+    name-si := find-symbol name (%eenv-module eenv) recurse
 
     if (pair? name-si) {
       scope = si-scope name-si
@@ -558,7 +558,33 @@ define (meaning-nametree-dynamic-extend nametree name index scope) {
 define* (meaning-variable-info src nametree name flags eenv (recurse? #t)) {
   si := meaning-lexical-lookup src nametree name
 
-  if (not si) {
+  if si {
+    ;; The "semantically dubious" act of shadowing predefs catches us
+    ;; out here too and the problem is more subtle.
+    ;;
+    ;; In this case a different eenv to us has shadowed the predef and
+    ;; the only way for us to know is to look the symbol up in the
+    ;; module and see if the scope has changed from (our) 'predef to
+    ;; (their) 'toplevel.  If so we need to extend our own tables and
+    ;; swap in the gvi from the newer_si (otherwise we get the symbol
+    ;; itself).
+
+    if (eq? 'predef (si-scope si)) {
+      newer-si := find-symbol name (%eenv-module eenv) #f
+
+      if (and newer-si
+	      (eq? 'toplevel (si-scope newer-si)) {
+		;; extend toplevel of this eenv
+		meaning-toplevel-extend src name flags eenv
+
+		;; meaning-toplevel-extend only returns a ci
+		si = meaning-find-toplevel-symbol name eenv
+
+		;; overwrite the gvi
+		si.3 = si-vi newer-si
+      }
+    }
+  } {
     ;; NOTICE This must be a recursive lookup.  Otherwise we'll not
     ;; see any bindings in Idio.
     ;;
@@ -1002,11 +1028,36 @@ define (meaning-assignment src name e nametree flags eenv) {
 	}
       })
       ((predef) {
-	new-ci := meaning-toplevel-extend src name (define-scope 'toplevel flags) eenv
+	;; We can shadow predefs...semantically dubious!
+	;;
+	;; Dubious because many (most?) functions use, say, ph,
+	;; eg. map.  If you redefine ph should map be affected?  Is it
+	;; your intention that by changing ph everything should use
+	;; the new definition of ph immediately or just that functions
+	;; defined after this should use the new definition?
+	;;
+	;; We need a new symbol index as the existing one is tagged as
+	;; a predef.  This new one will be tagged as a toplevel.
+	sym-idx := meaning-toplevel-extend src name (define-scope 'toplevel flags) eenv
 
+	;; But now we have a problem.
+	;;
+	;; As we *compile* regular code, any subsequent reference to
+	;; {name} will find this new toplevel and we'll embed SYM-REFs
+	;; to it etc..  All good for the future when we *run* the
+	;; compiled code.
+	;;
+	;; However, if any templates in the here and now refer to
+	;; {name} then we have a problem.  All we've done is extend
+	;; the VM's table of known toplevels and given it a value of
+	;; #undef.  If a template tries to use {name} it'll get back
+	;; #undef and things will start to go wrong.
+	;;
+	;; What we need to do is patch up the toplevel with the
+	;; current primitive value we're overriding.
 	vi := si-vi si
 	set-symbol-value! name (vm-values-ref vi 0) (%eenv-module eenv)
-	assign = list I-SYM-SET src new-ci m
+	assign = list I-SYM-SET src sym-idx m
       })
       (else {
 	;; Shouldn't get here unless the if clauses above don't

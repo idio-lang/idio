@@ -674,13 +674,13 @@ static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, IDIO scope, 
     IDIO_TYPE_ASSERT (struct_instance, eenv);
     IDIO_TYPE_ASSERT (symbol, scope);
 
-    IDIO name_si = idio_module_find_symbol_recurse (name, IDIO_MEANING_EENV_MODULE (eenv), recurse);
-
     IDIO symbols_sym_si = idio_list_assq (name, IDIO_MEANING_EENV_SYMBOLS (eenv));
 
     if (idio_S_false == symbols_sym_si) {
 	idio_as_t ci = idio_meaning_constants_lookup_or_extend (eenv, name);
 	IDIO fci = idio_fixnum (ci);
+
+	IDIO name_si = idio_module_find_symbol_recurse (name, IDIO_MEANING_EENV_MODULE (eenv), recurse);
 
 	if (idio_isa_pair (name_si)) {
 	    IDIO scope = IDIO_SI_SCOPE (name_si);
@@ -1021,9 +1021,8 @@ IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO eenv)
 				1);
 
     si = idio_meaning_find_symbol (name, eenv, scope);
-    fci = IDIO_SI_SI (si);
 
-    return fci;
+    return IDIO_SI_SI (si);
 }
 
 /*
@@ -1417,6 +1416,28 @@ static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int 
 		 */
 		idio_toplevel_extend (src, name, flags, eenv);
 		si = idio_meaning_find_toplevel_symbol (name, eenv);
+	    }
+	} else {
+	    /*
+	     * The "semantically dubious" act of shadowing predefs
+	     * catches us out here too and the problem is more subtle.
+	     *
+	     * In this case a different eenv to us has shadowed the
+	     * predef and the only way for us to know is to look the
+	     * symbol up in the module and see if the scope has
+	     * changed from (our) 'predef to (their) 'toplevel.  If so
+	     * we need to extend our own tables and swap in the gvi
+	     * from the newer_si (otherwise we get the symbol itself).
+	     */
+	    if (idio_S_predef == IDIO_SI_SCOPE (si)) {
+		IDIO newer_si = idio_module_find_symbol_recurse (name, IDIO_MEANING_EENV_MODULE (eenv), 0);
+
+		if (idio_S_false != newer_si &&
+		    idio_S_toplevel == IDIO_SI_SCOPE (newer_si)) {
+		    idio_toplevel_extend (src, name, flags, eenv);
+		    si = idio_meaning_find_toplevel_symbol (name, eenv);
+		    IDIO_SI_VI (si) = IDIO_SI_VI (newer_si);
+		}
 	    }
 	}
     }
@@ -2134,10 +2155,10 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	 * the new definition of ph immediately or just that functions
 	 * defined after this should use the new definition?
 	 *
-	 * We need a new ci as the existing one is tagged as a
-	 * predef.  This new one will be tagged as a toplevel.
+	 * We need a new symbol index as the existing one is tagged as
+	 * a predef.  This new one will be tagged as a toplevel.
 	 */
-	IDIO new_ci = idio_toplevel_extend (src, name, IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags)), eenv);
+	IDIO sym_idx = idio_toplevel_extend (src, name, IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags)), eenv);
 
 	/*
 	 * But now we have a problem.
@@ -2161,7 +2182,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 				      idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi)),
 				      IDIO_MEANING_EENV_MODULE (eenv));
 
-	assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, new_ci, m);
+	assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, sym_idx, m);
 
 	/* if we weren't allowing shadowing */
 

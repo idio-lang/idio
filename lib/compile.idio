@@ -56,7 +56,7 @@ define (compile-file-writer file eenv pc) {
     }
 
      puts #S{
-; The lib/compiler.idio commit used to create this file
+; The compiler commit used to create this file
 }
 
     write IDIO_BUILD_COMPILER_COMMIT
