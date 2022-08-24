@@ -6670,7 +6670,6 @@ IDIO idio_vm_run (IDIO thr, idio_xi_t xi, idio_pc_t pc, idio_vm_run_enum caller)
 		     IDIO_THREAD_PC (thr),
 		     v_XI0,
 		     (idio_vm_FINISH_pc + 1));
-	    idio_vm_dump_dasm ();
 	    bail = 1;
 	}
 
@@ -8174,16 +8173,11 @@ void idio_vm_dump_xenv (idio_xi_t xi)
     fprintf (stderr, "vm-xenv [%zu] ", xi);
 #endif
 
-    idio_vm_dump_xenv_dasm (xi);
-    idio_vm_dump_xenv_symbols (xi);
     idio_vm_dump_xenv_constants (xi);
-    /*
-    idio_vm_dump_xenv_src_exprs (xi);
-    */
+    idio_vm_dump_xenv_symbols (xi);
     idio_vm_dump_xenv_src_props (xi);
-    /*
+    idio_vm_dump_xenv_dasm (xi);
     idio_vm_dump_xenv_values (xi);
-    */
 }
 
 /*
@@ -8590,13 +8584,7 @@ void idio_final_vm ()
 	     * So we need yet another flag for during VM reporting.
 	     */
 	    idio_vm_reporting = 1;
-	    idio_vm_dump_symbols ();
-	    idio_vm_dump_constants ();
-	    /*
-	    idio_vm_dump_src_exprs ();
-	    */
-	    idio_vm_dump_src_props ();
-	    idio_vm_dump_values ();
+	    idio_vm_dump_all ();
 
 #ifdef IDIO_VM_PROF
 #ifdef IDIO_DEBUG
