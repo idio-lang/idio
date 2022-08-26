@@ -304,84 +304,6 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 #endif
 
     /*
-     * array lengths
-     *
-     * The size of the symbol and value tables.
-     *
-     * Could we really exceed a fixnum?
-     */
-    IDIO alen = idio_read (fh);
-
-    if (! idio_isa_fixnum (alen)) {
-#ifdef IDIO_DEBUG
-	idio_debug ("alen %s is not a fixnum\n", alen);
-#endif
-	return 0;
-    }
-#ifdef IDIO_COMPILE_FILE_READ
-    idio_debug ("alen %s ", alen);
-#endif
-
-    idio_as_t C_alen = IDIO_FIXNUM_VAL (alen);
-
-    /*
-     * symbol table entries
-     */
-    IDIO ste = idio_read (fh);
-
-    if (! (idio_isa_list (ste))) {
-#ifdef IDIO_DEBUG
-	idio_debug ("symbol table entries %s is not a list\n", ste);
-#endif
-	return 0;
-    }
-#ifdef IDIO_COMPILE_FILE_READ
-    fprintf (stderr, "ste #%zu ", idio_list_length (ste));
-#endif
-
-    idio_as_t max_ci = 0;
-    IDIO st = idio_array (C_alen);
-    /* enable all array elements */
-    IDIO_ARRAY_USIZE (st) = C_alen;
-
-    while (idio_S_nil != ste) {
-	IDIO si_ci = IDIO_PAIR_H (ste);
-
-	IDIO si = IDIO_PAIR_H (si_ci);
-	if (! idio_isa_fixnum (si)) {
-	    return 0;
-	}
-	idio_as_t C_si = IDIO_FIXNUM_VAL (si);
-
-	if (C_si >= C_alen) {
-#ifdef IDIO_DEBUG
-	    idio_debug ("symbol table entry %s is too large: ", si_ci);
-	    fprintf (stderr, "%zu >= %zu\n", C_si, C_alen);
-#endif
-	    return 0;
-	}
-
-	IDIO ci = IDIO_PAIR_T (si_ci);
-	if (idio_S_false != ci) {
-	    if (! idio_isa_fixnum (ci)) {
-#ifdef IDIO_DEBUG
-		idio_debug ("si-ci %s: ci is not a fixnum\n", si_ci);
-#endif
-		return 0;
-	    }
-	    idio_as_t C_ci = IDIO_FIXNUM_VAL (ci);
-
-	    idio_array_insert_index (st, ci, C_si);
-
-	    if (C_ci > max_ci) {
-		max_ci = C_si;
-	    }
-	}
-
-	ste = IDIO_PAIR_T (ste);
-    }
-
-    /*
      * constants
      */
     IDIO cs = idio_read (fh);
@@ -392,14 +314,167 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 #endif
 	return 0;
     }
+
+    idio_as_t cs_alen = idio_array_size (cs);
+
 #ifdef IDIO_COMPILE_FILE_READ
-    fprintf (stderr, "cs #%zu ", idio_array_size (cs));
+    fprintf (stderr, "cs #%zu ", cs_alen);
 #endif
 
+    /*
+     * array lengths
+     *
+     * The size of the symbol and value tables.
+     *
+     * Could we really exceed a fixnum?
+     */
+    IDIO st_alen = idio_read (fh);
 
-    if (max_ci >= idio_array_size (cs)) {
+    if (! idio_isa_fixnum (st_alen)) {
 #ifdef IDIO_DEBUG
-	fprintf (stderr, "constants is smaller (%zu) than the largest symbol index (%zu)\n", idio_array_size (cs), max_ci);
+	idio_debug ("st_alen %s is not a fixnum\n", st_alen);
+#endif
+	return 0;
+    }
+#ifdef IDIO_COMPILE_FILE_READ
+    idio_debug ("st_alen %s ", st_alen);
+#endif
+
+    idio_as_t C_st_alen = IDIO_FIXNUM_VAL (st_alen);
+
+    /*
+     * symbols symbol table entries
+     */
+    IDIO ste = idio_read (fh);
+
+    if (! (idio_isa_list (ste))) {
+#ifdef IDIO_DEBUG
+	idio_debug ("symbols: symbol table entries %s is not a list\n", ste);
+#endif
+	return 0;
+    }
+#ifdef IDIO_COMPILE_FILE_READ
+    fprintf (stderr, "ste #%zu ", idio_list_length (ste));
+#endif
+
+    IDIO symbols = idio_S_nil;
+
+    idio_as_t max_sci = 0;
+    IDIO st = idio_array (C_st_alen);
+    /* enable all array elements */
+    IDIO_ARRAY_USIZE (st) = C_st_alen;
+
+    while (idio_S_nil != ste) {
+	IDIO si_ci = IDIO_PAIR_H (ste);
+
+	IDIO si = IDIO_PAIR_H (si_ci);
+	if (! idio_isa_fixnum (si)) {
+	    return 0;
+	}
+	idio_as_t C_si = IDIO_FIXNUM_VAL (si);
+
+	if (C_si >= C_st_alen) {
+#ifdef IDIO_DEBUG
+	    idio_debug ("symbols: symbol table entry %s is too large: ", si_ci);
+	    fprintf (stderr, "%zu >= %zu\n", C_si, C_st_alen);
+#endif
+	    return 0;
+	}
+
+	IDIO ci = IDIO_PAIR_T (si_ci);
+	if (idio_S_false != ci) {
+	    if (! idio_isa_fixnum (ci)) {
+#ifdef IDIO_DEBUG
+		idio_debug ("symbols: si-ci %s: ci is not a fixnum\n", si_ci);
+#endif
+		return 0;
+	    }
+	    idio_as_t C_ci = IDIO_FIXNUM_VAL (ci);
+
+	    idio_array_insert_index (st, ci, C_si);
+
+	    symbols = idio_pair (IDIO_LIST7 (idio_array_ref_index (cs, C_ci),
+					     idio_S_toplevel, si, ci, idio_fixnum0, idio_S_nil, idio_S_nil),
+				 symbols);
+
+	    if (C_ci > max_sci) {
+		max_sci = C_si;
+	    }
+	}
+
+	ste = IDIO_PAIR_T (ste);
+    }
+
+    if (max_sci >= cs_alen) {
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "constants is smaller (%zu) than the largest symbols symbol index (%zu)\n", cs_alen, max_sci);
+#endif
+	return 0;
+    }
+
+    /*
+     * operators symbol table entries
+     */
+    IDIO ote = idio_read (fh);
+
+    if (! (idio_isa_list (ote))) {
+#ifdef IDIO_DEBUG
+	idio_debug ("operators: symbol table entries %s is not a list\n", ote);
+#endif
+	return 0;
+    }
+#ifdef IDIO_COMPILE_FILE_READ
+    fprintf (stderr, "ote #%zu ", idio_list_length (ote));
+#endif
+
+    IDIO operators = idio_S_nil;
+
+    idio_as_t max_oci = 0;
+
+    while (idio_S_nil != ote) {
+	IDIO si_ci = IDIO_PAIR_H (ote);
+
+	IDIO si = IDIO_PAIR_H (si_ci);
+	if (! idio_isa_fixnum (si)) {
+	    return 0;
+	}
+	idio_as_t C_si = IDIO_FIXNUM_VAL (si);
+
+	if (C_si >= C_st_alen) {
+#ifdef IDIO_DEBUG
+	    idio_debug ("operators: symbol table entry %s is too large: ", si_ci);
+	    fprintf (stderr, "%zu >= %zu\n", C_si, C_st_alen);
+#endif
+	    return 0;
+	}
+
+	IDIO ci = IDIO_PAIR_T (si_ci);
+	if (idio_S_false != ci) {
+	    if (! idio_isa_fixnum (ci)) {
+#ifdef IDIO_DEBUG
+		idio_debug ("operators: si-ci %s: ci is not a fixnum\n", si_ci);
+#endif
+		return 0;
+	    }
+	    idio_as_t C_ci = IDIO_FIXNUM_VAL (ci);
+
+	    idio_array_insert_index (st, ci, C_si);
+
+	    operators = idio_pair (IDIO_LIST7 (idio_array_ref_index (cs, C_ci),
+					       idio_S_toplevel, si, ci, idio_fixnum0, idio_S_nil, idio_S_nil),
+				   operators);
+
+	    if (C_ci > max_oci) {
+		max_oci = C_si;
+	    }
+	}
+
+	ote = IDIO_PAIR_T (ote);
+    }
+
+    if (max_oci >= cs_alen) {
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "constants is smaller (%zu) than the largest operators symbol index (%zu)\n", cs_alen, max_oci);
 #endif
 	return 0;
     }
@@ -486,45 +561,83 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
      * Phew!
      */
 
-    IDIO vs = idio_array_dv (C_alen, idio_fixnum (0));
+    IDIO vt = idio_array_dv (C_st_alen, idio_fixnum (0));
     /* enable all array elements */
-    IDIO_ARRAY_USIZE (vs) = C_alen;
+    IDIO_ARRAY_USIZE (vt) = C_st_alen;
 
-    idio_ai_t al = idio_array_size (cs);
     /*
      * IDIO_HASH_EQP doesn't like a zero length hash so set it to be 1
      */
-    IDIO ch = IDIO_HASH_EQP (al ? al : 1);
+    IDIO ch = IDIO_HASH_EQP (cs_alen ? cs_alen : 1);
 
     idio_ai_t ai;
 
-    for (ai = 0; ai < al; ai++) {
+    for (ai = 0; ai < (idio_ai_t) cs_alen; ai++) {
 	IDIO v = idio_array_ref_index (cs, ai);
 	if (idio_S_nil != v) {
 	    idio_hash_set (ch, v, idio_fixnum (ai));
 	}
     }
 
-    idio_xi_t xi = idio_vm_add_xenv (idio_string_C (ifn), st, cs, ch, vs, ses, sps, bs);
+    idio_debug ("op %s\n", operators);
+
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display_C ("[", dsh);
+    idio_display (idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_DESC), dsh);
+    idio_display_C ("] [", dsh);
+    idio_display_C (ifn, dsh);
+    idio_display_C ("] [", dsh);
+    idio_display (I_file, dsh);
+    idio_display_C ("]", dsh);
+    IDIO desc = idio_get_output_string (dsh);
+
+    /* idio_xi_t xi = idio_vm_add_xenv (desc, st, cs, ch, vt, ses, sps, bs); */
+    idio_xi_t xi = IDIO_FIXNUM_VAL (idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_XI));
 #ifdef IDIO_COMPILE_FILE_READ
     fprintf (stderr, "xi [%zu] for %s\n", xi, ifn);
 #endif
 
+    /*
+     * We already have an eenv passed into us (for the
+     * non-pre-compiled file) and there are two data structures
+     * pointing at data within it: the eenv and the xenv.
+     *
+     * As we now have new st, cs, etc. from the cached file we need to
+     * patch up both data structures.
+     */
+
     IDIO_XENV_EENV (idio_xenvs[xi]) = eenv;
+    IDIO_XENV_DESC (idio_xenvs[xi]) = desc;
+    IDIO_XENV_ST   (idio_xenvs[xi]) = st;
+    IDIO_XENV_CS   (idio_xenvs[xi]) = cs;
+    IDIO_XENV_CH   (idio_xenvs[xi]) = ch;
+    IDIO_XENV_VT   (idio_xenvs[xi]) = vt;
+    IDIO_XENV_SES  (idio_xenvs[xi]) = ses;
+    IDIO_XENV_SPS  (idio_xenvs[xi]) = sps;
 
-    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_ST,  IDIO_XENV_ST (idio_xenvs[xi]));
-    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_VT,  IDIO_XENV_VT (idio_xenvs[xi]));
-    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_CS,  IDIO_XENV_CS (idio_xenvs[xi]));
-    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_CH,  IDIO_XENV_CH (idio_xenvs[xi]));
-    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SES, IDIO_XENV_SES (idio_xenvs[xi]));
-    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SPS, IDIO_XENV_SPS (idio_xenvs[xi]));
+    /*
+     * Convert the octet string version of the byte code into an
+     * IDIO_IA_T instruction array byte code for the VM.
+     */
+    IDIO_IA_T byte_code = idio_codegen_string2idio_ia (bs);
 
-    IDIO CPT_byte_code = idio_C_pointer_type (idio_CSI_idio_ia_s,  IDIO_XENV_BYTE_CODE (idio_xenvs[xi]));
+    IDIO CPT_byte_code = idio_C_pointer_type (idio_CSI_idio_ia_s, byte_code);
     IDIO_C_TYPE_POINTER_FREEP (CPT_byte_code) = 0;
 
-    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_BYTE_CODE, CPT_byte_code);
+    IDIO_XENV_BYTE_CODE (idio_xenvs[xi]) = byte_code;
 
-    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_XI, idio_fixnum (xi));
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_DESC,       desc);
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SYMBOLS,    symbols);
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_OPERATORS,  operators);
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_ST,         st);
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_CS,	    cs);
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_CH,	    ch);
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_VT,	    vt);
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SES,	    ses);
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SPS,	    sps);
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_BYTE_CODE,  CPT_byte_code);
+
+    /* idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_XI, idio_fixnum (xi)); */
 
     idio_vm_run_xenv (xi, C_pc);
 

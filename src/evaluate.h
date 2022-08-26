@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
@@ -91,31 +91,33 @@
  * Indexes into structures for direct references
  */
 typedef enum {
-    IDIO_EENV_ST_DESC,		/* shared with xenv */
+    IDIO_EENV_ST_DESC,      /* shared with xenv */
     IDIO_EENV_ST_AOTP,
     IDIO_EENV_ST_CHKSUM,
-    IDIO_EENV_ST_SYMBOLS,	 /* alist of (symbol symbol-info) */
-    IDIO_EENV_ST_ST,		 /* symbol table for VM */
-    IDIO_EENV_ST_VT,		 /* value table for VM */
-    IDIO_EENV_ST_CS,	 /* shared with xenv */
-    IDIO_EENV_ST_CH, /* shared with xenv */
+    IDIO_EENV_ST_SYMBOLS,   /* alist of (symbol symbol-info) */
+    IDIO_EENV_ST_OPERATORS, /* alist of (operator-symbol symbol-info) */
+    IDIO_EENV_ST_ST,        /* symbol table for VM */
+    IDIO_EENV_ST_CS,        /* constants table for VM */
+    IDIO_EENV_ST_CH,        /* constanst hash for VM */
+    IDIO_EENV_ST_VT,        /* value table for VM */
     IDIO_EENV_ST_MODULE,
     IDIO_EENV_ST_ESCAPES,
-    IDIO_EENV_ST_SES,	/* shared with xenv */
-    IDIO_EENV_ST_SPS,	/* shared with xenv */
-    IDIO_EENV_ST_BYTE_CODE,	/* shared with xenv */
-    IDIO_EENV_ST_XI,		/* set when imported as xenv */
+    IDIO_EENV_ST_SES,       /* source expressions for VM */
+    IDIO_EENV_ST_SPS,       /* source properties for VM */
+    IDIO_EENV_ST_BYTE_CODE, /* for VM */
+    IDIO_EENV_ST_XI,        /* set when imported as xenv */
     IDIO_EENV_ST_SIZE,
 } idio_eenv_st_enum;
 
-#define IDIO_MEANING_EENV_AOTP(E)    idio_struct_instance_ref_direct((E), IDIO_EENV_ST_AOTP)
-#define IDIO_MEANING_EENV_SYMBOLS(E) idio_struct_instance_ref_direct((E), IDIO_EENV_ST_SYMBOLS)
-#define IDIO_MEANING_EENV_ST(E)      idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ST)
-#define IDIO_MEANING_EENV_VT(E)      idio_struct_instance_ref_direct((E), IDIO_EENV_ST_VT)
-#define IDIO_MEANING_EENV_CS(E)      idio_struct_instance_ref_direct((E), IDIO_EENV_ST_CS)
-#define IDIO_MEANING_EENV_CH(E)      idio_struct_instance_ref_direct((E), IDIO_EENV_ST_CH)
-#define IDIO_MEANING_EENV_MODULE(E)  idio_struct_instance_ref_direct((E), IDIO_EENV_ST_MODULE)
-#define IDIO_MEANING_EENV_ESCAPES(E) idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ESCAPES)
+#define IDIO_MEANING_EENV_AOTP(E)      idio_struct_instance_ref_direct((E), IDIO_EENV_ST_AOTP)
+#define IDIO_MEANING_EENV_SYMBOLS(E)   idio_struct_instance_ref_direct((E), IDIO_EENV_ST_SYMBOLS)
+#define IDIO_MEANING_EENV_OPERATORS(E) idio_struct_instance_ref_direct((E), IDIO_EENV_ST_OPERATORS)
+#define IDIO_MEANING_EENV_ST(E)        idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ST)
+#define IDIO_MEANING_EENV_CS(E)        idio_struct_instance_ref_direct((E), IDIO_EENV_ST_CS)
+#define IDIO_MEANING_EENV_CH(E)        idio_struct_instance_ref_direct((E), IDIO_EENV_ST_CH)
+#define IDIO_MEANING_EENV_VT(E)        idio_struct_instance_ref_direct((E), IDIO_EENV_ST_VT)
+#define IDIO_MEANING_EENV_MODULE(E)    idio_struct_instance_ref_direct((E), IDIO_EENV_ST_MODULE)
+#define IDIO_MEANING_EENV_ESCAPES(E)   idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ESCAPES)
 
 extern IDIO idio_evaluate_module;
 extern IDIO idio_evaluate_eenv_type;

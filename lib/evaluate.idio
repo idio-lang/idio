@@ -38,7 +38,23 @@ define (si-description si) (nth si 5)
 define (nt-param-i si)     (pht si)
 define (nt-param-j si)     (phtt si)
 
-export-struct-accessors-only %eenv	desc aot? chksum symbols st vt cs ch module escapes ses sps byte-code
+(export-struct-accessors-only %eenv
+			      desc
+			      aot?
+			      chksum
+			      symbols	; alist of (symbol symbol-info)
+			      operators	; alist of (operator-symbol symbol-info)
+			      st	; symbol table for VM
+			      cs	; constants table for VM
+			      ch	; constants hash for VM
+			      vt	; value table for VM
+			      module
+			      escapes
+			      ses	; source expressions for VM
+			      sps	; source properties for VM
+			      byte-code	; for VM
+			      xi	; set when imported as xenv
+)
 
 define (eenv-as-string eenv seen) {
   if (%eenv? eenv) {
@@ -234,6 +250,36 @@ define (meaning-extend-tables eenv name scope ci module desc set-symbol?) "
   vi
 }
 
+define (meaning-extend-operators eenv name desc) "
+
+" {
+  op-mod := find-module 'operator
+
+  ci := meaning-constants-lookup-or-extend eenv name
+
+  array-push! (%eenv-st eenv) ci
+
+  vt := %eenv-vt eenv
+  vi := array-length vt
+
+  array-push! vt 0
+
+  op-si := (list
+	    name
+	    scope
+	    vi
+	    ci
+	    0
+	    op-mod
+	    desc)
+
+  set-%eenv-operators! eenv (pair op-si (%eenv-operators eenv))
+
+  set-symbol! name (pt op-si) op-mod
+
+  vi
+}
+
 define (meaning-find-symbol-recurse name eenv scope recurse) {
   ;; We want to return the name-si for (what will be baseline)
   ;; primitives otherwise they'll become like the regular lookup of a
@@ -319,6 +365,18 @@ define (meaning-find-dynamic-symbol name eenv) {
 
 define (meaning-find-environ-symbol name eenv) {
   meaning-find-symbol-recurse name eenv 'environ #f
+}
+
+define (meaning-find-operator-symbol name eenv) {
+  operators-sym-si := assq name (%eenv-operators eenv)
+
+  if (not operators-sym-si) {
+    meaning-extend-operators eenv name "idio-precompilation"
+
+    operators-sym-si = assq name (%eenv-operators eenv)
+  }
+
+  pt operators-sym-si
 }
 
 ;; No meaning-predef-extend in Idio-land, C-land only
@@ -1256,18 +1314,11 @@ define (meaning-define-infix-operator src name pri e nametree flags eenv) {
     meaning-evaluation-error src "positive priority" pri
   }
 
-  op-mod := find-module 'operator
-  op-eenv := hash-ref %%eenv-map op-mod
+  ;; Step 1: find the existing symbol information for {name} or create
+  ;; a new one
+  si := meaning-find-operator-symbol name eenv
 
-  ;; Step 1: find the existing symbol for {name} or create a new one
-  si := meaning-find-toplevel-symbol name op-eenv
-
-  ci := meaning-constants-lookup-or-extend op-eenv name
-
-  op-id := si-si si
-
-  sym-si := list 'toplevel op-id ci 0 op-mod "define-infix-operator"
-  set-symbol! name sym-si op-mod
+  set-symbol! name si (find-module 'operator)
 
   ;; Step 2: rework the expression into some appropriate code and
   ;; compile
@@ -1315,7 +1366,7 @@ define (meaning-define-infix-operator src name pri e nametree flags eenv) {
     m = meaning src fe nametree flags eenv
   }
 
-  list I-INFIX-OPERATOR op-id pri m
+  list I-INFIX-OPERATOR (si-si si) pri m
 }
 
 define (meaning-define-postfix-operator src name pri e nametree flags eenv) {
@@ -1323,18 +1374,11 @@ define (meaning-define-postfix-operator src name pri e nametree flags eenv) {
     meaning-evaluation-error src "positive priority" pri
   }
 
-  op-mod := find-module 'operator
-  op-eenv := hash-ref %%eenv-map op-mod
+  ;; Step 1: find the existing symbol information for {name} or create
+  ;; a new one
+  si := meaning-find-operator-symbol name eenv
 
-  ;; Step 1: find the existing symbol for {name} or create a new one
-  si := meaning-find-toplevel-symbol name op-eenv
-
-  ci := meaning-constants-lookup-or-extend op-eenv name
-
-  op-id := si-si si
-
-  sym-si := list 'toplevel op-id ci 0 op-mod "define-postfix-operator"
-  set-symbol! name sym-si op-mod
+  set-symbol! name si (find-module 'operator)
 
   ;; Step 2: rework the expression into some appropriate code and
   ;; compile
@@ -1382,7 +1426,7 @@ define (meaning-define-postfix-operator src name pri e nametree flags eenv) {
     m = meaning src fe nametree flags eenv
   }
 
-  list I-POSTFIX-OPERATOR op-id pri m
+  list I-POSTFIX-OPERATOR (si-si si) pri m
 }
 
 define (meaning-define-dynamic src name e nametree flags eenv) {

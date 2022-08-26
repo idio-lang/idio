@@ -85,31 +85,6 @@ define (compile-file-writer file eenv pc) {
     write (%eenv-chksum eenv)
     puts "\n"
 
-    alen := array-length (%eenv-vt eenv)
-
-    puts #S{
-; The symbol/value table sizes
-${alen}
-}
-
-    st := %eenv-symbols eenv
-
-    puts #S{
-; The symbol table entries (si & ci)
-( }
-
-    for sym-si in (reverse st) {
-      si := pt sym-si
-      if (and (fixnum? (si-si si))
-	      (fixnum? (si-ci si))) {
-	write (pair (si-si si) (si-ci si))
-	puts " "
-      }
-    }
-
-    puts #S{)
-}
-
     ;; It's hard to avoid the (future) reader getting angsty about &
     ;; in constants, notably, SRFI-115 and its use of & as a term (as
     ;; a shorthand for the combining verb "and" -- which itself needs
@@ -133,16 +108,60 @@ ${alen}
     cs := %eenv-cs eenv
     puts #S{
 ; The ${array-length cs} constants
-#\[ }
+#\[
+}
 
     i := 0
     for c in cs {
+      puts "#* "
+      display i
+      puts " *# "
       write (escaped-constant c)
-      puts " ; "
-      display* i
+      (newline)
       i = i + 1
     }
     puts #S{\]
+}
+
+    puts #S{
+; The symbol/value table sizes
+${array-length (%eenv-st eenv)}
+}
+
+    symbols := %eenv-symbols eenv
+
+    puts #S{
+; The symbols in the symbol table (si & ci)
+( }
+
+    for sym-si in (reverse symbols) {
+      si := pt sym-si
+      if (and (fixnum? (si-si si))
+	      (fixnum? (si-ci si))) {
+	write (pair (si-si si) (si-ci si))
+	puts " "
+      }
+    }
+
+    puts #S{)
+}
+
+    operators := %eenv-operators eenv
+
+    puts #S{
+; The operators in the symbol table (si & ci)
+( }
+
+    for op-si in (reverse operators) {
+      si := pt op-si
+      if (and (fixnum? (si-si si))
+	      (fixnum? (si-ci si))) {
+	write (pair (si-si si) (si-ci si))
+	puts " "
+      }
+    }
+
+    puts #S{)
 }
 
     puts #S{
@@ -200,7 +219,7 @@ define (compile-file file & args) "
     eenv = ph args
     printf "compile-file: re-using eenv for %s\n" (%eenv-desc eenv)
   } {
-    eenv = %evaluation-environment file
+    eenv = %evaluation-environment (sprintf "compile-file %s" file)
     set-%eenv-aot?! eenv #t
   }
 

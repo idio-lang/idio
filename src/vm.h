@@ -193,9 +193,9 @@ typedef struct idio_xenv_s {
     IDIO st;			/* symbol table */
     IDIO cs;			/* constants */
     IDIO ch;			/* constants hash */
+    IDIO vt;			/* value table */
     IDIO ses;			/* src exprs */
     IDIO sps;			/* src properties */
-    IDIO vt;
     IDIO_IA_T byte_code;
 } idio_xenv_t;
 
@@ -205,9 +205,9 @@ typedef struct idio_xenv_s {
 #define IDIO_XENV_ST(X)        ((X)->st)
 #define IDIO_XENV_CS(X)        ((X)->cs)
 #define IDIO_XENV_CH(X)        ((X)->ch)
+#define IDIO_XENV_VT(X)        ((X)->vt)
 #define IDIO_XENV_SES(X)       ((X)->ses)
 #define IDIO_XENV_SPS(X)       ((X)->sps)
-#define IDIO_XENV_VT(X)        ((X)->vt)
 #define IDIO_XENV_BYTE_CODE(X) ((X)->byte_code)
 
 extern idio_xi_t idio_xenvs_size;
@@ -216,9 +216,9 @@ extern idio_xenv_t **idio_xenvs;
 #define IDIO_THREAD_ST(T)        IDIO_XENV_ST (idio_xenvs[IDIO_THREAD_XI(T)])
 #define IDIO_THREAD_CS(T)        IDIO_XENV_CS (idio_xenvs[IDIO_THREAD_XI(T)])
 #define IDIO_THREAD_CH(T)        IDIO_XENV_CH (idio_xenvs[IDIO_THREAD_XI(T)])
+#define IDIO_THREAD_VT(T)        IDIO_XENV_VT (idio_xenvs[IDIO_THREAD_XI(T)])
 #define IDIO_THREAD_SES(T)       IDIO_XENV_SES (idio_xenvs[IDIO_THREAD_XI(T)])
 #define IDIO_THREAD_SPS(T)       IDIO_XENV_SPS (idio_xenvs[IDIO_THREAD_XI(T)])
-#define IDIO_THREAD_VT(T)        IDIO_XENV_VT (idio_xenvs[IDIO_THREAD_XI(T)])
 #define IDIO_THREAD_BYTE_CODE(T) IDIO_XENV_BYTE_CODE (idio_xenvs[IDIO_THREAD_XI(T)])
 
 #define IDIO_VM_NS	1000000000L

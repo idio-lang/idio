@@ -1001,22 +1001,22 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_INFIX_OPERATOR:
 	    {
-		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
+		uint64_t oi = IDIO_VM_GET_REF (bc, pcp);
 		uint64_t pri = idio_vm_get_varuint (bc, pcp);
 
-		IDIO_VM_DASM ("INFIX-OPERATOR .%-4" PRIu64 " pri %4" PRIu64 " ", si, pri);
-		IDIO sym = idio_vm_symbols_ref (idio_operator_xi, si);
+		IDIO_VM_DASM ("INFIX-OPERATOR .%-4" PRIu64 " pri %4" PRIu64 " ", oi, pri);
+		IDIO sym = idio_vm_symbols_ref (xi, oi);
 		IDIO_TYPE_ASSERT (symbol, sym);
 		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
 	case IDIO_A_POSTFIX_OPERATOR:
 	    {
-		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
+		uint64_t oi = IDIO_VM_GET_REF (bc, pcp);
 		uint64_t pri = idio_vm_get_varuint (bc, pcp);
 
-		IDIO_VM_DASM ("POSTFIX-OPERATOR .%-4" PRIu64 " pri %4" PRIu64 " ", si, pri);
-		IDIO sym = idio_vm_symbols_ref (xi, si);
+		IDIO_VM_DASM ("POSTFIX-OPERATOR .%-4" PRIu64 " pri %4" PRIu64 " ", oi, pri);
+		IDIO sym = idio_vm_symbols_ref (xi, oi);
 		IDIO_TYPE_ASSERT (symbol, sym);
 		idio_debug_FILE (fp, "%s", sym);
 	    }
