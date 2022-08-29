@@ -2285,27 +2285,17 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, int
      */
 
     IDIO scope = IDIO_SI_SCOPE (si);
-    IDIO fci = IDIO_SI_CI (si);
     IDIO fgvi = IDIO_SI_VI (si);
     idio_as_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
     if (idio_S_toplevel == scope &&
 	0 == gvi &&
 	idio_S_false == IDIO_MEANING_EENV_AOTP (eenv)) {
-	idio_meaning_extend_tables (eenv,
-				    name,
-				    scope,
-				    fci,
-				    idio_S_false,
-				    idio_meaning_define_gvi0_string,
-				    1);
-
-	si = idio_module_find_symbol (name, IDIO_MEANING_EENV_MODULE (eenv));
-
 	gvi = idio_vm_extend_values (0);
 	fgvi = idio_fixnum (gvi);
 
 	IDIO_SI_VI (si) = fgvi;
+	IDIO_SI_DESCRIPTION (si) = idio_meaning_define_gvi0_string;
     }
 
     return idio_meaning_assignment (src, name, e, nametree, define_flags, eenv);

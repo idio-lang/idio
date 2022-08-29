@@ -28,12 +28,14 @@ export (
 import read expander operator codegen threading vm
 
 ;; symbol-info is a tuple: (scope si ci vi module description)
-define (si-scope si)       (ph si)
-define (si-si si)          (pht si)
-define (si-ci si)          (phtt si)
-define (si-vi si)          (nth si 3)
-define (si-module si)      (nth si 4)
-define (si-description si) (nth si 5)
+define (si-scope si)                 (ph si)
+define (si-si si)                    (pht si)
+define (si-ci si)                    (phtt si)
+define (si-vi si)                    (nth si 3)
+define (set-si-vi! si vi)            (set! si.3 vi)
+define (si-module si)                (nth si 4)
+define (si-description si)           (nth si 5)
+define (set-si-description! si desc) (set! si.5 desc)
 
 define (nt-param-i si)     (pht si)
 define (nt-param-j si)     (phtt si)
@@ -308,7 +310,7 @@ define (meaning-find-symbol-recurse name eenv scope recurse) {
 	symbols-si := pt symbols-sym-si
 
 	predef-vi := si-vi name-si
-	symbols-si.3 = predef-vi
+	set-si-vi! symbols-si predef-vi
 
 	;; also change the vt entry
 	vt := %eenv-vt eenv
@@ -643,7 +645,7 @@ define* (meaning-variable-info src nametree name flags eenv (recurse? #t)) {
 	si = meaning-find-toplevel-symbol name eenv
 
 	;; overwrite the gvi
-	si.3 = si-vi newer-si
+	set-si-vi! si (si-vi newer-si)
       }
     }
   }
@@ -1152,12 +1154,8 @@ define (meaning-define src name e nametree flags eenv) {
   if (and (eq? 'toplevel scope)
 	  (eq? 0 vi)
 	  (not (%eenv-aot? eenv))) {
-    meaning-extend-tables eenv name scope ci #f "meaning-define/gvi=0" #t
-
-    si = find-symbol name (%eenv-module eenv) #f
-
-    si.3 = (vm-extend-values)
-
+    set-si-vi! si (vm-extend-values)
+    set-si-description! si "meaning-define/gvi=0"
   }
 
   meaning-assignment src name e nametree define-flags eenv
