@@ -1160,12 +1160,12 @@ Does not return.						\n\
 	}
     }
 
-    static int resetting = 0;
-    if (resetting) {
+    static int idio_condition_resetting = 0;
+    if (idio_condition_resetting) {
 	fprintf (stderr, "reset-condition-handler: looping?\n");
 	exit (3);
     }
-    resetting = 1;
+    idio_condition_resetting = 1;
 
     fprintf (stderr, "reset-condition-handler: nothing to restore\n");
 

@@ -384,11 +384,11 @@ void idio_terminal_signal_handler (int sig)
      *
      * Following Bash, we'll avoiding repeating on ourselves.
      */
-    static int terminating = 0;
-    if (terminating) {
+    static int idio_terminating = 0;
+    if (idio_terminating) {
 	return;
     }
-    terminating = 1;
+    idio_terminating = 1;
 
     idio_remove_terminal_signals ();
 

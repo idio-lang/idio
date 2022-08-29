@@ -2385,7 +2385,7 @@ IDIO idio_hash_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     return r;
 }
 
-#ifdef IDIO_DEBUG
+#ifdef IDIO_HASH_TEST
 /*
  * Referencing
  * https://attractivechaos.wordpress.com/2019/12/28/deletion-from-hash-tables-without-tombstones/
@@ -2571,7 +2571,7 @@ void idio_hash_add_primitives ()
     IDIO_ADD_PRIMITIVE (fold_hash);
     IDIO_ADD_PRIMITIVE (copy_hash);
     IDIO_ADD_PRIMITIVE (merge_hash);
-#ifdef IDIO_DEBUG
+#ifdef IDIO_HASH_TEST
     IDIO_ADD_PRIMITIVE (unit_test_hash);
 #endif
 }
