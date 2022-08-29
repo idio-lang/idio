@@ -820,6 +820,17 @@ static IDIO idio_meaning_find_symbol (IDIO name, IDIO eenv, IDIO scope)
     return idio_meaning_find_symbol_recurse (name, eenv, scope, 0);
 }
 
+static IDIO idio_meaning_find_predef_symbol (IDIO name, IDIO eenv)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (eenv);
+
+    IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
+
+    return idio_meaning_find_symbol_recurse (name, eenv, idio_S_predef, 0);
+}
+
 static IDIO idio_meaning_find_toplevel_symbol (IDIO name, IDIO eenv)
 {
     IDIO_ASSERT (name);
@@ -927,71 +938,55 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
 
     IDIO eenv = idio_meaning_module_eenv (module, "predefs for");
 
-    IDIO si = idio_meaning_find_toplevel_symbol (name, eenv);
+    IDIO si = idio_meaning_find_predef_symbol (name, eenv);
 
-    if (idio_isa_pair (si)) {
-	IDIO fgvi = IDIO_SI_VI (si);
-	idio_as_t gvi = IDIO_FIXNUM_VAL (fgvi);
+    IDIO fgvi = IDIO_SI_VI (si);
+    idio_as_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
-	if (gvi) {
+    if (gvi) {
+	/*
+	 * Should only be called in C bootstrap
+	 */
+	IDIO pd = idio_vm_default_values_ref (gvi);
+
+	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
+	    idio_debug ("WARNING: predef-extend: %s: ", name);
+	    fprintf (stderr, "%p -> %p\n", IDIO_PRIMITIVE_F (pd), IDIO_PRIMITIVE_F (primdata));
+
 	    /*
-	     * Should only be called in C bootstrap
+	     * Tricky to generate a test case for this as it requires
+	     * that we really do redefine a primitive.
+	     *
+	     * It should catch any developer foobars, though.
 	     */
-	    IDIO pd = idio_vm_default_values_ref (gvi);
 
-	    if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
-		idio_debug ("WARNING: predef-extend: %s: ", name);
-		fprintf (stderr, "%p -> %p\n", IDIO_PRIMITIVE_F (pd), IDIO_PRIMITIVE_F (primdata));
+	    idio_meaning_error_static_redefine (name, IDIO_C_FUNC_LOCATION(), "primitive value change", name, pd, primdata);
 
-		/*
-		 * Tricky to generate a test case for this as it requires
-		 * that we really do redefine a primitive.
-		 *
-		 * It should catch any developer foobars, though.
-		 */
-
-		idio_meaning_error_static_redefine (name, IDIO_C_FUNC_LOCATION(), "primitive value change", name, pd, primdata);
-
-		return idio_S_notreached;
-	    } else {
-		return fgvi;
-	    }
+	    return idio_S_notreached;
 	}
+
+	return fgvi;
     }
 
-    idio_as_t ci = idio_meaning_constants_lookup_or_extend (eenv, name);
-    IDIO fci = idio_fixnum (ci);
-
-    idio_meaning_extend_tables (eenv,
-				name,
-				idio_S_predef,
-				fci,
-				module,
-				idio_meaning_predef_extend_string,
-				1);
-
-    idio_as_t gvi = idio_vm_extend_values (0);
-    IDIO fgvi = idio_fixnum (gvi);
-
-    IDIO symbols_sym_si = idio_list_assq (name, IDIO_MEANING_EENV_SYMBOLS (eenv));
-
     /*
-     * idio_meaning_extend_tables() doesn't set the symbol info for
-     * the initial environment.  So patch things up here.
+     * idio_meaning_extend_tables() will have created a toplevel entry
+     * with no vi so scribble over some of that data.
      */
-    IDIO sym_si = IDIO_LIST7 (name,
-			      idio_S_predef,
-			      IDIO_SI_SI (IDIO_PAIR_T (symbols_sym_si)),
-			      fci,
-			      fgvi,
-			      module,
-			      idio_meaning_predef_extend_string);
+    IDIO_SI_SCOPE (si) = idio_S_predef;
+
+    gvi = idio_vm_extend_values (0);
+    fgvi = idio_fixnum (gvi);
+    IDIO_SI_VI (si) = fgvi;
+
+    IDIO_SI_DESCRIPTION (si) = idio_meaning_predef_extend_string;
+
+    IDIO ssi = idio_pair (name, si);
 
     idio_struct_instance_set_direct (eenv,
 				     IDIO_EENV_ST_SYMBOLS,
-				     idio_pair (sym_si, IDIO_MEANING_EENV_SYMBOLS (eenv)));
+				     idio_pair (ssi, IDIO_MEANING_EENV_SYMBOLS (eenv)));
 
-    idio_module_set_symbol (name, IDIO_PAIR_T (sym_si), module);
+    idio_module_set_symbol (name, si, module);
 
     /*
      * idio_module_set_symbol_value() is a bit sniffy about setting
@@ -1042,24 +1037,22 @@ IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO eenv)
 
     IDIO si = idio_meaning_find_symbol (name, eenv, scope);
 
-    if (idio_isa_pair (si)) {
-	IDIO curscope = IDIO_SI_SCOPE (si);
-	if (scope != curscope) {
-	    if (idio_S_predef != curscope) {
-		/*
-		 * I'm not sure we can get here as once the name
-		 * exists in a toplevel then it we be found again
-		 * before we can re-extend the toplevel.
-		 *
-		 * One to look out for.
-		 */
-		idio_meaning_error_static_redefine (src, IDIO_C_FUNC_LOCATION (), "toplevel-extend: type change", name, si, scope);
+    IDIO curscope = IDIO_SI_SCOPE (si);
+    if (scope != curscope) {
+	if (idio_S_predef != curscope) {
+	    /*
+	     * I'm not sure we can get here as once the name
+	     * exists in a toplevel then it we be found again
+	     * before we can re-extend the toplevel.
+	     *
+	     * One to look out for.
+	     */
+	    idio_meaning_error_static_redefine (src, IDIO_C_FUNC_LOCATION (), "toplevel-extend: type change", name, si, scope);
 
-		return idio_S_notreached;
-	    }
-	} else {
-	    return IDIO_SI_SI (si);
+	    return idio_S_notreached;
 	}
+    } else {
+	return IDIO_SI_SI (si);
     }
 
 #ifdef IDIO_EVALUATE_DEBUG
@@ -1070,6 +1063,9 @@ IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO eenv)
     }
 #endif
 
+    /*
+     * We get here in the C codebase when we shadow predefs
+     */
     idio_as_t ci = idio_meaning_constants_lookup_or_extend (eenv, name);
     IDIO fci = idio_fixnum (ci);
 
@@ -1112,24 +1108,22 @@ IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO eenv)
 
     idio_as_t gvi = 0;
 
-    if (idio_isa_pair (si)) {
-	IDIO scope = IDIO_SI_SCOPE (si);
+    IDIO scope = IDIO_SI_SCOPE (si);
 
-	if (idio_S_dynamic != scope) {
-	    /*
-	     * I'm not sure we can get here as once the name exists in
-	     * a toplevel then it we be found again before we can
-	     * re-extend the toplevel.
-	     *
-	     * One to look out for.
-	     */
-	    idio_meaning_error_static_redefine (src, IDIO_C_FUNC_LOCATION (), "dynamic-extend: type change", name, si, scope);
+    if (idio_S_dynamic != scope) {
+	/*
+	 * I'm not sure we can get here as once the name exists in
+	 * a toplevel then it we be found again before we can
+	 * re-extend the toplevel.
+	 *
+	 * One to look out for.
+	 */
+	idio_meaning_error_static_redefine (src, IDIO_C_FUNC_LOCATION (), "dynamic-extend: type change", name, si, scope);
 
-	    return idio_S_notreached;
-	} else {
-	    IDIO fgvi = IDIO_SI_VI (si);
-	    gvi = IDIO_FIXNUM_VAL (fgvi);
-	}
+	return idio_S_notreached;
+    } else {
+	IDIO fgvi = IDIO_SI_VI (si);
+	gvi = IDIO_FIXNUM_VAL (fgvi);
     }
 
     if (0 == gvi) {
@@ -1178,24 +1172,22 @@ IDIO idio_environ_extend (IDIO src, IDIO name, IDIO val, IDIO eenv)
 
     idio_as_t gvi = 0;
 
-    if (idio_isa_pair (si)) {
-	IDIO scope = IDIO_SI_SCOPE (si);
+    IDIO scope = IDIO_SI_SCOPE (si);
 
-	if (idio_S_environ != scope) {
-	    /*
-	     * I'm not sure we can get here as once the name exists in
-	     * a toplevel then it we be found again before we can
-	     * re-extend the toplevel.
-	     *
-	     * One to look out for.
-	     */
-	    idio_meaning_error_static_redefine (src, IDIO_C_FUNC_LOCATION (), "environ-extend: type change", name, si, scope);
+    if (idio_S_environ != scope) {
+	/*
+	 * I'm not sure we can get here as once the name exists in
+	 * a toplevel then it we be found again before we can
+	 * re-extend the toplevel.
+	 *
+	 * One to look out for.
+	 */
+	idio_meaning_error_static_redefine (src, IDIO_C_FUNC_LOCATION (), "environ-extend: type change", name, si, scope);
 
-	    return idio_S_notreached;
-	} else {
-	    IDIO fgvi = IDIO_SI_VI (si);
-	    gvi = IDIO_FIXNUM_VAL (fgvi);
-	}
+	return idio_S_notreached;
+    } else {
+	IDIO fgvi = IDIO_SI_VI (si);
+	gvi = IDIO_FIXNUM_VAL (fgvi);
     }
 
     if (0 == gvi) {
@@ -1461,44 +1453,25 @@ static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int 
 	 */
         si = idio_meaning_find_symbol_recurse (name, eenv, scope, recurse);
 
-	if (idio_S_false == si) {
+	/*
+	 * The "semantically dubious" act of shadowing predefs catches
+	 * us out here too and the problem is more subtle.
+	 *
+	 * In this case a different eenv to us has shadowed the predef
+	 * and the only way for us to know is to look the symbol up in
+	 * the module and see if the scope has changed from (our)
+	 * 'predef to (their) 'toplevel.  If so we need to extend our
+	 * own tables and swap in the gvi from the newer_si (otherwise
+	 * we get the symbol itself).
+	 */
+	if (idio_S_predef == IDIO_SI_SCOPE (si)) {
+	    IDIO newer_si = idio_module_find_symbol_recurse (name, IDIO_MEANING_EENV_MODULE (eenv), 0);
 
-	    /* is name M/S ? */
-	    IDIO sdr = idio_module_direct_reference (name);
-
-	    if (idio_isa_pair (sdr)) {
-		/* (M S si) */
-		si = IDIO_PAIR_HTT (sdr);
-		idio_module_set_symbol (name, si, IDIO_MEANING_EENV_MODULE (eenv));
-	    } else {
-		/*
-		 * auto-extend the toplevel with this unknown variable
-		 * -- we should (eventually) see a definition for it
-		 */
+	    if (idio_S_false != newer_si &&
+		idio_S_toplevel == IDIO_SI_SCOPE (newer_si)) {
 		idio_toplevel_extend (src, name, flags, eenv);
 		si = idio_meaning_find_toplevel_symbol (name, eenv);
-	    }
-	} else {
-	    /*
-	     * The "semantically dubious" act of shadowing predefs
-	     * catches us out here too and the problem is more subtle.
-	     *
-	     * In this case a different eenv to us has shadowed the
-	     * predef and the only way for us to know is to look the
-	     * symbol up in the module and see if the scope has
-	     * changed from (our) 'predef to (their) 'toplevel.  If so
-	     * we need to extend our own tables and swap in the gvi
-	     * from the newer_si (otherwise we get the symbol itself).
-	     */
-	    if (idio_S_predef == IDIO_SI_SCOPE (si)) {
-		IDIO newer_si = idio_module_find_symbol_recurse (name, IDIO_MEANING_EENV_MODULE (eenv), 0);
-
-		if (idio_S_false != newer_si &&
-		    idio_S_toplevel == IDIO_SI_SCOPE (newer_si)) {
-		    idio_toplevel_extend (src, name, flags, eenv);
-		    si = idio_meaning_find_toplevel_symbol (name, eenv);
-		    IDIO_SI_VI (si) = IDIO_SI_VI (newer_si);
-		}
+		IDIO_SI_VI (si) = IDIO_SI_VI (newer_si);
 	    }
 	}
     }
@@ -4288,14 +4261,7 @@ static IDIO idio_meaning_dynamic_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
     IDIO sym_idx;
     IDIO si = idio_meaning_find_symbol_recurse (name, eenv, idio_S_dynamic, 1);
 
-    if (idio_isa_pair (si)) {
-	sym_idx = IDIO_SI_SI (si);
-    } else {
-	/*
-	 * Get a new toplevel for this dynamic variable
-	 */
-	sym_idx = idio_toplevel_extend (src, name, IDIO_MEANING_DYNAMIC_SCOPE (flags), eenv);
-    }
+    sym_idx = IDIO_SI_SI (si);
 
     /*
      * Tell the tree of "locals" about this dynamic variable and find
@@ -4356,14 +4322,7 @@ static IDIO idio_meaning_environ_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
     IDIO sym_idx;
     IDIO si = idio_meaning_find_symbol_recurse (name, eenv, idio_S_environ, 1);
 
-    if (idio_isa_pair (si)) {
-	sym_idx = IDIO_SI_SI (si);
-    } else {
-	/*
-	 * Get a new toplevel for this environ variable
-	 */
-	sym_idx = idio_toplevel_extend (src, name, IDIO_MEANING_ENVIRON_SCOPE (flags), eenv);
-    }
+    sym_idx = IDIO_SI_SI (si);
 
     /*
      * Tell the tree of "locals" about this environ variable and find
@@ -4461,13 +4420,7 @@ static IDIO idio_meaning_trap (IDIO src, IDIO ce, IDIO he, IDIO be, IDIO nametre
 	IDIO fci;
 	IDIO si = idio_meaning_find_symbol_recurse (cname, eenv, idio_S_toplevel, 1);
 
-	if (idio_isa_pair (si)) {
-	    fci = IDIO_SI_SI (si);
-	} else {
-	    idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION (), "trap: unknown condition name", cname);
-
-	    return idio_S_notreached;
-	}
+	fci = IDIO_SI_SI (si);
 
 	pushs = idio_pair (IDIO_LIST2 (IDIO_I_PUSH_TRAP, fci), pushs);
 	pops = idio_pair (IDIO_LIST1 (IDIO_I_POP_TRAP), pops);

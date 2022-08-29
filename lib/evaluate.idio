@@ -392,33 +392,32 @@ define (meaning-toplevel-extend src name flags eenv) {
 
   si := meaning-find-symbol name eenv scope
 
-  if (pair? si) {
-    cur-scope := si-scope si
+  cur-scope := si-scope si
 
-    if (not (eq? cur-scope scope)) {
-      meaning-error-static-redefine src "toplevel-extend: type change" name si scope
-    } {
-      si-si si
-    }
+  if (not (eq? cur-scope scope)) {
+    meaning-error-static-redefine src "toplevel-extend: type change" name si scope
   } {
-    (cond-expand
-     (IDIO_EVALUATE_DEBUG {
-       if (and (eq? scope 'toplevel)
-	       (not (eval-flags-define flags))) {
-	 eprintf "toplevel-extend: forward reference: %s at %s\n" name (meaning-error-location src)
-       }
-     }))
-
-    ci := meaning-constants-lookup-or-extend eenv name
-
-    ;; NB a vi of 0 indicates an unresolved value index to be resolved
-    ;; (based on the current set of imports) during runtime
-    meaning-extend-tables eenv name scope ci #f "meaning-toplevel-extend" #t
-
-    si = meaning-find-symbol name eenv scope
-
     si-si si
   }
+
+  (cond-expand
+   (IDIO_EVALUATE_DEBUG {
+     if (and (eq? scope 'toplevel)
+	     (not (eval-flags-define flags))) {
+       eprintf "toplevel-extend: forward reference: %s at %s\n" name (meaning-error-location src)
+     }
+   }))
+
+  ;; We get here in the C codebase when we shadow predefs
+  ci := meaning-constants-lookup-or-extend eenv name
+
+  ;; NB a vi of 0 indicates an unresolved value index to be resolved
+  ;; (based on the current set of imports) during runtime
+  meaning-extend-tables eenv name scope ci #f "meaning-toplevel-extend" #t
+
+  si = meaning-find-symbol name eenv scope
+
+  si-si si
 }
 
 ;; idio_dynamic_extend() is only called from C
@@ -435,17 +434,15 @@ define (meaning-environ-extend src name val eenv) {
 
   gvi := 0
 
-  if (pair? si) {
-    cur-scope := si-scope si
+  cur-scope := si-scope si
 
-    if (not (eq? cur-scope 'environ)) {
-      meaning-error-static-redefine src "environ-extend: type change" name si cur-scope
-    } {
-      gvi = si-vi si
-    }
+  if (not (eq? cur-scope 'environ)) {
+    meaning-error-static-redefine src "environ-extend: type change" name si cur-scope
+  } {
+    gvi = si-vi si
   }
 
-  if (eq? vi 0) {
+  if (eq? gvi 0) {
     ci := meaning-constants-lookup-or-extend environ-eenv name
     meaning-extend-tables environ-eenv name 'environ ci #f "meaning-environ-extend" #t
 
@@ -616,7 +613,14 @@ define (meaning-nametree-dynamic-extend nametree name index scope) {
 define* (meaning-variable-info src nametree name flags eenv (recurse? #t)) {
   si := meaning-lexical-lookup src nametree name
 
-  if si {
+  if (not si) {
+    ;; NOTICE This must be a recursive lookup.  Otherwise we'll not
+    ;; see any bindings in Idio.
+    ;;
+    ;; Unless we're defining something in which case we must NOT
+    ;; recurse...although that's down to our caller to decide
+    si = meaning-find-symbol-recurse name eenv (eval-flags-scope flags) recurse?
+
     ;; The "semantically dubious" act of shadowing predefs catches us
     ;; out here too and the problem is more subtle.
     ;;
@@ -640,30 +644,6 @@ define* (meaning-variable-info src nametree name flags eenv (recurse? #t)) {
 
 	;; overwrite the gvi
 	si.3 = si-vi newer-si
-      }
-    }
-  } {
-    ;; NOTICE This must be a recursive lookup.  Otherwise we'll not
-    ;; see any bindings in Idio.
-    ;;
-    ;; Unless we're defining something in which case we must NOT
-    ;; recurse...although that's down to our caller to decide
-    si = meaning-find-symbol-recurse name eenv (eval-flags-scope flags) recurse?
-
-    if (not si) {
-      ; is name M/S ?
-      sdr := symbol-direct-reference name
-
-      if sdr {
-	;; (M S si))
-	si = phtt sdr
-	set-symbol! name si (%eenv-module eenv)
-      } {
-	; not found -> (auto) extend toplevel
-	meaning-toplevel-extend src name flags eenv
-
-	; meaning-toplevel-extend only returns a ci
-	si = meaning-find-toplevel-symbol name eenv
       }
     }
   }
@@ -2365,11 +2345,7 @@ define (meaning-dynamic-let src name e e+ nametree flags eenv) {
 
   sym-idx := #f
 
-  if (pair? si) {
-    sym-idx = si-si si
-  } {
-    sym-idx = meaning-toplevel-extend src name (set-scope 'dynamic flags) eenv
-  }
+  sym-idx = si-si si
 
   nt+ := meaning-nametree-dynamic-extend nametree name sym-idx 'dynamic
 
@@ -2398,11 +2374,7 @@ define (meaning-environ-let src name e e+ nametree flags eenv) {
 
   sym-idx := #f
 
-  if (pair? si) {
-    sym-idx = si-si si
-  } {
-    sym-idx = meaning-toplevel-extend src name (set-scope 'environ flags) eenv
-  }
+  sym-idx = si-si si
 
   nt+ := meaning-nametree-dynamic-extend nametree name sym-idx 'environ
 
@@ -2459,11 +2431,7 @@ define (meaning-trap src ce he be nametree flags eenv) {
       ci := #f
 
       si := meaning-find-symbol-recurse c-sym eenv 'toplevel #t
-      if (pair? si) {
-	ci = si-si si
-      } {
-	error/type ^rt-parameter-value-error 'meaning-trap "condition name unknown" c-sym
-      }
+      ci = si-si si
 
       pushs = pair (list I-PUSH-TRAP ci) pushs
       pops = pair (list I-POP-TRAP) pops
