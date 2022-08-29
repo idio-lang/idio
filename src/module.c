@@ -1638,7 +1638,7 @@ IDIO idio_module_set_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO value, IDI
 	if (xi) {
 	    idio_vm_values_set (xi, IDIO_FIXNUM_VAL (sym_idx), fgvi);
 	}
-	IDIO_SI_VI (si) = idio_fixnum (gvi);
+	IDIO_SI_VI (si) = fgvi;
     }
 
     if (idio_S_toplevel == scope) {

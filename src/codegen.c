@@ -1081,67 +1081,21 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (ci));
 	}
 	break;
-    case IDIO_I_CODE_VAL_REF:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("VAL-REF gvi", mt, IDIO_C_FUNC_LOCATION_S ("VAL-REF"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO gvi = IDIO_PAIR_H (mt);
-
-	    if (! idio_isa_fixnum (gvi)) {
-		idio_codegen_error_param_type ("fixnum", gvi, IDIO_C_FUNC_LOCATION_S ("VAL-REF"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO_IA_PUSH1 (IDIO_A_VAL_REF);
-	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (gvi));
-	}
-	break;
-    case IDIO_I_CODE_FUNCTION_VAL_REF:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("FUNCTION-VAL-REF gvi", mt, IDIO_C_FUNC_LOCATION_S ("FUNCTION-VAL-REF"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO gvi = IDIO_PAIR_H (mt);
-
-	    if (! idio_isa_fixnum (gvi)) {
-		idio_codegen_error_param_type ("fixnum", gvi, IDIO_C_FUNC_LOCATION_S ("FUNCTION-VAL-REF"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO_IA_PUSH1 (IDIO_A_FUNCTION_VAL_REF);
-	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (gvi));
-	}
-	break;
     case IDIO_I_CODE_VAL_SET:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
-		idio_codegen_error_param_args ("VAL-SET e gvi m1", mt, IDIO_C_FUNC_LOCATION_S ("VAL-SET"));
+		idio_codegen_error_param_args ("VAL-SET e vi m1", mt, IDIO_C_FUNC_LOCATION_S ("VAL-SET"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO e   = IDIO_PAIR_H (mt);
-	    IDIO gvi = IDIO_PAIR_HT (mt);
+	    IDIO e  = IDIO_PAIR_H (mt);
+	    IDIO vi = IDIO_PAIR_HT (mt);
 
-	    if (! idio_isa_fixnum (gvi)) {
-		idio_codegen_error_param_type ("fixnum", gvi, IDIO_C_FUNC_LOCATION_S ("VAL-SET"));
+	    if (! idio_isa_fixnum (vi)) {
+		idio_codegen_error_param_type ("fixnum", vi, IDIO_C_FUNC_LOCATION_S ("VAL-SET"));
 
 		/* notreached */
 		return;
@@ -1154,7 +1108,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 	    IDIO_CODEGEN_SRC_EXPR (ia, e, eenv);
 
 	    IDIO_IA_PUSH1 (IDIO_A_VAL_SET);
-	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (gvi));
+	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (vi));
 	}
 	break;
     case IDIO_I_CODE_PREDEFINED:
@@ -3113,5 +3067,5 @@ void idio_init_codegen ()
 			    idio_S_2string,
 			    idio_vtable_create_method_simple (idio_constant_i_code_method_2string));
 
-    IDIO_C_STRUCT_IDENT_DEF (IDIO_SYMBOL ("struct-idio-ia-s"), idio_S_nil, idio_ia_s, idio_fixnum (0));
+    IDIO_C_STRUCT_IDENT_DEF (IDIO_SYMBOL ("struct-idio-ia-s"), idio_S_nil, idio_ia_s, idio_fixnum0);
 }

@@ -116,9 +116,6 @@ char const *idio_vm_bytecode2string (int code)
     case IDIO_A_COMPUTED_SYM_SET:         r = "A-COMPUTED-SYM-SET";         break;
     case IDIO_A_COMPUTED_SYM_DEF:         r = "A-COMPUTED-SYM-DEF";         break;
 
-    case IDIO_A_VAL_REF:                  r = "A-VAL-REF";                  break;
-    case IDIO_A_FUNCTION_VAL_REF:         r = "A-FUNCTION-VAL-REF";         break;
-
     case IDIO_A_VAL_SET:                  r = "A-VAL-SET";                  break;
 
     case IDIO_A_PREDEFINED0:              r = "A-PREDEFINED0";              break;
@@ -457,20 +454,6 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
 
 		IDIO_VM_DASM ("COMPUTED-SYM-DEF .%-4" PRIu64 "", si);
-	    }
-	    break;
-	case IDIO_A_VAL_REF:
-	    {
-		uint64_t vi = IDIO_VM_GET_REF (bc, pcp);
-
-		IDIO_VM_DASM ("VAL-REF .%-4" PRIu64 "", vi);
-	    }
-	    break;
-	case IDIO_A_FUNCTION_VAL_REF:
-	    {
-		uint64_t vi = IDIO_VM_GET_REF (bc, pcp);
-
-		IDIO_VM_DASM ("FUNCTION-VAL-REF .%-4" PRIu64 "", vi);
 	    }
 	    break;
 	case IDIO_A_VAL_SET:

@@ -4386,6 +4386,8 @@ void idio_vm_iset_val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, IDI
 	si_ce = idio_module_find_symbol (sym, ce);
 
 	idio_vm_values_set (xi, vi, fgvi);
+
+	IDIO_SI_VI (si_ce) = fgvi;
     }
 
     idio_vm_values_set (0, gvi, val);
@@ -4776,34 +4778,6 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO val = IDIO_THREAD_VAL (thr);
 
 	    idio_vm_computed_define (0, si, gvi, val);
-	}
-	break;
-    case IDIO_A_VAL_REF:
-	{
-	    uint64_t gvi = IDIO_VM_FETCH_REF (thr, bc);
-
-	    IDIO_VM_RUN_DIS ("%-17s   %" PRIu64, "VAL-REF", gvi);
-
-	    if (gvi) {
-		IDIO_THREAD_VAL (thr) = idio_vm_values_ref (xi, gvi);
-	    } else {
-		fprintf (stderr, "VAL-REF: gvi == 0\n");
-		IDIO_C_ASSERT (0);
-	    }
-	}
-	break;
-    case IDIO_A_FUNCTION_VAL_REF:
-	{
-	    uint64_t gvi = IDIO_VM_FETCH_REF (thr, bc);
-
-	    IDIO_VM_RUN_DIS ("%-17s   %" PRIu64, "FUNCTION-VAL-REF", gvi);
-
-	    if (gvi) {
-		IDIO_THREAD_VAL (thr) = idio_vm_values_ref (xi, gvi);
-	    } else {
-		fprintf (stderr, "FUNCTION-VAL-REF: gvi == 0\n");
-		IDIO_C_ASSERT (0);
-	    }
 	}
 	break;
     case IDIO_A_VAL_SET:

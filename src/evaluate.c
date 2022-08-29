@@ -2577,7 +2577,7 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     IDIO sym_si = IDIO_LIST6 (idio_S_toplevel,
 			      sym_idx,
 			      fci,
-			      idio_fixnum (0),
+			      idio_fixnum0,
 			      cm,
 			      docstr);
 
@@ -5868,20 +5868,20 @@ IDIO idio_evaluate_eenv (IDIO thr, IDIO desc, IDIO module)
     eenv = idio_struct_instance (idio_evaluate_eenv_type,
 				 idio_listv (IDIO_EENV_ST_SIZE,
 					     desc,
-					     idio_S_false,                       /* aot? */
-					     idio_S_false,                       /* chksum */
-					     idio_S_nil,                         /* symbols */
-					     idio_S_nil,                         /* operators */
-					     idio_array (0),                     /* st */
-					     idio_array (0),                     /* cs */
-					     IDIO_HASH_EQP (8),                  /* ch */
-					     idio_array_dv (0, idio_fixnum (0)), /* vt */
+					     idio_S_false,                    /* aot? */
+					     idio_S_false,                    /* chksum */
+					     idio_S_nil,                      /* symbols */
+					     idio_S_nil,                      /* operators */
+					     idio_array (0),                  /* st */
+					     idio_array (0),                  /* cs */
+					     IDIO_HASH_EQP (8),               /* ch */
+					     idio_array_dv (0, idio_fixnum0), /* vt */
 					     module,
-					     idio_S_nil,                         /* escapes */
-					     idio_array (0),                     /* ses */
-					     idio_array (0),                     /* sps */
+					     idio_S_nil,                      /* escapes */
+					     idio_array (0),                  /* ses */
+					     idio_array (0),                  /* sps */
 					     CPT_byte_code,
-					     idio_S_false                        /* xi */
+					     idio_S_false                     /* xi */
 				     ));
 
     idio_vm_add_xenv_from_eenv (thr, eenv);
