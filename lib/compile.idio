@@ -48,7 +48,8 @@ define (compile-file-writer file eenv pc) {
     desc := %eenv-desc eenv
 
     puts #S{
-; This is the execution environment for ${desc}
+; This is the execution environment for:
+; ${desc}
 }
     if (not (equal? desc file)) {
       puts #S{; found as ${file}
@@ -164,16 +165,25 @@ ${array-length (%eenv-st eenv)}
     puts #S{)
 }
 
+    bc := %eenv-byte-code eenv
+    bs := idio-ia->string bc
+    bs-len := string-length bs
+
+    ;; Hmm.  Empty files result in a PC of len(prologue) with the
+    ;; expectation that there is some code...
+    if (pc ge bs-len) {
+      ;; We need to do better than "just knowing" that the last opcode
+      ;; is RETURN!
+      pc = bs-len - 1
+    }
+
     puts #S{
 ; The initial program counter
 ${pc}
 }
 
-    bc := %eenv-byte-code eenv
-    bs := idio-ia->string bc
-
     puts #S{
-; The xenv byte code (${string-length bs} bytes)
+; The xenv byte code (${bs-len} bytes)
 }
 
     write bs

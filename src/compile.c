@@ -316,7 +316,7 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 	return 0;
     }
 
-    idio_as_t cs_alen = idio_array_size (cs);
+    idio_ai_t cs_alen = idio_array_size (cs);
 
 #ifdef IDIO_COMPILE_FILE_READ
     fprintf (stderr, "cs #%zu ", cs_alen);
@@ -342,7 +342,14 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
     idio_debug ("st_alen %s ", st_alen);
 #endif
 
-    idio_as_t C_st_alen = IDIO_FIXNUM_VAL (st_alen);
+    idio_ai_t C_st_alen = IDIO_FIXNUM_VAL (st_alen);
+
+    if (C_st_alen < 0) {
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "symbol table size %zd is negative in %s\n", C_st_alen, file);
+#endif
+	return 0;
+    }
 
     /*
      * symbols symbol table entries
@@ -362,7 +369,7 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 
     IDIO symbols = idio_S_nil;
 
-    idio_as_t max_sci = 0;
+    idio_ai_t max_sci = -1;
     IDIO st = idio_array (C_st_alen);
     /* enable all array elements */
     IDIO_ARRAY_USIZE (st) = C_st_alen;
@@ -374,7 +381,7 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 	if (! idio_isa_fixnum (si)) {
 	    return 0;
 	}
-	idio_as_t C_si = IDIO_FIXNUM_VAL (si);
+	idio_ai_t C_si = IDIO_FIXNUM_VAL (si);
 
 	if (C_si >= C_st_alen) {
 #ifdef IDIO_DEBUG
@@ -393,7 +400,7 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 #endif
 		return 0;
 	    }
-	    idio_as_t C_ci = IDIO_FIXNUM_VAL (ci);
+	    idio_ai_t C_ci = IDIO_FIXNUM_VAL (ci);
 
 	    idio_array_insert_index (st, ci, C_si);
 
@@ -434,7 +441,7 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 
     IDIO operators = idio_S_nil;
 
-    idio_as_t max_oci = 0;
+    idio_ai_t max_oci = -1;
 
     while (idio_S_nil != ote) {
 	IDIO si_ci = IDIO_PAIR_H (ote);
@@ -443,7 +450,7 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 	if (! idio_isa_fixnum (si)) {
 	    return 0;
 	}
-	idio_as_t C_si = IDIO_FIXNUM_VAL (si);
+	idio_ai_t C_si = IDIO_FIXNUM_VAL (si);
 
 	if (C_si >= C_st_alen) {
 #ifdef IDIO_DEBUG
@@ -462,7 +469,7 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 #endif
 		return 0;
 	    }
-	    idio_as_t C_ci = IDIO_FIXNUM_VAL (ci);
+	    idio_ai_t C_ci = IDIO_FIXNUM_VAL (ci);
 
 	    idio_array_insert_index (st, ci, C_si);
 
