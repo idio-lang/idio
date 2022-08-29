@@ -116,7 +116,7 @@ static const uint8_t idio_utf8d[] = {
     12,36,12,12,12,12,12,12,12,12,12,12,
 };
 
-static char const *hex_DIGITS = "0123456789ABCDEF";
+static char const *idio_unicode_hex_DIGITS = "0123456789ABCDEF";
 
 inline idio_unicode_t idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, idio_unicode_t byte)
 {
@@ -498,8 +498,8 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	} else if (hex) {
 	    r[n++] = '\\';
 	    r[n++] = 'x';
-	    r[n++] = hex_DIGITS[(c & 0xf0) >> 4];
-	    r[n++] = hex_DIGITS[(c & 0x0f)];
+	    r[n++] = idio_unicode_hex_DIGITS[(c & 0xf0) >> 4];
+	    r[n++] = idio_unicode_hex_DIGITS[(c & 0x0f)];
 	} else {
 	    if (is_pathname ||
 		is_octet) {

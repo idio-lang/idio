@@ -147,7 +147,7 @@ int idio_usi_isa (IDIO o, int flag)
 
 void idio_usi_describe_code_point (idio_unicode_t cp)
 {
-    static char const *case_names[] = {
+    static char const *idio_usi_case_names[] = {
 	"Uppercase",
 	"Lowercase",
 	"Titlecase",
@@ -238,7 +238,7 @@ void idio_usi_describe_code_point (idio_unicode_t cp)
     }
     for (int i = 0; i < 3; i++) {
 	if (var->cases[i]) {
-	    idio_display_C (case_names[i], oh);
+	    idio_display_C (idio_usi_case_names[i], oh);
 	    blen = idio_snprintf (buf, 30, "=%04X ", cp + var->cases[i]);
 	    idio_display_C_len (buf, blen, oh);
 	}
@@ -610,7 +610,7 @@ typedef struct SRFI_14_char_set_s {
     char const *name;
 } SRFI_14_char_set_t;
 
-const SRFI_14_char_set_t SRFI_14_char_sets[] = {
+const SRFI_14_char_set_t idio_usi_SRFI_14_char_sets[] = {
     { lower_case,             "char-set:lower-case" },
     { upper_case,             "char-set:upper-case" },
     { title_case,             "char-set:title-case" },
@@ -729,13 +729,13 @@ void idio_init_usi_wrap ()
 	css[csi] = idio_struct_instance (sparse_char_set_type, IDIO_LIST2 (idio_integer (IDIO_UNICODE_SIZE), as[csi]));
 
 	/*
-	 * The longest SRFI_14_char_sets[csi].name is 31 chars hence
+	 * The longest idio_usi_SRFI_14_char_sets[csi].name is 31 chars hence
 	 * the strnlen (..., 40) magic number to allow some future
 	 * leeway.
 	 *
 	 * strnlen rather that idio_strnlen during bootstrap
 	 */
-	idio_module_export_symbol_value (idio_symbols_C_intern (SRFI_14_char_sets[csi].name, strnlen (SRFI_14_char_sets[csi].name, 40)), css[csi], idio_SRFI_14_module);
+	idio_module_export_symbol_value (idio_symbols_C_intern (idio_usi_SRFI_14_char_sets[csi].name, strnlen (idio_usi_SRFI_14_char_sets[csi].name, 40)), css[csi], idio_SRFI_14_module);
     }
     idio_free (css);
 
