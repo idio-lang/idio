@@ -223,7 +223,7 @@ shasum the string `s`			\n\
     return idio_rfc6234_shasum_string (s, alg);
 }
 
-char *idio_rfc6234_shasum_fd (char const *func, int fd, IDIO alg, int *rblp)
+char *idio_rfc6234_shasum_fd_C (char const *func, int fd, IDIO alg, int *rblp)
 {
     IDIO_ASSERT (alg);
 
@@ -316,6 +316,23 @@ char *idio_rfc6234_shasum_fd (char const *func, int fd, IDIO alg, int *rblp)
     return r_buf;
 }
 
+IDIO idio_rfc6234_shasum_fd (char const *func, int fd, IDIO alg)
+{
+    IDIO_C_ASSERT (func);
+    IDIO_ASSERT (alg);
+
+    IDIO_TYPE_ASSERT (symbol, alg);
+
+    int r_buf_len = 0;
+    char *r_buf = idio_rfc6234_shasum_fd_C ("shasum-fd", fd, alg, &r_buf_len);
+
+    IDIO r = idio_string_C_len (r_buf, r_buf_len);
+
+    IDIO_GC_FREE (r_buf, r_buf_len);
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1V_DS ("shasum-fd", rfc6234_shasum_fd, (IDIO fd, IDIO args), "fd [alg]", "\
 shasum the contents from `fd`		\n\
 					\n\
@@ -348,8 +365,28 @@ shasum the contents from `fd`		\n\
 	IDIO_USER_TYPE_ASSERT (symbol, alg);
     }
 
+    return idio_rfc6234_shasum_fd ("shasum-fd", IDIO_C_TYPE_int (fd), alg);
+}
+
+/*
+ * idio_rfc6234_shasum_file must open a file which can trigger a GC so
+ * if you call this you need to protect your C automatic variables
+ */
+IDIO idio_rfc6234_shasum_file (char const *func, IDIO file, IDIO alg)
+{
+    IDIO_C_ASSERT (func);
+    IDIO_ASSERT (file);
+    IDIO_ASSERT (alg);
+
+    IDIO_TYPE_ASSERT (string, file);
+    IDIO_TYPE_ASSERT (symbol, alg);
+
+    IDIO fh = idio_file_handle_open_file (func, file, idio_S_nil, IDIO_MODE_RE, sizeof (IDIO_MODE_RE) - 1);
+
     int r_buf_len = 0;
-    char *r_buf = idio_rfc6234_shasum_fd ("shasum-fd", IDIO_C_TYPE_int (fd), alg, &r_buf_len);
+    char *r_buf = idio_rfc6234_shasum_fd_C (func, IDIO_FILE_HANDLE_FD (fh), alg, &r_buf_len);
+
+    idio_close_file_handle (fh);
 
     IDIO r = idio_string_C_len (r_buf, r_buf_len);
 
@@ -390,18 +427,7 @@ shasum the contents of `file`		\n\
 	IDIO_USER_TYPE_ASSERT (symbol, alg);
     }
 
-    IDIO fh = idio_file_handle_open_file ("shasum-file", file, idio_S_nil, IDIO_MODE_RE, sizeof (IDIO_MODE_RE) - 1);
-
-    int r_buf_len = 0;
-    char *r_buf = idio_rfc6234_shasum_fd ("shasum-file", IDIO_FILE_HANDLE_FD (fh), alg, &r_buf_len);
-
-    idio_close_file_handle (fh);
-
-    IDIO r = idio_string_C_len (r_buf, r_buf_len);
-
-    IDIO_GC_FREE (r_buf, r_buf_len);
-
-    return r;
+    return idio_rfc6234_shasum_file ("shasum-file", file, alg);
 }
 
 void idio_rfc6234_add_primitives ()

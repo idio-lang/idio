@@ -196,7 +196,7 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 	}
 
 	int r_buf_len = 0;
-	char *r_buf = idio_rfc6234_shasum_fd ("compile-file-reader", if_fd, idio_rfc6234_SHA256_sym, &r_buf_len);
+	char *r_buf = idio_rfc6234_shasum_fd_C ("compile-file-reader", if_fd, idio_rfc6234_SHA256_sym, &r_buf_len);
 
 	if (-1 == close (if_fd)) {
 	    idio_error_system_errno ("close", idio_string_C (ifn), IDIO_C_FUNC_LOCATION ());

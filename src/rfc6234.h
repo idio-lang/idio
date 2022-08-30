@@ -31,7 +31,9 @@ extern IDIO idio_rfc6234_SHA256_sym;
 extern IDIO idio_rfc6234_SHA384_sym;
 extern IDIO idio_rfc6234_SHA512_sym;
 
-char *idio_rfc6234_shasum_fd (char const *func, int fd, IDIO alg, int *hashsize);
+char *idio_rfc6234_shasum_fd_C (char const *func, int fd, IDIO alg, int *hashsize);
+IDIO idio_rfc6234_shasum_fd (char const *func, int fd, IDIO alg);
+IDIO idio_rfc6234_shasum_file (char const *func, IDIO file, IDIO alg);
 void idio_init_rfc6234 ();
 
 #endif
