@@ -899,8 +899,6 @@ IDIO idio_meaning_module_eenv (IDIO module, char *desc)
     if (idio_S_unspec == eenv) {
 	if (idio_Idio_module == module) {
 	    eenv = idio_default_eenv;
-	} else if (idio_operator_module == module) {
-	    eenv = idio_evaluate_eenv_from_xenv (idio_operator_xi, module);
 	} else {
 	    IDIO dsh = idio_open_output_string_handle_C ();
 	    idio_display_C (desc, dsh);
@@ -936,7 +934,7 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
 	IDIO_MODULE_EXPORTS (module) = idio_pair (name, IDIO_MODULE_EXPORTS (module));
     }
 
-    IDIO eenv = idio_meaning_module_eenv (module, "predefs for");
+    IDIO eenv = idio_meaning_module_eenv (module, "predefs for module");
 
     IDIO si = idio_meaning_find_predef_symbol (name, eenv);
 

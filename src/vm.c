@@ -8835,14 +8835,4 @@ void idio_init_vm ()
     if (clock_gettime (CLOCK_MONOTONIC, &idio_vm_ts0) < 0) {
 	perror ("clock_gettime (CLOCK_MONOTONIC, ts)");
     }
-
-    idio_expander_xi = idio_new_xenv (IDIO_STRING ("expander"));
-    idio_module_set_symbol_value (IDIO_SYMBOL ("*expander-xi*"),
-				  idio_fixnum (idio_expander_xi),
-				  idio_expander_module);
-
-    idio_operator_xi = idio_new_xenv (IDIO_STRING ("operator"));
-    idio_module_set_symbol_value (IDIO_SYMBOL ("*operator-xi*"),
-				  idio_fixnum (idio_operator_xi),
-				  idio_operator_module);
 }

@@ -26,8 +26,6 @@
 extern IDIO idio_expander_module;
 extern IDIO idio_operator_module;
 extern IDIO idio_expander_thread;
-extern idio_xi_t idio_expander_xi;
-extern idio_xi_t idio_operator_xi;
 
 IDIO idio_evaluate_expander (IDIO x, IDIO e);
 void idio_install_expander_source (IDIO id, IDIO proc, IDIO code);

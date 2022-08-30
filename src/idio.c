@@ -306,7 +306,7 @@ void idio_init (void)
      * to use idio_default_eenv.
      */
     idio_default_eenv = idio_evaluate_eenv (idio_thread_current_thread (),
-					    IDIO_STRING ("default compilation unit"),
+					    IDIO_STRING ("default evaluation environment"),
 					    idio_Idio_module);
     idio_gc_protect_auto (idio_default_eenv);
 
@@ -673,10 +673,9 @@ int main (int argc, char **argv, char **envp)
 
     idio_vm_push_abort (thr, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
-    IDIO eenv = idio_default_eenv;
-    eenv = idio_evaluate_eenv (idio_thread_current_thread (),
-			       IDIO_STRING ("bootstrap"),
-			       idio_thread_current_module ());
+    IDIO eenv = idio_evaluate_eenv (thr,
+				    IDIO_STRING ("> load bootstrap"),
+				    IDIO_THREAD_MODULE (thr));
     idio_gc_protect (eenv);
     idio_load_file_name (IDIO_STRING ("bootstrap"), eenv);
 
@@ -1024,8 +1023,20 @@ int main (int argc, char **argv, char **envp)
 	 */
 	thr = v_thr;
 
+	IDIO cm = IDIO_THREAD_MODULE (thr);
+	IDIO cih = IDIO_THREAD_INPUT_HANDLE (thr);
+
+	IDIO dsh = idio_open_output_string_handle_C ();
+	idio_display (IDIO_MODULE_NAME (cm), dsh);
+	idio_display_C ("> load ", dsh);
+	idio_display (IDIO_HANDLE_FILENAME (cih), dsh);
+	idio_display_C (" (REPL)", dsh);
+	IDIO desc = idio_get_output_string (dsh);
+
+	eenv = idio_evaluate_eenv (thr, desc, cm);
+
 	/* repl */
-	idio_load_handle_C (idio_thread_current_input_handle (), idio_read, idio_evaluate_func, idio_default_eenv);
+	idio_load_handle_C (cih, idio_read, idio_evaluate_func, eenv);
     }
 
     idio_free (sargv);

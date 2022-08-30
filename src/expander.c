@@ -67,8 +67,6 @@ static IDIO idio_evaluator_extend_str;
 static IDIO idio_S_expander_list = idio_S_nil;
 static IDIO idio_S_expander_list_src = idio_S_nil;
 IDIO idio_expander_thread = idio_S_nil;
-idio_xi_t idio_expander_xi;
-idio_xi_t idio_operator_xi;
 
 static IDIO idio_S_infix_operator_list = idio_S_nil;
 static IDIO idio_S_infix_operator_group = idio_S_nil;
