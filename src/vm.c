@@ -6784,7 +6784,7 @@ run code at `PC` in xenv `xi`			\n\
      *   vm-errors/vm-run-bad-PC-type.idio
      *
      * vm-run (threading/current-thread) -1
-     * vm-run (threading/current-thread) 987654321
+     * vm-run (threading/current-thread) 536870911 ; FIXNUM-MAX on 32-bit
      * vm-run (threading/current-thread) #t
      */
     idio_pc_t pc = PC0;

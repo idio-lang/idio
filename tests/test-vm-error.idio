@@ -128,7 +128,7 @@ vm-error-load "vm-errors/vm-run-bad-xi-value-1.idio" "vm-run xi='-1': should be 
 vm-error-load "vm-errors/vm-run-bad-xi-value-2.idio" "vm-run xi='98765': is too large" ^rt-parameter-value-error
 vm-error-load "vm-errors/vm-run-bad-xi-type.idio" "bad parameter type: '#t' a constant is not a fixnum|thread" ^rt-parameter-type-error
 vm-error-load "vm-errors/vm-run-bad-PC-value-1.idio" "vm-run PC='-1': should be non-negative" ^rt-parameter-value-error
-vm-error-load "vm-errors/vm-run-bad-PC-value-2.idio" "vm-run PC='987654321': is too large" ^rt-parameter-value-error
+vm-error-load "vm-errors/vm-run-bad-PC-value-2.idio" "vm-run PC='536870911': is too large" ^rt-parameter-value-error
 vm-error-load "vm-errors/vm-run-bad-PC-type.idio" "bad parameter type: '#t' a constant is not a fixnum" ^rt-parameter-type-error
 
 vm-error-load "vm-errors/vm-values-ref-bignum-float.idio" "bad parameter type: '1.1e+0' a bignum is not a integer" ^rt-parameter-type-error
