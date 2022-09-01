@@ -105,7 +105,7 @@ int hkdfExtract(SHAversion whichSha,
   } else if (salt_len < 0) {
     return shaBadParam;
   }
-  return hmac(whichSha, ikm, ikm_len, salt, salt_len, prk);
+  return RFC6234_hmac(whichSha, ikm, ikm_len, salt, salt_len, prk);
 }
 
 /*

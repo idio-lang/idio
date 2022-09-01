@@ -42,7 +42,7 @@
  *
  */
 
-int hmac(SHAversion whichSha,
+int RFC6234_hmac(SHAversion whichSha,
     const unsigned char *message_array, int length,
     const unsigned char *key, int key_len,
     uint8_t digest[USHAMaxHashSize])
