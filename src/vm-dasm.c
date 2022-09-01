@@ -394,7 +394,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    break;
 	case IDIO_A_CONSTANT_REF:
 	    {
-		idio_ai_t ci = idio_vm_get_varuint (bc, pcp);
+		uint64_t ci = idio_vm_get_varuint (bc, pcp);
 
 		IDIO c = idio_vm_dasm_constants_ref (xi, ci);
 
