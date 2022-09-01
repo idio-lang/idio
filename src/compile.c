@@ -223,6 +223,24 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
     IDIO fh = idio_open_file_handle_C ("open-input-file", I_file, file, file_len, 0, IDIO_MODE_RE, sizeof (IDIO_MODE_RE) - 1, 0, 0);
 
     /*
+     * file format version
+     */
+    IDIO version = idio_read (fh);
+#define IDIO_FILE_FORMAT_VERSION "1.0"
+
+    if (! (idio_isa_string (version) &&
+	   idio_compile_compare_strings (version, IDIO_STATIC_STR_LEN (IDIO_FILE_FORMAT_VERSION)))) {
+#ifdef IDIO_DEBUG
+	idio_debug ("format %s != ", version);
+	fprintf (stderr, "%s for %s\n", IDIO_FILE_FORMAT_VERSION, file);
+#endif
+	return 0;
+    }
+#ifdef IDIO_COMPILE_FILE_READ
+    idio_debug ("format %s ", version);
+#endif
+
+    /*
      * idio-build-compiler-commit
      *
      * The format isn't likely to change much but is versioned by the
@@ -493,24 +511,57 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
     }
 
     /*
-     * program counter
-     *
-     * Could we really exceed a fixnum?
+     * predefs
      */
-    IDIO pc = idio_read (fh);
+    IDIO predefs = idio_read (fh);
 
-    if (! idio_isa_fixnum (pc)) {
+    if (! (idio_isa_list (predefs))) {
 #ifdef IDIO_DEBUG
-	idio_debug ("pc %s is not a fixnum", pc);
+	idio_debug ("predefs: %s is not a list ", predefs);
 	fprintf (stderr, "in %s\n", file);
 #endif
 	return 0;
     }
 #ifdef IDIO_COMPILE_FILE_READ
-    idio_debug ("pc %s ", pc);
+    fprintf (stderr, "predefs #%zu ", idio_list_length (predefs));
 #endif
 
-    idio_pc_t C_pc = IDIO_FIXNUM_VAL (pc);
+    IDIO pds = predefs;
+    while (idio_S_nil != pds) {
+	IDIO pd = IDIO_PAIR_H (pds);
+
+	IDIO si = IDIO_PAIR_H (pd);
+	if (! idio_isa_fixnum (si)) {
+	    return 0;
+	}
+	idio_ai_t C_si = IDIO_FIXNUM_VAL (si);
+
+	if (C_si >= C_st_alen) {
+#ifdef IDIO_DEBUG
+	    idio_debug ("predefs: symbol table entry %s is too large: ", pd);
+	    fprintf (stderr, "%zu >= %zu in %s\n", C_si, C_st_alen, file);
+#endif
+	    return 0;
+	}
+
+	pds = IDIO_PAIR_T (pds);
+    }
+
+    /*
+     * initial program counters
+     */
+    IDIO pcs = idio_read (fh);
+
+    if (! idio_isa_list (pcs)) {
+#ifdef IDIO_DEBUG
+	idio_debug ("pcs %s is not a list ", pcs);
+	fprintf (stderr, "in %s\n", file);
+#endif
+	return 0;
+    }
+#ifdef IDIO_COMPILE_FILE_READ
+    idio_debug ("pcs %s ", pcs);
+#endif
 
     /*
      * byte code string
@@ -528,11 +579,18 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
     fprintf (stderr, "bs #%zu ", idio_string_len (bs));
 #endif
 
-    if (C_pc >= (ssize_t) idio_string_len (bs)) {
+    IDIO l = pcs;
+    while (idio_S_nil != l) {
+	idio_pc_t C_pc = IDIO_FIXNUM_VAL (IDIO_PAIR_H (l));
+
+	if (C_pc >= (ssize_t) idio_string_len (bs)) {
 #ifdef IDIO_DEBUG
-	fprintf (stderr, "pc is greater (%zu) than the length of the byte code (%zu) in %s\n", C_pc, idio_string_len (bs), file);
+	    fprintf (stderr, "pc is greater (%zu) than the length of the byte code (%zu) in %s\n", C_pc, idio_string_len (bs), file);
 #endif
-	return 0;
+	    return 0;
+	}
+
+	l = IDIO_PAIR_T (l);
     }
 
     /*
@@ -644,6 +702,7 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_DESC,       desc);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SYMBOLS,    symbols);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_OPERATORS,  operators);
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_PREDEFS,    predefs);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_ST,         st);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_CS,	    cs);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_CH,	    ch);
@@ -651,10 +710,24 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SES,	    ses);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SPS,	    sps);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_BYTE_CODE,  CPT_byte_code);
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_PCS,        pcs);
 
     /* idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_XI, idio_fixnum (xi)); */
 
-    idio_vm_run_xenv (xi, C_pc);
+    pds = predefs;
+    while (idio_S_nil != pds) {
+	IDIO pd = IDIO_PAIR_H (pds);
+
+	IDIO sym_idx = IDIO_PAIR_H (pd);
+	idio_ai_t C_si = IDIO_FIXNUM_VAL (sym_idx);
+
+	IDIO si = idio_module_find_symbol_recurse (IDIO_PAIR_HT (pd), IDIO_PAIR_HTT (pd), 0);
+	idio_vm_values_set (xi, C_si, IDIO_SI_VI (si));
+
+	pds = IDIO_PAIR_T (pds);
+    }
+
+    idio_vm_run_xenv (xi, pcs);
 
     return 1;
 }

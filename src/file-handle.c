@@ -65,6 +65,7 @@
 #include "pair.h"
 #include "path.h"
 #include "read.h"
+#include "rfc6234.h"
 #include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
@@ -3727,6 +3728,36 @@ possible file name extensions			\n\
     return  r;
 }
 
+/*
+ * idio_rfc6234_shasum_file() must open a file which can trigger a GC
+ * so we need to protect our C automatic variables -- including yours
+ * before you call this function.
+ *
+ * {efn} itself is safe as the first thing we do is put it in the
+ * (already protected) {eenv} struct-instance.
+ */
+void idio_load_set_eenv_chksum (IDIO eenv, IDIO efn)
+{
+    IDIO_ASSERT (eenv);
+    IDIO_ASSERT (efn);
+
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
+    IDIO_TYPE_ASSERT (string, efn);
+
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_FILE, efn);
+
+    IDIO chk = idio_open_output_string_handle_C ();
+
+    idio_gc_protect (chk);
+
+    idio_display_C ("SHA256:", chk);
+    idio_display (idio_rfc6234_shasum_file ("save-xenvs", efn, idio_rfc6234_SHA256_sym), chk);
+
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_CHKSUM, idio_get_output_string (chk));
+
+    idio_gc_expose (chk);
+}
+
 int idio_load_idio_cache (char *pathname, size_t pathname_len, IDIO eenv)
 {
     IDIO_C_ASSERT (pathname);
@@ -3799,7 +3830,15 @@ int idio_load_idio_cache (char *pathname, size_t pathname_len, IDIO eenv)
 
     IDIO I_cfn = idio_string_C_len (cfn, end - cfn);
 
-    return idio_compile_file_reader (eenv, I_cfn, cfn, end - cfn);
+    int r = idio_compile_file_reader (eenv, I_cfn, cfn, end - cfn);
+
+    if (r) {
+	IDIO efn = idio_string_C_len (pathname, pathname_len);
+
+	idio_load_set_eenv_chksum (eenv, efn);
+    }
+
+    return r;
 }
 
 IDIO idio_load_file_name (IDIO filename, IDIO eenv)
@@ -3965,6 +4004,16 @@ IDIO idio_load_file_name (IDIO filename, IDIO eenv)
 				    idio_array_pop (IDIO_THREAD_STACK (thr));
 				}
 
+				IDIO efn = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_FILE);
+
+				if (! idio_isa_string (efn)) {
+				    efn = IDIO_HANDLE_PATHNAME (fh);
+
+				    idio_gc_protect (fh);
+				    idio_load_set_eenv_chksum (eenv, efn);
+				    idio_gc_expose (fh);
+				}
+
 				return idio_load_handle_C (fh, reader, evaluator, eenv);
 			    }
 			}
@@ -3988,6 +4037,16 @@ IDIO idio_load_file_name (IDIO filename, IDIO eenv)
 
 	    if (free_filename_C) {
 		IDIO_GC_FREE (filename_C, filename_C_len);
+	    }
+
+	    IDIO efn = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_FILE);
+
+	    if (! idio_isa_string (efn)) {
+		efn = IDIO_HANDLE_PATHNAME (fh);
+
+		idio_gc_protect (fh);
+		idio_load_set_eenv_chksum (eenv, efn);
+		idio_gc_expose (fh);
 	    }
 
 	    return idio_load_handle_C (fh, reader, evaluator, eenv);

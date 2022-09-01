@@ -50,6 +50,7 @@
 #include "closure.h"
 #include "codegen.h"
 #include "command.h"
+#include "compile.h"
 #include "condition.h"
 #include "continuation.h"
 #include "error.h"
@@ -229,6 +230,8 @@ IDIO idio_vm_sps;
 idio_xi_t idio_xenvs_size;
 idio_xenv_t **idio_xenvs;
 
+static IDIO idio_S_cfw;		/* compile-file-writer */
+
 IDIO idio_vm_krun;
 
 static IDIO idio_vm_signal_handler_name;
@@ -241,6 +244,7 @@ static IDIO idio_vm_SYM_DEF_string = idio_S_nil;
 static IDIO idio_vm_SYM_DEF_gvi0_string = idio_S_nil;
 static IDIO idio_vm_SYM_SET_string = idio_S_nil;
 static IDIO idio_vm_SYM_SET_gvi0_string = idio_S_nil;
+static IDIO idio_vm_SYM_SET_predef_string = idio_S_nil;
 static IDIO idio_vm_COMPUTED_SYM_DEF_string = idio_S_nil;
 static IDIO idio_vm_COMPUTED_SYM_DEF_gvi0_string = idio_S_nil;
 static IDIO idio_vm_EXPANDER_string = idio_S_nil;
@@ -291,7 +295,7 @@ void idio_vm_dump_all ()
      * debugging instance it *doubled* the size of the traced code
      * output.
      */
-    /* idio_vm_dump_values (); */
+    idio_vm_dump_values ();
 }
 
 /*
@@ -4245,6 +4249,8 @@ idio_as_t idio_vm_iref (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, ID
 	} else {
 	    fgvi = IDIO_SI_VI (si_ce);
 	    gvi = IDIO_FIXNUM_VAL (fgvi);
+
+	    idio_vm_values_set (xi, si, fgvi);
 	}
 
 	if (0 == gvi) {
@@ -4269,10 +4275,6 @@ idio_as_t idio_vm_iref (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, ID
 
 	    si_ce = IDIO_LIST6 (idio_S_toplevel, fsi, fci, fgvi, ce, def);
 	    idio_module_set_symbol (sym, si_ce, ce);
-	} else if (xi) {
-	    IDIO_VM_RUN_DIS ("== [0].%-4" PRIu64 " ", gvi);
-
-	    idio_vm_values_set (xi, si, fgvi);
 	}
     }
 
@@ -4370,24 +4372,22 @@ void idio_vm_iset_val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, IDI
     if (idio_isa_pair (si_ce) &&
 	idio_S_predef == IDIO_SI_SCOPE (si_ce) &&
 	! idio_isa_primitive (val)) {
+	/*
+	 * Overwrite bits of the symbol info including a new vi
+	 */
+	IDIO_SI_SCOPE (si_ce) = idio_S_toplevel;
+	IDIO_SI_SI (si_ce) = idio_fixnum (si);
+
 	gvi = idio_vm_extend_values (0);
 	fgvi = idio_fixnum (gvi);
 
-	IDIO eenv = IDIO_XENV_EENV (idio_xenvs[xi]);
-
-	idio_as_t vi = idio_meaning_extend_tables (eenv,
-						   sym,
-						   idio_S_toplevel,
-						   IDIO_SI_CI (si_ce),
-						   ce,
-						   def,
-						   1);
-
-	si_ce = idio_module_find_symbol (sym, ce);
-
-	idio_vm_values_set (xi, vi, fgvi);
-
 	IDIO_SI_VI (si_ce) = fgvi;
+
+	IDIO_SI_DESCRIPTION (si_ce) = idio_vm_SYM_SET_predef_string;
+
+	idio_vm_values_set (xi, si, fgvi);
+
+	idio_module_set_symbol (sym, si_ce, ce);
     }
 
     idio_vm_values_set (0, gvi, val);
@@ -7964,8 +7964,13 @@ Show the current trap tree.					\n\
     return idio_S_unspec;
 }
 
-IDIO idio_vm_run_xenv (idio_xi_t xi, idio_pc_t pc)
+IDIO idio_vm_run_xenv (idio_xi_t xi, IDIO pcs)
 {
+    IDIO_ASSERT (pcs);
+
+    IDIO_TYPE_ASSERT (list, pcs);
+
+
     IDIO thr = idio_thread_current_thread ();
 
     idio_pc_t opc = IDIO_THREAD_PC (thr);
@@ -7975,13 +7980,13 @@ IDIO idio_vm_run_xenv (idio_xi_t xi, idio_pc_t pc)
 
     IDIO r = idio_S_unspec;
 
-#ifdef IDIO_VM_DIS
-    if (2 == xi) {
-	idio_vm_dis = 1;
-	idio_vm_set_dasm_file (IDIO_LIST1 (IDIO_STRING ("idio-vm-trace")));
+    while (idio_S_nil != pcs) {
+	idio_pc_t C_pc = IDIO_FIXNUM_VAL (IDIO_PAIR_H (pcs));
+
+	r = idio_vm_run (thr, xi, C_pc, IDIO_VM_RUN_C);
+
+	pcs = IDIO_PAIR_T (pcs);
     }
-#endif
-    r = idio_vm_run (thr, xi, pc, IDIO_VM_RUN_C);
 
     idio_vm_restore_all_state (thr);
 
@@ -8214,6 +8219,32 @@ void idio_vm_dump_xenv (idio_xi_t xi)
     idio_vm_dump_xenv_src_props (xi);
     idio_vm_dump_xenv_dasm (xi);
     idio_vm_dump_xenv_values (xi);
+}
+
+void idio_vm_save_xenvs (idio_xi_t from)
+{
+    if (from >= idio_xenvs_size) {
+	fprintf (stderr, "WARNING: save-xenvs: xi %zd >= max XI %zd\n", from, idio_xenvs_size);
+	return;
+    }
+
+    IDIO lsh = idio_open_input_string_handle_C (IDIO_STATIC_STR_LEN ("import compile"));
+    idio_load_handle_C (lsh, idio_read, idio_evaluate_func, idio_default_eenv);
+
+    IDIO cfw = idio_module_symbol_value (idio_S_cfw,
+					 idio_compile_module,
+					 idio_S_nil);
+
+    for (idio_xi_t xi = from ; xi < idio_xenvs_size; xi++) {
+	IDIO eenv = IDIO_XENV_EENV (idio_xenvs[xi]);
+
+	IDIO efn = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_FILE);
+
+	if (idio_isa_string (efn)) {
+	    idio_debug ("saving xenv for %s\n", efn);
+	    idio_vm_invoke_C (IDIO_LIST4 (cfw, efn, eenv, idio_fixnum (idio_prologue_len)));
+	}
+    }
 }
 
 /*
@@ -8501,6 +8532,7 @@ void idio_init_vm_values ()
     IDIO_VM_STRING (SYM_DEF_gvi0,             "SYM-DEF/gvi=0");
     IDIO_VM_STRING (SYM_SET,                  "SYM-SET");
     IDIO_VM_STRING (SYM_SET_gvi0,             "SYM-SET/gvi=0");
+    IDIO_VM_STRING (SYM_SET_predef,           "SYM-SET/predef");
     IDIO_VM_STRING (COMPUTED_SYM_DEF,         "COMPUTED-SYM-DEF");
     IDIO_VM_STRING (COMPUTED_SYM_DEF_gvi0,    "COMPUTED-SYM-DEF/gvi=0");
     IDIO_VM_STRING (EXPANDER,                 "EXPANDER");
@@ -8835,4 +8867,6 @@ void idio_init_vm ()
     if (clock_gettime (CLOCK_MONOTONIC, &idio_vm_ts0) < 0) {
 	perror ("clock_gettime (CLOCK_MONOTONIC, ts)");
     }
+
+    idio_S_cfw = IDIO_SYMBOL ("compile-file-writer");
 }

@@ -92,10 +92,12 @@
  */
 typedef enum {
     IDIO_EENV_ST_DESC,      /* shared with xenv */
+    IDIO_EENV_ST_FILE,	    /* of the source (not any compiled variant) */
     IDIO_EENV_ST_AOTP,
     IDIO_EENV_ST_CHKSUM,
     IDIO_EENV_ST_SYMBOLS,   /* alist of (symbol symbol-info) */
     IDIO_EENV_ST_OPERATORS, /* alist of (operator-symbol symbol-info) */
+    IDIO_EENV_ST_PREDEFS,   /* alist of (si symbol module-name) */
     IDIO_EENV_ST_ST,        /* symbol table for VM */
     IDIO_EENV_ST_CS,        /* constants table for VM */
     IDIO_EENV_ST_CH,        /* constanst hash for VM */
@@ -105,11 +107,13 @@ typedef enum {
     IDIO_EENV_ST_SES,       /* source expressions for VM */
     IDIO_EENV_ST_SPS,       /* source properties for VM */
     IDIO_EENV_ST_BYTE_CODE, /* for VM */
+    IDIO_EENV_ST_PCS,	    /* list of initial program counters */
     IDIO_EENV_ST_XI,        /* set when imported as xenv */
     IDIO_EENV_ST_SIZE,
 } idio_eenv_st_enum;
 
 #define IDIO_MEANING_EENV_AOTP(E)      idio_struct_instance_ref_direct((E), IDIO_EENV_ST_AOTP)
+#define IDIO_MEANING_EENV_FILE(E)      idio_struct_instance_ref_direct((E), IDIO_EENV_ST_FILE)
 #define IDIO_MEANING_EENV_SYMBOLS(E)   idio_struct_instance_ref_direct((E), IDIO_EENV_ST_SYMBOLS)
 #define IDIO_MEANING_EENV_OPERATORS(E) idio_struct_instance_ref_direct((E), IDIO_EENV_ST_OPERATORS)
 #define IDIO_MEANING_EENV_ST(E)        idio_struct_instance_ref_direct((E), IDIO_EENV_ST_ST)

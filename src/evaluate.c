@@ -967,11 +967,9 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
     }
 
     /*
-     * idio_meaning_extend_tables() will have created a toplevel entry
+     * idio_meaning_extend_tables() will have created a predef entry
      * with no vi so scribble over some of that data.
      */
-    IDIO_SI_SCOPE (si) = idio_S_predef;
-
     gvi = idio_vm_extend_values (0);
     fgvi = idio_fixnum (gvi);
     IDIO_SI_VI (si) = fgvi;
@@ -2152,6 +2150,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
     }
 
     IDIO scope = IDIO_SI_SCOPE (si);
+    IDIO sym_idx = IDIO_SI_SI (si);
 
     IDIO assign = idio_S_nil;
 
@@ -2165,12 +2164,11 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	    return IDIO_LIST4 (IDIO_I_DEEP_ARGUMENT_SET, fi, fj, m);
 	}
     } else if (idio_S_toplevel == scope) {
-	assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, IDIO_SI_SI (si), m);
+	assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, sym_idx, m);
     } else if (idio_S_dynamic == scope ||
 	       idio_S_environ == scope) {
-	assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, IDIO_SI_SI (si), m);
+	assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, sym_idx, m);
     } else if (idio_S_computed == scope) {
-	IDIO sym_idx = IDIO_SI_SI (si);
 	if (IDIO_MEANING_IS_DEFINE (flags)) {
 	    return IDIO_LIST2 (IDIO_LIST4 (IDIO_I_SYM_DEF, name, scope, sym_idx),
 			       IDIO_LIST3 (IDIO_I_COMPUTED_SYM_DEF, sym_idx, m));
@@ -2186,11 +2184,35 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	 * your intention that by changing ph everything should use
 	 * the new definition of ph immediately or just that functions
 	 * defined after this should use the new definition?
+	 */
+
+	/*
+	 * First up, record the predef details we're overwriting as
+	 * when the saved xenv is run nothing forces the assignment of
+	 * the predef to its xi.vi and we can have set the symbol
+	 * information tuple for the symbol to the closure before the
+	 * predef is (attempted to be) run.  When the primitive does
+	 * get run, the symbol data is looked up and you get the
+	 * closure data.  Oops.
 	 *
+	 * For the future VM to look this predef up we need its name
+	 * and the module it was found in and also the si in this
+	 * eenv.
+	 */
+	idio_struct_instance_set_direct (eenv,
+					 IDIO_EENV_ST_PREDEFS,
+					 idio_pair (IDIO_LIST3 (sym_idx,
+								name,
+								IDIO_MODULE_NAME (IDIO_SI_MODULE (si))),
+						    idio_struct_instance_ref_direct (eenv,
+										     IDIO_EENV_ST_PREDEFS)));
+
+	/*
 	 * We need a new symbol index as the existing one is tagged as
 	 * a predef.  This new one will be tagged as a toplevel.
 	 */
-	IDIO sym_idx = idio_toplevel_extend (src, name, IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags)), eenv);
+	sym_idx = idio_toplevel_extend (src, name, IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags)), eenv);
+	scope = idio_S_toplevel;
 
 	/*
 	 * But now we have a problem.
@@ -2231,7 +2253,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
     }
 
     if (IDIO_MEANING_IS_DEFINE (flags)) {
-	return IDIO_LIST2 (IDIO_LIST4 (IDIO_I_SYM_DEF, name, scope, IDIO_SI_SI (si)),
+	return IDIO_LIST2 (IDIO_LIST4 (IDIO_I_SYM_DEF, name, scope, sym_idx),
 			   assign);
     } else {
 	return assign;
@@ -4246,10 +4268,9 @@ static IDIO idio_meaning_dynamic_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
 
     IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, IDIO_MEANING_NOT_TAILP (flags), eenv);
 
-    IDIO sym_idx;
     IDIO si = idio_meaning_find_symbol_recurse (name, eenv, idio_S_dynamic, 1);
 
-    sym_idx = IDIO_SI_SI (si);
+    IDIO sym_idx = IDIO_SI_SI (si);
 
     /*
      * Tell the tree of "locals" about this dynamic variable and find
@@ -4307,10 +4328,9 @@ static IDIO idio_meaning_environ_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
 
     IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, IDIO_MEANING_NOT_TAILP (flags), eenv);
 
-    IDIO sym_idx;
     IDIO si = idio_meaning_find_symbol_recurse (name, eenv, idio_S_environ, 1);
 
-    sym_idx = IDIO_SI_SI (si);
+    IDIO sym_idx = IDIO_SI_SI (si);
 
     /*
      * Tell the tree of "locals" about this environ variable and find
@@ -4405,12 +4425,11 @@ static IDIO idio_meaning_trap (IDIO src, IDIO ce, IDIO he, IDIO be, IDIO nametre
     while (idio_S_nil != ce) {
 	IDIO cname = IDIO_PAIR_H (ce);
 
-	IDIO fci;
 	IDIO si = idio_meaning_find_symbol_recurse (cname, eenv, idio_S_toplevel, 1);
 
-	fci = IDIO_SI_SI (si);
+	IDIO sym_idx = IDIO_SI_SI (si);
 
-	pushs = idio_pair (IDIO_LIST2 (IDIO_I_PUSH_TRAP, fci), pushs);
+	pushs = idio_pair (IDIO_LIST2 (IDIO_I_PUSH_TRAP, sym_idx), pushs);
 	pops = idio_pair (IDIO_LIST1 (IDIO_I_POP_TRAP), pops);
 
 	ce = IDIO_PAIR_T (ce);
@@ -5809,10 +5828,12 @@ IDIO idio_evaluate_eenv (IDIO thr, IDIO desc, IDIO module)
     eenv = idio_struct_instance (idio_evaluate_eenv_type,
 				 idio_listv (IDIO_EENV_ST_SIZE,
 					     desc,
+					     idio_S_nil,		      /* file */
 					     idio_S_false,                    /* aot? */
 					     idio_S_false,                    /* chksum */
 					     idio_S_nil,                      /* symbols */
 					     idio_S_nil,                      /* operators */
+					     idio_S_nil,                      /* predefs */
 					     idio_array (0),                  /* st */
 					     idio_array (0),                  /* cs */
 					     IDIO_HASH_EQP (8),               /* ch */
@@ -5822,6 +5843,7 @@ IDIO idio_evaluate_eenv (IDIO thr, IDIO desc, IDIO module)
 					     idio_array (0),                  /* ses */
 					     idio_array (0),                  /* sps */
 					     CPT_byte_code,
+					     idio_S_nil,                      /* PC */
 					     idio_S_false                     /* xi */
 				     ));
 
@@ -5846,10 +5868,12 @@ IDIO idio_evaluate_eenv_from_xenv (idio_xi_t xi, IDIO module)
     eenv = idio_struct_instance (idio_evaluate_eenv_type,
 				 idio_listv (IDIO_EENV_ST_SIZE,
 					     IDIO_XENV_DESC (xenv),
+					     idio_S_nil,                          /* file */
 					     idio_S_false,                        /* aot? */
 					     idio_S_false,                        /* chksum */
 					     idio_S_nil,                          /* symbols */
 					     idio_S_nil,                          /* operators */
+					     idio_S_nil,                          /* predefs */
 					     IDIO_XENV_ST (xenv),                 /* st */
 					     IDIO_XENV_CS (xenv),                 /* cs */
 					     IDIO_XENV_CH (xenv),                 /* ch */
@@ -5859,6 +5883,7 @@ IDIO idio_evaluate_eenv_from_xenv (idio_xi_t xi, IDIO module)
 					     IDIO_XENV_SES (xenv),                /* ses */
 					     IDIO_XENV_SPS (xenv),                /* sps */
 					     CPT_byte_code,
+					     idio_S_nil,			  /* PC */
 					     idio_fixnum (IDIO_XENV_INDEX (xenv)) /* xi */
 				     ));
 
@@ -6066,10 +6091,12 @@ void idio_init_evaluate ()
 						idio_S_nil,
 						idio_listv (IDIO_EENV_ST_SIZE,
 							    IDIO_SYMBOL ("desc"),
+							    IDIO_SYMBOL ("file"),
 							    IDIO_SYMBOL ("aot?"),
 							    IDIO_SYMBOL ("chksum"),
 							    IDIO_SYMBOL ("symbols"),
 							    IDIO_SYMBOL ("operators"),
+							    IDIO_SYMBOL ("predefs"),
 							    IDIO_SYMBOL ("st"),
 							    IDIO_SYMBOL ("cs"),
 							    IDIO_SYMBOL ("ch"),
@@ -6079,6 +6106,7 @@ void idio_init_evaluate ()
 							    IDIO_SYMBOL ("ses"),
 							    IDIO_SYMBOL ("sps"),
 							    IDIO_SYMBOL ("byte-code"),
+							    IDIO_SYMBOL ("pcs"),
 							    IDIO_SYMBOL ("xi")));
 
     idio_module_set_symbol_value (sym, idio_evaluate_eenv_type, idio_evaluate_module);

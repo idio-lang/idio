@@ -57,6 +57,13 @@ define (compile-file-writer file eenv pc) {
     }
 
      puts #S{
+; The file format version
+}
+
+    write "1.0"
+    puts "\n"
+
+     puts #S{
 ; The compiler commit used to create this file
 }
 
@@ -80,7 +87,7 @@ define (compile-file-writer file eenv pc) {
     puts "\n"
 
     puts #S{
-; The checksum for the source file
+; The checksum for the source file ${%eenv-file eenv}
 }
 
     write (%eenv-chksum eenv)
@@ -165,21 +172,43 @@ ${array-length (%eenv-st eenv)}
     puts #S{)
 }
 
+    predefs := %eenv-predefs eenv
+
+    puts #S{
+; The predefs (si name module-name)
+(
+}
+
+      for pd in predefs {
+	puts " "
+	write pd
+	(newline)
+      }
+
+    puts #S{)
+}
+
     bc := %eenv-byte-code eenv
     bs := idio-ia->string bc
     bs-len := string-length bs
 
     ;; Hmm.  Empty files result in a PC of len(prologue) with the
     ;; expectation that there is some code...
-    if (pc ge bs-len) {
-      ;; We need to do better than "just knowing" that the last opcode
-      ;; is RETURN!
-      pc = bs-len - 1
+    pc = %eenv-pc eenv
+
+    if (pair? pc) {
+      if ((ph pc) ge bs-len) {
+	;; We need to do better than "just knowing" that the last
+	;; opcode is RETURN!
+	set-ph! pc (bs-len - 1)
+      }
+    } {
+      pc = list (bs-len - 1)
     }
 
     puts #S{
-; The initial program counter
-${pc}
+; The initial program counters (${length pc})
+${reverse! pc}
 }
 
     puts #S{
@@ -260,6 +289,8 @@ define (compile-file file & args) "
   ;; this should be 10 (until the prologue is changed)
   pc0 := string-length (idio-ia->string (%eenv-byte-code eenv))
 
+  all-pc := pair pc0 #n
+
   loop :+ function #n {
     e := read fh
     if (eof-object? e) #n {
@@ -286,6 +317,8 @@ define (compile-file file & args) "
 
       pc := codegen m eenv
 
+      all-pc = pair pc all-pc
+
       (loop)
     }
   }
@@ -301,7 +334,7 @@ define (compile-file file & args) "
   ;printf "compile-file: eenv %s\n" eenv
 
   if (not (pair? args)) {
-    compile-file-writer fn eenv pc0
+    compile-file-writer fn eenv all-pc
   }
 
   ;; return all-m to any recursive calls via evaluate/meaning-include

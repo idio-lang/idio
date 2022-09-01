@@ -91,7 +91,7 @@ local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)
 	(cd $(EXTDIR)/empty/src; $(MAKE) local-install)
 
 pre-compile: $(LI_BINDIR)/idio
-	$(LI_BINDIR)/idio $(UTILSDIR)/bin/pre-compile-lib
+	$(LI_BINDIR)/idio --save-xenvs </dev/null
 
 clean-pre-compile:
 	if [[ -d $(LI_LIBDIR) ]] ; then rm -rf $(shell find $(LI_LIBDIR) -name __idio__) ; fi

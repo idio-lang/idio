@@ -673,11 +673,11 @@ int main (int argc, char **argv, char **envp)
 
     idio_vm_push_abort (thr, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
-    IDIO eenv = idio_evaluate_eenv (thr,
-				    IDIO_STRING ("> load bootstrap"),
-				    IDIO_THREAD_MODULE (thr));
-    idio_gc_protect (eenv);
-    idio_load_file_name (IDIO_STRING ("bootstrap"), eenv);
+    IDIO bootstrap_eenv = idio_evaluate_eenv (thr,
+					      IDIO_STRING ("> load bootstrap"),
+					      IDIO_THREAD_MODULE (thr));
+    idio_gc_protect (bootstrap_eenv);
+    idio_load_file_name (IDIO_STRING ("bootstrap"), bootstrap_eenv);
 
     idio_gc_collect_all ("post-bootstrap");
     idio_add_terminal_signals ();
@@ -850,6 +850,8 @@ int main (int argc, char **argv, char **envp)
 						  IDIO_SYMBOL ("-v")));
 
 		    exit (0);
+		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--save-xenvs"))) {
+		    idio_vm_save_xenvs (IDIO_FIXNUM_VAL (idio_struct_instance_ref_direct (bootstrap_eenv, IDIO_EENV_ST_XI)));
 		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--help"))) {
 		    idio_usage (argv[0]);
 		    exit (0);
@@ -1033,10 +1035,11 @@ int main (int argc, char **argv, char **envp)
 	idio_display_C (" (REPL)", dsh);
 	IDIO desc = idio_get_output_string (dsh);
 
-	eenv = idio_evaluate_eenv (thr, desc, cm);
+	IDIO repl_eenv = idio_evaluate_eenv (thr, desc, cm);
+	idio_gc_protect (repl_eenv);
 
 	/* repl */
-	idio_load_handle_C (cih, idio_read, idio_evaluate_func, eenv);
+	idio_load_handle_C (cih, idio_read, idio_evaluate_func, repl_eenv);
     }
 
     idio_free (sargv);

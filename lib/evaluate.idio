@@ -42,10 +42,12 @@ define (nt-param-j si)     (phtt si)
 
 (export-struct-accessors-only %eenv
 			      desc
+			      file	; of the source (not any compiled variant)
 			      aot?
 			      chksum
 			      symbols	; alist of (symbol symbol-info)
 			      operators	; alist of (operator-symbol symbol-info)
+			      predefs   ; alist of (si symbol module-name)
 			      st	; symbol table for VM
 			      cs	; constants table for VM
 			      ch	; constants hash for VM
@@ -55,13 +57,14 @@ define (nt-param-j si)     (phtt si)
 			      ses	; source expressions for VM
 			      sps	; source properties for VM
 			      byte-code	; for VM
+			      pc	; list of PC
 			      xi	; set when imported as xenv
 )
 
 define (eenv-as-string eenv seen) {
   if (%eenv? eenv) {
     r := (open-output-string)
-    hprintf r "#<SI %%eenv %s " (%eenv-desc eenv)
+    hprintf r "#<SI %%eenv %s [%s] " (%eenv-desc eenv) (%eenv-file eenv)
 
     hprintf r "st #%s " (length (%eenv-symbols eenv))
     hprintf r "ct #%s " (array-length (%eenv-cs eenv))
@@ -1029,6 +1032,8 @@ define (meaning-assignment src name e nametree flags eenv) {
      }
 
      scope := si-scope si
+     sym-idx := si-si si
+
      ci := #f
 
      ; without being able to return early we can presume that if
@@ -1052,14 +1057,12 @@ define (meaning-assignment src name e nametree flags eenv) {
 	}
       })
       ((toplevel) {
-	assign = list I-SYM-SET src (si-si si) m
+	assign = list I-SYM-SET src sym-idx m
       })
       ((dynamic environ) {
-	assign = list I-SYM-SET src (si-si si) m
+	assign = list I-SYM-SET src sym-idx m
       })
       ((computed) {
-	sym-idx := si-si si
-
 	if (eval-flags-define flags) {
 	  i-code = (list (list I-SYM-DEF name scope sym-idx)
 			 (list I-COMPUTED-SYM-DEF sym-idx m))
@@ -1078,7 +1081,8 @@ define (meaning-assignment src name e nametree flags eenv) {
 	;;
 	;; We need a new symbol index as the existing one is tagged as
 	;; a predef.  This new one will be tagged as a toplevel.
-	sym-idx := meaning-toplevel-extend src name (define-scope 'toplevel flags) eenv
+	sym-idx = meaning-toplevel-extend src name (define-scope 'toplevel flags) eenv
+	scope = 'toplevel
 
 	;; But now we have a problem.
 	;;
@@ -1108,7 +1112,7 @@ define (meaning-assignment src name e nametree flags eenv) {
      (cond
       (i-code i-code)
       ((eval-flags-define flags)
-       (list (list I-SYM-DEF name scope (si-si si))
+       (list (list I-SYM-DEF name scope sym-idx)
 	     assign))
       (else assign))
    })
@@ -2429,9 +2433,9 @@ define (meaning-trap src ce he be nametree flags eenv) {
       ci := #f
 
       si := meaning-find-symbol-recurse c-sym eenv 'toplevel #t
-      ci = si-si si
+      sym-idx = si-si si
 
-      pushs = pair (list I-PUSH-TRAP ci) pushs
+      pushs = pair (list I-PUSH-TRAP sym-idx) pushs
       pops = pair (list I-POP-TRAP) pops
 
       c-loop (pt c*)

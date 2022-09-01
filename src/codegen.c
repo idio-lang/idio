@@ -2759,6 +2759,12 @@ idio_pc_t idio_codegen (IDIO thr, IDIO m, IDIO eenv)
 
     idio_ia_append_free (byte_code, ia);
 
+    idio_struct_instance_set_direct (eenv,
+				     IDIO_EENV_ST_PCS,
+				     idio_pair (idio_fixnum (PC0),
+						idio_struct_instance_ref_direct (eenv,
+										 IDIO_EENV_ST_PCS)));
+
     return PC0;
 }
 
