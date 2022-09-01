@@ -3798,10 +3798,9 @@ int idio_load_idio_cache (char *pathname, size_t pathname_len, IDIO eenv)
      *
      * /path/to/__idio__/{mod}.{ASM_COMMIT}
      */
-    size_t cfn_len = pathname_len - iie_len;
     size_t icd_len = sizeof (IDIO_CACHE_DIR) - 1;
     size_t ibac_len = sizeof (IDIO_BUILD_ASM_COMMIT) - 1;
-    cfn_len += 1 + icd_len + 1 + ibac_len;
+    size_t cfn_len = (pathname_len - iie_len) + 1 + icd_len + 1 + ibac_len + 1;
 
     char cfn[cfn_len];
     memcpy (cfn, pathname, pathname_len);
