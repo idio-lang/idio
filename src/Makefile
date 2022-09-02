@@ -69,11 +69,37 @@ test : local-install
 # where the libc malloc behaviour differs from IDIO_MALLOC.
 #
 # In the meanwhile, rely on valgrind and IDIO_MALLOC
-verify: dist-clean
-	$(MAKE) test
-	#-ASAN_OPTIONS=log_path=idio-asan $(MAKE) clean sanitize-address test
-	$(MAKE) clean debug test
+verify: ;
+	@echo -e "\n\n**** clean start\n\n"
+	$(MAKE) dist-clean > /dev/null
+	# this includes the bootstrap-build
+	$(MAKE) all > /dev/null
+	# post-dist-clean we have new source files...
+	$(MAKE) all > /dev/null
+	@echo -e "\n\n**** regular test\n\n"
+	$(LI_BINDIR)/idio test
+	$(MAKE) pre-compile
+	@echo -e "\n\n**** regular pre-compile test\n\n"
+	$(LI_BINDIR)/idio test
+	$(MAKE) build-clean clean-pre-compile > /dev/null
+	ASAN_OPTIONS=log_path=idio-asan $(MAKE) sanitize-address > /dev/null
+	# we can at least pick up on ASAN errors in the bootstrap
+	@echo -e "\n\n**** ASAN test\n\n"
+	$(LI_BINDIR)/idio zero-length
+	$(MAKE) pre-compile
+	# including loading cache files
+	@echo -e "\n\n**** ASAN pre-compile test\n\n"
+	$(LI_BINDIR)/idio zero-length
+	$(MAKE) build-clean clean-pre-compile > /dev/null
+	$(MAKE) debug > /dev/null
+	@echo -e "\n\n**** debug test\n\n"
+	$(LI_BINDIR)/idio test
+	$(MAKE) pre-compile
+	@echo -e "\n\n**** debug pre-compile test\n\n"
+	$(LI_BINDIR)/idio test
 	# run valgrind with the debug version as the output is more useful
+	$(MAKE) clean-pre-compile
+	@echo -e "\n\n**** valgrind test\n\n"
 	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(LI_BINDIR)/idio test
 	ls -l idio-valgrind.*
 
