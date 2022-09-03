@@ -60,6 +60,7 @@ void idio_init_pair ();
 #define IDIO_LIST5(...)		idio_listv (5, __VA_ARGS__)
 #define IDIO_LIST6(...)		idio_listv (6, __VA_ARGS__)
 #define IDIO_LIST7(...)		idio_listv (7, __VA_ARGS__)
+#define IDIO_LIST8(...)		idio_listv (8, __VA_ARGS__)
 
 #endif
 

@@ -45,6 +45,7 @@
 
 #include "array.h"
 #include "bignum.h"
+#include "closure.h"
 #include "codegen.h"
 #include "condition.h"
 #include "continuation.h"
@@ -2051,14 +2052,15 @@ return the name associated with handle `handle`	\n\
     return IDIO_HANDLE_FILENAME (handle);
 }
 
-IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs, int preserve)
+IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO eenv), IDIO eenv, idio_load_handle_preserve_enum preserve)
 {
     IDIO_ASSERT (h);
     IDIO_C_ASSERT (reader);
     IDIO_C_ASSERT (evaluator);
-    IDIO_ASSERT (cs);
+    IDIO_ASSERT (eenv);
+
     IDIO_TYPE_ASSERT (handle, h);
-    IDIO_TYPE_ASSERT (array, cs);
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
 
     /*
      * load/load-handle are both wrappered by closures meaning that
@@ -2118,6 +2120,11 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     IDIO e = idio_S_nil;
     IDIO r = idio_S_nil;
 
+    IDIO fxi = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_XI);
+    IDIO_TYPE_ASSERT (fixnum, fxi);
+
+    idio_xi_t xi = IDIO_FIXNUM_VAL (fxi);
+
     for (;;) {
 	IDIO cm = idio_thread_current_module ();
 	IDIO oh;
@@ -2130,10 +2137,15 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	    /*
 	     * Throw out some messages about any recently failed jobs
 	     */
-	    idio_vm_invoke_C (idio_thread_current_thread (),
-			      idio_module_symbol_value (idio_S_djn,
-							idio_job_control_module,
-							idio_S_nil));
+	    IDIO djn = idio_module_symbol_value (idio_S_djn,
+						 idio_job_control_module,
+						 idio_S_nil);
+
+	    if (idio_isa_function (djn)) {
+		idio_vm_invoke_C (djn);
+	    } else {
+		idio_debug ("WARNING: interactive: do-job-notification is %s\n", djn);
+	    }
 
 	    /*
 	     * As we're interactive, make an attempt to flush stdout
@@ -2178,11 +2190,11 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
 	IDIO eosh = idio_open_output_string_handle_C ();
 
-	idio_display_C ("ABORT evaluate", eosh);
+	idio_display_C ("ABORT load-handle evaluate", eosh);
 
 	idio_vm_push_abort (thr, IDIO_LIST2 (eval_abort, idio_get_output_string (eosh)));
 
-	IDIO m = (*evaluator) (e, cs);
+	IDIO m = (*evaluator) (e, eenv);
 
 	idio_vm_pop_abort (thr);
 
@@ -2199,9 +2211,42 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	fprintf (stderr, " e %ld.%06ld", td.tv_sec, td.tv_usec);
 #endif
 
-	idio_pc_t pc = idio_codegen (thr, m, cs);
+	idio_pc_t pc = idio_codegen (thr, m, eenv);
 
-	r = idio_vm_run_C (thr, pc);
+	/*
+	 * WARNING: if we've come in here from the primitive
+	 * load-handle (and possibly others) then, for the first
+	 * expression, idio_codegen(), above, will have generated some
+	 * new byte code and returned to us the starting PC, 10
+	 * (ie. just after the prologue).
+	 *
+	 * If we are NOT in a new execution environment then we'll be
+	 * using an existing xi and the chances are it's probably that
+	 * of bootstrap.idio (because we were using the load-handle
+	 * closure defined in lib/bootstrap/module.idio) and this PC
+	 * of 10 will... re-run the bootstrap.  Yay!  No, wait, d'oh!
+	 *
+	 * The symptoms of this are not necessarily obvious -- by and
+	 * large you would like to think we simply redefine everything
+	 * we defined the first time round.  However, on the way
+	 * through, *require-features* is reset to #n (and
+	 * subsequently prepended to as per bootstrap.idio) which
+	 * means, for example, we will have lost the registration of a
+	 * previous load of a shared library, say, empty, and any
+	 * subsequent attempt to reload it will be trapped and faulted
+	 * as a duplicated shared library load.
+	 *
+	 * This happens in the test suite where "empty" is
+	 * deliberately reloaded to generate the error in
+	 * test/test-file-handle-error.idio.  The re-running of
+	 * bootstrap.idio occurs in calls to load-handle in
+	 * test/test-load-handle.idio and therefore we've lost "empty"
+	 * from *require-features* and therefore we will try to load
+	 * it again for the actual extension tests sometime later and
+	 * it will fail (with the duplicated shared library load
+	 * error).
+	 */
+	r = idio_vm_run_C (thr, xi, pc);
 
 	idio_sp_t sp = idio_array_size (stack);
 
@@ -2271,7 +2316,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	if (sp == sp0) {
 	    idio_array_pop (stack);
 	} else {
-	    fprintf (stderr, "load-handle: SP %zd != %zd\n", sp, sp0);
+	    fprintf (stderr, "load-handle: preserve: SP %zd != %zd\n", sp, sp0);
 	}
     }
 
@@ -2281,9 +2326,9 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 /*
  * A dumb wrapper to idio_load_handle()
  */
-IDIO idio_load_handle_C (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
+IDIO idio_load_handle_C (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO eenv), IDIO eenv)
 {
-    return idio_load_handle (h, reader, evaluator, cs, 1);
+    return idio_load_handle (h, reader, evaluator, eenv, IDIO_LOAD_HANDLE_PRESERVE_HANDLE);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("load-handle", load_handle, (IDIO h), "handle", "\
@@ -2305,14 +2350,28 @@ This is the `load-handle` primitive.				\n\
     IDIO_USER_TYPE_ASSERT (handle, h);
 
     IDIO thr = idio_thread_current_thread ();
+    idio_xi_t xi0 = IDIO_THREAD_XI (thr);
     idio_pc_t pc0 = IDIO_THREAD_PC (thr);
 
-    IDIO r = idio_load_handle (h, idio_read, idio_evaluate_func, idio_vm_constants, 0);
+    IDIO cm = IDIO_THREAD_MODULE (thr);
+
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (IDIO_MODULE_NAME (cm), dsh);
+    idio_display_C ("> load-handle for ", dsh);
+    idio_display (IDIO_HANDLE_FILENAME (h), dsh);
+    IDIO desc = idio_get_output_string (dsh);
+    IDIO eenv = idio_evaluate_eenv (thr, desc, cm);
+    idio_gc_protect (eenv);
+
+    IDIO r = idio_load_handle (h, idio_read, idio_evaluate_func, eenv, IDIO_LOAD_HANDLE_PRESERVE_NONE);
+
+    idio_gc_expose (eenv);
 
     idio_pc_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
 	IDIO_THREAD_PC (thr) = pc0;
     }
+    IDIO_THREAD_XI (thr) = xi0;
 
     return r;
 }

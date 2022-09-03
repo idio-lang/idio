@@ -6365,7 +6365,7 @@ void idio_libc_api_add_primitives ()
 	IDIO_C_STRUCT_IDENT_DEF (struct_name, idio_list_nreverse (struct_fields), cname, fgvi); \
 	IDIO I_vt = idio_C_pointer_type_add_vtable (idio_CSI_ ## cname); \
 	IDIO printer = IDIO_EXPORT_MODULE_PRIMITIVE (idio_ ## mname ## _module, cname ## _as_string); \
-	IDIO printer_func = idio_vm_values_ref (IDIO_FIXNUM_VAL (printer)); \
+	IDIO printer_func = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (printer)); \
 	idio_vtable_add_method (IDIO_C_TYPE_POINTER_P (I_vt),		\
 				idio_S_2string,				\
 				idio_vtable_create_method_value (idio_util_method_run, \

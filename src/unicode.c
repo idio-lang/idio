@@ -116,7 +116,8 @@ static const uint8_t idio_utf8d[] = {
     12,36,12,12,12,12,12,12,12,12,12,12,
 };
 
-static char const *idio_unicode_hex_DIGITS = "0123456789ABCDEF";
+char const *idio_HEX_digits = "0123456789ABCDEF";
+char const *idio_hex_digits = "0123456789abcdef";
 
 inline idio_unicode_t idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, idio_unicode_t byte)
 {
@@ -498,8 +499,8 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	} else if (hex) {
 	    r[n++] = '\\';
 	    r[n++] = 'x';
-	    r[n++] = idio_unicode_hex_DIGITS[(c & 0xf0) >> 4];
-	    r[n++] = idio_unicode_hex_DIGITS[(c & 0x0f)];
+	    r[n++] = idio_HEX_digits[(c & 0xf0) >> 4];
+	    r[n++] = idio_HEX_digits[(c & 0x0f)];
 	} else {
 	    if (is_pathname ||
 		is_octet) {
@@ -832,7 +833,7 @@ void idio_unicode_add_primitives ()
      * add the sigstr and docstr
      */
     IDIO fvi = IDIO_ADD_PRIMITIVE (unicode_eq_p);
-    IDIO p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    IDIO p = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
     idio_primitive_set_property_C (p, idio_KW_sigstr, IDIO_STATIC_STR_LEN ("cp1 cp2 [...]"));
     idio_primitive_set_property_C (p, idio_KW_docstr_raw, IDIO_STATIC_STR_LEN ("\
 test if unicode arguments are equal			\n\

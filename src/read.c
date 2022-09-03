@@ -1127,9 +1127,10 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, idio_unicod
 		 */
 
 		/*
-		 * An operator cannot be in functional position although
-		 * several operators and functional names clash!  So, skip
-		 * if it's the first element in the list.
+		 * An operator cannot be in functional position
+		 * although several operators and functional names
+		 * clash!  So, skip if it's the first element in the
+		 * list.
 		 */
 		if (count > 0) {
 		    IDIO lo = idio_read_1_expr (handle, ic, depth);
@@ -2005,7 +2006,7 @@ static IDIO idio_read_array (IDIO handle, IDIO lo, idio_unicode_t ic[IDIO_TEMPLA
 {
     IDIO_ASSERT (handle);
 
-    IDIO l = idio_read_list (handle, lo, idio_T_lbracket, ic, IDIO_LIST_BRACKET (depth + 1));
+    IDIO l = idio_read_list (handle, lo, idio_T_lbracket, ic, IDIO_LIST_CONSTANT (IDIO_LIST_BRACKET (depth + 1)));
     return idio_list_to_array (l);
 }
 

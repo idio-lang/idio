@@ -1,0 +1,4 @@
+
+module vm
+
+vm-run (threading/current-thread) 536870911 ; FIXNUM-MAX on 32-bit

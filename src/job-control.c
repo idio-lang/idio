@@ -68,6 +68,7 @@
 #include "fixnum.h"
 #include "handle.h"
 #include "hash.h"
+#include "job-control.h"
 #include "idio-string.h"
 #include "libc-wrap.h"
 #include "module.h"
@@ -113,40 +114,6 @@ static IDIO idio_S_default_child_handler;
 IDIO idio_S_djn;
 
 static IDIO idio_str_job_failed;
-
-/*
- * Indexes into structures for direct references
- */
-#define IDIO_JOB_ST_PIPELINE		0
-#define IDIO_JOB_ST_PROCS		1
-#define IDIO_JOB_ST_PGID		2
-#define IDIO_JOB_ST_NOTIFY_STOPPED	3
-#define IDIO_JOB_ST_NOTIFY_COMPLETED	4
-#define IDIO_JOB_ST_RAISEP		5
-#define IDIO_JOB_ST_RAISED		6
-#define IDIO_JOB_ST_TCATTRS		7
-#define IDIO_JOB_ST_STDIN		8
-#define IDIO_JOB_ST_STDOUT		9
-#define IDIO_JOB_ST_STDERR		10
-#define IDIO_JOB_ST_REPORT_TIMING	11
-#define IDIO_JOB_ST_TIMING_START	12
-#define IDIO_JOB_ST_TIMING_END		13
-#define IDIO_JOB_ST_ASYNC		14
-#define IDIO_JOB_ST_SET_EXIT_STATUS	15
-
-#define IDIO_PROCESS_ST_ARGV		0
-#define IDIO_PROCESS_ST_EXEC		1
-#define IDIO_PROCESS_ST_PID		2
-#define IDIO_PROCESS_ST_COMPLETED	3
-#define IDIO_PROCESS_ST_STOPPED		4
-#define IDIO_PROCESS_ST_STATUS		5
-
-/* PSJ is PROCESS_SUBSTITUTION_JOB */
-#define IDIO_PSJ_READ			0
-#define IDIO_PSJ_FD			1
-#define IDIO_PSJ_PATH			2
-#define IDIO_PSJ_DIR			3
-#define IDIO_PSJ_SUPPRESS		4
 
 static void idio_job_control_error_exec (char **argv, char **envp, IDIO c_location)
 {
@@ -807,7 +774,7 @@ void idio_job_control_do_job_notification ()
 	    IDIO psj = idio_hash_ref (ps_jobs, job);
 
 	    if (idio_S_unspec != psj) {
-		IDIO psj_path = idio_struct_instance_ref_direct (psj, IDIO_PSJ_PATH);
+		IDIO psj_path = idio_struct_instance_ref_direct (psj, IDIO_PSJ_ST_PATH);
 		if (idio_S_false != psj_path) {
 #ifdef IDIO_DEBUG
 		    fprintf (stderr, "%6d: SHUTDOWN: ", getpid ());
@@ -831,7 +798,7 @@ void idio_job_control_do_job_notification ()
 
 			    perror (em);
 			} else {
-			    IDIO psj_dir = idio_struct_instance_ref_direct (psj, IDIO_PSJ_DIR);
+			    IDIO psj_dir = idio_struct_instance_ref_direct (psj, IDIO_PSJ_ST_DIR);
 			    size = 0;
 			    char *dir_C = idio_string_as_C (psj_dir, &size);
 
@@ -954,8 +921,7 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 	}
     }
 
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (),
-			       IDIO_LIST2 (idio_module_symbol_value (idio_S_wait_for_job,
+    IDIO r = idio_vm_invoke_C (IDIO_LIST2 (idio_module_symbol_value (idio_S_wait_for_job,
 								     idio_job_control_module,
 								     idio_S_nil),
 					   job));
@@ -1286,8 +1252,7 @@ IDIO idio_job_control_SIGCHLD_signal_handler ()
     /*
      * do-job-notification is a thunk so we can call it direct
      */
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (),
-			       idio_module_symbol_value (idio_S_djn,
+    IDIO r = idio_vm_invoke_C (idio_module_symbol_value (idio_S_djn,
 							 idio_job_control_module,
 							 idio_S_nil));
 
@@ -1934,7 +1899,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 	     * As we simply return the result of idio_vm_invoke_C(),
 	     * no need to protect anything here.
 	     */
-	    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+	    IDIO r = idio_vm_invoke_C (cmd);
 
 	    return r;
 	}
@@ -2006,7 +1971,8 @@ launch a pipeline of `job_controls`			\n\
     IDIO cmds = job_controls;
     while (idio_S_nil != cmds) {
 	IDIO proc = idio_struct_instance (idio_job_control_process_type,
-					  IDIO_LIST6 (IDIO_PAIR_H (cmds),
+					  idio_listv (IDIO_PROCESS_ST_SIZE,
+						      IDIO_PAIR_H (cmds),
 						      idio_S_nil,
 						      idio_libc_pid_t (-1),
 						      idio_S_false,
@@ -2062,7 +2028,7 @@ launch a pipeline of `job_controls`			\n\
 				    idio_C_pointer_type (idio_CSI_libc_struct_rusage, rusage_childrenp));
 
     IDIO job = idio_struct_instance (idio_job_control_job_type,
-				     idio_listv (16,
+				     idio_listv (IDIO_JOB_ST_SIZE,
 						 job_controls,
 						 procs,
 						 idio_libc_pid_t (0),
@@ -2197,6 +2163,19 @@ void idio_job_control_set_interactive (int interactive)
 
 void idio_job_control_add_primitives ()
 {
+    /*
+     * The Idio-visible %idio-interactive should be read-only.
+     * However, we actually play some tricks with it like disabling
+     * during {load} so we don't get plagued with job failure
+     * messages.  So it should be a (read-only) computed variable.
+     */
+    IDIO geti;
+    geti = IDIO_ADD_PRIMITIVE (interactivep);
+    idio_module_add_computed_symbol (IDIO_SYMBOL ("%idio-interactive"),
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (geti)),
+				     idio_S_nil,
+				     idio_job_control_module);
+
     IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_is_stopped);
     IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_is_completed);
     IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_failed);
@@ -2321,19 +2300,6 @@ void idio_init_job_control ()
     idio_job_control_cmd_pid = idio_job_control_pid;
 
     /*
-     * The Idio-visible %idio-interactive should be read-only.
-     * However, we actually play some tricks with it like disabling
-     * during {load} so we don't get plagued with job failure
-     * messages.  So it should be a (read-only) computed variable.
-     */
-    IDIO geti;
-    geti = IDIO_ADD_PRIMITIVE (interactivep);
-    idio_module_add_computed_symbol (IDIO_SYMBOL ("%idio-interactive"),
-				     idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)),
-				     idio_S_nil,
-				     idio_job_control_module);
-
-    /*
      * Not noted in the Job Control docs is that if we are launched
      * non-interactively then we never set
      * idio_job_control_pgid/%idio-pgid with a later complaint about a
@@ -2380,7 +2346,8 @@ void idio_init_job_control ()
     sym = IDIO_SYMBOL ("%idio-process");
     idio_job_control_process_type = idio_struct_type (sym,
 						      idio_S_nil,
-						      IDIO_LIST6 (IDIO_SYMBOL ("argv"),
+						      idio_listv (IDIO_PROCESS_ST_SIZE,
+								  IDIO_SYMBOL ("argv"),
 								  IDIO_SYMBOL ("exec"),
 								  IDIO_SYMBOL ("pid"),
 								  IDIO_SYMBOL ("completed"),
@@ -2391,7 +2358,7 @@ void idio_init_job_control ()
     sym = IDIO_SYMBOL ("%idio-job");
     idio_job_control_job_type = idio_struct_type (sym,
 						  idio_S_nil,
-						  idio_listv (16,
+						  idio_listv (IDIO_JOB_ST_SIZE,
 							      IDIO_SYMBOL ("pipeline"),
 							      IDIO_SYMBOL ("procs"),
 							      IDIO_SYMBOL ("pgid"),

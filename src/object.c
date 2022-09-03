@@ -1254,7 +1254,7 @@ IDIO idio_object_slot_ref (IDIO obj, IDIO slot_name)
 	    return idio_struct_instance_ref_direct (obj, IDIO_CLASS_ST_MAX + IDIO_FIXNUM_VAL (slot_getter));
 	} else {
 	    IDIO cmd = IDIO_LIST2 (slot_getter, obj);
-	    return idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+	    return idio_vm_invoke_C (cmd);
 	}
     }
 
@@ -1322,7 +1322,7 @@ IDIO idio_object_slot_set (IDIO obj, IDIO slot, IDIO val)
 	    return idio_struct_instance_set_direct (obj, IDIO_CLASS_ST_MAX + IDIO_FIXNUM_VAL (slot_getter), val);
 	} else {
 	    IDIO cmd = IDIO_LIST3 (slot_getter, obj, val);
-	    return idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+	    return idio_vm_invoke_C (cmd);
 	}
     }
 
@@ -1823,26 +1823,15 @@ void idio_object_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_object_module, slot_set_direct);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_object_module, dump_instance);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_object_module, cpl_args);
-}
-
-void idio_final_object ()
-{
-}
-
-void idio_init_object ()
-{
-    idio_module_table_register (idio_object_add_primitives, idio_final_object, NULL);
-
-    idio_object_module = idio_module (IDIO_SYMBOL ("object"));
 
     IDIO vi;
     vi = IDIO_ADD_MODULE_PRIMITIVE (idio_object_module, invoke_instance_in_error);
-    idio_object_invoke_instance_in_error = idio_vm_values_ref (IDIO_FIXNUM_VAL (vi));
+    idio_object_invoke_instance_in_error = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (vi));
     vi = IDIO_ADD_MODULE_PRIMITIVE (idio_object_module, invoke_entity_in_error);
-    idio_object_invoke_entity_in_error = idio_vm_values_ref (IDIO_FIXNUM_VAL (vi));
+    idio_object_invoke_entity_in_error = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (vi));
 
     vi = IDIO_ADD_MODULE_PRIMITIVE (idio_object_module, default_slot_value);
-    idio_object_default_slot_value = idio_vm_values_ref (IDIO_FIXNUM_VAL (vi));
+    idio_object_default_slot_value = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (vi));
 
     /*
      * We need an implementation to (nearly silently) do all the heavy
@@ -2026,4 +2015,15 @@ void idio_init_object ()
 
     IDIO_EXPORT_PROCEDURE_CLASS (idio_closure_inst, "<closure>");
     IDIO_EXPORT_PROCEDURE_CLASS (idio_primitive_inst, "<primitive>");
+}
+
+void idio_final_object ()
+{
+}
+
+void idio_init_object ()
+{
+    idio_module_table_register (idio_object_add_primitives, idio_final_object, NULL);
+
+    idio_object_module = idio_module (IDIO_SYMBOL ("object"));
 }

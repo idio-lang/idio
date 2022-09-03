@@ -23,6 +23,49 @@
 #ifndef JOB_CONTROL_H
 #define JOB_CONTROL_H
 
+/*
+ * Indexes into structures for direct references
+ */
+typedef enum {
+    IDIO_JOB_ST_PIPELINE,
+    IDIO_JOB_ST_PROCS,
+    IDIO_JOB_ST_PGID,
+    IDIO_JOB_ST_NOTIFY_STOPPED,
+    IDIO_JOB_ST_NOTIFY_COMPLETED,
+    IDIO_JOB_ST_RAISEP,
+    IDIO_JOB_ST_RAISED,
+    IDIO_JOB_ST_TCATTRS,
+    IDIO_JOB_ST_STDIN,
+    IDIO_JOB_ST_STDOUT,
+    IDIO_JOB_ST_STDERR,
+    IDIO_JOB_ST_REPORT_TIMING,
+    IDIO_JOB_ST_TIMING_START,
+    IDIO_JOB_ST_TIMING_END,
+    IDIO_JOB_ST_ASYNC,
+    IDIO_JOB_ST_SET_EXIT_STATUS,
+    IDIO_JOB_ST_SIZE,
+} idio_job_st_enum;
+
+typedef enum {
+    IDIO_PROCESS_ST_ARGV,
+    IDIO_PROCESS_ST_EXEC,
+    IDIO_PROCESS_ST_PID,
+    IDIO_PROCESS_ST_COMPLETED,
+    IDIO_PROCESS_ST_STOPPED,
+    IDIO_PROCESS_ST_STATUS,
+    IDIO_PROCESS_ST_SIZE,
+} idio_process_st_enum;
+
+/* PSJ is PROCESS_SUBSTITUTION_JOB */
+typedef enum {
+    IDIO_PSJ_ST_READ,
+    IDIO_PSJ_ST_FD,
+    IDIO_PSJ_ST_PATH,
+    IDIO_PSJ_ST_DIR,
+    IDIO_PSJ_ST_SUPPRESS,
+    IDIO_PSJ_ST_SIZE,
+} idio_psj_st_enum;
+
 extern IDIO idio_job_control_module;
 extern int idio_job_control_tty_fd;
 extern int idio_job_control_tty_isatty;

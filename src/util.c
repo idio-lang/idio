@@ -432,9 +432,9 @@ test if symbol `s` is defined in this environment	\n\
 
     IDIO r = idio_S_false;
 
-    IDIO sk = idio_module_env_symbol_recurse (s);
+    IDIO si = idio_module_env_symbol_recurse (s);
 
-    if (idio_S_false != sk) {
+    if (idio_S_false != si) {
 	r = idio_S_true;
     }
 
@@ -678,8 +678,7 @@ int idio_equal (IDIO o1, IDIO o2, idio_equal_enum eqp)
 	    if (IDIO_TYPE_FIXNUM_MARK == m2) {
 		return (o1 == o2);
 	    } else if (idio_isa_number (o2)) {
-		r = idio_vm_invoke_C (idio_thread_current_thread (),
-				      IDIO_LIST3 (idio_module_symbol_value (idio_S_num_eq,
+		r = idio_vm_invoke_C (IDIO_LIST3 (idio_module_symbol_value (idio_S_num_eq,
 									    idio_Idio_module,
 									    idio_S_nil),
 						  o1,
@@ -709,8 +708,7 @@ int idio_equal (IDIO o1, IDIO o2, idio_equal_enum eqp)
 		    IDIO r = idio_S_false;
 
 		    if (idio_isa_bignum (o1)) {
-			r = idio_vm_invoke_C (idio_thread_current_thread (),
-					      IDIO_LIST3 (idio_module_symbol_value (idio_S_num_eq,
+			r = idio_vm_invoke_C (IDIO_LIST3 (idio_module_symbol_value (idio_S_num_eq,
 										    idio_Idio_module,
 										    idio_S_nil),
 							  o1,
@@ -2001,180 +1999,6 @@ C/pointer (with CSI)				\n\
     return idio_S_unspec;
 }
 
-/*
- * Code coverage:
- *
- * Used by the disassembler.
- *
- * Compile a debug build then run with --vm-reports
- */
-char const *idio_vm_bytecode2string (int code)
-{
-    char *r;
-
-    switch (code) {
-    case IDIO_A_SHALLOW_ARGUMENT_REF0:		r = "A-SHALLOW-ARGUMENT-REF0";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF1:		r = "A-SHALLOW-ARGUMENT-REF1";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF2:		r = "A-SHALLOW-ARGUMENT-REF2";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF3:		r = "A-SHALLOW-ARGUMENT-REF3";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF:		r = "A-SHALLOW-ARGUMENT-REF";		break;
-    case IDIO_A_DEEP_ARGUMENT_REF:		r = "A-DEEP-ARGUMENT-REF";		break;
-
-    case IDIO_A_SHALLOW_ARGUMENT_SET0:		r = "A-SHALLOW-ARGUMENT-SET0";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET1:		r = "A-SHALLOW-ARGUMENT-SET1";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET2:		r = "A-SHALLOW-ARGUMENT-SET2";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET3:		r = "A-SHALLOW-ARGUMENT-SET3";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET:		r = "A-SHALLOW-ARGUMENT-SET";		break;
-    case IDIO_A_DEEP_ARGUMENT_SET:		r = "A-DEEP-ARGUMENT-SET";		break;
-
-    case IDIO_A_GLOBAL_SYM_REF:			r = "A-GLOBAL-SYM-REF";			break;
-    case IDIO_A_CHECKED_GLOBAL_SYM_REF:		r = "A-CHECKED-GLOBAL-SYM-REF";		break;
-    case IDIO_A_GLOBAL_FUNCTION_SYM_REF:	r = "A-GLOBAL-FUNCTION-SYM-REF";	break;
-    case IDIO_A_CHECKED_GLOBAL_FUNCTION_SYM_REF:r = "A-CHECKED-GLOBAL-FUNCTION-SYM-REF";break;
-    case IDIO_A_CONSTANT_SYM_REF:		r = "A-CONSTANT-SYM-REF";		break;
-    case IDIO_A_COMPUTED_SYM_REF:		r = "A-COMPUTED-SYM-REF";		break;
-
-    case IDIO_A_GLOBAL_SYM_DEF:			r = "A-GLOBAL-SYM-DEF";			break;
-    case IDIO_A_GLOBAL_SYM_SET:			r = "A-GLOBAL-SYM-SET";			break;
-    case IDIO_A_COMPUTED_SYM_SET:		r = "A-COMPUTED-SYM-SET";		break;
-    case IDIO_A_COMPUTED_SYM_DEF:		r = "A-COMPUTED-SYM-DEF";		break;
-
-    case IDIO_A_GLOBAL_VAL_REF:			r = "A-GLOBAL-VAL-REF";			break;
-    case IDIO_A_CHECKED_GLOBAL_VAL_REF:		r = "A-CHECKED-GLOBAL-VAL-REF";		break;
-    case IDIO_A_GLOBAL_FUNCTION_VAL_REF:	r = "A-GLOBAL-FUNCTION-VAL-REF";	break;
-    case IDIO_A_CHECKED_GLOBAL_FUNCTION_VAL_REF:r = "A-CHECKED-GLOBAL-FUNCTION-VAL-REF";break;
-    case IDIO_A_CONSTANT_VAL_REF:		r = "A-CONSTANT-VAL-REF";		break;
-    case IDIO_A_COMPUTED_VAL_REF:		r = "A-COMPUTED-VAL-REF";		break;
-
-    case IDIO_A_GLOBAL_VAL_DEF:			r = "A-GLOBAL-VAL-DEF";			break;
-    case IDIO_A_GLOBAL_VAL_SET:			r = "A-GLOBAL-VAL-SET";			break;
-    case IDIO_A_COMPUTED_VAL_SET:		r = "A-COMPUTED-VAL-SET";		break;
-    case IDIO_A_COMPUTED_VAL_DEF:		r = "A-COMPUTED-VAL-DEF";		break;
-
-    case IDIO_A_PREDEFINED0:			r = "A-PREDEFINED0";			break;
-    case IDIO_A_PREDEFINED1:			r = "A-PREDEFINED1";			break;
-    case IDIO_A_PREDEFINED2:			r = "A-PREDEFINED2";			break;
-    case IDIO_A_PREDEFINED3:			r = "A-PREDEFINED3";			break;
-    case IDIO_A_PREDEFINED4:			r = "A-PREDEFINED4";			break;
-    case IDIO_A_PREDEFINED5:			r = "A-PREDEFINED5";			break;
-    case IDIO_A_PREDEFINED6:			r = "A-PREDEFINED6";			break;
-    case IDIO_A_PREDEFINED7:			r = "A-PREDEFINED7";			break;
-    case IDIO_A_PREDEFINED8:			r = "A-PREDEFINED8";			break;
-    case IDIO_A_PREDEFINED:			r = "A-PREDEFINED";			break;
-
-    case IDIO_A_LONG_GOTO:			r = "A-LONG-GOTO";			break;
-    case IDIO_A_LONG_JUMP_FALSE:		r = "A-LONG-JUMP-FALSE";		break;
-    case IDIO_A_LONG_JUMP_TRUE:			r = "A-LONG-JUMP-TRUE";			break;
-    case IDIO_A_SHORT_GOTO:			r = "A-SHORT-GOTO";			break;
-    case IDIO_A_SHORT_JUMP_FALSE:		r = "A-SHORT-JUMP-FALSE";		break;
-    case IDIO_A_SHORT_JUMP_TRUE:		r = "A-SHORT-JUMP-TRUE";		break;
-
-    case IDIO_A_PUSH_VALUE:			r = "A-PUSH-VALUE";			break;
-    case IDIO_A_POP_VALUE:			r = "A-POP-VALUE";			break;
-    case IDIO_A_POP_REG1:			r = "A-POP-REG1";			break;
-    case IDIO_A_POP_REG2:			r = "A-POP-REG2";			break;
-    case IDIO_A_SRC_EXPR:			r = "A-SRC-EXPR";			break;
-    case IDIO_A_POP_FUNCTION:			r = "A-POP-FUNCTION";			break;
-    case IDIO_A_PRESERVE_STATE:			r = "A-PRESERVE-STATE";			break;
-    case IDIO_A_RESTORE_STATE:			r = "A-RESTORE-STATE";			break;
-    case IDIO_A_RESTORE_ALL_STATE:		r = "A-RESTORE-ALL-STATE";		break;
-
-    case IDIO_A_CREATE_FUNCTION:		r = "A-CREATE-FUNCTION";		break;
-    case IDIO_A_CREATE_CLOSURE:			r = "A-CREATE-CLOSURE";			break;
-    case IDIO_A_FUNCTION_INVOKE:		r = "A-FUNCTION-INVOKE";		break;
-    case IDIO_A_FUNCTION_GOTO:			r = "A-FUNCTION-GOTO";			break;
-    case IDIO_A_RETURN:				r = "A-RETURN";				break;
-    case IDIO_A_FINISH:				r = "A-FINISH";				break;
-    case IDIO_A_PUSH_ABORT:			r = "A-PUSH-ABORT";			break;
-    case IDIO_A_POP_ABORT:			r = "A-POP-ABORT";			break;
-
-    case IDIO_A_ALLOCATE_FRAME1:		r = "A-ALLOCATE-FRAME1";		break;
-    case IDIO_A_ALLOCATE_FRAME2:		r = "A-ALLOCATE-FRAME2";		break;
-    case IDIO_A_ALLOCATE_FRAME3:		r = "A-ALLOCATE-FRAME3";		break;
-    case IDIO_A_ALLOCATE_FRAME4:		r = "A-ALLOCATE-FRAME4";		break;
-    case IDIO_A_ALLOCATE_FRAME5:		r = "A-ALLOCATE-FRAME5";		break;
-    case IDIO_A_ALLOCATE_FRAME:			r = "A-ALLOCATE-FRAME";			break;
-    case IDIO_A_ALLOCATE_DOTTED_FRAME:		r = "A-ALLOCATE-DOTTED-FRAME";		break;
-    case IDIO_A_REUSE_FRAME:			r = "A-REUSE-FRAME";			break;
-
-    case IDIO_A_POP_FRAME0:			r = "A-POP-FRAME0";			break;
-    case IDIO_A_POP_FRAME1:			r = "A-POP-FRAME1";			break;
-    case IDIO_A_POP_FRAME2:			r = "A-POP-FRAME2";			break;
-    case IDIO_A_POP_FRAME3:			r = "A-POP-FRAME3";			break;
-    case IDIO_A_POP_FRAME:			r = "A-POP-FRAME";			break;
-
-    case IDIO_A_LINK_FRAME:			r = "A-LINK-FRAME";			break;
-    case IDIO_A_UNLINK_FRAME:			r = "A-UNLINK-FRAME";			break;
-    case IDIO_A_PACK_FRAME:			r = "A-PACK-FRAME";			break;
-    case IDIO_A_POP_LIST_FRAME:			r = "A-POP-LIST-FRAME";			break;
-    case IDIO_A_EXTEND_FRAME:			r = "A-EXTEND-FRAME";			break;
-
-    case IDIO_A_ARITY1P:			r = "A-ARITY1P";			break;
-    case IDIO_A_ARITY2P:			r = "A-ARITY2P";			break;
-    case IDIO_A_ARITY3P:			r = "A-ARITY3P";			break;
-    case IDIO_A_ARITY4P:			r = "A-ARITY4P";			break;
-    case IDIO_A_ARITYEQP:			r = "A-ARITYEQP";			break;
-    case IDIO_A_ARITYGEP:			r = "A-ARITYGEP";			break;
-
-    case IDIO_A_SHORT_NUMBER:			r = "A-SHORT-NUMBER";			break;
-    case IDIO_A_SHORT_NEG_NUMBER:		r = "A-SHORT-NEG-NUMBER";		break;
-    case IDIO_A_CONSTANT_0:			r = "A-CONSTANT-0";			break;
-    case IDIO_A_CONSTANT_1:			r = "A-CONSTANT-1";			break;
-    case IDIO_A_CONSTANT_2:			r = "A-CONSTANT-2";			break;
-    case IDIO_A_CONSTANT_3:			r = "A-CONSTANT-3";			break;
-    case IDIO_A_CONSTANT_4:			r = "A-CONSTANT-4";			break;
-    case IDIO_A_FIXNUM:				r = "A-FIXNUM";				break;
-    case IDIO_A_NEG_FIXNUM:			r = "A-NEG-FIXNUM";			break;
-    case IDIO_A_CONSTANT:			r = "A-CONSTANT";			break;
-    case IDIO_A_NEG_CONSTANT:			r = "A-NEG-CONSTANT";			break;
-    case IDIO_A_UNICODE:			r = "A-UNICODE";			break;
-
-    case IDIO_A_NOP:				r = "A-NOP";				break;
-    case IDIO_A_PRIMCALL0:			r = "A-PRIMCALL0";			break;
-    case IDIO_A_PRIMCALL1:			r = "A-PRIMCALL1";			break;
-    case IDIO_A_PRIMCALL2:			r = "A-PRIMCALL2";			break;
-
-    case IDIO_A_PRIMCALL3:			r = "A-PRIMCALL3";			break;
-    case IDIO_A_PRIMCALL:			r = "A-PRIMCALL";			break;
-
-    case IDIO_A_SUPPRESS_RCSE:			r = "A-SUPPRESS-RCSE";			break;
-    case IDIO_A_POP_RCSE:			r = "A-POP-RCSE";			break;
-
-    case IDIO_A_NOT:				r = "A-NOT";				break;
-
-    case IDIO_A_EXPANDER:			r = "A-EXPANDER";			break;
-    case IDIO_A_INFIX_OPERATOR:			r = "A-INFIX-OPERATOR";			break;
-    case IDIO_A_POSTFIX_OPERATOR:		r = "A-POSTFIX-OPERATOR";		break;
-
-    case IDIO_A_PUSH_DYNAMIC:			r = "A-PUSH-DYNAMIC";			break;
-    case IDIO_A_POP_DYNAMIC:			r = "A-POP-DYNAMIC";			break;
-    case IDIO_A_DYNAMIC_SYM_REF:		r = "A-DYNAMIC-SYM-REF";		break;
-    case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:	r = "A-DYNAMIC-FUNCTION-SYM-REF";	break;
-    case IDIO_A_DYNAMIC_VAL_REF:		r = "A-DYNAMIC-VAL-REF";		break;
-    case IDIO_A_DYNAMIC_FUNCTION_VAL_REF:	r = "A-DYNAMIC-FUNCTION-VAL-REF";	break;
-
-    case IDIO_A_PUSH_ENVIRON:			r = "A-PUSH-ENVIRON";			break;
-    case IDIO_A_POP_ENVIRON:			r = "A-POP-ENVIRON";			break;
-    case IDIO_A_ENVIRON_SYM_REF:		r = "A-ENVIRON-SYM-REF";		break;
-    case IDIO_A_ENVIRON_VAL_REF:		r = "A-ENVIRON-VAL-REF";		break;
-
-    case IDIO_A_NON_CONT_ERR:			r = "A-NON-CONT-ERR";			break;
-    case IDIO_A_PUSH_TRAP:			r = "A-PUSH-TRAP";			break;
-    case IDIO_A_POP_TRAP:			r = "A-POP-TRAP";			break;
-    case IDIO_A_RESTORE_TRAP:			r = "A-RESTORE-TRAP";			break;
-
-    case IDIO_A_PUSH_ESCAPER:			r = "A-PUSH-ESCAPER";			break;
-    case IDIO_A_POP_ESCAPER:			r = "A-POP-ESCAPER";			break;
-
-    default:
-	/* fprintf (stderr, "idio_vm_bytecode2string: unexpected bytecode %d\n", code); */
-	r = "Unknown bytecode";
-	break;
-    }
-
-    return r;
-}
-
 IDIO idio_util_method_value_index (idio_vtable_method_t *m, IDIO v, ...)
 {
     IDIO_C_ASSERT (m);
@@ -2200,7 +2024,7 @@ IDIO idio_util_method_value_index (idio_vtable_method_t *m, IDIO v, ...)
 
     IDIO cmd = IDIO_LIST3 (func, v, member);
 
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+    IDIO r = idio_vm_invoke_C (cmd);
 
     return r;
 }
@@ -2224,7 +2048,7 @@ otherwise index the object `o` by `i`		\n\
     if (idio_isa_function (i)) {
 	IDIO cmd = IDIO_LIST2 (i, o);
 
-	IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+	IDIO r = idio_vm_invoke_C (cmd);
 
 	return r;
     }
@@ -2271,7 +2095,7 @@ IDIO idio_util_method_set_value_index (idio_vtable_method_t *m, IDIO v, ...)
 
     IDIO cmd = IDIO_LIST4 (func, v, member, value);
 
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+    IDIO r = idio_vm_invoke_C (cmd);
 
     return r;
 }
@@ -2328,7 +2152,7 @@ set value of the object `o` indexed by `i` to `v`	\n\
 	if (idio_isa_function (setter_func)) {
 	    IDIO set_cmd = IDIO_LIST4 (setter_func, o, i, v);
 
-	    IDIO set_r = idio_vm_invoke_C (idio_thread_current_thread (), set_cmd);
+	    IDIO set_r = idio_vm_invoke_C (set_cmd);
 
 	    return set_r;
 	}
@@ -2394,7 +2218,8 @@ IDIO idio_copy (IDIO o, int depth)
 		if (idio_isa_instance (o)) {
 		    return o;
 		} else if (idio_struct_instance_isa (o, idio_path_type) ||
-		    idio_struct_instance_isa (o, idio_lexobj_type)) {
+			   idio_struct_instance_isa (o, idio_lexobj_type) ||
+			   idio_struct_instance_isa (o, idio_evaluate_eenv_type)) {
 		    return idio_struct_instance_copy (o);
 		} else {
 		    /*
@@ -3150,7 +2975,7 @@ char *idio_constant_idio_as_C_string (IDIO v, size_t *sizep, idio_unicode_t form
     case IDIO_CONSTANT_EOF:				t = "#<eof>";				break;
     case IDIO_CONSTANT_TRUE:				t = "#t";				break;
     case IDIO_CONSTANT_FALSE:				t = "#f";				break;
-    case IDIO_CONSTANT_VOID:				t = "#<void>";				break;
+    case IDIO_CONSTANT_VOID:				t = "(void)";				break;
     case IDIO_CONSTANT_NAN:				t = "#<NaN>";				break;
 
 	/*
@@ -3259,7 +3084,7 @@ IDIO idio_util_method_run0 (idio_vtable_method_t *m, IDIO v, ...)
 
     IDIO cmd = IDIO_LIST2 (func, v);
 
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+    IDIO r = idio_vm_invoke_C (cmd);
 
     return r;
 }
@@ -3294,7 +3119,7 @@ IDIO idio_util_method_run (idio_vtable_method_t *m, IDIO v, ...)
 
     IDIO cmd = idio_list_append2 (IDIO_LIST2 (func, v), args);
 
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+    IDIO r = idio_vm_invoke_C (cmd);
 
     return r;
 }

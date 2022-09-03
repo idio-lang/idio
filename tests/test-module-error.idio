@@ -66,16 +66,6 @@ module-error-load := {
   }
 }
 
-module-error-load "module-errors/set-module-vci-bad-mci-type.idio" "bad parameter type: '#t' a constant is not a fixnum"
-module-error-load "module-errors/set-module-vci-bad-gci-type.idio" "bad parameter type: '#t' a constant is not a fixnum"
-module-error-load "module-errors/set-module-vci-unbound.idio" "module name unbound"
-module-error-load "module-errors/set-module-vci-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module|symbol"
-
-module-error-load "module-errors/set-module-vvi-bad-mci-type.idio" "bad parameter type: '#t' a constant is not a fixnum"
-module-error-load "module-errors/set-module-vvi-bad-gvi-type.idio" "bad parameter type: '#t' a constant is not a fixnum"
-module-error-load "module-errors/set-module-vvi-unbound.idio" "module name unbound"
-module-error-load "module-errors/set-module-vvi-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module|symbol"
-
 module-error-load "module-errors/find-module-bad-name-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 module-error-load "module-errors/find-module-unbound.idio" "module name unbound"
 
@@ -124,4 +114,4 @@ module-error-load "module-errors/set-symbol-value-bad-symbol-type.idio" "bad par
 module-error-load "module-errors/set-symbol-value-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module"
 
 ;; all done?
-Tests? (module-error0 + 37)
+Tests? (module-error0 + 29)

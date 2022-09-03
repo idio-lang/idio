@@ -70,10 +70,10 @@
 #include "vm.h"
 
 /*
- * We use these *_condition_type_mci in idio_vm_init_thread() to
+ * We use these *_condition_type_gci in idio_vm_init_thread() to
  * bootstrap the base trap handlers
  */
-IDIO idio_condition_condition_type_mci;
+IDIO idio_condition_condition_type_gci;
 
 /* SRFI-36 */
 IDIO idio_condition_condition_type;
@@ -707,7 +707,7 @@ void idio_condition_report (char const *prefix, IDIO c)
 			      c,
 			      idio_thread_current_error_handle ());
 
-    idio_vm_invoke_C (idio_thread_current_thread (), cr_cmd);
+    idio_vm_invoke_C (cr_cmd);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("default-rcse-handler", default_rcse_handler, (IDIO c), "c", "\
@@ -824,8 +824,6 @@ does not return per se						\n\
 	exit (1);
     }
 
-    IDIO thr = idio_thread_current_thread ();
-
     /*
      * Technically we can allow the user to override the SIGCHLD and
      * SIGHUP handlers -- though we'd advise against it.
@@ -835,7 +833,7 @@ does not return per se						\n\
 	IDIO handler = idio_hash_ref (idio_condition_default_handler, sit);
 
 	if (idio_S_unspec != handler) {
-	    return idio_vm_invoke_C (thr, IDIO_LIST2 (handler, c));
+	    return idio_vm_invoke_C (IDIO_LIST2 (handler, c));
 	}
 
 	sit = IDIO_STRUCT_TYPE_PARENT (sit);
@@ -941,11 +939,11 @@ does not return per se						\n\
 						      idio_debugger_module,
 						      idio_S_nil);
 
-	    if (idio_S_unspec != debugger) {
+	    if (idio_isa_function (debugger)) {
 		IDIO cmd = IDIO_LIST1 (debugger);
 
 		fprintf (stderr, "invoking debugger\n");
-		IDIO r = idio_vm_invoke_C (thr, cmd);
+		IDIO r = idio_vm_invoke_C (cmd);
 
 		/*
 		 * PC for RETURN
@@ -956,9 +954,9 @@ does not return per se						\n\
 		 *
 		 *
 		 */
-		/* IDIO_THREAD_PC (thr) = idio_vm_CHR_pc + 2; */
-
 		return r;
+	    } else {
+		idio_debug ("debug is %s: debugger invocation failed\n", debugger);
 	    }
 	} else {
 	    fprintf (stderr, "\ndefault-condition-handler: bootstrap incomplete\n");
@@ -1088,7 +1086,7 @@ does not return per se						\n\
 	fprintf (stderr, "restart-condition-handler: nothing to restore\n");
 #ifdef IDIO_DEBUG
 	idio_debug ("\nrestart-condition-handler: re-raising %s\n", c);
-	idio_vm_trap_state (idio_thread_current_thread ());
+	idio_vm_trap_state (thr);
 	idio_vm_frame_tree (idio_S_nil);
 #endif
     } else {
@@ -1204,17 +1202,17 @@ void idio_condition_add_primitives ()
 
     IDIO fvi;
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, reset_condition_handler);
-    idio_condition_reset_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_condition_reset_condition_handler = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, restart_condition_handler);
-    idio_condition_restart_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_condition_restart_condition_handler = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_condition_handler);
-    idio_condition_default_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_condition_default_condition_handler = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_rcse_handler);
-    idio_condition_default_rcse_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_condition_default_rcse_handler = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_racse_handler);
-    idio_condition_default_racse_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_condition_default_racse_handler = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_SIGCHLD_handler);
-    idio_condition_default_SIGCHLD_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_condition_default_SIGCHLD_handler = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi));
 }
 
 void idio_init_condition ()
@@ -1234,13 +1232,13 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_error_type, "^error", idio_condition_condition_type);
 
     /*
-     * We want the fmci of ^condition for the *-condition-handler(s)
+     * We want the fgci of ^condition for the *-condition-handler(s)
      * which means we have to repeat a couple of the actions of the
      * IDIO_DEFINE_CONDITION0 macro.
      */
     IDIO sym = IDIO_SYMBOL (IDIO_CONDITION_CONDITION_TYPE_NAME);
-    idio_as_t gci = idio_vm_constants_lookup_or_extend (sym);
-    idio_condition_condition_type_mci = idio_fixnum (gci);
+    idio_as_t gci = idio_vm_extend_default_constants (sym);
+    idio_condition_condition_type_gci = idio_fixnum (gci);
 
     /* Idio */
     IDIO_DEFINE_CONDITION3 (idio_condition_idio_error_type, "^idio-error", idio_condition_error_type, "message", "location", "detail");

@@ -5,8 +5,8 @@ CDEBUG		:= -O3 -UIDIO_DEBUG -UIDIO_VM_PROF
 else ifdef MAKE_DEBUG
 CDEBUG		:= -DIDIO_DEBUG=3 -g -DIDIO_VM_PROF
 else
-CDEBUG		:= 
-endif 
+CDEBUG		:=
+endif
 
 
 PROFLAGS	:=
@@ -30,7 +30,7 @@ ifneq ($(MAKECMDGOALS),clean)
 include $(deps) Makefile.system
 endif
 
-# dummy versions if Makefile.system doesn't exist yet
+# dummy version of Makefile.system doesn't exist yet
 IDIO_SYSTEM_VERSION_MM		?= a.b
 IDIO_SYSTEM_VERSION_M		?= a
 
@@ -69,15 +69,41 @@ test : local-install
 # where the libc malloc behaviour differs from IDIO_MALLOC.
 #
 # In the meanwhile, rely on valgrind and IDIO_MALLOC
-verify: dist-clean
-	$(MAKE) test
-	#-ASAN_OPTIONS=log_path=idio-asan $(MAKE) clean sanitize-address test
-	$(MAKE) clean debug test
+verify: ;
+	@echo -e "\n\n**** clean start\n\n"
+	$(MAKE) dist-clean > /dev/null
+	# this includes the bootstrap-build
+	$(MAKE) all > /dev/null
+	# post-dist-clean we have new source files...
+	$(MAKE) all > /dev/null
+	@echo -e "\n\n**** regular test\n\n"
+	$(LI_BINDIR)/idio test
+	$(MAKE) pre-compile
+	@echo -e "\n\n**** regular pre-compile test\n\n"
+	$(LI_BINDIR)/idio test
+	$(MAKE) build-clean clean-pre-compile > /dev/null
+	ASAN_OPTIONS=log_path=idio-asan $(MAKE) sanitize-address > /dev/null
+	# we can at least pick up on ASAN errors in the bootstrap
+	@echo -e "\n\n**** ASAN test\n\n"
+	$(LI_BINDIR)/idio zero-length
+	$(MAKE) pre-compile
+	# including loading cache files
+	@echo -e "\n\n**** ASAN pre-compile test\n\n"
+	$(LI_BINDIR)/idio zero-length
+	$(MAKE) build-clean clean-pre-compile > /dev/null
+	$(MAKE) debug > /dev/null
+	@echo -e "\n\n**** debug test\n\n"
+	$(LI_BINDIR)/idio test
+	$(MAKE) pre-compile
+	@echo -e "\n\n**** debug pre-compile test\n\n"
+	$(LI_BINDIR)/idio test
 	# run valgrind with the debug version as the output is more useful
+	$(MAKE) clean-pre-compile
+	@echo -e "\n\n**** valgrind test\n\n"
 	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(LI_BINDIR)/idio test
 	ls -l idio-valgrind.*
 
-doc : 
+doc :
 	rm -rf $(SRCKDOUTDIR)
 	(cd .. ; kernel-autodoc src $(SRCKDOUTDIR))
 	#cp $(SRCKDOUTDIR)/*_[ch].rst $(SRCDOCDIR)
@@ -90,10 +116,21 @@ local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)
 	(cd $(EXTDIR)/expect/src; $(MAKE) local-install)
 	(cd $(EXTDIR)/empty/src; $(MAKE) local-install)
 
+pre-compile: $(LI_BINDIR)/idio
+	$(LI_BINDIR)/idio --save-xenvs </dev/null
+
+clean-pre-compile:
+	if [[ -d $(LI_LIBDIR) ]] ; then rm -rf $(shell find $(LI_LIBDIR) -name __idio__) ; fi
+
+$(SRCDIR)/rfc6234.o : $(SRCDIR)/RFC6234/libsha.a
+
+$(SRCDIR)/RFC6234/libsha.a :
+	$(MAKE) -C RFC6234 libsha.a
+
 $(LI_BINDIR)/idio : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
 	ln -sf idio.${IDIO_SYSTEM_VERSION_MM} $@
 
-$(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(objects) | Makefile.system $(LI_BINDIR) libc-api.h idio-system.h idio-config.h
+$(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(objects) $(SRCDIR)/RFC6234/libsha.a | Makefile.system $(LI_BINDIR) libc-api.h idio-system.h idio-config.h
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 $(LI_BINDIR) $(LI_LIBVERDIR) :
@@ -153,7 +190,7 @@ clean-system-install :
 lib%.so : %.o
 	$(CC) -shared -o $@ $^
 
-clean : build-clean clean-ext-src clean-ext-api run-clean edit-clean
+clean : build-clean clean-ext-src clean-ext-api clean-rfc6234 run-clean edit-clean clean-pre-compile
 	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system $(LIBDIR)/system.idio
 
 clean-ext-src: $(EXTDIR)/*/src
@@ -166,12 +203,15 @@ clean-ext-api: $(EXTDIR)/*/api
 	    (cd $${dir}; ${MAKE} clean) ; \
 	done
 
+clean-rfc6234:
+	$(MAKE) -C RFC6234 clean
+
 build-clean:
 	rm -f *.o *.d *.so map
 	rm -rf $(EXTDIR)/*/gen
 
 run-clean :
-	rm -f vgcore.* core.* core *.gcda *.gcno *.gcov gmon.out idio-asan.* idio-valgrind.* o e vm-* gc-stats
+	rm -f vgcore.* core.* core *.gcda *.gcno *.gcov gmon.out idio-asan.* idio-valgrind.* o e idio-vm-* idio-sps.* idio-gc-stats
 ifeq ($(OS),Darwin)
 	rm -f /cores/*
 else ifeq ($(OS),FreeBSD)
@@ -202,13 +242,18 @@ valgrind: local-install
 cppcheck:
 	cppcheck --force --enable=all .
 
+IDIO_SYSTEM = $(LIBDIR)/idio-system.idio
+
 # the include $(deps) means that, in effect, *.d are the first things
 # built and some of them require idio-system.h -- and %.d doesn't work
-env.d file-handle.d idio.d libc-api.d vars.d : idio-system.h
+compile.d env.d file-handle.d idio.d libc-api.d vars.d : idio-system.h
 $(deps) : idio-config.h
 
-idio-system.h Makefile.system $(LIBDIR)/system.idio : $(UTILSDIR)/bin/gen-idio-system $(sources) $(filter-out $(LIBDIR)/system.idio,$(isources)) $(SRCDIR)/version
-	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(LIBDIR)/system.idio
+# $(IDIO_SYSTEM) : $(UTILSDIR)/bin/gen-idio-system src/vm-asm.h
+# 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(IDIO_SYSTEM)
+
+idio-system.h Makefile.system $(IDIO_SYSTEM) : $(UTILSDIR)/bin/gen-idio-system $(sources) $(filter-out $(IDIO_SYSTEM),$(isources)) $(SRCDIR)/version
+	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(IDIO_SYSTEM)
 
 idio-config.h : $(UTILSDIR)/bin/gen-idio-config
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-config

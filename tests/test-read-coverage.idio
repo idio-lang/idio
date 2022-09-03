@@ -58,11 +58,13 @@ read-coverage-load "read-coverage/bitset-rbrace.idio"
 
 ;; #=[] verbatim reader (ie. no operators are applied)
 
-; normally
-a := #[ 1 2 lt 3 4 ] ; #[ 1 (binary-lt 2 3) 4 ]
+; normal array (updated as the reader enforces no operators, now, anyway!)
+a := #[ 1 2 lt 3 4 ] ; #[ 1 2 lt  3 4 ]
 test a.0 1
-test a.1 '(binary-lt 2 3)
-test a.2 4
+test a.1 2
+test a.2 'lt
+test a.3 3
+test a.4 4
 
 ; when verbatim
 a := #=[ 1 2 lt 3 4 ] ; #[ 1 2 lt 3 4 ]
@@ -73,4 +75,4 @@ test a.3 3
 test a.4 4
 
 ;; all done?
-Tests? (read0 + 8)
+Tests? (read0 + 10)

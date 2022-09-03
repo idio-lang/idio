@@ -65,6 +65,7 @@ IDIO idio_continuation (IDIO thr, int kind)
 
     IDIO_CONTINUATION_GREY (k)		= NULL;
     IDIO_CONTINUATION_PC (k)		= IDIO_THREAD_PC (thr);
+    IDIO_CONTINUATION_XI (k)		= IDIO_THREAD_XI (thr);
     if (IDIO_CONTINUATION_CALL_DC == kind) {
 	IDIO_CONTINUATION_STACK (k)	= idio_fixnum (idio_array_size (IDIO_THREAD_STACK (thr)));
 	IDIO_CONTINUATION_FLAGS (k)	= IDIO_CONTINUATION_FLAG_DELIMITED;
@@ -159,9 +160,9 @@ char *idio_continuation_as_C_string (IDIO v, size_t *sizep, idio_unicode_t forma
     }
 
 #ifdef IDIO_DEBUG
-    *sizep = idio_asprintf (&r, "#<K%s %10p ss=%zu PC=%td>", kind, v, kss, IDIO_CONTINUATION_PC (v));
+    *sizep = idio_asprintf (&r, "#<K%s %10p ss=%zu PC=[%zu]@%td>", kind, v, kss, IDIO_CONTINUATION_XI (v), IDIO_CONTINUATION_PC (v));
 #else
-    *sizep = idio_asprintf (&r, "#<K%s ss=%zu PC=%td>", kind, kss, IDIO_CONTINUATION_PC (v));
+    *sizep = idio_asprintf (&r, "#<K%s ss=%zu PC=[%zu]@%td>", kind, kss, IDIO_CONTINUATION_XI (v), IDIO_CONTINUATION_PC (v));
 #endif
 
     return r;

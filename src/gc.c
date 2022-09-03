@@ -594,8 +594,6 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	idio_gc_gcc_mark (gc, IDIO_MODULE_EXPORTS (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_MODULE_IMPORTS (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_MODULE_SYMBOLS (o), colour);
-	idio_gc_gcc_mark (gc, IDIO_MODULE_VCI (o), colour);
-	idio_gc_gcc_mark (gc, IDIO_MODULE_VVI (o), colour);
 	break;
     case IDIO_TYPE_FRAME:
 	IDIO_C_ASSERT (gc->grey != IDIO_FRAME_GREY (o));
@@ -1387,7 +1385,7 @@ void idio_gc_closure_stats (IDIO c)
 	    idio_gc_all_closure_t.tv_sec += 1;
 	}
 
-	fprintf (idio_vm_perf_FILE, "%+5jds gc_sweep_free Clos %6zu %8" PRIu64, (intmax_t) idio_vm_elapsed (), IDIO_CLOSURE_CODE_PC (c), IDIO_CLOSURE_CALLED (c));
+	fprintf (idio_vm_perf_FILE, "%+5jds gc_sweep_free Clos [%zu]@%6zu %8" PRIu64, (intmax_t) idio_vm_elapsed (), IDIO_CLOSURE_XI (c), IDIO_CLOSURE_CODE_PC (c), IDIO_CLOSURE_CALLED (c));
 
 	idio_debug_FILE (idio_vm_perf_FILE, " %-40s", idio_vm_closure_name (c));
 
@@ -1663,9 +1661,9 @@ void idio_gc_stats ()
     fprintf (stderr, "gc-stats ");
 #endif
     if (NULL == idio_gc_stats_FILE) {
-	idio_gc_stats_FILE = fopen ("gc-stats", "w");
+	idio_gc_stats_FILE = fopen ("idio-gc-stats", "w");
     } else {
-	idio_gc_stats_FILE = fopen ("gc-stats", "a");
+	idio_gc_stats_FILE = fopen ("idio-gc-stats", "a");
     }
 
     if (NULL != idio_gc_stats_FILE) {

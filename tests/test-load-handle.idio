@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -37,8 +37,8 @@ ish := open-input-string bad-expr
 rval := (gensym)
 
 set-default-handler! ^idio-error (function (c) {
-				    eprintf "This is the load-handle default handler for ^idio-error returning %s\n" rval
-				    test #t #t
+				    eprintf "This is the test-load-handle default handler for ^idio-error returning gensym %s after a %s: '%s'\n" rval (struct-type-name (struct-instance-type c)) (idio-error-message c)
+				    test 7 7
 				    rval
 })
 
@@ -54,8 +54,7 @@ XXX weird namespace feature
 
 If we are not in the Idio module then any command in the following
 cont-expr will be subject to each word being treated as a new symbol
--- and getting a warning about it.  See the code in
-idio_vm_get_or_create_vvi().
+-- and getting a warning about it.
 
 It will, however, still get run -- as unknown symbols are thrown at
 the execve() mechanisms.
@@ -72,12 +71,12 @@ ish := open-input-string cont-expr
 ; non-zero exit status)
 trap ^rt-signal-SIGCHLD (function (c) {
 			   ;eprintf "test-load-handle trap: SIGCHLD\n"
-			   test #t #t
+			   test 8 8
 			   raise c
 }) {
   trap ^rt-command-status-error (function (c) {
 				   ;eprintf "test load-handle trap: %s with %s\n" (idio-error-message c) (rt-command-status-error-status c)
-				   test #t #t
+				   test 9 9
   }) {
     ;printf "NOTICE: test-load-handle.idio: exec false; this will be picked up by test load-handle trap: pre\n"
     load-handle ish

@@ -53,6 +53,9 @@ typedef struct idio_file_handle_stream_s {
 #define IDIO_FILE_HANDLE_COUNT(H)  IDIO_FILE_HANDLE_STREAM_COUNT((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 
 #define IDIO_IDIO_EXT	".idio"
+#define IDIO_SO_EXT	".so"
+#define IDIO_LIB_DIR	"lib"
+#define IDIO_CACHE_DIR	"__idio__"
 #define IDIO_MODE_R	"r"
 #define IDIO_MODE_RE	"re"
 #define IDIO_MODE_W	"w"
@@ -60,6 +63,7 @@ typedef struct idio_file_handle_stream_s {
 
 void idio_file_handle_format_error (char const *circumstance, char const *kind, char const *msg, IDIO filename, IDIO c_location);
 
+IDIO idio_open_file_handle_C (char const *func, IDIO filename, char const *pathname, size_t const pathname_len, int free_pathname, char const *mode_str, size_t const mode_str_len, int free_mode_str, int user_mode);
 IDIO idio_file_handle_open_file (char const *func, IDIO name, IDIO mode, char const *def_mode, size_t dm_len);
 int idio_isa_file_handle (IDIO fh);
 int idio_isa_fd_handle (IDIO fh);

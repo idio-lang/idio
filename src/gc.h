@@ -624,6 +624,11 @@ typedef struct idio_hash_s {
  */
 typedef intptr_t idio_pc_t;
 
+/**
+ * typedef idio_xi_t - Idio VM execution environment index
+ */
+typedef uintptr_t idio_xi_t;
+
 /*
  * If we wanted to store the arity and varargs boolean of a closure
  * (for a possible thunk? predicate) without increasing the size of
@@ -653,6 +658,7 @@ typedef struct idio_closure_stats_s {
 
 typedef struct idio_closure_s {
     struct idio_s *grey;
+    idio_xi_t xi;			/* xenv index */
     idio_pc_t code_pc;
     idio_pc_t code_len;
     struct idio_s *name;
@@ -664,6 +670,7 @@ typedef struct idio_closure_s {
 } idio_closure_t;
 
 #define IDIO_CLOSURE_GREY(C)       ((C)->u.closure->grey)
+#define IDIO_CLOSURE_XI(C)         ((C)->u.closure->xi)
 #define IDIO_CLOSURE_CODE_PC(C)    ((C)->u.closure->code_pc)
 #define IDIO_CLOSURE_CODE_LEN(C)   ((C)->u.closure->code_len)
 #define IDIO_CLOSURE_NAME(C)       ((C)->u.closure->name)
@@ -735,9 +742,7 @@ typedef struct idio_module_s {
     struct idio_s *name;
     struct idio_s *exports;	/* symbols */
     struct idio_s *imports;	/* modules */
-    struct idio_s *symbols;	/* hash table */
-    struct idio_s *vci;		/* hash table: VM constant index mapping: module-specific -> global */
-    struct idio_s *vvi;		/* hash table: VM value index mapping: module-specific -> global */
+    struct idio_s *symbols;	/* hash table of name to symbol info tuple */
 } idio_module_t;
 
 #define IDIO_MODULE_GREY(F)	((F)->u.module->grey)
@@ -745,8 +750,6 @@ typedef struct idio_module_s {
 #define IDIO_MODULE_EXPORTS(F)	((F)->u.module->exports)
 #define IDIO_MODULE_IMPORTS(F)	((F)->u.module->imports)
 #define IDIO_MODULE_SYMBOLS(F)	((F)->u.module->symbols)
-#define IDIO_MODULE_VCI(F)	((F)->u.module->vci)
-#define IDIO_MODULE_VVI(F)	((F)->u.module->vvi)
 
 #define IDIO_FRAME_FLAG_NONE	 0
 #define IDIO_FRAME_FLAG_ETRACE   (1<<0)
@@ -765,7 +768,8 @@ typedef struct idio_frame_s {
     struct idio_s *next;
     idio_fi_t nparams;		/* number in use */
     idio_fi_t nalloc;		/* number allocated */
-    struct idio_s *names;	/* a ref into vm_constants */
+    idio_xi_t xi;
+    struct idio_s *names;	/* a ref into vm_constants[xi] */
     struct idio_s* *args;
 } idio_frame_t;
 
@@ -773,6 +777,7 @@ typedef struct idio_frame_s {
 #define IDIO_FRAME_NEXT(F)	((F)->u.frame->next)
 #define IDIO_FRAME_NPARAMS(F)	((F)->u.frame->nparams)
 #define IDIO_FRAME_NALLOC(F)	((F)->u.frame->nalloc)
+#define IDIO_FRAME_XI(F)	((F)->u.frame->xi)
 #define IDIO_FRAME_NAMES(F)	((F)->u.frame->names)
 #define IDIO_FRAME_ARGS(F,i)	((F)->u.frame->args[i])
 #define IDIO_FRAME_FLAGS(F)	((F)->tflags)
@@ -922,6 +927,7 @@ typedef intptr_t idio_sp_t;
 
 typedef struct idio_thread_s {
     struct idio_s *grey;
+    idio_xi_t xi;			/* xenv index */
     idio_pc_t pc;
     struct idio_s *stack;
     struct idio_s *val;
@@ -969,6 +975,7 @@ typedef struct idio_thread_s {
 } idio_thread_t;
 
 #define IDIO_THREAD_GREY(T)           ((T)->u.thread->grey)
+#define IDIO_THREAD_XI(T)             ((T)->u.thread->xi)
 #define IDIO_THREAD_PC(T)             ((T)->u.thread->pc)
 #define IDIO_THREAD_STACK(T)          ((T)->u.thread->stack)
 #define IDIO_THREAD_VAL(T)            ((T)->u.thread->val)
@@ -1021,6 +1028,7 @@ typedef struct idio_thread_s {
 typedef struct idio_continuation_s {
     struct idio_s *grey;
     idio_pc_t pc;
+    idio_xi_t xi;
     struct idio_s *stack;
     struct idio_s *frame;
     struct idio_s *env;
@@ -1038,6 +1046,7 @@ typedef struct idio_continuation_s {
 
 #define IDIO_CONTINUATION_GREY(K)		((K)->u.continuation->grey)
 #define IDIO_CONTINUATION_PC(K)			((K)->u.continuation->pc)
+#define IDIO_CONTINUATION_XI(K)			((K)->u.continuation->xi)
 #define IDIO_CONTINUATION_STACK(K)		((K)->u.continuation->stack)
 #define IDIO_CONTINUATION_FRAME(K)		((K)->u.continuation->frame)
 #define IDIO_CONTINUATION_ENV(K)		((K)->u.continuation->env)
@@ -1516,12 +1525,11 @@ typedef struct idio_gc_s {
  * next (source code) statement, we need to have already byte compiled
  * the not-immediately-relevant code.  Which we can then copy.
  *
- * XXX These are reference counted for reasons to do with an
- * undiscovered bug^W^Wundocumented feature.
- *
- * Used in both codegen.c and vm.c.
+ * XXX These are reference counted as they are used in both codegen.c
+ * and vm.c.
  */
 typedef struct idio_ia_s {
+    int refcnt;
     idio_pc_t asize;		/* alloc()'d */
     idio_pc_t usize;		/* used */
     IDIO_I *ae;
@@ -1529,6 +1537,7 @@ typedef struct idio_ia_s {
 
 typedef idio_ia_t* IDIO_IA_T;
 
+#define IDIO_IA_REFCNT(A)	((A)->refcnt)
 #define IDIO_IA_ASIZE(A)	((A)->asize)
 #define IDIO_IA_USIZE(A)	((A)->usize)
 #define IDIO_IA_AE(A,i)		((A)->ae[i])

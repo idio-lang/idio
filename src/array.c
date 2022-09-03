@@ -591,31 +591,37 @@ static idio_ai_t idio_array_find (IDIO a, idio_equal_enum eqp, IDIO e, idio_ai_t
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
 
+    idio_as_t as = IDIO_ARRAY_USIZE (a);
+
+    if (0 == as) {
+	return -1;
+    }
+
     if (index < 0) {
 	/*
 	 * Test Case: ??
 	 *
 	 * Used by the codegen constants lookup code
 	 */
-	idio_array_bounds_error (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
+	idio_array_bounds_error (index, as, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
     }
 
-    if (index >= (idio_ai_t) IDIO_ARRAY_USIZE (a)) {
+    if (index >= (idio_ai_t) as) {
 	/*
 	 * Test Case: ??
 	 *
 	 * Used by the codegen constants lookup code
 	 */
-	idio_array_bounds_error (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
+	idio_array_bounds_error (index, as, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
     }
 
-    for (; index < (idio_ai_t) IDIO_ARRAY_USIZE (a); index++) {
+    for (; index < (idio_ai_t) as; index++) {
 	if (idio_equal (IDIO_ARRAY_AE (a, index), e, eqp)) {
 	    return index;
 	}
@@ -656,6 +662,90 @@ idio_ai_t idio_array_find_equalp (IDIO a, IDIO e, idio_ai_t index)
     IDIO_TYPE_ASSERT (array, a);
 
     return idio_array_find (a, IDIO_EQUAL_EQUALP, e, index);
+}
+
+IDIO_DEFINE_PRIMITIVE2V_DS ("array-find-eqp", array_find_eqp, (IDIO a, IDIO v, IDIO args), "a v [index]", "\
+return the first index of `v` in `a` starting	\n\
+at `index` or ``-1``				\n\
+						\n\
+:param a: the array				\n\
+:type a: array					\n\
+:param v: the value to search for		\n\
+:type v: any					\n\
+:param index: starting index, defaults to ``0``	\n\
+:type index: integer, optional			\n\
+:return: the index of the first `v` in `a`	\n\
+:rtype: integer					\n\
+")
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (args);
+
+    IDIO_USER_TYPE_ASSERT (array, a);
+
+    idio_ai_t index = 0;
+
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
+    IDIO_USER_TYPE_ASSERT (list, args);
+
+    if (idio_isa_pair (args)) {
+	IDIO iv = IDIO_PAIR_H (args);
+
+	if (idio_isa_fixnum (iv)) {
+	    index = IDIO_FIXNUM_VAL (iv);
+	} else if (idio_isa_bignum (iv)) {
+	    if (IDIO_BIGNUM_INTEGER_P (iv)) {
+		/*
+		 * Code coverage: to get here we'd need to pass
+		 * FIXNUM-MAX+1 and that is to too big to allocate...
+		 */
+		index = idio_bignum_ptrdiff_t_value (iv);
+	    } else {
+		IDIO iv_i = idio_bignum_real_to_integer (iv);
+		if (idio_S_nil == iv_i) {
+		    /*
+		     * Test Case: array-errors/array-find-eqp-index-not-integer.idio
+		     *
+		     * array-find-eqp #[] #t 1.1
+		     */
+		    idio_error_param_type ("integer", iv, IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		} else {
+		    index = idio_bignum_ptrdiff_t_value (iv_i);
+		}
+	    }
+	} else {
+	    /*
+	     * Test Case: array-errors/array-find-eqp-index-not-integer.idio
+	     *
+	     * array-find-eqp #[] #t #t
+	     */
+	    idio_error_param_type ("integer", iv, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
+    if (index < 0) {
+	/*
+	 * Test Case: array-errors/array-find-eqp-index-negative-integer.idio
+	 *
+	 * make-array -1
+	 */
+	idio_array_length_error ("invalid length", index, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    idio_ai_t fi = idio_array_find_eqp (a, v, index);
+
+    return idio_integer (fi);
 }
 
 /**
@@ -1389,7 +1479,7 @@ value with arguments: `index` the value at that	index		\n\
     for (ai = 0; ai < al; ai++) {
 	IDIO v = idio_array_ref_index (a, ai);
 	if (! idio_equal (v, IDIO_ARRAY_DV (a), IDIO_EQUAL_EQUALP)) {
-	    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (func, idio_integer (ai), v));
+	    idio_vm_invoke_C (IDIO_LIST3 (func, idio_integer (ai), v));
 	}
     }
 
@@ -1435,7 +1525,7 @@ The final value of `val` is returned.				\n\
 
     for (ai = 0; ai < al; ai++) {
 	IDIO v = idio_array_ref_index (a, ai);
-	val = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST4 (func, idio_integer (ai), v, val));
+	val = idio_vm_invoke_C (IDIO_LIST4 (func, idio_integer (ai), v, val));
     }
 
     return val;
@@ -1554,6 +1644,7 @@ IDIO idio_array_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 
 void idio_array_add_primitives ()
 {
+    IDIO_ADD_PRIMITIVE (array_find_eqp);
     IDIO_ADD_PRIMITIVE (arrayp);
     IDIO_ADD_PRIMITIVE (make_array);
     IDIO_ADD_PRIMITIVE (copy_array);
@@ -1565,13 +1656,13 @@ void idio_array_add_primitives ()
     idio_vtable_add_method (a_vt,
 			    idio_S_value_index,
 			    idio_vtable_create_method_value (idio_util_method_value_index,
-							     idio_vm_values_ref (IDIO_FIXNUM_VAL (ref))));
+							     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (ref))));
 
     IDIO set = IDIO_ADD_PRIMITIVE (array_set);
     idio_vtable_add_method (a_vt,
 			    idio_S_set_value_index,
 			    idio_vtable_create_method_value (idio_util_method_set_value_index,
-							     idio_vm_values_ref (IDIO_FIXNUM_VAL (set))));
+							     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (set))));
 
     IDIO_ADD_PRIMITIVE (array_push);
     IDIO_ADD_PRIMITIVE (array_pop);

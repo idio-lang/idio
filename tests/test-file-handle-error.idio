@@ -19,6 +19,10 @@
 ;; test-file-handle-error.idio
 ;;
 
+module tests/file-handle-errors
+export fd
+import libc
+
 file-handle-error0 := Tests
 file-handle-error-skipped := 0
 
@@ -433,7 +437,7 @@ if parts {
   load "empty"
   filename = "empty"
 
-  extension-error-load "duplicate check: already loaded"
+  extension-error-load "duplicate module: already loaded"
 } {
   eprintf "test-file-handle-error: failed to match for empty.so in IDIOLIB=%s\n" IDIOLIB
   eprintf "looking for subdir=%s in (find-lib \"empty\")=%s\n" subdir (find-lib "empty")

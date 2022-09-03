@@ -25,6 +25,12 @@ export (
 	 copy-infix-operator!
 	 copy-postfix-operator!
 	 operator-expand*
+
+	 ;; pre-compilation
+	 *infix-operator-list*
+	 *infix-operator-group*
+	 *postfix-operator-list*
+	 *postfix-operator-group*
 )
 
 #*
@@ -42,7 +48,7 @@ list of (id & proc) pairs.
 The C code for infix-operator? is the equivalent of
 
 define (infix-operator? o) {
-assq o *infix-operator-list*
+  assq o *infix-operator-list*
 }
 
 Ditto for postfix operators.

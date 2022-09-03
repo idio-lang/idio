@@ -23,11 +23,11 @@
 #ifndef STRUCT_H
 #define STRUCT_H
 
-#define IDIO_DEFINE_STRUCT0(v,n,p) {				\
-	IDIO sym = idio_symbols_C_intern (n, sizeof (n) - 1);	\
-	v = idio_struct_type (sym, p, idio_S_nil);		\
-	idio_gc_protect_auto (v);				\
-	idio_module_set_symbol_value (sym, v, idio_Idio_module); \
+#define IDIO_DEFINE_STRUCT0(v,n,p) {					\
+	IDIO sym = idio_symbols_C_intern (n, sizeof (n) - 1);		\
+	v = idio_struct_type (sym, p, idio_S_nil);			\
+	idio_gc_protect_auto (v);					\
+	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 
 #define IDIO_DEFINE_STRUCT1(v,n,p,f1) {					\

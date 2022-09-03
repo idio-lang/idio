@@ -18,6 +18,7 @@ core.*
 vgcore.*
 *.so
 *.so.*
+*.a
 *.orig
 vm-perf.log
 src/map
@@ -27,7 +28,7 @@ src/idio-system.h
 src/idio-config.h
 src/libc-api.h
 lib/libc-api.idio
-lib/system.idio
+lib/idio-system.idio
 Makefile.system
 main
 scm1-c-structs
@@ -42,3 +43,4 @@ ext/*/gen
 *.gcov
 coverage.xml
 .local
+__idio__

@@ -53,6 +53,7 @@
 #include "closure.h"
 #include "codegen.h"
 #include "command.h"
+#include "compile.h"
 #include "condition.h"
 #include "continuation.h"
 #include "env.h"
@@ -76,6 +77,7 @@
 #include "posix-regex.h"
 #include "primitive.h"
 #include "read.h"
+#include "rfc6234.h"
 #include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
@@ -84,6 +86,7 @@
 #include "usi-wrap.h"
 #include "util.h"
 #include "vars.h"
+#include "vm-dasm.h"
 #include "vm.h"
 #include "vtable.h"
 
@@ -91,11 +94,12 @@ pid_t idio_pid = 0;
 int idio_state = IDIO_STATE_BOOTSTRAP;
 int idio_exit_status = 0;
 IDIO idio_k_exit = NULL;
+IDIO idio_default_eenv = idio_S_nil;
 
 void idio_add_primitives ();
 
 #ifdef IDIO_VM_PROF
-#define IDIO_VM_PROF_FILE_NAME "vm-perf"
+#define IDIO_VM_PROF_FILE_NAME "idio-vm-perf"
 FILE *idio_vm_perf_FILE;
 #endif
 
@@ -282,7 +286,9 @@ void idio_init (void)
     idio_init_env ();
     idio_init_path ();
     idio_init_vm ();
+    idio_init_vm_dasm ();
     idio_init_codegen ();
+    idio_init_compile ();
     idio_init_continuation ();
     idio_init_object ();
 
@@ -290,8 +296,23 @@ void idio_init (void)
     idio_init_libc_poll ();
     idio_init_posix_regex ();
 
+    idio_init_rfc6234 ();
+
     idio_init_command ();
     idio_init_job_control ();
+
+    /*
+     * Not Art but idio_X_add_primitives() in env.c, vars.c are going
+     * to use idio_default_eenv.
+     */
+    idio_default_eenv = idio_evaluate_eenv (idio_thread_current_thread (),
+					    IDIO_STRING ("default evaluation environment"),
+					    idio_Idio_module);
+    idio_gc_protect_auto (idio_default_eenv);
+
+    idio_module_set_symbol_value (IDIO_SYMBOL ("*expander-eenv*"),
+				  idio_default_eenv,
+				  idio_expander_module);
 
     idio_add_primitives ();
 }
@@ -319,10 +340,16 @@ void idio_remove_terminal_signals ();
 
 void idio_final ()
 {
+    if (IDIO_STATE_SHUTDOWN == idio_state) {
+	fprintf (stderr, "idio_final: already shutting down? => assert (0)\n");
+	assert (0);
+    }
+
     idio_remove_terminal_signals ();
     idio_state = IDIO_STATE_SHUTDOWN;
 
     idio_module_table_final ();
+    idio_final_xenv ();
     idio_final_vtable ();
 
 #ifdef IDIO_VM_PROF
@@ -615,6 +642,13 @@ int main (int argc, char **argv, char **envp)
     default:
 	fprintf (stderr, "sigsetjmp: bootstrap failed: exit (%d)\n", idio_exit_status);
 	idio_free (sargv);
+#ifdef IDIO_DEBUG
+	/*
+	 * Scrape together any clues we can get!  --vm-reports (and
+	 * other arguments) are only processed post-bootstrap.
+	 */
+	idio_vm_reports = 1;
+#endif
 	idio_final ();
 	exit (idio_exit_status);
 	break;
@@ -639,7 +673,11 @@ int main (int argc, char **argv, char **envp)
 
     idio_vm_push_abort (thr, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
-    idio_load_file_name (IDIO_STRING ("bootstrap"), idio_vm_constants);
+    IDIO bootstrap_eenv = idio_evaluate_eenv (thr,
+					      IDIO_STRING ("> load bootstrap"),
+					      IDIO_THREAD_MODULE (thr));
+    idio_gc_protect (bootstrap_eenv);
+    idio_load_file_name (IDIO_STRING ("bootstrap"), bootstrap_eenv);
 
     idio_gc_collect_all ("post-bootstrap");
     idio_add_terminal_signals ();
@@ -647,9 +685,12 @@ int main (int argc, char **argv, char **envp)
 
     /*
      * Dig out the (post-bootstrap) definition of "load" which will
-     * now be continuation and module aware.
+     * now be continuation- and module-aware.
      */
-    IDIO load = idio_module_symbol_value (idio_S_load, idio_Idio_module_instance (), IDIO_LIST1 (idio_S_false));
+    IDIO load = idio_module_symbol_value_xi (IDIO_THREAD_XI (thr),
+					     idio_S_load,
+					     idio_Idio_module,
+					     IDIO_LIST1 (idio_S_false));
     if (idio_S_false == load) {
 	idio_free (sargv);
 	idio_coding_error_C ("cannot lookup 'load'", idio_S_nil, IDIO_C_FUNC_LOCATION ());
@@ -762,7 +803,7 @@ int main (int argc, char **argv, char **envp)
 
 			switch (sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1)) {
 			case 0:
-			    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, filename));
+			    idio_vm_invoke_C (IDIO_LIST2 (load, filename));
 			    break;
 			case IDIO_VM_SIGLONGJMP_CONTINUATION:
 			    fprintf (stderr, "load %s: continuation was invoked => pending exit (1)\n", argv[i]);
@@ -802,13 +843,15 @@ int main (int argc, char **argv, char **envp)
 		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--load"))) {
 		    option = OPTION_LOAD;
 		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--version"))) {
-		    idio_vm_invoke_C (idio_thread_current_thread (),
-				      IDIO_LIST2 (idio_module_symbol_value (IDIO_SYMBOL ("idio-version"),
-									    idio_Idio_module_instance (),
-									    IDIO_LIST1 (idio_S_false)),
+		    idio_vm_invoke_C (IDIO_LIST2 (idio_module_symbol_value_xi (IDIO_THREAD_XI (thr),
+									       IDIO_SYMBOL ("idio-version"),
+									       idio_Idio_module,
+									       IDIO_LIST1 (idio_S_false)),
 						  IDIO_SYMBOL ("-v")));
 
 		    exit (0);
+		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--save-xenvs"))) {
+		    idio_vm_save_xenvs (IDIO_FIXNUM_VAL (idio_struct_instance_ref_direct (bootstrap_eenv, IDIO_EENV_ST_XI)));
 		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--help"))) {
 		    idio_usage (argv[0]);
 		    exit (0);
@@ -860,7 +903,7 @@ int main (int argc, char **argv, char **envp)
      * no arguments sargv[0] is argv[0].
      */
     IDIO filename = idio_string_C (sargv[0]);
-    idio_module_set_symbol_value (IDIO_SYMBOL ("ARGV0"), filename, idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOL ("ARGV0"), filename, idio_Idio_module);
 
     IDIO args = idio_array (sargc);
     if (sargc) {
@@ -869,8 +912,8 @@ int main (int argc, char **argv, char **envp)
 	}
     }
 
-    idio_module_set_symbol_value (IDIO_SYMBOL ("ARGC"), idio_integer (sargc - 1), idio_Idio_module_instance ());
-    idio_module_set_symbol_value (IDIO_SYMBOL ("ARGV"), args, idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOL ("ARGC"), idio_integer (sargc - 1), idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("ARGV"), args, idio_Idio_module);
 
     if (sargc) {
 	/*
@@ -901,7 +944,7 @@ int main (int argc, char **argv, char **envp)
 
 	switch (sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1)) {
 	case 0:
-	    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, filename));
+	    idio_vm_invoke_C (IDIO_LIST2 (load, filename));
 	    break;
 	case IDIO_VM_SIGLONGJMP_CONTINUATION:
 	    fprintf (stderr, "load %s: continuation was invoked => pending exit (1)\n", sargv[0]);
@@ -939,7 +982,8 @@ int main (int argc, char **argv, char **envp)
 
 	    if (import_debugger) {
 		IDIO lsh = idio_open_input_string_handle_C (IDIO_STATIC_STR_LEN ("import debugger"));
-		idio_load_handle_C (lsh, idio_read, idio_evaluate_func, idio_vm_constants);
+
+		idio_load_handle_C (lsh, idio_read, idio_evaluate_func, idio_default_eenv);
 	    }
 	}
 
@@ -981,8 +1025,21 @@ int main (int argc, char **argv, char **envp)
 	 */
 	thr = v_thr;
 
+	IDIO cm = IDIO_THREAD_MODULE (thr);
+	IDIO cih = IDIO_THREAD_INPUT_HANDLE (thr);
+
+	IDIO dsh = idio_open_output_string_handle_C ();
+	idio_display (IDIO_MODULE_NAME (cm), dsh);
+	idio_display_C ("> load ", dsh);
+	idio_display (IDIO_HANDLE_FILENAME (cih), dsh);
+	idio_display_C (" (REPL)", dsh);
+	IDIO desc = idio_get_output_string (dsh);
+
+	IDIO repl_eenv = idio_evaluate_eenv (thr, desc, cm);
+	idio_gc_protect (repl_eenv);
+
 	/* repl */
-	idio_load_handle_C (idio_thread_current_input_handle (), idio_read, idio_evaluate_func, idio_vm_constants);
+	idio_load_handle_C (cih, idio_read, idio_evaluate_func, repl_eenv);
     }
 
     idio_free (sargv);

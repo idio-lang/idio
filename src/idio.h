@@ -111,7 +111,7 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO__LINE__			IDIO_S2(__LINE__)
 #define IDIO_C_LOCATION(s)		(idio_string_C (s ":" __FILE__ ":" IDIO__LINE__))
 #define IDIO_C_FUNC_LOCATION()		(idio_string_C_array (2, (char const *[]) { __FILE__ ":" IDIO__LINE__ ":", (char *) __func__  }))
-#define IDIO_C_FUNC_LOCATION_S(s)	(idio_string_C_array (3, (char const *[]) { __FILE__ ":" IDIO__LINE__ ":", (char *) __func__, "/" s }))
+#define IDIO_C_FUNC_LOCATION_S(s)	(idio_string_C_array (4, (char const *[]) { __FILE__ ":" IDIO__LINE__ ":", (char *) __func__, "/", s }))
 
 #else
 
@@ -299,13 +299,13 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_DEFINE_PRIMITIVE5(iname,cname,params)			\
     IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,5,0,"","")
 
-#define IDIO_ADD_MODULE_PRIMITIVE(m,cname)	idio_add_module_primitive (m, &idio_primitive_data_ ## cname, idio_vm_constants, __FILE__, __LINE__);
+#define IDIO_ADD_MODULE_PRIMITIVE(m,cname)	idio_add_module_primitive (m, &idio_primitive_data_ ## cname, __FILE__, __LINE__);
 
-#define IDIO_EXPORT_MODULE_PRIMITIVE(m,cname)	idio_export_module_primitive (m, &idio_primitive_data_ ## cname, idio_vm_constants, __FILE__, __LINE__);
+#define IDIO_EXPORT_MODULE_PRIMITIVE(m,cname)	idio_export_module_primitive (m, &idio_primitive_data_ ## cname, __FILE__, __LINE__);
 
-#define IDIO_ADD_PRIMITIVE(cname)		idio_add_primitive (&idio_primitive_data_ ## cname, idio_vm_constants, __FILE__, __LINE__);
+#define IDIO_ADD_PRIMITIVE(cname)		idio_add_primitive (&idio_primitive_data_ ## cname, __FILE__, __LINE__);
 
-#define IDIO_ADD_EXPANDER(cname)		idio_add_expander_primitive (&idio_primitive_data_ ## cname, idio_vm_constants, __FILE__, __LINE__);
+#define IDIO_ADD_EXPANDER(cname)		idio_add_expander_primitive (&idio_primitive_data_ ## cname, __FILE__, __LINE__);
 
 #define IDIO_DEFINE_INFIX_OPERATOR_DESC(iname,cname,params,arity,varargs) \
     IDIO idio_defoperator_ ## cname params;				\
@@ -350,7 +350,11 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_ADD_POSTFIX_OPERATOR(cname,pri)	  idio_add_postfix_operator_primitive (&idio_postfix_operator_data_ ## cname, pri);
 
 #define IDIO_C_STRUCT_IDENT_DECL(n)			IDIO idio_CSI_ ## n
-#define IDIO_C_STRUCT_IDENT_DEF(sname,fnames,cname,fvi)	idio_CSI_ ## cname = IDIO_LIST3 (sname, fnames, idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi)));  idio_gc_protect_auto (idio_CSI_ ## cname);
+#define IDIO_C_STRUCT_IDENT_DEF(sname,fnames,cname,fvi)			\
+    idio_CSI_ ## cname = IDIO_LIST3 (sname,				\
+				     fnames,				\
+				     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (fvi))); \
+    idio_gc_protect_auto (idio_CSI_ ## cname);
 
 /*
  * Some well-known constants.
@@ -418,6 +422,7 @@ extern int idio_state;
 extern pid_t idio_pid;
 extern int idio_exit_status;
 extern IDIO idio_k_exit;
+extern IDIO idio_default_eenv;
 
 void idio_module_table_register (void (*ap_func) (void), void (*f_func) (void), void *handle);
 void idio_module_table_deregister (void (*ap_func) (void), void (*f_func) (void));

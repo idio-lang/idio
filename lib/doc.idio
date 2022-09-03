@@ -21,24 +21,27 @@
 
 ;; after SRFI-95, please
 
+;; from evaluate.idio
+define (si-module si)      (pht  (pttt si))
+
 define-template (help x) {
   #T{
     (cond
      ((function? $x) {
        sigstr := %property $x :sigstr #f
        docstr := %property $x :docstr-raw #f
-       source := %property $x :source #f
+       sp := %property $x :src-props #f
        details := evaluate/find-symbol '$x
 
        display '$x
        display " is a function"
        if (list? details) {
 	 display " from module "
-	 display (module-name (phttt details))
+	 display (module-name (si-module details))
        }
-       if source {
+       if sp {
 	 display " ("
-	 display source
+	 display sp
 	 display ")"
        }
        display "\n"
@@ -117,7 +120,7 @@ define-template (help x) {
 	    display " is an expander"
 	    if (list? details) {
 	      display " from module "
-	      display (module-name (phttt details))
+	      display (module-name (si-module details))
 	    }
 	    display "\n"
 	    display "SYNOPSIS: "

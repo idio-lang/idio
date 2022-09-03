@@ -50,6 +50,7 @@
 #include "idio-string.h"
 #include "module.h"
 #include "pair.h"
+#include "string-handle.h"
 #include "symbol.h"
 #include "thread.h"
 #include "util.h"
@@ -60,6 +61,8 @@ static IDIO idio_running_threads;
 static IDIO idio_running_thread = idio_S_nil;
 IDIO idio_threading_module = idio_S_nil;
 
+static IDIO_FLAGS_T idio_thread_id = 0;
+
 IDIO idio_thread_base (idio_as_t stack_size)
 {
     IDIO t = idio_gc_get (IDIO_TYPE_THREAD);
@@ -67,9 +70,10 @@ IDIO idio_thread_base (idio_as_t stack_size)
 
     IDIO_GC_ALLOC (t->u.thread, sizeof (idio_thread_t));
 
-    IDIO main_module = idio_Idio_module_instance ();
+    IDIO main_module = idio_Idio_module;
 
     IDIO_THREAD_GREY (t) = NULL;
+    IDIO_THREAD_XI (t) = 0;
     IDIO_THREAD_PC (t) = 0;
     IDIO_THREAD_STACK (t) = idio_array (stack_size);
     IDIO_THREAD_VAL (t) = idio_S_unspec;
@@ -82,15 +86,34 @@ IDIO idio_thread_base (idio_as_t stack_size)
 
 	return idio_S_notreached;
     }
-    IDIO_THREAD_FUNC (t) = idio_S_unspec;
+
+    /*
+     * Hmm.  Switching the loader to idio_invoke_C
+     * (idio_module_symbol_value ("evaluate/evaluate"), ...) seems to
+     * prise out an idio_vm_restore_all_state() verification fail.
+     *
+     * Hence preset *func* and *expr* to values that are restorable
+     */
+    IDIO_THREAD_FUNC (t) = idio_S_load;
     IDIO_THREAD_REG1 (t) = idio_S_unspec;
     IDIO_THREAD_REG2 (t) = idio_S_unspec;
-    IDIO_THREAD_EXPR (t) = idio_fixnum0;
+    IDIO_THREAD_EXPR (t) = idio_fixnum (0); /* too early for idio_fixnum0 */
+
+    /*
+     * Arguably these should be idio_thread_current_X_handle() but
+     * that creates a circular loop for the first thread.
+     *
+     * As it happens, because the first thread is created before
+     * idio_stdX are defined in file-handle.c, we have to re-assign
+     * them in idio_init_first_thread() anyway.
+     */
     IDIO_THREAD_INPUT_HANDLE (t) = idio_stdin_file_handle ();
     IDIO_THREAD_OUTPUT_HANDLE (t) = idio_stdout_file_handle ();
     IDIO_THREAD_ERROR_HANDLE (t) = idio_stderr_file_handle ();
     IDIO_THREAD_MODULE (t) = main_module;
     IDIO_THREAD_HOLES (t) = idio_S_nil;
+
+    IDIO_THREAD_FLAGS (t) = idio_thread_id++;
 
     return t;
 }
@@ -273,8 +296,10 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
      */
     seen = idio_pair (v, seen);
     idio_as_t sp = idio_array_size (IDIO_THREAD_STACK (v));
-    *sizep = idio_asprintf (&r, "#<THR %10p\n  pc=%6zd\n  sp/top=%2zd/",
+    *sizep = idio_asprintf (&r, "#<THR %10p #%d\n      pc=[%zu]@%zd\n  sp/top=%2zd/",
 			    v,
+			    IDIO_THREAD_FLAGS (v),
+			    IDIO_THREAD_XI (v),
 			    IDIO_THREAD_PC (v),
 			    sp - 1);
 
@@ -282,12 +307,12 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
     char *t = idio_as_string (idio_array_top (IDIO_THREAD_STACK (v)), &t_size, 4, seen, 0);
     IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-    IDIO_STRCAT (r, sizep, "\n  val=");
+    IDIO_STRCAT (r, sizep, "\n     val=");
     t_size = 0;
     t = idio_as_string (IDIO_THREAD_VAL (v), &t_size, 4, seen, 0);
     IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-    IDIO_STRCAT (r, sizep, "\n  func=");
+    IDIO_STRCAT (r, sizep, "\n    func=");
     t_size = 0;
     t = idio_as_string (IDIO_THREAD_FUNC (v), &t_size, 1, seen, 0);
     IDIO_STRCAT_FREE (r, sizep, t, t_size);
@@ -295,10 +320,10 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	IDIO frame = IDIO_THREAD_FRAME (v);
 
 	if (idio_S_nil == frame) {
-	    IDIO_STRCAT (r, sizep, "\n  fr=nil");
+	    IDIO_STRCAT (r, sizep, "\n   frame=nil");
 	} else {
 	    char *es;
-	    size_t es_size = idio_asprintf (&es, "\n  fr=%10p n=%td ", frame, IDIO_FRAME_NPARAMS (frame));
+	    size_t es_size = idio_asprintf (&es, "\n   frame=%10p n=%td ", frame, IDIO_FRAME_NPARAMS (frame));
 	    IDIO_STRCAT_FREE (r, sizep, es, es_size);
 
 	    size_t f_size = 0;
@@ -307,52 +332,62 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	}
     }
 
-    IDIO_STRCAT (r, sizep, "\n  env=");
+    IDIO_STRCAT (r, sizep, "\n     env=");
     t_size = 0;
     t = idio_as_string (IDIO_THREAD_ENV (v), &t_size, 1, seen, 0);
     IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
     if (depth > 1) {
-	IDIO_STRCAT (r, sizep, "\n  fr=");
+	IDIO_STRCAT (r, sizep, "\n   frame=");
 	t_size = 0;
 	t = idio_as_string (IDIO_THREAD_FRAME (v), &t_size, 1, seen, 0);
 	IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 	if (depth > 2) {
-	    IDIO_STRCAT (r, sizep, "\n  reg1=");
+	    IDIO_STRCAT (r, sizep, "\n    reg1=");
 	    t_size = 0;
 	    t = idio_as_string (IDIO_THREAD_REG1 (v), &t_size, 1, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-	    IDIO_STRCAT (r, sizep, "\n  reg2=");
+	    IDIO_STRCAT (r, sizep, "\n    reg2=");
 	    t_size = 0;
 	    t = idio_as_string (IDIO_THREAD_REG2 (v), &t_size, 1, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-	    IDIO_STRCAT (r, sizep, "\n  expr=");
-	    IDIO fmci = IDIO_THREAD_EXPR (v);
-	    if (idio_isa_fixnum (fmci)) {
-		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
-		intptr_t gci = IDIO_FIXNUM_VAL (fgci);
+	    IDIO_STRCAT (r, sizep, "\n    expr=");
 
-		IDIO src = idio_vm_src_constants_ref (gci);
+	    IDIO lsh = idio_open_output_string_handle_C ();
+	    IDIO fsei = IDIO_THREAD_EXPR (v);
+	    idio_xi_t xi = IDIO_THREAD_XI (v);
+	    if (idio_isa_fixnum (fsei)) {
+		IDIO sp = idio_vm_src_props_ref (xi, IDIO_FIXNUM_VAL (fsei));
 
-		t_size = 0;
-		t = idio_as_string (src, &t_size, 4, seen, 0);
-		IDIO_STRCAT_FREE (r, sizep, t, t_size);
+		if (idio_isa_pair (sp)) {
+		    IDIO fn = idio_vm_constants_ref (xi, IDIO_FIXNUM_VAL (IDIO_PAIR_H (sp)));
+		    idio_display (fn, lsh);
+		    idio_display_C (":line ", lsh);
+		    idio_display (IDIO_PAIR_HT (sp), lsh);
+		} else {
+		    idio_display_C ("<no source properties>", lsh);
+		}
+	    } else {
+		idio_display (fsei, lsh);
 	    }
+	    t_size = 0;
+	    t = idio_as_string (idio_get_output_string (lsh), &t_size, 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-	    IDIO_STRCAT (r, sizep, "\n  input_handle=");
+	    IDIO_STRCAT (r, sizep, "\n     i/h=");
 	    t_size = 0;
 	    t = idio_as_string (IDIO_THREAD_INPUT_HANDLE (v), &t_size, 1, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-	    IDIO_STRCAT (r, sizep, "\n  output_handle=");
+	    IDIO_STRCAT (r, sizep, "\n     o/h=");
 	    t_size = 0;
 	    t = idio_as_string (IDIO_THREAD_OUTPUT_HANDLE (v), &t_size, 1, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
-	    IDIO_STRCAT (r, sizep, "\n  error_handle=");
+	    IDIO_STRCAT (r, sizep, "\n     e/h=");
 	    t_size = 0;
 	    t = idio_as_string (IDIO_THREAD_ERROR_HANDLE (v), &t_size, 1, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
@@ -363,12 +398,16 @@ char *idio_thread_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 	    char *hs;
-	    size_t hs_size = idio_asprintf (&hs, "\n  holes=%zd ", idio_list_length (IDIO_THREAD_HOLES (v)));
+	    size_t hs_size = idio_asprintf (&hs, "\n   holes=%zd ", idio_list_length (IDIO_THREAD_HOLES (v)));
 	    IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
 
 	    t_size = 0;
 	    t = idio_as_string (IDIO_THREAD_HOLES (v), &t_size, 2, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+	    char *jbs;
+	    size_t jbs_size = idio_asprintf (&jbs, "\n  jmpbuf=%p", IDIO_THREAD_JMP_BUF (v));
+	    IDIO_STRCAT_FREE (r, sizep, jbs, jbs_size);
 	}
     }
     IDIO_STRCAT (r, sizep, ">");
@@ -399,11 +438,6 @@ IDIO idio_thread_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 
 void idio_thread_add_primitives ()
 {
-    /*
-     * Required by environ stuff during add_primitives...
-     */
-    idio_running_thread = idio_thread_base (40);
-
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_threading_module, current_thread);
 }
 
@@ -415,10 +449,23 @@ void idio_init_thread ()
     idio_gc_protect_auto (idio_running_threads);
 
     idio_threading_module = idio_module (IDIO_SYMBOL ("threading"));
+
+    /*
+     * Required early doors
+     */
+    idio_running_thread = idio_thread_base (40);
 }
 
 void idio_init_first_thread ()
 {
+    /*
+     * We created a holding idio_running_thread before
+     * idio_init_file_handle() could set these up
+     */
+    IDIO_THREAD_INPUT_HANDLE (idio_running_thread) = idio_stdin_file_handle ();
+    IDIO_THREAD_OUTPUT_HANDLE (idio_running_thread) = idio_stdout_file_handle ();
+    IDIO_THREAD_ERROR_HANDLE (idio_running_thread) = idio_stderr_file_handle ();
+
     idio_vm_thread_init (idio_running_thread);
     idio_array_push (idio_running_threads, idio_running_thread);
 
@@ -426,9 +473,6 @@ void idio_init_first_thread ()
      * We also need the expander thread "early doors"
      */
     idio_expander_thread = idio_thread (40);
-
-    /* IDIO_THREAD_MODULE (idio_expander_thread) = idio_expander_module; */
-    IDIO_THREAD_PC (idio_expander_thread) = 1;
 
     IDIO ethr = IDIO_SYMBOL ("*expander-thread*");
     idio_module_set_symbol_value (ethr, idio_expander_thread, idio_expander_module);

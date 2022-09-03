@@ -23,7 +23,7 @@
 #ifndef CLOSURE_H
 #define CLOSURE_H
 
-IDIO idio_toplevel_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO name, IDIO sigstr, IDIO docstr, IDIO srcloc);
+IDIO idio_toplevel_closure (idio_xi_t xi, size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO name, IDIO sigstr, IDIO docstr, idio_as_t sei);
 IDIO idio_closure (IDIO cl, IDIO frame);
 int idio_isa_closure (IDIO o);
 int idio_isa_function (IDIO o);

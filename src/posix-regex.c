@@ -478,4 +478,3 @@ void idio_init_posix_regex ()
 #endif
     idio_S_REG_VERBOSE  = IDIO_SYMBOL ("REG_VERBOSE");
 }
-

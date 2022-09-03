@@ -139,7 +139,7 @@ static int idio_env_set_default (IDIO name, IDIO val)
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (string, val);
 
-    IDIO ENV = idio_module_env_symbol_value (name, IDIO_LIST1 (idio_S_false));
+    IDIO ENV = idio_module_symbol_value (name, idio_Idio_module, IDIO_LIST1 (idio_S_false));
     if (idio_S_false == ENV) {
 	/*
 	 * Code coverage:
@@ -157,7 +157,7 @@ static int idio_env_set_default (IDIO name, IDIO val)
 	 * So, we'll get here if no-one has set IDIOLIB otherwise it's
 	 * a manual test.
 	 */
-	idio_environ_extend (name, name, val, idio_vm_constants);
+	idio_environ_extend (name, name, val, idio_default_eenv);
 	return 1;
     }
 
@@ -216,7 +216,7 @@ static void idio_env_add_environ ()
 	    var = idio_string_C (*env);
 	}
 
-	idio_environ_extend (var, var, val, idio_vm_constants);
+	idio_environ_extend (var, var, val, idio_default_eenv);
     }
 
     /*
@@ -814,7 +814,7 @@ void idio_env_extend_IDIOLIB (char const *path, size_t const path_len, int prepe
 	     */
 	    int in_place = 0;
 
-	    IDIO idiolib = idio_module_env_symbol_value (idio_S_IDIOLIB, IDIO_LIST1 (idio_S_false));
+	    IDIO idiolib = idio_module_symbol_value (idio_S_IDIOLIB, idio_Idio_module, IDIO_LIST1 (idio_S_false));
 
 	    size_t idiolib_C_len = 0;
 	    char *idiolib_C = NULL;
@@ -960,9 +960,15 @@ void idio_env_init_idiolib (char const *argv0, size_t const argv0_len)
     /*
      * While we are here, set IDIO_CMD and IDIO_EXE.
      */
-    idio_module_set_symbol_value (IDIO_SYMBOL ("IDIO_CMD"), idio_pathname_C_len (argv0, argv0_len), idio_Idio_module_instance ());
-    idio_module_set_symbol_value (IDIO_SYMBOL ("IDIO_CMD_PATH"), idio_pathname_C_len (a0rp, a0rp_len), idio_Idio_module_instance ());
-    idio_module_set_symbol_value (IDIO_SYMBOL ("IDIO_EXE"), idio_pathname_C_len (erp, erp_len), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (IDIO_SYMBOL ("IDIO_CMD"),
+				  idio_pathname_C_len (argv0, argv0_len),
+				  idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("IDIO_CMD_PATH"),
+				  idio_pathname_C_len (a0rp, a0rp_len),
+				  idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("IDIO_EXE"),
+				  idio_pathname_C_len (erp, erp_len),
+				  idio_Idio_module);
 
     if (erp_len > 0) {
 	idio_env_extend_IDIOLIB (erp, erp_len, 1);

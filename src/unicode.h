@@ -47,6 +47,8 @@
 #define IDIO_UTF8_STRING_USEPREC	1
 
 extern IDIO idio_unicode_module;
+extern char const *idio_HEX_digits;
+extern char const *idio_hex_digits;
 
 int idio_unicode_valid_code_point (idio_unicode_t cp);
 int idio_unicode_character_code_point (idio_unicode_t cp);

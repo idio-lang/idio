@@ -51,6 +51,7 @@
 #include "primitive.h"
 #include "string-handle.h"
 #include "symbol.h"
+#include "thread.h"
 #include "util.h"
 #include "vm.h"
 #include "vtable.h"
@@ -66,7 +67,7 @@
  * Return:
  * Returns the closure.
  */
-IDIO idio_toplevel_closure (size_t const code_pc, size_t const code_len, IDIO frame, IDIO env, IDIO name, IDIO sigstr, IDIO docstr, IDIO srcloc)
+IDIO idio_toplevel_closure (idio_xi_t xi, size_t const code_pc, size_t const code_len, IDIO frame, IDIO env, IDIO name, IDIO sigstr, IDIO docstr, idio_as_t sei)
 {
     IDIO_C_ASSERT (code_pc);
     IDIO_C_ASSERT (code_len);
@@ -87,6 +88,7 @@ IDIO idio_toplevel_closure (size_t const code_pc, size_t const code_len, IDIO fr
     IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
 
     IDIO_CLOSURE_GREY (c)              = NULL;
+    IDIO_CLOSURE_XI (c)                = xi;
     IDIO_CLOSURE_CODE_PC (c)           = code_pc;
     IDIO_CLOSURE_CODE_LEN (c)          = code_len;
     IDIO_CLOSURE_FRAME (c)             = frame;
@@ -147,9 +149,20 @@ IDIO idio_toplevel_closure (size_t const code_pc, size_t const code_len, IDIO fr
 	idio_set_property (c, idio_KW_docstr_raw, docstr);
     }
 
-    if (idio_S_nil != srcloc) {
-	idio_set_property (c, idio_KW_source, srcloc);
+    idio_set_property (c, idio_KW_src_expr, idio_vm_src_expr_ref (xi, sei));
+    IDIO props = idio_S_false;
+    IDIO sp = idio_vm_src_props_ref (xi, sei);
+    if (idio_isa_pair (sp)) {
+	IDIO fn = idio_vm_constants_ref (xi, IDIO_FIXNUM_VAL (IDIO_PAIR_H (sp)));
+
+	IDIO osh = idio_open_output_string_handle_C ();
+	idio_display (fn, osh);
+	idio_display_C (":line ", osh);
+	idio_display (IDIO_PAIR_HT (sp), osh);
+
+	props = idio_get_output_string (osh);
     }
+    idio_set_property (c, idio_KW_src_props, props);
 
     return c;
 }
@@ -170,6 +183,7 @@ IDIO idio_closure (IDIO cl, IDIO frame)
     IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
 
     IDIO_CLOSURE_GREY (c)     = NULL;
+    IDIO_CLOSURE_XI (c)       = IDIO_CLOSURE_XI (cl);
     IDIO_CLOSURE_CODE_PC (c)  = IDIO_CLOSURE_CODE_PC (cl);
     IDIO_CLOSURE_CODE_LEN (c) = IDIO_CLOSURE_CODE_LEN (cl);
     IDIO_CLOSURE_FRAME (c)    = frame;
@@ -321,7 +335,7 @@ char *idio_closure_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, ID
     }
 
     char *t;
-    size_t t_size = idio_asprintf (&t, "@%zd/%p/", IDIO_CLOSURE_CODE_PC (v), IDIO_CLOSURE_FRAME (v));
+    size_t t_size = idio_asprintf (&t, "[%zu]@%zd/%p/", IDIO_CLOSURE_XI (v), IDIO_CLOSURE_CODE_PC (v), IDIO_CLOSURE_FRAME (v));
     IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
     size_t mn_size = 0;
@@ -365,7 +379,7 @@ void idio_closure_add_primitives ()
      * NB Can't set setter's setter until it's been added as a
      * primitive
      */
-    IDIO setter = idio_module_symbol_value_recurse (idio_S_setter, idio_Idio_module_instance (), idio_S_nil);
+    IDIO setter = idio_module_symbol_value_recurse (idio_S_setter, idio_Idio_module, idio_S_nil);
     idio_create_properties (setter);
 }
 

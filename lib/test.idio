@@ -22,7 +22,7 @@
 #*
 
 The testing we're doing here is more akin to system testing than unit
-testing (which we reallly should have as well...).
+testing (which we really should have as well...).
 
 Suppose we want to test arithmetic addition:
 
@@ -326,6 +326,8 @@ test-load "test-posix-regex-error.idio"
 test-load "test-posix-regex.idio"
 test-load "test-primitive-error.idio"
 test-load "test-primitive.idio"
+test-load "test-rfc6234-error.idio"
+test-load "test-rfc6234.idio"
 test-load "test-string-error.idio"
 test-load "test-string.idio"
 test-load "test-string-handle-error.idio"
@@ -375,7 +377,7 @@ if (null? extension-tests) {
     (regex-case
      etf
      ("(.*/tests)/([^/]+)$" {
-       eprintf "extension-tests: %s\n" r.1
+       printf "extension-tests: %s\n" r.1
        path-prepend 'IDIOLIB r.1
        test-load r.2
      })
@@ -398,7 +400,7 @@ test-load "test-job-control.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? (8109 - Skipped)
+Tests? (8146 - Skipped)
 
 if (e? testfile) (delete-file testfile)
 

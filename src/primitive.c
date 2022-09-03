@@ -43,10 +43,14 @@
 #include "error.h"
 #include "evaluate.h"
 #include "fixnum.h"
+#include "handle.h"
 #include "idio-string.h"
 #include "keyword.h"
+#include "pair.h"
 #include "primitive.h"
+#include "string-handle.h"
 #include "symbol.h"
+#include "thread.h"
 #include "util.h"
 #include "vm.h"
 #include "vtable.h"
@@ -142,11 +146,12 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
 	idio_set_property (o, idio_KW_docstr_raw, idio_string_C_len (desc->docstr, desc->docstr_len));
     }
     if (NULL != desc->source_file) {
-	char src[81];
-	snprintf (src, 80, "%s:line %zu", desc->source_file, desc->source_line);
-	src[80] = '\0';
+	IDIO osh = idio_open_output_string_handle_C ();
+	idio_display (idio_string_C (desc->source_file), osh);
+	idio_display_C (":line ", osh);
+	idio_display (idio_integer (desc->source_line), osh);
 
-	idio_set_property (o, idio_KW_source, idio_string_C (src));
+	idio_set_property (o, idio_KW_src_props, idio_get_output_string (osh));
     }
 
     return o;

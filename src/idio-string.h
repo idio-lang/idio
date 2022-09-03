@@ -47,6 +47,7 @@ IDIO idio_string_C_array (size_t ns, char const *a_C[]);
 IDIO idio_copy_string (IDIO s);
 void idio_free_string (IDIO so);
 int idio_isa_string (IDIO so);
+int idio_isa_octet_string (IDIO so);
 IDIO idio_substring_offset_len (IDIO so, size_t offset, size_t blen);
 int idio_isa_substring (IDIO so);
 void idio_free_substring (IDIO so);

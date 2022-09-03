@@ -33,7 +33,8 @@ extern IDIO_KEYWORD_DECL (line);
 extern IDIO_KEYWORD_DECL (name);
 extern IDIO_KEYWORD_DECL (setter);
 extern IDIO_KEYWORD_DECL (sigstr);
-extern IDIO_KEYWORD_DECL (source);
+extern IDIO_KEYWORD_DECL (src_expr);
+extern IDIO_KEYWORD_DECL (src_props);
 
 IDIO idio_keyword_C (char const *s_C);
 IDIO idio_tag_C (char const *s_C);

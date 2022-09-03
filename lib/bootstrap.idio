@@ -62,7 +62,7 @@ require path-functions
 ; after SRFI-95, please
 load "doc.idio"
 
-load "system.idio"
+load "idio-system.idio"
 
 import SRFI-0				; cond-expand
 import job-control			; override C primitives

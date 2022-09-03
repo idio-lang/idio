@@ -64,7 +64,8 @@ IDIO_KEYWORD_DECL (line);
 IDIO_KEYWORD_DECL (name);
 IDIO_KEYWORD_DECL (setter);
 IDIO_KEYWORD_DECL (sigstr);
-IDIO_KEYWORD_DECL (source);
+IDIO_KEYWORD_DECL (src_expr);
+IDIO_KEYWORD_DECL (src_props);
 
 void idio_keyword_key_not_found_error (IDIO key, IDIO c_location)
 {
@@ -487,7 +488,8 @@ void idio_init_keyword ()
     IDIO_KEYWORD_DEF ("name", name);
     IDIO_KEYWORD_DEF ("setter", setter);
     IDIO_KEYWORD_DEF ("sigstr", sigstr);
-    IDIO_KEYWORD_DEF ("source", source);
+    IDIO_KEYWORD_DEF ("src-expr", src_expr);
+    IDIO_KEYWORD_DEF ("src-props", src_props);
 
     idio_vtable_t *k_vt = idio_vtable (IDIO_TYPE_KEYWORD);
 
