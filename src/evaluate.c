@@ -614,6 +614,35 @@ static idio_as_t idio_meaning_constants_lookup_or_extend (IDIO eenv, IDIO name)
     return ci;
 }
 
+void idio_meaning_eenv_add_predef (IDIO eenv, IDIO sym_idx, IDIO name, IDIO module)
+{
+    IDIO_ASSERT (eenv);
+    IDIO_ASSERT (sym_idx);
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (module);
+
+    IDIO_TYPE_ASSERT (struct_instance, eenv);
+    IDIO_TYPE_ASSERT (fixnum, sym_idx);
+    IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (module, module);
+
+    IDIO ph = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_PH);
+
+    IDIO he = idio_hash_ref (ph, sym_idx);
+
+    if (idio_S_unspec == he) {
+	IDIO pd = IDIO_LIST3 (sym_idx, name, IDIO_MODULE_NAME (module));
+
+	idio_hash_put (ph, sym_idx, pd);
+
+	idio_struct_instance_set_direct (eenv,
+					 IDIO_EENV_ST_PREDEFS,
+					 idio_pair (pd,
+						    idio_struct_instance_ref_direct (eenv,
+										     IDIO_EENV_ST_PREDEFS)));
+    }
+}
+
 idio_as_t idio_meaning_extend_tables (IDIO eenv,
 				      IDIO name,
 				      IDIO scope,
@@ -722,6 +751,7 @@ static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, IDIO scope, 
 
 	IDIO name_si = idio_module_find_symbol_recurse (name, IDIO_MEANING_EENV_MODULE (eenv), recurse);
 
+	int add_predef = 0;
 	if (idio_isa_pair (name_si)) {
 	    IDIO scope = IDIO_SI_SCOPE (name_si);
 
@@ -734,6 +764,10 @@ static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, IDIO scope, 
 					0);
 
 	    if (idio_S_predef == scope) {
+		symbols_sym_si = idio_list_assq (name, IDIO_MEANING_EENV_SYMBOLS (eenv));
+		IDIO symbols_si = IDIO_PAIR_T (symbols_sym_si);
+		add_predef = 1;
+
 		/*
 		 * Notionally we don't care about the (future) vi
 		 * right now just that we reserve a slot for
@@ -742,8 +776,6 @@ static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, IDIO scope, 
 		 * However, we want the running vi as later on we'll
 		 * need to access the underlying primdata.
 		 */
-		symbols_sym_si = idio_list_assq (name, IDIO_MEANING_EENV_SYMBOLS (eenv));
-		IDIO symbols_si = IDIO_PAIR_T (symbols_sym_si);
 		
 		IDIO vi_tail = IDIO_PAIR_TTT (symbols_si);
 		IDIO predef_vi = IDIO_SI_VI (name_si);
@@ -760,6 +792,10 @@ static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, IDIO scope, 
 	    IDIO sdr = idio_module_direct_reference (name);
 
 	    if (idio_S_false == sdr) {
+		if (idio_S_predef == scope) {
+		    add_predef = 1;
+		}
+
 		idio_meaning_extend_tables (eenv,
 					    name,
 					    scope,
@@ -788,6 +824,7 @@ static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, IDIO scope, 
 		 */
 		IDIO new_scope = IDIO_SI_SCOPE (sdr_si);
 		if (idio_S_predef == new_scope) {
+		    add_predef = 1;
 		    new_scope = idio_S_toplevel;
 		}
 
@@ -802,6 +839,11 @@ static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, IDIO scope, 
 	}
 
 	symbols_sym_si = idio_list_assq (name, IDIO_MEANING_EENV_SYMBOLS (eenv));
+
+	if (add_predef) {
+	    IDIO symbols_si = IDIO_PAIR_T (symbols_sym_si);
+	    idio_meaning_eenv_add_predef (eenv, IDIO_SI_SI (symbols_si), name, IDIO_SI_MODULE (symbols_si));
+	}
     }
 
     return IDIO_PAIR_T (symbols_sym_si);
@@ -1564,6 +1606,7 @@ static IDIO idio_meaning_reference (IDIO src, IDIO name, IDIO nametree, int flag
     } else if (idio_S_computed == scope) {
 	return IDIO_LIST2 (IDIO_I_COMPUTED_SYM_REF, IDIO_SI_SI (si));
     } else if (idio_S_predef == scope) {
+	idio_meaning_eenv_add_predef (eenv, IDIO_SI_SI (si), name, IDIO_SI_MODULE (si));
 	return IDIO_LIST2 (IDIO_I_PREDEFINED,       IDIO_SI_SI (si));
     } else {
 	/*
@@ -1621,6 +1664,7 @@ static IDIO idio_meaning_function_reference (IDIO src, IDIO name, IDIO nametree,
     } else if (idio_S_computed == scope) {
 	return IDIO_LIST2 (IDIO_I_COMPUTED_SYM_REF,         IDIO_SI_SI (si));
     } else if (idio_S_predef == scope) {
+	idio_meaning_eenv_add_predef (eenv, IDIO_SI_SI (si), name, IDIO_SI_MODULE (si));
 	return IDIO_LIST2 (IDIO_I_PREDEFINED,               IDIO_SI_SI (si));
     } else {
 	/*
@@ -2199,13 +2243,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	 * and the module it was found in and also the si in this
 	 * eenv.
 	 */
-	idio_struct_instance_set_direct (eenv,
-					 IDIO_EENV_ST_PREDEFS,
-					 idio_pair (IDIO_LIST3 (sym_idx,
-								name,
-								IDIO_MODULE_NAME (IDIO_SI_MODULE (si))),
-						    idio_struct_instance_ref_direct (eenv,
-										     IDIO_EENV_ST_PREDEFS)));
+	idio_meaning_eenv_add_predef (eenv, sym_idx, name, IDIO_SI_MODULE (si));
 
 	/*
 	 * We need a new symbol index as the existing one is tagged as
@@ -5834,6 +5872,7 @@ IDIO idio_evaluate_eenv (IDIO thr, IDIO desc, IDIO module)
 					     idio_S_nil,                      /* symbols */
 					     idio_S_nil,                      /* operators */
 					     idio_S_nil,                      /* predefs */
+					     IDIO_HASH_EQP (8),               /* predefs hash */
 					     idio_array (0),                  /* st */
 					     idio_array (0),                  /* cs */
 					     IDIO_HASH_EQP (8),               /* ch */
@@ -5874,6 +5913,7 @@ IDIO idio_evaluate_eenv_from_xenv (idio_xi_t xi, IDIO module)
 					     idio_S_nil,                          /* symbols */
 					     idio_S_nil,                          /* operators */
 					     idio_S_nil,                          /* predefs */
+					     IDIO_HASH_EQP (8),                   /* predefs hash */
 					     IDIO_XENV_ST (xenv),                 /* st */
 					     IDIO_XENV_CS (xenv),                 /* cs */
 					     IDIO_XENV_CH (xenv),                 /* ch */
@@ -6097,6 +6137,7 @@ void idio_init_evaluate ()
 							    IDIO_SYMBOL ("symbols"),
 							    IDIO_SYMBOL ("operators"),
 							    IDIO_SYMBOL ("predefs"),
+							    IDIO_SYMBOL ("ph"),
 							    IDIO_SYMBOL ("st"),
 							    IDIO_SYMBOL ("cs"),
 							    IDIO_SYMBOL ("ch"),

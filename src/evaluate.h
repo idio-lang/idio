@@ -98,9 +98,10 @@ typedef enum {
     IDIO_EENV_ST_SYMBOLS,   /* alist of (symbol symbol-info) */
     IDIO_EENV_ST_OPERATORS, /* alist of (operator-symbol symbol-info) */
     IDIO_EENV_ST_PREDEFS,   /* alist of (si symbol module-name) */
+    IDIO_EENV_ST_PH,	    /* hash of si to (si symbol module-name) */
     IDIO_EENV_ST_ST,        /* symbol table for VM */
     IDIO_EENV_ST_CS,        /* constants table for VM */
-    IDIO_EENV_ST_CH,        /* constanst hash for VM */
+    IDIO_EENV_ST_CH,        /* constants hash for VM */
     IDIO_EENV_ST_VT,        /* value table for VM */
     IDIO_EENV_ST_MODULE,
     IDIO_EENV_ST_ESCAPES,

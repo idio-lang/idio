@@ -48,6 +48,7 @@ define (nt-param-j si)     (phtt si)
 			      symbols	; alist of (symbol symbol-info)
 			      operators	; alist of (operator-symbol symbol-info)
 			      predefs   ; alist of (si symbol module-name)
+			      ph        ; hash of si to (si symbol module-name)
 			      st	; symbol table for VM
 			      cs	; constants table for VM
 			      ch	; constants hash for VM

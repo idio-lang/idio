@@ -522,10 +522,12 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 #endif
 	return 0;
     }
+    idio_ai_t predefs_len =  idio_list_length (predefs);
 #ifdef IDIO_COMPILE_FILE_READ
-    fprintf (stderr, "predefs #%zu ", idio_list_length (predefs));
+    fprintf (stderr, "predefs #%zu ", predefs_len);
 #endif
 
+    IDIO ph = IDIO_HASH_EQP (predefs_len ? predefs_len : 1);
     IDIO pds = predefs;
     while (idio_S_nil != pds) {
 	IDIO pd = IDIO_PAIR_H (pds);
@@ -543,6 +545,8 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 #endif
 	    return 0;
 	}
+
+	idio_hash_put (ph, si, pd);
 
 	pds = IDIO_PAIR_T (pds);
     }
@@ -703,6 +707,7 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SYMBOLS,    symbols);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_OPERATORS,  operators);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_PREDEFS,    predefs);
+    idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_PH,         ph);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_ST,         st);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_CS,	    cs);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_CH,	    ch);
