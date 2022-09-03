@@ -247,7 +247,7 @@ void idio_error_raise_cont (IDIO ct, IDIO args)
     IDIO_TYPE_ASSERT (list, args);
 
 #ifdef IDIO_GDB_DEBUG
-    fprintf (stderr, "\n\nIDIO_GDB_DEBUG: NOTICE: deliberate assert(0) raise-cont ****\n\n");
+    fprintf (stderr, "\n\nIDIO_GDB_DEBUG: NOTICE: deliberate SIGINT in raise-cont ****\n\n");
     idio_debug ("%s\n", idio_struct_instance (ct, args));
     kill (getpid (), SIGINT);
 #endif
@@ -265,7 +265,7 @@ void idio_error_raise_noncont (IDIO ct, IDIO args)
     IDIO_TYPE_ASSERT (list, args);
 
 #ifdef IDIO_GDB_DEBUG
-    fprintf (stderr, "\n\nIDIO_GDB_DEBUG: NOTICE: deliberate assert(0) raise-noncont ****\n\n");
+    fprintf (stderr, "\n\nIDIO_GDB_DEBUG: NOTICE: deliberate SIGINT in raise-noncont ****\n\n");
     idio_debug ("%s\n", idio_struct_instance (ct, args));
     kill (getpid (), SIGINT);
 #endif
@@ -653,7 +653,7 @@ This does not return!				\n\
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE3V_DS ("error/type", error_type, (IDIO ct, IDIO loc, IDIO msg, IDIO args), "ct loc msg [detail]", "\
+IDIO_DEFINE_PRIMITIVE3V_DS ("error/type", error_type, (IDIO ct, IDIO loc, IDIO msg, IDIO args), "ct loc msg [detail [...]]", "\
 raise a `ct` condition				\n\
 						\n\
 :param ct: condition type			\n\
@@ -760,10 +760,41 @@ This does not return!				\n\
 	idio_display_C (" ", msh);
 	idio_display (msg, msh);
 
-	idio_error_raise_noncont (idio_condition_rt_parameter_value_error_type,
+	idio_error_raise_noncont (idio_condition_rt_parameter_error_type,
 				  IDIO_LIST3 (idio_get_output_string (msh),
 					      idio_get_output_string (lsh),
 					      idio_get_output_string (dsh)));
+
+	return idio_S_notreached;
+    } else if (idio_eqp (ct, idio_condition_rt_variable_error_type)) {
+	IDIO func = loc;
+	IDIO param = idio_S_nil;
+
+	size_t nargs = idio_list_length (args);
+	if (nargs > 1) {
+	    nargs = 1;
+	}
+	switch (nargs) {
+	case 1:
+	    param = IDIO_PAIR_H (args);
+	}
+
+	IDIO msh;
+	IDIO lsh;
+	IDIO dsh;
+	idio_error_init (&msh, &lsh, &dsh, IDIO_C_FUNC_LOCATION ());
+
+	idio_display (func, msh);
+	idio_display_C (" ", msh);
+	idio_display (param, msh);
+	idio_display_C (" ", msh);
+	idio_display (msg, msh);
+
+	idio_error_raise_noncont (idio_condition_rt_variable_error_type,
+				  IDIO_LIST4 (idio_get_output_string (msh),
+					      idio_get_output_string (lsh),
+					      idio_get_output_string (dsh),
+					      param));
 
 	return idio_S_notreached;
     }
