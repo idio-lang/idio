@@ -2717,10 +2717,14 @@ void idio_codegen_code_prologue (IDIO_IA_T ia)
     /*
      * Just the RESTORE_STATE, RETURN for apply
      */
-    idio_vm_AR_pc = IDIO_IA_USIZE (ia); /* PC == 5 */
-    IDIO_IA_PUSH2 (IDIO_A_RESTORE_STATE, IDIO_A_RETURN);
+    idio_vm_AR_pc = IDIO_IA_USIZE (ia) - 2; /* PC == 3 */
 
-    idio_vm_IHR_pc = IDIO_IA_USIZE (ia); /* PC == 7 */
+    /*
+     * Just the RETURN for, uh, RETURN
+     */
+    idio_vm_RETURN_pc = IDIO_IA_USIZE (ia) - 1; /* PC == 4 */
+
+    idio_vm_IHR_pc = IDIO_IA_USIZE (ia); /* PC == 5 */
     IDIO_IA_PUSH3 (IDIO_A_POP_TRAP, IDIO_A_RESTORE_ALL_STATE, IDIO_A_RETURN);
 }
 

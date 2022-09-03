@@ -159,6 +159,7 @@ idio_pc_t idio_vm_NCE_pc;
 idio_pc_t idio_vm_CHR_pc;
 idio_pc_t idio_vm_IHR_pc;
 idio_pc_t idio_vm_AR_pc;
+idio_pc_t idio_vm_RETURN_pc;
 idio_pc_t idio_prologue_len;
 
 int idio_vm_exit = 0;
@@ -307,6 +308,12 @@ void idio_vm_panic (IDIO thr, char const *m)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
+
+#ifdef IDIO_GDB_DEBUG
+    fprintf (stderr, "\n\nIDIO_GDB_DEBUG: NOTICE: deliberate SIGINT in vm-panic ****\n\n");
+    fprintf (stderr, "PANIC: %s\n", m);
+    kill (getpid (), SIGINT);
+#endif
 
     /*
      * Not reached!
@@ -6238,7 +6245,7 @@ void idio_vm_default_pc (IDIO thr)
      * If we put on real code the idio_vm_invoke will set PC after
      * this.
      */
-    IDIO_THREAD_PC (thr) = IDIO_IA_USIZE (IDIO_THREAD_BYTE_CODE (thr));
+    IDIO_THREAD_PC (thr) = idio_vm_RETURN_pc;
 }
 
 void idio_vm_sa_signal (int signum)
@@ -6314,12 +6321,6 @@ IDIO idio_vm_run (IDIO thr, idio_xi_t xi, idio_pc_t pc, idio_vm_run_enum caller)
 	IDIO_THREAD_STACK_PUSH (idio_fixnum (IDIO_THREAD_XI (thr)));
 	IDIO_THREAD_STACK_PUSH (idio_SM_return);
     }
-
-    /*
-     * We get called from places where code has been generated but no
-     * RETURN is appended.
-     */
-    idio_ia_push (IDIO_THREAD_BYTE_CODE (thr), IDIO_A_RETURN);
 
 #ifdef IDIO_DEBUG
     struct timeval t0;

@@ -5784,8 +5784,9 @@ IDIO idio_evaluate (IDIO src, IDIO eenv)
 
     idio_gc_resume ("idio_evaluate");
 
-    return IDIO_LIST2 (IDIO_LIST2 (IDIO_I_PUSH_ABORT, m),
-		       IDIO_LIST1 (IDIO_I_POP_ABORT));
+    return IDIO_LIST3 (IDIO_LIST2 (IDIO_I_PUSH_ABORT, m),
+		       IDIO_LIST1 (IDIO_I_POP_ABORT),
+		       IDIO_LIST1 (IDIO_I_RETURN));
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("evaluate", evaluate, (IDIO src, IDIO args), "src [eenv]", "\

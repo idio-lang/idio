@@ -60,6 +60,7 @@ extern idio_pc_t idio_vm_NCE_pc;
 extern idio_pc_t idio_vm_CHR_pc;
 extern idio_pc_t idio_vm_IHR_pc;
 extern idio_pc_t idio_vm_AR_pc;
+extern idio_pc_t idio_vm_RETURN_pc;
 extern idio_pc_t idio_prologue_len;
 extern int idio_vm_exit;
 extern int idio_vm_virtualisation_WSL;

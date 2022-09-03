@@ -213,6 +213,7 @@ ${array-length (%eenv-st eenv)}
      })
      ((null? pc) {
        ;; No code was generated -- eg. lib/zero-length.idio
+       #t
      })
      (else {
        error/type ^rt-variable-error 'compile-file-writer "PC is not a list" pc 'pc

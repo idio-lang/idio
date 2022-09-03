@@ -3297,7 +3297,7 @@ environment `eenv` and return intermediate code for the code generator
 
   m := meaning src src #n no-flags eenv
 
-  list (list I-PUSH-ABORT m) (list I-POP-ABORT)
+  list (list I-PUSH-ABORT m) (list I-POP-ABORT) (list I-RETURN)
 }
 
 ;; done
