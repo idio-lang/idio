@@ -7970,7 +7970,6 @@ IDIO idio_vm_run_xenv (idio_xi_t xi, IDIO pcs)
 
     IDIO_TYPE_ASSERT (list, pcs);
 
-
     IDIO thr = idio_thread_current_thread ();
 
     idio_pc_t opc = IDIO_THREAD_PC (thr);

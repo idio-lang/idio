@@ -211,7 +211,7 @@ build-clean:
 	rm -rf $(EXTDIR)/*/gen
 
 run-clean :
-	rm -f vgcore.* core.* core *.gcda *.gcno *.gcov gmon.out idio-asan.* idio-valgrind.* o e idio-vm-* idio-src-* idio-gc-stats
+	rm -f vgcore.* core.* core *.gcda *.gcno *.gcov gmon.out idio-asan.* idio-valgrind.* o e idio-vm-* idio-sps.* idio-gc-stats
 ifeq ($(OS),Darwin)
 	rm -f /cores/*
 else ifeq ($(OS),FreeBSD)

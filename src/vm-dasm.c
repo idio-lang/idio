@@ -422,8 +422,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		    idio_debug_FILE (fp, "%s as ", sym);
 		    idio_debug_FILE (fp, "%s", kind);
 		} else {
-		    IDIO_VM_DASM ("SYM-DEF .%-4" PRIu64 " !! isa %s;", si, idio_type2string (sym));
-		    idio_debug_FILE (fp, " == %s !! ", sym);
+		    IDIO_VM_DASM ("SYM-DEF .%-4" PRIu64 " !! isa %s ", si, idio_type2string (sym));
+		    idio_debug_FILE (fp, "== %s !! ", sym);
 		}
 	    }
 	    break;
@@ -486,8 +486,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		if (idio_isa_primitive (pd)) {
 		    IDIO_VM_DASM ("PREDEFINED .%-4" PRIu64 " PRIM %-20s", si, IDIO_PRIMITIVE_NAME (pd));
 		} else {
-		    IDIO_VM_DASM ("PREDEFINED .%-4" PRIu64 " PRIM !! isa %s = ", si, idio_type2string (pd));
-		    idio_debug_FILE (fp, "%s !!", pd);
+		    IDIO_VM_DASM ("PREDEFINED .%-4" PRIu64 " !! isa %s ", si, idio_type2string (pd));
+		    idio_debug_FILE (fp, "== %s !!", pd);
 		}
 	    }
 	    break;
@@ -935,8 +935,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		if (idio_isa_primitive (pd)) {
 		    IDIO_VM_DASM ("PRIMITIVE/0 .%-4" PRIu64 " %s", si, IDIO_PRIMITIVE_NAME (pd));
 		} else {
-		    IDIO_VM_DASM ("PRIMITIVE/0 .%-4" PRIu64 " !! isa %s", si, idio_type2string (pd));
-		    idio_debug_FILE (fp, "%s !!", pd);
+		    IDIO_VM_DASM ("PRIMITIVE/0 .%-4" PRIu64 " !! isa %s ", si, idio_type2string (pd));
+		    idio_debug_FILE (fp, "== %s !!", pd);
 		}
 	    }
 	    break;
@@ -948,8 +948,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		if (idio_isa_primitive (pd)) {
 		    IDIO_VM_DASM ("PRIMITIVE/1 .%-4" PRIu64 " %s", si, IDIO_PRIMITIVE_NAME (pd));
 		} else {
-		    IDIO_VM_DASM ("PRIMITIVE/1 .%-4" PRIu64 " !! isa %s", si, idio_type2string (pd));
-		    idio_debug_FILE (fp, "%s !!", pd);
+		    IDIO_VM_DASM ("PRIMITIVE/1 .%-4" PRIu64 " !! isa %s ", si, idio_type2string (pd));
+		    idio_debug_FILE (fp, "== %s !!", pd);
 		}
 	    }
 	    break;
@@ -961,8 +961,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		if (idio_isa_primitive (pd)) {
 		    IDIO_VM_DASM ("PRIMITIVE/2 .%-4" PRIu64 " %s", si, IDIO_PRIMITIVE_NAME (pd));
 		} else {
-		    IDIO_VM_DASM ("PRIMITIVE/2 .%-4" PRIu64 " !! isa %s", si, idio_type2string (pd));
-		    idio_debug_FILE (fp, "%s !!", pd);
+		    IDIO_VM_DASM ("PRIMITIVE/2 .%-4" PRIu64 " !! isa %s ", si, idio_type2string (pd));
+		    idio_debug_FILE (fp, "== %s !!", pd);
 		}
 	    }
 	    break;
