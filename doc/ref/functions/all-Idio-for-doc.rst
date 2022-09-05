@@ -7,13 +7,13 @@
 where `body` is a body form that uses the variable(s) :samp:`{v}` or
 :samp:`{v1}`, :samp:`{v2}`, etc.,
 
-In first, singular, form, :samp:`{value}` can be a list, array or
+In the first, singular, form, :samp:`{value}` can be a list, array or
 string.
 
 A string will be split into Unicode code points.
 
-In second, multiple, form, :samp:`{values}` must be a list of lists,
-arrays or strings.
+In the second, multiple, form, :samp:`{values}` must be a list of
+lists, arrays or strings and should be of the same type.
 
 Strings will be split into Unicode code points.
 

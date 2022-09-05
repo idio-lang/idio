@@ -1,0 +1,2 @@
+
+array-find-eq? #[] #t -1

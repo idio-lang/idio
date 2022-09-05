@@ -23,7 +23,6 @@ export (
 	 evaluate
 	 si-si
 	 si-ci
-	 dump-eenv
 )
 import read expander operator codegen threading vm
 
@@ -58,7 +57,7 @@ define (nt-param-j si)     (phtt si)
 			      ses	; source expressions for VM
 			      sps	; source properties for VM
 			      byte-code	; for VM
-			      pc	; list of PC
+			      pcs	; list of initial PCs
 			      xi	; set when imported as xenv
 )
 
@@ -208,7 +207,7 @@ define (meaning-constants-lookup-or-extend eenv name) {
     ci = hash-ref ch name #f
 
     if (not ci) {
-      ci = array-find-eqp cs name
+      ci = array-find-eq? cs name
     }
   }
 
@@ -1168,6 +1167,23 @@ define (meaning-define src name e nametree flags eenv) {
 
 define (meaning-define-template src name e nametree flags eenv) {
 
+  ;; Possible docstr
+  ;;
+  ;; (define-template (name formal*) ["docstr"] ...)
+
+  docstr := #n
+  if (and (pair? e)
+	  (string? (ph e))
+	  (not (null? (pt e)))) {
+    docstr = ph e
+    e = pt e
+  } {
+    docstr = sprintf "define-template: %s (x e)" name
+  }
+
+  ;; XXX only a single expression
+  e = ph e
+
   if (pair? name) {
     ;; (define-template (name formal*) ...) =>
     ;; (define-template name (function/name name (formal*) ...))
@@ -1186,8 +1202,6 @@ define (meaning-define-template src name e nametree flags eenv) {
 
   appl := list 'apply e pt-x
   meaning-copy-src-properties src appl
-
-  docstr := sprintf "define-template: %s (x e)" name
 
   expander := (list 'function/name
 		    (string->symbol (sprintf "%s-expander" name))
@@ -2795,11 +2809,11 @@ define (meaning src e nametree flags eenv) {
      })
 
      ((define-template) {
-       ;; (define-template bindings body ...)
+       ;; (define-template bindings [doc] body ...)
        if (pair? te) {
 	 tte := pt te
 	 if (pair? tte) {
-	   meaning-define-template src (ph te) (ph tte) nametree flags eenv
+	   meaning-define-template src (ph te) tte nametree flags eenv
 	 } {
 	   ;; Test Case: evaluation-errors/define-template-bindings-nil.idio
 

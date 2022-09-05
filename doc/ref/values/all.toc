@@ -51,6 +51,8 @@
 (document Idio IDIO_BUILD_TIMESTAMP)
 (document Idio IDIO_BUILD_COMMIT)
 (document Idio IDIO_BUILD_DESCRIBE)
+(document Idio IDIO_BUILD_ASM_COMMIT)
+(document Idio IDIO_BUILD_COMPILER_COMMIT)
 (document Idio IDIO_BUILD_CC)
 (document Idio IDIO_BUILD_CC_PATH)
 (document Idio IDIO_BUILD_CC_VERSION)

@@ -116,6 +116,10 @@ define (mod-name mod sym) {
   }
 }
 
+define (eval-str str) {
+  load-handle (open-input-string str)
+}
+
 define (indent-text leader text) {
   append-string leader (join-string (append-string "\n" leader) (split-string-exactly text "\n"))
 }
@@ -220,11 +224,10 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 	 ;; use (void) here as no symbol's value should be void -- the
 	 ;; point being that some symbols are initialized to #f and we
 	 ;; couldn't tell the difference otherwise
-	 val := symbol-value sym mod (void)
+	 val := eval-str mod-str
 
-	 if (and (void? val)
-		 (not (or (eq? 'libc mod)
-			  (eq? 'Idio mod)))) {
+	 if (and (symbol? val)
+		 (eq? val mod-sym)) {
 	   hprintf out-fh ".. %s/%s - XXX not found\n\n" mod sym
 
 	   eprintf "generate-toc-file %s: %s %s: failed lookup\n" fbn mod sym
@@ -669,7 +672,9 @@ for-each (function (mod) {
   ;; name) so we can ditch any __* symbols.
 
   sorted-symbols := sort-symbol (fold-left (function (r s) {
-    val := symbol-value s mod #f
+    mod-str := mod-name mod s
+    val := eval-str mod-str
+
     (cond
 
      ;; no environ variables
@@ -711,7 +716,7 @@ for-each (function (mod) {
 	     ;; symbol?
 	     si := evaluate/find-symbol s mod
 	     if (pair? si) {
-	       orig-mod := module-name (phttt si)
+	       orig-mod := module-name (si-module si)
 	       if (eq? orig-mod mod) {
 		 pair s r
 	       } {
@@ -751,7 +756,7 @@ for-each (function (mod) {
        ;; we've created as a by-product of using the symbol?
        si := evaluate/find-symbol s mod
        if (pair? si) {
-	 orig-mod := module-name (phttt si)
+	 orig-mod := module-name (si-module si)
 	 if (eq? orig-mod mod) {
 	   pair s r
 	 } {
@@ -769,7 +774,8 @@ for-each (function (mod) {
 
   for-each (function (sym) {
     if (not (hash-ref mod-ht sym #f)) {
-      val := symbol-value sym mod #f
+      val := eval-str (mod-name mod sym)
+
       type := #t
       (cond
        ((environ? sym) {
@@ -786,7 +792,13 @@ for-each (function (mod) {
        }))
 
       if type {
-	printf "  %-30s %s\n" sym type
+	(pattern-case (symbol->string sym)
+		      ("*/*" {
+			printf "  %-30s %-10s contains / ??\n" sym type
+		      })
+		      (else {
+			printf "  %-30s %s\n" sym type
+		      }))
       }
       #t
     }

@@ -58,6 +58,7 @@
 ; doc
 (document Idio help)
 (nodocument Idio autodoc)
+(nodocument Idio si-module)	; duplicate of evaluate
 (document Idio idio-version)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

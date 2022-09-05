@@ -1,0 +1,14 @@
+RFC 6234
+^^^^^^^^
+
+RFC6234_ describes US Secure Hash Algorithms (SHA) which might be more
+familiar as SHA256 and the like.
+
+RFC 6234 Constants
+""""""""""""""""""
+
+The SHA algorithms are selected using one of the following symbols:
+``SHA1``, ``SHA224``, ``SHA256``, ``SHA384`` and ``SHA512``.
+
+RFC 6234 Functions
+""""""""""""""""""

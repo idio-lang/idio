@@ -67,6 +67,11 @@ array-error-load := {
 array-error-load "array-errors/array-ref-negative-bounds.idio" "array bounds error: abs (-4) >= #elem 3"
 array-error-load "array-errors/array-ref-positive-bounds.idio" "array bounds error: abs (5) >= #elem 3"
 
+array-error-load "array-errors/array-find-eqp-bad-array-type.idio" "bad parameter type: '#t' a constant is not a array"
+array-error-load "array-errors/array-find-eqp-index-not-integer.idio" "bad parameter type: '1.1e+0' a bignum is not a integer"
+array-error-load "array-errors/array-find-eqp-bad-index-type.idio" "bad parameter type: '#t' a constant is not a integer"
+array-error-load "array-errors/array-find-eqp-negative-index.idio" "invalid length: size -1"
+
 array-error-load "array-errors/make-array-size-float.idio" "bad parameter type: '1.1e+0' a bignum is not a integer"
 array-error-load "array-errors/make-array-size-not-integer.idio" "bad parameter type: '#t' a constant is not a integer"
 array-error-load "array-errors/make-array-size-negative.idio" "invalid length: size -1"
@@ -105,4 +110,4 @@ array-error-load "array-errors/fold-array-bad-array-type.idio" "bad parameter ty
 array-error-load "array-errors/fold-array-bad-func-type.idio" "bad parameter type: '#t' a constant is not a function"
 
 ;; all done?
-Tests? (array-error0 + 30)
+Tests? (array-error0 + 34)
