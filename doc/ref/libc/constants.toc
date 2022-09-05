@@ -56,9 +56,3 @@
 (document libc W_OK)
 (document libc X_OK)
 
-(document libc E*)
-(document libc RLIMIT_*)
-(document libc SIG*)
-(document libc O_*)
-(document libc POLL*)
-

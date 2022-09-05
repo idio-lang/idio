@@ -94,9 +94,6 @@
 (document libc make-tmp-file)
 (document libc make-tmp-file-handle)
 
-(document libc %make-tmp-fd pct-make-tmp-fd)
-(document libc %get-tmpdir)
-(document libc %get-sys-tmpdir)
 (nodocument libc %file-access)
 
 (document libc sig-name)
