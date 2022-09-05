@@ -792,7 +792,13 @@ for-each (function (mod) {
        }))
 
       if type {
-	printf "  %-30s %s\n" sym type
+	(pattern-case (symbol->string sym)
+		      ("*/*" {
+			printf "  %-30s %-10s contains / ??\n" sym type
+		      })
+		      (else {
+			printf "  %-30s %s\n" sym type
+		      }))
       }
       #t
     }

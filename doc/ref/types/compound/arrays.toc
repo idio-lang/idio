@@ -22,6 +22,8 @@
 (document Idio array-shift!)
 (document Idio array-fill!)
 
+(document Idio array-find-eq?)
+
 (document Idio array-for-each-set)
 
 (document Idio fold-array)

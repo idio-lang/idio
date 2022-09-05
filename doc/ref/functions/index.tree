@@ -12,6 +12,7 @@
 (toc-file posix-regex)
 (toc-file path-functions)
 (toc-file timing)
+(toc-file rfc6234)
 (toc-file properties)
 (toc-file vtables)
 (toc-file thread-state)

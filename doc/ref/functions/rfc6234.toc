@@ -1,0 +1,5 @@
+(rst "rfc6234" 0)
+
+(document Idio shasum-file)
+(document Idio shasum-fd)
+(document Idio shasum-string)

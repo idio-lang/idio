@@ -3,4 +3,5 @@
 (rst "leader" 0)
 
 (toc-file special-forms)
+(toc-file structures)
 (toc-file functions)

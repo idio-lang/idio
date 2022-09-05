@@ -23,7 +23,6 @@ export (
 	 evaluate
 	 si-si
 	 si-ci
-	 dump-eenv
 )
 import read expander operator codegen threading vm
 
@@ -58,7 +57,7 @@ define (nt-param-j si)     (phtt si)
 			      ses	; source expressions for VM
 			      sps	; source properties for VM
 			      byte-code	; for VM
-			      pc	; list of PC
+			      pcs	; list of initial PCs
 			      xi	; set when imported as xenv
 )
 

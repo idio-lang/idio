@@ -109,3 +109,5 @@
 (nodocument Idio yield/control-at)
 (nodocument Idio yield/shift)
 
+(nodocument Idio %vm-add-xenv)
+(nodocument Idio %vm-add-xenv-from-eenv)
