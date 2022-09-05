@@ -2371,6 +2371,31 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     IDIO_TYPE_ASSERT (struct_instance, eenv);
 
     /*
+     * Possible docstr:
+     *
+     *(define-template (name formal*) ["docstr"] ...)
+     */
+    IDIO docstr = idio_S_nil;
+    if (idio_isa_pair (e) &&
+	idio_isa_string (IDIO_PAIR_H (e)) &&
+	idio_S_nil != IDIO_PAIR_T (e)) {
+	docstr = IDIO_PAIR_H (e);
+	e = IDIO_PAIR_T (e);
+    } else {
+	IDIO dsh  = idio_open_output_string_handle_C ();
+	idio_display_C ("define-template: ", dsh);
+	idio_display (name, dsh);
+	idio_display_C (" (x e)", dsh);
+
+	docstr = idio_get_output_string (dsh);
+    }
+
+    /*
+     * XXX only a single expression
+     */
+    e = IDIO_PAIR_H (e);
+
+    /*
      * (define-template (name formal*) ...) =>
      * (define-template name (function/name name (formal*) ...))
      */
@@ -2401,13 +2426,6 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     IDIO nsh  = idio_open_output_string_handle_C ();
     idio_display (name, nsh);
     idio_display_C ("-expander", nsh);
-
-    IDIO dsh  = idio_open_output_string_handle_C ();
-    idio_display_C ("define-template: ", dsh);
-    idio_display (name, dsh);
-    idio_display_C (" (x e)", dsh);
-
-    IDIO docstr = idio_get_output_string (dsh);
 
     IDIO expander = IDIO_LIST5 (idio_S_function_name,
 				idio_symbols_string_intern (idio_get_output_string (nsh)),
@@ -5058,13 +5076,13 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO eenv)
 		return idio_S_notreached;
 	    }
 	} else if (idio_S_define_template == eh) {
-	    /* (define-template bindings body ...) */
+	    /* (define-template bindings [doc] body ...) */
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
 		    return idio_meaning_define_template (src,
 							 IDIO_PAIR_H (et),
-							 IDIO_PAIR_H (ett),
+							 ett,
 							 nametree,
 							 flags,
 							 eenv);
