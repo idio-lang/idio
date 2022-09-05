@@ -208,7 +208,7 @@ define (meaning-constants-lookup-or-extend eenv name) {
     ci = hash-ref ch name #f
 
     if (not ci) {
-      ci = array-find-eqp cs name
+      ci = array-find-eq? cs name
     }
   }
 

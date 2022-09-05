@@ -247,6 +247,17 @@ test c 2
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;; array-find-eq?
+twenty-str := "twenty"
+a = list->array (list 10 twenty-str 'thirty)
+test (array-find-eq? a 10) 0
+test (array-find-eq? a 10 1) -1
+test (array-find-eq? a "twenty") -1	; XXX "twenty" eq? "twenty"
+test (array-find-eq? a twenty-str) 1
+test (array-find-eq? a 'thirty) 2
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; for
 
 ;; testing `for` against a single array requires a little bit of
@@ -304,4 +315,4 @@ for (x y z) in arrays {
 }
 
 ;; all done?
-Tests? (array0 + 108)
+Tests? (array0 + 113)

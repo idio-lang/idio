@@ -664,7 +664,7 @@ idio_ai_t idio_array_find_equalp (IDIO a, IDIO e, idio_ai_t index)
     return idio_array_find (a, IDIO_EQUAL_EQUALP, e, index);
 }
 
-IDIO_DEFINE_PRIMITIVE2V_DS ("array-find-eqp", array_find_eqp, (IDIO a, IDIO v, IDIO args), "a v [index]", "\
+IDIO_DEFINE_PRIMITIVE2V_DS ("array-find-eq?", array_find_eqp, (IDIO a, IDIO v, IDIO args), "a v [index]", "\
 return the first index of `v` in `a` starting	\n\
 at `index` or ``-1``				\n\
 						\n\
@@ -676,12 +676,18 @@ at `index` or ``-1``				\n\
 :type index: integer, optional			\n\
 :return: the index of the first `v` in `a`	\n\
 :rtype: integer					\n\
+:raises: ^rt-array-bounds-error			\n\
 ")
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (v);
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: array-errors/array-find-eqp-bad-array-type.idio
+     *
+     * array-find-eqp #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (array, a);
 
     idio_ai_t index = 0;
@@ -722,7 +728,7 @@ at `index` or ``-1``				\n\
 	    }
 	} else {
 	    /*
-	     * Test Case: array-errors/array-find-eqp-index-not-integer.idio
+	     * Test Case: array-errors/array-find-eqp-bad-index-type.idio
 	     *
 	     * array-find-eqp #[] #t #t
 	     */
@@ -734,9 +740,9 @@ at `index` or ``-1``				\n\
 
     if (index < 0) {
 	/*
-	 * Test Case: array-errors/array-find-eqp-index-negative-integer.idio
+	 * Test Case: array-errors/array-find-eqp-negative-index.idio
 	 *
-	 * make-array -1
+	 * array-find-eqp #[] #t -1
 	 */
 	idio_array_length_error ("invalid length", index, IDIO_C_FUNC_LOCATION ());
 
