@@ -194,7 +194,7 @@ ${array-length (%eenv-st eenv)}
 
     ;; Hmm.  Empty files result in a PC of len(prologue) with the
     ;; expectation that there is some code...
-    pc = %eenv-pc eenv
+    pc = %eenv-pcs eenv
 
     (cond
      ((pair? pc) {
