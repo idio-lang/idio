@@ -668,7 +668,6 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
     idio_display_C ("]", dsh);
     IDIO desc = idio_get_output_string (dsh);
 
-    /* idio_xi_t xi = idio_vm_add_xenv (desc, st, cs, ch, vt, ses, sps, bs); */
     idio_xi_t xi = IDIO_FIXNUM_VAL (idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_XI));
 #ifdef IDIO_COMPILE_FILE_READ
     fprintf (stderr, "xi [%zu] for %s\n", xi, ifn);
@@ -716,8 +715,6 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_SPS,	    sps);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_BYTE_CODE,  CPT_byte_code);
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_PCS,        pcs);
-
-    /* idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_XI, idio_fixnum (xi)); */
 
     pds = predefs;
     while (idio_S_nil != pds) {
