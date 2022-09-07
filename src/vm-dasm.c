@@ -1290,7 +1290,7 @@ void idio_vm_dasm_add_primitives ()
 void idio_final_vm_dasm ()
 {
     if (getpid () == idio_pid) {
-	if (idio_vm_reports) {
+	if (idio_vm_tables) {
 	    idio_vm_dump_dasm ();
 	}
     }

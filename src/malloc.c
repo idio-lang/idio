@@ -571,11 +571,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
  */
 void idio_malloc_stats (char const *s)
 {
-    FILE *fh = stderr;
-
-#ifdef IDIO_VM_PROF
-    fh = idio_vm_perf_FILE;
-#endif
+    FILE *fh = fopen ("idio-malloc-stats", "w");
 
     unsigned long long i, j, k;
     register union idio_malloc_overhead_u *p;
@@ -646,6 +642,8 @@ void idio_malloc_stats (char const *s)
     fprintf(fh, "\n\tTotal in use: %lu for %lu, total free: %lu for %lu\n",
 	    nused, totused, nfree, totfree);
     fprintf (fh, "\t %5lu mmaps, %5lu munmaps\n", mmaps, munmaps);
+
+    fclose (fh);
 }
 #endif
 

@@ -2009,7 +2009,7 @@ void idio_module_add_primitives ()
 
 void idio_final_module ()
 {
-    if (idio_vm_reports) {
+    if (idio_vm_tables) {
 	FILE *fp = fopen ("idio-vm-modules", "w");
 	if (NULL == fp) {
 	    perror ("fopen (idio-vm-modules, w)");
