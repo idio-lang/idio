@@ -132,6 +132,7 @@ FILE *idio_dasm_FILE;
 #endif
 int idio_vm_reports = 0;
 int idio_vm_reporting = 0;
+int idio_vm_tables = 0;
 
 /**
  * DOC:
@@ -8627,7 +8628,7 @@ void idio_final_vm ()
 	}
 #endif
 
-	if (idio_vm_reports) {
+	if (idio_vm_tables) {
 	    /*
 	     * We deliberately test that broken struct instance and
 	     * C/pointer printers generate ^rt-parameter-value-errors.
@@ -8644,8 +8645,8 @@ void idio_final_vm ()
 	     * the code to fall back on the default struct instance
 	     * and C/pointer printers.
 	     *
-	     * The flag, idio_vm_reports is, clearly, toggled on the
-	     * presence of the --vm-reports argument but we don't want
+	     * The flag, idio_vm_tables is, clearly, toggled on the
+	     * presence of the --vm-tables argument but we don't want
 	     * this alternate behaviour to prevent
 	     * ^rt-parameter-value-error being raised during run-time.
 	     *
@@ -8653,28 +8654,16 @@ void idio_final_vm ()
 	     */
 	    idio_vm_reporting = 1;
 	    idio_vm_dump_all ();
+	}
 
+	if (idio_vm_reports) {
 #ifdef IDIO_VM_PROF
 #ifdef IDIO_DEBUG
 	    fprintf (stderr, "vm-perf ");
 #endif
-	    for (idio_xi_t xi = 0; xi < idio_xenvs_size; xi++) {
-		IDIO_IA_T bc = IDIO_XENV_BYTE_CODE (idio_xenvs[xi]);
-		IDIO st = IDIO_XENV_ST (idio_xenvs[xi]);
-		IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
-		IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
 
-		fprintf (idio_vm_perf_FILE, "final-vm: #%2zu\n", xi);
-		fprintf (idio_vm_perf_FILE, "  %zu instruction bytes\n", IDIO_IA_USIZE (bc));
-		if (IDIO_THREAD_XI (thr)) {
-		    fprintf (idio_vm_perf_FILE, "  %zu symbols\n", idio_array_size (st));
-		}
-		fprintf (idio_vm_perf_FILE, "  %zu constants\n", idio_array_size (cs));
-		fprintf (idio_vm_perf_FILE, "  %zu values\n", idio_array_size (vs));
-	    }
-#endif
+	    FILE *vm_opcodes = fopen ("idio-vm-opcodes", "w");
 
-#ifdef IDIO_VM_PROF
 	    uint64_t c = 0;
 	    struct timespec t;
 	    t.tv_sec = 0;
@@ -8693,7 +8682,7 @@ void idio_final_vm ()
 	    float c_pct = 0;
 	    float t_pct = 0;
 
-	    fprintf (idio_vm_perf_FILE, "vm-ins:  %4.4s %-40.40s %8.8s %5.5s %15.15s %5.5s %6.6s\n", "code", "instruction", "count", "cnt%", "time (sec.nsec)", "time%", "ns/call");
+	    fprintf (vm_opcodes, "%4.4s %-40.40s %8.8s %5.5s %15.15s %5.5s %6.6s\n", "code", "instruction", "count", "cnt%", "time (sec.nsec)", "time%", "ns/call");
 	    for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
 		if (1 || idio_vm_ins_counters[i]) {
 		    char const *bc_name = idio_vm_bytecode2string (i);
@@ -8710,7 +8699,7 @@ void idio_final_vm ()
 			float time_pct = i_time * 100 / t_time;
 			t_pct += time_pct;
 
-			fprintf (idio_vm_perf_FILE, "vm-ins:  %4" PRIu8 " %-40s %8" PRIu64 " %5.1f %5jd.%09ld %5.1f",
+			fprintf (vm_opcodes, "%4" PRIu8 " %-40s %8" PRIu64 " %5.1f %5jd.%09ld %5.1f",
 				 i,
 				 bc_name,
 				 idio_vm_ins_counters[i],
@@ -8722,12 +8711,14 @@ void idio_final_vm ()
 			if (idio_vm_ins_counters[i]) {
 			    call_time = (idio_vm_ins_call_time[i].tv_sec * IDIO_VM_NS + idio_vm_ins_call_time[i].tv_nsec) / idio_vm_ins_counters[i];
 			}
-			fprintf (idio_vm_perf_FILE, " %6.f", call_time);
-			fprintf (idio_vm_perf_FILE, "\n");
+			fprintf (vm_opcodes, " %6.f", call_time);
+			fprintf (vm_opcodes, "\n");
 		    }
 		}
 	    }
-	    fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-38s %10" PRIu64 " %5.1f %5jd.%09ld %5.1f\n", "", "total", c, c_pct, (intmax_t) t.tv_sec, t.tv_nsec, t_pct);
+	    fprintf (vm_opcodes, "%4s %-38s %10" PRIu64 " %5.1f %5jd.%09ld %5.1f\n", "", "total", c, c_pct, (intmax_t) t.tv_sec, t.tv_nsec, t_pct);
+
+	    fclose (vm_opcodes);
 #endif
 	}
 

@@ -543,7 +543,8 @@ static void idio_usage (char *argv0)
     fprintf (stderr, "Idio options:\n\n");
     fprintf (stderr, "  --load NAME             load NAME and continue processing\n");
     fprintf (stderr, "  --debugger              enable the debugger if interactive\n");
-    fprintf (stderr, "  --vm-reports            enable various VM reports\n");
+    fprintf (stderr, "  --vm-reports            print various VM reports on exit\n");
+    fprintf (stderr, "  --vm-tables             print various VM tables on exit\n");
 
     fprintf (stderr, "\n");
     fprintf (stderr, "  -V                      print the version number and quit\n");
@@ -648,6 +649,8 @@ int main (int argc, char **argv, char **envp)
 	 * other arguments) are only processed post-bootstrap.
 	 */
 	idio_vm_reports = 1;
+	idio_vm_reporting = 1;
+	idio_vm_tables = 1;
 #endif
 	idio_final ();
 	exit (idio_exit_status);
@@ -838,6 +841,8 @@ int main (int argc, char **argv, char **envp)
 	    } else if (strncmp (argv[i], "--", 2) == 0) {
 		if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--vm-reports"))) {
 		    idio_vm_reports = 1;
+		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--vm-tables"))) {
+		    idio_vm_tables = 1;
 		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--debugger"))) {
 		    import_debugger = 1;
 		} else if (idio_static_match (argv[i], IDIO_STATIC_STR_LEN ("--load"))) {

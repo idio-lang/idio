@@ -54,6 +54,7 @@ extern IDIO idio_vm_sps;
 extern IDIO idio_vm_krun;
 extern int idio_vm_reports;
 extern int idio_vm_reporting;
+extern int idio_vm_tables;
 extern IDIO_IA_T idio_all_code;
 extern idio_pc_t idio_vm_FINISH_pc;
 extern idio_pc_t idio_vm_NCE_pc;

@@ -1385,7 +1385,7 @@ void idio_gc_closure_stats (IDIO c)
 	    idio_gc_all_closure_t.tv_sec += 1;
 	}
 
-	fprintf (idio_vm_perf_FILE, "%+5jds gc_sweep_free Clos [%zu]@%6zu %8" PRIu64, (intmax_t) idio_vm_elapsed (), IDIO_CLOSURE_XI (c), IDIO_CLOSURE_CODE_PC (c), IDIO_CLOSURE_CALLED (c));
+	fprintf (idio_vm_perf_FILE, "%+5jds gc_sweep_free Clos [%zu]@%-6zu %8" PRIu64, (intmax_t) idio_vm_elapsed (), IDIO_CLOSURE_XI (c), IDIO_CLOSURE_CODE_PC (c), IDIO_CLOSURE_CALLED (c));
 
 	idio_debug_FILE (idio_vm_perf_FILE, " %-40s", idio_vm_closure_name (c));
 
@@ -1666,188 +1666,191 @@ void idio_gc_stats ()
 	idio_gc_stats_FILE = fopen ("idio-gc-stats", "a");
     }
 
-    if (NULL != idio_gc_stats_FILE) {
-	char scales[] = " KMGT";
-	unsigned long long count;
-	int scale;
+    if (NULL == idio_gc_stats_FILE) {
+	perror ("fopen (idio-gc-stats)");
+	return;
+    }
 
-	idio_gc_t *gc = idio_gc;
-	while (NULL != gc) {
-	    fprintf (idio_gc_stats_FILE, "gc-stats #%d: %4lld   collections\n", gc->inst, gc->stats.collections);
+    char scales[] = " KMGT";
+    unsigned long long count;
+    int scale;
 
-	    count = gc->stats.bounces;
-	    scale = 0;
-	    idio_hcount (&count, &scale);
+    idio_gc_t *gc = idio_gc;
+    while (NULL != gc) {
+	fprintf (idio_gc_stats_FILE, "gc-stats #%d: %4lld   collections\n", gc->inst, gc->stats.collections);
 
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  bounces\n", count, scales[scale]);
+	count = gc->stats.bounces;
+	scale = 0;
+	idio_hcount (&count, &scale);
 
-	    int i;
-	    long long tgets = 0;
-	    long long nused = 0;
-	    for (i = 1; i < IDIO_TYPE_MAX; i++) {
-		tgets += gc->stats.tgets[i];
-		nused += gc->stats.nused[i];
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  bounces\n", count, scales[scale]);
+
+	int i;
+	long long tgets = 0;
+	long long nused = 0;
+	for (i = 1; i < IDIO_TYPE_MAX; i++) {
+	    tgets += gc->stats.tgets[i];
+	    nused += gc->stats.nused[i];
+	}
+	count = tgets;
+	scale = 0;
+	idio_hcount (&count, &scale);
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c total GC requests\n", count, scales[scale]);
+	count = nused;
+	scale = 0;
+	idio_hcount (&count, &scale);
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c current GC requests\n", count, scales[scale]);
+	fprintf (idio_gc_stats_FILE, "gc-stats: %-15.15s %5.5s %4.4s %5.5s %4.4s\n", "type", "total", "%age", "used", "%age");
+	int types_unused = 0;
+	for (i = 1; i < IDIO_TYPE_MAX; i++) {
+	    unsigned long long tgets_count = gc->stats.tgets[i];
+
+	    if (tgets_count) {
+		int tgets_scale = 0;
+		idio_hcount (&tgets_count, &tgets_scale);
+		unsigned long long nused_count = gc->stats.nused[i];
+		int nused_scale = 0;
+		idio_hcount (&nused_count, &nused_scale);
+
+		fprintf (idio_gc_stats_FILE, "gc-stats: %-15.15s %4lld%c %3lld %4lld%c %3lld\n",
+			 idio_type_enum2string (i),
+			 tgets_count, scales[tgets_scale],
+			 tgets ? gc->stats.tgets[i] * 100 / tgets : -1,
+			 nused_count, scales[nused_scale],
+			 nused ? gc->stats.nused[i] * 100 / nused : -1
+		    );
+	    } else {
+		types_unused++;
 	    }
-	    count = tgets;
-	    scale = 0;
-	    idio_hcount (&count, &scale);
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c total GC requests\n", count, scales[scale]);
-	    count = nused;
-	    scale = 0;
-	    idio_hcount (&count, &scale);
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c current GC requests\n", count, scales[scale]);
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %-15.15s %5.5s %4.4s %5.5s %4.4s\n", "type", "total", "%age", "used", "%age");
-	    int types_unused = 0;
-	    for (i = 1; i < IDIO_TYPE_MAX; i++) {
-		unsigned long long tgets_count = gc->stats.tgets[i];
-
-		if (tgets_count) {
-		    int tgets_scale = 0;
-		    idio_hcount (&tgets_count, &tgets_scale);
-		    unsigned long long nused_count = gc->stats.nused[i];
-		    int nused_scale = 0;
-		    idio_hcount (&nused_count, &nused_scale);
-
-		    fprintf (idio_gc_stats_FILE, "gc-stats: %-15.15s %4lld%c %3lld %4lld%c %3lld\n",
-			     idio_type_enum2string (i),
-			     tgets_count, scales[tgets_scale],
-			     tgets ? gc->stats.tgets[i] * 100 / tgets : -1,
-			     nused_count, scales[nused_scale],
-			     nused ? gc->stats.nused[i] * 100 / nused : -1
-			);
-		} else {
-		    types_unused++;
-		}
-	    }
-	    if (types_unused) {
-		fprintf (idio_gc_stats_FILE, "gc-stats: %d types unused\n", types_unused);
-	    }
-
-	    count = gc->stats.mgets;
-	    scale = 0;
-	    idio_hcount (&count, &scale);
-
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  max requests between GC\n", count, scales[scale]);
-
-	    count = gc->stats.reuse;
-	    scale = 0;
-	    idio_hcount (&count, &scale);
-
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  GC objects reused\n", count, scales[scale]);
-
-	    count = gc->stats.allocs;
-	    scale = 0;
-	    idio_hcount (&count, &scale);
-
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  system allocs\n", count, scales[scale]);
-
-	    count = gc->stats.tbytes;
-	    scale = 0;
-	    idio_hcount (&count, &scale);
-
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%cB total bytes referenced\n", count, scales[scale]);
-
-	    count = gc->stats.nbytes;
-	    scale = 0;
-	    idio_hcount (&count, &scale);
-
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%cB current bytes referenced\n", count, scales[scale]);
-
-	    int rc = 0;
-	    idio_root_t *root = gc->roots;
-	    gc->verbose++;
-	    while (root) {
-		switch (root->object->type) {
-		default:
-		    rc++;
-		    break;
-		}
-		root = root->next;
-	    }
-	    gc->verbose--;
-
-	    count = rc;
-	    scale = 0;
-	    idio_hcount (&count, &scale);
-
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  root objects\n", count, scales[scale]);
-
-	    int drc = 0;
-	    if (idio_isa_pair (gc->dynamic_roots)) {
-		IDIO dr = IDIO_PAIR_H (gc->dynamic_roots);
-		while (idio_S_nil != dr) {
-		    drc++;
-		    dr = IDIO_PAIR_T (dr);
-		}
-	    }
-
-	    count = drc;
-	    scale = 0;
-	    idio_hcount (&count, &scale);
-
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  auto objects\n", count, scales[scale]);
-
-	    int fc = 0;
-	    IDIO o = gc->free;
-	    while (o) {
-		fc++;
-		o = o->next;
-	    }
-
-	    count = fc;
-	    scale = 0;
-	    idio_hcount (&count, &scale);
-
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  on free list\n", count, scales[scale]);
-
-	    int uc = 0;
-	    o = gc->used;
-	    gc->verbose++;
-	    while (o) {
-		IDIO_ASSERT (o);
-		uc++;
-		if (o->next &&
-		    o->next->type == 0) {
-		    fprintf (idio_gc_stats_FILE, "bad type %10p\n", o->next);
-		    o->next = o->next->next;
-		}
-
-		o = o->next;
-	    }
-	    gc->verbose--;
-
-#ifdef IDIO_VM_PROF
-	    fprintf (idio_gc_stats_FILE, "gc-stats: all closures   %4jd.%09ld %7.3f\n", (intmax_t) idio_gc_all_closure_t.tv_sec, idio_gc_all_closure_t.tv_nsec, idio_gc_all_closure_ru);
-	    fprintf (idio_gc_stats_FILE, "gc-stats: all primitives %4jd.%09ld %7.3f\n", (intmax_t) idio_gc_all_primitive_t.tv_sec, idio_gc_all_primitive_t.tv_nsec, idio_gc_all_primitive_ru);
-#endif
-
-	    count = uc;
-	    scale = 0;
-	    idio_hcount (&count, &scale);
-
-	    fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  on used list\n", count, scales[scale]);
-
-	    struct rusage ru;
-	    if (getrusage (RUSAGE_SELF, &ru) < 0) {
-		perror ("gc-stats: getrusage");
-	    }
-
-	    double ru_t =
-		gc->stats.ru_utime.tv_sec * IDIO_VM_US + gc->stats.ru_utime.tv_usec +
-		gc->stats.ru_stime.tv_sec * IDIO_VM_US + gc->stats.ru_stime.tv_usec;
-
-	    ru_t /= IDIO_VM_US;
-
-	    fprintf (idio_gc_stats_FILE, "gc-stats: GC time dur %ld.%03ld user+sys %6.3f; max RSS %ldKB\n",
-		     (long) gc->stats.dur.tv_sec, (long) gc->stats.dur.tv_usec / 1000,
-		     ru_t,
-		     ru.ru_maxrss);
-
-	    gc = gc->next;
+	}
+	if (types_unused) {
+	    fprintf (idio_gc_stats_FILE, "gc-stats: %d types unused\n", types_unused);
 	}
 
-	fclose (idio_gc_stats_FILE);
+	count = gc->stats.mgets;
+	scale = 0;
+	idio_hcount (&count, &scale);
+
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  max requests between GC\n", count, scales[scale]);
+
+	count = gc->stats.reuse;
+	scale = 0;
+	idio_hcount (&count, &scale);
+
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  GC objects reused\n", count, scales[scale]);
+
+	count = gc->stats.allocs;
+	scale = 0;
+	idio_hcount (&count, &scale);
+
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  system allocs\n", count, scales[scale]);
+
+	count = gc->stats.tbytes;
+	scale = 0;
+	idio_hcount (&count, &scale);
+
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%cB total bytes referenced\n", count, scales[scale]);
+
+	count = gc->stats.nbytes;
+	scale = 0;
+	idio_hcount (&count, &scale);
+
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%cB current bytes referenced\n", count, scales[scale]);
+
+	int rc = 0;
+	idio_root_t *root = gc->roots;
+	gc->verbose++;
+	while (root) {
+	    switch (root->object->type) {
+	    default:
+		rc++;
+		break;
+	    }
+	    root = root->next;
+	}
+	gc->verbose--;
+
+	count = rc;
+	scale = 0;
+	idio_hcount (&count, &scale);
+
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  root objects\n", count, scales[scale]);
+
+	int drc = 0;
+	if (idio_isa_pair (gc->dynamic_roots)) {
+	    IDIO dr = IDIO_PAIR_H (gc->dynamic_roots);
+	    while (idio_S_nil != dr) {
+		drc++;
+		dr = IDIO_PAIR_T (dr);
+	    }
+	}
+
+	count = drc;
+	scale = 0;
+	idio_hcount (&count, &scale);
+
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  auto objects\n", count, scales[scale]);
+
+	int fc = 0;
+	IDIO o = gc->free;
+	while (o) {
+	    fc++;
+	    o = o->next;
+	}
+
+	count = fc;
+	scale = 0;
+	idio_hcount (&count, &scale);
+
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  on free list\n", count, scales[scale]);
+
+	int uc = 0;
+	o = gc->used;
+	gc->verbose++;
+	while (o) {
+	    IDIO_ASSERT (o);
+	    uc++;
+	    if (o->next &&
+		o->next->type == 0) {
+		fprintf (idio_gc_stats_FILE, "bad type %10p\n", o->next);
+		o->next = o->next->next;
+	    }
+
+	    o = o->next;
+	}
+	gc->verbose--;
+
+#ifdef IDIO_VM_PROF
+	fprintf (idio_gc_stats_FILE, "gc-stats: all closures   %4jd.%09ld %7.3f\n", (intmax_t) idio_gc_all_closure_t.tv_sec, idio_gc_all_closure_t.tv_nsec, idio_gc_all_closure_ru);
+	fprintf (idio_gc_stats_FILE, "gc-stats: all primitives %4jd.%09ld %7.3f\n", (intmax_t) idio_gc_all_primitive_t.tv_sec, idio_gc_all_primitive_t.tv_nsec, idio_gc_all_primitive_ru);
+#endif
+
+	count = uc;
+	scale = 0;
+	idio_hcount (&count, &scale);
+
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  on used list\n", count, scales[scale]);
+
+	struct rusage ru;
+	if (getrusage (RUSAGE_SELF, &ru) < 0) {
+	    perror ("gc-stats: getrusage");
+	}
+
+	double ru_t =
+	    gc->stats.ru_utime.tv_sec * IDIO_VM_US + gc->stats.ru_utime.tv_usec +
+	    gc->stats.ru_stime.tv_sec * IDIO_VM_US + gc->stats.ru_stime.tv_usec;
+
+	ru_t /= IDIO_VM_US;
+
+	fprintf (idio_gc_stats_FILE, "gc-stats: GC time dur %ld.%03ld user+sys %6.3f; max RSS %ldKB\n",
+		 (long) gc->stats.dur.tv_sec, (long) gc->stats.dur.tv_usec / 1000,
+		 ru_t,
+		 ru.ru_maxrss);
+
+	gc = gc->next;
     }
+
+    fclose (idio_gc_stats_FILE);
 }
 
 void idio_gc_possibly_collect ()
@@ -2261,7 +2264,7 @@ void idio_final_gc ()
 	idio_gc_stats ();
 #ifdef IDIO_DEBUG
 #ifdef IDIO_MALLOC
-    idio_malloc_stats ("final-gc");
+	idio_malloc_stats ("final-gc");
 #endif
 #endif
     }
