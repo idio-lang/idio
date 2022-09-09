@@ -391,9 +391,9 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO_VM_DASM (".%-4" PRIu64 " ", si);
 
 		if (idio_isa_symbol (sym)) {
-		    idio_debug_FILE (fp, " %s", sym);
+		    idio_debug_FILE (fp, "%s", sym);
 		} else {
-		    IDIO_VM_DASM (" !! %s", idio_type2string (sym));
+		    IDIO_VM_DASM ("!! %s", idio_type2string (sym));
 		    idio_debug_FILE (fp, " %s !!", sym);
 		}
 	    }
@@ -460,8 +460,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		    idio_debug_FILE (fp, "%s", sym);
 		} else {
 		    IDIO_VM_DASM_OP ("SYM-SET");
-		    IDIO_VM_DASM (".%-4" PRIu64 " !! %s", si, idio_type2string (sym));
-		    idio_debug_FILE (fp, " %s !! ", sym);
+		    IDIO_VM_DASM (".%-4" PRIu64 " !! %s ", si, idio_type2string (sym));
+		    idio_debug_FILE (fp, "%s !! ", sym);
 		}
 	    }
 	    break;
@@ -622,10 +622,10 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 			fn = idio_array_ref_index (cs, IDIO_FIXNUM_VAL (fi));
 			idio_hash_set (fnh, fi, fn);
 		    }
-		    idio_debug_FILE (fp, " %s", fn);
+		    idio_debug_FILE (fp, "%s", fn);
 		    idio_debug_FILE (fp, ":line %s", IDIO_PAIR_HT (lo));
 		} else {
-		    IDIO_VM_DASM (" %-25s", "<no lex tuple>");
+		    IDIO_VM_DASM ("%-25s", "<no lex tuple>");
 		}
 		if (idio_S_false != e) {
 		    idio_debug_FILE (fp, "\n  %.80s", e);

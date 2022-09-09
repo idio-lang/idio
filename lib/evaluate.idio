@@ -26,15 +26,16 @@ export (
 )
 import read expander operator codegen threading vm
 
-;; symbol-info is a tuple: (scope si ci vi module description)
+;; symbol-info is a tuple: (scope xi si ci vi module description)
 define (si-scope si)                 (ph si)
-define (si-si si)                    (pht si)
-define (si-ci si)                    (phtt si)
-define (si-vi si)                    (nth si 3)
-define (set-si-vi! si vi)            (set! si.3 vi)
-define (si-module si)                (nth si 4)
-define (si-description si)           (nth si 5)
-define (set-si-description! si desc) (set! si.5 desc)
+define (si-xi si)                    (pht si)
+define (si-si si)                    (nth si 2)
+define (si-ci si)                    (nth si 3)
+define (si-vi si)                    (nth si 4)
+define (set-si-vi! si vi)            (set! si.4 vi)
+define (si-module si)                (nth si 5)
+define (si-description si)           (nth si 6)
+define (set-si-description! si desc) (set! si.6 desc)
 
 define (nt-param-i si)     (pht si)
 define (nt-param-j si)     (phtt si)
@@ -240,6 +241,7 @@ define (meaning-extend-tables eenv name scope ci module desc set-symbol?) "
   sym-si := (list
 	     name
 	     scope
+	     (%eenv-xi eenv)
 	     vi
 	     ci
 	     0
@@ -272,6 +274,7 @@ define (meaning-extend-operators eenv name desc) "
   op-si := (list
 	    name
 	    scope
+	    (%eenv-xi eenv)
 	    vi
 	    ci
 	    0
@@ -1298,7 +1301,7 @@ define (meaning-define-template src name e nametree flags eenv) {
 
     cm := (current-module)
 
-    sym-si := list 'toplevel ex-id ci 0 cm docstr
+    sym-si := list 'toplevel (%eenv-xi eenv) ex-id ci 0 cm docstr
 
     set-symbol! name sym-si cm
 

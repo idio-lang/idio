@@ -906,16 +906,17 @@ IDIO idio_module_direct_reference (IDIO name)
 		if (idio_S_false != si) {
 		    /*
 		     * Our result si should look similar to the result
-		     * we've just found except that the ci cannot be
-		     * the same: the symbols M/S is not the same as
-		     * the symbol S.
+		     * we've just found except we'll remark here that
+		     * the xi, si and ci cannot be the same: the
+		     * symbol M/S (in the caller) is not the same as
+		     * the symbol S in the module this was found in.
 		     */
-		    idio_as_t ci = idio_vm_constants_lookup_or_extend (IDIO_THREAD_XI (idio_thread_current_thread ()),  name);
 		    r = IDIO_LIST3 (m_sym,
 				    s_sym,
-				    IDIO_LIST6 (IDIO_SI_SCOPE (si),
+				    IDIO_LIST7 (IDIO_SI_SCOPE (si),
+						IDIO_SI_XI (si),
 						IDIO_SI_SI (si),
-						idio_fixnum (ci),
+						IDIO_SI_CI (si),
 						IDIO_SI_VI (si),
 						mod,
 						idio_module_direct_reference_string));
