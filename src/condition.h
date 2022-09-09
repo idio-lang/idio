@@ -68,7 +68,7 @@ extern IDIO idio_condition_define_condition0_dynamic_string;
 	idio_gc_protect_auto (v);					\
 	idio_as_t gci = idio_vm_extend_default_constants (sym);		\
 	idio_as_t gvi = idio_vm_extend_default_values ();		\
-	idio_module_set_symbol (sym, IDIO_LIST6 (idio_S_toplevel, idio_fixnum (0), idio_fixnum (gvi), idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_condition_define_condition0_string), idio_Idio_module); \
+	idio_module_set_symbol (sym, IDIO_LIST7 (idio_S_toplevel, idio_fixnum (0), idio_fixnum (gvi), idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_condition_define_condition0_string), idio_Idio_module); \
 	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 
@@ -78,7 +78,7 @@ extern IDIO idio_condition_define_condition0_dynamic_string;
 	idio_gc_protect_auto (v);					\
 	idio_as_t gci = idio_vm_extend_default_constants (sym);		\
 	idio_as_t gvi = idio_vm_extend_default_values ();		\
-	idio_module_set_symbol (sym, IDIO_LIST6 (idio_S_toplevel, idio_fixnum (0), idio_fixnum (gvi), idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_condition_define_condition0_dynamic_string), idio_Idio_module); \
+	idio_module_set_symbol (sym, IDIO_LIST7 (idio_S_toplevel, idio_fixnum (0), idio_fixnum (gvi), idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_condition_define_condition0_dynamic_string), idio_Idio_module); \
 	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 
@@ -88,7 +88,7 @@ extern IDIO idio_condition_define_condition0_dynamic_string;
 	idio_gc_protect_auto (v);					\
 	idio_as_t gci = idio_vm_extend_default_constants (sym);		\
 	idio_as_t gvi = idio_vm_extend_default_values ();		\
-	idio_module_set_symbol (sym, IDIO_LIST6 (idio_S_toplevel, idio_fixnum (0), idio_fixnum (gvi), idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_condition_define_condition1_string), idio_Idio_module); \
+	idio_module_set_symbol (sym, IDIO_LIST7 (idio_S_toplevel, idio_fixnum (0), idio_fixnum (gvi), idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_condition_define_condition1_string), idio_Idio_module); \
 	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 
@@ -98,7 +98,7 @@ extern IDIO idio_condition_define_condition0_dynamic_string;
 	idio_gc_protect_auto (v);					\
 	idio_as_t gci = idio_vm_extend_default_constants (sym);		\
 	idio_as_t gvi = idio_vm_extend_default_values ();		\
-	idio_module_set_symbol (sym, IDIO_LIST6 (idio_S_toplevel, idio_fixnum (0), idio_fixnum (gvi), idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_condition_define_condition2_string), idio_Idio_module); \
+	idio_module_set_symbol (sym, IDIO_LIST7 (idio_S_toplevel, idio_fixnum (0), idio_fixnum (gvi), idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_condition_define_condition2_string), idio_Idio_module); \
 	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 
@@ -108,7 +108,7 @@ extern IDIO idio_condition_define_condition0_dynamic_string;
 	idio_gc_protect_auto (v);					\
 	idio_as_t gci = idio_vm_extend_default_constants (sym);		\
 	idio_as_t gvi = idio_vm_extend_default_values ();		\
-	idio_module_set_symbol (sym, IDIO_LIST6 (idio_S_toplevel, idio_fixnum (0), idio_fixnum (gvi), idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_condition_define_condition3_string), idio_Idio_module); \
+	idio_module_set_symbol (sym, IDIO_LIST7 (idio_S_toplevel, idio_fixnum (0), idio_fixnum (gvi), idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_condition_define_condition3_string), idio_Idio_module); \
 	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 

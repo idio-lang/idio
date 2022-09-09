@@ -2623,8 +2623,8 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     IDIO xi = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_XI);
 
     IDIO sym_si = IDIO_LIST7 (idio_S_toplevel,
-			      sym_idx,
 			      xi,
+			      sym_idx,
 			      fci,
 			      idio_fixnum0,
 			      cm,

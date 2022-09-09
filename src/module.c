@@ -2017,7 +2017,7 @@ void idio_final_module ()
 	    return;
 	}
 
-	fprintf (fp, " %5s %5s %-40s%.2s %5s\n", "SI", "CI", "symbol", "Exported", "GVI");
+	fprintf (fp, " %5s %5s %-40s%.2s %5s %4s %-10s %s\n", "SI", "CI", "symbol", "Exported", "GVI", "XI", "module", "desc");
 
 	IDIO module_names = idio_hash_keys_to_list (idio_modules_hash);
 	while (idio_S_nil != module_names) {
@@ -2040,6 +2040,9 @@ void idio_final_module ()
 		    fprintf (fp, "  ");
 		}
 		idio_debug_FILE (fp, " %5s", IDIO_SI_VI (si));
+		idio_debug_FILE (fp, " %4s", IDIO_SI_XI (si));
+		idio_debug_FILE (fp, " %-10s", IDIO_MODULE_NAME (IDIO_SI_MODULE (si)));
+		idio_debug_FILE (fp, " %s", IDIO_SI_DESCRIPTION (si));
 		fprintf (fp, "\n");
 
 		symbols = IDIO_PAIR_T (symbols);
