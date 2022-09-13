@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <dlfcn.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <poll.h>
 #include <setjmp.h>
@@ -635,7 +636,7 @@ int main (int argc, char **argv, char **envp)
     case 0:
 	break;
     case IDIO_VM_SIGLONGJMP_EXIT:
-	fprintf (stderr, "NOTICE: bootstrap/exit (%d) for PID %d\n", idio_exit_status, getpid ());
+	fprintf (stderr, "NOTICE: bootstrap/exit (%d) for PID %" PRIdMAX "\n", idio_exit_status, (intmax_t) getpid ());
 	idio_free (sargv);
 	idio_final ();
 	exit (idio_exit_status);
@@ -720,7 +721,7 @@ int main (int argc, char **argv, char **envp)
     case IDIO_VM_SIGLONGJMP_EXIT:
 #ifdef IDIO_DEBUG
 	if (idio_exit_status) {
-	    fprintf (stderr, "NOTICE: script/exit (%d) for PID %d\n", idio_exit_status, getpid ());
+	    fprintf (stderr, "NOTICE: script/exit (%d) for PID %" PRIdMAX "\n", idio_exit_status, (intmax_t) getpid ());
 	}
 #endif
 	idio_free (sargv);

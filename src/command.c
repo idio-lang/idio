@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <glob.h>
 #include <grp.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <poll.h>
 #include <pwd.h>
@@ -1416,7 +1417,7 @@ IDIO idio_command_invoke (IDIO name, IDIO thr, char const *pathname)
 	if (idio_close_handle (close_stdin) < 0) {
 	    if (EBADF == errno) {
 		char em[BUFSIZ];
-		snprintf (em, BUFSIZ, "[%d] ici 0: close (%d): EBADF", getpid (), IDIO_FILE_HANDLE_FD (close_stdin));
+		snprintf (em, BUFSIZ, "[%" PRIdMAX "] ici 0: close (%d): EBADF", (intmax_t) getpid (), IDIO_FILE_HANDLE_FD (close_stdin));
 		perror (em);
 	    } else {
 		/*

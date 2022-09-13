@@ -761,7 +761,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	/*
 	 * Test Case: ??
 	 */
-	fprintf (stderr, "[%d]fcntl %d (%s) => %d\n", getpid (), fd, idio_type2string (ifd), errno);
+	fprintf (stderr, "[%" PRIdMAX "]fcntl %d (%s) => %d\n", (intmax_t) getpid (), fd, idio_type2string (ifd), errno);
 	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, idio_S_F_GETFL), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -2479,7 +2479,7 @@ int idio_flush_file_handle (IDIO fh)
 	       * Hmm, not sure...
 	       */
 
-	     fprintf (stderr, "%6d: flush %d bytes failed for fd=%3d", getpid (), IDIO_FILE_HANDLE_COUNT (fh), IDIO_FILE_HANDLE_FD (fh));
+	     fprintf (stderr, "%6" PRIdMAX ": flush %d bytes failed for fd=%3d", (intmax_t) getpid (), IDIO_FILE_HANDLE_COUNT (fh), IDIO_FILE_HANDLE_FD (fh));
 	      fprintf (stderr, " hflags=%#x", IDIO_HANDLE_FLAGS (fh));
 	      idio_debug (" fh=%s\n", fh);
 	      if (EBADF == errno) {

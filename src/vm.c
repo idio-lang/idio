@@ -3976,7 +3976,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 
     idio_vm_time_delta ();
     fprintf (idio_tracing_FILE, "%09ld ", idio_vm_ts_delta.tv_nsec);
-    fprintf (idio_tracing_FILE, "%6d ", getpid ());
+    fprintf (idio_tracing_FILE, "%6" PRIdMAX " ", (intmax_t) getpid ());
 
     /*
      * Technically, intptr_t (idio_xi_t, idio_pc_t) can be 20 chars
@@ -4083,7 +4083,7 @@ static void idio_vm_primitive_call_trace (IDIO primdata, IDIO thr, int nargs)
      */
     idio_vm_time_delta ();
     fprintf (idio_tracing_FILE, "%09ld ", idio_vm_ts_delta.tv_nsec);
-    fprintf (idio_tracing_FILE, "%6d ", getpid ());
+    fprintf (idio_tracing_FILE, "%6" PRIdMAX " ", (intmax_t) getpid ());
 
     char buf[51];
     snprintf (buf, 50, "[%zu]@%zd", IDIO_THREAD_XI (thr), IDIO_THREAD_PC (thr) - 1);
@@ -4159,7 +4159,7 @@ static void idio_vm_primitive_result_trace (IDIO thr)
 
     idio_vm_time_delta ();
     fprintf (idio_tracing_FILE, "%09ld ", idio_vm_ts_delta.tv_nsec);
-    fprintf (idio_tracing_FILE, "%6d ", getpid ());
+    fprintf (idio_tracing_FILE, "%6" PRIdMAX " ", (intmax_t) getpid ());
 
     char buf[51];
     snprintf (buf, 50, "[%zu]@%zd", IDIO_THREAD_XI (thr), IDIO_THREAD_PC (thr));
@@ -5158,7 +5158,7 @@ int idio_vm_run1 (IDIO thr)
 		 */
 		idio_vm_time_delta ();
 		fprintf (idio_tracing_FILE, "%09ld ", idio_vm_ts_delta.tv_nsec);
-		fprintf (idio_tracing_FILE, "%6d ", getpid ());
+		fprintf (idio_tracing_FILE, "%6" PRIdMAX " ", (intmax_t) getpid ());
 
 		char buf[51];
 		snprintf (buf, 50, "[%zu]@%zd", IDIO_THREAD_XI (thr), IDIO_THREAD_PC (thr));
@@ -6369,7 +6369,7 @@ IDIO idio_vm_run (IDIO thr, idio_xi_t xi, idio_pc_t pc, idio_vm_run_enum caller)
 	idio_gc_reset ("idio_vm_run/event", v_gc_pause);
 	break;
     case IDIO_VM_SIGLONGJMP_EXIT:
-	fprintf (stderr, "NOTICE: idio_vm_run/exit (%d) for PID %d\n", idio_exit_status, getpid ());
+	fprintf (stderr, "NOTICE: idio_vm_run/exit (%d) for PID %" PRIdMAX "\n", idio_exit_status, (intmax_t) getpid ());
 	idio_gc_reset ("idio_vm_run/exit", v_gc_pause);
 	idio_final ();
 	exit (idio_exit_status);
@@ -6612,9 +6612,9 @@ IDIO idio_vm_run (IDIO thr, idio_xi_t xi, idio_pc_t pc, idio_vm_run_enum caller)
 #ifdef IDIO_VM_PROF
 	fh = idio_vm_perf_FILE;
 #endif
-	fprintf (fh, "[%d]vm_run: %10" PRIdPTR " ins in time %4jd.%03ld => %6" PRIdPTR " i/ms\n", getpid(), loops, (intmax_t) td.tv_sec, (long) td.tv_usec / 1000, ipms);
+	fprintf (fh, "[%" PRIdMAX "]vm_run: %10" PRIdPTR " ins in time %4jd.%03ld => %6" PRIdPTR " i/ms\n", (intmax_t) getpid (), loops, (intmax_t) td.tv_sec, (long) td.tv_usec / 1000, ipms);
 	if (td.tv_sec > 10) {
-	    fprintf (fh, "[%d>%d] %jds: slow call to [%zu}@%zd\n", getppid (), getpid (), (intmax_t) td.tv_sec, v_XI0, v_PC0);
+	    fprintf (fh, "[%" PRIdMAX ">%" PRIdMAX "] %jds: slow call to [%zu}@%zd\n", (intmax_t) getppid (), (intmax_t) getpid (), (intmax_t) td.tv_sec, v_XI0, v_PC0);
 	}
     }
 #endif
