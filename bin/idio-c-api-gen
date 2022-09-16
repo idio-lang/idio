@@ -1168,15 +1168,20 @@ ${i-module-name}-error-load := \{
 		(("char")			 "char")
 		(("signed char")		 "schar")
 		(("unsigned char")		 "uchar")
-		(("short int" "short")	 "short")
+		(("short int"
+		  "short")			 "short")
 		(("short unsigned int"
 		  "unsigned short")		 "ushort")
 		(("int")			 "int")
 		(("unsigned int")		 "uint")
-		(("long int")		 "long")
-		(("long unsigned int")	 "ulong")
-		(("long long int")		 "longlong")
-		(("long long unsigned int")	 "ulonglong")
+		(("long int"
+		  "long")			 "long")
+		(("long unsigned int"
+		  "unsigned long")	         "ulong")
+		(("long long int"
+		  "long long")			 "longlong")
+		(("long long unsigned int"
+		  "unsigned long long")		 "ulonglong")
 		(("float")			 "float")
 		(("double")			 "double")
 		(("long double")		 "longdouble")
@@ -1235,15 +1240,20 @@ ${i-module-name}-error-load := \{
 		(("char")			 "CHAR")
 		(("signed char")		 "SCHAR")
 		(("unsigned char")		 "UCHAR")
-		(("short int" "short")	 "SHORT")
+		(("short int"
+		  "short")			 "SHORT")
 		(("short unsigned int"
 		  "unsigned short")		 "USHORT")
 		(("int")			 "INT")
 		(("unsigned int")		 "UINT")
-		(("long int")		 "LONG")
-		(("long unsigned int")	 "ULONG")
-		(("long long int")		 "LONGLONG")
-		(("long long unsigned int")	 "ULONGLONG")
+		(("long int"
+		  "long")			 "LONG")
+		(("long unsigned int"
+		  "unsigned long")		 "ULONG")
+		(("long long int"
+		  "long long")			 "LONGLONG")
+		(("long long unsigned int"
+		  "unsigned long long")		 "ULONGLONG")
 		(("float")			 "FLOAT")
 		(("double")			 "DOUBLE")
 		(("long double")		 "LONGDOUBLE")

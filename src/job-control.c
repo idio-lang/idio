@@ -42,6 +42,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <grp.h>
+#include <inttypes.h>
 #include <poll.h>
 #include <pwd.h>
 #include <setjmp.h>
@@ -777,7 +778,7 @@ void idio_job_control_do_job_notification ()
 		IDIO psj_path = idio_struct_instance_ref_direct (psj, IDIO_PSJ_ST_PATH);
 		if (idio_S_false != psj_path) {
 #ifdef IDIO_DEBUG
-		    fprintf (stderr, "%6d: SHUTDOWN: ", getpid ());
+		    fprintf (stderr, "%6" PRIdMAX ": SHUTDOWN: ", (intmax_t) getpid ());
 		    idio_debug ("unlink/rm %s\n", psj);
 #endif
 		    size_t size = 0;
@@ -1112,7 +1113,7 @@ static void idio_job_control_hangup_job (IDIO job)
 	    }
 	}
     } else {
-	fprintf (stderr, "SIGHUP -> pgid %d ??\n", job_pgid);
+	fprintf (stderr, "SIGHUP -> pgid %" PRIdMAX " ??\n", (intmax_t) job_pgid);
 	idio_debug ("job %s\n", job);
     }
 }
@@ -1179,7 +1180,7 @@ IDIO idio_job_control_SIGTERM_stopped_jobs ()
     IDIO jobs = idio_module_symbol_value (idio_S_idio_jobs, idio_job_control_module, idio_S_nil);
     if (idio_S_nil != jobs) {
 	if (idio_job_control_interactive) {
-	    fprintf (stderr, "%6d: ijc SIGTERM: outstanding jobs: ", getpid());
+	    fprintf (stderr, "%6" PRIdMAX ": ijc SIGTERM: outstanding jobs: ", (intmax_t) getpid());
 	    idio_debug ("%s\n", jobs);
 	}
 
@@ -1212,7 +1213,7 @@ IDIO idio_job_control_SIGTERM_stopped_jobs ()
 		if (job_pgid > 0) {
 #ifdef IDIO_DEBUG
 		    if (idio_job_control_interactive) {
-			fprintf (stderr, "%6d: ijc SIGTERM -> pgid %d\n", getpid (), job_pgid);
+			fprintf (stderr, "%6" PRIdMAX ": ijc SIGTERM -> pgid %" PRIdMAX "\n", (intmax_t) getpid (), (intmax_t) job_pgid);
 			idio_debug ("job %s\n", job);
 		    }
 #endif
@@ -1234,7 +1235,7 @@ IDIO idio_job_control_SIGTERM_stopped_jobs ()
 		     */
 #ifdef IDIO_DEBUG
 		    if (idio_job_control_interactive) {
-			fprintf (stderr, "%6d: ijc SIGTERM -> pgid %d ??\n", getpid(), job_pgid);
+			fprintf (stderr, "%6" PRIdMAX ": ijc SIGTERM -> pgid %" PRIdMAX " ??\n", (intmax_t) getpid(), (intmax_t) job_pgid);
 			idio_debug ("job %s\n", job);
 		    }
 #endif
@@ -2079,7 +2080,7 @@ void idio_job_control_set_interactive (int interactive)
 	 */
 	int c = 0;
 	while (tcgetpgrp (idio_job_control_tty_fd) != (idio_job_control_pgid = getpgrp ())) {
-	    fprintf (stderr, "%2d: tcgetpgrp(%d)=%d getpgrp()=%d\n", c, tcgetpgrp (idio_job_control_tty_fd), idio_job_control_tty_fd, getpgrp ());
+	    fprintf (stderr, "%2d: tcgetpgrp(%" PRIdMAX ")=%d getpgrp()=%" PRIdMAX "\n", c, (intmax_t) tcgetpgrp (idio_job_control_tty_fd), idio_job_control_tty_fd, (intmax_t) getpgrp ());
 	    c++;
 	    if (c > 2) {
 		exit (128 + 15);

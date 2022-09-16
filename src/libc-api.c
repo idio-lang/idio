@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <grp.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <poll.h>
 #include <pwd.h>
@@ -2745,7 +2746,7 @@ Options will be IORed together			     \n\
 
 		    spid = idio_hash_ref (stray_pids, pid);
 		    if (idio_S_unspec != spid) {
-			fprintf (stderr, "%6d: waitpid: recovered stray pid %d\n", getpid (), C_pid);
+			fprintf (stderr, "%6" PRIdMAX ": waitpid: recovered stray pid %" PRIdMAX "\n", (intmax_t) getpid (), (intmax_t) C_pid);
 			idio_hash_delete (stray_pids, pid);
 			return IDIO_LIST2 (pid, spid);
 		    }
