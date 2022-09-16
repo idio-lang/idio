@@ -1,0 +1,356 @@
+#! /usr/bin/env idio
+
+#*
+
+Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+------------------------------
+
+report-tested-system
+
+As test systems get upgraded(*) the web pages' record of
+support/tested systems becomes out of date so we want a mechanism to
+figure the values out automatically.
+
+While we are here, we can normalize the production of the tuple:
+
+* kernel: uname -s
+
+  All the BSDs report a different uname -s but the value is reworked
+  to a common "BSD" (cf. Linux, SunOS, Darwin, etc.).
+
+* OS: Fedora Linux 36; macOS 12.6
+
+  This is often "$NAME $VERSION_ID" from /etc/os-release with
+  OS-specific variations.
+
+  Something akin to the marketing name of the OS.
+
+* ISA: uname -m
+
+  uname -m should probably be uname -p but several systems report
+  "unknown".
+
+  This is the most problematic at there is no consistency between the
+  use of, say:
+
+  * x86_64 and amd64 (and i86pc -- thanks, SunOS)
+
+  * i386 and i686 (and i86pc -- thanks, SunOS)
+
+  * aarch64 and arm64.
+
+* bits: 64 or 32
+
+* compiler: gcc 12; clang 14
+
+  Some supplier-version tuple.  The real function is to demonstrate
+  that the code compiles using multiple compilers, the (major) version
+  number is supplementary.
+
+Packaging the tuple into documentation is a separate step.
+
+(*) Usually real computers.  The advantage/purpose of a VM is you can
+keep it pseudo-frozen in time for testing and you can add a new VM for
+a new (major) release.  Real computers we (probably) want to keep
+updated including across major revisions meaning we can't keep
+old (major) revisions lying around because we run out of physical
+computers.
+
+Even this strategy fails if you trash your VM and it turns out the
+distro doesn't keep old packages online *shakes fist at FreeBSD 10*.
+
+*#
+
+kernel        := libc/idio-uname.sysname
+OS            := #f
+ISA           := libc/idio-uname.machine
+bits          := (cond-expand
+ (sizeof/pointer/64 "64")
+ (sizeof/pointer/32 "32")
+ (else {
+   eprintf "%s: unexpected sizeof pointer\n" ARGV0
+   exit 1
+ }))
+compiler      := #f
+
+;; The processing is largely a dupe of SRFI-0 but we want slightly
+;; different things.
+(cond-expand
+ ((or "uname/sysname/Linux"
+      "uname/sysname/FreeBSD") {
+   found := #f
+   OS-name := #f
+   OS-version := #f
+   WSL1 := #f
+   WSL2 := #f
+
+   file-loop :+ function (fn*) {
+     if (null? fn*) #n {
+       fn := ph fn*
+       if (e? fn) {
+	 fh := open-input-file fn
+	 line-loop :+ function () {
+	   if (eof? fh) #n {
+	     (regex-case
+	      (read-line fh)
+	      ("^#" {
+		(line-loop)
+	      })
+	      ("([[:alnum:]_]+)=\"?([^\"]*)\"?" {
+		(case r.1
+		 (("NAME") {
+		   OS-name = r.2
+		   found = #t
+
+		   (pattern-case
+		    OS-name
+		    ("FreeBSD" {
+		      kernel = "BSD"
+		    }))
+		 })
+		 (("VERSION_ID") {
+		   OS-version = r.2
+		   found = #t
+		 }))
+		(line-loop)
+	      }))
+	     (line-loop)
+	   }
+	 }
+	 (line-loop)
+       } {
+	 file-loop (pt fn*)
+       }
+     }
+   }
+
+   file-loop '("/etc/os-release" "/usr/lib/os-release")
+
+   ;; CentOS 6 uses /etc/system-release: CentOS release 6.10 (Final)
+   if (not found) {
+     rf := "/etc/system-release"
+     if (f? rf) {
+       rh := open-input-file rf
+       rl := read-lines rh
+       close-handle rh
+       (regex-case
+	rl
+	("([^[:space:]]+) release ([[:digit:]]+)" {
+	  OS-name = r.1
+	  OS-version = r.2
+	}))
+     }
+   }
+
+   OS = sprintf "%s %s" OS-name OS-version
+
+   (regex-case
+    OS-name
+    ("^(Raspbian|Debian) " {
+      ;; Raspberry Pi -- for some reason I like to know that it has
+      ;; been run on an RPi even if, in practice, it functions
+      ;; identically to a Debian system (and about six times slower).
+      pv := "/sys/firmware/devicetree/base/model"
+      if (r? pv) {
+	;; I've used my own boxen plus hints from
+	;; https://gist.github.com/jperkin/c37a574379ef71e339361954be96be12
+	;; for the regexps
+
+	(regex-case
+	 (collect-output cat pv)
+	 ("Raspberry Pi ([2-9]) Model ([AB])( Plus)? Rev " {
+	   plus? := ""
+	   if (and ((array-length r) gt 3)
+		   ((string-length r.3) gt 0)) {
+	     plus? = "+"
+	   }
+	   OS = sprintf "%s (RPi %s %s%s)" OS r.1 r.2 plus?
+	 })
+
+	 ;; The following are untested
+
+	 ("Raspberry Pi Compute Module( [3]( Plus)?)? Rev " {
+	   rev := ""
+	   if ((array-length r) gt 1) {
+	     if ((array-length r) gt 2) {
+	       rev = append-string r.1 "+"
+	     } {
+	       rev = r.1
+	     }
+	   }
+	   OS = sprintf "%s (RPi CM %s)" OS rev
+	 })
+	 ("Raspberry Pi Zero ([W]) Rev " {
+	   OS = sprintf "%s (RPi Zero %s)" OS r.1
+	 }))
+      }
+    }))
+
+   ;; WSL? https://stackoverflow.com/questions/38086185/how-to-check-if-a-program-is-run-in-bash-on-ubuntu-on-windows-and-not-just-plain
+   pv := "/proc/sys/kernel/osrelease"
+   if (r? pv) {
+     ;; XXX do not use collect-output (or pipe-from) as under WSL.1
+     ;; they will invoke fcntl F_SETFD on the pipe-handle which it
+     ;; doesn't like.
+     ;;
+     ;; We can't override that until we've been through here!
+     fh := open-input-file pv
+     rl := read-lines fh
+     close-handle fh
+     rc := regcomp "Microsoft|WSL" 'REG_ICASE
+     if (regexec rc rl) {
+       WSL1 = #t
+       rc := regcomp "microsoft"
+       if (regexec rc rl) {
+	 WSL1 = #f
+	 WSL2 = #t
+       }
+     }
+
+     (cond
+      (WSL1 {
+	OS = sprintf "%s (WSL1)" OS
+      })
+      (WSL2 {
+	OS = sprintf "%s (WSL2)" OS
+      }))
+   }
+ })
+ ("uname/sysname/SunOS" {
+   ;; Oracle Solaris 11.4 has /etc/os-release
+   found := #f
+
+   file-loop :+ function (fn*) {
+     if (null? fn*) #n {
+       fn := ph fn*
+       if (e? fn) {
+	 fh := open-input-file fn
+	 line-loop :+ function () {
+	   if (eof? fh) #n {
+	     (regex-case
+	      (read-line fh)
+	      ("^#" {
+		(line-loop)
+	      })
+	      ("([[:alnum:]_]+)=\"?([^\"]*)\"?" {
+		(case r.1
+		 (("NAME") {
+		   OS-name = r.2
+		   found = #t
+		 })
+		 (("VERSION_ID") {
+		   OS-version = r.2
+		   found = #t
+		 }))
+		(line-loop)
+	      }))
+	     (line-loop)
+	   }
+	 }
+	 (line-loop)
+       } {
+	 file-loop (pt fn*)
+       }
+     }
+   }
+
+   file-loop '("/etc/os-release" "/usr/lib/os-release")
+
+   if (not found) {
+     rf := "/etc/release"
+     if (f? rf) {
+       rh := open-input-file rf
+       rl := read-lines rh
+       close-handle rh
+       (regex-case
+	rl
+	; OpenIndiana Development oi_151.1.8 X86 (powered by illumos)
+	; OpenIndiana Hipster 2020.04 (powered by illumos)
+	; ...and from the Intertubes...
+	; Solaris 9 9/04 s9s_u7wos_09 SPARC
+	; Solaris 10 5/08 s10x_u5wos_10 X86
+	; Oracle Solaris 11.4 X86
+	; OpenSolaris 2009.06 snv_111b X86
+	; annoyingly different is:
+	; Oracle Solaris 11 Express snv_151a X86
+	("(Solaris|OpenSolaris|OpenIndiana|Oracle) ([^[:space:]]+) ([^[:space:]]+)" {
+	  OS = sprintf "%s %s %s" r.1 r.2 r.3
+	}))
+     }
+   } {
+     OS = sprintf "%s %s" OS-name OS-version
+   }
+
+ })
+ ((or "uname/sysname/OpenBSD"
+      "uname/sysname/NetBSD") {
+   kernel = "BSD"
+   OS = sprintf "%s %s" libc/idio-uname.sysname libc/idio-uname.release
+ })
+ ("uname/sysname/Darwin" {
+   PN := #f
+   PV := #f
+
+   ph := pipe-from sw_vers
+   line-loop :+ function () {
+     if (eof? ph) #n {
+       (regex-case
+	(read-line ph)
+	( ; macOS
+	  ; Mac OS X
+	  "ProductName:[[:space:]]+([[:alpha:] ]+)" {
+	    PN = r.1
+	  })
+	("ProductVersion:[[:space:]]+(.+)" {
+	  PV = r.1
+	}))
+       (line-loop)
+     }
+   }
+   (line-loop)
+   close-handle ph
+
+   OS = sprintf "%s %s" PN PV
+ }))
+
+(regex-case
+ (collect-output IDIO_BUILD_CC_PATH --version)
+ ( ; cc (GCC) 12.2.1 20220819 (Red Hat 12.2.1-1)
+   ; gcc (OpenIndiana 10.3.0-oi-3) 10.3.0
+   ; gcc-8 (Debian 8.3.0-6) 8.3.0
+   "^g?cc[^ ]* \\([^\\)]+\\) ([[:alnum:].]+)" {
+     versions := split-string r.1 "."
+     compiler = sprintf "gcc %s" (ph versions)
+   })
+ ( ; i686-apple-darwin9-gcc-4.0.1 (GCC) 4.0.1 (Apple Inc. build 5493)
+   "gcc[^ ]+ \\(GCC\\) ([[:alnum:].]+)" {
+     versions := split-string r.1 "."
+     compiler = sprintf "gcc %s" (ph versions)
+   })
+ ( ; OpenBSD clang version 10.0.1
+   ; Apple clang version 14.0.0 (clang-1400.0.29.102)
+   ; FreeBSD clang version 13.0.0 (git@github.com:llvm/llvm-project.git llvmorg-13.0.0-0-gd7b669b3a303)
+   " clang version ([[:alnum:].]+)" {
+     versions := split-string r.1 "."
+     compiler = sprintf "clang %s" (ph versions)
+   }))
+
+printf "%s, %s, %s, %s, %s\n" kernel OS ISA bits compiler
+
+;Local Variables:
+;mode: Idio
+;coding: utf-8-unix
+;End:
