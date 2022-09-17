@@ -33,7 +33,7 @@ define (si-si si)                    (nth si 2)
 define (si-ci si)                    (nth si 3)
 define (si-vi si)                    (nth si 4)
 define (set-si-vi! si vi)            (set! si.4 vi)
-define (si-module si)                (nth si 5)
+define (si-module si)                (nth si 5) ; update doc.idio as well!
 define (si-description si)           (nth si 6)
 define (set-si-description! si desc) (set! si.6 desc)
 
