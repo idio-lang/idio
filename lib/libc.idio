@@ -393,11 +393,11 @@ The resource names follow C conventions such as ``libc/RLIMIT_AS`` and
 ``libc/RLIMIT_NOFILE``.
 
   " {
-    resource := #n
     (cond
-     ((C/int? res) (resource = res))
-     ((symbol? res) (resource = res))
+     ((C/int? res) #t)
+     ((symbol? res) #t)
      ((keyword? res) {
+       resource := #n
 
        ;; each OS has a different set of (valid) RLIMIT_* macros so our
        ;; set of :nickname tests has to be dynamic
@@ -413,10 +413,14 @@ The resource names follow C conventions such as ``libc/RLIMIT_AS`` and
 	 }
        }) (libc/rlimit-names)
 
-       if (null? resource) (error/type ^rt-parameter-nil-error 'getrlimit "bad resource" resource "from" res)
+       if (null? resource) {
+	 error/type ^rt-parameter-nil-error 'getrlimit "bad resource" res
+       } {
+	 res = resource
+       }
      }))
 
-    orig-getrlimit resource
+    orig-getrlimit res
   }
 }
 
@@ -439,11 +443,11 @@ The resource names follow C conventions such as ``libc/RLIMIT_AS`` and
 ``libc/RLIMIT_NOFILE``.
 
   " {
-    resource := #n
     (cond
-     ((C/int? res) (resource = res))
-     ((symbol? res) (resource = res))
+     ((C/int? res) #t)
+     ((symbol? res) #t)
      ((keyword? res) {
+       resource := #n
 
        ;; each OS has a different set of (valid) RLIMIT_* macros so our
        ;; set of :nickname tests has to be dynamic
@@ -459,10 +463,14 @@ The resource names follow C conventions such as ``libc/RLIMIT_AS`` and
 	 }
        }) (libc/rlimit-names)
 
-       if (null? resource) (error/type ^rt-parameter-nil-error 'setrlimit "bad resource" resource "from" res)
+       if (null? resource) {
+	 error/type ^rt-parameter-nil-error 'setrlimit "bad resource" res
+       } {
+	 res = resource
+       }
      }))
 
-    orig-setrlimit resource rlim
+    orig-setrlimit res rlim
   }
 }
 
