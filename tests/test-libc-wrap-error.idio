@@ -273,7 +273,9 @@ libc-wrap-error-load "libc-wrap-errors/getpgid-bad-pid-type.idio" "bad parameter
  (else {
    libc-wrap-error-load "libc-wrap-errors/getpgid-bad-pid.idio" "No such process" ESRCH "getpgid"
  }))
-libc-wrap-error-load "libc-wrap-errors/getrlimit-bad-resource-type.idio" "bad parameter type: '#n' a constant is not a C/int"
+
+libc-wrap-error-load "libc-wrap-errors/getrlimit-bad-resource-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/getrlimit-bad-resource-nickname.idio" "getrlimit bad resource (:NOT_LIKELY)"
 libc-wrap-error-load "libc-wrap-errors/getrlimit-bad-rlim.idio" "Invalid argument" EINVAL "getrlimit"
 
 libc-wrap-error-load "libc-wrap-errors/getpwuid-bad-uid-type.idio" "bad parameter type: '#t' a constant is not a unsigned fixnum|libc/uid_t"
@@ -410,6 +412,8 @@ libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pid-type.idio" "bad parameter
 libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pgid-type.idio" "bad parameter type: '#t' a constant is not a libc/pid_t"
 libc-wrap-error-load "libc-wrap-errors/setpgid-negative-pgid.idio" "Invalid argument" EINVAL "setpgid"
 
+libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-resource-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-resource-nickname.idio" "setrlimit bad resource (:NOT_LIKELY)"
 libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-rlim-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/setrlimit-rlim-invalid-pointer-type.idio" "setrlimit rlim='#<C/* C/pointer>' a C/pointer is not a libc/struct-rlimit"
 libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-rlim.idio" "Invalid argument" EINVAL "setrlimit"
@@ -773,4 +777,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 370 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 373 - libc-wrap-error-skipped)

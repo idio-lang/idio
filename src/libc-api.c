@@ -1716,7 +1716,7 @@ in C, :samp:`{rlimit}->{member}`	\n\
     IDIO_ASSERT (member);
 
     /*
-     * Test Case: libc-errors/struct-rlimit-ref-bad-pointer-type.idio
+     * Test Case: libc-errors/struct-rlimit-ref-bad-resource-type.idio
      *
      * struct-rlimit-ref #t #t
      */
@@ -4687,7 +4687,8 @@ a wrapper to libc :manpage:`kill(2)`				\n\
 	/*
 	 * Test Case: libc-wrap-errors/kill-invalid-signal.idio
 	 *
-	 * ;; technically risky as 98765 could be a valid signal...
+	 * Technically risky as 98765 could be a valid signal...
+	 *
 	 * kill (C/integer-> PID libc/pid_T) (C/integer-> 98765)
 	 */
 	idio_error_system_errno ("kill", IDIO_LIST2 (pid, sig), IDIO_C_FUNC_LOCATION ());
