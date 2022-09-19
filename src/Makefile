@@ -82,6 +82,13 @@ verify: ;
 	@echo -e "\n\n**** regular pre-compile test\n\n"
 	$(LI_BINDIR)/idio test
 	$(MAKE) build-clean clean-pre-compile > /dev/null
+	$(MAKE) lean > /dev/null
+	@echo -e "\n\n**** lean test\n\n"
+	$(LI_BINDIR)/idio test
+	$(MAKE) pre-compile
+	@echo -e "\n\n**** lean pre-compile test\n\n"
+	$(LI_BINDIR)/idio test
+	$(MAKE) build-clean clean-pre-compile > /dev/null
 	ASAN_OPTIONS=log_path=idio-asan $(MAKE) sanitize-address > /dev/null
 	# we can at least pick up on ASAN errors in the bootstrap
 	@echo -e "\n\n**** ASAN test\n\n"
