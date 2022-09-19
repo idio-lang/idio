@@ -1789,7 +1789,11 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 	     * Block reading the pgrp_pipe
 	     */
 	    char buf[1];
-	    read (pgrp_pipe[0], buf, 1);
+	    ssize_t read_r = read (pgrp_pipe[0], buf, 1);
+
+	    if (-1 == read_r) {
+		perror ("read (pgrp-pipe)");
+	    }
 
 	    if (close (pgrp_pipe[0]) < 0) {
 		idio_command_free_argv1 (argv);

@@ -6622,7 +6622,7 @@ IDIO idio_vm_run (IDIO thr, idio_xi_t xi, idio_pc_t pc, idio_vm_run_enum caller)
 #endif
 	fprintf (fh, "[%" PRIdMAX "]vm_run: %10" PRIdPTR " ins in time %4jd.%03ld => %6" PRIdPTR " i/ms\n", (intmax_t) getpid (), loops, (intmax_t) td.tv_sec, (long) td.tv_usec / 1000, ipms);
 	if (td.tv_sec > 10) {
-	    fprintf (fh, "[%" PRIdMAX ">%" PRIdMAX "] %jds: slow call to [%zu}@%zd\n", (intmax_t) getppid (), (intmax_t) getpid (), (intmax_t) td.tv_sec, v_XI0, v_PC0);
+	    fprintf (fh, "[%" PRIdMAX ">%" PRIdMAX "] %jds: slow call to [%zu]@%zd\n", (intmax_t) getppid (), (intmax_t) getpid (), (intmax_t) td.tv_sec, v_XI0, v_PC0);
 	}
     }
 #endif
