@@ -324,10 +324,9 @@ void idio_bignum_dump (IDIO bn)
     int first = 1;
 
     /*
-      To make visual comparison of numbers easier, always print out
-	IDIO_BIGNUM_SIG_SEGMENTS even if the number doesn't
-	have that many.  We can then compare columnally.  Much easier
-	on the eye.
+     * To make visual comparison of numbers easier, always print out
+     * IDIO_BIGNUM_SIG_SEGMENTS even if the number doesn't have that
+     * many.  We can then compare columnally.  Much easier on the eye.
      */
     ssize_t ai;
     for (ai = segs; ai >= 0; ai--) {
@@ -1196,9 +1195,6 @@ int idio_bignum_lt_p (IDIO a, IDIO b)
     IDIO_TYPE_ASSERT (bignum, a);
     IDIO_TYPE_ASSERT (bignum, b);
 
-    /* idio_debug ("bignum_lt %s", a); */
-    /* idio_debug (" < %s == ", b); */
-
     int na = idio_bignum_negative_p (a);
     int nb = idio_bignum_negative_p (b);
 
@@ -1414,9 +1410,6 @@ IDIO idio_bignum_shift_left (IDIO a, int const fill)
 
     IDIO_BSA ra = idio_bsa (al);
 
-    /* idio_debug ("bignum-shift-left: a %s\n", a); */
-    /* idio_bignum_dump (a); */
-
     int carry = fill;
 
     ssize_t ai;
@@ -1457,9 +1450,6 @@ IDIO idio_bignum_shift_left (IDIO a, int const fill)
 
     IDIO r = idio_bignum_integer (ra);
 
-    /* idio_debug ("bignum-shift-left: r %s\n", r); */
-    /* idio_bignum_dump (r); */
-
     return r;
 }
 
@@ -1485,8 +1475,10 @@ IDIO idio_bignum_shift_right (IDIO a)
 	al++;
 	ra = idio_bsa (al);
 
-	/* plonk this int64 into sig_a as that's what we're about to
-	get_index from */
+	/*
+	 * plonk this int64 into sig_a as that's what we're about to
+	 * get_index from
+	 */
 	idio_bsa_set (sig_a, 0, 0);
     }
 
@@ -1505,8 +1497,9 @@ IDIO idio_bignum_shift_right (IDIO a)
 	idio_bsa_set (ra, r, ai);
     }
 
-    /* is more than one segment s and if the mss is zero, pop it
-	off */
+    /*
+     * is more than one segment s and if the mss is zero, pop it off
+     */
     if (al > 1) {
 	IDIO_BS_T v = idio_bsa_get (ra, segs);
 	if (0 == v) {
@@ -1533,17 +1526,14 @@ IDIO idio_bignum_multiply (IDIO a, IDIO b)
 
     IDIO ab = idio_bignum_abs (b);
 
-    /* idio_debug ("bignum-multiply: aa %s ", aa); */
-    /* idio_debug ("* %s\n", ab); */
-
     IDIO r = idio_bignum_integer_intmax_t (0);
 
     /*
-      1234 * 11 =>
-      4 * 11 +
-      3 * 110 +
-      2 * 1100 +
-      1 * 11000
+     * 1234 * 11 =>
+     * 4 * 11 +
+     * 3 * 110 +
+     * 2 * 1100 +
+     * 1 * 11000
      */
     while (! idio_bignum_zero_p (aa)) {
 	IDIO ibsr = idio_bignum_shift_right (aa);
@@ -1569,14 +1559,14 @@ IDIO idio_bignum_multiply (IDIO a, IDIO b)
 }
 
 /*
-  Prepare for (long) division of a / b: find (r,f) such that r < a and
-  r == b * 10^m and f is 10^m, eg.  12345 / 123 => (12300, 100)
-
-  Note that 24680 / 123 => (12300, 100) as well as
-  idio_bignum_equalize is only scaling by 10.
-
-  r = scaled divisor
-  f = factor (of scaled divisor)
+ * Prepare for (long) division of a / b: find (r,f) such that r < a
+ * and r == b * 10^m and f is 10^m, eg.  12345 / 123 => (12300, 100)
+ *
+ * Note that 24680 / 123 => (12300, 100) as well as
+ * idio_bignum_equalize is only scaling by 10.
+ *
+ * r = scaled divisor
+ * f = factor (of scaled divisor)
  */
 IDIO idio_bignum_equalize (IDIO a, IDIO b)
 {
@@ -1635,10 +1625,10 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
     IDIO r_mod = idio_bignum_copy (aa);
 
     /*
-      a / b for 12 / 123
-
-      r_div = 0
-      r_mod = 12
+     * a / b for 12 / 123
+     *
+     * r_div = 0
+     * r_mod = 12
      */
     if (idio_bignum_lt_p (aa, ab)) {
 	/*
@@ -1656,50 +1646,50 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
     IDIO sf = IDIO_PAIR_T (ibe);
 
     /*
-      a / b for 12345 / 123
-
-      r_div = 0
-      r_mod = 12345
-      sd = 12300
-      sf = 100
-
-      !zero_p(100)
-        c0=c=0
-	while !(r_mod < c)
-	  c0=c
-	  c+=12300 ; 12300
-	  i++      ; 1
-	  c0=c
-	  c+=12300 ; 24600
-	  i++      ; 2
-	  ...loop fail
-	r_div = r_div*10 + 1 ; 1
-	r_mod = 12345 - 12300; 45
-	sf = 100/10; 10
-	sd = 12300/10 ; 1230
-      !zero_p (10)
-        c0=c=0
-	while !(r_mod < c)
-	  c0=c
-	  c+=1230 ; 1230
-	  i++      ; 1
-	  ...loop fail
-	r_div = r_div*10 + 0; == 10
-	r_mod = 45-0; == 45
-	sf = 10/10; == 1
-	sd = 1230/10; == 123
-      !zero_p(1)
-        c0=c=0
-	while !(r_mod < c)
-	  c0=c
-	  c+=123 ; 123
-	  i++      ; 1
-	  ...loop fail
-	r_div = r_div*10 + 0; == 100
-	r_mod = 45-0; == 45
-	sf = 1/10; == 0
-	sd = 123/10; == 12
-
+     * a / b for 12345 / 123
+     *
+     * r_div = 0
+     * r_mod = 12345
+     * sd = 12300
+     * sf = 100
+     *
+     * !zero_p(100)
+     *   c0=c=0
+     *	while !(r_mod < c)
+     *	  c0=c
+     *	  c+=12300 ; 12300
+     *	  i++      ; 1
+     *	  c0=c
+     *	  c+=12300 ; 24600
+     *	  i++      ; 2
+     *	  ...loop fail
+     *	r_div = r_div*10 + 1 ; 1
+     *	r_mod = 12345 - 12300; 45
+     *	sf = 100/10; 10
+     *	sd = 12300/10 ; 1230
+     * !zero_p (10)
+     *  c0=c=0
+     *	while !(r_mod < c)
+     *	  c0=c
+     *	  c+=1230 ; 1230
+     *	  i++      ; 1
+     *	  ...loop fail
+     *	r_div = r_div*10 + 0; == 10
+     *	r_mod = 45-0; == 45
+     *	sf = 10/10; == 1
+     *	sd = 1230/10; == 123
+     * !zero_p(1)
+     *  c0=c=0
+     *	while !(r_mod < c)
+     *	  c0=c
+     *	  c+=123 ; 123
+     *	  i++      ; 1
+     *	  ...loop fail
+     *	r_div = r_div*10 + 0; == 100
+     *	r_mod = 45-0; == 45
+     *	sf = 1/10; == 0
+     *	sd = 123/10; == 12
+     *
      */
 
     while (! idio_bignum_zero_p (sf)) {
@@ -1854,10 +1844,10 @@ IDIO idio_bignum_real_negate (IDIO bn)
 }
 
 /*
-  Remove trailing zeroes: 123000 => 123e3
-  Shift decimal place to end: 1.23e0 => 123e-2
-
-  Limit to IDIO_BIGNUM_SIG_MAX_DIGITS, a loss of precision
+ * Remove trailing zeroes: 123000 => 123e3
+ * Shift decimal place to end: 1.23e0 => 123e-2
+ *
+ * Limit to IDIO_BIGNUM_SIG_MAX_DIGITS, a loss of precision
  */
 IDIO idio_bignum_normalize (IDIO bn)
 {
@@ -1878,17 +1868,7 @@ IDIO idio_bignum_normalize (IDIO bn)
     while (digits > IDIO_BIGNUM_SIG_MAX_DIGITS) {
 	ibsr = idio_bignum_shift_right (bn_s);
 
-	bn_s = IDIO_PAIR_H (ibsr);
-	digits--;
-	IDIO_BE_T exp0 = exp;
-	exp++;
-	if (exp < exp0) {
-#ifdef IDIO_DEBUG
-	    /*
-	    idio_debug ("bn-norm sd %35s", bn);
-	    fprintf (stderr, " exp=%" IDIO_BE_FMT " < exp0=%" IDIO_BE_FMT " digits=%zu\n", exp, exp0, digits);
-	    */
-#endif
+	if (IDIO_BE_MAX == exp) {
 	    /*
 	     * Test Case: bignum-errors/bignum-normalise-digits-overflow.idio
 	     *
@@ -1900,7 +1880,12 @@ IDIO idio_bignum_normalize (IDIO bn)
 	    idio_bignum_conversion_error ("exponent overflow", bn, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
+	} else {
+	    exp++;
 	}
+
+	bn_s = IDIO_PAIR_H (ibsr);
+	digits--;
     }
 
     while (! idio_bignum_zero_p (bn_s)) {
@@ -1910,16 +1895,7 @@ IDIO idio_bignum_normalize (IDIO bn)
 	    break;
 	}
 
-	bn_s = IDIO_PAIR_H (ibsr);
-	IDIO_BE_T exp0 = exp;
-	exp++;
-	if (exp < exp0) {
-#ifdef IDIO_DEBUG
-	    /*
-	    idio_debug ("bn-norm tz %35s", bn);
-	    fprintf (stderr, " exp=%" IDIO_BE_FMT " < exp0=%" IDIO_BE_FMT "\n", exp, exp0);
-	    */
-#endif
+	if (IDIO_BE_MAX == exp) {
 	    /*
 	     * Test Case: bignum-errors/bignum-normalise-overflow.idio
 	     *
@@ -1931,7 +1907,11 @@ IDIO idio_bignum_normalize (IDIO bn)
 	    idio_bignum_conversion_error ("exponent overflow", bn, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
+	} else {
+	    exp++;
 	}
+
+	bn_s = IDIO_PAIR_H (ibsr);
     }
 
     if (idio_bignum_zero_p (bn_s)) {
@@ -2099,11 +2079,11 @@ int idio_bignum_real_equal_p (IDIO a, IDIO b)
 }
 
 /*
-  1.0e0, -2, *
-
-  =>
-
-  100.0e-2
+ * 1.0e0, -2, *
+ *
+ * =>
+ *
+ * 100.0e-2
  */
 IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BE_T desired_exp, IDIO_BE_T const max_digits)
 {
@@ -2126,9 +2106,8 @@ IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BE_T desired_exp, IDIO_BE_T co
     IDIO_BE_T exp = IDIO_BIGNUM_EXP (bn);
     while (exp > desired_exp) {
 	bnc = idio_bignum_shift_left (bnc, 0);
-	IDIO_BE_T exp0 = exp;
-	exp--;
-	if (exp > exp0) {
+
+	if (IDIO_BE_MIN == exp) {
 	    /*
 	     * Test Case: ??
 	     *
@@ -2137,6 +2116,8 @@ IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BE_T desired_exp, IDIO_BE_T co
 	    idio_bignum_conversion_error ("exponent underflow", bn, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
+	} else {
+	    exp--;
 	}
     }
 
@@ -2572,29 +2553,29 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
     }
 
     /*
-      The actual division is an integer division of the significand
-      digits (keeping track of the exponents separately).
-
-      However, the integer division of 13/4 is 3.  We don't seem to
-      have as many significant digits in the result as we would like
-      for a division of what are real numbers: 13.0/4 is 3.0. Really?
-
-      But wait, the integer division of 13000/4 is 3250, so if we
-      bumped the numerator up by 10^n (and decremented its exponent by
-      n), in this case n=3, then we'll have more significant digits in
-      our answer and the combined exponent, now -3+0=-3, makes the
-      resultant real 3250e-3 or 3.250.  Hurrah!
-
-      So what value of n?  As big as we can!
-
-      Here we can abuse our normal IDIO_BIGNUM_SIG_MAX_DIGITS limit
-      and say that we want to make n such that digits(a*10^n) ==
-      digits(b)+MAX_DIGITS. This way, without losing precision in b
-      (by shrinking it) we can bump a up such that the resultant
-      integer division has MAX_DIGITS significant digits.
-
-      Note that if digits(a) is MAX_DIGITS and digits(b) is one then
-      digits(a) after this will be 2*MAX_DIGITS.
+     * The actual division is an integer division of the significand
+     * digits (keeping track of the exponents separately).
+     *
+     * However, the integer division of 13/4 is 3.  We don't seem to
+     * have as many significant digits in the result as we would like
+     * for a division of what are real numbers: 13.0/4 is 3.0. Really?
+     *
+     * But wait, the integer division of 13000/4 is 3250, so if we
+     * bumped the numerator up by 10^n (and decremented its exponent
+     * by n), in this case n=3, then we'll have more significant
+     * digits in our answer and the combined exponent, now -3+0=-3,
+     * makes the resultant real 3250e-3 or 3.250.  Hurrah!
+     *
+     * So what value of n?  As big as we can!
+     *
+     * Here we can abuse our normal IDIO_BIGNUM_SIG_MAX_DIGITS limit
+     * and say that we want to make n such that digits(a*10^n) ==
+     * digits(b)+MAX_DIGITS. This way, without losing precision in b
+     * (by shrinking it) we can bump a up such that the resultant
+     * integer division has MAX_DIGITS significant digits.
+     *
+     * Note that if digits(a) is MAX_DIGITS and digits(b) is one then
+     * digits(a) after this will be 2*MAX_DIGITS.
      */
 
     size_t nd = idio_bignum_count_digits (IDIO_BIGNUM_SIG (ra));
@@ -2604,9 +2585,7 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
 	ra_i = idio_bignum_shift_left (ra_i, 0);
 
 	nd++;
-	IDIO_BE_T expa0 = expa;
-	expa--;
-	if (expa > expa0) {
+	if (IDIO_BE_MIN == expa) {
 	    /*
 	     * Test Case: bignum-errors/bignum-divide-digits-underflow.idio
 	     *
@@ -2619,6 +2598,8 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
 	    idio_bignum_conversion_error ("exponent underflow", ra, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
+	} else {
+	    expa--;
 	}
     }
 
@@ -3235,8 +3216,8 @@ char *idio_bignum_as_string (IDIO bn, size_t *sizep)
 }
 
 /*
-  count the digits in the first array element (by dividing by 10) then
-  add DPW times the remaining number of elements
+ * count the digits in the first array element (by dividing by 10)
+ * then add DPW times the remaining number of elements
  */
 size_t idio_bignum_count_digits (IDIO_BSA sig_a)
 {
@@ -3476,24 +3457,41 @@ IDIO idio_bignum_real_C (char const *nums, size_t const nums_len)
 
     /*
      * also unused in S9fES string_to_real
-
-    int j = idio_array_size (IDIO_BIGNUM_SIG (sig_bn));
-    */
+     *
+     * int j = idio_array_size (IDIO_BIGNUM_SIG (sig_bn));
+     */
 
     if (IDIO_BIGNUM_EXP_CHAR (*s)) {
 	s++;
 	slen--;
 	IDIO n = idio_bignum_integer_C (s, slen, 1);
 	int64_t exp_v = idio_bignum_int64_t_value (n);
-	IDIO_BE_T exp0 = exp;
-	exp += exp_v;
-	if (exp_v < 0 &&
-	    exp > exp0) {
-#ifdef IDIO_DEBUG
-	    /*
-	    fprintf (stderr, "bn-real-C %35s exp_v=%" PRId64 " < 0 && exp=%" IDIO_BE_FMT " > exp0=%" IDIO_BE_FMT "\n", nums, exp_v, exp, exp0);
-	    */
-#endif
+
+	/* overflow is tri-state: -1, 0, 1 */
+	int overflow = 0;
+	if (exp_v > 0) {
+	    if (exp_v > IDIO_BE_MAX) {
+		overflow = 1;
+	    } else if (exp > 0 &&
+		       exp_v > (IDIO_BE_MAX - exp)) {
+		/* exp += exp_v would provoke undefined behaviour */
+		overflow = 1;
+	    } else {
+		exp += exp_v;
+	    }
+	} else if (exp_v < 0) {
+	    if (exp_v < IDIO_BE_MIN) {
+		overflow = -1;
+	    } else if (exp < 0 &&
+		       llabs (exp_v) > llabs (IDIO_BE_MIN - exp)) {
+		/* exp += exp_v would provoke undefined behaviour */
+		overflow = -1;
+	    } else {
+		exp += exp_v;
+	    }
+	}
+
+	if (-1 == overflow) {
 	    /*
 	     * Test Case: bignum-errors/read-bignum-underflow.idio
 	     *
@@ -3502,13 +3500,7 @@ IDIO idio_bignum_real_C (char const *nums, size_t const nums_len)
 	    idio_bignum_conversion_error ("exponent underflow", n, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
-	} else if (exp_v >= 0 &&
-		   exp < exp0) {
-#ifdef IDIO_DEBUG
-	    /*
-	    fprintf (stderr, "bn-real-C %35s exp_v=%" PRId64 " >= 0 && exp=%" IDIO_BE_FMT " < exp0=%" IDIO_BE_FMT "\n", nums, exp_v, exp, exp0);
-	    */
-#endif
+	} else if (1 == overflow) {
 	    /*
 	     * Test Case: bignum-errors/read-bignum-overflow.idio
 	     *
@@ -3622,11 +3614,11 @@ IDIO idio_bignum_primitive_subtract (IDIO args)
 	    first = 0;
 
 	    /*
-	      a bit of magic for subtract:
-
-	      (- 6)   => 0-6 => -6
-	      (- 6 2) => 6-2 => 4
-	    */
+	     * a bit of magic for subtract:
+	     *
+	     * (- 6)   => 0-6 => -6
+	     * (- 6 2) => 6-2 => 4
+	     */
 
 	    IDIO t = IDIO_PAIR_T (args);
 	    if (idio_S_nil == t) {
@@ -3711,11 +3703,11 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 	    first = 0;
 
 	    /*
-	      a bit of magic for divide:
-
-	      (/ 6)   => 1/6 => 1/6
-	      (/ 6 2) => 6/2 => 3
-	    */
+	     * a bit of magic for divide:
+	     *
+	     * (/ 6)   => 1/6 => 1/6
+	     * (/ 6 2) => 6/2 => 3
+	     */
 
 	    IDIO t = IDIO_PAIR_T (args);
 	    if (idio_S_nil != t) {
