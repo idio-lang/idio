@@ -2447,6 +2447,21 @@ static void idio_libc_set_rlimit_names ()
     IDIO_LIBC_RLIMIT (RLIMIT_SWAP);
 #endif
 
+    /* FreeBSD */
+#if defined (RLIMIT_KQUEUES)
+    IDIO_LIBC_RLIMIT (RLIMIT_KQUEUES);
+#endif
+
+    /* FreeBSD */
+#if defined (RLIMIT_UMTXP)
+    IDIO_LIBC_RLIMIT (RLIMIT_UMTXP);
+#endif
+
+    /* NetBSD */
+#if defined (RLIMIT_NTHR)
+    IDIO_LIBC_RLIMIT (RLIMIT_NTHR);
+#endif
+
 #if IDIO_DEBUG
     int first = 1;
     for (i = IDIO_LIBC_FRLIMIT ; i < IDIO_LIBC_NRLIMIT ; i++) {
