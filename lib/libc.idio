@@ -375,10 +375,41 @@ descriptor.
 ;; libc/RLIMIT_* symbols, the C/int values or a :nickname keyword,
 ;; eg. :NOFILE for libc/RLIMIT_NOFILE
 
-getrlimit = {
+{
   orig-getrlimit := getrlimit
+  orig-setrlimit := setrlimit
 
-  function/name getrlimit (res) "
+  ;; each OS has a different set of (valid) RLIMIT_* macros so our set
+  ;; of :nickname tests has to be dynamic
+
+  ;; #{ (:nick & value) ... }
+  nicknames := #{}
+
+  map (function/name rlimit-nicknames (np) "map over `libc/rlimit-names`" {
+    ln := pt np
+
+    ;; New (releases of) operating systems might introduce new
+    ;; RLIMIT_* names which we haven't captured in src/libc-wrap.c
+    ;; (and/or maybe don't want to) -- the result of that will be an
+    ;; empty string in lieu of "RLIMIT_{RESOURCE}".
+    ;;
+    ;; It is possible that the RLIMIT_* name might not have an
+    ;; underscore -- more likely a problem in the Idio code but, who
+    ;; knows, right? -- so we need to handle that as well.
+
+    if ((string-length ln) gt 0) {
+      ss := split-string ln "_"
+      if ((length ss) gt 1) {
+	n := pht ss
+	k := make-keyword n
+	s := string->symbol ln
+
+	hash-set! nicknames k (symbol-value s 'libc)
+      }
+    }
+  }) (libc/rlimit-names)
+
+  getrlimit = function/name getrlimit (res) "
 
 a more convenient :manpage:`getrlimit(2)` which can use a
 :samp:`:{nickname}` keyword, eg. ``:NOFILE`` for
@@ -392,42 +423,26 @@ a more convenient :manpage:`getrlimit(2)` which can use a
 The resource names follow C conventions such as ``libc/RLIMIT_AS`` and
 ``libc/RLIMIT_NOFILE``.
 
+.. seealso:: :ref:`rlimit-names <libc/rlimit-names>`
+
   " {
     (cond
      ((C/int? res) #t)
      ((symbol? res) #t)
      ((keyword? res) {
-       resource := #n
+       resource := hash-ref nicknames res #f
 
-       ;; each OS has a different set of (valid) RLIMIT_* macros so our
-       ;; set of :nickname tests has to be dynamic
-
-       map (function (np) "map over `libc/rlimit-names`" {
-	 ln := pt np
-	 n := pht (split-string ln "_")
-	 k := make-keyword n
-	 s := string->symbol ln
-
-	 if (eq? res k) {
-	   resource = symbol-value s 'libc
-	 }
-       }) (libc/rlimit-names)
-
-       if (null? resource) {
-	 error/type ^rt-parameter-nil-error 'getrlimit "bad resource" res
-       } {
+       if resource {
 	 res = resource
+       } {
+	 error/type ^rt-parameter-nil-error 'getrlimit "bad resource" res
        }
      }))
 
     orig-getrlimit res
   }
-}
 
-setrlimit = {
-  orig-setrlimit := setrlimit
-
-  function/name setrlimit (res rlim) "
+  setrlimit = function/name setrlimit (res rlim) "
 
 a more convenient :manpage:`setrlimit(2)` which can use a
 :samp:`:{nickname}` keyword, eg. ``:NOFILE`` for
@@ -442,31 +457,22 @@ a more convenient :manpage:`setrlimit(2)` which can use a
 The resource names follow C conventions such as ``libc/RLIMIT_AS`` and
 ``libc/RLIMIT_NOFILE``.
 
+.. seealso::
+
+   :ref:`getrlimit <libc/getrlimit>` to obtain a `struct-rlimit` and
+   :ref:`rlimit-names <libc/rlimit-names>`
+
   " {
     (cond
      ((C/int? res) #t)
      ((symbol? res) #t)
      ((keyword? res) {
-       resource := #n
+       resource := hash-ref nicknames res #f
 
-       ;; each OS has a different set of (valid) RLIMIT_* macros so our
-       ;; set of :nickname tests has to be dynamic
-
-       map (function (np) "map over `libc/rlimit-names`" {
-	 ln := pt np
-	 n := pht (split-string ln "_")
-	 k := make-keyword n
-	 s := string->symbol ln
-
-	 if (eq? res k) {
-	   resource = symbol-value s 'libc
-	 }
-       }) (libc/rlimit-names)
-
-       if (null? resource) {
-	 error/type ^rt-parameter-nil-error 'setrlimit "bad resource" res
-       } {
+       if resource {
 	 res = resource
+       } {
+	 error/type ^rt-parameter-nil-error 'setrlimit "bad resource" res
        }
      }))
 
