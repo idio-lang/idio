@@ -49,9 +49,10 @@
 .. _QEMU: https://www.qemu.org/
 .. _Qish: http://www.starynkevitch.net/Basile/qishintro.html
 .. _R5RS: https://schemers.org/Documents/Standards/R5RS/
-.. _RFC1918: https://tools.ietf.org/html/rfc1918
-.. _RFC3339: https://datatracker.ietf.org/doc/html/rfc3339
-.. _RFC8259: https://tools.ietf.org/html/rfc8259
+.. _RFC1918: https://rfc-editor.org/rfc/rfc1918
+.. _RFC3339: https://rfc-editor.org/rfc/rfc3339
+.. _RFC6234: https://rfc-editor.org/rfc/rfc6234
+.. _RFC8259: https://rfc-editor.org/rfc/rfc8259
 .. _Readline: https://tiswww.case.edu/php/chet/readline/rltop.html
 .. _SBCL: http://www.sbcl.org/
 .. _SQLite: https://www.sqlite.org/index.html
