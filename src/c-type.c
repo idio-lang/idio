@@ -2473,7 +2473,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("->number", C_to_number, (IDIO i), "i", "\
 convert C number `i` to an Idio number	\n\
 						\n\
 :param o: C number to convert			\n\
-:type o: a C/ type				\n\
+:type o: a C/ numeric type			\n\
 :return: Idio number				\n\
 :rtype: number					\n\
 						\n\
@@ -2952,7 +2952,7 @@ IDIO idio_C_number_method_2string (idio_vtable_method_t *m, IDIO v, ...)
     case IDIO_TYPE_C_DOUBLE:		cs = IDIO_PRINT_CONVERSION_FORMAT_g; break;
     case IDIO_TYPE_C_LONGDOUBLE:	cs = IDIO_PRINT_CONVERSION_FORMAT_g; break;
     default:
-	idio_error_param_value_msg_only ("C-as-string", "value", "should be a C/ type", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_msg_only ("C-as-string", "value", "should be a C/ numeric type", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

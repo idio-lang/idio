@@ -486,6 +486,8 @@ in C, :samp:`{termios}->{member} = {val}`	\n\
 :param val: a C/ type			\n\
 :type val: varies on `member`		\n\
 :return: ``#<unspec>``			\n\
+					\n\
+The C/ types for `val` are `libc/tcflag_t`, `libc/speed_t` and `C/pointer` for `c_cc`.	\n\
 ")
 {
     IDIO_ASSERT (termios);
@@ -845,6 +847,8 @@ in C, :samp:`{tm}->{member} = {val}`	\n\
 :param val: a C/ type			\n\
 :type val: varies on `member`		\n\
 :return: ``#<unspec>``			\n\
+					\n\
+The C/ types for `val` are `C/int`, `C/long` and `C/pointer` for `tm_zone`.	\n\
 ")
 {
     IDIO_ASSERT (tm);
@@ -1520,6 +1524,8 @@ in C, :samp:`{timespec}->{member} = {val}`	\n\
 :param val: a C/ type			\n\
 :type val: varies on `member`		\n\
 :return: ``#<unspec>``			\n\
+					\n\
+The C/ types for `val` are `libc/time_t`, `C/long`.	\n\
 ")
 {
     IDIO_ASSERT (timespec);
@@ -1768,6 +1774,8 @@ in C, :samp:`{rlimit}->{member} = {val}`	\n\
 :param val: a C/ type			\n\
 :type val: varies on `member`		\n\
 :return: ``#<unspec>``			\n\
+					\n\
+The C/ types for `val` are `libc/rlim_t`.	\n\
 ")
 {
     IDIO_ASSERT (rlimit);
@@ -1972,6 +1980,8 @@ in C, :samp:`{timeval}->{member} = {val}`	\n\
 :param val: a C/ type			\n\
 :type val: varies on `member`		\n\
 :return: ``#<unspec>``			\n\
+					\n\
+The C/ types for `val` are `libc/time_t` or `libc/suseconds_t` (or `C/long` on OpenBSD).	\n\
 ")
 {
     IDIO_ASSERT (timeval);
