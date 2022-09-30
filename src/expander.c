@@ -693,7 +693,7 @@ IDIO idio_expanderp (IDIO name)
 		    fprintf (stderr, "%s ", idio_type2string (lv));
 		    idio_debug ("%s\n", lv);
 		    idio_debug ("%s\n", expander_list);
-		    /* idio_vm_thread_state (idio_thread_current_thread ()); */
+		    /* idio_vm_thread_state (idio_thread_current_thread (), idio_S_nil); */
 		    assert (0);
 		}
 	    }

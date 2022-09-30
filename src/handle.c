@@ -2257,7 +2257,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
 	    IDIO_GC_FREE (sname, size);
 
-	    idio_vm_thread_state (thr);
+	    idio_vm_thread_state (thr, idio_S_nil);
 	}
 
 	if (handle_interactive) {

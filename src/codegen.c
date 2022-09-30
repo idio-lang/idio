@@ -1288,23 +1288,26 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
     case IDIO_I_CODE_TR_FIX_LET:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 3) {
-		idio_codegen_error_param_args ("TR-FIX-LET m* m+ formals", mt, IDIO_C_FUNC_LOCATION_S ("TR-FIX-LET"));
+		idio_list_length (mt) != 4) {
+		idio_codegen_error_param_args ("TR-FIX-LET m* m+ formals src", mt, IDIO_C_FUNC_LOCATION_S ("TR-FIX-LET"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO ms = IDIO_PAIR_H (mt);
-	    IDIO mp = IDIO_PAIR_HT (mt);
+	    IDIO ms      = IDIO_PAIR_H (mt);
+	    IDIO mp      = IDIO_PAIR_HT (mt);
 	    IDIO formals = IDIO_PAIR_HTT (mt);
+	    IDIO src     = IDIO_PAIR_HTTT (mt);
 
 	    idio_as_t fci = idio_codegen_constants_lookup_or_extend (eenv, formals);
+	    idio_as_t sei = idio_codegen_extend_src_exprs (eenv, src);
 
 	    idio_codegen_compile (thr, ia, eenv, ms, depth + 1);
 
 	    IDIO_IA_PUSH1 (IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT (fci);
+	    IDIO_IA_PUSH_VARUINT (sei);
 
 	    idio_codegen_compile (thr, ia, eenv, mp, depth + 1);
 	}
@@ -1312,23 +1315,26 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
     case IDIO_I_CODE_FIX_LET:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 3) {
-		idio_codegen_error_param_args ("FIX-LET m* m+ formals", mt, IDIO_C_FUNC_LOCATION_S ("FIX-LET"));
+		idio_list_length (mt) != 4) {
+		idio_codegen_error_param_args ("FIX-LET m* m+ formals src", mt, IDIO_C_FUNC_LOCATION_S ("FIX-LET"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO ms = IDIO_PAIR_H (mt);
-	    IDIO mp = IDIO_PAIR_HT (mt);
+	    IDIO ms      = IDIO_PAIR_H (mt);
+	    IDIO mp      = IDIO_PAIR_HT (mt);
 	    IDIO formals = IDIO_PAIR_HTT (mt);
+	    IDIO src     = IDIO_PAIR_HTTT (mt);
 
 	    idio_as_t fci = idio_codegen_constants_lookup_or_extend (eenv, formals);
+	    idio_as_t sei = idio_codegen_extend_src_exprs (eenv, src);
 
 	    idio_codegen_compile (thr, ia, eenv, ms, depth + 1);
 
 	    IDIO_IA_PUSH1 (IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT (fci);
+	    IDIO_IA_PUSH_VARUINT (sei);
 
 	    idio_codegen_compile (thr, ia, eenv, mp, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_UNLINK_FRAME);
@@ -1637,6 +1643,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 
 	    idio_ia_push (ia_tf, IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT_BC (ia_tf, fci);
+	    IDIO_IA_PUSH_VARUINT_BC (ia_tf, sei);
 
 	    idio_codegen_compile (thr, ia_tf, eenv, mp, depth + 1);
 	    idio_ia_push (ia_tf, IDIO_A_RETURN);
@@ -1767,6 +1774,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 
 	    idio_ia_push (ia_tf, IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT_BC (ia_tf, fci);
+	    IDIO_IA_PUSH_VARUINT_BC (ia_tf, sei);
 
 	    idio_codegen_compile (thr, ia_tf, eenv, mp, depth + 1);
 	    idio_ia_push (ia_tf, IDIO_A_RETURN);

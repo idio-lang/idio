@@ -391,10 +391,10 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO_VM_DASM (".%-4" PRIu64 " ", si);
 
 		if (idio_isa_symbol (sym)) {
-		    idio_debug_FILE (fp, " %s", sym);
+		    idio_debug_FILE (fp, "%s", sym);
 		} else {
 		    IDIO_VM_DASM (" !! %s", idio_type2string (sym));
-		    idio_debug_FILE (fp, " %s !!", sym);
+		    idio_debug_FILE (fp, "%s !!", sym);
 		}
 	    }
 	    break;
@@ -405,8 +405,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
 
 		IDIO_VM_DASM_OP ("FUNCTION-SYM-REF");
-		IDIO_VM_DASM (".%-4" PRIu64 "", si);
-		idio_debug_FILE (fp, " %s", sym);
+		IDIO_VM_DASM (".%-4" PRIu64 " ", si);
+		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
 	case IDIO_A_CONSTANT_REF:
@@ -417,7 +417,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 
 		IDIO_VM_DASM_OP ("CONSTANT-REF");
 		IDIO_VM_DASM (".%-4" PRIu64 " ", ci);
-		idio_debug_FILE (fp, " %s", c);
+		idio_debug_FILE (fp, "%s", c);
 	    }
 	    break;
 	case IDIO_A_COMPUTED_SYM_REF:
@@ -460,8 +460,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		    idio_debug_FILE (fp, "%s", sym);
 		} else {
 		    IDIO_VM_DASM_OP ("SYM-SET");
-		    IDIO_VM_DASM (".%-4" PRIu64 " !! %s", si, idio_type2string (sym));
-		    idio_debug_FILE (fp, " %s !! ", sym);
+		    IDIO_VM_DASM (".%-4" PRIu64 " !! %s ", si, idio_type2string (sym));
+		    idio_debug_FILE (fp, "%s !! ", sym);
 		}
 	    }
 	    break;
@@ -622,10 +622,10 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 			fn = idio_array_ref_index (cs, IDIO_FIXNUM_VAL (fi));
 			idio_hash_set (fnh, fi, fn);
 		    }
-		    idio_debug_FILE (fp, " %s", fn);
+		    idio_debug_FILE (fp, "%s", fn);
 		    idio_debug_FILE (fp, ":line %s", IDIO_PAIR_HT (lo));
 		} else {
-		    IDIO_VM_DASM (" %-25s", "<no lex tuple>");
+		    IDIO_VM_DASM ("%-25s", "<no lex tuple>");
 		}
 		if (idio_S_false != e) {
 		    idio_debug_FILE (fp, "\n  %.80s", e);
@@ -730,7 +730,7 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		size_t hlen = idio_snprintf (h, BUFSIZ, "A@%" PRIu64 "", pc + o);
 		idio_hash_put (hints, idio_fixnum (pc + o), idio_symbols_C_intern (h, hlen));
 		IDIO_VM_DASM ("PUSH-ABORT");
-		IDIO_VM_DASM ("to PC +%" PRIu64 " %s", o + 1, h);
+		IDIO_VM_DASM (" to PC +%" PRIu64 " %s", o + 1, h);
 	    }
 	    break;
 	case IDIO_A_POP_ABORT:
@@ -820,11 +820,12 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	case IDIO_A_LINK_FRAME:
 	    {
 		uint64_t si = idio_vm_get_varuint (bc, pcp);
+		uint64_t sei = idio_vm_get_varuint (bc, pcp);
 
 		IDIO names = idio_vm_dasm_constants_ref (xi, si);
 		IDIO_VM_DASM_OP ("LINK-FRAME");
-		IDIO_VM_DASM (".%-4" PRIu64, si);
-		idio_debug_FILE (fp, " %s", names);
+		IDIO_VM_DASM (".%-4" PRIu64 " .%-4" PRIu64 " ", si, sei);
+		idio_debug_FILE (fp, "%s", names);
 	    }
 	    break;
 	case IDIO_A_UNLINK_FRAME:
@@ -853,8 +854,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 
 		IDIO names = idio_vm_dasm_constants_ref (xi, si);
 
-		IDIO_VM_DASM ("EXTEND-FRAME %2" PRIu64 " .%-4" PRIu64, alloc, si);
-		idio_debug_FILE (fp, " %s", names);
+		IDIO_VM_DASM ("EXTEND-FRAME %2" PRIu64 " .%-4" PRIu64 " ", alloc, si);
+		idio_debug_FILE (fp, "%s", names);
 	    }
 	    break;
 	case IDIO_A_ARITY1P:
@@ -935,10 +936,10 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 	    {
 		uint64_t v = idio_vm_get_varuint (bc, pcp);
 
-		IDIO_VM_DASM ("CONSTANT %5" PRIu64 "", v);
+		IDIO_VM_DASM ("CONSTANT %5" PRIu64 " ", v);
 		size_t size = 0;
 		char *ids = idio_display_string (IDIO_CONSTANT_IDIO ((intptr_t) v), &size);
-		IDIO_VM_DASM (" %s", ids);
+		IDIO_VM_DASM ("%s", ids);
 		IDIO_GC_FREE (ids, size);
 	    }
 	    break;
@@ -947,10 +948,10 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		int64_t v = idio_vm_get_varuint (bc, pcp);
 
 		v = -v;
-		IDIO_VM_DASM ("NEG-CONSTANT %6" PRId64 "", v);
+		IDIO_VM_DASM ("NEG-CONSTANT %6" PRId64 " ", v);
 		size_t size = 0;
 		char *ids = idio_display_string (IDIO_CONSTANT_IDIO ((intptr_t) v), &size);
-		IDIO_VM_DASM (" %s", ids);
+		IDIO_VM_DASM ("%s", ids);
 		IDIO_GC_FREE (ids, size);
 	    }
 	    break;
@@ -1118,8 +1119,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		    idio_debug_FILE (fp, "%s", sym);
 		} else {
 		    IDIO_VM_DASM_OP ("ENVIRON-SYM-REF");
-		    IDIO_VM_DASM (".%-4" PRIu64 " !! %s", si, idio_type2string (sym));
-		    idio_debug_FILE (fp, " %s !! ", sym);
+		    IDIO_VM_DASM (".%-4" PRIu64 " !! %s ", si, idio_type2string (sym));
+		    idio_debug_FILE (fp, "%s !! ", sym);
 		}
 	    }
 	    break;

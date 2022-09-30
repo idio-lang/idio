@@ -3523,8 +3523,17 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
     IDIO l = e;
     IDIO defs = idio_S_nil;
 
+    /*
+     * In a slightly convoluted way we want to hang on to the last
+     * define/:+ in order that the code that generates the {let}
+     * statement has source code properties to associate with the let.
+     */
+    IDIO last_cur = idio_S_unspec;
+    IDIO cur = idio_S_unspec;
+
     for (;;) {
-	IDIO cur = idio_S_unspec;
+	last_cur = cur;
+
 	if (idio_S_nil == l) {
 	    /*
 	     * Test Case: evaluation-errors/letrec-empty-body.idio
@@ -3566,16 +3575,17 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
 	}
 	idio_meaning_copy_src_properties (IDIO_MPP (IDIO_PAIR_H (l), src), cur);
 
+	IDIO cur_props = IDIO_MPP (cur, src);
+
 	if (idio_isa_pair (cur) &&
 	    idio_S_begin == IDIO_PAIR_H (cur)) {
 	    /*  redundant begin */
 	    l = idio_list_append2 (IDIO_PAIR_T (cur), IDIO_PAIR_T (l));
-	    idio_meaning_copy_src_properties (cur, l);
+	    idio_meaning_copy_src_properties (cur_props, l);
 	    continue;
 	} else if (idio_isa_pair (cur) &&
 		   (idio_S_define == IDIO_PAIR_H (cur) ||
 		    idio_S_colon_plus == IDIO_PAIR_H (cur))) {
-
 	    /*
 	     * cur	~ (define (name arg) ...)
 	     * cur	~ (:+ name value-expr)
@@ -3610,7 +3620,7 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
 							IDIO_PAIR_T (bindings)),
 					    IDIO_PAIR_TT (cur));
 		}
-		idio_meaning_copy_src_properties (IDIO_MPP (cur, src), fn);
+		idio_meaning_copy_src_properties (cur_props, fn);
 		form = IDIO_LIST2 (IDIO_PAIR_H (bindings), fn);
 	    } else {
 		/*
@@ -3618,10 +3628,13 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
 		 *
 		 * (name value-expr)
 		 */
-		form = idio_meaning_rewrite_assign_anon_function (src, IDIO_PAIR_T (cur));
+		form = idio_meaning_rewrite_assign_anon_function (cur_props, IDIO_PAIR_T (cur));
 	    }
-	    idio_meaning_copy_src_properties (IDIO_MPP (cur, src), form);
+
+	    idio_meaning_copy_src_properties (cur_props, form);
+
 	    defs = idio_pair (form, defs);
+
 	    l = IDIO_PAIR_T (l);
 	    continue;
 	} else if (idio_isa_pair (cur) &&
@@ -3639,7 +3652,7 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
 	    return idio_S_notreached;
 	} else {
 	    /* body proper */
-	    IDIO cur_props = IDIO_MPP (cur, src);
+
 	    l = idio_meaning_rewrite_body (cur_props, l, nametree);
 
 	    if (idio_S_nil == defs) {
@@ -3704,13 +3717,15 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
 		     *  (set! v2 a2))
 		     */
 		    IDIO assign = idio_list_append2 (IDIO_LIST1 (idio_S_set), IDIO_PAIR_H (vs));
+		    idio_meaning_copy_src_properties (vs, assign);
 		    body = idio_list_append2 (IDIO_LIST1 (assign), body);
+
 		    vs = IDIO_PAIR_T (vs);
 		}
 		body = idio_list_append2 (body, l);
 
 		IDIO let = idio_list_append2 (IDIO_LIST2 (idio_S_let, bindings), body);
-		idio_meaning_copy_src_properties (cur_props, let);
+		idio_meaning_copy_src_properties (IDIO_MPP (last_cur, src), let);
 
 		return let;
 	    }
@@ -3841,9 +3856,9 @@ static IDIO idio_meaning_fix_closed_application (IDIO src, IDIO ns, IDIO body, I
     IDIO mbody = idio_meaning_sequence (IDIO_MPP (body, src), body, ent, flags, idio_S_begin, eenv);
 
     if (IDIO_MEANING_IS_TAILP (flags)) {
-	return IDIO_LIST4 (IDIO_I_TR_FIX_LET, ams, mbody, idio_meaning_nametree_to_list (ent));
+	return IDIO_LIST5 (IDIO_I_TR_FIX_LET, ams, mbody, idio_meaning_nametree_to_list (ent), src);
     } else {
-	return IDIO_LIST4 (IDIO_I_FIX_LET, ams, mbody, idio_meaning_nametree_to_list (ent));
+	return IDIO_LIST5 (IDIO_I_FIX_LET, ams, mbody, idio_meaning_nametree_to_list (ent), src);
     }
 }
 
@@ -3922,9 +3937,9 @@ static IDIO idio_meaning_dotted_closed_application (IDIO src, IDIO ns, IDIO n, I
     IDIO mbody = idio_meaning_sequence (IDIO_MPP (body, src), body, ent, flags, idio_S_begin, eenv);
 
     if (IDIO_MEANING_IS_TAILP (flags)) {
-	return IDIO_LIST4 (IDIO_I_TR_FIX_LET, ams, mbody, idio_meaning_nametree_to_list (ent));
+	return IDIO_LIST5 (IDIO_I_TR_FIX_LET, ams, mbody, idio_meaning_nametree_to_list (ent), src);
     } else {
-	return IDIO_LIST4 (IDIO_I_FIX_LET, ams, mbody, idio_meaning_nametree_to_list (ent));
+	return IDIO_LIST5 (IDIO_I_FIX_LET, ams, mbody, idio_meaning_nametree_to_list (ent), src);
     }
 }
 

@@ -1842,52 +1842,61 @@ The algorithm was inspired by rewrite-body in STklos
 *#
 
 define (meaning-rewrite-body-letrec src e nametree) {
+  ;; In a slightly convoluted way we want to hang on to the last
+  ;; define/:+ in order that the code that generates the {let}
+  ;; statement has source code properties to associate with the let.
+  last-cur := #f
+  cur := #f
+
   loop :+ function (l defs r) {
-    cur := (cond
-	    ((null? l) {
-	      #*
+    last-cur = cur
+    cur = (cond
+	   ((null? l) {
+	     #*
 
-	      Test Case: evaluation-errors/letrec-empty-body.idio
+	     Test Case: evaluation-errors/letrec-empty-body.idio
 
-	      {
-	        bar :+ "foo"
+	     {
+	     bar :+ "foo"
 
-	      }
+	     }
 
-	      NB The point is that there is nothing else in the block
-	      after the creation of {bar}, so there is no "body" for
-	      the (generated) letrec of {bar}.
+	     NB The point is that there is nothing else in the block
+	     after the creation of {bar}, so there is no "body" for
+	     the (generated) letrec of {bar}.
 
-	      Regardless of whether {bar} is a (faintly) pointless
-	      sort of letrec, notably not involving a function.
+	     Regardless of whether {bar} is a (faintly) pointless
+	     sort of letrec, notably not involving a function.
 
-	      There's an argument that it could be optimised away (if
-	      the value-expression has no side-effects, etc.).
+	     There's an argument that it could be optimised away (if
+	     the value-expression has no side-effects, etc.).
 
-	      *#
-	      meaning-evaluation-error src "empty body after definition" src
-	    })
+	     *#
+	     meaning-evaluation-error src "empty body after definition" src
+	   })
 
-	    ((and (pair? l)
-		  (pair? (ph l))
-		  (expander? (phh l))) {
-	      te := template-expand* (ph l)
-	      meaning-copy-src-properties src te
-	      te
-	    })
+	   ((and (pair? l)
+		 (pair? (ph l))
+		 (expander? (phh l))) {
+	     te := template-expand* (ph l)
+	     meaning-copy-src-properties src te
+	     te
+	   })
 
-	    ((pair? l) {
-	      ph l
-	    })
+	   ((pair? l) {
+	     ph l
+	   })
 
-	    (else {
-	      eprintf "meaning-rewrite-body-letrec: unexpected atom: %s\nsrc %s\n" l src
-	      l
-	    }))
+	   (else {
+	     eprintf "meaning-rewrite-body-letrec: unexpected atom: %s\nsrc %s\n" l src
+	     l
+	   }))
 
     if (pair? l) {
       meaning-copy-src-properties (mpp (ph l) src) cur
     }
+
+    cur-props := mpp cur src
 
     (cond
 
@@ -1895,7 +1904,7 @@ define (meaning-rewrite-body-letrec src e nametree) {
 	   (eq? 'begin (ph cur))) {
        ;; redundant begin
        new-l := append (pt cur) (pt l)
-       meaning-copy-src-properties cur new-l
+       meaning-copy-src-properties cur-props new-l
        loop new-l defs r
      })
 
@@ -1929,16 +1938,16 @@ define (meaning-rewrite-body-letrec src e nametree) {
 			      (pt bindings))
 		 (ptt cur))
 	 }
-	 meaning-copy-src-properties (mpp cur src) fn
+	 meaning-copy-src-properties cur-props fn
 
 	 form = list (ph bindings) fn
        } {
 	 ;; cur	~ (:+ name value-expr)
 
 	 ;; form	~ (name value-expr)
-	 form = meaning-rewrite-assign-anon-function src (pt cur)
+	 form = meaning-rewrite-assign-anon-function cur-props (pt cur)
        }
-       meaning-copy-src-properties (mpp cur src) form
+       meaning-copy-src-properties cur-props form
 
        loop (pt l) (pair form defs) r
      })
@@ -1957,7 +1966,6 @@ define (meaning-rewrite-body-letrec src e nametree) {
      (else {
        ;; body proper
 
-       cur-props := mpp cur src
        l = meaning-rewrite-body cur-props l nametree
 
        ;; if no defs just return l
@@ -2021,12 +2029,13 @@ define (meaning-rewrite-body-letrec src e nametree) {
 	 body := #n
 	 for-each (function (def) {
 	   assign := append (list 'set!) def
+	   meaning-copy-src-properties def assign
 	   body = append (list assign) body
 	 }) defs
 	 body = append body l
 
 	 stmt := append (list 'let bindings) body
-	 meaning-copy-src-properties cur-props stmt
+	 meaning-copy-src-properties (mpp last-cur src) stmt
 
 	 stmt
        }
@@ -2090,9 +2099,9 @@ define (meaning-fix-closed-application src formal* body ae* nametree flags eenv)
   mbody := meaning-sequence (mpp body src) body nt+ flags 'begin eenv
 
   if (eval-flags-tailp flags) {
-    list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+)
+    list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+) src
   } {
-    list I-FIX-LET am* mbody (meaning-nametree->list nt+)
+    list I-FIX-LET am* mbody (meaning-nametree->list nt+) src
   }
 }
 
@@ -2132,9 +2141,9 @@ define (meaning-dotted-closed-application src formal* vararg body ae* nametree f
   mbody := meaning-sequence (mpp body src) body nt+ flags 'begin eenv
 
   if (eval-flags-tailp flags) {
-    list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+)
+    list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+) src
   } {
-    list I-FIX-LET am* mbody (meaning-nametree->list nt+)
+    list I-FIX-LET am* mbody (meaning-nametree->list nt+) src
   }
 }
 

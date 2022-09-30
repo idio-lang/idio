@@ -265,7 +265,7 @@ IDIO idio_vm_default_values_ref (idio_as_t gvi);
 void idio_vm_values_set (idio_xi_t xi, idio_as_t vi, IDIO v);
 void idio_vm_default_values_set (idio_as_t gvi, IDIO v);
 void idio_vm_decode_thread (IDIO thr);
-void idio_vm_decode_stack (IDIO thr, IDIO stack);
+void idio_vm_decode_stack (IDIO stack);
 void idio_vm_reset_thread (IDIO thr, int verbose);
 IDIO idio_vm_add_dynamic (IDIO si, IDIO ci, IDIO vi, IDIO m, IDIO note);
 IDIO idio_vm_dynamic_ref (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO args);
@@ -302,6 +302,7 @@ idio_xi_t idio_vm_add_xenv (IDIO desc, IDIO st, IDIO cs, IDIO ch, IDIO vt, IDIO 
 idio_xi_t idio_vm_add_xenv_from_eenv (IDIO thr, IDIO eenv);
 void idio_vm_save_xenvs (idio_xi_t from);
 IDIO idio_vm_source_location ();
+IDIO idio_vm_call_tree (IDIO args);
 IDIO idio_vm_frame_tree (IDIO args);
 void idio_vm_trap_state (IDIO thr);
 
@@ -314,7 +315,7 @@ IDIO idio_vm_iref_val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, idi
 void idio_vm_thread_init (IDIO thr);
 void idio_vm_default_pc (IDIO thr);
 IDIO idio_vm_extend_tables (idio_xi_t xi, IDIO name, IDIO scope, IDIO module, IDIO desc);
-void idio_vm_thread_state (IDIO thr);
+void idio_vm_thread_state (IDIO thr, IDIO args);
 
 time_t idio_vm_elapsed (void);
 
