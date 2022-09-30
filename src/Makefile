@@ -1,7 +1,27 @@
 include Makefile.common
 
 ifdef MAKE_LEAN
-CDEBUG		:= -O3 -UIDIO_DEBUG -UIDIO_VM_PROF -D_FORTIFY_SOURCE=3
+# Some systems get upset if _FORTIFY_SOURCE is already defined
+FORTIFY_CFLAGS	:= -U_FORTIFY_SOURCE
+
+# CentOS Stream 8 & 9 both issue a warning (and then -Werror fails) if
+# _FORTIFY_SOURCE is > 2.  This should probably be migrated to
+# utils/bin/gen-idio/system for a cleaner, more generic compilation
+# test and result in an entry in Makefile.system.
+ifeq (,$(wildcard /etc/os-release))
+FORTIFY_CFLAGS	:= ${FORTIFY_CFLAGS} -D_FORTIFY_SOURCE=3
+else
+
+NAME		:= $(shell grep ^NAME= /etc/os-release)
+
+ifneq (,$(findstring "CentOS Stream",$(NAME)))
+FORTIFY_CFLAGS	:= ${FORTIFY_CFLAGS} -D_FORTIFY_SOURCE=2
+else
+FORTIFY_CFLAGS	:= ${FORTIFY_CFLAGS} -D_FORTIFY_SOURCE=3
+endif
+endif
+
+CDEBUG		:= -O3 -UIDIO_DEBUG -UIDIO_VM_PROF ${FORTIFY_CFLAGS}
 else ifdef MAKE_DEBUG
 CDEBUG		:= -DIDIO_DEBUG=3 -g -DIDIO_VM_PROF
 else

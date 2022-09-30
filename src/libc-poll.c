@@ -778,8 +778,12 @@ IDIO idio_libc_poll_select (IDIO rlist, IDIO wlist, IDIO elist, IDIO timeout)
      * Three identical loops over the fd lists
      */
     for (int i = 0; i < 3; i++) {
-	fd_set *fdsp;
-	IDIO fd_list;
+	/*
+	 * gcc-4.0 optimiser complains that these two might be
+	 * uninitialized
+	 */
+	fd_set *fdsp = (fd_set *) 0;
+	IDIO fd_list = idio_S_nil;
 	switch (i) {
 	case 0:
 	    fdsp = &rfds;
@@ -853,6 +857,10 @@ IDIO idio_libc_poll_select (IDIO rlist, IDIO wlist, IDIO elist, IDIO timeout)
      */
     int use_rt = 1;
     struct timeval rt;
+     /*
+      * gcc-4 optimiser complains that rt.* might be uninitialized
+      */
+    memset (&rt, 0, sizeof (struct timeval));
 
     /*
      * While we're passing through we can make a decision about the
@@ -1005,7 +1013,11 @@ IDIO idio_libc_poll_select (IDIO rlist, IDIO wlist, IDIO elist, IDIO timeout)
      * Three identical loops over the fd lists
      */
     for (int i = 0; i < 3; i++) {
-	fd_set *fdsp;
+	/*
+	 * gcc-4.0 optimiser complains that {fdsp} might be
+	 * uninitialized
+	 */
+	fd_set *fdsp = (fd_set *) 0;
 	switch (i) {
 	case 0:
 	    fdsp = &rfds;

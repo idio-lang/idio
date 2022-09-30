@@ -333,6 +333,7 @@ void *idio_malloc_calloc (size_t num, size_t size)
  */
 static void idio_malloc_morecore (idio_bi_t bucket)
 {
+    IDIO_C_ASSERT (bucket < IDIO_MALLOC_NBUCKETS);
     register idio_alloc_t sz = idio_malloc_bucket_sizes[bucket];
 
     if (-1 == sz) {

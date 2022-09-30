@@ -598,7 +598,7 @@ int main (int argc, char **argv, char **envp)
      * and then we can process any option arguments that load
      * libraries etc..
      */
-    int sargc = 0;
+    int volatile sargc = 0;
     char ** volatile sargv = (char **) idio_alloc ((argc + 1) * sizeof (char *));
     sargv[0] = argv[0];
     sargv[1] = NULL;	/* just in case */

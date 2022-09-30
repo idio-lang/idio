@@ -190,15 +190,15 @@ void idio_vars_add_primitives ()
      *
      * 2. try something to do with the time
      */
-    size_t buflen = sizeof (unsigned int);
-    char buf[buflen];
+    size_t uintlen = sizeof (unsigned int);
+    unsigned int uint;
 
     int use_time = 0;
     int fd = open ("/dev/urandom", O_RDONLY | O_NONBLOCK);
     if (fd >= 0) {
-	int n = read (fd, buf, buflen);
-	if (n == (ssize_t) buflen) {
-	    srandom ((unsigned int) *((unsigned int *) buf));
+	int n = read (fd, (void *) &uint, uintlen);
+	if (n == (ssize_t) uintlen) {
+	    srandom (uint);
 	} else {
 	    use_time = 1;
 	}

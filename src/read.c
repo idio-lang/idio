@@ -1775,6 +1775,11 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 			uintmax_t u = idio_read_uintmax_radix (handle, lo, c, 16, lim);
 
 			char b[4];
+			/*
+			 * gcc-7 optimiser complains that {b} might be
+			 * uninitialized
+			 */
+			memset (b, 0, 4);
 			int n;
 			if (idio_unicode_valid_code_point (u)) {
 			    if (u >= 0x10000) {
