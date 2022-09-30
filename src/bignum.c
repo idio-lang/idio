@@ -2472,9 +2472,31 @@ IDIO idio_bignum_real_multiply (IDIO a, IDIO b)
 
     IDIO rb_i = idio_bignum_copy_to_integer (rb);
 
-    IDIO_BE_T exp = expa + expb;
-    if (expb < 0 &&
-	exp > expa) {
+    /* overflow is tri-state: -1, 0, 1 */
+    int overflow = 0;
+    if (expb > 0) {
+	if (expb > IDIO_BE_MAX) {
+	    overflow = 1;
+	} else if (expa > 0 &&
+		   expb > (IDIO_BE_MAX - expa)) {
+	    /* expa += expb would provoke undefined behaviour */
+	    overflow = 1;
+	} else {
+	    expa += expb;
+	}
+    } else if (expb < 0) {
+	if (expb < IDIO_BE_MIN) {
+	    overflow = -1;
+	} else if (expa < 0 &&
+		   llabs (expb) > llabs (IDIO_BE_MIN - expa)) {
+	    /* expa += expb would provoke undefined behaviour */
+	    overflow = -1;
+	} else {
+	    expa += expb;
+	}
+    }
+
+    if (-1 == overflow) {
 	/*
 	 * Test Case: bignum-errors/bignum-multiply-underflow.idio
 	 *
@@ -2483,8 +2505,7 @@ IDIO idio_bignum_real_multiply (IDIO a, IDIO b)
 	idio_bignum_conversion_error ("exponent underflow", a, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
-    } else if (expb >= 0 &&
-	       exp < expa) {
+    } else if (1 == overflow) {
 	/*
 	 * Test Case: bignum-errors/bignum-multiply-overflow.idio
 	 *
@@ -2499,7 +2520,7 @@ IDIO idio_bignum_real_multiply (IDIO a, IDIO b)
 
     int flags = (neg ? IDIO_BIGNUM_FLAG_REAL_NEGATIVE : 0);
 
-    IDIO r = idio_bignum_real (flags, exp, IDIO_BIGNUM_SIG (r_i));
+    IDIO r = idio_bignum_real (flags, expa, IDIO_BIGNUM_SIG (r_i));
 
     return idio_bignum_normalize (r);
 }
@@ -2603,9 +2624,31 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
 	}
     }
 
-    IDIO_BE_T exp = expa - expb;
-    if (expb > 0 &&
-	exp > expa) {
+    /* overflow is tri-state: -1, 0, 1 */
+    int overflow = 0;
+    if (expb > 0) {
+	if (expb > IDIO_BE_MAX) {
+	    overflow = 1;
+	} else if (expa < 0 &&
+		   expb > llabs (IDIO_BE_MIN - expa)) {
+	    /* expa -= expb would provoke undefined behaviour */
+	    overflow = -1;
+	} else {
+	    expa -= expb;
+	}
+    } else if (expb < 0) {
+	if (expb < IDIO_BE_MIN) {
+	    overflow = -1;
+	} else if (expa > 0 &&
+		   llabs (expb) > (IDIO_BE_MAX - expa)) {
+	    /* expa -= expb would provoke undefined behaviour */
+	    overflow = 1;
+	} else {
+	    expa -= expb;
+	}
+    }
+
+    if (-1 == overflow) {
 	/*
 	 * Test Case: bignum-errors/bignum-divide-underflow.idio
 	 *
@@ -2618,8 +2661,7 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
 	idio_bignum_conversion_error ("exponent underflow", ra, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
-    } else if (expb < 0 &&
-	       exp < expa) {
+    } else if (1 == overflow) {
 	/*
 	 * Test Case: bignum-errors/bignum-divide-overflow.idio
 	 *
@@ -2634,12 +2676,13 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
 
 	return idio_S_notreached;
     }
+
     IDIO ibd = idio_bignum_divide (ra_i, rb_i);
     IDIO r_i = IDIO_PAIR_H (ibd);
 
     int flags = (neg ? IDIO_BIGNUM_FLAG_REAL_NEGATIVE : 0);
 
-    IDIO r = idio_bignum_real (flags, exp, IDIO_BIGNUM_SIG (r_i));
+    IDIO r = idio_bignum_real (flags, expa, IDIO_BIGNUM_SIG (r_i));
 
     return idio_bignum_normalize (r);
 }
