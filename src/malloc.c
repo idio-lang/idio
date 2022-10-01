@@ -536,7 +536,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
 
     int16_t *rmagic = (int16_t *) ((char *) op + reqd_size - IDIO_MALLOC_RSLOP);
     if (IDIO_MALLOC_RMAGIC != (uint16_t) *rmagic) {
-	fprintf (stderr, "[%" PRIdMAX "]im-realloc: %p + %" IDIO_PRIa " - %4ld: %x != %x\n", (intmax_t) getpid (), op, reqd_size, IDIO_MALLOC_RSLOP, IDIO_MALLOC_RMAGIC, (uint16_t) *rmagic);
+	fprintf (stderr, "[%" PRIdMAX "]im-realloc: %p + %" IDIO_PRIa " - %4d: %x != %x\n", (intmax_t) getpid (), op, reqd_size, (int) IDIO_MALLOC_RSLOP, IDIO_MALLOC_RMAGIC, (uint16_t) *rmagic);
 	IDIO_C_ASSERT(IDIO_MALLOC_RMAGIC == (uint16_t) *rmagic);
     }
 
