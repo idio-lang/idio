@@ -361,14 +361,14 @@ extern FILE *idio_vm_perf_FILE;
  *
  * Update util.c:idio_as_string as well!
  */
-#define IDIO_CONSTANT_NIL              0
-#define IDIO_CONSTANT_UNDEF           -1
-#define IDIO_CONSTANT_UNSPEC          -2
-#define IDIO_CONSTANT_EOF              3
-#define IDIO_CONSTANT_TRUE             4
-#define IDIO_CONSTANT_FALSE            5
-#define IDIO_CONSTANT_VOID            -6
-#define IDIO_CONSTANT_NAN             -7
+#define IDIO_CONSTANT_NIL             0
+#define IDIO_CONSTANT_UNDEF           1
+#define IDIO_CONSTANT_UNSPEC          2
+#define IDIO_CONSTANT_EOF             3
+#define IDIO_CONSTANT_TRUE            4
+#define IDIO_CONSTANT_FALSE           5
+#define IDIO_CONSTANT_VOID            6
+#define IDIO_CONSTANT_NAN             7
 
 /*
  * Stack markers

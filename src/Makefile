@@ -69,8 +69,16 @@ coverage :
 
 # adding -DIDIO_DEBUG=3 to SAN_CFLAGS causes a memory leak in
 # __vasprintf_internal ...
+
+# AddressSanitizer integrates LeakSanitizer
 asan sanitize-address :
 	$(MAKE) SAN_CFLAGS="-fsanitize=address -g" SAN_LDFLAGS=-fsanitize=address
+
+# -fsanitize=undefined is a check group which includes most suboptions
+# (null, enum, ...), see
+# https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
+ubsan sanitize-undefined :
+	$(MAKE) SAN_CFLAGS="-fsanitize=undefined -g" SAN_LDFLAGS=-fsanitize=undefined
 
 lean :
 	$(MAKE) MAKE_LEAN=1

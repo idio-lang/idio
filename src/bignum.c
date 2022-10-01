@@ -545,6 +545,10 @@ IDIO idio_bignum_copy_to_integer (IDIO bn)
 		    for (ai--; ai > 0 ; ai--) {				\
 			v *= IDIO_BIGNUM_INT_SEG_LIMIT;			\
 			T sig = idio_bsa_get (sig_a, ai - 1);		\
+			if (sig > (M - v)) {				\
+			    idio_bignum_conversion_error ("significand overflow", bn, IDIO_C_FUNC_LOCATION ());	\
+			    return -1;					\
+			}						\
 			v += sig;					\
 		    }							\
 		    if (neg) {						\

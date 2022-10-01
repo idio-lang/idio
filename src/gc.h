@@ -1511,7 +1511,11 @@ typedef struct idio_gc_s {
 #define IDIO_TYPE_CONSTANT_UNICODEP(x)		((((intptr_t) x) & IDIO_TYPE_CONSTANT_MASK) == IDIO_TYPE_CONSTANT_UNICODE_MARK)
 
 #define IDIO_FIXNUM_VAL(x)	(((intptr_t) x) >> IDIO_TYPE_BITS_SHIFT)
-#define IDIO_FIXNUM(x)		((IDIO) ((x) << IDIO_TYPE_BITS_SHIFT | IDIO_TYPE_FIXNUM_MARK))
+/*
+ * left-shift of negative numbers is undefined behaviour so we need a
+ * more robust implementation (cast to unsigned and cast back again)
+ */
+#define IDIO_FIXNUM(x)	((IDIO) ((intptr_t) (((uintptr_t) x) << IDIO_TYPE_BITS_SHIFT) | IDIO_TYPE_FIXNUM_MARK))
 #define IDIO_FIXNUM_MIN		(INTPTR_MIN >> IDIO_TYPE_BITS_SHIFT)
 #define IDIO_FIXNUM_MAX		(INTPTR_MAX >> IDIO_TYPE_BITS_SHIFT)
 
