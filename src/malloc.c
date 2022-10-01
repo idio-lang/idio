@@ -90,6 +90,9 @@
  * knock-on effects are the size of the first bucket (2^3 or 2^4
  * bytes) and some stats-oriented stuff which uses the same Power-of-2
  * bit-shifting in IDIO_MALLOC_FIRST_Po2.
+ *
+ * NB IDIO_MALLOC_MAX_SZ is signed (because an idio_alloc_t is
+ * signed).
  */
 
 #if PTRDIFF_MAX == 2147483647L
@@ -97,11 +100,13 @@ typedef int32_t				idio_alloc_t;
 #define IDIO_PRIa			PRIu32
 #define IDIO_MALLOC_NBUCKETS		30
 #define IDIO_MALLOC_FIRST_Po2		3
+#define IDIO_MALLOC_MAX_SZ		0x40000000 /* 1 << 30 */
 #else
 typedef int64_t				idio_alloc_t;
 #define IDIO_PRIa			PRIu64
 #define IDIO_MALLOC_NBUCKETS		62
 #define IDIO_MALLOC_FIRST_Po2		4
+#define IDIO_MALLOC_MAX_SZ		0x4000000000000000 /* 1 << 62 */
 #endif
 
 /*
@@ -126,10 +131,10 @@ union idio_malloc_overhead_u {
      */
     uint64_t o_align;		/* 					8 bytes */
     struct {
-	uint8_t ovu_magic;	/* magic number				1 */
-	idio_bi_t ovu_bucket;   /* bucket #				1 */
-	uint16_t ovu_rmagic;	/* range magic number			2 */
-	idio_alloc_t ovu_size;	/* actual block size			4/8 */
+	uint8_t      ovu_magic;  /* magic number			1 */
+	idio_bi_t    ovu_bucket; /* bucket #				1 */
+	uint16_t     ovu_rmagic; /* range magic number			2 */
+	idio_alloc_t ovu_size;   /* actual block size			4/8 */
     } ovu;
 #define ov_magic	ovu.ovu_magic
 #define ov_bucket	ovu.ovu_bucket
@@ -142,7 +147,8 @@ union idio_malloc_overhead_u {
  */
 #define IDIO_MALLOC_MAGIC_FREE	0xbf		/* f for free */
 #define IDIO_MALLOC_MAGIC_ALLOC	0xbb		/* b for ... blob */
-#define IDIO_MALLOC_RMAGIC	0x5555		/* magic # on range info */
+#define IDIO_MALLOC_LMAGIC	0x5555		/* magic # on range info */
+#define IDIO_MALLOC_RMAGIC	0xeeee		/* magic # on range info */
 
 /*
  * There's one ovu_rmagic field in the header and this will give us
@@ -221,11 +227,12 @@ static void idio_malloc_init ()
      */
     register idio_alloc_t sz = 1 << IDIO_MALLOC_FIRST_Po2;
     for (nblks = 0; nblks < IDIO_MALLOC_NBUCKETS; nblks++) {
-	if (0 == sz) {
-	    sz = -1;
-	}
 	idio_malloc_bucket_sizes[nblks] = sz;
-	sz <<= 1;
+	if (IDIO_MALLOC_MAX_SZ == sz) {
+	    break;
+	} else {
+	    sz <<= 1;
+	}
     }
 
     for (nblks = 7; nblks < IDIO_MALLOC_NBUCKETS; nblks++) {
@@ -270,8 +277,8 @@ void *idio_malloc_malloc (size_t size)
     }
 
     /*
-     * If nothing in hash bucket right now,
-     * request more memory from the system.
+     * If nothing in hash bucket right now, request more memory from
+     * the system.
      */
     register union idio_malloc_overhead_u *op;
     if ((op = idio_malloc_nextf[bucket]) == NULL) {
@@ -303,12 +310,13 @@ void *idio_malloc_malloc (size_t size)
 #endif
 
     /*
-     * Record allocated size of block and
-     * bound space with magic numbers.
+     * Record allocated size of block and bound space with magic
+     * numbers.
      */
+    op->ov_rmagic = IDIO_MALLOC_LMAGIC;
     op->ov_size = size;
-    op->ov_rmagic = IDIO_MALLOC_RMAGIC;
-    *(uint16_t *)((caddr_t)(op + 1) + op->ov_size) = IDIO_MALLOC_RMAGIC;
+    int16_t *rmagic = (int16_t *) ((char *) op + reqd_size - IDIO_MALLOC_RSLOP);
+    *rmagic = IDIO_MALLOC_RMAGIC;
 
     return ((char *)(op + 1));
 }
@@ -431,8 +439,7 @@ void idio_malloc_free (void *cp)
 	assert (op->ov_magic == IDIO_MALLOC_MAGIC_ALLOC);
     }
 
-    IDIO_C_ASSERT(op->ov_rmagic == IDIO_MALLOC_RMAGIC);
-    IDIO_C_ASSERT(*(uint16_t *)((caddr_t)(op + 1) + op->ov_size) == IDIO_MALLOC_RMAGIC);
+    IDIO_C_ASSERT(IDIO_MALLOC_LMAGIC == op->ov_rmagic);
 
     register idio_bi_t bucket = op->ov_bucket;
 
@@ -443,11 +450,14 @@ void idio_malloc_free (void *cp)
      * they've done.  Not that there's *that* much we can do as any of
      * the values could have been trampled on.
      */
+    IDIO_C_ASSERT (op->ov_size >= 0);
     register idio_alloc_t reqd_size = IDIO_MALLOC_SIZE (op->ov_size);
     if (reqd_size > idio_malloc_bucket_sizes[bucket]) {
-	fprintf (stderr, "im-free: %" IDIO_PRIa " (%" IDIO_PRIa ") > bucket[%2d] == %" IDIO_PRIa "\n", reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
+	fprintf (stderr, "[%" PRIdMAX "]im-free: %p rq %" IDIO_PRIa " (sz %" IDIO_PRIa ") > bucket[%2d] == %" IDIO_PRIa "\n", (intmax_t) getpid (), op, reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
 	IDIO_C_ASSERT (reqd_size <= idio_malloc_bucket_sizes[bucket]);
     }
+
+    IDIO_C_ASSERT(IDIO_MALLOC_RMAGIC == (uint16_t) *(uint16_t *) ((char *) op + reqd_size - IDIO_MALLOC_RSLOP));
 
     if (bucket >= idio_malloc_pagesz_bucket) {
 	if (munmap ((caddr_t) op, idio_malloc_bucket_sizes[bucket]) < 0) {
@@ -506,8 +516,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
 	assert (op->ov_magic == IDIO_MALLOC_MAGIC_ALLOC);
     }
 
-    IDIO_C_ASSERT (op->ov_rmagic == IDIO_MALLOC_RMAGIC);
-    IDIO_C_ASSERT(*(uint16_t *)((caddr_t)(op + 1) + op->ov_size) == IDIO_MALLOC_RMAGIC);
+    IDIO_C_ASSERT (IDIO_MALLOC_LMAGIC == op->ov_rmagic);
 
     register idio_bi_t bucket = op->ov_bucket;
 
@@ -518,10 +527,17 @@ void * idio_malloc_realloc (void *cp, size_t size)
      * they've done.  Not that there's *that* much we can do as any of
      * the values could have been trampled on.
      */
+    IDIO_C_ASSERT (op->ov_size >= 0);
     register idio_alloc_t reqd_size = IDIO_MALLOC_SIZE (op->ov_size);
     if (reqd_size > idio_malloc_bucket_sizes[bucket]) {
-	fprintf (stderr, "im-realloc: %" IDIO_PRIa " (%" IDIO_PRIa ") > bucket[%2d] == %" IDIO_PRIa "\n", reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
+	fprintf (stderr, "[%" PRIdMAX "]im-realloc: %p rq %" IDIO_PRIa " (sz %" IDIO_PRIa ") > bucket[%2d] == %" IDIO_PRIa "\n", (intmax_t) getpid (), op, reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
 	IDIO_C_ASSERT (reqd_size <= idio_malloc_bucket_sizes[bucket]);
+    }
+
+    int16_t *rmagic = (int16_t *) ((char *) op + reqd_size - IDIO_MALLOC_RSLOP);
+    if (IDIO_MALLOC_RMAGIC != (uint16_t) *rmagic) {
+	fprintf (stderr, "[%" PRIdMAX "]im-realloc: %p + %" IDIO_PRIa " - %4ld: %x != %x\n", (intmax_t) getpid (), op, reqd_size, IDIO_MALLOC_RSLOP, IDIO_MALLOC_RMAGIC, (uint16_t) *rmagic);
+	IDIO_C_ASSERT(IDIO_MALLOC_RMAGIC == (uint16_t) *rmagic);
     }
 
     if (size == (size_t) op->ov_size) {
@@ -537,10 +553,15 @@ void * idio_malloc_realloc (void *cp, size_t size)
      * allocation's ov_size?
      */
     reqd_size = IDIO_MALLOC_SIZE (size);
-    if (IDIO_MALLOC_BUCKET_RANGE (reqd_size, bucket) ||
-	IDIO_MALLOC_BUCKET_RANGE (reqd_size, bucket - 1)) {
+    if ((bucket > 0 &&
+	 IDIO_MALLOC_BUCKET_RANGE (reqd_size, bucket)) ||
+	(bucket > 1 &&
+	 IDIO_MALLOC_BUCKET_RANGE (reqd_size, bucket - 1))) {
 	op->ov_size = size;
-	*(uint16_t *)((caddr_t)(op + 1) + op->ov_size) = IDIO_MALLOC_RMAGIC;
+
+	rmagic = (int16_t *) ((char *) op + reqd_size - IDIO_MALLOC_RSLOP);
+	*rmagic = IDIO_MALLOC_RMAGIC;
+
 	return cp;
     }
 
@@ -555,7 +576,14 @@ void * idio_malloc_realloc (void *cp, size_t size)
     }
 
     bcopy(cp, res, count);
-    *(uint16_t *)((caddr_t)(res) + op->ov_size) = IDIO_MALLOC_RMAGIC;
+
+    /*
+     * {res} is the consumer result, we want the underlying union to
+     * (correctly) set the ramge magic mark.
+     */
+    union idio_malloc_overhead_u *rp = (union idio_malloc_overhead_u *) ((caddr_t) res - sizeof (union idio_malloc_overhead_u));
+    rmagic = (int16_t *) ((char *) rp + reqd_size - IDIO_MALLOC_RSLOP);
+    *rmagic = IDIO_MALLOC_RMAGIC;
 
     idio_malloc_free (cp);
 
