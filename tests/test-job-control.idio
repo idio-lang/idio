@@ -733,11 +733,6 @@ job-control-async-load "job-control-errors/simple-named-pipe-into-Idio-compound-
    ;; FreeBSD gets a SIGPIPE once it has opened the named pipe
    job-control-async-load "job-control-errors/simple-named-pipe-into-Idio-compound-exit-9-early-child.idio" kill-PIPE
  })
- ("uname/sysname/SunOS" {
-   ;; SunOS doesn't seem to mind writing into the named pipe when the
-   ;; read end process has gone away.
-   job-control-async-load "job-control-errors/simple-named-pipe-into-Idio-compound-exit-9-early-child.idio" exit-4
- })
  (else {
    job-control-async-load "job-control-errors/simple-named-pipe-into-Idio-compound-exit-9-early-child.idio" exit-5
  }))
@@ -751,11 +746,6 @@ job-control-async-load "job-control-errors/simple-named-pipe-into-external-compo
  ((not /dev/fd) {
    ;; FreeBSD gets a SIGPIPE once it has opened the named pipe
    job-control-async-load "job-control-errors/simple-named-pipe-into-external-compound-exit-9-early-child.idio" kill-PIPE
- })
- ("uname/sysname/SunOS" {
-   ;; SunOS doesn't seem to mind writing into the named pipe when the
-   ;; read end process has gone away.
-   job-control-async-load "job-control-errors/simple-named-pipe-into-external-compound-exit-9-early-child.idio" exit-4
  })
  (else {
    job-control-async-load "job-control-errors/simple-named-pipe-into-external-compound-exit-9-early-child.idio" exit-5
@@ -819,11 +809,6 @@ job-control-async-load "job-control-errors/pipeline-pipe-from-external-compound-
 job-control-async-load "job-control-errors/simple-named-pipe-from-Idio-compound-exit-0.idio" exit-0
 
 (cond-expand
- ("uname/sysname/SunOS" {
-   ;; SunOS doesn't seem to mind reading from the named pipe when the
-   ;; write end process has gone away.
-   job-control-async-load "job-control-errors/simple-named-pipe-from-Idio-compound-exit-9-early-child.idio" exit-3
- })
  (/dev/fd {
    job-control-async-load "job-control-errors/simple-named-pipe-from-Idio-compound-exit-9-early-child.idio" exit-5
  })
