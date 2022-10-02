@@ -47,7 +47,7 @@ define-template (expander-trap type) {
 	if (not (string? filename)) (error/type ^rt-parameter-type-error '$loader-sym "string" filename)
 	n = n + 1
 	thunk := function () {
-	  ;eprintf "loading #%s %s\n" n filename
+	  test-report "loading #%s %s\n" n filename
 	  trap $condition-name (function (c) {
 	    ;eprintf "caught %s at %s\n" msg (idio-error-location c)
 	    test (idio-error-message c) msg

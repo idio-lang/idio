@@ -40,7 +40,7 @@ hash-error-load := {
 
     exp-tests := 1
 
-    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    test-report "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-hash-error
 	  ^rt-parameter-error) (function (c) {
 	    ;eprintf "hash-error #%s: %s %s\n" n msg (idio-error-location c)

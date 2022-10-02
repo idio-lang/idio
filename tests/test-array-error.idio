@@ -41,7 +41,7 @@ array-error-load := {
 
     exp-tests := 1
 
-    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    test-report "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-array-error
 	  ^rt-parameter-type-error) (function (c) {
 	    ;eprintf "array-error #%s: %s %s\n" n msg (idio-error-location c)

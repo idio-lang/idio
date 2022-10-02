@@ -114,7 +114,7 @@ job-control-error-load := {
 
     exp-tests := 1
 
-    ;eprintf "loading #%s (async) %s looking for %s\n" n filename exp
+    test-report "loading #%s (async) %s looking for %s\n" n filename exp
 
     ; standard pipe lock
     jcel-lock := (libc/pipe)
@@ -237,7 +237,7 @@ job-control-async-load := {
 
     exp-tests := 2
 
-    ;eprintf "loading #%s %s looking for %s\n" n filename exp
+    test-report "loading #%s %s looking for %s\n" n filename exp
 
     ; pipe for reporting PIDs
     pid-pipe := (libc/pipe)
@@ -543,10 +543,6 @@ under valgrind.  So bump it up to 5000.
 
 
 *#
-
-define (job-control-delay n) {
-  libc/nanosleep (list 0 (n * 1000000))
-}
 
 define (job-control-pipeline-delay n) {
   poller := make-poller (list STDOUT_FILENO POLLPRI)

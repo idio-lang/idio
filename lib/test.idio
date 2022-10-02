@@ -146,6 +146,12 @@ define (Tests? n) {
   }
 }
 
+define (test-report & args) {
+  if Notify {
+    apply eprintf args
+  }
+}
+
 ;; Where is the tests directory, say, relative to us?  We must be
 ;; somewhere in the hierarchy.  Probably, GitLab CI shell puts us in
 ;; .../builds/<RUNNER>/0/idio/idio and gitlab-runner exec shell in

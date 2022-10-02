@@ -40,7 +40,7 @@ symbol-error-load := {
 
     exp-tests := 1
 
-    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    test-report "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-symbol-error
 	  ^rt-hash-key-not-found-error
 	  ^rt-parameter-error) (function (c) {
