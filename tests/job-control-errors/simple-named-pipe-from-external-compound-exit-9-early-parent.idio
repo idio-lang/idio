@@ -4,7 +4,7 @@ str := sprintf "hello from %d" PID
 lock := (libc/pipe)
 
 ipn := named-pipe-from {
-  job-control-delay 100
+  job-control-pipeline-delay 5000
 
   libc/exit 9
   echo str
