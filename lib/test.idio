@@ -283,130 +283,136 @@ test-load := {
   }
 }
 
-
-test-load "test-read-error.idio"
-test-load "test-read-coverage.idio"
-test-load "test-evaluation-error.idio"
-test-load "test-expander-error.idio"
-
-test-load "test-array-error.idio"
-test-load "test-array.idio"
-test-load "test-bignum-error.idio"
-test-load "test-bignum.idio"
-test-load "test-bitset-error.idio"
-test-load "test-bitset.idio"
-test-load "test-c-type-error.idio"
-test-load "test-c-type.idio"
-test-load "test-closure-error.idio"
-test-load "test-closure.idio"
-test-load "test-condition-error.idio"
-test-load "test-condition.idio"
-test-load "test-continuation.idio"
-test-load "test-env.idio"
-; test-error ??
-test-load "test-file-handle-error.idio"
-test-load "test-file-handle.idio"
-test-load "test-fixnum-error.idio"
-test-load "test-fixnum.idio"
-test-load "test-handle-error.idio"
-test-load "test-handle.idio"
-test-load "test-load-handle.idio"
-test-load "test-hash-error.idio"
-test-load "test-hash.idio"
-test-load "test-keyword-error.idio"
-test-load "test-keyword.idio"
-test-load "test-libc-wrap-error.idio"
-test-load "test-libc-wrap.idio"
-test-load "test-libc-poll-error.idio"
-test-load "test-libc-poll.idio"
-test-load "test-module-error.idio"
-test-load "test-module.idio"
-test-load "test-object-error.idio"
-test-load "test-object.idio"
-test-load "test-pair-error.idio"
-test-load "test-pair.idio"
-test-load "test-path-error.idio"
-test-load "test-path.idio"
-test-load "test-path-functions.idio"
-test-load "test-posix-regex-error.idio"
-test-load "test-posix-regex.idio"
-test-load "test-primitive-error.idio"
-test-load "test-primitive.idio"
-test-load "test-rfc6234-error.idio"
-test-load "test-rfc6234.idio"
-test-load "test-string-error.idio"
-test-load "test-string.idio"
-test-load "test-string-handle-error.idio"
-test-load "test-string-handle.idio"
-test-load "test-struct-error.idio"
-test-load "test-struct.idio"
-test-load "test-symbol-error.idio"
-test-load "test-symbol.idio"
-test-load "test-unicode-error.idio"
-test-load "test-unicode.idio"
-test-load "test-usi-error.idio"
-test-load "test-usi.idio"
-test-load "test-utf-8.idio"
-test-load "test-util-error.idio"
-test-load "test-util.idio"
-test-load "test-vars-error.idio"
-test-load "test-vars.idio"
-test-load "test-vtable-error.idio"
-test-load "test-vtable.idio"
-test-load "test-vm-error.idio"
-
-test-load "test-s9.idio"
-test-load "test-loop.idio"
-
-test-load "test-operator.idio"
-test-load "test-template.idio"
-test-load "test-dynamic.idio"
-test-load "test-computed.idio"
-;;test-load "test-call-cc.idio"
-
-test-load "test-trap.idio"
-
-test-load "test-SRFI-89.idio"
-test-load "test-SRFI-115.idio"
-
-extension-tests := glob (append-string topdir "/ext/*/tests/test-*.idio")
-if (null? extension-tests) {
-  eprintf "No extension tests\n"
+if (ARGC gt 0) {
+  for t in ARGV {
+    fn := sprintf "test-%s.idio" t
+    test-load fn
+  }
 } {
+  test-load "test-read-error.idio"
+  test-load "test-read-coverage.idio"
+  test-load "test-evaluation-error.idio"
+  test-load "test-expander-error.idio"
 
-  CPATH := PATH
-  for-each (function (etf) {
-    IDIOLIB = OIDIOLIB
-    PATH = CPATH
+  test-load "test-array-error.idio"
+  test-load "test-array.idio"
+  test-load "test-bignum-error.idio"
+  test-load "test-bignum.idio"
+  test-load "test-bitset-error.idio"
+  test-load "test-bitset.idio"
+  test-load "test-c-type-error.idio"
+  test-load "test-c-type.idio"
+  test-load "test-closure-error.idio"
+  test-load "test-closure.idio"
+  test-load "test-condition-error.idio"
+  test-load "test-condition.idio"
+  test-load "test-continuation.idio"
+  test-load "test-env.idio"
+  ; test-error ??
+  test-load "test-file-handle-error.idio"
+  test-load "test-file-handle.idio"
+  test-load "test-fixnum-error.idio"
+  test-load "test-fixnum.idio"
+  test-load "test-handle-error.idio"
+  test-load "test-handle.idio"
+  test-load "test-load-handle.idio"
+  test-load "test-hash-error.idio"
+  test-load "test-hash.idio"
+  test-load "test-keyword-error.idio"
+  test-load "test-keyword.idio"
+  test-load "test-libc-wrap-error.idio"
+  test-load "test-libc-wrap.idio"
+  test-load "test-libc-poll-error.idio"
+  test-load "test-libc-poll.idio"
+  test-load "test-module-error.idio"
+  test-load "test-module.idio"
+  test-load "test-object-error.idio"
+  test-load "test-object.idio"
+  test-load "test-pair-error.idio"
+  test-load "test-pair.idio"
+  test-load "test-path-error.idio"
+  test-load "test-path.idio"
+  test-load "test-path-functions.idio"
+  test-load "test-posix-regex-error.idio"
+  test-load "test-posix-regex.idio"
+  test-load "test-primitive-error.idio"
+  test-load "test-primitive.idio"
+  test-load "test-rfc6234-error.idio"
+  test-load "test-rfc6234.idio"
+  test-load "test-string-error.idio"
+  test-load "test-string.idio"
+  test-load "test-string-handle-error.idio"
+  test-load "test-string-handle.idio"
+  test-load "test-struct-error.idio"
+  test-load "test-struct.idio"
+  test-load "test-symbol-error.idio"
+  test-load "test-symbol.idio"
+  test-load "test-unicode-error.idio"
+  test-load "test-unicode.idio"
+  test-load "test-usi-error.idio"
+  test-load "test-usi.idio"
+  test-load "test-utf-8.idio"
+  test-load "test-util-error.idio"
+  test-load "test-util.idio"
+  test-load "test-vars-error.idio"
+  test-load "test-vars.idio"
+  test-load "test-vtable-error.idio"
+  test-load "test-vtable.idio"
+  test-load "test-vm-error.idio"
 
-    td := #f
-    (regex-case
-     etf
-     ("(.*/tests)/([^/]+)$" {
-       printf "extension-tests: %s\n" r.1
-       path-prepend 'IDIOLIB r.1
-       test-load r.2
-     })
-     (else {
-       eprintf "extension-tests: unexpected test-file: \"%s\"\n" etf
-     }))
-  }) extension-tests
+  test-load "test-s9.idio"
+  test-load "test-loop.idio"
+
+  test-load "test-operator.idio"
+  test-load "test-template.idio"
+  test-load "test-dynamic.idio"
+  test-load "test-computed.idio"
+  ;;test-load "test-call-cc.idio"
+
+  test-load "test-trap.idio"
+
+  test-load "test-SRFI-89.idio"
+  test-load "test-SRFI-115.idio"
+
+  extension-tests := glob (append-string topdir "/ext/*/tests/test-*.idio")
+  if (null? extension-tests) {
+    eprintf "No extension tests\n"
+  } {
+
+    CPATH := PATH
+    for-each (function (etf) {
+      IDIOLIB = OIDIOLIB
+      PATH = CPATH
+
+      td := #f
+      (regex-case
+       etf
+       ("(.*/tests)/([^/]+)$" {
+	 printf "extension-tests: %s\n" r.1
+	 path-prepend 'IDIOLIB r.1
+	 test-load r.2
+       })
+       (else {
+	 eprintf "extension-tests: unexpected test-file: \"%s\"\n" etf
+       }))
+    }) extension-tests
+  }
+
+  test-load "test-issues.idio"
+
+  ; test shell-ish things after all the other tests
+  test-load "test-command-error.idio"
+  test-load "test-command.idio"
+  test-load "test-logical-command.idio"
+
+  test-load "test-job-control.idio"
+
+  ;; test that we've seen as many tests as we should have.  How many is
+  ;; that?  Erm, they've not been counted and are dynamic in number so
+  ;; test we've seen at least as many as the largest number we've
+  ;; seen.  Wait, some tests are OS-specific.  Drat!
+  Tests? (8158 - Skipped)
 }
-
-test-load "test-issues.idio"
-
-; test shell-ish things after all the other tests
-test-load "test-command-error.idio"
-test-load "test-command.idio"
-test-load "test-logical-command.idio"
-
-test-load "test-job-control.idio"
-
-;; test that we've seen as many tests as we should have.  How many is
-;; that?  Erm, they've not been counted and are dynamic in number so
-;; test we've seen at least as many as the largest number we've
-;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? (8158 - Skipped)
 
 if (e? testfile) (delete-file testfile)
 
