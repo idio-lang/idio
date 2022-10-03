@@ -84,10 +84,11 @@ void idio_error_error_message (char const *format, ...)
 
     va_list fmt_args;
     va_start (fmt_args, format);
-    int flen = idio_error_vfprintf (format, fmt_args);
+    idio_error_vfprintf (format, fmt_args);
     va_end (fmt_args);
 
-    switch (format[flen-1]) {
+    size_t formatlen = strlen (format);
+    switch (format[formatlen-1]) {
     case '\n':
 	break;
     default:
@@ -101,10 +102,11 @@ void idio_error_warning_message (char const *format, ...)
 
     va_list fmt_args;
     va_start (fmt_args, format);
-    int flen = idio_error_vfprintf (format, fmt_args);
+    idio_error_vfprintf (format, fmt_args);
     va_end (fmt_args);
 
-    switch (format[flen-1]) {
+    size_t formatlen = strlen (format);
+    switch (format[formatlen-1]) {
     case '\n':
 	break;
     default:
