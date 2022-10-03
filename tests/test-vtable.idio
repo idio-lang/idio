@@ -22,6 +22,7 @@
 module tests/vtable
 
 import SRFI-14
+import object
 
 vtable0 := Tests
 

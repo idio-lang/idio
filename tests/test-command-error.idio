@@ -147,6 +147,12 @@ command-env-error-load := {
   }
 }
 
+;; if running standalone we won't have a struct-instance in %%last-job
+;; which will cause the command-errors/arg-bad-struct.idio test to
+;; fail -- so run a simple job now
+if (null? %%last-job) {
+  (true)
+}
 command-env-error-load "command-errors/env-format.idio" "environ 'IDIO-LIB' contains an ASCII NUL"
 command-env-error-load "command-errors/env-type.idio" "environment variable 'IDIO-LIB' is not a string"
 
