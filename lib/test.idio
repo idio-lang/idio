@@ -284,9 +284,35 @@ test-load := {
 }
 
 if (ARGC gt 0) {
+  CPATH := PATH
   for t in ARGV {
-    fn := sprintf "test-%s.idio" t
-    test-load fn
+    tfn := sprintf "test-%s.idio" t
+    if (find-lib tfn) {
+      test-load tfn
+    } {
+      ;; an extension
+      etfns := glob (sprintf "%s/ext/*/tests/test-%s.idio" topdir t)
+      if (null? etfns) {
+	eprintf "ERROR: cannot find %s\n" tfn
+	exit 1
+      } {
+	IDIOLIB = OIDIOLIB
+	PATH = CPATH
+
+	(regex-case
+	 (ph etfns)
+	 ("(.*/tests)/([^/]+)$" {
+	   printf "extension-tests: %s\n" r.1
+	   path-prepend 'IDIOLIB r.1
+	   test-load r.2
+	 })
+	 (else {
+	   eprintf "extension-tests: unexpected test-file: \"%s\"\n" etf
+	   exit 1
+	 }))
+
+      }
+    }
   }
 } {
   test-load "test-read-error.idio"
