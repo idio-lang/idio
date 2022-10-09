@@ -226,7 +226,7 @@ lib%.so : %.o
 	$(CC) -shared -o $@ $^
 
 clean : build-clean clean-ext-src clean-ext-api clean-rfc6234 run-clean edit-clean clean-pre-compile
-	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system $(LIBDIR)/system.idio
+	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system $(IDIO_SYSTEM)
 
 clean-ext-src: $(EXTDIR)/*/src
 	for dir in $^ ; do \
