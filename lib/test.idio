@@ -161,6 +161,8 @@ define (test-report & args) {
 topdir := #f
 testdir := #f
 
+; used in test-expect.idio to find UnicodeData.txt (a big file)
+IDIO-UTILS-DIR := #f
 ; used in test-command.idio to find the full path to auto-exit
 IDIO-UTILS-BIN := #f
 
@@ -209,7 +211,8 @@ OPATH := PATH
 
 ;; put the testing utilities on the PATH
 if topdir {
-  IDIO-UTILS-BIN = append-string topdir "/utils/bin"
+  IDIO-UTILS-DIR = append-string topdir "/utils"
+  IDIO-UTILS-BIN = append-string IDIO-UTILS-DIR "/bin"
   if (d? IDIO-UTILS-BIN) {
     path-append 'PATH IDIO-UTILS-BIN
     printf "[%s/%d] %3ds test.idio using PATH=%s\n" (getpid) PID SECONDS PATH

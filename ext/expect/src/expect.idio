@@ -93,7 +93,7 @@ create an instance of a :ref:`struct-spawn <expect/struct-spawn>`
 :type mode: :ref:`libc/struct-termios <libc/struct-termios>`
 :return: `struct-spawn`
 :rtype: struct-instance
-   
+
 The `buffer` attribute is initialised to the empty string, ``\"\"``,
 and the remaining attributes initialised to ``#f``.
 
@@ -482,7 +482,6 @@ What we want to do is, broadly, three things:
 	 ...
        }) spawn-id)
      })))
-    
   }
 
 3. define the exp-continue loop (in the scope of the user's body
@@ -776,18 +775,6 @@ define (exp-case-reset sid+ & matched) "
   }
 
   loop sid+
-
-  #*
-  for sid in sid+ {
-    if sid {
-      set-struct-spawn-timeout! sid #f
-      set-struct-spawn-eof! sid #f
-      if (not (null? matched)) {
-	set-struct-spawn-matched! sid #f
-      }
-    }
-  }
-  *#
 }
 
 define (exp-case-matched sid+) "
@@ -1035,6 +1022,30 @@ define (exp-case-poll) "
 
 	    poll-results := libc/poller-poll poller poll-timeout
 
+	    define (close-poll poll-fd sid msg) {
+	      libc/poller-deregister poller poll-fd
+	      expect/exp-close :spawn-id sid
+	      set-struct-spawn-eof! sid #t
+
+	      expect/exp-log sid #t msg
+	    }
+
+	    define (read-poll poll-fd sid all) {
+	      data := libc/read poll-fd 1024
+	      if data {
+		if (eof-object? data) {
+		  close-poll poll-fd sid (sprintf "exp-case: %@: poll (fd=%d): POLLIN EOF\n" (struct-spawn-argv sid) poll-fd)
+		} {
+		  set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
+		  expect/exp-log sid #t data
+		  if (and all
+			  ((string-length data) eq 1024)) {
+		    read-poll poll-fd sid all
+		  }
+		}
+	      }
+	    }
+
 	    (cond
 	     ((null? poll-results) {
 	       exp-case-set-timeout sid+
@@ -1046,36 +1057,16 @@ define (exp-case-poll) "
 		 sid := hash-ref poller-map poll-fd
 		 (cond
 		  ((libc/POLLIN? poll-revents) {
-		    data := libc/read poll-fd 1024
-		    if data {
-		      if (eof-object? data) {
-			libc/poller-deregister poller poll-fd
-			expect/exp-close :spawn-id sid
-			set-struct-spawn-eof! sid #t
-			expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLIN EOF\n" (struct-spawn-argv sid) poll-fd)
-		      } {
-			set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
-			expect/exp-log sid #t data
-		      }
-		    }
+		    read-poll poll-fd sid #f
 		  })
 		  ((libc/POLLHUP? poll-revents) {
-		    libc/poller-deregister poller poll-fd
-		    expect/exp-close :spawn-id sid
-		    set-struct-spawn-eof! sid #t
-		    expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLHUP EOF\n" (struct-spawn-argv sid) poll-fd)
+		    close-poll poll-fd sid (sprintf "exp-case: %@: poll (fd=%d): POLLHUP EOF\n" (struct-spawn-argv sid) poll-fd)
 		  })
 		  ((libc/POLLERR? poll-revents) {
-		    libc/poller-deregister poller poll-fd
-		    expect/exp-close :spawn-id sid
-		    set-struct-spawn-eof! sid #t
-		    expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLERR EOF\n" (struct-spawn-argv sid) poll-fd)
+		    close-pool poll-fd sid (sprintf "exp-case: %@: poll (fd=%d): POLLERR EOF\n" (struct-spawn-argv sid) poll-fd)
 		  })
 		  ((libc/POLLNVAL? poll-revents) {
-		    libc/poller-deregister poller poll-fd
-		    expect/exp-close :spawn-id sid
-		    set-struct-spawn-eof! sid #t
-		    expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): invalid request\n" (struct-spawn-argv sid) poll-fd)
+		    close-poll poll-fd sid (sprintf "exp-case: %@: poll (fd=%d): invalid request\n" (struct-spawn-argv sid) poll-fd)
 		  }))
 	       }
 	     }))
@@ -1262,7 +1253,7 @@ define-template (exp-case & clauses) {
 	     }
 	   }))
 	}) (ph ikb) (pht ikb))
-	
+
 	exp-match = function (spawn-id) {
 	  (cond
 	   $@(map (function (b) {
