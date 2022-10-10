@@ -1,26 +1,22 @@
 include Makefile.common
 
+all : local-install
+	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
+	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
+	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
+
+ifneq ($(MAKECMDGOALS),clean)
+# XXX put these on the same line otherwise the generator and then the
+# %.d are run twice
+include $(deps) Makefile.system
+endif
+
+# dummy version of Makefile.system doesn't exist yet
+IDIO_SYSTEM_VERSION_MM		?= a.b
+IDIO_SYSTEM_VERSION_M		?= a
+
+
 ifdef MAKE_LEAN
-# Some systems get upset if _FORTIFY_SOURCE is already defined
-FORTIFY_CFLAGS	:= -U_FORTIFY_SOURCE
-
-# CentOS Stream 8 & 9 both issue a warning (and then -Werror fails) if
-# _FORTIFY_SOURCE is > 2.  This should probably be migrated to
-# utils/bin/gen-idio/system for a cleaner, more generic compilation
-# test and result in an entry in Makefile.system.
-ifeq (,$(wildcard /etc/os-release))
-FORTIFY_CFLAGS	:= ${FORTIFY_CFLAGS} -D_FORTIFY_SOURCE=3
-else
-
-NAME		:= $(shell grep ^NAME= /etc/os-release)
-
-ifneq (,$(findstring "CentOS Stream",$(NAME)))
-FORTIFY_CFLAGS	:= ${FORTIFY_CFLAGS} -D_FORTIFY_SOURCE=2
-else
-FORTIFY_CFLAGS	:= ${FORTIFY_CFLAGS} -D_FORTIFY_SOURCE=3
-endif
-endif
-
 CDEBUG		:= -O3 -UIDIO_DEBUG -UIDIO_VM_PROF ${FORTIFY_CFLAGS}
 else ifdef MAKE_DEBUG
 CDEBUG		:= -DIDIO_DEBUG=3 -g -DIDIO_VM_PROF
@@ -38,21 +34,6 @@ LIBS		:= $(LIBS)
 ifneq ($(OS),Darwin)
 DLIBS		:= libos.so libposix-regex.so
 endif
-
-all : local-install
-	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
-	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
-	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
-
-ifneq ($(MAKECMDGOALS),clean)
-# XXX put these on the same line otherwise the generator and then the
-# %.d are run twice
-include $(deps) Makefile.system
-endif
-
-# dummy version of Makefile.system doesn't exist yet
-IDIO_SYSTEM_VERSION_MM		?= a.b
-IDIO_SYSTEM_VERSION_M		?= a
 
 # system install
 SI_BINDIR	?= $(IDIO_SYSTEM_BINDIR)
@@ -155,7 +136,7 @@ pre-compile: $(LI_BINDIR)/idio
 	$(LI_BINDIR)/idio --save-xenvs </dev/null
 
 clean-pre-compile:
-	if [[ -d $(LI_LIBDIR) ]] ; then rm -rf $(shell find $(LI_LIBDIR) -name __idio__) ; fi
+	rm -rf $(LI_LIBDIR)/__idio__
 
 $(SRCDIR)/rfc6234.o : $(SRCDIR)/RFC6234/libsha.a
 

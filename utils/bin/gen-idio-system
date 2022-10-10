@@ -37,6 +37,16 @@
 # append /idio for /usr/lib64/idio or /usr/lib/x86_64-linux-gnu/idio,
 # say.
 
+handle_EXIT ()
+{
+    if [[ ${tmpdir:+X} = X ]] ; then
+	cd /
+	rm -rf ${tmpdir}
+    fi
+}
+
+trap handle_EXIT EXIT
+
 set -ue
 
 note ()
@@ -248,6 +258,37 @@ elif ! git diff-index --cached --quiet HEAD --ignore-submodules -- ${git_compile
 fi
 
 ######################################################################
+
+case "$(uname -s)" in
+Darwin)
+    tmpdir=$(mktemp -d /tmp/${0##*/}.XXXXXX)
+    ;;
+*)
+    tmpdir=$(mktemp -d)
+    ;;
+esac
+
+######################################################################
+
+# _FORTIFY_SOURCE=3 or _FORTIFY_SOURCE=2 ?
+
+# Everything tested to date supports _FORTIFY_SOURCE=2.
+
+names+=(IDIO_CC_FORTIFY_SOURCE)
+cat <<EOF > ${tmpdir}/test.c
+#include <sys/types.h>
+int main (int argc, char **argv)
+{
+    return 0;
+}
+EOF
+
+IDIO_CC_FORTIFY_SOURCE=3
+if ! ${CC} -o ${tmpdir}/a.out -Werror -O3 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=${IDIO_CC_FORTIFY_SOURCE} ${tmpdir}/test.c >/dev/null 2>&1 ; then
+    IDIO_CC_FORTIFY_SOURCE=2
+fi
+
+######################################################################
 #
 # CC
 
@@ -311,8 +352,19 @@ ${var_name}_SYSTEM_BUILD_TIMESTAMP	:= ${build_timestamp}
 ${var_name}_SYSTEM_BINDIR		:= ${bindir}
 ${var_name}_SYSTEM_LIBDIR		:= ${libdir}/idio
 ${var_name}_SYSTEM_ARCH		:= ${MULTIARCH}
+${var_name}_SYSTEM_ARCH		:= ${MULTIARCH}
 
 EOF
+
+case "${opt_module}" in
+idio)
+    cat <<EOF >> Makefile.system
+# Some systems get upset if _FORTIFY_SOURCE is already defined
+FORTIFY_CFLAGS			:= -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=${IDIO_CC_FORTIFY_SOURCE}
+
+EOF
+    ;;
+esac
 
 if [[ $# -ne 0 ]] ; then
     cat <<EOF > $1
