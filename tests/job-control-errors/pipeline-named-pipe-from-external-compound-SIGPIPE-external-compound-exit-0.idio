@@ -4,8 +4,9 @@ str := sprintf "hello from %d" PID
 ipn := named-pipe-from {
   (cond-expand
    ((or "uname/sysname/SunOS"
-	"uname/sysname/OpenBSD") {
-     libc/sleep 1
+	"uname/sysname/OpenBSD"
+	"uname/sysname/NetBSD") {
+     libc/nanosleep '(0 5e8)
    })
    (else {
      job-control-pipeline-delay 5000

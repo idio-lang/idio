@@ -4,7 +4,16 @@ str := sprintf "hello from %d" PID
 ipn := named-pipe-from {
   echo str
 } | {
-  job-control-pipeline-delay 5000
+  (cond-expand
+   ((or "uname/sysname/OpenBSD"
+	"uname/sysname/NetBSD") {
+     libc/nanosleep '(0 5e8)
+   })
+   ((and IDIO_DEBUG
+	 "uname/sysname/Darwin"
+	 "uname/release/9.8.0") {
+     libc/nanosleep '(0 5e8)
+   }))
   libc/exit 9
   (cat)
 }

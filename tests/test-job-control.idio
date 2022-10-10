@@ -102,6 +102,59 @@ We'll have a generic testing function to do the forking and running.
 The actual test code will be in files, as usual, and the sub-Idio will
 simply load those files and... react.
 
+Dubious Delays
+==============
+
+We are, in shell-speak, attempting constructions like:
+
+str=$(cat <(echo hello | exit 0))
+
+[[ The $(cat ...) part doesn't exist in these tests because Idio can
+read from pipe-handles directly but there isn't anything comparable in
+the shell.  The effect is the same, though, we want to collect the
+output of a (here, process substitution) command where we want the
+command to fail in a specific way. ]]
+
+There are lots of ways this can go wrong whereas we are attempting to
+provoke a specific error.  In this case you can imagine we might want
+to be provoking a SIGPIPE because the RHS of the pipeline, "exit 0",
+should take less time to run and complete (and thus invalidate the
+pipe(2)) than "echo hello" takes.  That doesn't always happen though
+depending on operating system scheduling amongst other things.
+
+On many systems we can, prior to the "echo hello" call poll(2) with
+POLLPRI looking for the operating system to tell us the write end of
+the pipe(2) has gone away.  Except that doesn't work on all
+systems (no idea, sorry) and so we need to throw in a quiet sleep --
+generally a libc/nanosleep for 500ms -- in lieu and hope for the best.
+
+Of course, any arbitrary sleep is at the mercy of circumstance.  That
+could be: the afore-mentioned operating system scheduling; how much
+debug is in the build; whether the test is being run by valgrind, say.
+
+We could make it a "safe" five seconds, say, (the poll variant uses a
+five second timeout which, if it is hit, is regarded as a fail!) but
+then every run of the test suite will include more than a dozen of
+these meaning the test suite takes a bonus minute and more for no
+particularly good reason.
+
+In the meanwhile, our read of the named-pipe (the $(cat ...)
+equivalent for the shell) might get an empty string (resulting in an
+exit 3 for the test) or might get a failure to open/read the
+pipe-handle, quite often with an EBADF because the
+pipe-handle (the "cat /dev/fd/n" equivalent) has collapsed -- a
+separate issue to the | in the process substitution command.  We can
+distinguish that specific system error (with exit 5) but should we?
+Do we really only care that we didn't get the LHS string or are we
+happy that any error occurred?
+
+What did we expect to happen anyway?
+
+We could do with a three-way lock (opened in the parent then variously
+closed in the LHS and RHS).  The key here is to ensure that the parent
+can close any pipe write-end whilst also being in the foreground,
+blocking whilst waiting for the underlying pipeline to be available.
+
 *#
 
 job-control-error-load := {
@@ -114,7 +167,7 @@ job-control-error-load := {
 
     exp-tests := 1
 
-    test-report "loading #%s (async) %s looking for %s\n" n filename exp
+    test-report "loading #%s %s looking for %s\n" n filename exp
 
     ; standard pipe lock
     jcel-lock := (libc/pipe)
@@ -237,7 +290,7 @@ job-control-async-load := {
 
     exp-tests := 2
 
-    test-report "loading #%s %s looking for %s\n" n filename exp
+    test-report "loading #%s (async) %s looking for %s\n" n filename exp
 
     ; pipe for reporting PIDs
     pid-pipe := (libc/pipe)
@@ -324,7 +377,18 @@ job-control-async-load := {
 	 printf "%6d: async status is null for pid=%d; ENOCHILD?? r=%s\n" PID pid r
        })
        ((libc/WIFEXITED st) {
-	 test (list 'exit (libc/WEXITSTATUS st)) exp
+	 if (eq? 'exit (ph exp)) {
+	   exp-ident := pht exp
+	   (cond
+	    ((C/int? exp-ident)
+	     (test (libc/WEXITSTATUS st) exp-ident))
+	    (exp-ident
+	     (test (libc/WEXITSTATUS st) C/0i))
+	    (else
+	     (test (C/> (libc/WEXITSTATUS st) C/0i) #t)))
+	 } {
+	   test 'exit (ph exp)
+	 }
        })
        ((libc/WIFSIGNALED st) {
 	 test (list 'kill (libc/WTERMSIG st)) exp
@@ -386,12 +450,13 @@ function will flag them up as not being the expected result.
 
 *#
 
-exit-0 := list 'exit C/0i
-exit-3 := list 'exit (C/integer-> 3)
-exit-4 := list 'exit (C/integer-> 4)
-exit-5 := list 'exit (C/integer-> 5)
-exit-6 := list 'exit (C/integer-> 6)
-exit-9 := list 'exit (C/integer-> 9)
+exit-0    := list 'exit C/0i
+exit-3    := list 'exit (C/integer-> 3)
+exit-4    := list 'exit (C/integer-> 4)
+exit-5    := list 'exit (C/integer-> 5)
+exit-6    := list 'exit (C/integer-> 6)
+exit-9    := list 'exit (C/integer-> 9)
+exit-fail := list 'exit #f
 kill-USR1 := list 'kill libc/SIGUSR1
 kill-PIPE := list 'kill libc/SIGPIPE
 kill-TERM := list 'kill libc/SIGTERM
@@ -549,11 +614,13 @@ define (job-control-pipeline-delay n) {
   r := poller-poll poller n
 
   if (null? r) {
-    (cond-expand
-     (IDIO_DEBUG {
-       eprintf "[%d] job-control-pipeline-delay: nothing from poll\n" PID
-     })
-     (else #t))
+    eprintf "[%d] job-control-pipeline-delay: poll timeout\n" PID
+    exit 17
+
+    ;; Historically this timeout was ignored (adding a silent five
+    ;; seconds to this test).
+
+    ;#t
   } {
     for pp in r {
       if (not (or (POLLERR? (pht pp))
@@ -659,6 +726,7 @@ define (job-control-read-line-from ipn) {
 				    ;; FIFO
 				    (cond
 				     ((system-error? c) {
+				       ;condition-report "job-control-read-line-from" c
 				       e := (system-error-errno c)
 				       (cond
 					((C/== e libc/EBADF) {
@@ -734,7 +802,7 @@ job-control-async-load "job-control-errors/simple-named-pipe-into-Idio-compound-
    job-control-async-load "job-control-errors/simple-named-pipe-into-Idio-compound-exit-9-early-child.idio" kill-PIPE
  })
  (else {
-   job-control-async-load "job-control-errors/simple-named-pipe-into-Idio-compound-exit-9-early-child.idio" exit-5
+   job-control-async-load "job-control-errors/simple-named-pipe-into-Idio-compound-exit-9-early-child.idio" exit-fail
  }))
 job-control-async-load "job-control-errors/simple-named-pipe-into-Idio-compound-exit-9-early-parent.idio" exit-4
 
@@ -748,7 +816,7 @@ job-control-async-load "job-control-errors/simple-named-pipe-into-external-compo
    job-control-async-load "job-control-errors/simple-named-pipe-into-external-compound-exit-9-early-child.idio" kill-PIPE
  })
  (else {
-   job-control-async-load "job-control-errors/simple-named-pipe-into-external-compound-exit-9-early-child.idio" exit-5
+   job-control-async-load "job-control-errors/simple-named-pipe-into-external-compound-exit-9-early-child.idio" exit-fail
  }))
 job-control-async-load "job-control-errors/simple-named-pipe-into-external-compound-exit-9-early-parent.idio" exit-4
 
@@ -762,7 +830,7 @@ job-control-async-load "job-control-errors/pipeline-named-pipe-into-external-com
    job-control-async-load "job-control-errors/pipeline-named-pipe-into-external-compound-exit-9-early-child-external-compound-exit-0.idio" kill-PIPE
  })
  (else {
-   job-control-async-load "job-control-errors/pipeline-named-pipe-into-external-compound-exit-9-early-child-external-compound-exit-0.idio" exit-5
+   job-control-async-load "job-control-errors/pipeline-named-pipe-into-external-compound-exit-9-early-child-external-compound-exit-0.idio" exit-fail
  }))
 job-control-async-load "job-control-errors/pipeline-named-pipe-into-external-compound-exit-9-early-parent-external-compound-exit-0.idio" exit-3
 job-control-async-load "job-control-errors/pipeline-named-pipe-into-external-compound-exit-9-late-external-compound-exit-0.idio" exit-0
@@ -799,7 +867,7 @@ job-control-async-load "job-control-errors/pipeline-pipe-from-external-compound-
 job-control-async-load "job-control-errors/pipeline-pipe-from-external-compound-exit-0-external-compound-exit-9-late.idio" exit-0
 
 ; here the RHS quits early (causing a SIGPIPE for the LHS) and we get
-; exit-4 because the RHS didn't create the expected file
+; exit-3 because the RHS didn't output the expected string
 job-control-async-load "job-control-errors/pipeline-pipe-from-external-compound-SIGPIPE-Idio-compound-exit-0.idio" exit-3
 job-control-async-load "job-control-errors/pipeline-pipe-from-external-compound-SIGPIPE-external-compound-exit-0.idio" exit-3
 
@@ -810,12 +878,12 @@ job-control-async-load "job-control-errors/simple-named-pipe-from-Idio-compound-
 
 (cond-expand
  (/dev/fd {
-   job-control-async-load "job-control-errors/simple-named-pipe-from-Idio-compound-exit-9-early-child.idio" exit-5
+   job-control-async-load "job-control-errors/simple-named-pipe-from-Idio-compound-exit-9-early-child.idio" exit-fail
  })
  (else {
    job-control-async-load "job-control-errors/simple-named-pipe-from-Idio-compound-exit-9-early-child.idio" exit-3
  }))
-job-control-async-load "job-control-errors/simple-named-pipe-from-Idio-compound-exit-9-early-parent.idio" exit-3
+job-control-async-load "job-control-errors/simple-named-pipe-from-Idio-compound-exit-9-early-parent.idio" exit-fail
 
 ;; late is after it wrote the msg to testfile so we can't distinguish it from nominal success
 job-control-async-load "job-control-errors/simple-named-pipe-from-Idio-compound-exit-9-late.idio" exit-0
@@ -825,15 +893,15 @@ job-control-async-load "job-control-errors/simple-named-pipe-from-external-compo
  ("uname/sysname/SunOS" {
    ;; SunOS doesn't seem to mind reading from the named pipe when the
    ;; write end process has gone away.
-   job-control-async-load "job-control-errors/simple-named-pipe-from-external-compound-exit-9-early-child.idio" exit-5
+   job-control-async-load "job-control-errors/simple-named-pipe-from-external-compound-exit-9-early-child.idio" exit-fail
  })
  (/dev/fd {
-   job-control-async-load "job-control-errors/simple-named-pipe-from-external-compound-exit-9-early-child.idio" exit-5
+   job-control-async-load "job-control-errors/simple-named-pipe-from-external-compound-exit-9-early-child.idio" exit-fail
  })
  (else {
    job-control-async-load "job-control-errors/simple-named-pipe-from-external-compound-exit-9-early-child.idio" exit-3
  }))
-job-control-async-load "job-control-errors/simple-named-pipe-from-external-compound-exit-9-early-parent.idio" exit-3
+job-control-async-load "job-control-errors/simple-named-pipe-from-external-compound-exit-9-early-parent.idio" exit-fail
 
 ;; late is after it wrote the msg to testfile so we can't distinguish it from nominal success
 job-control-async-load "job-control-errors/simple-named-pipe-from-external-compound-exit-9-late.idio" exit-0
@@ -846,7 +914,7 @@ job-control-async-load "job-control-errors/pipeline-named-pipe-from-external-com
 job-control-async-load "job-control-errors/pipeline-named-pipe-from-external-compound-exit-0-external-compound-exit-9-late.idio" exit-0
 
 ; here the RHS quits early (causing a SIGPIPE for the LHS) and we get
-; exit-4 because the RHS didn't create the expected file
+; exit-3 because the RHS didn't output the expected string
 job-control-async-load "job-control-errors/pipeline-named-pipe-from-external-compound-SIGPIPE-Idio-compound-exit-0.idio" exit-3
 job-control-async-load "job-control-errors/pipeline-named-pipe-from-external-compound-SIGPIPE-external-compound-exit-0.idio" exit-3
 

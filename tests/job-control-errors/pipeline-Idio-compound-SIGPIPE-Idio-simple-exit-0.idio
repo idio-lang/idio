@@ -3,7 +3,15 @@
 ;; to small sleep.
 
 {
-  job-control-pipeline-delay 5000
+  (cond-expand
+   ((or "uname/sysname/SunOS"
+	"uname/sysname/OpenBSD"
+	"uname/sysname/NetBSD") {
+     libc/nanosleep '(0 5e8)
+   })
+   (else {
+     job-control-pipeline-delay 5000
+   }))
   puts "hello\n"
 } | libc/sleep 0
 
