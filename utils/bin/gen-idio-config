@@ -16,7 +16,7 @@
 #
 #
 
-# 
+#
 # gen-idio-config -- create a system-specific header
 #
 
@@ -39,7 +39,7 @@ note ()
     :
 }
 
-usage () 
+usage ()
 {
     cat << EOF >&2
 
@@ -238,9 +238,232 @@ EOF
 
 IDIO_CAN_POLL_DEVICE=1
 if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
-    IDIO_CAN_POLL_DEVICE=0
+    echo "Failed to compile IDIO_CAN_POLL_DEVICE test" >&2
+    exit 1
 elif ! ${tmpdir}/a.out >/dev/null 2>&1 ; then
     IDIO_CAN_POLL_DEVICE=0
+fi
+
+if [[ ${IDIO_CAN_POLL_DEVICE} ]] ; then
+
+    # WSL1 anomalous behaviour wants us to go a step further.
+    #
+    # Here, suppose a command running under a pty can have output
+    # something and quit.  If everything is a bit slow then, assuming
+    # we only now call poll(2) with both output and closed-output
+    # pending, WSL1 only reports POLLHUP and does not report
+    # POLLIN|POLLHUP.
+    #
+    # If you slow everything down some more (strace -f -e trace
+    # write=all ...) then some gap appears where you'll get a POLLIN
+    # and then a POLLHUP.
+    #
+    # It's somewhat annoying as, everywhere else, a POLLHUP on its own
+    # means the other end of the pty has gone away.  If the other end
+    # goes away with data pending you'll get POLLIN|POLLHUP for as
+    # long as there is data pending and we (will have) handled the
+    # POLLIN first.
+
+    # We can't blindly ignore POLLHUP and rely on read(2) returning 0
+    # because if nothing was output, perfectly valid for /bin/true,
+    # and we have a POLLHUP then read(2) will return EIO.
+    #
+    # So we could look to capture EIO at every turn.  In the case of
+    # the expect code in Idio-land by using trap -- hint: very
+    # expensive.  Or we could have the read(2) wrapper code in
+    # src/libc-api.c return some sentinel value for EIO which then
+    # requires that every caller be aware that the sentinel value is
+    # possible.  Or we could special-case WSL1 (and any others) at the
+    # one-off cost of an extra clause in this script to identify the
+    # issue.
+
+    # Somewhat compounding the issue is that OpenBSD 6 and NetBSD 9
+    # will both set IDIO_POLLHUP_OCCLUDES_POLLIN even though they pass
+    # all the (problematic on WSL1) expect tests.
+
+    # XXX We only want to say that IDIO_POLLHUP_OCCLUDES_POLLIN if it
+    # really does occlude it in which case that's the only time that
+    # we can exit (0).  Any other failure is, um, a success.
+
+    names+=(IDIO_POLLHUP_OCCLUDES_POLLIN)
+    cat <<EOF > ${tmpdir}/test.c
+#define _GNU_SOURCE
+#include <fcntl.h>
+#include <inttypes.h>
+#include <poll.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <sys/wait.h>
+
+#if defined (__sun) && defined (__SVR4)
+#include <stropts.h>
+#endif
+
+
+int main (int argc, char **argv)
+{
+    int mfd = posix_openpt (O_RDWR | O_NOCTTY);
+
+    if (-1 == mfd) {
+	perror ("posix_openpt");
+	exit (1);
+    }
+
+    if (grantpt (mfd) == -1) {
+	perror ("grantpt");
+	exit (1);
+    }
+
+    if (unlockpt (mfd) == -1) {
+	perror ("unlockpt");
+	exit (1);
+    }
+
+    char *sn = ptsname (mfd);
+
+    if (NULL == sn) {
+	perror ("ptsname");
+	exit (1);
+    }
+
+    int sfd = open (sn, O_RDWR | O_NOCTTY);
+
+    if (-1 == sfd) {
+	perror ("open");
+	exit (1);
+    }
+
+#if defined (__sun) && defined (__SVR4)
+    if (ioctl (sfd, I_PUSH, "ptem") == -1) {
+	perror ("ioctl (I_PUSH, ptem)");
+	exit (1);
+    }
+
+    if (ioctl (sfd, I_PUSH, "ldterm") == -1) {
+	perror ("ioctl (I_PUSH, ldterm)");
+	exit (1);
+    }
+#endif
+
+    pid_t pid = fork ();
+
+    if (-1 == pid) {
+	perror ("fork");
+	exit (1);
+    }
+
+    if (0 == pid) {
+	close (mfd);
+
+	setsid ();
+
+	dup2 (sfd, STDIN_FILENO);
+	dup2 (sfd, STDOUT_FILENO);
+	dup2 (sfd, STDERR_FILENO);
+
+	if (sfd > STDERR_FILENO) {
+	    close (sfd);
+	}
+
+	/* tty -> controlling tty */
+	int ctty = open (sn, O_RDWR);
+
+	if (-1 == ctty) {
+	    /* "open (sn, O_RDWR)" */
+	    size_t emlen = 6 + strlen (sn) + 9 + 1;
+	    char em[emlen];
+	    snprintf (em, emlen, "open (%s, O_RDWR)", sn);
+	    perror (em);
+	    exit (1);
+	}
+	close (ctty);
+
+	char cmdstr[BUFSIZ];
+	snprintf (cmdstr, BUFSIZ, "hello from %" PRIdMAX, (intmax_t) getpid ());
+
+	execl ("/bin/echo", "/bin/echo", cmdstr, (char *) NULL);
+
+	perror ("execl /bin/echo");
+	exit (1);
+    } else {
+	close (sfd);
+
+	/*
+	 * exit (0) and only exit (0) is satisfactory
+	 *
+	 * XXX OpenBSD/NetBSD both get a 5s timeout here.
+	 */
+	int wstatus;
+	pid_t waitpid_r = waitpid (pid, &wstatus, 0);
+
+	if (-1 == waitpid_r) {
+	    perror ("waitpid");
+	    exit (1);
+	}
+
+	if (! WIFEXITED (wstatus)) {
+	    fprintf (stderr, "/bin/echo: did not exit (killed/signalled/stopped)\n");
+	    exit (1);
+	}
+
+	if (0 != WEXITSTATUS (wstatus)) {
+	    fprintf (stderr, "/bin/echo: exit (%d)\n", WEXITSTATUS (wstatus));
+	    exit (1);
+	}
+
+	/*
+	 * Finally, we get to see if a process that output something
+	 * (POLLIN) and has exited (POLLHUP) generates POLLIN|POLLHUP
+	 * or just POLLHUP.
+	 */
+	struct pollfd fds[1];
+	fds[0].fd = mfd;
+	fds[0].events = POLLIN;
+
+	/*
+	 * 1ms timeout as the POLLIN|POLLHUP should be there as the
+	 * process has been reaped.
+	 */
+	int poll_r = poll (fds, 1, 1);
+
+	if (-1 == poll_r) {
+	    perror ("poll mfd");
+	    exit (1);
+	}
+
+	if (0 == poll_r) {
+	    fprintf (stderr, "poll mfd: timeout\n");
+	    exit (1);
+	}
+
+	if (fds[0].revents & POLLHUP) {
+	    if (0 == (fds[0].revents & POLLIN)) {
+		exit (0);
+	    }
+	}
+    }
+
+    close (sfd);
+    close (mfd);
+
+    return 1;
+}
+EOF
+
+    # NB The logic of these tests are reversed with respect to similar
+    # tests.  Only if we can definitively prove that POLLHUP occludes
+    # POLLIN can we set the value.
+
+    IDIO_POLLHUP_OCCLUDES_POLLIN=0
+    if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
+	echo "Failed to compile IDIO_POLLHUP_OCCLUDES_POLLIN test" >&2
+	exit 1
+    elif ${tmpdir}/a.out >/dev/null 2>&1 ; then
+	IDIO_POLLHUP_OCCLUDES_POLLIN=1
+    fi
 fi
 
 ##############################
@@ -331,4 +554,3 @@ cat <<EOF >> ${var_header}
 
 #endif
 EOF
-
