@@ -116,6 +116,13 @@ exp-timeout = 1
 
 exp-timeout = 10
 
+;; Also remember that there is a 2s gap after each line of output and
+;; the previous timeout was 1s.  So we have another 1s pause here
+;; before we match "line 2 ..."
+;;
+;; That then does a (exp-continue) which will have another 2s pause
+;; before EOF is picked up by the (still running) exp-after clause.
+
 (exp-case
  ("wrote line 2 to stdout" {
    test 'line2 'line2
@@ -151,6 +158,7 @@ exp-send "world" :slow #t :cr #t
    ;(exp-continue)
  }))
 
+;; XXX this might take a couple of seconds or so, humans are slow...
 exp-send "hello world" :human #t :cr #t
 
 (exp-case
@@ -249,28 +257,28 @@ test (exp-case) 'match-after
 ;; exp-close
 
 ;; exp-close before we start
-spawn echo "foo"
+spawn echo "abc"
 (exp-close)
 test (exp-case (:eof #t)) #f
 (exp-wait)
 
 ;; exp-close mid-session
-spawn echo "foo"
+spawn echo "def"
 (exp-case
- ("f" (exp-close)))
+ ("d" (exp-close)))
 test (exp-case (:eof #t)) #f
 (exp-wait)
 
 ;; exp-wait before we start
-spawn echo "foo"
+spawn echo "ghi"
 (exp-wait)
 test (exp-case (:eof #t)) #f
 (exp-wait)
 
 ;; exp-wait mid-session
-spawn echo "foo"
+spawn echo "jkl"
 (exp-case
- ("f" (exp-wait)))
+ ("j" (exp-wait)))
 test (exp-case (:eof #t)) #f
 (exp-wait)
 
