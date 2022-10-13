@@ -60,7 +60,7 @@
  *
  * For evaluation:
  *
- * (scope si ci vi module string)
+ * (scope xi si ci vi module string)
  *
  * nametree also gets in the mix
  *
@@ -72,17 +72,18 @@
  *
  * For runtime:
  *
- * (scope n/a gci gvi module string)
+ * (scope n/a n/a gci gvi module string)
  *
  * Here, gci and gvi are, effectively, indexes into
  * idio_xenvs[0].constants and idio_xenvs[0].values.
  */
 #define IDIO_SI_SCOPE(SI)	IDIO_PAIR_H(SI)
-#define IDIO_SI_SI(SI)		IDIO_PAIR_HT(SI)
-#define IDIO_SI_CI(SI)		IDIO_PAIR_HTT(SI)
-#define IDIO_SI_VI(SI)		IDIO_PAIR_H   (IDIO_PAIR_TTT (SI))
-#define IDIO_SI_MODULE(SI)	IDIO_PAIR_HT  (IDIO_PAIR_TTT (SI))
-#define IDIO_SI_DESCRIPTION(SI)	IDIO_PAIR_HTT (IDIO_PAIR_TTT (SI))
+#define IDIO_SI_XI(SI)		IDIO_PAIR_HT(SI)
+#define IDIO_SI_SI(SI)		IDIO_PAIR_HTT(SI)
+#define IDIO_SI_CI(SI)		IDIO_PAIR_H   (IDIO_PAIR_TTT (SI))
+#define IDIO_SI_VI(SI)		IDIO_PAIR_HT  (IDIO_PAIR_TTT (SI))
+#define IDIO_SI_MODULE(SI)	IDIO_PAIR_HTT (IDIO_PAIR_TTT (SI))
+#define IDIO_SI_DESCRIPTION(SI)	IDIO_PAIR_H   (IDIO_PAIR_TTT (IDIO_PAIR_TTT (SI)))
 
 #define IDIO_NT_PARAM_I(SI)	IDIO_PAIR_HT(SI)
 #define IDIO_NT_PARAM_J(SI)	IDIO_PAIR_HTT(SI)

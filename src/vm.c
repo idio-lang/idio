@@ -749,6 +749,7 @@ idio_xenv_t *idio_xenv ()
      * special case index 0, the standard VM tables
      */
     if (0 == idio_xenvs_size) {
+	IDIO_XENV_EENV (xenv)      = idio_S_nil;
 	IDIO_XENV_DESC (xenv)      = IDIO_STRING ("default execution environment");
 	IDIO_XENV_ST (xenv)        = idio_vm_st;
 	IDIO_XENV_CS (xenv)        = idio_vm_cs;
@@ -797,6 +798,7 @@ idio_xi_t idio_new_xenv (IDIO desc)
 
     idio_xenv_t *xenv = idio_xenv ();
 
+    IDIO_XENV_EENV (xenv) = idio_S_nil;
     IDIO_XENV_DESC (xenv) = desc;
     IDIO_XENV_ST (xenv)   = idio_array (0);
     IDIO_XENV_CS (xenv)   = idio_array (0);
@@ -1840,14 +1842,14 @@ IDIO idio_vm_invoke_C_thread (IDIO thr, IDIO command)
 	     * because it will allocate a slot for the command name even
 	     * though it won't go there.
 	     */
-	    IDIO vs = idio_frame_allocate (idio_list_length (command));
+	    IDIO fr = idio_frame_allocate (idio_list_length (command));
 	    idio_fi_t fai;
 	    IDIO args = IDIO_PAIR_T (command);
 	    for (fai = 0; idio_S_nil != args; fai++) {
-		idio_frame_update (vs, 0, fai, IDIO_PAIR_H (args));
+		idio_frame_update (fr, 0, fai, IDIO_PAIR_H (args));
 		args = IDIO_PAIR_T (args);
 	    }
-	    IDIO_THREAD_VAL (thr) = vs;
+	    IDIO_THREAD_VAL (thr) = fr;
 
 	    idio_vm_invoke (thr, IDIO_PAIR_H (command), IDIO_VM_INVOKE_TAIL_CALL);
 
@@ -1982,21 +1984,23 @@ static idio_sp_t idio_vm_find_stack_marker (IDIO stack, IDIO mark, idio_sp_t fro
     }
 }
 
-IDIO idio_vm_add_dynamic (IDIO si, IDIO ci, IDIO vi, IDIO m, IDIO note)
+IDIO idio_vm_add_dynamic (IDIO xi, IDIO si, IDIO ci, IDIO vi, IDIO m, IDIO note)
 {
+    IDIO_ASSERT (xi);
     IDIO_ASSERT (si);
     IDIO_ASSERT (ci);
     IDIO_ASSERT (vi);
     IDIO_ASSERT (m);
     IDIO_ASSERT (note);
 
+    IDIO_TYPE_ASSERT (fixnum, xi);
     IDIO_TYPE_ASSERT (fixnum, si);
     IDIO_TYPE_ASSERT (fixnum, ci);
     IDIO_TYPE_ASSERT (fixnum, vi);
     IDIO_TYPE_ASSERT (module, m);
     IDIO_TYPE_ASSERT (string, note);
 
-    return IDIO_LIST6 (idio_S_dynamic, si, ci, vi, m, note);
+    return IDIO_LIST7 (idio_S_dynamic, xi, si, ci, vi, m, note);
 }
 
 static void idio_vm_push_dynamic (IDIO thr, idio_as_t gvi, IDIO val)
@@ -2138,21 +2142,23 @@ void idio_vm_dynamic_set (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO v)
     }
 }
 
-IDIO idio_vm_add_environ (IDIO si, IDIO ci, IDIO vi, IDIO m, IDIO note)
+IDIO idio_vm_add_environ (IDIO xi, IDIO si, IDIO ci, IDIO vi, IDIO m, IDIO note)
 {
+    IDIO_ASSERT (xi);
     IDIO_ASSERT (si);
     IDIO_ASSERT (ci);
     IDIO_ASSERT (vi);
     IDIO_ASSERT (m);
     IDIO_ASSERT (note);
 
+    IDIO_TYPE_ASSERT (fixnum, xi);
     IDIO_TYPE_ASSERT (fixnum, si);
     IDIO_TYPE_ASSERT (fixnum, ci);
     IDIO_TYPE_ASSERT (fixnum, vi);
     IDIO_TYPE_ASSERT (module, m);
     IDIO_TYPE_ASSERT (string, note);
 
-    return IDIO_LIST6 (idio_S_environ, si, ci, vi, m, note);
+    return IDIO_LIST7 (idio_S_environ, xi, si, ci, vi, m, note);
 }
 
 static void idio_vm_push_environ (IDIO thr, idio_as_t gvi, IDIO val)
@@ -2293,8 +2299,8 @@ void idio_vm_environ_set (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO v)
 
 IDIO idio_vm_computed_ref (idio_xi_t xi, idio_as_t si, idio_as_t vi)
 {
-    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
-    IDIO gns = idio_array_ref_index (vs, vi);
+    IDIO vt = IDIO_XENV_VT (idio_xenvs[xi]);
+    IDIO gns = idio_array_ref_index (vt, vi);
 
     if (idio_isa_pair (gns)) {
 	IDIO get = IDIO_PAIR_H (gns);
@@ -2370,8 +2376,8 @@ IDIO idio_vm_computed_set (idio_xi_t xi, idio_as_t si, idio_as_t vi, IDIO v)
 {
     IDIO_ASSERT (v);
 
-    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
-    IDIO gns = idio_array_ref_index (vs, vi);
+    IDIO vt = IDIO_XENV_VT (idio_xenvs[xi]);
+    IDIO gns = idio_array_ref_index (vt, vi);
 
     if (idio_isa_pair (gns)) {
 	IDIO set = IDIO_PAIR_T (gns);
@@ -2450,9 +2456,9 @@ void idio_vm_computed_define (idio_xi_t xi, idio_as_t si, idio_as_t gvi, IDIO v)
 
     IDIO_TYPE_ASSERT (pair, v);
 
-    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
+    IDIO vt = IDIO_XENV_VT (idio_xenvs[xi]);
 
-    idio_array_insert_index (vs, v, gvi);
+    idio_array_insert_index (vt, v, gvi);
 }
 
 void idio_vm_push_trap (IDIO thr, IDIO handler, IDIO fgci, idio_sp_t next)
@@ -3037,8 +3043,8 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR, int re
      * no-one is expecting.
      */
 
-    IDIO vs = idio_frame (idio_S_nil, IDIO_LIST1 (condition));
-    IDIO_THREAD_VAL (thr) = vs;
+    IDIO fr = idio_frame (idio_S_nil, IDIO_LIST1 (condition));
+    IDIO_THREAD_VAL (thr) = fr;
 
     /* God speed! */
     idio_vm_invoke (thr, handler, tailp);
@@ -3183,23 +3189,23 @@ IDIO idio_apply (IDIO fn, IDIO args)
 	}
     }
 
-    IDIO vs = idio_frame_allocate (size + 1);
+    IDIO fr = idio_frame_allocate (size + 1);
 
     if (nargs) {
-	idio_ai_t vsi;
-	for (vsi = 0; vsi < nargs - 1; vsi++) {
-	    IDIO_FRAME_ARGS (vs, vsi) = IDIO_PAIR_H (args);
+	idio_ai_t fri;
+	for (fri = 0; fri < nargs - 1; fri++) {
+	    IDIO_FRAME_ARGS (fr, fri) = IDIO_PAIR_H (args);
 	    args = IDIO_PAIR_T (args);
 	}
 	args = larg;
-	for (; idio_S_nil != args; vsi++) {
-	    IDIO_FRAME_ARGS (vs, vsi) = IDIO_PAIR_H (args);
+	for (; idio_S_nil != args; fri++) {
+	    IDIO_FRAME_ARGS (fr, fri) = IDIO_PAIR_H (args);
 	    args = IDIO_PAIR_T (args);
 	}
     }
 
     IDIO thr = idio_thread_current_thread ();
-    IDIO_THREAD_VAL (thr) = vs;
+    IDIO_THREAD_VAL (thr) = fr;
 
     idio_vm_invoke (thr, fn, IDIO_VM_INVOKE_TAIL_CALL);
 
@@ -4226,8 +4232,8 @@ idio_as_t idio_vm_iref (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, ID
 
     IDIO_VM_RUN_DIS ("%-17s   .%-4" PRIu64 " ", op, si);
 
-    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
-    IDIO fgvi = idio_array_ref_index (vs, si);
+    IDIO vt = IDIO_XENV_VT (idio_xenvs[xi]);
+    IDIO fgvi = idio_array_ref_index (vt, si);
     idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
     if (0 == gvi) {
@@ -4290,7 +4296,7 @@ idio_as_t idio_vm_iref (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, ID
 	    idio_as_t ci = idio_vm_constants_lookup_or_extend (xi, sym);
 	    IDIO fci = idio_fixnum (ci);
 
-	    si_ce = IDIO_LIST6 (idio_S_toplevel, fsi, fci, fgvi, ce, def);
+	    si_ce = IDIO_LIST7 (idio_S_toplevel, idio_fixnum (xi), fsi, fci, fgvi, ce, def);
 	    idio_module_set_symbol (sym, si_ce, ce);
 	}
     }
@@ -4304,11 +4310,11 @@ IDIO idio_vm_iref_val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, idi
     IDIO_C_ASSERT (op);
 
     IDIO_TYPE_ASSERT (thread, thr);
-    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
+    IDIO vt = IDIO_XENV_VT (idio_xenvs[xi]);
     idio_ai_t gvi = si;
 
     if (xi) {
-	IDIO fgvi = idio_array_ref_index (vs, si);
+	IDIO fgvi = idio_array_ref_index (vt, si);
 	IDIO_TYPE_ASSERT (fixnum, fgvi);
 	gvi = IDIO_FIXNUM_VAL (fgvi);
 
@@ -4364,8 +4370,8 @@ void idio_vm_iset_val (IDIO thr, idio_xi_t xi, idio_as_t si, char *const op, IDI
     IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (string, def);
 
-    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
-    IDIO fgvi = idio_array_ref_index (vs, si);
+    IDIO vt = IDIO_XENV_VT (idio_xenvs[xi]);
+    IDIO fgvi = idio_array_ref_index (vt, si);
     idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
     if (0 == gvi) {
@@ -4696,7 +4702,7 @@ int idio_vm_run1 (IDIO thr)
 		gvi = idio_vm_extend_values (0);
 		fgvi = idio_fixnum (gvi);
 
-		si_ce = IDIO_LIST6 (kind, fsi, fgci, fgvi, ce, idio_vm_SYM_DEF_string);
+		si_ce = IDIO_LIST7 (kind, idio_fixnum (xi), fsi, fgci, fgvi, ce, idio_vm_SYM_DEF_string);
 		idio_module_set_symbol (sym, si_ce, ce);
 	    } else {
 		fgvi = IDIO_SI_VI (si_ce);
@@ -4764,7 +4770,7 @@ int idio_vm_run1 (IDIO thr)
 		fgvi = idio_fixnum (gvi);
 		idio_vm_values_set (xi, si, fgvi);
 
-		si_ce = IDIO_LIST6 (idio_S_toplevel, fsi, fgci, fgvi, ce, idio_vm_COMPUTED_SYM_DEF_string);
+		si_ce = IDIO_LIST7 (idio_S_toplevel, idio_fixnum (xi), fsi, fgci, fgvi, ce, idio_vm_COMPUTED_SYM_DEF_string);
 		idio_module_set_symbol (sym, si_ce, ce);
 	    } else {
 		fgvi = IDIO_SI_VI (si_ce);
@@ -4775,7 +4781,8 @@ int idio_vm_run1 (IDIO thr)
 		    fgvi = idio_fixnum (gvi);
 		    idio_vm_values_set (xi, si, fgvi);
 
-		    si_ce = IDIO_LIST6 (idio_S_toplevel,
+		    si_ce = IDIO_LIST7 (idio_S_toplevel,
+					idio_fixnum (xi),
 					fsi,
 					IDIO_SI_CI (si_ce),
 					fgvi,
@@ -4788,8 +4795,8 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("[0].%" PRIu64 " ", gvi);
 
 	    if (xi) {
-		IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
-		idio_array_set (vs, fsi, fgvi);
+		IDIO vt = IDIO_XENV_VT (idio_xenvs[xi]);
+		idio_array_set (vt, fsi, fgvi);
 	    }
 
 	    IDIO val = IDIO_THREAD_VAL (thr);
@@ -4853,13 +4860,14 @@ int idio_vm_run1 (IDIO thr)
 		IDIO_VM_RUN_DIS ("%-20s", IDIO_PRIMITIVE_NAME (pd));
 	    } else {
 		IDIO_VM_RUN_DIS ("!! isa %-20s !!", idio_type2string (pd));
-		fprintf (stderr, "%-17s   .%-4" PRIu64 " ", "PREDEFINED", si);
-		IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
-		IDIO fgvi = idio_array_ref_index (vs, si);
+		fprintf (stderr, "%-17s   .%-4" PRIu64 " ", "PREDEFINED?", si);
+		IDIO vt = IDIO_XENV_VT (idio_xenvs[xi]);
+		IDIO fgvi = idio_array_ref_index (vt, si);
 		IDIO_TYPE_ASSERT (fixnum, fgvi);
 		idio_as_t gvi = IDIO_FIXNUM_VAL (fgvi);
 		fprintf (stderr, "[0].%-4zd ", gvi);
-		fprintf (stderr, "[%zu]@%zd\n", xi, pc);
+		fprintf (stderr, "[%zu]@%zd is a %s ", xi, pc, idio_type2string (pd));
+		idio_debug ("%s\n", pd);
 		IDIO_TYPE_ASSERT (primitive, pd);
 	    }
 	    IDIO_THREAD_VAL (thr) = pd;
@@ -5280,9 +5288,9 @@ int idio_vm_run1 (IDIO thr)
 
 	    IDIO_VM_RUN_DIS ("ALLOCATE-DOTTED-FRAME %" PRIu64, arity);
 
-	    IDIO vs = idio_frame_allocate (arity);
-	    idio_frame_update (vs, 0, arity - 1, idio_S_nil);
-	    IDIO_THREAD_VAL (thr) = vs;
+	    IDIO fr = idio_frame_allocate (arity);
+	    idio_frame_update (fr, 0, arity - 1, idio_S_nil);
+	    IDIO_THREAD_VAL (thr) = fr;
 	}
 	break;
     case IDIO_A_REUSE_FRAME:
@@ -5845,8 +5853,8 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO sym = idio_vm_symbols_ref (xi, si);
 	    IDIO_TYPE_ASSERT (symbol, sym);
 
-	    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
-	    IDIO fgvi = idio_array_ref_index (vs, si);
+	    IDIO vt = IDIO_XENV_VT (idio_xenvs[xi]);
+	    IDIO fgvi = idio_array_ref_index (vt, si);
 	    idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
 	    IDIO ce = idio_thread_current_env ();
@@ -5868,7 +5876,7 @@ int idio_vm_run1 (IDIO thr)
 		    fgvi = idio_fixnum (gvi);
 		    idio_vm_values_set (xi, si, fgvi);
 
-		    si_ce = IDIO_LIST6 (idio_S_toplevel, fsi, fci, fgvi, ce, idio_vm_EXPANDER_string);
+		    si_ce = IDIO_LIST7 (idio_S_toplevel, idio_fixnum (xi), fsi, fci, fgvi, ce, idio_vm_EXPANDER_string);
 		    idio_module_set_symbol (sym, si_ce, ce);
 		} else {
 		    fgvi = IDIO_SI_VI (si_ce);
@@ -5913,7 +5921,7 @@ int idio_vm_run1 (IDIO thr)
 		    fgvi = idio_fixnum (gvi);
 		    idio_vm_values_set (xi, oi, fgvi);
 
-		    op_si = IDIO_LIST6 (idio_S_toplevel, foi, fci, fgvi, idio_operator_module, idio_vm_INFIX_OPERATOR_string);
+		    op_si = IDIO_LIST7 (idio_S_toplevel, idio_fixnum (xi), foi, fci, fgvi, idio_operator_module, idio_vm_INFIX_OPERATOR_string);
 		    idio_module_set_symbol (sym, op_si, idio_operator_module);
 		}
 
@@ -5957,7 +5965,7 @@ int idio_vm_run1 (IDIO thr)
 		    fgvi = idio_fixnum (gvi);
 		    idio_vm_values_set (xi, oi, fgvi);
 
-		    op_si = IDIO_LIST6 (idio_S_toplevel, foi, fci, fgvi, idio_operator_module, idio_vm_POSTFIX_OPERATOR_string);
+		    op_si = IDIO_LIST7 (idio_S_toplevel, idio_fixnum (xi), foi, fci, fgvi, idio_operator_module, idio_vm_POSTFIX_OPERATOR_string);
 		    idio_module_set_symbol (sym, op_si, idio_operator_module);
 		}
 
@@ -6583,10 +6591,10 @@ IDIO idio_vm_run (IDIO thr, idio_xi_t xi, idio_pc_t pc, idio_vm_run_enum caller)
 			IDIO_THREAD_PC (thr) = idio_vm_IHR_pc; /* => (POP-TRAP) RESTORE-ALL-STATE, RETURN */
 
 			/* one arg, signum */
-			IDIO vs = idio_frame_allocate (2);
-			idio_frame_update (vs, 0, 0, idio_fixnum (signum));
+			IDIO fr = idio_frame_allocate (2);
+			idio_frame_update (fr, 0, 0, idio_fixnum (signum));
 
-			IDIO_THREAD_VAL (thr) = vs;
+			IDIO_THREAD_VAL (thr) = fr;
 			idio_vm_invoke (thr, idio_vm_signal_handler, IDIO_VM_INVOKE_REGULAR_CALL);
 
 			siglongjmp (IDIO_THREAD_JMP_BUF (thr), IDIO_VM_SIGLONGJMP_EVENT);
@@ -7297,10 +7305,10 @@ Return the current vm source constants array.	\n\
 
 idio_as_t idio_vm_extend_values (idio_xi_t xi)
 {
-    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
+    IDIO vt = IDIO_XENV_VT (idio_xenvs[xi]);
 
-    idio_as_t i = idio_array_size (vs);
-    idio_array_push (vs, idio_S_undef);
+    idio_as_t i = idio_array_size (vt);
+    idio_array_push (vt, idio_S_undef);
 
     if (0 == xi) {
 	idio_array_push (idio_vm_st, idio_S_false);
@@ -7338,8 +7346,8 @@ idio_as_t idio_vm_extend_default_values ()
 IDIO idio_vm_values_ref (idio_xi_t xi, idio_as_t vi)
 {
     if (vi) {
-	IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
-	IDIO v = idio_array_ref_index (vs, vi);
+	IDIO vt = IDIO_XENV_VT (idio_xenvs[xi]);
+	IDIO v = idio_array_ref_index (vt, vi);
 
 	if (idio_isa_struct_instance (v)) {
 	    if (idio_struct_type_isa (IDIO_STRUCT_INSTANCE_TYPE (v), idio_path_type)) {
@@ -7452,8 +7460,8 @@ IDIO idio_vm_default_values_ref (idio_as_t gvi)
 
 void idio_vm_values_set (idio_xi_t xi, idio_as_t vi, IDIO v)
 {
-    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
-    idio_array_insert_index (vs, v, vi);
+    IDIO vt = IDIO_XENV_VT (idio_xenvs[xi]);
+    idio_array_insert_index (vt, v, vi);
 }
 
 void idio_vm_default_values_set (idio_as_t gvi, IDIO v)
@@ -7475,10 +7483,10 @@ void idio_vm_dump_xenv_values (idio_xi_t xi)
 
     idio_debug_FILE (fp, "%s\n", IDIO_XENV_DESC (idio_xenvs[xi]));
 
-    IDIO vs = IDIO_XENV_VT (idio_xenvs[xi]);
-    IDIO vs0 = IDIO_XENV_VT (idio_xenvs[0]);
+    IDIO vt = IDIO_XENV_VT (idio_xenvs[xi]);
+    IDIO vt0 = IDIO_XENV_VT (idio_xenvs[0]);
 
-    idio_as_t al = idio_array_size (vs);
+    idio_as_t al = idio_array_size (vt);
     fprintf (fp, "VM values for xenv[%zu]: %zd values\n", xi, al);
     fprintf (fp, "%6.6s  %4.4s %-20.20s %s\n", "vi", "gvi", "type", "value");
     fprintf (fp, "%6.6s  %4.4s %-20.20s %s\n", "--", "---", "----", "-----");
@@ -7486,7 +7494,7 @@ void idio_vm_dump_xenv_values (idio_xi_t xi)
     idio_as_t i;
     for (i = 0 ; i < al; i++) {
 	fprintf (fp, "%6zd: ", i);
-	IDIO fgvi = idio_array_ref_index (vs, i);
+	IDIO fgvi = idio_array_ref_index (vt, i);
 
 	idio_as_t gvi = 0;
 	if (xi) {
@@ -7497,7 +7505,7 @@ void idio_vm_dump_xenv_values (idio_xi_t xi)
 	fprintf (fp, "%4zd ", gvi);
 
 	if (gvi) {
-	    IDIO v = idio_array_ref_index (vs0, gvi);
+	    IDIO v = idio_array_ref_index (vt0, gvi);
 
 	    size_t size = 0;
 	    char *vs = NULL;
@@ -7579,7 +7587,7 @@ IDIO idio_vm_extend_tables (idio_xi_t xi, IDIO name, IDIO scope, IDIO module, ID
     idio_vm_symbols_set (xi, vi, fci);
     idio_vm_values_set (xi, vi, fgvi);
 
-    IDIO si = IDIO_LIST6 (scope, fvi, fci, fgvi, module, desc);
+    IDIO si = IDIO_LIST7 (scope, idio_fixnum (xi), fvi, fci, fgvi, module, desc);
 
     return si;
 }
@@ -8252,9 +8260,9 @@ idio_xi_t idio_vm_add_xenv (IDIO desc, IDIO st, IDIO cs, IDIO ch, IDIO vt, IDIO 
     IDIO_TYPE_ASSERT (array, ses);
     IDIO_TYPE_ASSERT (array, sps);
 
-    idio_xenv_t *xe = idio_xenv ();
+    idio_xenv_t *xenv = idio_xenv ();
 
-    IDIO_XENV_EENV (xe)		  = idio_S_nil;
+    IDIO_XENV_EENV (xenv) = idio_S_nil;
 
     /*
      * XXX We need to idio_gc_protect_auto() these elements as they
@@ -8264,40 +8272,40 @@ idio_xi_t idio_vm_add_xenv (IDIO desc, IDIO st, IDIO cs, IDIO ch, IDIO vt, IDIO 
      * the GC has mechanically free every allocated value including
      * these things we are protecting.
      */
-    IDIO_XENV_DESC (xe) = desc;
-    idio_gc_protect_auto (IDIO_XENV_DESC (xe));
+    IDIO_XENV_DESC (xenv) = desc;
+    idio_gc_protect_auto (IDIO_XENV_DESC (xenv));
 
-    IDIO_XENV_ST (xe)   = st;
-    idio_gc_protect_auto (IDIO_XENV_ST (xe));
+    IDIO_XENV_ST (xenv)   = st;
+    idio_gc_protect_auto (IDIO_XENV_ST (xenv));
 
-    IDIO_XENV_CS (xe)   = cs;
-    idio_gc_protect_auto (IDIO_XENV_CS (xe));
+    IDIO_XENV_CS (xenv)   = cs;
+    idio_gc_protect_auto (IDIO_XENV_CS (xenv));
 
-    IDIO_XENV_CH (xe)   = ch;
-    idio_gc_protect_auto (IDIO_XENV_CH (xe));
+    IDIO_XENV_CH (xenv)   = ch;
+    idio_gc_protect_auto (IDIO_XENV_CH (xenv));
 
-    IDIO_XENV_VT (xe)   = vt;
-    idio_gc_protect_auto (IDIO_XENV_VT (xe));
+    IDIO_XENV_VT (xenv)   = vt;
+    idio_gc_protect_auto (IDIO_XENV_VT (xenv));
 
-    IDIO_XENV_SES (xe)  = ses;
-    idio_gc_protect_auto (IDIO_XENV_SES (xe));
+    IDIO_XENV_SES (xenv)  = ses;
+    idio_gc_protect_auto (IDIO_XENV_SES (xenv));
 
-    IDIO_XENV_SPS (xe)  = sps;
-    idio_gc_protect_auto (IDIO_XENV_SPS (xe));
+    IDIO_XENV_SPS (xenv)  = sps;
+    idio_gc_protect_auto (IDIO_XENV_SPS (xenv));
 
     if (idio_isa_octet_string (bc)) {
-	IDIO_XENV_BYTE_CODE (xe) = idio_codegen_string2idio_ia (bc);
+	IDIO_XENV_BYTE_CODE (xenv) = idio_codegen_string2idio_ia (bc);
     } else if (idio_isa_C_pointer (bc)) {
 	IDIO_IA_T ia = IDIO_C_TYPE_POINTER_P (bc);
 
-	IDIO_XENV_BYTE_CODE (xe) = ia;
+	IDIO_XENV_BYTE_CODE (xenv) = ia;
 	IDIO_IA_REFCNT (ia)++;
     } else {
 	fprintf (stderr, "add-xenv: unexpected byte code format\n");
 	assert (0);
     }
 
-    return IDIO_XENV_INDEX (xe);
+    return IDIO_XENV_INDEX (xenv);
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("%vm-add-xenv", vm_add_xenv, (IDIO args), "desc st cs ch vt ses sps byte-code pc", "\
@@ -9158,9 +9166,4 @@ void idio_init_vm ()
     }
 
     idio_S_cfw = IDIO_SYMBOL ("compile-file-writer");
-
-#ifdef IDIO_VM_DIS
-    idio_vm_dis = 1;
-    idio_vm_set_dasm_file (IDIO_LIST1 (IDIO_STRING ("idio-vm-trace")));
-#endif
 }

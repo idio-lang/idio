@@ -22,7 +22,7 @@
 ;; after SRFI-95, please
 
 ;; from evaluate.idio
-define (si-module si)      (pht  (pttt si))
+define (si-module si)                (nth si 5)
 
 define-template (help x) {
   #T{

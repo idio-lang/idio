@@ -392,6 +392,8 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
     /* enable all array elements */
     IDIO_ARRAY_USIZE (st) = C_st_alen;
 
+    IDIO fxi = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_XI);
+
     while (idio_S_nil != ste) {
 	IDIO si_ci = IDIO_PAIR_H (ste);
 
@@ -422,8 +424,8 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 
 	    idio_array_insert_index (st, ci, C_si);
 
-	    symbols = idio_pair (IDIO_LIST7 (idio_array_ref_index (cs, C_ci),
-					     idio_S_toplevel, si, ci, idio_fixnum0, idio_S_nil, idio_S_nil),
+	    symbols = idio_pair (IDIO_LIST8 (idio_array_ref_index (cs, C_ci),
+					     idio_S_toplevel, fxi, si, ci, idio_fixnum0, idio_S_nil, idio_S_nil),
 				 symbols);
 
 	    if (C_ci > max_sci) {
@@ -492,7 +494,7 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 	    idio_array_insert_index (st, ci, C_si);
 
 	    operators = idio_pair (IDIO_LIST7 (idio_array_ref_index (cs, C_ci),
-					       idio_S_toplevel, si, ci, idio_fixnum0, idio_S_nil, idio_S_nil),
+					       idio_S_toplevel, fxi, si, ci, idio_fixnum0, idio_S_nil, idio_S_nil),
 				   operators);
 
 	    if (C_ci > max_oci) {
@@ -668,7 +670,7 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
     idio_display_C ("]", dsh);
     IDIO desc = idio_get_output_string (dsh);
 
-    idio_xi_t xi = IDIO_FIXNUM_VAL (idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_XI));
+    idio_xi_t xi = IDIO_FIXNUM_VAL (fxi);
 #ifdef IDIO_COMPILE_FILE_READ
     fprintf (stderr, "xi [%zu] for %s\n", xi, ifn);
 #endif

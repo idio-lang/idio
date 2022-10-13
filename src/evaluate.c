@@ -672,10 +672,13 @@ idio_as_t idio_meaning_extend_tables (IDIO eenv,
 	module = IDIO_MEANING_EENV_MODULE (eenv);
     }
 
+    IDIO fxi = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_XI);
+
     idio_array_push (vt, idio_fixnum0);
 
-    IDIO sym_si = IDIO_LIST7 (name,
+    IDIO sym_si = IDIO_LIST8 (name,
 			      scope,
+			      fxi,
 			      fvi,
 			      fci,
 			      idio_fixnum0,
@@ -714,10 +717,13 @@ idio_as_t idio_meaning_extend_operators (IDIO eenv,
 
     IDIO fvi = idio_fixnum (vi);
 
+    IDIO fxi = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_XI);
+
     idio_array_push (vt, idio_fixnum0);
 
-    IDIO op_si = IDIO_LIST7 (name,
+    IDIO op_si = IDIO_LIST8 (name,
 			     idio_S_toplevel,
+			     fxi,
 			     fvi,
 			     fci,
 			     idio_fixnum0,
@@ -776,10 +782,9 @@ static IDIO idio_meaning_find_symbol_recurse (IDIO name, IDIO eenv, IDIO scope, 
 		 * However, we want the running vi as later on we'll
 		 * need to access the underlying primdata.
 		 */
-		
-		IDIO vi_tail = IDIO_PAIR_TTT (symbols_si);
+
 		IDIO predef_vi = IDIO_SI_VI (name_si);
-		IDIO_PAIR_H (vi_tail) = predef_vi;
+		IDIO_SI_VI (symbols_si) = predef_vi;
 
 		/*
 		 * Also change the vt entry
@@ -992,6 +997,8 @@ static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDI
 	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
 	    idio_debug ("WARNING: predef-extend: %s: ", name);
 	    fprintf (stderr, "%p -> %p\n", IDIO_PRIMITIVE_F (pd), IDIO_PRIMITIVE_F (primdata));
+	    idio_debug ("%s != ", primdata);
+	    idio_debug ("%s\n", pd);
 
 	    /*
 	     * Tricky to generate a test case for this as it requires
@@ -2613,7 +2620,10 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
 
     IDIO cm = idio_thread_current_module ();
 
-    IDIO sym_si = IDIO_LIST6 (idio_S_toplevel,
+    IDIO xi = idio_struct_instance_ref_direct (eenv, IDIO_EENV_ST_XI);
+
+    IDIO sym_si = IDIO_LIST7 (idio_S_toplevel,
+			      xi,
 			      sym_idx,
 			      fci,
 			      idio_fixnum0,

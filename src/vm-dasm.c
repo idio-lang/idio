@@ -393,8 +393,8 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		if (idio_isa_symbol (sym)) {
 		    idio_debug_FILE (fp, "%s", sym);
 		} else {
-		    IDIO_VM_DASM (" !! %s", idio_type2string (sym));
-		    idio_debug_FILE (fp, "%s !!", sym);
+		    IDIO_VM_DASM ("!! %s", idio_type2string (sym));
+		    idio_debug_FILE (fp, " %s !!", sym);
 		}
 	    }
 	    break;
