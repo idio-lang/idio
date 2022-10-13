@@ -465,11 +465,24 @@ spawn echo "FOO"
    ;; be satisfied from the initial read.  Consequently, we will not have
    ;; generated any End of File indications.  Let's force the issue.
 
+   eof2-Tests := Tests
+
    ;; get both EOF
    (exp-case
     (:eof {
-      test 'eof*2 'eof*2				; twice
+      test 'eof*2 'eof*2				; twice?
+
+      ;; No (exp-continue) as we'll be called twice for these simple
+      ;; processes.  Hopefully, otherwise we'll catch it in the next
+      ;; clause.
     }))
+
+   if (Tests lt (eof2-Tests + 2)) {
+     (exp-case
+      (:eof {
+	test 'eof*2-delayed 'eof*2-delayed
+      }))
+   }
 
    (exp-wait)
 
@@ -482,6 +495,8 @@ spawn echo "FOO"
 
    (exp-spawn-sync)
 
+   eof3-Tests := Tests
+
    ;; madness...
    (exp-case
     ("bc" {
@@ -493,11 +508,19 @@ spawn echo "FOO"
       (exp-continue)
     })
     (:eof {
-      test 'eof 'eof			; twice
+      test 'eof*3 'eof*3		; twice?
 
       ;; No (exp-continue) as we'll be called twice for these simple
-      ;; processes.  Hopefully.
+      ;; processes.  Hopefully, otherwise we'll catch it in the next
+      ;; clause.
     }))
+
+   if (Tests lt (eof3-Tests + 4)) {
+     (exp-case
+      (:eof {
+	test 'eof*3-delayed 'eof*3-delayed
+      }))
+   }
 
    (exp-wait)
 
@@ -507,6 +530,8 @@ spawn echo "FOO"
    spawn echo "lmn"
 
    (exp-spawn-sync)
+
+   eof4-Tests := Tests
 
    ;; madness...
    (exp-case
@@ -519,11 +544,19 @@ spawn echo "FOO"
       (exp-continue)
     })
     (:eof {
-      test 'eof 'eof			; twice
+      test 'eof*4 'eof*4		; twice?
 
       ;; No (exp-continue) as we'll be called twice for these simple
-      ;; processes.  Hopefully.
+      ;; processes.  Hopefully, otherwise we'll catch it in the next
+      ;; clause.
     }))
+
+   if (Tests lt (eof4-Tests + 4)) {
+     (exp-case
+      (:eof {
+	test 'eof*4-delayed 'eof*4-delayed
+      }))
+   }
 
    (exp-wait)
  })
