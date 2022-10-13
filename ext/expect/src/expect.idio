@@ -59,6 +59,21 @@ by OpenBSD 6 and NetBSD 9 but those have, certainly historically,
 managed to pass all the tests.  So the cond-expand qualification
 becomes IDIO_POLLHUP_OCCLUDES_POLLIN and virtualisation/WSL.
 
+****
+
+https://unix.stackexchange.com/a/538271 suggests that read(2) on a
+closed pty will result in EIO for Linux with differing results for
+Solaris and *BSD.  Experience suggests that select(2) will provoke
+this easily (or at least generate an immediate EOF) whereas poll(2)
+seems to circumvent the issue most of the time (barring
+IDIO_POLLHUP_OCCLUDES_POLLIN as above).
+
+You can edit src/idio-config.h and add/edit
+
+#undef IDIO_CAN_POLL_DEVICE
+
+to use select(2) and see this behaviour yourself.
+
 *#
 
 module expect
@@ -105,6 +120,10 @@ export (
 	 exp-case-poll
 	 exp-case-select
 	 exp-case
+
+	 ;; a sentinel value for exp-case to return when nothing
+	 ;; matches
+	 exp-case-failed-to-match
 
 	 exp-send
 	 exp-wait
@@ -999,6 +1018,7 @@ define-template (exp-case-after & clauses) {
   }
 }
 
+exp-case-failed-to-match := pair 'exp-case 'failed-to-match
 exp-case-break-tag := make-prompt-tag 'exp-case-break
 (define-syntax exp-break
  (syntax-rules ()
@@ -1191,7 +1211,7 @@ define (exp-case-poll) "
 	    }
 	  }
 	} {
-	  exp-break #f
+	  exp-break exp-case-failed-to-match
 	}
       }
 
@@ -1285,14 +1305,27 @@ define (exp-case-select) "
 	       ;; we know it is mfd but let's go through the motions
 	       for fd in rlist {
 		 sid := hash-ref select-map fd
-		 data := libc/read fd 1024
-		 if data {
-		   if (eof-object? data) {
+
+		 trap ^system-error (function (c) {
+		   ;; select(2) is more likely to return EIO than
+		   ;; poll(2)
+		   if (C/== (system-error-errno c) libc/EIO) {
 		     set-struct-spawn-eof! sid #t
-		     expect/exp-log sid #t (sprintf "exp-case: %@: select (fd=%d): EOF\n" (struct-spawn-argv sid) fd)
+		     expect/exp-log sid #t (sprintf "exp-case: %@: select (fd=%d): EIO\n" (struct-spawn-argv sid) fd)
+		     trap-return #f
 		   } {
-		     set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
-		     expect/exp-log sid #t data
+		     raise c
+		   }
+		 }) {
+		   data := libc/read fd 1024
+		   if data {
+		     if (eof-object? data) {
+		       set-struct-spawn-eof! sid #t
+		       expect/exp-log sid #t (sprintf "exp-case: %@: select (fd=%d): EOF\n" (struct-spawn-argv sid) fd)
+		     } {
+		       set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
+		       expect/exp-log sid #t data
+		     }
 		   }
 		 }
 	       }
@@ -1312,7 +1345,7 @@ define (exp-case-select) "
 	    }
 	  }
 	} {
-	  exp-break #f
+	  exp-break exp-case-failed-to-match
 	}
       }
 
