@@ -34,6 +34,8 @@ rounding.
 *#
 
 module tests/util
+import SRFI-14
+import object
 
 util0 := Tests
 
@@ -147,6 +149,7 @@ bn1a  := 1.0
 bn1b  := 1.0
 bn2   := 2.0
 
+touch testfile				; just in case it doesn't exist
 fh1a  := open-input-file testfile
 fh1b  := open-input-file testfile
 fh2   := open-output-file testfile

@@ -40,6 +40,7 @@
 #include "idio.h"
 
 #include "error.h"
+#include "fixnum.h"
 #include "frame.h"
 #include "idio-string.h"
 #include "pair.h"
@@ -88,6 +89,9 @@ IDIO idio_frame_allocate (idio_fi_t arityp1)
 	IDIO_FRAME_ARGS (fo, i) = idio_S_undef;
     }
     IDIO_FRAME_ARGS (fo, i) = idio_S_nil;
+
+    IDIO_FRAME_FUNC (fo) = idio_S_nil;
+    IDIO_FRAME_SRC_EXPR (fo) = -1;
 
     return fo;
 }
@@ -310,7 +314,7 @@ char *idio_frame_report_string (IDIO v, size_t *sizep, idio_unicode_t format, ID
 
     char *r = NULL;
 
-    *sizep = idio_asprintf (&r, "#<FRAME n=%d/%d>", IDIO_FRAME_NPARAMS (v), IDIO_FRAME_NALLOC (v));
+    *sizep = idio_asprintf (&r, "#<FRAME n=%d/%d [%zu] se=.%-5zd>", IDIO_FRAME_NPARAMS (v), IDIO_FRAME_NALLOC (v), IDIO_FRAME_XI (v), IDIO_FRAME_SRC_EXPR (v));
 
     return r;
 }
@@ -329,7 +333,7 @@ char *idio_frame_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO
      *
      * Not user-visible.
      */
-    *sizep = idio_asprintf (&r, "#<FRAME %p n=%d/%d [ ", v, IDIO_FRAME_NPARAMS (v), IDIO_FRAME_NALLOC (v));
+    *sizep = idio_asprintf (&r, "#<FRAME %p n=%d/%d [%zu] se=.%-5zd [ ", v, IDIO_FRAME_NPARAMS (v), IDIO_FRAME_NALLOC (v), IDIO_FRAME_XI (v), IDIO_FRAME_SRC_EXPR (v));
 
     for (idio_fi_t i = 0; i < IDIO_FRAME_NALLOC (v); i++) {
 	size_t t_size = 0;

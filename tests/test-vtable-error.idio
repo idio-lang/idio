@@ -40,7 +40,7 @@ vtable-error-load := {
 
     exp-tests := 1
 
-    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    test-report "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-vtable-unbound-error
 	  ^rt-vtable-method-unbound-error) (function (c) {
 	    ;eprintf "vtable-error #%s: %s %s\n" n msg (idio-error-location c)

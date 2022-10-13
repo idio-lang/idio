@@ -42,7 +42,7 @@ string-handle-error-load := {
 
     exp-tests := 1
 
-    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    test-report "loading #%s %s looking for %s\n" n filename msg
     trap (^i/o-error
 	  ^rt-parameter-error) (function (c) {
 	    ;eprintf "string-handle-error #%s: %s %s\n" n msg (idio-error-location c)

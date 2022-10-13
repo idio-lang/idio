@@ -24,6 +24,7 @@ module tests/expect
 import expect
 
 expect-0 := Tests
+expect-skipped := 0
 
 exp-log-user #f
 exp-timeout = 10
@@ -116,6 +117,13 @@ exp-timeout = 1
 
 exp-timeout = 10
 
+;; Also remember that there is a 2s gap after each line of output and
+;; the previous timeout was 1s.  So we have another 1s pause here
+;; before we match "line 2 ..."
+;;
+;; That then does a (exp-continue) which will have another 2s pause
+;; before EOF is picked up by the (still running) exp-after clause.
+
 (exp-case
  ("wrote line 2 to stdout" {
    test 'line2 'line2
@@ -151,6 +159,7 @@ exp-send "world" :slow #t :cr #t
    ;(exp-continue)
  }))
 
+;; XXX this might take a couple of seconds or so, humans are slow...
 exp-send "hello world" :human #t :cr #t
 
 (exp-case
@@ -166,7 +175,25 @@ exp-send "hello world" :human #t :cr #t
 ;;
 ;; exp-case return value
 
-spawn auto-exit -o 10
+spawn-args := #n
+(cond-expand
+ ((not IDIO_CAN_POLL_DEVICE) {
+   ;; Hmm.  On the only example I have, Mac OS X 10.5.8 (and running
+   ;; in debug mode to slow it down) exhibits some
+   ;; IDIO_POLLHUP_OCCLUDES_POLLIN-like behaviour.  auto-exit -o 10
+   ;; outputs 10 lines and exits before we get round to calling
+   ;; select(2).  Here, we simply get EOF, no other data.
+   ;;
+   ;; (Some hand-crafted examples on other systems suggest they would
+   ;; exhibit the same behaviour so it looks like a select(2) thing
+   ;; rather than a pty thing.)
+   ;;
+   ;; So we can't drain the pty like IDIO_POLLHUP_OCCLUDES_POLLIN.
+   ;; All we can do is look to try to avoid the issue.  In this case
+   ;; by asking for a minimal sleep(1) after each line is output.
+   spawn-args = '(-s 1)
+ }))
+apply spawn auto-exit -o 10 spawn-args
 
 (exp-case-before
  ("wrote" 'match-before))
@@ -249,29 +276,29 @@ test (exp-case) 'match-after
 ;; exp-close
 
 ;; exp-close before we start
-spawn echo "foo"
+spawn echo "abc"
 (exp-close)
-test (exp-case (:eof #t)) #f
+test (exp-case (:eof #t)) exp-case-failed-to-match
 (exp-wait)
 
 ;; exp-close mid-session
-spawn echo "foo"
+spawn echo "def"
 (exp-case
- ("f" (exp-close)))
-test (exp-case (:eof #t)) #f
+ ("d" (exp-close)))
+test (exp-case (:eof #t)) exp-case-failed-to-match
 (exp-wait)
 
 ;; exp-wait before we start
-spawn echo "foo"
+spawn echo "ghi"
 (exp-wait)
-test (exp-case (:eof #t)) #f
+test (exp-case (:eof #t)) exp-case-failed-to-match
 (exp-wait)
 
 ;; exp-wait mid-session
-spawn echo "foo"
+spawn echo "jkl"
 (exp-case
- ("f" (exp-wait)))
-test (exp-case (:eof #t)) #f
+ ("j" (exp-wait)))
+test (exp-case (:eof #t)) exp-case-failed-to-match
 (exp-wait)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -294,13 +321,98 @@ spawn auto-exit -o 1 -r 1
 ;; OpenBSD's man(1) seemed to do something weird that I don't have the
 ;; skills to debug.  In the meanwhile, the basic premise for the test
 ;; is the spawned process blocking on stdout because of a lot of data
-;; for which "cat file" suffices.  The contents of file?  man bash, of
-;; course.
-man bash > testfile
+;; for which "cat file" suffices.  The contents of file?  It was "man
+;; bash" until I realised that man was doing strange things even on
+;; sensible systems (and truncating the output because it was being
+;; run in a tty and therefore interactive...)  let alone that NetBSD
+;; didn't have the man page on my MANPATH.
+;;
+;; So, a large file, big enough to block a tty's buffer?
+;; utils/Unicode/UnicodeData.txt is 1.8MB, that should do.
+cp (append-string IDIO-UTILS-DIR "/Unicode/UnicodeData.txt") testfile
+
 spawn cat testfile
-(exp-case ("." #t))
+(exp-case (:re "." #t))
 (exp-wait)
-rm testfile
+
+;; Tease the read-poll function in exp-case-poll (which uses a chunk
+;; size of 1024 for libc/read) by reading a little below and a little
+;; above that number -- we might get an EIO if things go wrong.
+;;
+;; We have to be careful here as we only want exactly n output bytes
+;; to the tty and no extraneous blether from, say, dd, which will also
+;; appear in the tty output.
+;;
+;; Original: More importantly, why do we centre on 1003 +/- 1 when
+;; we're looking for 1024 output chars?  Why, ttys or, rather,
+;; termios(3), of course.  The tty has ONLCR enabled by default which
+;; means the newlines in the input file (being cat'ed to the terminal)
+;; are translated to CR-NL, in other words an extra character per
+;; line.  The 1003 bytes we read from the input file contain the first
+;; 21 lines and therefore an extra 21 chars taking us to 1024.
+;;
+;; Ideally, we should disable onlcr.
+define (seq c r) {
+  l := #n
+  (do
+   ((i (c - r) (i + 1)))
+   ((i gt (c + r)) (reverse! l))
+  (l = pair i l))
+}
+
+;; dd is, by default, a bit chatty about what it has done which is all
+;; well and good but we don't know what it is about to say and because
+;; that chat also appears in the terminal it messes withour test.  So,
+;; where possible, shut dd up.
+;;
+;; Where it is not possible, the test is pointless.
+dd-args := #f
+(cond-expand
+ ("release/OpenIndiana"
+  ;; We're a bit stuffed, here, as there is no argument to stop dd
+  ;; printing stats and IO redirection isn't picked up (as we're not
+  ;; spawning a shell...)
+  #t)
+ ("uname/sysname/NetBSD" {
+   dd-args = "msgfmt=quiet"
+ })
+ ("uname/sysname/Darwin" {
+   ;; Newer macOS support status=none, older (Mac OS X 10.15.8) does
+   ;; not.  We can take a look at sw_vers.  The test isn't useful for
+   ;; older Mac OS X.
+   ph := pipe-from sw_vers
+   line-loop :+ function () {
+     if (eof? ph) #n {
+       (regex-case
+	(read-line ph)
+	("ProductVersion:[[:space:]]+([[:digit:]]+)\\." {
+	  PV := read-number r.1
+	  if (PV gt 10) {
+	    dd-args = "status=none"
+	  }
+	}))
+       (line-loop)
+     }
+   }
+   (line-loop)
+   close-handle ph
+ })
+ (else {
+   dd-args = "status=none"
+ }))
+
+if dd-args {
+  for size in (seq 1003 1) {
+    spawn dd (sprintf "if=%s" testfile) bs=1 (sprintf "count=%d" size) dd-args
+    (exp-case
+     ("0" #t))
+    (exp-wait)
+  }
+
+  rm testfile
+} {
+  eprintf "NOTICE: skipping tests using dd\n"
+}
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -315,103 +427,151 @@ spawn echo "FOO"
  }))
 (exp-wait)
 
-;; a list of two spawn-ids -- we'll plod through one step at a time
-spawn-id = #n
+(cond-expand
+ (IDIO_CAN_POLL_DEVICE {
+   ;; a list of two spawn-ids -- we'll plod through one step at a time
+   spawn-id = #n
 
-spawn echo "foo"
-spawn echo "bar"
+   spawn echo "foo"
+   spawn echo "bar"
 
-(exp-spawn-sync)
+   (exp-spawn-sync)
 
-;; exp-case will cause a single read from each spawned process --
-;; hopefully the terminal can buffer the four output characters from
-;; each echo
+   ;; exp-case will cause a single read from each spawned process --
+   ;; hopefully the terminal can buffer the four output characters from
+   ;; each echo
 
-;; match something from one of them -- which one depends on operating
-;; system scheduling
-(exp-case
- ("oo" {
-   test prefix "f"
+   ;; match something from one of them -- which one depends on operating
+   ;; system scheduling
+   (exp-case
+    ("oo" {
+      test prefix "f"
+    })
+    ("ar" {
+      test prefix "b"
+    }))
+
+   ;; match the other using the same clauses
+   (exp-case
+    ("oo" {
+      test prefix "f"
+    })
+    ("ar" {
+      test prefix "b"
+    }))
+
+   ;; At this point, we shouldn't have required a second read from the
+   ;; terminal for either process as both of the previous matches could
+   ;; be satisfied from the initial read.  Consequently, we will not have
+   ;; generated any End of File indications.  Let's force the issue.
+
+   eof2-Tests := Tests
+
+   ;; get both EOF
+   (exp-case
+    (:eof {
+      test 'eof*2 'eof*2				; twice?
+
+      ;; No (exp-continue) as we'll be called twice for these simple
+      ;; processes.  Hopefully, otherwise we'll catch it in the next
+      ;; clause.
+    }))
+
+   if (Tests lt (eof2-Tests + 2)) {
+     (exp-case
+      (:eof {
+	test 'eof*2-delayed 'eof*2-delayed
+      }))
+   }
+
+   (exp-wait)
+
+   ;; a list of two spawn-ids -- this time we'll crash through everything
+   ;; at once by calling exp-continue
+   spawn-id = #n
+
+   spawn echo "abc"
+   spawn echo "def"
+
+   (exp-spawn-sync)
+
+   eof3-Tests := Tests
+
+   ;; madness...
+   (exp-case
+    ("bc" {
+      test prefix "a"			; once
+      (exp-continue)
+    })
+    ("ef" {
+      test prefix "d"			; once
+      (exp-continue)
+    })
+    (:eof {
+      test 'eof*3 'eof*3		; twice?
+
+      ;; No (exp-continue) as we'll be called twice for these simple
+      ;; processes.  Hopefully, otherwise we'll catch it in the next
+      ;; clause.
+    }))
+
+   if (Tests lt (eof3-Tests + 4)) {
+     (exp-case
+      (:eof {
+	test 'eof*3-delayed 'eof*3-delayed
+      }))
+   }
+
+   (exp-wait)
+
+   ;; What if we forget to clear spawn-id?  Let's run through the same
+   ;; again with the previous spawn-ids still in the list.
+   spawn echo "ijk"
+   spawn echo "lmn"
+
+   (exp-spawn-sync)
+
+   eof4-Tests := Tests
+
+   ;; madness...
+   (exp-case
+    ("jk" {
+      test prefix "i"			; once
+      (exp-continue)
+    })
+    ("mn" {
+      test prefix "l"			; once
+      (exp-continue)
+    })
+    (:eof {
+      test 'eof*4 'eof*4		; twice?
+
+      ;; No (exp-continue) as we'll be called twice for these simple
+      ;; processes.  Hopefully, otherwise we'll catch it in the next
+      ;; clause.
+    }))
+
+   if (Tests lt (eof4-Tests + 4)) {
+     (exp-case
+      (:eof {
+	test 'eof*4-delayed 'eof*4-delayed
+      }))
+   }
+
+   (exp-wait)
  })
- ("ar" {
-   test prefix "b"
+ (else {
+   ;; The problem lies in that the only native "(not
+   ;; IDIO_CAN_POLL_DEVICE)" test system currently available is Mac OS
+   ;; X 10.5.8 which, running in debug mode, will, because of the
+   ;; exp-spawn-sync just get EOF for all six spawned echo commands.
+   ;;
+   ;; That there is a (trailing) exp-case-after with an :eof clause
+   ;; means it will match :eof six times but against the wrong
+   ;; clauses, ie. not the ones explicitly listed above.
+
+   expect-skipped = expect-skipped + 12
  }))
-
-;; match the other using the same clauses
-(exp-case
- ("oo" {
-   test prefix "f"
- })
- ("ar" {
-   test prefix "b"
- }))
-
-;; At this point, we shouldn't have required a second read from the
-;; terminal for either process as both of the previous matches could
-;; be satisfied from the initial read.  Consequently, we will not have
-;; generated any End of File indications.  Let's force the issue.
-
-;; get both EOF
-(exp-case
- (:eof {
-   test 'eof*2 'eof*2				; twice
- }))
-
-(exp-wait)
-
-;; a list of two spawn-ids -- this time we'll crash through everything
-;; at once by calling exp-continue
-spawn-id = #n
-
-spawn echo "abc"
-spawn echo "def"
-
-(exp-spawn-sync)
-
-;; madness...
-(exp-case
- ("bc" {
-   test prefix "a"			; once
-   (exp-continue)
- })
- ("ef" {
-   test prefix "d"			; once
-   (exp-continue)
- })
- (:eof {
-   test 'eof 'eof			; twice
-
-   ;; No (exp-continue) as we'll be called twice for these simple
-   ;; processes.  Hopefully.
- }))
-
-(exp-wait)
-
-;; What if we forget to clear spawn-id?  Let's run through the same
-;; again with the previous spawn-ids still in the list.
-spawn echo "ijk"
-spawn echo "lmn"
-
-(exp-spawn-sync)
-
-;; madness...
-(exp-case
- ("jk" {
-   test prefix "i"			; once
-   (exp-continue)
- })
- ("mn" {
-   test prefix "l"			; once
-   (exp-continue)
- })
- (:eof {
-   test 'eof 'eof			; twice
-
-   ;; No (exp-continue) as we'll be called twice for these simple
-   ;; processes.  Hopefully.
- }))
-
-(exp-wait)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -446,7 +606,8 @@ exp-send "hello" :cr #t :spawn-id (ph spawn-id)
 spawn-id = #f
 
 ;; all done?
-Tests? (expect-0 + 46)
+Skipped = Skipped + expect-skipped
+Tests? (expect-0 + 46 - expect-skipped)
 
 (exp-case-before)
 (exp-case-after)

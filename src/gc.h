@@ -771,16 +771,25 @@ typedef struct idio_frame_s {
     idio_xi_t xi;
     struct idio_s *names;	/* a ref into vm_constants[xi] */
     struct idio_s* *args;
+
+    /*
+     * For debugging purposes we can record the function and source
+     * expression (index) as we roll along
+     */
+    struct idio_s* func;
+    idio_ai_t src_expr;		/* a fixnum: -1 is no src_expr */
 } idio_frame_t;
 
-#define IDIO_FRAME_GREY(F)	((F)->u.frame->grey)
-#define IDIO_FRAME_NEXT(F)	((F)->u.frame->next)
-#define IDIO_FRAME_NPARAMS(F)	((F)->u.frame->nparams)
-#define IDIO_FRAME_NALLOC(F)	((F)->u.frame->nalloc)
-#define IDIO_FRAME_XI(F)	((F)->u.frame->xi)
-#define IDIO_FRAME_NAMES(F)	((F)->u.frame->names)
-#define IDIO_FRAME_ARGS(F,i)	((F)->u.frame->args[i])
-#define IDIO_FRAME_FLAGS(F)	((F)->tflags)
+#define IDIO_FRAME_GREY(F)     ((F)->u.frame->grey)
+#define IDIO_FRAME_NEXT(F)     ((F)->u.frame->next)
+#define IDIO_FRAME_NPARAMS(F)  ((F)->u.frame->nparams)
+#define IDIO_FRAME_NALLOC(F)   ((F)->u.frame->nalloc)
+#define IDIO_FRAME_XI(F)       ((F)->u.frame->xi)
+#define IDIO_FRAME_NAMES(F)    ((F)->u.frame->names)
+#define IDIO_FRAME_ARGS(F,i)   ((F)->u.frame->args[i])
+#define IDIO_FRAME_FUNC(F)     ((F)->u.frame->func)
+#define IDIO_FRAME_SRC_EXPR(F) ((F)->u.frame->src_expr)
+#define IDIO_FRAME_FLAGS(F)    ((F)->tflags)
 
 #define IDIO_BIGNUM_FLAG_NONE          (0)
 #define IDIO_BIGNUM_FLAG_INTEGER       (1<<0)
@@ -1502,7 +1511,11 @@ typedef struct idio_gc_s {
 #define IDIO_TYPE_CONSTANT_UNICODEP(x)		((((intptr_t) x) & IDIO_TYPE_CONSTANT_MASK) == IDIO_TYPE_CONSTANT_UNICODE_MARK)
 
 #define IDIO_FIXNUM_VAL(x)	(((intptr_t) x) >> IDIO_TYPE_BITS_SHIFT)
-#define IDIO_FIXNUM(x)		((IDIO) ((x) << IDIO_TYPE_BITS_SHIFT | IDIO_TYPE_FIXNUM_MARK))
+/*
+ * left-shift of negative numbers is undefined behaviour so we need a
+ * more robust implementation (cast to unsigned and cast back again)
+ */
+#define IDIO_FIXNUM(x)	((IDIO) ((intptr_t) (((uintptr_t) x) << IDIO_TYPE_BITS_SHIFT) | IDIO_TYPE_FIXNUM_MARK))
 #define IDIO_FIXNUM_MIN		(INTPTR_MIN >> IDIO_TYPE_BITS_SHIFT)
 #define IDIO_FIXNUM_MAX		(INTPTR_MAX >> IDIO_TYPE_BITS_SHIFT)
 

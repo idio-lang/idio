@@ -136,7 +136,7 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
     size_t ibac_len = sizeof (IDIO_BUILD_ASM_COMMIT) - 1;
     if ((size_t) (file_dot - file) < ibac_len) {
 #ifdef IDIO_DEBUG
-	fprintf (stderr, "not %zu after dot (%zu) in %s\n", ibac_len, file_dot - file, file);
+	fprintf (stderr, "not %zu after dot (%td) in %s\n", ibac_len, file_dot - file, file);
 #endif
 	return 0;
     }

@@ -3101,7 +3101,7 @@ IDIO idio_split_string (IDIO in, IDIO delim, int flags)
     /*
      * offsets within string
      */
-    ssize_t saved;
+    ssize_t saved = ! IDIO_STRING_TOKEN_SENTINEL;
     size_t len = ilen;
 
     ssize_t i = 0;

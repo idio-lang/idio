@@ -1,7 +1,9 @@
 
 module tests/file-handle/open-from-fd
 
-rm testfile
+if (e? testfile) {
+  rm testfile
+}
 touch testfile
 fh := open-file testfile "r"
 

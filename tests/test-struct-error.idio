@@ -40,7 +40,7 @@ struct-error-load := {
 
     exp-tests := 1
 
-    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    test-report "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-struct-error
 	  ^rt-parameter-error) (function (c) {
 	    ;eprintf "struct-error #%s: %s %s\n" n msg (idio-error-location c)

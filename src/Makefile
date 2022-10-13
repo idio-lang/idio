@@ -1,7 +1,23 @@
 include Makefile.common
 
+all : local-install
+	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
+	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
+	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
+
+ifneq ($(MAKECMDGOALS),clean)
+# XXX put these on the same line otherwise the generator and then the
+# %.d are run twice
+include $(deps) Makefile.system
+endif
+
+# dummy version of Makefile.system doesn't exist yet
+IDIO_SYSTEM_VERSION_MM		?= a.b
+IDIO_SYSTEM_VERSION_M		?= a
+
+
 ifdef MAKE_LEAN
-CDEBUG		:= -O3 -UIDIO_DEBUG -UIDIO_VM_PROF -D_FORTIFY_SOURCE=3
+CDEBUG		:= -O3 -UIDIO_DEBUG -UIDIO_VM_PROF ${FORTIFY_CFLAGS}
 else ifdef MAKE_DEBUG
 CDEBUG		:= -DIDIO_DEBUG=3 -g -DIDIO_VM_PROF
 else
@@ -19,21 +35,6 @@ ifneq ($(OS),Darwin)
 DLIBS		:= libos.so libposix-regex.so
 endif
 
-all : local-install
-	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
-	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
-	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
-
-ifneq ($(MAKECMDGOALS),clean)
-# XXX put these on the same line otherwise the generator and then the
-# %.d are run twice
-include $(deps) Makefile.system
-endif
-
-# dummy version of Makefile.system doesn't exist yet
-IDIO_SYSTEM_VERSION_MM		?= a.b
-IDIO_SYSTEM_VERSION_M		?= a
-
 # system install
 SI_BINDIR	?= $(IDIO_SYSTEM_BINDIR)
 SI_LIBDIR	?= $(IDIO_SYSTEM_LIBDIR)
@@ -49,8 +50,16 @@ coverage :
 
 # adding -DIDIO_DEBUG=3 to SAN_CFLAGS causes a memory leak in
 # __vasprintf_internal ...
+
+# AddressSanitizer integrates LeakSanitizer
 asan sanitize-address :
 	$(MAKE) SAN_CFLAGS="-fsanitize=address -g" SAN_LDFLAGS=-fsanitize=address
+
+# -fsanitize=undefined is a check group which includes most suboptions
+# (null, enum, ...), see
+# https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
+ubsan sanitize-undefined :
+	$(MAKE) SAN_CFLAGS="-fsanitize=undefined -g" SAN_LDFLAGS=-fsanitize=undefined
 
 lean :
 	$(MAKE) MAKE_LEAN=1
@@ -127,7 +136,7 @@ pre-compile: $(LI_BINDIR)/idio
 	$(LI_BINDIR)/idio --save-xenvs </dev/null
 
 clean-pre-compile:
-	if [[ -d $(LI_LIBDIR) ]] ; then rm -rf $(shell find $(LI_LIBDIR) -name __idio__) ; fi
+	rm -rf $(LI_LIBDIR)/__idio__
 
 $(SRCDIR)/rfc6234.o : $(SRCDIR)/RFC6234/libsha.a
 
@@ -198,7 +207,7 @@ lib%.so : %.o
 	$(CC) -shared -o $@ $^
 
 clean : build-clean clean-ext-src clean-ext-api clean-rfc6234 run-clean edit-clean clean-pre-compile
-	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system $(LIBDIR)/system.idio
+	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system $(IDIO_SYSTEM)
 
 clean-ext-src: $(EXTDIR)/*/src
 	for dir in $^ ; do \

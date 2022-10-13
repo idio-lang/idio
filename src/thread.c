@@ -65,7 +65,7 @@ static IDIO_FLAGS_T idio_thread_id = 0;
 
 IDIO idio_thread_base (idio_as_t stack_size)
 {
-    IDIO t = idio_gc_get (IDIO_TYPE_THREAD);
+    IDIO_v t = idio_gc_get (IDIO_TYPE_THREAD);
     t->vtable = idio_vtable (IDIO_TYPE_THREAD);
 
     IDIO_GC_ALLOC (t->u.thread, sizeof (idio_thread_t));

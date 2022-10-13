@@ -1288,23 +1288,26 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
     case IDIO_I_CODE_TR_FIX_LET:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 3) {
-		idio_codegen_error_param_args ("TR-FIX-LET m* m+ formals", mt, IDIO_C_FUNC_LOCATION_S ("TR-FIX-LET"));
+		idio_list_length (mt) != 4) {
+		idio_codegen_error_param_args ("TR-FIX-LET m* m+ formals src", mt, IDIO_C_FUNC_LOCATION_S ("TR-FIX-LET"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO ms = IDIO_PAIR_H (mt);
-	    IDIO mp = IDIO_PAIR_HT (mt);
+	    IDIO ms      = IDIO_PAIR_H (mt);
+	    IDIO mp      = IDIO_PAIR_HT (mt);
 	    IDIO formals = IDIO_PAIR_HTT (mt);
+	    IDIO src     = IDIO_PAIR_HTTT (mt);
 
 	    idio_as_t fci = idio_codegen_constants_lookup_or_extend (eenv, formals);
+	    idio_as_t sei = idio_codegen_extend_src_exprs (eenv, src);
 
 	    idio_codegen_compile (thr, ia, eenv, ms, depth + 1);
 
 	    IDIO_IA_PUSH1 (IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT (fci);
+	    IDIO_IA_PUSH_VARUINT (sei);
 
 	    idio_codegen_compile (thr, ia, eenv, mp, depth + 1);
 	}
@@ -1312,23 +1315,26 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
     case IDIO_I_CODE_FIX_LET:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 3) {
-		idio_codegen_error_param_args ("FIX-LET m* m+ formals", mt, IDIO_C_FUNC_LOCATION_S ("FIX-LET"));
+		idio_list_length (mt) != 4) {
+		idio_codegen_error_param_args ("FIX-LET m* m+ formals src", mt, IDIO_C_FUNC_LOCATION_S ("FIX-LET"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO ms = IDIO_PAIR_H (mt);
-	    IDIO mp = IDIO_PAIR_HT (mt);
+	    IDIO ms      = IDIO_PAIR_H (mt);
+	    IDIO mp      = IDIO_PAIR_HT (mt);
 	    IDIO formals = IDIO_PAIR_HTT (mt);
+	    IDIO src     = IDIO_PAIR_HTTT (mt);
 
 	    idio_as_t fci = idio_codegen_constants_lookup_or_extend (eenv, formals);
+	    idio_as_t sei = idio_codegen_extend_src_exprs (eenv, src);
 
 	    idio_codegen_compile (thr, ia, eenv, ms, depth + 1);
 
 	    IDIO_IA_PUSH1 (IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT (fci);
+	    IDIO_IA_PUSH_VARUINT (sei);
 
 	    idio_codegen_compile (thr, ia, eenv, mp, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_UNLINK_FRAME);
@@ -1637,6 +1643,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 
 	    idio_ia_push (ia_tf, IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT_BC (ia_tf, fci);
+	    IDIO_IA_PUSH_VARUINT_BC (ia_tf, sei);
 
 	    idio_codegen_compile (thr, ia_tf, eenv, mp, depth + 1);
 	    idio_ia_push (ia_tf, IDIO_A_RETURN);
@@ -1767,6 +1774,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 
 	    idio_ia_push (ia_tf, IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT_BC (ia_tf, fci);
+	    IDIO_IA_PUSH_VARUINT_BC (ia_tf, sei);
 
 	    idio_codegen_compile (thr, ia_tf, eenv, mp, depth + 1);
 	    idio_ia_push (ia_tf, IDIO_A_RETURN);
@@ -2302,67 +2310,69 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 		IDIO_IA_PUSH1 (IDIO_A_POP_RCSE);
 	    }
 
-	    IDIO_IA_T iac[n];
-	    intptr_t i;
+	    if (n) {
+		IDIO_IA_T iac[n];
+		intptr_t i;
 
-	    /*
-	     * 1st pass, l is only the accumulated code size for
-	     * allocating iar/iat
-	     */
-	    size_t l = 0;
-	    for (i = 0; i < n ; i++) {
-		iac[i] = idio_ia (100);
+		/*
+		 * 1st pass, l is only the accumulated code size for
+		 * allocating iar/iat
+		 */
+		size_t l = 0;
+		for (i = 0; i < n ; i++) {
+		    iac[i] = idio_ia (100);
 
-		if (i < (n - 1) ||
-		    idio_S_false == tailp) {
-		    idio_ia_push (iac[i], IDIO_A_SUPPRESS_RCSE);
+		    if (i < (n - 1) ||
+			idio_S_false == tailp) {
+			idio_ia_push (iac[i], IDIO_A_SUPPRESS_RCSE);
+		    }
+		    idio_codegen_compile (thr, iac[i], eenv, IDIO_PAIR_H (mt), depth + 1);
+		    if (i < (n - 1) ||
+			idio_S_false == tailp) {
+			idio_ia_push (iac[i], IDIO_A_POP_RCSE);
+		    }
+
+		    l += IDIO_IA_USIZE (iac[i]);
+		    mt = IDIO_PAIR_T (mt);
 		}
-		idio_codegen_compile (thr, iac[i], eenv, IDIO_PAIR_H (mt), depth + 1);
-		if (i < (n - 1) ||
-		    idio_S_false == tailp) {
-		    idio_ia_push (iac[i], IDIO_A_POP_RCSE);
+
+		/*
+		 * How much temporary instruction space?
+		 *
+		 * largest varuint is 9 bytes, jump ins is one and
+		 * there will be n of them.
+		 *
+		 * To grow the result we need (jump+iac[i]) in iat
+		 * then append iar then copy iat back to iar
+		 */
+		IDIO_IA_T iar = idio_ia (l + n * (1 + 9));
+		IDIO_IA_T iat = idio_ia (l + n * (1 + 9));
+
+		/*
+		 * 2nd pass, l now includes jump sizes
+		 */
+		l = 0;
+		for (i = n - 1; i >= 0 ; i--) {
+		    l += IDIO_IA_USIZE (iac[i]);
+		    if (l <= IDIO_IA_VARUINT_1BYTE) {
+			idio_ia_push (iat, IDIO_A_SHORT_JUMP_FALSE);
+			idio_ia_push (iat, l);
+		    } else {
+			idio_ia_push (iat, IDIO_A_LONG_JUMP_FALSE);
+			IDIO_IA_PUSH_VARUINT_BC (iat, l);
+		    }
+
+		    idio_ia_append_free (iat, iac[i]);
+
+		    idio_ia_append (iat, iar);
+		    idio_ia_copy (iar, iat);
+		    IDIO_IA_USIZE (iat) = 0;
+		    l = IDIO_IA_USIZE (iar);
 		}
 
-		l += IDIO_IA_USIZE (iac[i]);
-		mt = IDIO_PAIR_T (mt);
+		idio_ia_append_free (ia, iar);
+		idio_ia_free (iat);
 	    }
-
-	    /*
-	     * How much temporary instruction space?
-	     *
-	     * largest varuint is 9 bytes, jump ins is one and there
-	     * will be n of them.
-	     *
-	     * To grow the result we need (jump+iac[i]) in iat then
-	     * append iar then copy iat back to iar
-	     */
-	    IDIO_IA_T iar = idio_ia (l + n * (1 + 9));
-	    IDIO_IA_T iat = idio_ia (l + n * (1 + 9));
-
-	    /*
-	     * 2nd pass, l now includes jump sizes
-	     */
-	    l = 0;
-	    for (i = n - 1; i >= 0 ; i--) {
-		l += IDIO_IA_USIZE (iac[i]);
-		if (l <= IDIO_IA_VARUINT_1BYTE) {
-		    idio_ia_push (iat, IDIO_A_SHORT_JUMP_FALSE);
-		    idio_ia_push (iat, l);
-		} else {
-		    idio_ia_push (iat, IDIO_A_LONG_JUMP_FALSE);
-		    IDIO_IA_PUSH_VARUINT_BC (iat, l);
-		}
-
-		idio_ia_append_free (iat, iac[i]);
-
-		idio_ia_append (iat, iar);
-		idio_ia_copy (iar, iat);
-		IDIO_IA_USIZE (iat) = 0;
-		l = IDIO_IA_USIZE (iar);
-	    }
-
-	    idio_ia_append_free (ia, iar);
-	    idio_ia_free (iat);
 	}
 	break;
     case IDIO_I_CODE_OR:
@@ -2398,67 +2408,69 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 		IDIO_IA_PUSH1 (IDIO_A_POP_RCSE);
 	    }
 
-	    IDIO_IA_T iac[n];
-	    intptr_t i;
+	    if (n) {
+		IDIO_IA_T iac[n];
+		intptr_t i;
 
-	    /*
-	     * 1st pass, l is only the accumulated code size for
-	     * allocating iar/iat
-	     */
-	    size_t l = 0;
-	    for (i = 0; i < n ; i++) {
-		iac[i] = idio_ia (100);
+		/*
+		 * 1st pass, l is only the accumulated code size for
+		 * allocating iar/iat
+		 */
+		size_t l = 0;
+		for (i = 0; i < n ; i++) {
+		    iac[i] = idio_ia (100);
 
-		if (i < (n - 1) ||
-		    idio_S_false == tailp) {
-		    idio_ia_push (iac[i], IDIO_A_SUPPRESS_RCSE);
+		    if (i < (n - 1) ||
+			idio_S_false == tailp) {
+			idio_ia_push (iac[i], IDIO_A_SUPPRESS_RCSE);
+		    }
+		    idio_codegen_compile (thr, iac[i], eenv, IDIO_PAIR_H (mt), depth + 1);
+		    if (i < (n - 1) ||
+			idio_S_false == tailp) {
+			idio_ia_push (iac[i], IDIO_A_POP_RCSE);
+		    }
+
+		    l += IDIO_IA_USIZE (iac[i]);
+		    mt = IDIO_PAIR_T (mt);
 		}
-		idio_codegen_compile (thr, iac[i], eenv, IDIO_PAIR_H (mt), depth + 1);
-		if (i < (n - 1) ||
-		    idio_S_false == tailp) {
-		    idio_ia_push (iac[i], IDIO_A_POP_RCSE);
+
+		/*
+		 * How much temporary instruction space?
+		 *
+		 * largest varuint is 9 bytes, jump ins is one and
+		 * there will be n of them.
+		 *
+		 * To grow the result we need (jump+iac[i]) in iat
+		 * then append iar then copy iat back to iar
+		 */
+		IDIO_IA_T iar = idio_ia (l + n * (1 + 9));
+		IDIO_IA_T iat = idio_ia (l + n * (1 + 9));
+
+		/*
+		 * 2nd pass, l now includes jump sizes
+		 */
+		l = 0;
+		for (i = n - 1; i >= 0 ; i--) {
+		    l += IDIO_IA_USIZE (iac[i]);
+		    if (l <= IDIO_IA_VARUINT_1BYTE) {
+			idio_ia_push (iat, IDIO_A_SHORT_JUMP_TRUE);
+			idio_ia_push (iat, l);
+		    } else {
+			idio_ia_push (iat, IDIO_A_LONG_JUMP_TRUE);
+			IDIO_IA_PUSH_VARUINT_BC (iat, l);
+		    }
+
+		    idio_ia_append_free (iat, iac[i]);
+
+		    idio_ia_append (iat, iar);
+		    idio_ia_copy (iar, iat);
+		    IDIO_IA_USIZE (iat) = 0;
+		    l = IDIO_IA_USIZE (iar);
 		}
 
-		l += IDIO_IA_USIZE (iac[i]);
-		mt = IDIO_PAIR_T (mt);
+		idio_ia_append_free (ia, iar);
+		idio_ia_free (iat);
 	    }
-
-	    /*
-	     * How much temporary instruction space?
-	     *
-	     * largest varuint is 9 bytes, jump ins is one and there
-	     * will be n of them.
-	     *
-	     * To grow the result we need (jump+iac[i]) in iat then
-	     * append iar then copy iat back to iar
-	     */
-	    IDIO_IA_T iar = idio_ia (l + n * (1 + 9));
-	    IDIO_IA_T iat = idio_ia (l + n * (1 + 9));
-
-	    /*
-	     * 2nd pass, l now includes jump sizes
-	     */
-	    l = 0;
-	    for (i = n - 1; i >= 0 ; i--) {
-		l += IDIO_IA_USIZE (iac[i]);
-		if (l <= IDIO_IA_VARUINT_1BYTE) {
-		    idio_ia_push (iat, IDIO_A_SHORT_JUMP_TRUE);
-		    idio_ia_push (iat, l);
-		} else {
-		    idio_ia_push (iat, IDIO_A_LONG_JUMP_TRUE);
-		    IDIO_IA_PUSH_VARUINT_BC (iat, l);
-		}
-
-		idio_ia_append_free (iat, iac[i]);
-
-		idio_ia_append (iat, iar);
-		idio_ia_copy (iar, iat);
-		IDIO_IA_USIZE (iat) = 0;
-		l = IDIO_IA_USIZE (iar);
-	    }
-
-	    idio_ia_append_free (ia, iar);
-	    idio_ia_free (iat);
 	}
 	break;
     case IDIO_I_CODE_BEGIN:

@@ -333,7 +333,7 @@ void idio_vm_panic (IDIO thr, char const *m)
 	exit (-2);
     } else {
 	idio_vm_panicking = (char *) m;
-	idio_vm_thread_state (thr);
+	idio_vm_thread_state (thr, idio_S_nil);
 
 #ifdef IDIO_DEBUG
 	idio_vm_reporting = 1;
@@ -1081,7 +1081,7 @@ static void idio_vm_restore_all_state (IDIO thr)
 	    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_VAL (thr));
 	    IDIO_THREAD_STACK_PUSH (marker);
 #ifdef IDIO_DEBUG
-	    idio_vm_thread_state (thr);
+	    idio_vm_thread_state (thr, idio_S_nil);
 #endif
 
 	    idio_error_param_value_msg ("VM/RESTORE", "func", IDIO_THREAD_FUNC (thr), "not an invokable value", IDIO_C_FUNC_LOCATION ());
@@ -1527,7 +1527,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, idio_vm_invoke_enum tailp)
 		fprintf (stderr, "func args (%d): %s ", IDIO_FRAME_NPARAMS (val) + 1, IDIO_PRIMITIVE_NAME (func));
 		idio_debug ("*val* %s; ", val);
 		idio_debug ("last %s\n", last);
-		idio_vm_thread_state (thr);
+		idio_vm_thread_state (thr, idio_S_nil);
 		idio_coding_error_C ("primitive: using varargs?", last, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -2754,6 +2754,15 @@ static void idio_vm_push_offset_abort (IDIO thr, uint64_t o)
      * IDIO_PAIR_H (krun) = k;
      * IDIO_PAIR_HT (krun) = idio_get_output_string (kosh);
      */
+
+    /*
+     * In principle it doesn't matter but an ABORT marks/wraps a top
+     * level statement which, notionally, has no parent frame.
+     * Mechanically, though, the thread has whatever frame was last
+     * left lying around.  So, for clarity when debugging, we can
+     * clear the thread's frame.
+     */
+    IDIO_THREAD_FRAME (thr) = idio_S_nil;
 }
 
 void idio_vm_pop_abort (IDIO thr)
@@ -2784,7 +2793,7 @@ idio_sp_t idio_vm_find_abort_1 (IDIO thr)
 	asp < 2) {
 	fprintf (stderr, "find-abort-1: no ABORTs? asp == %" PRIdPTR "\n", asp);
 #ifdef IDIO_DEBUG
-	idio_vm_thread_state (thr);
+	idio_vm_thread_state (thr, idio_S_nil);
 #endif
 	return 0;
 	assert (0);
@@ -2821,7 +2830,7 @@ idio_sp_t idio_vm_find_abort_2 (IDIO thr)
 	asp < 2) {
 	fprintf (stderr, "find-abort-2: no ABORTs? asp == %" PRIdPTR "\n", asp);
 #ifdef IDIO_DEBUG
-	idio_vm_thread_state (thr);
+	idio_vm_thread_state (thr, idio_S_nil);
 #endif
 	assert (0);
     }
@@ -2832,7 +2841,7 @@ idio_sp_t idio_vm_find_abort_2 (IDIO thr)
     if (-1 == next) {
 	fprintf (stderr, "find-abort-2: only 1 ABORT\n");
 #ifdef IDIO_DEBUG
-	idio_vm_thread_state (thr);
+	idio_vm_thread_state (thr, idio_S_nil);
 #endif
 	return 0;
     }
@@ -2873,7 +2882,7 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR, int re
     }
 
     if (trap_sp >= (idio_sp_t) idio_array_size (stack)) {
-	idio_vm_thread_state (thr);
+	idio_vm_thread_state (thr, idio_S_nil);
 	idio_vm_panic (thr, "trap SP >= sizeof (stack)");
     }
     if (trap_sp < 3) {
@@ -3363,11 +3372,11 @@ IDIO idio_vm_restore_continuation_data (IDIO k, IDIO val)
 	fprintf (stderr, "KD ss->%" PRIdPTR "\n", C_k_stack);
 	if (C_k_stack < 0) {
 	    fprintf (stderr, "KD < 0\n");
-	    idio_vm_thread_state (thr);
+	    idio_vm_thread_state (thr, idio_S_nil);
 	    IDIO_C_ASSERT (0);
 	} else if (IDIO_ARRAY_USIZE (IDIO_THREAD_STACK (thr)) < (uintptr_t) C_k_stack) {
 	    fprintf (stderr, "KD >%zd\n", IDIO_ARRAY_USIZE (IDIO_THREAD_STACK (thr)));
-	    idio_vm_thread_state (thr);
+	    idio_vm_thread_state (thr, idio_S_nil);
 	    IDIO_C_ASSERT (0);
 	}
 	IDIO_ARRAY_USIZE (IDIO_THREAD_STACK (thr)) = IDIO_FIXNUM_VAL (k_stack);
@@ -4971,6 +4980,11 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("POP-FUNCTION");
 
 	    IDIO_THREAD_FUNC (thr) = IDIO_THREAD_STACK_POP ();
+	    IDIO fr = IDIO_THREAD_VAL (thr);
+	    if (idio_isa_frame (fr)) {
+		IDIO_FRAME_FUNC (fr) = IDIO_THREAD_FUNC (thr);
+		IDIO_FRAME_SRC_EXPR (fr) = IDIO_FIXNUM_VAL (IDIO_THREAD_EXPR (thr));
+	    }
 	}
 	break;
     case IDIO_A_PRESERVE_STATE:
@@ -4989,7 +5003,7 @@ int idio_vm_run1 (IDIO thr)
 	break;
     case IDIO_A_RESTORE_ALL_STATE:
 	{
-	    IDIO_VM_RUN_DIS ("RESTORE-ALL-STATE");
+    IDIO_VM_RUN_DIS ("RESTORE-ALL-STATE");
 
 	    idio_vm_restore_all_state (thr);
 	}
@@ -5197,7 +5211,7 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t o = idio_vm_fetch_varuint (bc, thr);
 
-	    IDIO_VM_RUN_DIS ("PUSH-ABORT to PC +%" PRIu64 "", o);
+	    IDIO_VM_RUN_DIS ("PUSH-ABORT to PC +%" PRIu64 " @%" PRIu64 " ", o, IDIO_THREAD_PC (thr) + o);
 
 	    idio_vm_push_offset_abort (thr, o);
 	    idio_command_suppress_rcse = idio_S_false;
@@ -5338,13 +5352,32 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_LINK_FRAME:
 	{
 	    uint64_t si = idio_vm_fetch_varuint (bc, thr);
+	    uint64_t sei = idio_vm_fetch_varuint (bc, thr);
 
-	    IDIO_VM_RUN_DIS ("LINK-FRAME si=%" PRIu64, si);
+	    IDIO_VM_RUN_DIS ("LINK-FRAME si=%" PRIu64 " sei=%" PRId64, si, sei);
 
 	    IDIO frame = IDIO_THREAD_VAL (thr);
 	    if (idio_S_nil != frame) {
 		IDIO_FRAME_XI (frame) = xi;
 		IDIO_FRAME_NAMES (frame) = idio_fixnum (si);
+		/*
+		 * There are two forms of calling functions.
+		 *
+		 * Firstly, frame allocation followed by a
+		 * POP-FUNCTION opcode which is our preferred source
+		 * of frame information.  We don't want this
+		 * start-of-function LINK-FRAME to stamp over the
+		 * point-of-call will start-of-function information.
+		 *
+		 * However, closed applications (which include most
+		 * letrec-ish statements in blocks) will allocate a
+		 * frame then call the function "directly" which won't
+		 * have set anything.  So only set SRC_EXPR if not
+		 * already set.
+		 */
+		if (-1 == IDIO_FRAME_SRC_EXPR (frame)) {
+		    IDIO_FRAME_SRC_EXPR (frame) = sei;
+		}
 	    }
 
 	    IDIO_THREAD_FRAME (thr) = idio_link_frame (IDIO_THREAD_FRAME (thr), frame);
@@ -6051,7 +6084,7 @@ int idio_vm_run1 (IDIO thr)
 #endif
 		IDIO krun = idio_array_ref_index (stack, asp - 1);
 		IDIO_ARRAY_USIZE (stack) = asp + 1;
-		idio_vm_thread_state (thr);
+		idio_vm_thread_state (thr, idio_S_nil);
 
 		idio_exit_status = 1;
 		if (idio_isa_pair (krun)) {
@@ -6700,7 +6733,7 @@ IDIO idio_vm_run (IDIO thr, idio_xi_t xi, idio_pc_t pc, idio_vm_run_enum caller)
 #endif
 		IDIO krun = idio_array_ref_index (stack, asp - 1);
 		IDIO_ARRAY_USIZE (stack) = asp + 1;
-		idio_vm_thread_state (thr);
+		idio_vm_thread_state (thr, idio_S_nil);
 
 		idio_exit_status = 1;
 		if (idio_isa_pair (krun)) {
@@ -7559,9 +7592,10 @@ IDIO idio_vm_extend_tables (idio_xi_t xi, IDIO name, IDIO scope, IDIO module, ID
     return si;
 }
 
-void idio_vm_thread_state (IDIO thr)
+void idio_vm_thread_state (IDIO thr, IDIO args)
 {
     IDIO_ASSERT (thr);
+    IDIO_ASSERT (args);
 
     IDIO_TYPE_ASSERT (thread, thr);
     IDIO stack = IDIO_THREAD_STACK (thr);
@@ -7569,6 +7603,7 @@ void idio_vm_thread_state (IDIO thr)
     idio_vm_debug (thr, "vm-thread-state", 0);
     fprintf (stderr, "\n");
 
+    idio_vm_call_tree (args);
     idio_vm_frame_tree (idio_S_nil);
     fprintf (stderr, "\n");
 
@@ -7586,8 +7621,13 @@ void idio_vm_thread_state (IDIO thr)
 	    names = idio_array_ref_index (cs, aci);
 	}
 
-	fprintf (stderr, "vm-thread-state: frame: %10p (%10p) %2u/%2u %5" PRIdPTR, frame, IDIO_FRAME_NEXT (frame), IDIO_FRAME_NPARAMS (frame), IDIO_FRAME_NALLOC (frame), aci);
-	idio_debug (" - %-20s - ", names);
+	fprintf (stderr, "vm-thread-state: frame: [%zu] se=.%-5zd %2u/%2u aci .%-5" PRIdPTR,
+		 IDIO_FRAME_XI(frame),
+		 IDIO_FRAME_SRC_EXPR (frame),
+		 IDIO_FRAME_NPARAMS (frame),
+		 IDIO_FRAME_NALLOC (frame),
+		 aci);
+	idio_debug (" - %-30s - ", names);
 	idio_debug ("%s\n", idio_frame_args_as_list (frame));
 	frame = IDIO_FRAME_NEXT (frame);
     }
@@ -7660,13 +7700,15 @@ void idio_vm_thread_state (IDIO thr)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE0_DS ("idio-thread-state", idio_thread_state, (), "", "\
+IDIO_DEFINE_PRIMITIVE0V_DS ("idio-thread-state", idio_thread_state, (IDIO args), "[args]", "\
 Display a dump of the current thread's state	\n\
 						\n\
 :return: ``#<unspec>``				\n\
 ")
 {
-    idio_vm_thread_state (idio_thread_current_thread ());
+    IDIO_ASSERT (args);
+
+    idio_vm_thread_state (idio_thread_current_thread (), args);
 
     return idio_S_unspec;
 }
@@ -7811,6 +7853,183 @@ Run `thunk` in thread `thr`.			\n\
     return r;
 }
 
+void idio_vm_call_tree_report (const size_t i, IDIO mod, idio_ai_t sei, idio_xi_t xi, IDIO func, IDIO fr)
+{
+    IDIO_ASSERT (mod);
+    IDIO_ASSERT (func);
+    IDIO_ASSERT (fr);
+
+    IDIO_TYPE_ASSERT (module, mod);
+
+    fprintf (stderr, "  %2zu ", i);
+    idio_debug ("%-20s ", IDIO_MODULE_NAME (mod));
+
+    if (sei >= 0) {
+	IDIO lo = idio_vm_src_props_ref (xi, sei);
+
+	if (idio_isa_pair (lo)) {
+	    IDIO fi = IDIO_PAIR_H (lo);
+	    IDIO cs = IDIO_XENV_CS (idio_xenvs[xi]);
+	    IDIO fn = idio_array_ref_index (cs, IDIO_FIXNUM_VAL (fi));
+	    idio_debug ("  %30s", fn);
+	    idio_debug (":line %-5s", IDIO_PAIR_HT (lo));
+	} else {
+	    fprintf (stderr, "  %41s", "<no lex tuple>");
+	}
+    } else {
+	fprintf (stderr, "  %41s", "<unknown src location>");
+    }
+
+    fprintf (stderr, "(");
+    if (idio_isa_frame (fr)) {
+	IDIO fr_func = IDIO_FRAME_FUNC (fr);
+	if (idio_isa_function (fr_func)) {
+	    func = fr_func;
+	}
+    }
+
+    if (idio_isa_primitive (func)) {
+	fprintf (stderr, "%s", IDIO_PRIMITIVE_NAME (func));
+    } else if (idio_isa_closure (func)) {
+	idio_debug ("%s", IDIO_CLOSURE_NAME (func));
+    } else {
+	idio_debug ("? %s", func);
+    }
+
+    if (idio_isa_frame (fr)) {
+	idio_fi_t nargs = IDIO_FRAME_NPARAMS (fr);
+	for (idio_fi_t i = 0; i < nargs; i++) {
+	    idio_debug (" %s", IDIO_FRAME_ARGS (fr, i));
+	}
+    }
+    fprintf (stderr, ")");
+    fprintf (stderr, "\n");
+}
+
+IDIO idio_vm_call_tree (IDIO args)
+{
+    IDIO_ASSERT (args);
+
+    IDIO thr = idio_thread_current_thread ();
+
+    fprintf (stderr, "  call frame tree (0th is thread data)\n");
+
+    idio_xi_t xi = IDIO_THREAD_XI (thr);
+
+    IDIO mod = IDIO_THREAD_MODULE (thr);
+    idio_ai_t sei = IDIO_FIXNUM_VAL (IDIO_THREAD_EXPR (thr));
+
+    IDIO func = IDIO_THREAD_FUNC (thr);
+    IDIO stack = IDIO_THREAD_STACK (thr);
+
+    /*
+     * The debugger calls us with an argument meaning we can try to
+     * step over debugger calls/frames.
+     */
+    idio_sp_t pas_sp = 0;
+    if (idio_isa_pair (args)) {
+	pas_sp = idio_vm_find_stack_marker (stack, idio_SM_preserve_all_state, 0, 0);
+	if (-1 != pas_sp) {
+	    /*
+	     * Slightly awkwardly, *FUNC* and *EXPR* are saved by
+	     * preserve_all_state but the *XI* -- more preceisely, the
+	     * XI appropriate to the code running at the time -- is
+	     * hiding in the *FRAME* by preserve_state.
+	     *
+	     * Otherwise, these are all appropriate to whatever is
+	     * running at the time.
+	     */
+	    func = idio_array_ref_index (stack, pas_sp - 2);
+	    sei = IDIO_FIXNUM_VAL (idio_array_ref_index (stack, pas_sp - 3));
+
+	    /* preserve_all_state includes a preserve_state */
+	    pas_sp = idio_vm_find_stack_marker (stack, idio_SM_preserve_state, pas_sp, 0);
+	    IDIO fr = idio_array_ref_index (stack, pas_sp - 2);
+	    xi = IDIO_FRAME_XI (fr);
+
+	    /* skip this preserve_state */
+	    pas_sp--;
+	}
+    }
+
+    size_t i = 0;
+    idio_vm_call_tree_report (i++, mod, sei, xi, func, idio_S_nil);
+
+    if (pas_sp >= 0) {
+	idio_sp_t asp = idio_vm_find_stack_marker (stack, idio_SM_abort, 0, 0);
+	idio_sp_t ps_sp = idio_vm_find_stack_marker (stack, idio_SM_preserve_state, pas_sp, 0);
+	IDIO fr = idio_S_nil;
+
+	/*
+	 * The following condition logic is affected by
+	 * idio_meaning_rewrite_body_letrec() where the definition of
+	 * internal functions generates an extra frame to hold the
+	 * functions in.  This can happen multiple times in a body
+	 * block.
+	 *
+	 * Regular local variables extend the current frame but
+	 * function definitions produce a closed application block
+	 * with the corresponding frame.
+	 *
+	 * What distinguishes the frames is that no SRC-EXPR
+	 * (technically, no POP-FUNCTION) opcode is generated meaning
+	 * that the frame's FUNC value will be #n.
+	 *
+	 * Knowing that we can walk back over such frames looking for
+	 * actually called frames.
+	 */
+	while (-1 != ps_sp &&
+	       ps_sp > asp) {
+	    mod = idio_array_ref_index (stack, ps_sp - 1);
+	    fr = idio_array_ref_index (stack, ps_sp - 2);
+
+	    if (idio_isa_frame (fr)) {
+		xi = IDIO_FRAME_XI (fr);
+		sei = IDIO_FRAME_SRC_EXPR (fr);
+		func = IDIO_FRAME_FUNC (fr);
+
+		while (idio_S_nil == func) {
+		    fr = IDIO_FRAME_NEXT (fr);
+		    if (idio_isa_frame (fr)) {
+			xi = IDIO_FRAME_XI (fr);
+			sei = IDIO_FRAME_SRC_EXPR (fr);
+			func = IDIO_FRAME_FUNC (fr);
+		    } else {
+			/* probably not called but just in case */
+			break;
+		    }
+		}
+
+		if (sei >= 0) {
+		    idio_vm_call_tree_report (i++, mod, sei, xi, func, fr);
+		} else {
+		    idio_debug (" -1 for %s\n", fr);
+		}
+	    } else {
+		fprintf (stderr, "  <no frame>\n");
+	    }
+
+	    ps_sp = idio_vm_find_stack_marker (stack, idio_SM_preserve_state, ps_sp - 1, 0);
+	}
+    }
+
+    fprintf (stderr, "\n");
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE0V_DS ("%vm-call-tree", vm_call_tree, (IDIO args), "[args]", "\
+Show the current call tree.					\n\
+								\n\
+:param args: (optional)						\n\
+:type args: list						\n\
+")
+{
+    IDIO_ASSERT (args);
+
+    return idio_vm_call_tree (args);
+}
+
 IDIO idio_vm_frame_tree (IDIO args)
 {
     IDIO_ASSERT (args);
@@ -7825,12 +8044,29 @@ IDIO idio_vm_frame_tree (IDIO args)
     while (idio_S_nil != frame) {
 	if (first) {
 	    first = 0;
+	    fprintf (stderr, "  frame tree\n");
 	    fprintf (stderr, "  %2.2s %2.2s  %20.20s   %s\n", "frame", "#", "var", "val");
 	}
 
 	idio_xi_t frame_xi = IDIO_FRAME_XI (frame);
 	IDIO cs = IDIO_XENV_CS (idio_xenvs[frame_xi]);
 	idio_as_t ncs = idio_array_size (cs);
+
+	idio_ai_t sei = IDIO_FRAME_SRC_EXPR (frame);
+	if (sei >= 0) {
+	    IDIO lo = idio_vm_src_props_ref (frame_xi, sei);
+
+	    if (idio_isa_pair (lo)) {
+		IDIO fi = IDIO_PAIR_H (lo);
+		IDIO fn = idio_array_ref_index (cs, IDIO_FIXNUM_VAL (fi));
+		idio_debug ("  %s", fn);
+		idio_debug (":line %s\n", IDIO_PAIR_HT (lo));
+	    } else {
+		fprintf (stderr, "  %s\n", "<no lex tuple>");
+	    }
+	} else {
+	    fprintf (stderr, "  <unknown src location>\n");
+	}
 
 	IDIO faci = IDIO_FRAME_NAMES (frame);
 	idio_ai_t aci = IDIO_FIXNUM_VAL (faci);
@@ -8296,10 +8532,10 @@ void idio_vm_decode_thread (IDIO thr)
     idio_sp_t sp = sp0;
     fprintf (stderr, "vm-decode-thread: thr=%8p sp=%4zd pc=[%zu]@%zd\n", thr, sp, IDIO_THREAD_XI (thr), IDIO_THREAD_PC (thr));
 
-    idio_vm_decode_stack (thr, stack);
+    idio_vm_decode_stack (stack);
 }
 
-void idio_vm_decode_stack (IDIO thr, IDIO stack)
+void idio_vm_decode_stack (IDIO stack)
 {
     IDIO_ASSERT (stack);
     IDIO_TYPE_ASSERT (array, stack);
@@ -8432,6 +8668,64 @@ void idio_vm_decode_stack (IDIO thr, IDIO stack)
     }
 }
 
+IDIO_DEFINE_PRIMITIVE0_DS ("%vm-decode-stack", vm_decode_stack, (void), "", "\
+Decode the current stack.					\n\
+")
+{
+    IDIO thr = idio_thread_current_thread ();
+
+    idio_vm_decode_stack (IDIO_THREAD_STACK (thr));
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("%vm-tables", vm_tables, (void), "", "\
+Dump the VM's tables.					\n\
+")
+{
+    idio_vm_dump_all ();
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE0V_DS ("%vm-abort", vm_abort, (IDIO args), "[level]", "\
+Abort the current top level expression.		\n\
+						\n\
+:param level: ABORT level, defaults to most recent	\n\
+:type level: fixnum, optional			\n\
+")
+{
+    IDIO_ASSERT (args);
+
+    IDIO thr = idio_thread_current_thread ();
+    IDIO stack = IDIO_THREAD_STACK (thr);
+
+    idio_sp_t asp = idio_vm_find_stack_marker (stack, idio_SM_abort, 0, 0);
+
+    if (-1 != asp) {
+	IDIO stack = IDIO_THREAD_STACK (thr);
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "%%vm-abort: ABORT stack from %zd to %zd\n", idio_array_size (stack), asp + 1);
+#endif
+	IDIO krun = idio_array_ref_index (stack, asp - 1);
+	IDIO_ARRAY_USIZE (stack) = asp + 1;
+
+	if (idio_isa_pair (krun)) {
+	    fprintf (stderr, "%%vm-abort: restoring ABORT ");
+	    idio_debug ("%s\n", IDIO_PAIR_HT (krun));
+	    idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+
+	    return idio_S_notreached;
+	}
+    }
+
+    fprintf (stderr, "%%vm-abort: nothing to restore => exit (1)\n");
+    idio_exit_status = 1;
+    idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
+
+    return idio_S_notreached;
+}
+
 void idio_vm_reset_thread (IDIO thr, int verbose)
 {
     IDIO_ASSERT (thr);
@@ -8443,7 +8737,7 @@ void idio_vm_reset_thread (IDIO thr, int verbose)
 	/* IDIO stack = IDIO_THREAD_STACK (thr); */
 	IDIO frame = IDIO_THREAD_FRAME (thr);
 
-	idio_vm_thread_state (thr);
+	idio_vm_thread_state (thr, idio_S_nil);
 
 	size_t i = 0;
 	while (idio_S_nil != frame) {
@@ -8609,10 +8903,14 @@ void idio_vm_add_primitives ()
     IDIO_ADD_PRIMITIVE (exit);
     IDIO_ADD_PRIMITIVE (set_exit_status);
     IDIO_ADD_PRIMITIVE (run_in_thread);
+    IDIO_ADD_PRIMITIVE (vm_call_tree);
     IDIO_ADD_PRIMITIVE (vm_frame_tree);
     IDIO_ADD_PRIMITIVE (vm_trap_state);
     IDIO_ADD_PRIMITIVE (vm_add_xenv);
     IDIO_ADD_PRIMITIVE (vm_add_xenv_from_eenv);
+    IDIO_ADD_PRIMITIVE (vm_decode_stack);
+    IDIO_ADD_PRIMITIVE (vm_tables);
+    IDIO_ADD_PRIMITIVE (vm_abort);
 }
 
 void idio_final_vm ()
@@ -8632,7 +8930,7 @@ void idio_final_vm ()
 	idio_sp_t ss = idio_array_size (stack);
 	if (ss > 27) {
 	    fprintf (stderr, "VM didn't finish cleanly with %zd > 27 entries on the stack\n", ss);
-	    idio_vm_thread_state (thr);
+	    idio_vm_thread_state (thr, idio_S_nil);
 	}
 #endif
 
@@ -8868,5 +9166,4 @@ void idio_init_vm ()
     }
 
     idio_S_cfw = IDIO_SYMBOL ("compile-file-writer");
-
 }

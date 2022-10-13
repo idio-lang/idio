@@ -2,10 +2,19 @@
 str := sprintf "hello from %d" PID
 
 ipn := named-pipe-from {
-  job-control-pipeline-delay 5000
   echo str
 } | {
   libc/sleep 0
+
+  (cond-expand
+   ((and IDIO_DEBUG
+	 "uname/sysname/Darwin"
+	 "uname/release/9.8.0") {
+     libc/nanosleep '(0 5e8)
+   })
+   ("uname/sysname/OpenBSD" {
+     libc/nanosleep '(0 5e8)
+   }))
 }
 
 hprintf pid-ph "%d,%d\n" PID (%idio-job-pgid %%last-job)

@@ -43,7 +43,7 @@ path-error-load := {
 
     exp-tests := 1
 
-    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    test-report "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-path-error
 	  ^rt-glob-error
 	  ^rt-parameter-error) (function (c) {

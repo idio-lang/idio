@@ -40,7 +40,7 @@ evaluation-error-load := {
 
     exp-tests := 1
 
-    ;eprintf "loading #%s %s\n" n filename
+    test-report "loading #%s %s\n" n filename
     trap (^st-variable-error
 	  ^rt-parameter-type-error
 	  ^evaluation-error) (function (c) {

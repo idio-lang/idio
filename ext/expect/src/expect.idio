@@ -18,6 +18,64 @@ expect.idio
 
 *#
 
+#*
+
+IDIO_POLLHUP_OCCLUDES_POLLIN was introduced for WSL1 where, subject to
+timing, you can have a spawned process both output something and exit
+before this process gets round to calling poll(2).  For example, where
+the spawned command might be something like "echo hello" but it could
+also be the last output of a much longer command which you've
+otherwise been quite happily consuming.
+
+Normally, under those circumstances we should get POLLIN|POLLHUP and
+would continue to get POLLIN|POLLHUP until all the (buffered) output
+in read in from the pty.  At that point we would only get POLLHUP and
+can handle that by indicating the remote end has been closed.
+
+However, WSL1 only reports POLLHUP even though the output is present
+and can be read.  This creates something of a problem as the headline
+flags (POLLHUP only) suggest we should simply close the spawn-id down
+and not refer to it again but in practice we can read the output and
+do something with it.
+
+Part of the problem, here, is how we have chosen to handle expect
+spawn-id in exp-case (and friends).  It is always managed as a list
+and each time round the exp-case-poll loop we remove entries from the
+list that have completed (for some value of completed).  In addition,
+on a POLLHUP we set the mfd to #f which we can use in a test to see if
+there is anything worth doing.
+
+The upshot is an extra pending-eof field which holds the string-length
+of the buffer from the last time round the exp-case-poll loop.  If,
+having tried to match something, we failed (which we can identify
+because the string-length of the buffer is unchanged) we can say that,
+ok, *now* we're done.  Otherwise, as things get matched in the buffer
+we need to support this idea of not-quite-EOF-yet and therefore
+not-quite-yet close things down.  It's all handled in cond-expand so
+only WSL1 gets the extra code.
+
+To complicate matters, IDIO_POLLHUP_OCCLUDES_POLLIN is also reported
+by OpenBSD 6 and NetBSD 9 but those have, certainly historically,
+managed to pass all the tests.  So the cond-expand qualification
+becomes IDIO_POLLHUP_OCCLUDES_POLLIN and virtualisation/WSL.
+
+****
+
+https://unix.stackexchange.com/a/538271 suggests that read(2) on a
+closed pty will result in EIO for Linux with differing results for
+Solaris and *BSD.  Experience suggests that select(2) will provoke
+this easily (or at least generate an immediate EOF) whereas poll(2)
+seems to circumvent the issue most of the time (barring
+IDIO_POLLHUP_OCCLUDES_POLLIN as above).
+
+You can edit src/idio-config.h and add/edit
+
+#undef IDIO_CAN_POLL_DEVICE
+
+to use select(2) and see this behaviour yourself.
+
+*#
+
 module expect
 export (
 	 ;; vars
@@ -63,6 +121,10 @@ export (
 	 exp-case-select
 	 exp-case
 
+	 ;; a sentinel value for exp-case to return when nothing
+	 ;; matches
+	 exp-case-failed-to-match
+
 	 exp-send
 	 exp-wait
 	 exp-spawn-sync
@@ -74,7 +136,7 @@ import unicode
 
 (export-struct
  struct-spawn
- argv pid mfd mode buffer matched eof timeout log-file lfh status)
+ argv pid mfd mode buffer matched eof timeout log-file lfh status pending-eof)
 
 ;; a simplified constructor
 make-struct-spawn = {
@@ -93,12 +155,12 @@ create an instance of a :ref:`struct-spawn <expect/struct-spawn>`
 :type mode: :ref:`libc/struct-termios <libc/struct-termios>`
 :return: `struct-spawn`
 :rtype: struct-instance
-   
+
 The `buffer` attribute is initialised to the empty string, ``\"\"``,
 and the remaining attributes initialised to ``#f``.
 
 " {
-    orig-make-struct-spawn argv pid mfd mode "" #f #f #f #f #f #f
+    orig-make-struct-spawn argv pid mfd mode "" #f #f #f #f #f #f #f
   }
 }
 
@@ -482,7 +544,6 @@ What we want to do is, broadly, three things:
 	 ...
        }) spawn-id)
      })))
-    
   }
 
 3. define the exp-continue loop (in the scope of the user's body
@@ -732,21 +793,28 @@ close the master file descriptor to the spawned process
 list of such ``struct-spawn``\ s.
 
 " {
+  define (close-sid sid) {
+    mfd := struct-spawn-mfd spawn-id
+    if mfd {
+      libc/close mfd
+      set-struct-spawn-mfd! spawn-id #f
+      (cond-expand
+       ((and IDIO_POLLHUP_OCCLUDES_POLLIN
+	     virtualisation/WSL) {
+	 if (struct-spawn-pending-eof sid) {
+	   set-struct-spawn-pending-eof! sid #f
+	 }
+       }))
+    }
+  }
+
   (cond
    ((struct-spawn? spawn-id) {
-     mfd := struct-spawn-mfd spawn-id
-     if mfd {
-       libc/close mfd
-       set-struct-spawn-mfd! spawn-id #f
-     }
+     close-sid spawn-id
    })
    ((pair? spawn-id) {
      for sid in spawn-id {
-       mfd := struct-spawn-mfd sid
-       if mfd {
-	 libc/close mfd
-	 set-struct-spawn-mfd! sid #f
-       }
+       close-sid sid
      }
    }))
 }
@@ -776,18 +844,6 @@ define (exp-case-reset sid+ & matched) "
   }
 
   loop sid+
-
-  #*
-  for sid in sid+ {
-    if sid {
-      set-struct-spawn-timeout! sid #f
-      set-struct-spawn-eof! sid #f
-      if (not (null? matched)) {
-	set-struct-spawn-matched! sid #f
-      }
-    }
-  }
-  *#
 }
 
 define (exp-case-matched sid+) "
@@ -859,6 +915,13 @@ define (exp-case-set-timeout sid+) "
     if sid {
       set-struct-spawn-timeout! sid #t
       expect/exp-log sid #t (sprintf "exp-case: %@: poll: timeout\n" (struct-spawn-argv sid))
+      (cond-expand
+       ((and IDIO_POLLHUP_OCCLUDES_POLLIN
+	     virtualisation/WSL) {
+	 if (struct-spawn-pending-eof sid) {
+	   set-struct-spawn-pending-eof! sid #f
+	 }
+       }))
     }
   }
 }
@@ -955,6 +1018,7 @@ define-template (exp-case-after & clauses) {
   }
 }
 
+exp-case-failed-to-match := pair 'exp-case 'failed-to-match
 exp-case-break-tag := make-prompt-tag 'exp-case-break
 (define-syntax exp-break
  (syntax-rules ()
@@ -1009,7 +1073,8 @@ define (exp-case-poll) "
 	  if sid {
 	    ;; also exclude (the first time through) people who've
 	    ;; managed to call exp-close before exp-case...
-	    if (struct-spawn-mfd sid) (c + 1) c
+	    if (or (struct-spawn-mfd sid)
+		   (struct-spawn-pending-eof sid)) (c + 1) c
 	  } c
 	}) 0 sid+)
 
@@ -1035,6 +1100,62 @@ define (exp-case-poll) "
 
 	    poll-results := libc/poller-poll poller poll-timeout
 
+	    define (eof-sid poll-fd sid msg) {
+	      libc/poller-deregister poller poll-fd
+	      expect/exp-close :spawn-id sid
+	      set-struct-spawn-eof! sid #t
+
+	      expect/exp-log sid #t msg
+	    }
+
+	    define (close-poll poll-fd sid msg) {
+	      (cond-expand
+	       ((and IDIO_POLLHUP_OCCLUDES_POLLIN
+		     virtualisation/WSL) {
+		 blen := string-length (struct-spawn-buffer sid)
+		 plen := struct-spawn-pending-eof sid
+		 if plen {
+		   if (plen eq blen) {
+		     set-struct-spawn-pending-eof! sid #f
+		     eof-sid poll-fd sid msg
+		   } {
+		     if (blen gt 0) {
+		       set-struct-spawn-pending-eof! sid blen
+		     } {
+		       set-struct-spawn-pending-eof! sid #f
+		       eof-sid poll-fd sid msg
+		     }
+		   }
+		 } {
+		   if (blen gt 0) {
+		     set-struct-spawn-pending-eof! sid blen
+		   } {
+		     set-struct-spawn-pending-eof! sid #f
+		     eof-sid poll-fd sid msg
+		   }
+		 }
+	       })
+	       (else {
+		 eof-sid poll-fd sid msg
+	       }))
+	    }
+
+	    define (read-poll poll-fd sid all) {
+	      data := libc/read poll-fd 1024
+	      if data {
+		if (eof-object? data) {
+		  close-poll poll-fd sid (sprintf "exp-case: %@: poll (fd=%d): POLLIN EOF\n" (struct-spawn-argv sid) poll-fd)
+		} {
+		  set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
+		  expect/exp-log sid #t data
+		  if (and all
+			  ((string-length data) eq 1024)) {
+		    read-poll poll-fd sid all
+		  }
+		}
+	      }
+	    }
+
 	    (cond
 	     ((null? poll-results) {
 	       exp-case-set-timeout sid+
@@ -1046,36 +1167,32 @@ define (exp-case-poll) "
 		 sid := hash-ref poller-map poll-fd
 		 (cond
 		  ((libc/POLLIN? poll-revents) {
-		    data := libc/read poll-fd 1024
-		    if data {
-		      if (eof-object? data) {
-			libc/poller-deregister poller poll-fd
-			expect/exp-close :spawn-id sid
-			set-struct-spawn-eof! sid #t
-			expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLIN EOF\n" (struct-spawn-argv sid) poll-fd)
-		      } {
-			set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
-			expect/exp-log sid #t data
-		      }
-		    }
+		    read-poll poll-fd sid #f
 		  })
 		  ((libc/POLLHUP? poll-revents) {
-		    libc/poller-deregister poller poll-fd
-		    expect/exp-close :spawn-id sid
-		    set-struct-spawn-eof! sid #t
-		    expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLHUP EOF\n" (struct-spawn-argv sid) poll-fd)
+		    (cond-expand
+		     ((and IDIO_POLLHUP_OCCLUDES_POLLIN
+			   virtualisation/WSL) {
+		       trap ^system-error (function (c) {
+			 if (and (C/== (system-error-errno c) libc/EIO)
+				 (equal? (system-error-function c) "read")) {
+			   #f
+			 } {
+			   condition-report "poll POLLHUP occludes POLLIN" c
+			   raise c
+			 }
+		       }) {
+			 read-poll poll-fd sid #t
+		       }
+		     }))
+
+		    close-poll poll-fd sid (sprintf "exp-case: %@: poll (fd=%d): POLLHUP EOF\n" (struct-spawn-argv sid) poll-fd)
 		  })
 		  ((libc/POLLERR? poll-revents) {
-		    libc/poller-deregister poller poll-fd
-		    expect/exp-close :spawn-id sid
-		    set-struct-spawn-eof! sid #t
-		    expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): POLLERR EOF\n" (struct-spawn-argv sid) poll-fd)
+		    close-pool poll-fd sid (sprintf "exp-case: %@: poll (fd=%d): POLLERR EOF\n" (struct-spawn-argv sid) poll-fd)
 		  })
 		  ((libc/POLLNVAL? poll-revents) {
-		    libc/poller-deregister poller poll-fd
-		    expect/exp-close :spawn-id sid
-		    set-struct-spawn-eof! sid #t
-		    expect/exp-log sid #t (sprintf "exp-case: %@: poll (fd=%d): invalid request\n" (struct-spawn-argv sid) poll-fd)
+		    close-poll poll-fd sid (sprintf "exp-case: %@: poll (fd=%d): invalid request\n" (struct-spawn-argv sid) poll-fd)
 		  }))
 	       }
 	     }))
@@ -1094,7 +1211,7 @@ define (exp-case-poll) "
 	    }
 	  }
 	} {
-	  exp-break #f
+	  exp-break exp-case-failed-to-match
 	}
       }
 
@@ -1188,14 +1305,27 @@ define (exp-case-select) "
 	       ;; we know it is mfd but let's go through the motions
 	       for fd in rlist {
 		 sid := hash-ref select-map fd
-		 data := libc/read fd 1024
-		 if data {
-		   if (eof-object? data) {
+
+		 trap ^system-error (function (c) {
+		   ;; select(2) is more likely to return EIO than
+		   ;; poll(2)
+		   if (C/== (system-error-errno c) libc/EIO) {
 		     set-struct-spawn-eof! sid #t
-		     expect/exp-log sid #t (sprintf "exp-case: %@: select (fd=%d): EOF\n" (struct-spawn-argv sid) fd)
+		     expect/exp-log sid #t (sprintf "exp-case: %@: select (fd=%d): EIO\n" (struct-spawn-argv sid) fd)
+		     trap-return #f
 		   } {
-		     set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
-		     expect/exp-log sid #t data
+		     raise c
+		   }
+		 }) {
+		   data := libc/read fd 1024
+		   if data {
+		     if (eof-object? data) {
+		       set-struct-spawn-eof! sid #t
+		       expect/exp-log sid #t (sprintf "exp-case: %@: select (fd=%d): EOF\n" (struct-spawn-argv sid) fd)
+		     } {
+		       set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
+		       expect/exp-log sid #t data
+		     }
 		   }
 		 }
 	       }
@@ -1215,7 +1345,7 @@ define (exp-case-select) "
 	    }
 	  }
 	} {
-	  exp-break #f
+	  exp-break exp-case-failed-to-match
 	}
       }
 
@@ -1262,7 +1392,7 @@ define-template (exp-case & clauses) {
 	     }
 	   }))
 	}) (ph ikb) (pht ikb))
-	
+
 	exp-match = function (spawn-id) {
 	  (cond
 	   $@(map (function (b) {

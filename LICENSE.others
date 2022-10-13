@@ -139,3 +139,15 @@ LIABILITY FOR DAMAGES RESULTING FROM THE SOFTWARE OR ITS USE IS
 EXPRESSLY DISCLAIMED, WHETHER ARISING IN CONTRACT, TORT (INCLUDING
 NEGLIGENCE) OR STRICT LIABILITY, EVEN IF XEROX CORPORATION IS ADVISED
 OF THE POSSIBILITY OF SUCH DAMAGES.
+
+ * RFC 6234
+
+This is the "demonstration implementation of these secure hash
+functions in C" as extracted from Chapter 8 of the RFC.
+
+The RFC's Copyright states:
+
+Code Components extracted from this document must include Simplified
+BSD License text as described in Section 4.e of the Trust Legal
+Provisions and are provided without warranty as described in the
+Simplified BSD License.

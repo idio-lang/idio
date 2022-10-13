@@ -57,6 +57,7 @@ debug := #n
     ;idio-debug "continuations = %s\n" continuations
 
     debug-loop :+ function () {
+      puts "\n---\n"
       al := array-length continuations
       if (al gt 0) {
 	printf "Choose between the following continuations:\n"
@@ -70,9 +71,16 @@ debug := #n
 	dloop (al - 1)
 	printf "c <num> [<val>]	Invoke continuation <num>\n"
       }
-      printf "v <val>		return a value to continuation of failed expression\n"
-      printf "ft		show the tree of frames\n"
-      printf "t		show the thread state\n"
+
+      printf "v <val>		return a value to the continuation of the failed expression\n"
+      printf "a		abort the current expression\n"
+      printf "q		quit Idio\n"
+      (newline)
+      printf "ct		show the tree of call frames (to the most recent ABORT)\n"
+      printf "ft		show the tree of VM frames\n"
+      printf "ds		decode the current stack\n"
+      printf "its		show the thread state (idio-thread-state)\n"
+      printf "dt		dump VM tables (cf. --vm-tables)\n"
       printf "debug> "
 
       line := (read-line)
@@ -93,11 +101,27 @@ debug := #n
 	 v := read-expr lsh
 	 debug-k v
        })
+       ((eqv? 'a cmd) {
+	 (%vm-abort)
+       })
+       ((eqv? 'q cmd) {
+	 exit 0
+       })
+       ((eqv? 'ct cmd) {
+	 %vm-call-tree 1
+       })
        ((eqv? 'ft cmd) {
 	 (%vm-frame-tree)
        })
-       ((eqv? 't cmd) {
-	 (idio-thread-state)
+       ((eqv? 'ds cmd) {
+	 (%vm-decode-stack)
+       })
+       ((eqv? 'its cmd) {
+	 idio-thread-state 1
+       })
+       ((eqv? 'dt cmd) {
+	 (%vm-tables)
+	 (newline)
        })
        (else (printf "unrecognised line %s\n" line)))
 

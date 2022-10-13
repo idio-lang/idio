@@ -47,7 +47,7 @@ read-error-load := {
 
     exp-tests := 2
 
-    ;eprintf "loading #%s %s looking for %s at line %s\n" n filename msg linenum
+    test-report "loading #%s %s looking for %s at line %s\n" n filename msg linenum
     trap (^read-error) (function (c) {
       ;eprintf "read-error #%s: %s %s %s\n" n msg (idio-error-location c) (idio-error-line c)
       test (idio-error-message c) msg
@@ -82,7 +82,7 @@ string-error-load := {
 
     exp-tests := 1
 
-    ;eprintf "loading #%s %s looking for %s at line %s\n" n filename msg linenum
+    test-report "loading #%s %s looking for %s at line %s\n" n filename msg linenum
     trap (^string-error) (function (c) {
       ;eprintf "string-error #%s: %s %s %s\n" n msg (idio-error-location c) (idio-error-line c)
       test (idio-error-message c) msg

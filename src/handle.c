@@ -2127,7 +2127,10 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
     for (;;) {
 	IDIO cm = idio_thread_current_module ();
-	IDIO oh;
+	/*
+	 * gcc-4 optimiser complains that {oh} might be uninitialized
+	 */
+	IDIO oh = idio_S_nil;
 	IDIO eh;
 
 	if (handle_interactive) {
@@ -2257,7 +2260,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
 	    IDIO_GC_FREE (sname, size);
 
-	    idio_vm_thread_state (thr);
+	    idio_vm_thread_state (thr, idio_S_nil);
 	}
 
 	if (handle_interactive) {

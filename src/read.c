@@ -177,11 +177,11 @@ IDIO idio_src_properties;
 #define IDIO_LIST_ANGLE_MARK		(1 << 19) /* 0x08hhhh */
 
 /* QUOTE and QUASIQUOTE are on or off */
-#define IDIO_LIST_QUOTE_MARK		(1 << 28) /* 0x1000hhhh */
-#define IDIO_LIST_QUASIQUOTE_MARK	(1 << 29) /* 0x2000hhhh */
+#define IDIO_LIST_QUOTE_MARK		(1 << 27) /* 0x1000hhhh */
+#define IDIO_LIST_QUASIQUOTE_MARK	(1 << 28) /* 0x2000hhhh */
 
-#define IDIO_LIST_STRING_MARK		(1 << 30) /* 0x4000hhhh */
-#define IDIO_LIST_CONSTANT_MARK		(1 << 31) /* 0x8000hhhh */
+#define IDIO_LIST_STRING_MARK		(1 << 29) /* 0x4000hhhh */
+#define IDIO_LIST_CONSTANT_MARK		(1 << 30) /* 0x8000hhhh */
 
 #define IDIO_LIST_MASK			(0xffff | IDIO_LIST_QUOTE_MARK | IDIO_LIST_QUASIQUOTE_MARK)
 
@@ -1775,6 +1775,11 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 			uintmax_t u = idio_read_uintmax_radix (handle, lo, c, 16, lim);
 
 			char b[4];
+			/*
+			 * gcc-7 optimiser complains that {b} might be
+			 * uninitialized
+			 */
+			memset (b, 0, 4);
 			int n;
 			if (idio_unicode_valid_code_point (u)) {
 			    if (u >= 0x10000) {

@@ -121,6 +121,7 @@ libc/select #n #n #n tv
 libc/select (list STDIN_FILENO) (list STDOUT_FILENO) (list STDIN_FILENO) 10
 
 ; fd-handle
+touch testfile				; just in case it is missing
 fh := open-input-file testfile
 libc/select (list fh) #n #n 10
 close-handle fh
