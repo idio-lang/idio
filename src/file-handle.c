@@ -3777,19 +3777,25 @@ int idio_load_idio_cache (char *pathname, size_t pathname_len, IDIO eenv)
 
     /* no dot no deal */
     if (NULL == pathname_dot) {
-	/* fprintf (stderr, "no dot in %s\n", pathname); */
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "no dot in %s\n", pathname);
+#endif
 	return 0;
     }
 
     size_t iie_len = sizeof (IDIO_IDIO_EXT) - 1;
     size_t dot_len = pathname_len - (pathname_dot - pathname);
     if (dot_len != iie_len) {
-	/* fprintf (stderr, "len (%s) != len (%s) in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname); */
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "len (%s) != len (%s) in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname);
+#endif
 	return 0;
     }
 
     if (strncmp (pathname_dot, IDIO_IDIO_EXT, iie_len)) {
-	/* fprintf (stderr, "ext %s != %s in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname); */
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "ext %s != %s in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname);
+#endif
 	return 0;
     }
 
@@ -3824,6 +3830,9 @@ int idio_load_idio_cache (char *pathname, size_t pathname_len, IDIO eenv)
     end[0] = '\0';
 
     if (access (cfn, R_OK)) {
+#ifdef IDIO_DEBUG
+	/* fprintf (stderr, "access (%s) != R_OK\n", cfn); */
+#endif
 	return 0;
     }
 
