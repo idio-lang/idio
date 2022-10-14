@@ -296,7 +296,7 @@ CC_path=$(type -p ${CC})
 
 ######################################################################
 
-var_MODULE=$( echo ${opt_module} | tr '[a-z]' '[A-Z]' )
+var_MODULE=$( echo -n ${opt_module} | tr '[a-z]' '[A-Z]' | tr -c '[A-Z0-9]' _)
 var_header=${opt_module}-system.h
 
 # Bah!  The extensions want a generic name, MODULE_* so the make rules

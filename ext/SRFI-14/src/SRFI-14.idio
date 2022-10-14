@@ -93,7 +93,7 @@ import unicode
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; sparse-char-set is defined in usi-wrap.c
+;; sparse-char-set is defined in SRFI-14-module.c
 
 define-struct-accessors-only sparse-char-set size planes
 

@@ -4,6 +4,7 @@ all : local-install
 	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
 	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
 	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
+	(cd $(EXTDIR)/SRFI-14/src; $(MAKE) $@)
 
 ifneq ($(MAKECMDGOALS),clean)
 # XXX put these on the same line otherwise the generator and then the
@@ -69,6 +70,7 @@ debug :
 	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
 	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
 	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
+	(cd $(EXTDIR)/SRFI-14/src; $(MAKE) $@)
 
 test : local-install
 	$(LI_BINDIR)/idio test
@@ -131,6 +133,7 @@ local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)
 	(cd $(EXTDIR)/json5/src; $(MAKE) local-install)
 	(cd $(EXTDIR)/expect/src; $(MAKE) local-install)
 	(cd $(EXTDIR)/empty/src; $(MAKE) local-install)
+	(cd $(EXTDIR)/SRFI-14/src; $(MAKE) local-install)
 
 pre-compile: $(LI_BINDIR)/idio
 	$(LI_BINDIR)/idio --save-xenvs </dev/null
