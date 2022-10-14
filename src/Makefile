@@ -139,7 +139,7 @@ pre-compile: $(LI_BINDIR)/idio
 	$(LI_BINDIR)/idio --save-xenvs </dev/null
 
 clean-pre-compile:
-	rm -rf $(LI_LIBDIR)/__idio__
+	rm -rf $(LI_LIBDIR)/$(IDIO_SYSTEM_VERSION_MM)/__idio__
 
 $(SRCDIR)/rfc6234.o : $(SRCDIR)/RFC6234/libsha.a
 
