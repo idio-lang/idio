@@ -764,11 +764,24 @@ idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
     IDIO_ASSERT (handle);
     IDIO_TYPE_ASSERT (handle, handle);
 
-    if (idio_S_nil == lo) {
-	/* called from outside read.c */
-	lo = idio_read_lexobj_from_handle (handle);
-
-    } else {
+    /*
+     * If this is called from outside read.c then lo is idio_S_nil.
+     *
+     * Normally, not a problem but it turns out that when reading in
+     * an octet string (hint: byte code in pre-compiled files) we call
+     * idio_getc_handle() from idio_read_uintmax_radix() because we
+     * read in \xHH.
+     *
+     * So, when we previously called
+     *
+     *   lo = idio_read_lexobj_from_handle (handle);
+     *
+     * we were, unhelpfully, making an awful lot of calls to
+     * idio_struct_instance() and idio_listv().
+     *
+     * We don't want to do that.
+     */
+    if (idio_S_nil != lo) {
 	IDIO_TYPE_ASSERT (struct_instance, lo);
     }
 
@@ -3538,7 +3551,9 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 		}
 
 		if (c == ic[1]) {
-		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_unquote_splicing (handle, lo, ic, depth + 1));
+		    idio_struct_instance_set_direct (lo,
+						     IDIO_LEXOBJ_ST_EXPR,
+						     idio_read_unquote_splicing (handle, lo, ic, depth + 1));
 		    return lo;
 		}
 
@@ -3547,7 +3562,9 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 		 */
 		idio_ungetc_handle (handle, c);
 
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_unquote (handle, lo, ic, depth + 1));
+		idio_struct_instance_set_direct (lo,
+						 IDIO_LEXOBJ_ST_EXPR,
+						 idio_read_unquote (handle, lo, ic, depth + 1));
 		return lo;
 	    } else {
 		/*
@@ -3555,11 +3572,15 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 		 * expression so this must be a genuine word, eg. a
 		 * submatch, '($ ...), from SRFI-115.
 		 */
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_word (handle, lo, c, ic));
+		idio_struct_instance_set_direct (lo,
+						 IDIO_LEXOBJ_ST_EXPR,
+						 idio_read_word (handle, lo, c, ic));
 		return lo;
 	    }
 	} else if (c == ic[2]) {
-	    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_quote (handle, lo, ic, IDIO_LIST_QUOTE (depth) + 1));
+	    idio_struct_instance_set_direct (lo,
+					     IDIO_LEXOBJ_ST_EXPR,
+					     idio_read_quote (handle, lo, ic, IDIO_LIST_QUOTE (depth) + 1));
 	    return lo;
 	} else if (c == ic[3]) {
 	    c = idio_getc_handle (handle);
@@ -3581,7 +3602,9 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 		break;
 	    default:
 		idio_ungetc_handle (handle, c);
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_escape (handle, lo, ic, depth));
+		idio_struct_instance_set_direct (lo,
+						 IDIO_LEXOBJ_ST_EXPR,
+						 idio_read_escape (handle, lo, ic, depth));
 		return lo;
 	    }
 	} else {
@@ -3655,7 +3678,9 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 			idio_getc_handle (handle);
 
 			/* convert to a subshell */
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, IDIO_LIST2 (idio_S_subshell, subshell));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 IDIO_LIST2 (idio_S_subshell, subshell));
 			idio_hash_put (idio_src_properties, subshell, lo);
 			return lo;
 		    }
@@ -3743,7 +3768,9 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 		    case IDIO_CHAR_SLASH:
 			{
 			    idio_ungetc_handle (handle, c2);
-			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_word (handle, lo, c, ic));
+			    idio_struct_instance_set_direct (lo,
+							     IDIO_LEXOBJ_ST_EXPR,
+							     idio_read_word (handle, lo, c, ic));
 			    return lo;
 			}
 			break;
@@ -3767,7 +3794,12 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 			IDIO_CHAR_BACKSLASH,
 			IDIO_CHAR_APPLY_OPERATORS
 		    };
-		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_quasiquote (handle, lo, qq_ic, IDIO_LIST_QUASIQUOTE (depth) + 1));
+		    idio_struct_instance_set_direct (lo,
+						     IDIO_LEXOBJ_ST_EXPR,
+						     idio_read_quasiquote (handle,
+									   lo,
+									   qq_ic,
+									   IDIO_LIST_QUASIQUOTE (depth) + 1));
 		    return lo;
 		}
 	    case IDIO_CHAR_HASH:
@@ -3798,13 +3830,21 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 
 			/* lists */
 		    case IDIO_CHAR_BACKSLASH:
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_character (handle, lo, IDIO_READ_CHARACTER_EXTENDED));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 idio_read_character (handle,
+									      lo,
+									      IDIO_READ_CHARACTER_EXTENDED));
 			return lo;
 		    case IDIO_CHAR_LBRACKET:
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_array (handle, lo, ic, depth + 1));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 idio_read_array (handle, lo, ic, depth + 1));
 			return lo;
 		    case IDIO_CHAR_LBRACE:
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_hash (handle, lo, ic, depth + 1));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 idio_read_hash (handle, lo, ic, depth + 1));
 			return lo;
 
 			/* verbatim collections -- ie. no operators */
@@ -3830,7 +3870,14 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 
 			    switch (c2) {
 			    case IDIO_CHAR_LBRACKET:
-				idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_array (handle, lo, icv, depth + 1));
+				/*
+				 * NB. We'll pass idio_S_nil for {lo}
+				 * to idio_read_array() to prevent
+				 * unnecessary creation of lexobjs
+				 */
+				idio_struct_instance_set_direct (lo,
+								 IDIO_LEXOBJ_ST_EXPR,
+								 idio_read_array (handle, idio_S_nil, icv, depth + 1));
 				return lo;
 			    default:
 				{
@@ -3855,22 +3902,34 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 
 			/* numbers and unicode */
 		    case 'B':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_bitset (handle, lo, depth));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 idio_read_bitset (handle, lo, depth));
 			return lo;
 		    case 'b':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_bignum_radix (handle, lo, c, 2));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 idio_read_bignum_radix (handle, lo, c, 2));
 			return lo;
 		    case 'd':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_bignum_radix (handle, lo, c, 10));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 idio_read_bignum_radix (handle, lo, c, 10));
 			return lo;
 		    case 'o':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_bignum_radix (handle, lo, c, 8));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 idio_read_bignum_radix (handle, lo, c, 8));
 			return lo;
 		    case 'x':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_bignum_radix (handle, lo, c, 16));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 idio_read_bignum_radix (handle, lo, c, 16));
 			return lo;
 		    case 'U':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_unicode (handle, lo));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 idio_read_unicode (handle, lo));
 			return lo;
 		    case 'e':
 		    case 'i':
@@ -3952,13 +4011,19 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 
 			/* structured forms */
 		    case 'P':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_pathname (handle, lo, depth));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 idio_read_pathname (handle, lo, depth));
 			return lo;
 		    case 'S':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_istring (handle, lo, IDIO_LIST_STRING (depth) + 1));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 idio_read_istring (handle, lo, IDIO_LIST_STRING (depth) + 1));
 			return lo;
 		    case 'T':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_template (handle, lo, IDIO_LIST_QUASIQUOTE (depth) + 1));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 idio_read_template (handle, lo, IDIO_LIST_QUASIQUOTE (depth) + 1));
 			return lo;
 
 			/* invalid */
@@ -4074,7 +4139,12 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 				/* use odelim */
 				break;
 			    }
-			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_octet_string (handle, lo, cdelim, idio_default_string_ic));
+			    idio_struct_instance_set_direct (lo,
+							     IDIO_LEXOBJ_ST_EXPR,
+							     idio_read_octet_string (handle,
+										     lo,
+										     cdelim,
+										     idio_default_string_ic));
 			    return lo;
 			}
 		    case 'P':
@@ -4095,12 +4165,19 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 				/* use odelim */
 				break;
 			    }
-			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_path_string (handle, lo, cdelim, idio_default_string_ic));
+			    idio_struct_instance_set_direct (lo,
+							     IDIO_LEXOBJ_ST_EXPR,
+							     idio_read_path_string (handle,
+										    lo,
+										    cdelim,
+										    idio_default_string_ic));
 			    return lo;
 			}
 		    default:
 			idio_ungetc_handle (handle, c2);
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_word (handle, lo, c, ic));
+			idio_struct_instance_set_direct (lo,
+							 IDIO_LEXOBJ_ST_EXPR,
+							 idio_read_word (handle, lo, c, ic));
 			return lo;
 		    }
 		}
@@ -4128,7 +4205,9 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 			}
 		    }
 
-		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_word (handle, lo, c, ic));
+		    idio_struct_instance_set_direct (lo,
+						     IDIO_LEXOBJ_ST_EXPR,
+						     idio_read_word (handle, lo, c, ic));
 		    return lo;
 		}
 	    case IDIO_CHAR_SEMICOLON:
@@ -4136,10 +4215,17 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t ic[IDIO_TEMPLATE_IC
 		moved = 1;
 		break;
 	    case IDIO_CHAR_DQUOTE:
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_utf8_string (handle, lo, IDIO_CHAR_DQUOTE, idio_default_string_ic));
+		idio_struct_instance_set_direct (lo,
+						 IDIO_LEXOBJ_ST_EXPR,
+						 idio_read_utf8_string (handle,
+									lo,
+									IDIO_CHAR_DQUOTE,
+									idio_default_string_ic));
 		return lo;
 	    default:
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_ST_EXPR, idio_read_word (handle, lo, c, ic));
+		idio_struct_instance_set_direct (lo,
+						 IDIO_LEXOBJ_ST_EXPR,
+						 idio_read_word (handle, lo, c, ic));
 		return lo;
 	    }
 	}
@@ -4183,8 +4269,12 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, idio_unicode_t ic[I
 	IDIO lo = idio_read_1_expr_nl (handle, ic, depth, 1);
 	if (skipped) {
 	    skipped = 0;
-	    idio_struct_instance_set_direct (line_lo, IDIO_LEXOBJ_ST_LINE, idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE));
-	    idio_struct_instance_set_direct (line_lo, IDIO_LEXOBJ_ST_POS, idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_POS));
+	    idio_struct_instance_set_direct (line_lo,
+					     IDIO_LEXOBJ_ST_LINE,
+					     idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_LINE));
+	    idio_struct_instance_set_direct (line_lo,
+					     IDIO_LEXOBJ_ST_POS,
+					     idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_POS));
 	}
 	IDIO expr = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_ST_EXPR);
 
