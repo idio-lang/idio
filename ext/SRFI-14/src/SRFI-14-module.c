@@ -39,6 +39,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "idio-config.h"
+
 #include "gc.h"
 #include "idio.h"
 
@@ -55,6 +57,7 @@
 #include "symbol.h"
 #include "unicode.h"
 #include "usi.h"
+#include "util.h"
 
 IDIO idio_SRFI_14_module;
 

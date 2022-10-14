@@ -35,6 +35,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "idio-config.h"
+
 #include "gc.h"
 
 #include "array.h"
