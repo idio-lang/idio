@@ -6610,7 +6610,7 @@ IDIO idio_vm_run (IDIO thr, idio_xi_t xi, idio_pc_t pc, idio_vm_run_enum caller)
 		}
 	    }
 
-	    if ((++idio_vm_run_loops & 0xff) == 0) {
+	    if ((++idio_vm_run_loops & 0x3fff) == 0) {
 		idio_gc_possibly_collect ();
 	    }
 	} else {

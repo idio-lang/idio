@@ -165,7 +165,7 @@ void idio_gc_free (void *p, size_t size)
  * goes.
  */
 
-#define IDIO_GC_ALLOC_POOL	1
+#define IDIO_GC_ALLOC_POOL	1E3
 
 IDIO idio_gc_get_alloc ()
 {
@@ -225,7 +225,10 @@ IDIO idio_gc_get (idio_type_e type)
 	idio_gc->stats.reuse++;
 	idio_gc->free = o->next;
     }
-    idio_gc->stats.igets++;
+
+    if (idio_gc->stats.igets++ > 5E5) {
+	IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_REQUEST;
+    }
 
     /* assign type late in case we've re-used a previous object */
     o->type = type;
@@ -1591,7 +1594,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 
 void idio_gc_sweep (idio_gc_t *gc)
 {
-    while (0 && gc->stats.nfree > IDIO_GC_ALLOC_POOL) {
+    while (gc->stats.nfree > (10 * IDIO_GC_ALLOC_POOL)) {
     	IDIO fo = gc->free;
 	gc->free = fo->next;
 	IDIO_GC_FREE (fo, sizeof (idio_t));
@@ -1646,9 +1649,9 @@ void idio_gc_sweep (idio_gc_t *gc)
 
 #ifdef IDIO_GC_DEBUG
     if (nobj) {
-	fprintf (stderr, "gc-sweep #%d: saw %7zd obj; freed %5.1f%%; left %7zd + %6zd\n", gc->inst, nobj, freed * 100.0 / nobj, nobj - freed, freed);
+	fprintf (stderr, "gc-sweep #%d: saw %7zd obj; freed %6zd %5.1f%%; left %7zd\n", gc->inst, nobj, freed, freed * 100.0 / nobj, nobj - freed);
     } else {
-	fprintf (stderr, "gc-sweep #%d: saw %7zd obj; freed     0%%; left %7zd + %6zd\n", gc->inst, nobj, nobj - freed, freed);
+	fprintf (stderr, "gc-sweep #%d: saw %7zd obj; freed %6zd     0%%; left %7zd\n", gc->inst, nobj, freed, nobj - freed);
     }
 #endif
 }
@@ -1842,10 +1845,31 @@ void idio_gc_stats ()
 
 	ru_t /= IDIO_VM_US;
 
-	fprintf (idio_gc_stats_FILE, "gc-stats: GC time dur %ld.%03ld user+sys %6.3f; max RSS %ldKB\n",
+	count = ru.ru_maxrss;
+#if defined (__APPLE__) && defined (__MACH__)
+	/*
+	 * bytes except Mac OS X 10.5.8 which claims pages but seems
+	 * to set it to zero
+	 */
+	scale = 0;
+#elif defined (__sun) && defined (__SVR4)
+	/*
+	 * pages but in all implementations the value of set to zero
+	 */
+	scale = 0;
+#else
+	/*
+	 * KB
+	 */
+	scale = 1;
+#endif
+	idio_hcount (&count, &scale);
+
+	fprintf (idio_gc_stats_FILE, "gc-stats: GC time dur %ld.%03ld user+sys %6.3f; max RSS %lld%cB\n",
 		 (long) gc->stats.dur.tv_sec, (long) gc->stats.dur.tv_usec / 1000,
 		 ru_t,
-		 ru.ru_maxrss);
+		 count,
+		 scales[scale]);
 
 	gc = gc->next;
     }
@@ -1871,10 +1895,9 @@ void idio_gc_possibly_collect ()
      * list.
      */
     if (idio_gc->pause == 0 &&
-	((IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) ||
-	 idio_gc->stats.igets > 1024000)) {
+	((IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST))) {
 #ifdef IDIO_GC_DEBUG
-	fprintf (stderr, "possibly-collect: reqd=%d %6llu igets %7llu allocs %6lld free\n",
+	fprintf (stderr, "possibly-collect: reqd=%d igets=%6llu allocs=%7llu free=%6lld\n",
 		 (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) ? 1 : 0,
 		 idio_gc->stats.igets,
 		 idio_gc->stats.allocs,
@@ -1893,8 +1916,12 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 	return;
     }
 
+    gc->stats.collections++;
 #ifdef IDIO_GC_DEBUG
-    fprintf (stderr, "gc-collect #%d: %20s: ", gc->inst, caller);
+    /*
+     * Child processes can report GC metrics so include the PID
+     */
+    fprintf (stderr, "[%" PRIdMAX "] gc-collect %d.%-3lld %-23s ", (intmax_t) getpid (), gc->inst, gc->stats.collections, caller);
 #endif
 
     IDIO_GC_FLAGS (idio_gc) &= ~ IDIO_GC_FLAG_REQUEST;
@@ -1909,7 +1936,6 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 	perror ("gc-collect: getrusage");
     }
 
-    gc->stats.collections++;
     if (gc->stats.igets > gc->stats.mgets) {
 	gc->stats.mgets = gc->stats.igets;
     }

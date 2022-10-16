@@ -280,9 +280,6 @@ test-load := {
     tv-delta := libc/subtract-struct-timeval tv-after tv-before
     delta := (C/->integer (libc/struct-timeval-ref tv-delta 'tv_sec)) + ((C/->integer (libc/struct-timeval-ref tv-delta 'tv_usec)) / 1000000)
     printf "[%s/%d] %3ds %4d tests in %5.2fs %s\n" (getpid) PID SECONDS (Tests - tests0) delta filename
-
-    ; clean up lost file descriptors
-    (gc/collect)
   }
 }
 
