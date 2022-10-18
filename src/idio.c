@@ -355,7 +355,8 @@ void idio_final ()
     idio_final_vtable ();
 
 #ifdef IDIO_VM_PROF
-    if (fclose (idio_vm_perf_FILE)) {
+    if (idio_vm_perf_FILE != stderr &&
+	fclose (idio_vm_perf_FILE)) {
 	perror ("fclose " IDIO_VM_PROF_FILE_NAME);
     }
     idio_vm_perf_FILE = stderr;

@@ -9033,7 +9033,9 @@ void idio_final_vm ()
 #endif
     }
 
-    fclose (idio_tracing_FILE);
+    if (idio_tracing_FILE != stderr) {
+	fclose (idio_tracing_FILE);
+    }
     idio_ia_free (idio_all_code);
     idio_all_code = NULL;
 }
