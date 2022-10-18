@@ -1016,7 +1016,7 @@ void idio_gc_expose_all ()
 	fprintf (stderr, "gc-expose-all #%d\n", gc->inst);
 #endif
 	idio_root_t *r = gc->roots;
-#ifdef IDIO_DEBUG
+#ifdef IDIO_GC_DEBUG
 	size_t n = 0;
 #endif
 	while (r) {
@@ -1028,14 +1028,14 @@ void idio_gc_expose_all ()
 	     *
 	     * Instead, just a quick note.
 	     */
-#ifdef IDIO_DEBUG
+#ifdef IDIO_GC_DEBUG
 	    fprintf (stderr, "gc-expose-all: %10p %s\n", r->object, idio_type2string (r->object));
 	    n++;
 #endif
 	    r = r->next;
 	}
 
-#ifdef IDIO_DEBUG
+#ifdef IDIO_GC_DEBUG
 	if (n) {
 	    fprintf (stderr, "gc-expose-all #%d: for %zd root objects\n", gc->inst, n);
 	}
