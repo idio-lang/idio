@@ -1324,7 +1324,8 @@ typedef struct idio_gc_s {
 	long long nused[IDIO_TYPE_MAX]; /* per-type usage */
 	long long collections;	/* # times gc has been run */
 	long long bounces;
-	struct timeval dur;
+	struct timeval mark_dur;
+	struct timeval sweep_dur;
 	struct timeval ru_utime;
 	struct timeval ru_stime;
     }  stats;
