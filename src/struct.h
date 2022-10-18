@@ -26,28 +26,24 @@
 #define IDIO_DEFINE_STRUCT0(v,n,p) {					\
 	IDIO sym = idio_symbols_C_intern (n, sizeof (n) - 1);		\
 	v = idio_struct_type (sym, p, idio_S_nil);			\
-	idio_gc_protect_auto (v);					\
 	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 
 #define IDIO_DEFINE_STRUCT1(v,n,p,f1) {					\
 	IDIO sym = idio_symbols_C_intern (n, sizeof (n) - 1);		\
 	v = idio_struct_type (sym, p, IDIO_LIST1 (idio_symbols_C_intern (f1, sizeof (f1) - 1))); \
-	idio_gc_protect_auto (v);					\
 	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 
 #define IDIO_DEFINE_STRUCT2(v,n,p,f1,f2) {				\
 	IDIO sym = idio_symbols_C_intern (n, sizeof (n) - 1);		\
 	v = idio_struct_type (sym, p, IDIO_LIST2 (idio_symbols_C_intern (f1, sizeof (f1) - 1), idio_symbols_C_intern (f2, sizeof (f2) - 1))); \
-	idio_gc_protect_auto (v);					\
 	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 
 #define IDIO_DEFINE_STRUCT3(v,n,p,f1,f2,f3) {				\
 	IDIO sym = idio_symbols_C_intern (n, sizeof (n) - 1);		\
 	v = idio_struct_type (sym, p, IDIO_LIST3 (idio_symbols_C_intern (f1, sizeof (f1) - 1), idio_symbols_C_intern (f2, sizeof (f2) - 1), idio_symbols_C_intern (f3, sizeof (f3) - 1))); \
-	idio_gc_protect_auto (v);					\
 	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 
@@ -73,7 +69,6 @@
 	    fields = idio_pair (field, fields);				\
 	}								\
 	v = idio_struct_type (sym, p, fields);				\
-	idio_gc_protect_auto (v);					\
 	idio_module_set_symbol_value (sym, v, m);			\
     }
 

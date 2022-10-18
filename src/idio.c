@@ -682,7 +682,7 @@ int main (int argc, char **argv, char **envp)
     IDIO bootstrap_eenv = idio_evaluate_eenv (thr,
 					      IDIO_STRING ("> load bootstrap"),
 					      IDIO_THREAD_MODULE (thr));
-    idio_gc_protect (bootstrap_eenv);
+    idio_gc_protect_auto (bootstrap_eenv);
     idio_load_file_name (IDIO_STRING ("bootstrap"), bootstrap_eenv);
 
     idio_gc_collect_all ("post-bootstrap");

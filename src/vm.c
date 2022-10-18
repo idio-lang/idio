@@ -8241,7 +8241,7 @@ IDIO idio_vm_run_xenv (idio_xi_t xi, IDIO pcs)
     return r;
 }
 
-idio_xi_t idio_vm_add_xenv (IDIO desc, IDIO st, IDIO cs, IDIO ch, IDIO vt, IDIO ses, IDIO sps, IDIO bc)
+idio_xi_t idio_vm_add_xenv (int protect, IDIO desc, IDIO st, IDIO cs, IDIO ch, IDIO vt, IDIO ses, IDIO sps, IDIO bc)
 {
     IDIO_ASSERT (desc);
     IDIO_ASSERT (st);
@@ -8264,34 +8264,37 @@ idio_xi_t idio_vm_add_xenv (IDIO desc, IDIO st, IDIO cs, IDIO ch, IDIO vt, IDIO 
 
     IDIO_XENV_EENV (xenv) = idio_S_nil;
 
+    IDIO_XENV_DESC (xenv) = desc;
+
+    IDIO_XENV_ST (xenv)   = st;
+
+    IDIO_XENV_CS (xenv)   = cs;
+
+    IDIO_XENV_CH (xenv)   = ch;
+
+    IDIO_XENV_VT (xenv)   = vt;
+
+    IDIO_XENV_SES (xenv)  = ses;
+
+    IDIO_XENV_SPS (xenv)  = sps;
+
     /*
-     * XXX We need to idio_gc_protect_auto() these elements as they
-     * are not in a GC-visible structure.
+     * XXX We may need to idio_gc_protect_auto() these elements as
+     * they are not in a GC-visible structure.
      *
      * Note, though, these tables are freed (see idio_final()) *after*
      * the GC has mechanically free every allocated value including
      * these things we are protecting.
      */
-    IDIO_XENV_DESC (xenv) = desc;
-    idio_gc_protect_auto (IDIO_XENV_DESC (xenv));
-
-    IDIO_XENV_ST (xenv)   = st;
-    idio_gc_protect_auto (IDIO_XENV_ST (xenv));
-
-    IDIO_XENV_CS (xenv)   = cs;
-    idio_gc_protect_auto (IDIO_XENV_CS (xenv));
-
-    IDIO_XENV_CH (xenv)   = ch;
-    idio_gc_protect_auto (IDIO_XENV_CH (xenv));
-
-    IDIO_XENV_VT (xenv)   = vt;
-    idio_gc_protect_auto (IDIO_XENV_VT (xenv));
-
-    IDIO_XENV_SES (xenv)  = ses;
-    idio_gc_protect_auto (IDIO_XENV_SES (xenv));
-
-    IDIO_XENV_SPS (xenv)  = sps;
-    idio_gc_protect_auto (IDIO_XENV_SPS (xenv));
+    if (protect) {
+	idio_gc_protect_auto (IDIO_XENV_DESC (xenv));
+	idio_gc_protect_auto (IDIO_XENV_ST (xenv));
+	idio_gc_protect_auto (IDIO_XENV_CS (xenv));
+	idio_gc_protect_auto (IDIO_XENV_CH (xenv));
+	idio_gc_protect_auto (IDIO_XENV_VT (xenv));
+	idio_gc_protect_auto (IDIO_XENV_SES (xenv));
+	idio_gc_protect_auto (IDIO_XENV_SPS (xenv));
+    }
 
     if (idio_isa_octet_string (bc)) {
 	IDIO_XENV_BYTE_CODE (xenv) = idio_codegen_string2idio_ia (bc);
@@ -8364,7 +8367,7 @@ Add a new xenv derived from the arguments	\n\
     IDIO_USER_TYPE_ASSERT (octet_string, bs);
     IDIO_USER_TYPE_ASSERT (integer, pc);
 
-    idio_xi_t xi = idio_vm_add_xenv (desc, st, cs, ch, vt, ses, sps, bs);
+    idio_xi_t xi = idio_vm_add_xenv (1, desc, st, cs, ch, vt, ses, sps, bs);
 
     return idio_fixnum (xi);
 }
@@ -8396,10 +8399,9 @@ idio_xi_t idio_vm_add_xenv_from_eenv (IDIO thr, IDIO eenv)
 	return 0;
     }
 
-    idio_xi_t xi = idio_vm_add_xenv (desc, st, cs, ch, vt, ses, sps, CTP_bc);
+    idio_xi_t xi = idio_vm_add_xenv (0, desc, st, cs, ch, vt, ses, sps, CTP_bc);
 
     IDIO_XENV_EENV (idio_xenvs[xi]) = eenv;
-    idio_gc_protect_auto (eenv);
 
     idio_struct_instance_set_direct (eenv, IDIO_EENV_ST_XI, idio_fixnum (xi));
 

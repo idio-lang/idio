@@ -1974,7 +1974,6 @@ IDIO idio_module_method_2string (idio_vtable_method_t *m, IDIO v, ...)
 
 void idio_module_add_primitives ()
 {
-    IDIO_ADD_PRIMITIVE (find_or_create_module);
     IDIO_ADD_PRIMITIVE (current_env);
     IDIO_ADD_PRIMITIVE (current_module);
     IDIO_ADD_PRIMITIVE (set_current_module);
@@ -1982,6 +1981,7 @@ void idio_module_add_primitives ()
     IDIO_ADD_PRIMITIVE (set_module_exports);
     IDIO_ADD_PRIMITIVE (modulep);
     IDIO_ADD_PRIMITIVE (find_module);
+    IDIO_ADD_PRIMITIVE (find_or_create_module);
     IDIO_ADD_PRIMITIVE (module_name);
     IDIO_ADD_PRIMITIVE (module_imports);
     IDIO_ADD_PRIMITIVE (module_exports);
@@ -2024,9 +2024,11 @@ void idio_final_module ()
 	    IDIO module_name = IDIO_PAIR_H (module_names);
 	    IDIO module = idio_hash_ref (idio_modules_hash, module_name);
 
-	    idio_debug_FILE (fp, "\nModule %s\n", module_name);
-
 	    IDIO symbols = idio_hash_keys_to_list (IDIO_MODULE_SYMBOLS (module));
+
+	    idio_debug_FILE (fp, "\nModule %s", module_name);
+	    fprintf (fp, " %zd symbols\n", idio_list_length (symbols));
+
 	    while (idio_S_nil != symbols) {
 		IDIO sym = IDIO_PAIR_H (symbols);
 		IDIO si = idio_hash_ref (IDIO_MODULE_SYMBOLS (module), sym);

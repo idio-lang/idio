@@ -97,25 +97,6 @@ extern IDIO idio_S_F_SETFD;
  */
 #define IDIO_LIBC_SIGNAL_NAME(n) IDIO_LIBC_SIGNAL_NAME_ONLY(#n,n)
 
-/*
- * We create a signal-specific condition type, ^rt-signal-SIGxxx, for
- * each signum then build a single instance of it.  That condition
- * carries no other information than the signal number so the
- * condition can be persistent and re-used.
- */
-
-#define IDIO_LIBC_SIGNAL_NAME_AND_CONDITION(n) {			\
-	IDIO sig_sym = idio_symbols_C_intern (#n, sizeof (#n) - 1);	\
-	idio_libc_export_symbol_value (sig_sym, idio_C_int (n));	\
-	if ('\0' == idio_libc_signal_names[n][0]) {			\
-	    snprintf (idio_libc_signal_names[n], IDIO_LIBC_SIGNAMELEN, "%s", #n); \
-	}								\
-	IDIO sig_ct;							\
-	IDIO_DEFINE_CONDITION0_DYNAMIC (sig_ct, "^rt-signal-" #n, idio_condition_rt_signal_type); \
-	IDIO sig_cond = idio_struct_instance (sig_ct, IDIO_LIST1 (idio_C_int (n))); \
-	idio_array_insert_index (idio_vm_signal_handler_conditions, sig_cond, n); \
-    }
-
 #define IDIO_LIBC_SIGNAL(n) {						\
 	IDIO sig_sym = idio_symbols_C_intern (#n, sizeof (#n) - 1);	\
 	idio_libc_export_symbol_value (sig_sym, idio_C_int (n));	\
@@ -134,10 +115,6 @@ extern IDIO idio_S_F_SETFD;
 	if ('\0' == idio_libc_errno_names[n][0]) {			\
 	    snprintf (idio_libc_errno_names[n], IDIO_LIBC_ERRNAMELEN, "%s", IDIO_SYMBOL_S (err_sym)); \
 	}								\
-	IDIO err_ct;							\
-	IDIO_DEFINE_CONDITION0_DYNAMIC (err_ct, "^system-error-" #n, idio_condition_system_error_type); \
-	IDIO err_cond = idio_struct_instance (err_ct, IDIO_LIST5 (idio_S_nil, idio_S_nil, idio_S_nil, idio_C_int (n), idio_S_nil)); \
-	idio_array_insert_index (idio_vm_errno_conditions, err_cond, n); \
     }
 
 #define IDIO_LIBC_RLIMIT(n) {						\
@@ -161,7 +138,6 @@ IDIO idio_libc_export_symbol_value (IDIO symbol, IDIO value);
 char *idio_libc_string_C (IDIO val, char const *func_C, size_t *free_me_p, IDIO c_location);
 char *idio_getcwd (char const *func, char *buf, size_t size);
 char *idio_libc_signal_name (int signum);
-extern IDIO idio_vm_errno_conditions;
 extern char **idio_libc_errno_names;
 char *idio_libc_errno_name (int errnum);
 extern char **idio_libc_rlimit_names;

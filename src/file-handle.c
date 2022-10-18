@@ -4107,11 +4107,21 @@ This is the `load` primitive.					\n\
 
     IDIO eenv = idio_evaluate_eenv (thr, desc, cm);
 
-    idio_gc_protect (eenv);
+    /*
+     * It is not beyond the bounds of possibility that loading a file
+     * might result in a condition being raised (think: test suite) in
+     * which case we don't want to idio_gc_protect() eenv because that
+     * will leave (roughly 1300) eenvs as root objects even though
+     * they are invalid.
+     *
+     * So, use the stack instead.
+     */
+    IDIO stack = IDIO_THREAD_STACK (thr);
+    idio_array_push (stack, eenv);
 
     IDIO r = idio_load_file_name (filename, eenv);
 
-    idio_gc_expose (eenv);
+    idio_array_pop (stack);
 
     idio_pc_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -4250,5 +4260,4 @@ void idio_init_file_handle ()
     idio_gc_protect_auto (idio_dl_handles);
 
     idio_compile_file_reader_sym = IDIO_SYMBOL ("compile-file-reader");
-    idio_gc_protect_auto (idio_compile_file_reader_sym);
 }
