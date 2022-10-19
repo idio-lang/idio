@@ -1604,8 +1604,6 @@ void idio_gc_expose (IDIO o);
 void idio_gc_expose_all ();
 void idio_gc_add_weak_object (IDIO o);
 void idio_gc_remove_weak_object (IDIO o);
-void idio_gc_mark (idio_gc_t *idio_gc);
-void idio_gc_sweep (idio_gc_t *idio_gc);
 void idio_gc_possibly_collect ();
 #define IDIO_GC_COLLECT_GEN	0
 #define IDIO_GC_COLLECT_ALL	1

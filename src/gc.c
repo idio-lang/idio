@@ -166,6 +166,7 @@ void idio_gc_free (void *p, size_t size)
  */
 
 #define IDIO_GC_ALLOC_POOL	1E3
+#define IDIO_GC_ALLOC_MANY	5E5
 
 IDIO idio_gc_get_alloc ()
 {
@@ -226,7 +227,7 @@ IDIO idio_gc_get (idio_type_e type)
 	idio_gc->free = o->next;
     }
 
-    if (idio_gc->stats.igets++ > 5E5) {
+    if (idio_gc->stats.igets++ > IDIO_GC_ALLOC_MANY) {
 	IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_REQUEST;
     }
 
@@ -1062,7 +1063,7 @@ void idio_gc_expose_all ()
 
 #ifdef IDIO_GC_DEBUG
 	if (n) {
-	    fprintf (stderr, "gc-expose-all #%d: for %zd root objects\n", gc->inst, n);
+	    fprintf (stderr, "gc-expose-all #%d: for %zd roots\n", gc->inst, n);
 	}
 #endif
 
@@ -1617,9 +1618,9 @@ void idio_gc_sweep_free_value (IDIO vo)
     }
 }
 
-void idio_gc_sweep (idio_gc_t *gc)
+size_t idio_gc_sweep (idio_gc_t *gc)
 {
-    while (gc->stats.nfree > (10 * IDIO_GC_ALLOC_POOL)) {
+    while (gc->stats.nfree > IDIO_GC_ALLOC_MANY) {
     	IDIO fo = gc->free;
 	gc->free = fo->next;
 	IDIO_GC_FREE (fo, sizeof (idio_t));
@@ -1673,20 +1674,25 @@ void idio_gc_sweep (idio_gc_t *gc)
     }
 
 #ifdef IDIO_GC_DEBUG
-    fprintf (stderr, "gc-sweep #%d: saw %7zd obj; freed %6zd ", gc->inst, nobj, freed);
-    double freed100 = freed * 100.0;
-    if (nobj) {
-	fprintf (stderr, "%5.1f%% ", freed100 / nobj);
-    } else {
-	fprintf (stderr, "    0%% ");
+    pid_t pid = getpid ();
+    if (pid == idio_pid) {
+	fprintf (stderr, "[%" PRIdMAX "] gc-sweep #%d: saw %7zd obj; freed %6zd ", (intmax_t) pid, gc->inst, nobj, freed);
+	double freed100 = freed * 100.0;
+	if (nobj) {
+	    fprintf (stderr, "%5.1f%% ", freed100 / nobj);
+	} else {
+	    fprintf (stderr, "    0%% ");
+	}
+	if (gc->stats.igets) {
+	    fprintf (stderr, "%5.1f%% ", freed100 / gc->stats.igets);
+	} else {
+	    fprintf (stderr, "    0%% ");
+	}
+	fprintf (stderr, "; %7zd obj rem\n", nobj - freed);
     }
-    if (gc->stats.igets) {
-	fprintf (stderr, "%5.1f%% ", freed100 / gc->stats.igets);
-    } else {
-	fprintf (stderr, "    0%% ");
-    }
-    fprintf (stderr, "; %7zd obj rem\n", nobj - freed);
 #endif
+
+    return nobj;
 }
 
 static FILE *idio_gc_stats_FILE = NULL;
@@ -1810,7 +1816,7 @@ void idio_gc_stats ()
 	scale = 0;
 	idio_hcount (&count, &scale);
 
-	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  root objects\n", count, scales[scale]);
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  roots\n", count, scales[scale]);
 
 	int drc = 0;
 	if (idio_isa_pair (gc->dynamic_roots)) {
@@ -1955,20 +1961,6 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
     }
 
     gc->stats.collections++;
-#ifdef IDIO_GC_DEBUG
-    /*
-     * Child processes can report GC metrics which give an anomalous
-     * appearance of a collection being repeated so include the PID to
-     * help differentiate.
-     */
-    pid_t pid = getpid ();
-    int print = 0;
-    if (pid == idio_pid) {
-	print = 1;
-	fprintf (stderr, "[%" PRIdMAX "] gc-collect %s %d.%-3lld %-23s ", (intmax_t) pid, IDIO_GC_COLLECT_GEN == gen ? "gen" : "all", gc->inst, gc->stats.collections, caller);
-    }
-#endif
-
     IDIO_GC_FLAGS (idio_gc) &= ~ IDIO_GC_FLAG_REQUEST;
 
     struct timeval t0;
@@ -1986,6 +1978,10 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 	perror ("gc-collect: getrusage");
     }
 
+#ifdef IDIO_GC_DEBUG
+    size_t nobj = 0;
+#endif
+
     if (IDIO_GC_COLLECT_GEN == gen) {
 	if (gettimeofday (&t0, NULL) < 0) {
 	    perror ("gc-collect: gettimeofday");
@@ -1997,7 +1993,11 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 	    perror ("gc-collect: gettimeofday");
 	}
 
+#ifdef IDIO_GC_DEBUG
+	nobj = idio_gc_sweep (gc);
+#else
 	idio_gc_sweep (gc);
+#endif
 
 	if (gettimeofday (&t_sweep, NULL) < 0) {
 	    perror ("gc-collect: gettimeofday");
@@ -2031,7 +2031,11 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 		perror ("gc-collect: gettimeofday");
 	    }
 
+#ifdef IDIO_GC_DEBUG
+	    nobj += idio_gc_sweep (gc);
+#else
 	    idio_gc_sweep (gc);
+#endif
 
 	    if (gettimeofday (&t_sweep, NULL) < 0) {
 		perror ("gc-collect: gettimeofday");
@@ -2081,9 +2085,30 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
     gc->stats.sweep_dur.tv_sec += s_sweep;
 
 #ifdef IDIO_GC_DEBUG
-    if (print) {
-	fprintf (stderr, "[%" PRIdMAX "] gc-stats: GC time dur mark/sweep %ld.%03lds/%ld.%03lds",
+    /*
+     * Child processes can report GC metrics(*) which give an
+     * anomalous appearance of a collection being repeated so report
+     * (and limit to) the (main) PID to help clarify/differentiate
+     * matters.
+     *
+     * (*) Somewhat worse, the child processes, even though they are
+     * shortlived expressions in the test suite, can trigger a GC
+     * which we have to wait for.
+     *
+     * Doubly worse because if that trigger occurs for one child
+     * process then it's quite likely to occur for many of the child
+     * processes.  Doh!
+     */
+    pid_t pid = getpid ();
+    if (pid == idio_pid) {
+	fprintf (stderr, "[%" PRIdMAX "] gc-collect %s %d.%-3lld %-23s ",
 		 (intmax_t) pid,
+		 IDIO_GC_COLLECT_GEN == gen ? "gen" : "all",
+		 gc->inst,
+		 gc->stats.collections,
+		 caller);
+
+	fprintf (stderr, "m/s %ld.%03lds/%ld.%03lds",
 		 (long) s_mark, (long) us_mark / 1000,
 		 (long) s_sweep, (long) us_sweep / 1000);
 
@@ -2098,7 +2123,7 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 	    }
 	    root = root->next;
 	}
-	fprintf (stderr, " %d root objects ", rc);
+	fprintf (stderr, " %2d roots ", rc);
 
 	int drc = 0;
 	if (idio_isa_pair (gc->dynamic_roots)) {
@@ -2108,7 +2133,13 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 		dr = IDIO_PAIR_T (dr);
 	    }
 	}
-	fprintf (stderr, " %d dynamics\n", drc);
+	fprintf (stderr, " %6d autos", drc);
+
+	if (us_mark) {
+	    fprintf (stderr, " %6zu in %6ldus = %5.1f", nobj, us_mark, 1.0 * nobj / us_mark);
+	}
+
+	fprintf (stderr, "\n");
     }
 #endif
 
