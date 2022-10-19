@@ -232,11 +232,14 @@ IDIO idio_gc_get (idio_type_e type)
     }
 
     /* assign type late in case we've re-used a previous object */
-    o->type = type;
-    o->vtable = NULL;
-    o->gc_flags = IDIO_GC_FLAG_NONE;
-    o->flags = IDIO_FLAG_NONE;
-    o->tflags = 0;
+    o->type      = type;
+    o->vtable    = NULL;
+    o->colour    = IDIO_GC_FLAG_GCC_WHITE;
+    o->free      = IDIO_GC_FLAG_NOTFREE;
+    o->sticky    = IDIO_GC_FLAG_NOTSTICKY;
+    o->finalizer = IDIO_GC_FLAG_NOFINALIZER;
+    o->flags     = IDIO_FLAG_NONE;
+    o->tflags    = 0;
 
     IDIO_ASSERT (o);
     if (NULL != idio_gc->used) {
@@ -343,15 +346,15 @@ void idio_gc_register_finalizer (IDIO o, void (*func) (IDIO o))
     IDIO ofunc = idio_C_pointer (func);
 
     idio_hash_put (idio_gc_finalizer_hash, o, ofunc);
-    o->gc_flags |= IDIO_GC_FLAG_FINALIZER;
+    o->finalizer = IDIO_GC_FLAG_FINALIZER;
 }
 
 void idio_gc_deregister_finalizer (IDIO o)
 {
     IDIO_ASSERT (o);
 
-    if (o->gc_flags & IDIO_GC_FLAG_FINALIZER_MASK) {
-	o->gc_flags &= IDIO_GC_FLAG_FINALIZER_UMASK;
+    if (IDIO_GC_FLAG_FINALIZER == o->finalizer) {
+	o->finalizer = IDIO_GC_FLAG_NOFINALIZER;
     } else {
 	/* fprintf (stderr, "final del: already done?\n"); */
 	/* idio_dump (idio_gc_finalizer_hash, 2); */
@@ -385,7 +388,7 @@ static void idio_gc_finalizer_run (IDIO o)
     }
 }
 
-void idio_gc_gcc_mark (idio_gc_t *gc, IDIO o, unsigned colour)
+void idio_gc_gcc_mark (idio_gc_t *gc, IDIO o, idio_gc_flag_gcc_enum colour)
 {
     /* IDIO_ASSERT (o); */
 
@@ -411,7 +414,7 @@ void idio_gc_gcc_mark (idio_gc_t *gc, IDIO o, unsigned colour)
 	return;
     }
 
-    if ((o->gc_flags & IDIO_GC_FLAG_FREE_UMASK) & IDIO_GC_FLAG_FREE) {
+    if (IDIO_GC_FLAG_FREE == o->free) {
 	fprintf (stderr, "idio_gc_gcc_mark: already free?: ");
 	gc->verbose++;
 	idio_dump (o, 1);
@@ -421,13 +424,13 @@ void idio_gc_gcc_mark (idio_gc_t *gc, IDIO o, unsigned colour)
 
     switch (colour) {
     case IDIO_GC_FLAG_GCC_WHITE:
-	o->gc_flags = (o->gc_flags & IDIO_GC_FLAG_GCC_UMASK) | colour;
+	o->colour = colour;
 	break;
     case IDIO_GC_FLAG_GCC_BLACK:
-	if (o->gc_flags & IDIO_GC_FLAG_GCC_BLACK) {
+	if (IDIO_GC_FLAG_GCC_BLACK == o->colour) {
 	    break;
 	}
-	if (o->gc_flags & IDIO_GC_FLAG_GCC_LGREY) {
+	if (IDIO_GC_FLAG_GCC_LGREY == o->colour) {
 	    break;
 	}
 
@@ -440,80 +443,80 @@ void idio_gc_gcc_mark (idio_gc_t *gc, IDIO o, unsigned colour)
 	    return;
 	    break;
 	case IDIO_TYPE_SUBSTRING:
-	    o->gc_flags = (o->gc_flags & IDIO_GC_FLAG_GCC_UMASK) | colour;
+	    o->colour = colour;
 	    idio_gc_gcc_mark (gc, IDIO_SUBSTRING_PARENT (o), colour);
 	    break;
 	case IDIO_TYPE_PAIR:
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
+	    o->colour = IDIO_GC_FLAG_GCC_LGREY;
 	    IDIO_PAIR_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
 	case IDIO_TYPE_ARRAY:
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
+	    o->colour = IDIO_GC_FLAG_GCC_LGREY;
 	    IDIO_ARRAY_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
 	case IDIO_TYPE_HASH:
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
+	    o->colour = IDIO_GC_FLAG_GCC_LGREY;
 	    IDIO_HASH_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
 	case IDIO_TYPE_CLOSURE:
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
+	    o->colour = IDIO_GC_FLAG_GCC_LGREY;
 	    IDIO_CLOSURE_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
 	case IDIO_TYPE_PRIMITIVE:
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
+	    o->colour = IDIO_GC_FLAG_GCC_LGREY;
 	    IDIO_PRIMITIVE_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
 	case IDIO_TYPE_MODULE:
 	    IDIO_C_ASSERT (IDIO_MODULE_GREY (o) != o);
 	    IDIO_C_ASSERT (gc->grey != o);
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
+	    o->colour = IDIO_GC_FLAG_GCC_LGREY;
 	    IDIO_MODULE_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
 	case IDIO_TYPE_FRAME:
 	    IDIO_C_ASSERT (IDIO_FRAME_GREY (o) != o);
 	    IDIO_C_ASSERT (gc->grey != o);
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
+	    o->colour = IDIO_GC_FLAG_GCC_LGREY;
 	    IDIO_FRAME_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
 	case IDIO_TYPE_HANDLE:
 	    IDIO_C_ASSERT (IDIO_HANDLE_GREY (o) != o);
 	    IDIO_C_ASSERT (gc->grey != o);
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
+	    o->colour = IDIO_GC_FLAG_GCC_LGREY;
 	    IDIO_HANDLE_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
 	case IDIO_TYPE_STRUCT_TYPE:
 	    IDIO_C_ASSERT (IDIO_STRUCT_TYPE_GREY (o) != o);
 	    IDIO_C_ASSERT (gc->grey != o);
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
+	    o->colour = IDIO_GC_FLAG_GCC_LGREY;
 	    IDIO_STRUCT_TYPE_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
 	case IDIO_TYPE_STRUCT_INSTANCE:
 	    IDIO_C_ASSERT (IDIO_STRUCT_INSTANCE_GREY (o) != o);
 	    IDIO_C_ASSERT (gc->grey != o);
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
+	    o->colour = IDIO_GC_FLAG_GCC_LGREY;
 	    IDIO_STRUCT_INSTANCE_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
 	case IDIO_TYPE_THREAD:
 	    IDIO_C_ASSERT (IDIO_THREAD_GREY (o) != o);
 	    IDIO_C_ASSERT (gc->grey != o);
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
+	    o->colour = IDIO_GC_FLAG_GCC_LGREY;
 	    IDIO_THREAD_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
 	case IDIO_TYPE_CONTINUATION:
 	    IDIO_C_ASSERT (IDIO_CONTINUATION_GREY (o) != o);
 	    IDIO_C_ASSERT (gc->grey != o);
-	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
+	    o->colour = IDIO_GC_FLAG_GCC_LGREY;
 	    IDIO_CONTINUATION_GREY (o) = gc->grey;
 	    gc->grey = o;
 	    break;
@@ -521,7 +524,7 @@ void idio_gc_gcc_mark (idio_gc_t *gc, IDIO o, unsigned colour)
 	    /*
 	     * All other (non-compound) types just have the colour set
 	     */
-	    o->gc_flags = (o->gc_flags & IDIO_GC_FLAG_GCC_UMASK) | colour;
+	    o->colour = colour;
 	    break;
 	}
 	break;
@@ -545,8 +548,7 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 
     size_t i;
 
-    o->gc_flags &= IDIO_GC_FLAG_GCC_UMASK;
-    o->gc_flags = (o->gc_flags & IDIO_GC_FLAG_GCC_UMASK) | IDIO_GC_FLAG_GCC_BLACK;
+    o->colour = IDIO_GC_FLAG_GCC_BLACK;
 
     switch (o->type) {
     case IDIO_TYPE_PAIR:
@@ -1170,7 +1172,7 @@ void idio_gc_mark_weak (idio_gc_t *gc)
 				case IDIO_TYPE_PLACEHOLDER_MARK:
 				    break;
 				case IDIO_TYPE_POINTER_MARK:
-				    if (k->gc_flags & IDIO_GC_FLAG_GCC_BLACK) {
+				    if (IDIO_GC_FLAG_GCC_BLACK == k->colour) {
 					idio_gc_gcc_mark (gc, IDIO_HASH_HE_VALUE (he), IDIO_GC_FLAG_GCC_BLACK);
 					modified++;
 				    }
@@ -1243,10 +1245,10 @@ void idio_gc_mark_weak (idio_gc_t *gc)
 			    case IDIO_TYPE_PLACEHOLDER_MARK:
 				break;
 			    case IDIO_TYPE_POINTER_MARK:
-				if (k->gc_flags & IDIO_GC_FLAG_GCC_BLACK) {
+				if (IDIO_GC_FLAG_GCC_BLACK == k->colour) {
 				    idio_gc_gcc_mark (gc, IDIO_HASH_HE_VALUE (he), IDIO_GC_FLAG_GCC_BLACK);
 				} else {
-				    if (k->gc_flags & IDIO_GC_FLAG_FINALIZER) {
+				    if (IDIO_GC_FLAG_FINALIZER == k->finalizer) {
 					idio_gc_finalizer_run (k);
 				    }
 
@@ -1330,7 +1332,7 @@ void idio_gc_mark_weak (idio_gc_t *gc)
 			    case IDIO_TYPE_PLACEHOLDER_MARK:
 				break;
 			    case IDIO_TYPE_POINTER_MARK:
-				if (0 == (k->gc_flags & IDIO_GC_FLAG_GCC_BLACK)) {
+				if (IDIO_GC_FLAG_GCC_BLACK != k->colour) {
 				    fprintf (stderr, "lost key %10p %10p in chain %5zu\n", o, k, i);
 				    lost++;
 				}
@@ -1512,7 +1514,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 	return;
     }
 
-    if (vo->gc_flags & IDIO_GC_FLAG_FINALIZER) {
+    if (IDIO_GC_FLAG_FINALIZER == vo->finalizer) {
 	idio_gc_finalizer_run (vo);
     }
 
@@ -1636,7 +1638,7 @@ size_t idio_gc_sweep (idio_gc_t *gc)
     while (co) {
 	IDIO_ASSERT (co);
 	nobj++;
-	if ((co->gc_flags & IDIO_GC_FLAG_FREE_MASK) == IDIO_GC_FLAG_FREE) {
+	if (IDIO_GC_FLAG_FREE == co->free) {
 	    fprintf (stderr, "idio_gc_sweep: already free?: ");
 	    gc->verbose++;
 	    idio_dump (co, 1);
@@ -1646,8 +1648,8 @@ size_t idio_gc_sweep (idio_gc_t *gc)
 
 	no = co->next;
 
-	if (((co->gc_flags & IDIO_GC_FLAG_STICKY_MASK) == IDIO_GC_FLAG_NOTSTICKY) &&
-	    ((co->gc_flags & IDIO_GC_FLAG_GCC_MASK) == IDIO_GC_FLAG_GCC_WHITE)) {
+	if ((IDIO_GC_FLAG_NOTSTICKY == co->sticky) &&
+	    (IDIO_GC_FLAG_GCC_WHITE == co->colour)) {
 	    gc->stats.nused[co->type]--;
 	    /* fprintf (stderr, "idio_gc_sweep: free %10p %2d %s\n", co, co->type, idio_type2string (co)); */
 	    if (po) {
@@ -1660,7 +1662,7 @@ size_t idio_gc_sweep (idio_gc_t *gc)
 	    idio_gc_sweep_free_value (co);
 
 	    co->type = IDIO_TYPE_NONE;
-	    co->gc_flags = (co->gc_flags & IDIO_GC_FLAG_FREE_UMASK) | IDIO_GC_FLAG_FREE;
+	    co->free = IDIO_GC_FLAG_FREE;
 	    co->next = gc->free;
 	    gc->free = co;
 	    gc->stats.nfree++;

@@ -210,34 +210,6 @@ typedef int32_t idio_unicode_t;	/* must handle EOF as well! */
 typedef uint8_t IDIO_I;
 #define IDIO_I_MAX	UINT8_MAX
 
-#define IDIO_GC_FLAG_NONE		0
-#define IDIO_GC_FLAG_GCC_SHIFT		0	/* GC colours -- four bits */
-#define IDIO_GC_FLAG_FREE_SHIFT		4	/* debug */
-#define IDIO_GC_FLAG_STICKY_SHIFT	5	/* memory pinning */
-#define IDIO_GC_FLAG_FINALIZER_SHIFT	6
-
-#define IDIO_GC_FLAG_GCC_MASK		(0xf << IDIO_GC_FLAG_GCC_SHIFT)
-#define IDIO_GC_FLAG_GCC_UMASK		(~ IDIO_GC_FLAG_GCC_MASK)
-#define IDIO_GC_FLAG_GCC_BLACK		(1 << (IDIO_GC_FLAG_GCC_SHIFT+0))
-#define IDIO_GC_FLAG_GCC_DGREY		(1 << (IDIO_GC_FLAG_GCC_SHIFT+1))
-#define IDIO_GC_FLAG_GCC_LGREY		(1 << (IDIO_GC_FLAG_GCC_SHIFT+2))
-#define IDIO_GC_FLAG_GCC_WHITE		(1 << (IDIO_GC_FLAG_GCC_SHIFT+3))
-
-#define IDIO_GC_FLAG_FREE_MASK		(1 << IDIO_GC_FLAG_FREE_SHIFT)
-#define IDIO_GC_FLAG_FREE_UMASK		(~ IDIO_GC_FLAG_FREE_MASK)
-#define IDIO_GC_FLAG_NOTFREE		(0 << IDIO_GC_FLAG_FREE_SHIFT)
-#define IDIO_GC_FLAG_FREE		(1 << IDIO_GC_FLAG_FREE_SHIFT)
-
-#define IDIO_GC_FLAG_STICKY_MASK	(1 << IDIO_GC_FLAG_STICKY_SHIFT)
-#define IDIO_GC_FLAG_STICKY_UMASK	(~ IDIO_GC_FLAG_STICKY_MASK)
-#define IDIO_GC_FLAG_NOTSTICKY		(0 << IDIO_GC_FLAG_STICKY_SHIFT)
-#define IDIO_GC_FLAG_STICKY		(1 << IDIO_GC_FLAG_STICKY_SHIFT)
-
-#define IDIO_GC_FLAG_FINALIZER_MASK	(1 << IDIO_GC_FLAG_FINALIZER_SHIFT)
-#define IDIO_GC_FLAG_FINALIZER_UMASK	(~ IDIO_GC_FLAG_FINALIZER_MASK)
-#define IDIO_GC_FLAG_NOFINALIZER	(0 << IDIO_GC_FLAG_FINALIZER_SHIFT)
-#define IDIO_GC_FLAG_FINALIZER		(1 << IDIO_GC_FLAG_FINALIZER_SHIFT)
-
 /*
  * A vtable method is a C function and a block of data for the
  * function, if required.
@@ -1194,9 +1166,36 @@ typedef struct idio_opaque_s {
 
 typedef unsigned char IDIO_FLAGS_T;
 
-#define IDIO_FLAG_NONE		0
-#define IDIO_FLAG_CONST		(1<<0)
-#define IDIO_FLAG_TAINTED	(1<<1)
+typedef enum {
+    IDIO_GC_FLAG_GCC_BLACK,
+    IDIO_GC_FLAG_GCC_DGREY,
+    IDIO_GC_FLAG_GCC_LGREY,
+    IDIO_GC_FLAG_GCC_WHITE
+} idio_gc_flag_gcc_enum;
+
+typedef enum {
+    IDIO_GC_FLAG_NOTFREE,
+    IDIO_GC_FLAG_FREE
+} idio_gc_flag_free_enum;
+
+typedef enum {
+    IDIO_GC_FLAG_NOTSTICKY,
+    IDIO_GC_FLAG_STICKY
+} idio_gc_flag_sticky_enum;
+
+typedef enum {
+    IDIO_GC_FLAG_NOFINALIZER,
+    IDIO_GC_FLAG_FINALIZER
+} idio_gc_flag_finalizer_enum;
+
+/*
+ * generic type flags
+ */
+typedef enum {
+    IDIO_FLAG_NONE,
+    IDIO_FLAG_CONST,
+    IDIO_FLAG_TAINTED
+} idio_flag_enum;
 
 /**
  * struct idio_s - Idio type structure
@@ -1214,11 +1213,19 @@ struct idio_s {
      * The union will be word-aligned (or larger) so we have 4 or 8
      * bytes of room for "stuff"
      */
-    idio_type_e type;
-    IDIO_FLAGS_T gc_flags;
-    IDIO_FLAGS_T flags;		/* generic type flags */
-    IDIO_FLAGS_T tflags;	/* type-specific flags (since we have
-				   room here) */
+    idio_type_enum              type:6; /* 40-ish < 64 */
+    idio_gc_flag_gcc_enum       colour:2;
+    idio_gc_flag_free_enum      free:1;
+    idio_gc_flag_sticky_enum    sticky:1;
+    idio_gc_flag_finalizer_enum finalizer:1;
+
+    idio_flag_enum              flags:2; /* generic type flags */
+
+    /*
+     * type-specific flags (since we have room here)
+     */
+    IDIO_FLAGS_T tflags;
+
     /*
      * Rationale for union.  We need to decide whether the union
      * should embed the object or have a pointer to it.
