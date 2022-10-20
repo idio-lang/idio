@@ -1120,50 +1120,6 @@ typedef struct idio_C_type_s {
 #define IDIO_C_TYPE_POINTER_P(C)	((C)->u.C_type.u.C_pointer->p)
 #define IDIO_C_TYPE_POINTER_FREEP(C)	((C)->u.C_type.u.C_pointer->freep)
 
-typedef struct idio_C_typedef_s {
-    struct idio_s *grey;
-    struct idio_s *sym;		/* a symbol */
-} idio_C_typedef_t;
-
-#define IDIO_C_TYPEDEF_GREY(C) ((C)->u.C_typedef->grey)
-#define IDIO_C_TYPEDEF_SYM(C)  ((C)->u.C_typedef->sym)
-
-typedef struct idio_C_struct_s {
-    struct idio_s *grey;
-    struct idio_s *fields;
-    struct idio_s *methods;
-    struct idio_s *frame;
-    size_t size;
-} idio_C_struct_t;
-
-#define IDIO_C_STRUCT_GREY(C)    ((C)->u.C_struct->grey)
-#define IDIO_C_STRUCT_FIELDS(C)  ((C)->u.C_struct->fields)
-#define IDIO_C_STRUCT_METHODS(C) ((C)->u.C_struct->methods)
-#define IDIO_C_STRUCT_FRAME(C)   ((C)->u.C_struct->frame)
-#define IDIO_C_STRUCT_SIZE(C)    ((C)->u.C_struct->size)
-
-typedef struct idio_C_instance_s {
-    struct idio_s *grey;
-    void *p;
-    struct idio_s *C_struct;
-    struct idio_s *frame;
-} idio_C_instance_t;
-
-#define IDIO_C_INSTANCE_GREY(C)     ((C)->u.C_instance->grey)
-#define IDIO_C_INSTANCE_P(C)        ((C)->u.C_instance->p)
-#define IDIO_C_INSTANCE_C_STRUCT(C) ((C)->u.C_instance->C_struct)
-#define IDIO_C_INSTANCE_FRAME(C)    ((C)->u.C_instance->frame)
-
-typedef struct idio_opaque_s {
-    struct idio_s *grey;
-    void *p;
-    struct idio_s *args;
-} idio_opaque_t;
-
-#define IDIO_OPAQUE_GREY(C) ((C)->u.opaque->grey)
-#define IDIO_OPAQUE_P(C)    ((C)->u.opaque->p)
-#define IDIO_OPAQUE_ARGS(C) ((C)->u.opaque->args)
-
 typedef unsigned char IDIO_FLAGS_T;
 
 typedef enum {
@@ -1265,15 +1221,9 @@ struct idio_s {
 	idio_struct_type_t     *struct_type;
 	idio_struct_instance_t *struct_instance;
 	idio_thread_t	       *thread;
-
-	idio_C_type_t          C_type;
-
-	idio_C_typedef_t       *C_typedef;
-	idio_C_struct_t        *C_struct;
-	idio_C_instance_t      *C_instance;
-	idio_opaque_t          *opaque;
 	idio_continuation_t    *continuation;
 	idio_bitset_t	       bitset;
+	idio_C_type_t          C_type;
     } u;
 };
 

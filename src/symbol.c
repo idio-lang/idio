@@ -102,7 +102,6 @@ IDIO_SYMBOL_DECL (c_pointer);
 IDIO_SYMBOL_DECL (c_void);
 
 IDIO_SYMBOL_DECL (2string);
-IDIO_SYMBOL_DECL (C_struct);
 IDIO_SYMBOL_DECL (after);
 IDIO_SYMBOL_DECL (ampersand);
 IDIO_SYMBOL_DECL (and);
@@ -1103,7 +1102,6 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("C/void", c_void);
 
     IDIO_SYMBOL_DEF ("->string", 2string);
-    IDIO_SYMBOL_DEF ("c_struct", C_struct);
     IDIO_SYMBOL_DEF ("after", after);
     IDIO_SYMBOL_DEF ("&", ampersand);
     IDIO_SYMBOL_DEF ("and", and);

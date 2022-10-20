@@ -2494,56 +2494,6 @@ void idio_init_gc ()
     idio_gc_protect (dr);
     idio_gc->dynamic_roots = dr;
 
-    if (0) {
-	size_t n = 0;
-	size_t sum = 0;
-
-#define IDIO_GC_STRUCT_SIZE(s)	{					\
-	    size_t size = sizeof (struct s);				\
-	    sum += size;						\
-	    n++;							\
-	    fprintf (stderr, "sizeof (struct %-24s = %zd\n", #s ")", size); \
-	}
-
-	IDIO_GC_STRUCT_SIZE (idio_s);
-
-	n = 0;
-	sum = 0;
-
-	IDIO_GC_STRUCT_SIZE (idio_string_s);
-	IDIO_GC_STRUCT_SIZE (idio_substring_s);
-	IDIO_GC_STRUCT_SIZE (idio_symbol_s);
-	IDIO_GC_STRUCT_SIZE (idio_keyword_s);
-	IDIO_GC_STRUCT_SIZE (idio_pair_s);
-	IDIO_GC_STRUCT_SIZE (idio_array_s);
-	IDIO_GC_STRUCT_SIZE (idio_hash_s);
-	IDIO_GC_STRUCT_SIZE (idio_closure_s);
-	IDIO_GC_STRUCT_SIZE (idio_primitive_s);
-	IDIO_GC_STRUCT_SIZE (idio_bignum_s);
-	IDIO_GC_STRUCT_SIZE (idio_module_s);
-	IDIO_GC_STRUCT_SIZE (idio_frame_s);
-	IDIO_GC_STRUCT_SIZE (idio_handle_s);
-	IDIO_GC_STRUCT_SIZE (idio_struct_type_s);
-	IDIO_GC_STRUCT_SIZE (idio_struct_instance_s);
-	IDIO_GC_STRUCT_SIZE (idio_thread_s);
-	IDIO_GC_STRUCT_SIZE (idio_C_type_s);
-	IDIO_GC_STRUCT_SIZE (idio_C_typedef_s);
-	IDIO_GC_STRUCT_SIZE (idio_C_struct_s);
-	IDIO_GC_STRUCT_SIZE (idio_C_instance_s);
-	IDIO_GC_STRUCT_SIZE (idio_opaque_s);
-	IDIO_GC_STRUCT_SIZE (idio_continuation_s);
-
-	fprintf (stderr, "sum = %zd, avg = %zd\n", sum, sum / n);
-
-	/*
-	 * deduct sizeof (idio_thread_t) as there aren't may of them
-	 * in use and it skews the stats of regular user objects
-	 */
-	sum -= 96;
-	fprintf (stderr, "sum = %zd, avg = %zd\n", sum, sum / n);
-
-    }
-
     /*
      * Hmm, debugging something else I noticed that as file handles
      * come and go, they actually go and are therefore deregistered
