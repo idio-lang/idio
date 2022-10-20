@@ -695,16 +695,26 @@ idio_root_t *idio_gc_new_root ()
     return r;
 }
 
+idio_root_t *idio_gc_new_auto ()
+{
+
+    idio_root_t *r = idio_alloc (sizeof (idio_root_t));
+    r->next = idio_gc->autos;
+    idio_gc->autos = r;
+    r->object = idio_S_nil;
+    return r;
+}
+
 void idio_gc_dump_root (idio_root_t *root)
 {
     IDIO_C_ASSERT (root);
 }
 
-void idio_gc_gcc_mark_root (idio_gc_t *gc, idio_root_t *root, unsigned colour)
+void idio_gc_gcc_mark_root (idio_gc_t *gc, idio_root_t *r, unsigned colour)
 {
-    IDIO_C_ASSERT (root);
+    IDIO_C_ASSERT (r);
 
-    idio_gc_gcc_mark (gc, root->object, colour);
+    idio_gc_gcc_mark (gc, r->object, colour);
 }
 
 idio_gc_t *idio_gc_obj_new (idio_gc_t *root)
@@ -719,13 +729,7 @@ idio_gc_t *idio_gc_obj_new (idio_gc_t *root)
     idio_gc_t *c = idio_alloc (sizeof (idio_gc_t));
     c->next = NULL;
     c->roots = NULL;
-    if (NULL == root) {
-	c->dynamic_roots = idio_S_nil;
-    } else {
-	IDIO dr = idio_pair (idio_S_nil, idio_S_nil);
-	idio_gc_protect (dr);
-	c->dynamic_roots = dr;
-    }
+    c->autos = NULL;
     c->free = NULL;
     c->used = NULL;
     c->grey = NULL;
@@ -907,7 +911,10 @@ void idio_gc_protect (IDIO o)
 
     idio_root_t *r = idio_gc->roots;
     while (r) {
-	if (idio_S_nil == r->object) {
+	if (o == r->object) {
+	    fprintf (stderr, "root dupe %p\n", o);
+	    return;
+	} else if (idio_S_nil == r->object) {
 	    r->object = o;
 	    return;
 	}
@@ -938,14 +945,28 @@ void idio_gc_protect_auto (IDIO o)
 {
     IDIO_ASSERT (o);
 
-    if (idio_S_nil == o) {
-	idio_error_param_nil ("idio_gc_protect_auto", "protect", IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
+    switch ((intptr_t) o & IDIO_TYPE_MASK) {
+    case IDIO_TYPE_POINTER_MARK:
+	break;
+    default:
+	/* nothing to protect! */
 	return;
     }
 
-    IDIO_PAIR_H (idio_gc->dynamic_roots) = idio_pair (o, IDIO_PAIR_H (idio_gc->dynamic_roots));
+    idio_root_t *a = idio_gc->autos;
+    while (a) {
+	if (o == a->object) {
+	    fprintf (stderr, "auto dupe %p\n", o);
+	    return;
+	} else if (idio_S_nil == a->object) {
+	    a->object = o;
+	    return;
+	}
+	a = a->next;
+    }
+
+    a = idio_gc_new_auto ();
+    a->object = o;
 }
 
 /**
@@ -1060,7 +1081,9 @@ void idio_gc_expose_all ()
 	    fprintf (stderr, "\n");
 	    n++;
 #endif
-	    r = r->next;
+	    idio_root_t *n = r->next;
+	    idio_free (r);
+	    r = n;
 	}
 
 #ifdef IDIO_GC_DEBUG
@@ -1078,11 +1101,13 @@ void idio_gc_expose_autos ()
 {
     idio_gc_t *gc = idio_gc;
     while (NULL != gc) {
-	idio_gc_expose (gc->dynamic_roots);
-
-	/* just for completeness */
-	gc->dynamic_roots = idio_S_nil;
-
+	idio_root_t *a = gc->autos;
+	while (a) {
+	    idio_root_t *n = a->next;
+	    idio_free (a);
+	    a = n;
+	}
+	gc->autos = NULL;
 	gc = gc->next;
     }
 }
@@ -1382,10 +1407,16 @@ void idio_gc_mark (idio_gc_t *gc)
     }
     gc->grey = NULL;
 
-    idio_root_t *root = gc->roots;
-    while (root) {
-	idio_gc_gcc_mark_root (gc, root, IDIO_GC_FLAG_GCC_BLACK);
-	root = root->next;
+    idio_root_t *r = gc->roots;
+    while (r) {
+	idio_gc_gcc_mark_root (gc, r, IDIO_GC_FLAG_GCC_BLACK);
+	r = r->next;
+    }
+
+    idio_root_t *a = gc->autos;
+    while (a) {
+	idio_gc_gcc_mark_root (gc, a, IDIO_GC_FLAG_GCC_BLACK);
+	a = a->next;
     }
 
     while (gc->grey) {
@@ -1802,17 +1833,15 @@ void idio_gc_stats ()
 	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%cB current bytes referenced\n", count, scales[scale]);
 
 	int rc = 0;
-	idio_root_t *root = gc->roots;
-	gc->verbose++;
-	while (root) {
-	    switch (root->object->type) {
+	idio_root_t *r = gc->roots;
+	while (r) {
+	    switch (r->object->type) {
 	    default:
 		rc++;
 		break;
 	    }
-	    root = root->next;
+	    r = r->next;
 	}
-	gc->verbose--;
 
 	count = rc;
 	scale = 0;
@@ -1821,19 +1850,21 @@ void idio_gc_stats ()
 	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  roots\n", count, scales[scale]);
 
 	int drc = 0;
-	if (idio_isa_pair (gc->dynamic_roots)) {
-	    IDIO dr = IDIO_PAIR_H (gc->dynamic_roots);
-	    while (idio_S_nil != dr) {
+	idio_root_t *a = gc->autos;
+	while (a) {
+	    switch (a->object->type) {
+	    default:
 		drc++;
-		dr = IDIO_PAIR_T (dr);
+		break;
 	    }
+	    a = a->next;
 	}
 
 	count = drc;
 	scale = 0;
 	idio_hcount (&count, &scale);
 
-	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  auto objects\n", count, scales[scale]);
+	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  autos\n", count, scales[scale]);
 
 	int fc = 0;
 	IDIO o = gc->free;
@@ -2115,25 +2146,26 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 		 (long) s_sweep, (long) us_sweep / 1000);
 
 	int rc = 0;
-	idio_root_t *root = gc->roots;
-	gc->verbose++;
-	while (root) {
-	    switch (root->object->type) {
+	idio_root_t *r = gc->roots;
+	while (r) {
+	    switch (r->object->type) {
 	    default:
 		rc++;
 		break;
 	    }
-	    root = root->next;
+	    r = r->next;
 	}
 	fprintf (stderr, " %2d roots ", rc);
 
 	int drc = 0;
-	if (idio_isa_pair (gc->dynamic_roots)) {
-	    IDIO dr = IDIO_PAIR_H (gc->dynamic_roots);
-	    while (idio_S_nil != dr) {
+	idio_root_t *a = gc->autos;
+	while (a) {
+	    switch (a->object->type) {
+	    default:
 		drc++;
-		dr = IDIO_PAIR_T (dr);
+		break;
 	    }
+	    a = a->next;
 	}
 	fprintf (stderr, " %6d autos", drc);
 
@@ -2489,10 +2521,6 @@ void idio_init_gc ()
     idio_gc = idio_gc_obj_new (NULL);
 
     idio_gc->verbose = 0;
-
-    IDIO dr = idio_pair (idio_S_nil, idio_S_nil);
-    idio_gc_protect (dr);
-    idio_gc->dynamic_roots = dr;
 
     /*
      * Hmm, debugging something else I noticed that as file handles

@@ -1260,7 +1260,7 @@ typedef struct idio_root_s {
 typedef struct idio_gc_s {
     struct idio_gc_s *next;
     idio_root_t *roots;
-    IDIO dynamic_roots;
+    idio_root_t *autos;
     IDIO free;
     IDIO used;
     IDIO grey;
