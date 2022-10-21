@@ -67,7 +67,8 @@
 #include "vm.h"
 #include "vtable.h"
 
-static idio_gc_t *idio_gc;
+static idio_gc_t *idio_gc0;
+static idio_gc_t *idio_gc = NULL;
 static IDIO idio_gc_finalizer_hash = idio_S_nil;
 
 /**
@@ -172,7 +173,7 @@ IDIO idio_gc_get_alloc ()
 {
     IDIO o;
     int n;
-    IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_REQUEST;
+    IDIO_GC_FLAGS (idio_gc0) |= IDIO_GC_FLAG_REQUEST;
     IDIO p = NULL;
     for (n = 0 ; n < IDIO_GC_ALLOC_POOL; n++) {
 	idio_gc->stats.allocs++;
@@ -228,12 +229,13 @@ IDIO idio_gc_get (idio_type_e type)
     }
 
     if (idio_gc->stats.igets++ > IDIO_GC_ALLOC_MANY) {
-	IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_REQUEST;
+	IDIO_GC_FLAGS (idio_gc0) |= IDIO_GC_FLAG_REQUEST;
     }
 
     /* assign type late in case we've re-used a previous object */
     o->type      = type;
     o->vtable    = NULL;
+    o->gen       = idio_gc->gen;
     o->colour    = IDIO_GC_FLAG_GCC_WHITE;
     o->free      = IDIO_GC_FLAG_NOTFREE;
     o->sticky    = IDIO_GC_FLAG_NOTSTICKY;
@@ -391,7 +393,6 @@ static void idio_gc_finalizer_run (IDIO o)
 void idio_gc_gcc_mark (idio_gc_t *gc, IDIO o, idio_gc_flag_gcc_enum colour)
 {
     /* IDIO_ASSERT (o); */
-
     switch ((uintptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
@@ -717,10 +718,10 @@ void idio_gc_gcc_mark_root (idio_gc_t *gc, idio_root_t *r, unsigned colour)
     idio_gc_gcc_mark (gc, r->object, colour);
 }
 
-idio_gc_t *idio_gc_obj_new (idio_gc_t *root)
+idio_gc_t *idio_gc_obj_new ()
 {
-    idio_gc_t *r = root;
-    if (NULL != root) {
+    idio_gc_t *r = idio_gc;
+    if (NULL != r) {
 	while (NULL != r->next) {
 	    r = r->next;
 	}
@@ -736,10 +737,10 @@ idio_gc_t *idio_gc_obj_new (idio_gc_t *root)
     c->weak = NULL;
     c->pause = 0;
     c->verbose = 0;
-    if (NULL == root) {
-	c->inst = 1;
+    if (NULL == r) {
+	c->gen = 1;
     } else {
-	c->inst = r->inst + 1;
+	c->gen = r->gen + 1;
     }
     IDIO_GC_FLAGS (c) = IDIO_GC_FLAG_NONE;
 
@@ -768,7 +769,7 @@ idio_gc_t *idio_gc_obj_new (idio_gc_t *root)
     c->stats.ru_stime.tv_sec = 0;
     c->stats.ru_stime.tv_usec = 0;
 
-    if (NULL != root) {
+    if (NULL != r) {
 	r->next = c;
     }
 
@@ -777,8 +778,7 @@ idio_gc_t *idio_gc_obj_new (idio_gc_t *root)
 
 void idio_gc_new_gen ()
 {
-    idio_gc_collect_all ("gc-new-gen");
-    idio_gc_obj_new (idio_gc);
+    idio_gc = idio_gc_obj_new ();
 }
 
 #if IDIO_DEBUG > 2
@@ -812,66 +812,53 @@ void IDIO_FPRINTF (FILE *stream, char const *format, ...)
 }
 #endif
 
-void idio_gc_walk_tree ()
-{
-
-    idio_gc->verbose++;
-
-    size_t ri = 0;
-    idio_root_t *root = idio_gc->roots;
-    while (root) {
-	fprintf (stderr, "root #%3zd: ", ri++);
-	idio_dump (root->object, 16);
-	root = root->next;
-    }
-
-    idio_gc->verbose--;
-}
-
 void idio_gc_dump ()
 {
-    idio_gc->verbose = 3;
+    idio_gc_t *gc = idio_gc0;
 
-    size_t n = 0;
-    idio_root_t *root = idio_gc->roots;
-    while (root) {
-	n++;
-	idio_gc_dump_root (root);
-	root = root->next;
-    }
-    if (n) {
-	fprintf (stderr, "idio_gc_dump: %" PRIdPTR " roots\n", n);
-    }
+    while (NULL != gc) {
+	size_t n = 0;
+	idio_root_t *r = gc->roots;
+	while (NULL != r) {
+	    n++;
+	    idio_gc_dump_root (r);
+	    r = r->next;
+	}
+	if (n) {
+	    fprintf (stderr, "idio_gc_dump: %" PRIdPTR " roots\n", n);
+	}
 
-    IDIO o = idio_gc->free;
-    n = 0;
-    while (o) {
-	/*
-	  Can't actually dump the free objects as the code to print
-	  objects out asserts whether they are free or not...
-
-	  However, walking down the chain checks the chain is valid.
-	 */
-	o = o->next;
-	n++;
-    }
-    IDIO_C_ASSERT (n == (size_t) idio_gc->stats.nfree);
-
-    o = idio_gc->used;
-    n = 0;
-    if (NULL != o) {
-	fprintf (stderr, "idio_gc_dump: used list\n");
+	IDIO o = gc->free;
+	n = 0;
 	while (NULL != o) {
-	    IDIO_ASSERT (o);
-	    if (n < 10) {
-		idio_dump (o, 0);
-	    }
+	    /*
+	      Can't actually dump the free objects as the code to print
+	      objects out asserts whether they are free or not...
+
+	      However, walking down the chain checks the chain is valid.
+	    */
 	    o = o->next;
 	    n++;
 	}
-	if (n >= 10) {
-	    fprintf (stderr, "... +%zd more\n", n - 10);
+	IDIO_C_ASSERT (n == (size_t) gc->stats.nfree);
+
+	o = gc->used;
+	n = 0;
+	if (NULL != o) {
+	    fprintf (stderr, "idio_gc_dump: used list\n");
+	    while (NULL != o) {
+		IDIO_ASSERT (o);
+		if (n < 10) {
+		    idio_dump (o, 0);
+		}
+		o = o->next;
+		n++;
+	    }
+	    if (n >= 10) {
+		fprintf (stderr, "... +%zd more\n", n - 10);
+	    }
 	}
+	gc = gc->next;
     }
 }
 
@@ -910,7 +897,7 @@ void idio_gc_protect (IDIO o)
     }
 
     idio_root_t *r = idio_gc->roots;
-    while (r) {
+    while (NULL != r) {
 	if (o == r->object) {
 	    fprintf (stderr, "root dupe %p\n", o);
 	    return;
@@ -954,7 +941,7 @@ void idio_gc_protect_auto (IDIO o)
     }
 
     idio_root_t *a = idio_gc->autos;
-    while (a) {
+    while (NULL != a) {
 	if (o == a->object) {
 	    fprintf (stderr, "auto dupe %p\n", o);
 	    return;
@@ -992,14 +979,14 @@ void idio_gc_expose (IDIO o)
     }
 
     int seen = 0;
-    idio_gc_t *gc = idio_gc;
+    idio_gc_t *gc = idio_gc0;
     idio_root_t *r;
     while (! seen &&
 	   NULL != gc) {
 	r = gc->roots;
 	idio_root_t *p = NULL;
-	while (r) {
-	    if (r->object == o) {
+	while (NULL != r) {
+	    if (o == r->object) {
 		seen = 1;
 		if (p) {
 		    p->next = r->next;
@@ -1024,12 +1011,12 @@ void idio_gc_expose (IDIO o)
 	fprintf (stderr, "idio_gc_expose: o %10p not previously protected\n", o);
 	idio_debug ("o = %s\n", o);
 
-	fprintf (stderr, "idio_gc_expose: #%d currently protected:\n", gc->inst);
-	gc = idio_gc;
-	while (gc) {
+	fprintf (stderr, "idio_gc_expose: #%d currently protected:\n", gc->gen);
+	gc = idio_gc0;
+	while (NULL != gc) {
 	    r = gc->roots;
-	    while (r) {
-		fprintf (stderr, "  %10p %s\n", r->object, idio_type2string (r->object));
+	    while (NULL != r) {
+		fprintf (stderr, " %d %10p %s\n", gc->gen, r->object, idio_type2string (r->object));
 		r = r->next;
 	    }
 	    gc = gc->next;
@@ -1039,24 +1026,24 @@ void idio_gc_expose (IDIO o)
     }
 
     r = gc->roots;
-    while (r) {
+    while (NULL != r) {
 	idio_gc_dump_root (r);
 	r = r->next;
     }
 }
 
-void idio_gc_expose_all ()
+void idio_gc_expose_roots ()
 {
-    idio_gc_t *gc = idio_gc;
+    idio_gc_t *gc = idio_gc0;
     while (NULL != gc) {
 #ifdef IDIO_GC_DEBUG
-	fprintf (stderr, "gc-expose-all #%d\n", gc->inst);
+	fprintf (stderr, "gc-expose-roots #%d\n", gc->gen);
 #endif
 	idio_root_t *r = gc->roots;
 #ifdef IDIO_GC_DEBUG
-	size_t n = 0;
+	size_t rc = 0;
 #endif
-	while (r) {
+	while (NULL != r) {
 	    /*
 	     * Calling idio_dump (r->object, 1); on shutdown
 	     * is...unwise.  Ultimately, you may end up dumping a
@@ -1066,7 +1053,7 @@ void idio_gc_expose_all ()
 	     * Instead, just a quick note.
 	     */
 #ifdef IDIO_GC_DEBUG
-	    fprintf (stderr, "gc-expose-all: %10p %-15s ", r->object, idio_type2string (r->object));
+	    fprintf (stderr, "gc-expose-roots: %10p %-15s ", r->object, idio_type2string (r->object));
 	    switch (idio_type (r->object)) {
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		{
@@ -1079,7 +1066,7 @@ void idio_gc_expose_all ()
 		break;
 	    }
 	    fprintf (stderr, "\n");
-	    n++;
+	    rc++;
 #endif
 	    idio_root_t *n = r->next;
 	    idio_free (r);
@@ -1087,8 +1074,8 @@ void idio_gc_expose_all ()
 	}
 
 #ifdef IDIO_GC_DEBUG
-	if (n) {
-	    fprintf (stderr, "gc-expose-all #%d: for %zd roots\n", gc->inst, n);
+	if (rc) {
+	    fprintf (stderr, "gc-expose-roots #%d: for %zd roots\n", gc->gen, rc);
 	}
 #endif
 
@@ -1099,10 +1086,10 @@ void idio_gc_expose_all ()
 
 void idio_gc_expose_autos ()
 {
-    idio_gc_t *gc = idio_gc;
+    idio_gc_t *gc = idio_gc0;
     while (NULL != gc) {
 	idio_root_t *a = gc->autos;
-	while (a) {
+	while (NULL != a) {
 	    idio_root_t *n = a->next;
 	    idio_free (a);
 	    a = n;
@@ -1122,10 +1109,16 @@ void idio_gc_add_weak_object (IDIO o)
 	idio_gc->used = o->next;
     } else {
 	IDIO p = idio_gc->used;
-	while (p->next != o) {
+	while (NULL != p &&
+	       p->next != o) {
 	    p = p->next;
 	}
-	p->next = o->next;
+	if (NULL != p) {
+	    p->next = o->next;
+	} else {
+	    fprintf (stderr, "add-weak-obj: %p not on used list?\n", o);
+	    abort ();
+	}
     }
 
     o->next = idio_gc->weak;
@@ -1138,18 +1131,32 @@ void idio_gc_remove_weak_object (IDIO o)
 
     IDIO_TYPE_ASSERT (hash, o);
 
-    if (idio_gc->weak == o) {
-	idio_gc->weak = o->next;
-    } else {
-	IDIO p = idio_gc->weak;
-	while (p->next != o) {
-	    p = p->next;
+    idio_gc_t *gc = idio_gc0;
+    while (NULL != gc) {
+	if (gc->weak == o) {
+	    gc->weak = o->next;
+	    break;
+	} else {
+	    IDIO p = gc->weak;
+	    while (NULL != p &&
+		   p->next != o) {
+		p = p->next;
+	    }
+	    if (NULL != p) {
+		p->next = o->next;
+		break;
+	    }
 	}
-	p->next = o->next;
+	gc = gc->next;
     }
 
-    o->next = idio_gc->used;
-    idio_gc->used = o;
+    if (NULL != gc) {
+	o->next = gc->used;
+	gc->used = o;
+    } else {
+	fprintf (stderr, "remove weak obj: NULL?\n");
+	abort ();
+    }
 }
 
 /*
@@ -1176,7 +1183,7 @@ void idio_gc_mark_weak (idio_gc_t *gc)
     int modified = 1;
     while (modified) {
 	modified = 0;
-	while (o) {
+	while (NULL != o) {
 	    switch ((uintptr_t) o & IDIO_TYPE_MASK) {
 	    case IDIO_TYPE_FIXNUM_MARK:
 	    case IDIO_TYPE_CONSTANT_MARK:
@@ -1237,7 +1244,7 @@ void idio_gc_mark_weak (idio_gc_t *gc)
 	 * this point to flush through the values -- which might be
 	 * keys elsewhere.
 	 */
-	while (gc->grey) {
+	while (NULL != gc->grey) {
 	    idio_gc_process_grey (gc, IDIO_GC_FLAG_GCC_BLACK);
 	}
     }
@@ -1246,7 +1253,7 @@ void idio_gc_mark_weak (idio_gc_t *gc)
      * Pass 2: ditch unmarked key/value pairs
      */
     o = gc->weak;
-    while (o) {
+    while (NULL != o) {
 	switch ((uintptr_t) o & IDIO_TYPE_MASK) {
 	case IDIO_TYPE_FIXNUM_MARK:
 	case IDIO_TYPE_CONSTANT_MARK:
@@ -1325,7 +1332,7 @@ void idio_gc_mark_weak (idio_gc_t *gc)
 	o = o->next;
     }
 
-    while (gc->grey) {
+    while (NULL != gc->grey) {
 	idio_gc_process_grey (gc, IDIO_GC_FLAG_GCC_BLACK);
     }
 
@@ -1335,7 +1342,7 @@ void idio_gc_mark_weak (idio_gc_t *gc)
      */
     int lost = 0;
     o = gc->weak;
-    while (o) {
+    while (NULL != o) {
 	switch ((uintptr_t) o & IDIO_TYPE_MASK) {
 	case IDIO_TYPE_FIXNUM_MARK:
 	case IDIO_TYPE_CONSTANT_MARK:
@@ -1401,25 +1408,25 @@ void idio_gc_mark (idio_gc_t *gc)
 {
 
     IDIO o = gc->used;
-    while (o) {
+    while (NULL != o) {
 	idio_gc_gcc_mark (gc, o, IDIO_GC_FLAG_GCC_WHITE);
 	o = o->next;
     }
     gc->grey = NULL;
 
     idio_root_t *r = gc->roots;
-    while (r) {
+    while (NULL != r) {
 	idio_gc_gcc_mark_root (gc, r, IDIO_GC_FLAG_GCC_BLACK);
 	r = r->next;
     }
 
     idio_root_t *a = gc->autos;
-    while (a) {
+    while (NULL != a) {
 	idio_gc_gcc_mark_root (gc, a, IDIO_GC_FLAG_GCC_BLACK);
 	a = a->next;
     }
 
-    while (gc->grey) {
+    while (NULL != gc->grey) {
 	idio_gc_process_grey (gc, IDIO_GC_FLAG_GCC_BLACK);
     }
 
@@ -1582,7 +1589,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 #ifdef IDIO_VM_PROF
 	idio_gc_closure_stats (vo);
 #endif
-	if (0 == (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_FINISH)) {
+	if (0 == (IDIO_GC_FLAGS (idio_gc0) & IDIO_GC_FLAG_FINISH)) {
 	    idio_delete_properties (vo);
 	}
 	idio_free_closure (vo);
@@ -1591,7 +1598,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 #ifdef IDIO_VM_PROF
 	idio_gc_primitive_stats (vo);
 #endif
-	if (0 == (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_FINISH)) {
+	if (0 == (IDIO_GC_FLAGS (idio_gc0) & IDIO_GC_FLAG_FINISH)) {
 	    idio_delete_properties (vo);
 	}
 	idio_free_primitive (vo);
@@ -1603,7 +1610,6 @@ void idio_gc_sweep_free_value (IDIO vo)
 	idio_free_module (vo);
 	break;
     case IDIO_TYPE_FRAME:
-	/* fprintf (stderr, "igsfv: frame %p\n", vo); */
 	idio_free_frame (vo);
 	break;
     case IDIO_TYPE_HANDLE:
@@ -1666,7 +1672,7 @@ size_t idio_gc_sweep (idio_gc_t *gc)
     IDIO co = gc->used;
     IDIO po = NULL;
     IDIO no = NULL;
-    while (co) {
+    while (NULL != co) {
 	IDIO_ASSERT (co);
 	nobj++;
 	if (IDIO_GC_FLAG_FREE == co->free) {
@@ -1682,7 +1688,6 @@ size_t idio_gc_sweep (idio_gc_t *gc)
 	if ((IDIO_GC_FLAG_NOTSTICKY == co->sticky) &&
 	    (IDIO_GC_FLAG_GCC_WHITE == co->colour)) {
 	    gc->stats.nused[co->type]--;
-	    /* fprintf (stderr, "idio_gc_sweep: free %10p %2d %s\n", co, co->type, idio_type2string (co)); */
 	    if (po) {
 		po->next = co->next;
 	    } else {
@@ -1699,7 +1704,6 @@ size_t idio_gc_sweep (idio_gc_t *gc)
 	    gc->stats.nfree++;
 	    freed++;
 	} else {
-	    /* fprintf (stderr, "idio_gc_sweep: skip %10p %2d %s\n", co, co->type, idio_type2string (co)); */
 	    po = co;
 	}
 
@@ -1709,7 +1713,7 @@ size_t idio_gc_sweep (idio_gc_t *gc)
 #ifdef IDIO_GC_DEBUG
     pid_t pid = getpid ();
     if (pid == idio_pid) {
-	fprintf (stderr, "[%" PRIdMAX "] gc-sweep #%d: saw %7zd obj; freed %6zd ", (intmax_t) pid, gc->inst, nobj, freed);
+	fprintf (stderr, "[%" PRIdMAX "] gc-sweep #%d: saw %7zd obj; freed %6zd ", (intmax_t) pid, gc->gen, nobj, freed);
 	double freed100 = freed * 100.0;
 	if (nobj) {
 	    fprintf (stderr, "%5.1f%% ", freed100 / nobj);
@@ -1746,13 +1750,18 @@ void idio_gc_stats ()
 	return;
     }
 
+#ifdef IDIO_GC_DEBUG
+    fprintf (idio_gc_stats_FILE, "gc-stats sizeof (idio_t)         %zu\n", sizeof (idio_t));
+    fprintf (idio_gc_stats_FILE, "gc-stats sizeof (union idio_s_u) %zu\n", sizeof (union idio_s_u));
+#endif
+
     char scales[] = " KMGT";
     unsigned long long count;
     int scale;
 
-    idio_gc_t *gc = idio_gc;
+    idio_gc_t *gc = idio_gc0;
     while (NULL != gc) {
-	fprintf (idio_gc_stats_FILE, "gc-stats #%d: %4lld   collections\n", gc->inst, gc->stats.collections);
+	fprintf (idio_gc_stats_FILE, "gc-stats #%d: %4lld   collections\n", gc->gen, gc->stats.collections);
 
 	count = gc->stats.bounces;
 	scale = 0;
@@ -1775,7 +1784,11 @@ void idio_gc_stats ()
 	scale = 0;
 	idio_hcount (&count, &scale);
 	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c current GC requests\n", count, scales[scale]);
-	fprintf (idio_gc_stats_FILE, "gc-stats: %-15.15s %5.5s %4.4s %5.5s %4.4s\n", "type", "total", "%age", "used", "%age");
+	fprintf (idio_gc_stats_FILE, "gc-stats: %-15.15s %5.5s %4.4s %5.5s %4.4s", "type", "total", "%age", "used", "%age");
+#ifdef IDIO_GC_DEBUG
+	fprintf (idio_gc_stats_FILE, " %4.4s", "szof");
+#endif
+	fprintf (idio_gc_stats_FILE, "\n");
 	int types_unused = 0;
 	for (i = 1; i < IDIO_TYPE_MAX; i++) {
 	    unsigned long long tgets_count = gc->stats.tgets[i];
@@ -1787,13 +1800,55 @@ void idio_gc_stats ()
 		int nused_scale = 0;
 		idio_hcount (&nused_count, &nused_scale);
 
-		fprintf (idio_gc_stats_FILE, "gc-stats: %-15.15s %4lld%c %3lld %4lld%c %3lld\n",
+		fprintf (idio_gc_stats_FILE, "gc-stats: %-15.15s %4lld%c %4lld %4lld%c %4lld",
 			 idio_type_enum2string (i),
 			 tgets_count, scales[tgets_scale],
 			 tgets ? gc->stats.tgets[i] * 100 / tgets : -1,
 			 nused_count, scales[nused_scale],
 			 nused ? gc->stats.nused[i] * 100 / nused : -1
 		    );
+#ifdef IDIO_GC_DEBUG
+		size_t size = sizeof (IDIO);
+		switch (i) {
+		case IDIO_TYPE_STRING:          size = sizeof (idio_string_t);          break;
+		case IDIO_TYPE_SUBSTRING:       size = sizeof (idio_substring_t);       break;
+		case IDIO_TYPE_SYMBOL:          size = sizeof (idio_symbol_t);          break;
+		case IDIO_TYPE_KEYWORD:         size = sizeof (idio_keyword_t);         break;
+		case IDIO_TYPE_PAIR:            size = sizeof (idio_pair_t);            break;
+		case IDIO_TYPE_ARRAY:           size = sizeof (idio_array_t);           break;
+		case IDIO_TYPE_HASH:            size = sizeof (idio_hash_t);            break;
+		case IDIO_TYPE_CLOSURE:         size = sizeof (idio_closure_t);         break;
+		case IDIO_TYPE_PRIMITIVE:       size = sizeof (idio_primitive_t);       break;
+		case IDIO_TYPE_BIGNUM:          size = sizeof (idio_bignum_t);          break;
+		case IDIO_TYPE_MODULE:          size = sizeof (idio_module_t);          break;
+		case IDIO_TYPE_FRAME:           size = sizeof (idio_frame_t);           break;
+		case IDIO_TYPE_HANDLE:          size = sizeof (idio_handle_t);          break;
+		case IDIO_TYPE_STRUCT_TYPE:     size = sizeof (idio_struct_type_t);     break;
+		case IDIO_TYPE_STRUCT_INSTANCE: size = sizeof (idio_struct_instance_t); break;
+		case IDIO_TYPE_THREAD:          size = sizeof (idio_thread_t);          break;
+		case IDIO_TYPE_CONTINUATION:    size = sizeof (idio_continuation_t);    break;
+		case IDIO_TYPE_BITSET:          size = sizeof (idio_bitset_t);          break;
+		case IDIO_TYPE_C_CHAR:
+		case IDIO_TYPE_C_SCHAR:
+		case IDIO_TYPE_C_UCHAR:
+		case IDIO_TYPE_C_SHORT:
+		case IDIO_TYPE_C_USHORT:
+		case IDIO_TYPE_C_INT:
+		case IDIO_TYPE_C_UINT:
+		case IDIO_TYPE_C_LONG:
+		case IDIO_TYPE_C_ULONG:
+		case IDIO_TYPE_C_LONGLONG:
+		case IDIO_TYPE_C_ULONGLONG:
+		case IDIO_TYPE_C_FLOAT:
+		case IDIO_TYPE_C_DOUBLE:
+		case IDIO_TYPE_C_LONGDOUBLE:
+		case IDIO_TYPE_C_POINTER:
+		    size = sizeof (idio_C_type_t);
+		    break;
+		}
+		fprintf (idio_gc_stats_FILE, " %4zd", size);
+#endif
+		fprintf (idio_gc_stats_FILE, "\n");
 	    } else {
 		types_unused++;
 	    }
@@ -1834,7 +1889,7 @@ void idio_gc_stats ()
 
 	int rc = 0;
 	idio_root_t *r = gc->roots;
-	while (r) {
+	while (NULL != r) {
 	    switch (r->object->type) {
 	    default:
 		rc++;
@@ -1849,18 +1904,18 @@ void idio_gc_stats ()
 
 	fprintf (idio_gc_stats_FILE, "gc-stats: %4lld%c  roots\n", count, scales[scale]);
 
-	int drc = 0;
+	int ac = 0;
 	idio_root_t *a = gc->autos;
-	while (a) {
+	while (NULL != a) {
 	    switch (a->object->type) {
 	    default:
-		drc++;
+		ac++;
 		break;
 	    }
 	    a = a->next;
 	}
 
-	count = drc;
+	count = ac;
 	scale = 0;
 	idio_hcount (&count, &scale);
 
@@ -1868,7 +1923,7 @@ void idio_gc_stats ()
 
 	int fc = 0;
 	IDIO o = gc->free;
-	while (o) {
+	while (NULL != o) {
 	    fc++;
 	    o = o->next;
 	}
@@ -1882,7 +1937,7 @@ void idio_gc_stats ()
 	int uc = 0;
 	o = gc->used;
 	gc->verbose++;
-	while (o) {
+	while (NULL != o) {
 	    IDIO_ASSERT (o);
 	    uc++;
 	    if (o->next &&
@@ -1967,34 +2022,33 @@ void idio_gc_possibly_collect ()
      * in idio_gc_get_alloc() because there's nothing left on the free
      * list.
      */
-    if (idio_gc->pause == 0 &&
-	((IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST))) {
+    if (idio_gc0->pause == 0 &&
+	((IDIO_GC_FLAGS (idio_gc0) & IDIO_GC_FLAG_REQUEST))) {
 #ifdef IDIO_GC_DEBUG
 	pid_t pid = getpid ();
 	if (pid == idio_pid) {
 	    fprintf (stderr, "[%" PRIdMAX "] possibly-collect: reqd=%d igets=%6llu allocs=%7llu free=%6lld\n",
 		     (intmax_t) pid,
-		     (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) ? 1 : 0,
+		     (IDIO_GC_FLAGS (idio_gc0) & IDIO_GC_FLAG_REQUEST) ? 1 : 0,
 		     idio_gc->stats.igets,
 		     idio_gc->stats.allocs,
 		     idio_gc->stats.nfree);
 	}
 #endif
-	idio_gc_collect (idio_gc, IDIO_GC_COLLECT_GEN, "gc-possibly-collect");
+	idio_gc_collect (idio_gc0, IDIO_GC_COLLECT_ALL, "gc-possibly-collect");
     }
 }
 
 void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 {
-    /* idio_gc_walk_tree (); */
     /* idio_gc_stats ();   */
 
-    if (gc->pause) {
+    if (idio_gc0->pause) {
 	return;
     }
 
     gc->stats.collections++;
-    IDIO_GC_FLAGS (idio_gc) &= ~ IDIO_GC_FLAG_REQUEST;
+    IDIO_GC_FLAGS (idio_gc0) &= ~ IDIO_GC_FLAG_REQUEST;
 
     struct timeval t0;
     struct timeval t_mark;
@@ -2015,7 +2069,8 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
     size_t nobj = 0;
 #endif
 
-    if (IDIO_GC_COLLECT_GEN == gen) {
+    idio_gc_t *gc0 = gc;
+    while (NULL != gc) {
 	if (gettimeofday (&t0, NULL) < 0) {
 	    perror ("gc-collect: gettimeofday");
 	}
@@ -2026,8 +2081,29 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 	    perror ("gc-collect: gettimeofday");
 	}
 
+	s_mark += t_mark.tv_sec - t0.tv_sec;
+	us_mark += t_mark.tv_usec - t0.tv_usec;
+
+	if (us_mark < 0) {
+	    us_mark += 1000000;
+	    s_mark -= 1;
+	}
+
+	if (IDIO_GC_COLLECT_GEN == gen) {
+	    break;
+	}
+
+	gc = gc->next;
+    }
+    gc = gc0;
+
+    while (NULL != gc) {
+	if (gettimeofday (&t0, NULL) < 0) {
+	    perror ("gc-collect: gettimeofday");
+	}
+
 #ifdef IDIO_GC_DEBUG
-	nobj = idio_gc_sweep (gc);
+	nobj += idio_gc_sweep (gc);
 #else
 	idio_gc_sweep (gc);
 #endif
@@ -2036,67 +2112,26 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 	    perror ("gc-collect: gettimeofday");
 	}
 
-	s_mark = t_mark.tv_sec - t0.tv_sec;
-	us_mark = t_mark.tv_usec - t0.tv_usec;
-
-	if (us_mark < 0) {
-	    us_mark += 1000000;
-	    s_mark -= 1;
-	}
-
-	s_sweep = t_sweep.tv_sec - t_mark.tv_sec;
-	us_sweep = t_sweep.tv_usec - t_mark.tv_usec;
+	s_sweep += t_sweep.tv_sec - t_mark.tv_sec;
+	us_sweep += t_sweep.tv_usec - t_mark.tv_usec;
 
 	if (us_sweep < 0) {
 	    us_sweep += 1000000;
 	    s_sweep -= 1;
 	}
-    } else {
-	idio_gc_t *gc = idio_gc;
-	while (NULL != gc) {
-	    if (gettimeofday (&t0, NULL) < 0) {
-		perror ("gc-collect: gettimeofday");
-	    }
 
-	    idio_gc_mark (gc);
-
-	    if (gettimeofday (&t_mark, NULL) < 0) {
-		perror ("gc-collect: gettimeofday");
-	    }
-
-#ifdef IDIO_GC_DEBUG
-	    nobj += idio_gc_sweep (gc);
-#else
-	    idio_gc_sweep (gc);
-#endif
-
-	    if (gettimeofday (&t_sweep, NULL) < 0) {
-		perror ("gc-collect: gettimeofday");
-	    }
-
-	    s_mark += t_mark.tv_sec - t0.tv_sec;
-	    us_mark += t_mark.tv_usec - t0.tv_usec;
-
-	    if (us_mark < 0) {
-		us_mark += 1000000;
-		s_mark -= 1;
-	    }
-
-	    s_sweep += t_sweep.tv_sec - t_mark.tv_sec;
-	    us_sweep += t_sweep.tv_usec - t_mark.tv_usec;
-
-	    if (us_sweep < 0) {
-		us_sweep += 1000000;
-		s_sweep -= 1;
-	    }
-
-	    gc = gc->next;
+	if (gc->stats.igets > gc->stats.mgets) {
+	    gc->stats.mgets = gc->stats.igets;
 	}
+	gc->stats.igets = 0;
+
+	if (IDIO_GC_COLLECT_GEN == gen) {
+	    break;
+	}
+
+	gc = gc->next;
     }
-    if (gc->stats.igets > gc->stats.mgets) {
-	gc->stats.mgets = gc->stats.igets;
-    }
-    gc->stats.igets = 0;
+    gc = gc0;
 
     struct rusage ru1;
     if (getrusage (RUSAGE_SELF, &ru1) < 0) {
@@ -2137,7 +2172,7 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 	fprintf (stderr, "[%" PRIdMAX "] gc-collect %s %d.%-3lld %-23s ",
 		 (intmax_t) pid,
 		 IDIO_GC_COLLECT_GEN == gen ? "gen" : "all",
-		 gc->inst,
+		 gc->gen,
 		 gc->stats.collections,
 		 caller);
 
@@ -2147,7 +2182,7 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 
 	int rc = 0;
 	idio_root_t *r = gc->roots;
-	while (r) {
+	while (NULL != r) {
 	    switch (r->object->type) {
 	    default:
 		rc++;
@@ -2157,17 +2192,17 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 	}
 	fprintf (stderr, " %2d roots ", rc);
 
-	int drc = 0;
+	int ac = 0;
 	idio_root_t *a = gc->autos;
-	while (a) {
+	while (NULL != a) {
 	    switch (a->object->type) {
 	    default:
-		drc++;
+		ac++;
 		break;
 	    }
 	    a = a->next;
 	}
-	fprintf (stderr, " %6d autos", drc);
+	fprintf (stderr, " %6d autos", ac);
 
 	if (us_mark) {
 	    fprintf (stderr, " %6zu in %6ldus = %5.1f", nobj, us_mark, 1.0 * nobj / us_mark);
@@ -2217,7 +2252,7 @@ void idio_gc_collect_gen (char const *caller)
 
 void idio_gc_collect_all (char const *caller)
 {
-    idio_gc_collect (idio_gc, IDIO_GC_COLLECT_ALL, caller);
+    idio_gc_collect (idio_gc0, IDIO_GC_COLLECT_ALL, caller);
 }
 
 void idio_hcount (unsigned long long *bp, int *ip)
@@ -2248,7 +2283,7 @@ void idio_gc_stats_inc (idio_type_e type)
  */
 int idio_gc_get_pause (char const *caller)
 {
-    return idio_gc->pause;
+    return idio_gc0->pause;
 }
 
 /**
@@ -2263,7 +2298,7 @@ int idio_gc_get_pause (char const *caller)
  */
 void idio_gc_pause (char const *caller)
 {
-    idio_gc->pause++;
+    idio_gc0->pause++;
 }
 
 /**
@@ -2275,9 +2310,9 @@ void idio_gc_pause (char const *caller)
  */
 void idio_gc_resume (char const *caller)
 {
-    idio_gc->pause--;
-    if (idio_gc->pause < 0) {
-	idio_gc->pause = 0;
+    idio_gc0->pause--;
+    if (idio_gc0->pause < 0) {
+	idio_gc0->pause = 0;
     }
 }
 
@@ -2287,35 +2322,19 @@ void idio_gc_resume (char const *caller)
  */
 void idio_gc_reset (char const *caller, int pause)
 {
-    idio_gc->pause = pause;
+    idio_gc0->pause = pause;
 }
 
 void idio_gc_obj_free ()
 {
-    while (idio_gc->roots) {
-	idio_root_t *root = idio_gc->roots;
-	idio_gc->roots = root->next;
-	if (idio_S_nil == root->object) {
-	    idio_error_error_message ("root->object is #n at %s:%d", __FILE__, __LINE__);
-	    abort ();
-	}
-	idio_free (root);
+    if (idio_gc0->pause) {
+	idio_gc0->pause = 0;
     }
 
-    if (idio_gc->pause) {
-	idio_gc->pause = 0;
-    }
-
-    /*
-     * Having exposed everything running a collection should free
-     * everything...
-     */
-    idio_gc_t *gc = idio_gc;
+    idio_gc_t *gc = idio_gc0;
     while (NULL != gc) {
-	idio_gc_collect (gc, IDIO_GC_COLLECT_GEN, "gc-obj-free");
-
 	size_t n = 0;
-	while (gc->free) {
+	while (NULL != gc->free) {
 	    IDIO co = gc->free;
 	    gc->free = co->next;
 	    IDIO_GC_FREE (co, sizeof (idio_t));
@@ -2324,7 +2343,7 @@ void idio_gc_obj_free ()
 	IDIO_C_ASSERT (n == (size_t) gc->stats.nfree);
 
 	n = 0;
-	while (gc->used) {
+	while (NULL != gc->used) {
 	    IDIO co = gc->used;
 	    gc->used = co->next;
 	    IDIO_GC_FREE (co, sizeof (idio_t));
@@ -2332,12 +2351,12 @@ void idio_gc_obj_free ()
 	}
 
 	if (n) {
-	    fprintf (stderr, "gc-obj-free #%d: %zu remained in use\n", gc->inst, n);
+	    fprintf (stderr, "gc-obj-free #%d: %zu remained in use\n", gc->gen, n);
 	}
 
-	idio_gc_t *ogc = gc;
-	gc = gc->next;
-	idio_free (ogc);
+	idio_gc_t *ngc = gc->next;
+	idio_free (gc);
+	gc = ngc;
     }
 }
 
@@ -2452,7 +2471,8 @@ invoke the garbage collector			\n\
 :return: ``#<unspec>``				\n\
 ")
 {
-    idio_gc_collect (idio_gc, IDIO_GC_COLLECT_GEN, "gc/collect");
+    IDIO_GC_FLAGS (idio_gc0) |= IDIO_GC_FLAG_REQUEST;
+    idio_gc_collect_all ("gc/collect");
 
     return idio_S_unspec;
 }
@@ -2494,7 +2514,7 @@ void idio_final_gc ()
 #endif
     }
 
-    IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_FINISH;
+    IDIO_GC_FLAGS (idio_gc0) |= IDIO_GC_FLAG_FINISH;
 
     idio_gc_run_all_finalizers ();
 
@@ -2505,9 +2525,9 @@ void idio_final_gc ()
 
     idio_gc_expose_autos ();
 
-    idio_gc_expose_all ();
+    idio_gc_expose_roots ();
 
-    idio_gc_collect (idio_gc, IDIO_GC_COLLECT_ALL, "final-gc");
+    idio_gc_collect_all ("final-gc");
 #ifdef IDIO_DEBUG
     idio_gc_dump ();
 #endif
@@ -2518,7 +2538,8 @@ void idio_init_gc ()
 {
     idio_module_table_register (idio_gc_add_primitives, idio_final_gc, NULL);
 
-    idio_gc = idio_gc_obj_new (NULL);
+    idio_gc = idio_gc_obj_new ();
+    idio_gc0 = idio_gc;
 
     idio_gc->verbose = 0;
 

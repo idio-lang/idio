@@ -1166,16 +1166,22 @@ struct idio_s {
     idio_vtable_t *vtable;
 
     /*
-     * The union will be word-aligned (or larger) so we have 4 or 8
-     * bytes of room for "stuff"
+     * The union will be word-aligned (or larger, see below) so we
+     * have several bytes of room for "stuff".  (Once we use one
+     * bit/char/whatever for flags then we'll get the space for the
+     * full 4/8/16 byte alignment.)
+     *
+     * It doesn't *seem* to matter where in the structure these
+     * bitfields live (other than together) suggesting the compiler is
+     * quite good at deferencing the member fields.
      */
-    idio_type_enum              type:6; /* 40-ish < 64 */
-    idio_gc_flag_gcc_enum       colour:2;
-    idio_gc_flag_free_enum      free:1;
-    idio_gc_flag_sticky_enum    sticky:1;
+    idio_type_enum              type     :6; /* 40-ish types is < 64 */
+    idio_gc_flag_gcc_enum       colour   :2;
+    idio_gc_flag_free_enum      free     :1;
+    idio_gc_flag_sticky_enum    sticky   :1;
     idio_gc_flag_finalizer_enum finalizer:1;
 
-    idio_flag_enum              flags:2; /* generic type flags */
+    idio_flag_enum              flags    :2; /* generic type flags */
 
     /*
      * type-specific flags (since we have room here)
@@ -1183,38 +1189,65 @@ struct idio_s {
     IDIO_FLAGS_T tflags;
 
     /*
+     * The garbage collection generation this was allocated in
+     */
+    unsigned char gen;
+
+    /*
      * Rationale for union.  We need to decide whether the union
-     * should embed the object or have a pointer to it.
+     * should embed the type-specific structure or have a pointer to
+     * it.
      *
-     * Far and away the most commonly used object is a pair(*) which
+     * Far and away the most commonly used type is a pair(*) which
      * consists of three pointers (grey, head and tail).  If this
-     * union is a pointer to such an object then we use a pointer here
-     * in the union and then two pointers from malloc(3) as well as
-     * the three pointers in the pair.
+     * union is a pointer to such an structure then we use a pointer
+     * here in the union and then two pointers from malloc(3) as well
+     * as the three pointers in the pair.
      *
      * (*) Unless you start using bignums (two pointers) in which case
-     * they dominate.
+     * they may come to dominate.
      *
-     * Of course, the moment we use the (three pointer) object
+     * Of course, the moment we use the (three pointer) structure
      * directly in the union then the original pointer from the union
      * is shadowed by the three pointers of the pair directly here.
      * We still save the two malloc(3) pointers and the cost of
      * malloc(3)/free(3).
      *
-     * Any other object that is three pointers or less can then also
-     * be used directly in the union with no extra cost.
+     * Any other structure that is three pointers or less can then
+     * also be used directly in the union with no extra cost.
+     *
+     * ----
+     *
+     * idio_C_type_t is the alignment culprit with long double being
+     * the forcing type, here for a couple of examples (YMMV):
+     *
+     * 32-bit - 8 byte alignment (along with long long etc.)
+     *
+     * 64-bit - 16 byte alignment
+     *
+     * The alignment is both before and after.  It appears to be an
+     * integer multiple of the largest element, so n*8 or n*16 >= max
+     * (sizeof (union members)).
+     *
+     * In particular, the union, targeting 3 * sizeof (pointer),
+     * actually becomes 2 * sizeof (long double), ie. 4 * sizeof
+     * (pointer).  In other words there's a pointer's worth of empty
+     * space at the end of the union.
+     *
+     * Maybe a struct-instance (three pointers and a size_t) could be
+     * promoted to fit in the union directly.
      */
     union idio_s_u {
-	idio_string_t          string;
-	idio_substring_t       substring;
-	idio_symbol_t          symbol;
-	idio_keyword_t         keyword;
-	idio_pair_t            pair;
+	idio_string_t           string;
+	idio_substring_t        substring;
+	idio_symbol_t           symbol;
+	idio_keyword_t          keyword;
+	idio_pair_t             pair;
 	idio_array_t           *array;
 	idio_hash_t            *hash;
 	idio_closure_t         *closure;
 	idio_primitive_t       *primitive;
-	idio_bignum_t          bignum;
+	idio_bignum_t           bignum;
 	idio_module_t          *module;
 	idio_frame_t           *frame;
 	idio_handle_t          *handle;
@@ -1222,8 +1255,8 @@ struct idio_s {
 	idio_struct_instance_t *struct_instance;
 	idio_thread_t	       *thread;
 	idio_continuation_t    *continuation;
-	idio_bitset_t	       bitset;
-	idio_C_type_t          C_type;
+	idio_bitset_t	        bitset;
+	idio_C_type_t           C_type;
     } u;
 };
 
@@ -1267,7 +1300,7 @@ typedef struct idio_gc_s {
     IDIO weak;
     int pause;
     unsigned char verbose;
-    unsigned char inst;
+    unsigned char gen;
     IDIO_FLAGS_T flags;		/* generic GC flags */
     struct stats {
 	long long nfree; /* # on free list */
@@ -1553,12 +1586,10 @@ void IDIO_FPRINTF (FILE *stream, char const *format, ...);
 #else
 #define IDIO_FPRINTF(...)	((void) 0)
 #endif
-void idio_gc_dump ();
 void idio_gc_stats_inc (idio_type_e type);
 void idio_gc_protect (IDIO o);
 void idio_gc_protect_auto (IDIO o);
 void idio_gc_expose (IDIO o);
-void idio_gc_expose_all ();
 void idio_gc_add_weak_object (IDIO o);
 void idio_gc_remove_weak_object (IDIO o);
 void idio_gc_possibly_collect ();
