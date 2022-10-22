@@ -1628,7 +1628,9 @@ void idio_gc_sweep_free_value (IDIO vo)
     case IDIO_TYPE_C_ULONGLONG:
     case IDIO_TYPE_C_FLOAT:
     case IDIO_TYPE_C_DOUBLE:
+	break;
     case IDIO_TYPE_C_LONGDOUBLE:
+	idio_free_C_longdouble (vo);
 	break;
     case IDIO_TYPE_C_POINTER:
 	idio_free_C_pointer (vo);
@@ -1751,7 +1753,7 @@ void idio_gc_stats ()
     }
 
 #ifdef IDIO_GC_DEBUG
-    fprintf (idio_gc_stats_FILE, "gc-stats sizeof (idio_t)         %zu\n", sizeof (idio_t));
+    fprintf (idio_gc_stats_FILE, "gc-stats sizeof (struct idio_s)  %zu\n", sizeof (struct idio_s));
     fprintf (idio_gc_stats_FILE, "gc-stats sizeof (union idio_s_u) %zu\n", sizeof (union idio_s_u));
 #endif
 
@@ -1855,6 +1857,21 @@ void idio_gc_stats ()
 	}
 	if (types_unused) {
 	    fprintf (idio_gc_stats_FILE, "gc-stats: %d types unused\n", types_unused);
+	    if (5 != types_unused) {
+		/*
+		 * These should be other constants (noting that we've
+		 * only tracked user-ish constants above: fixnum and
+		 * unicode) and the PLACEHOLDER type.
+		 *
+		 * Also C/void which we haven't found a use for
+		 * (yet?).
+		 */
+		for (i = 1; i < IDIO_TYPE_MAX; i++) {
+		    if (0 == gc->stats.tgets[i]) {
+			fprintf (idio_gc_stats_FILE, "gc-stats: %2d %s\n", i, idio_type_enum2string (i));
+		    }
+		}
+	    }
 	}
 
 	count = gc->stats.mgets;
@@ -2205,7 +2222,7 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char const *caller)
 	fprintf (stderr, " %6d autos", ac);
 
 	if (us_mark) {
-	    fprintf (stderr, " %6zu in %6ldus = %5.1f", nobj, us_mark, 1.0 * nobj / us_mark);
+	    fprintf (stderr, " %6zu in %6ldus = %5.1f", nobj, (long) us_mark, 1.0 * nobj / us_mark);
 	}
 
 	fprintf (stderr, "\n");

@@ -1089,7 +1089,7 @@ typedef struct idio_C_type_s {
 	unsigned long long int	C_ulonglong;
 	float			C_float;
 	double			C_double;
-	long double		C_longdouble;
+	long double	       *C_longdouble;
 	idio_C_pointer_t       *C_pointer;
     } u;
 } idio_C_type_t;
@@ -1112,13 +1112,10 @@ typedef struct idio_C_type_s {
 #define IDIO_C_TYPE_ulonglong(C)     ((C)->u.C_type.u.C_ulonglong)
 #define IDIO_C_TYPE_float(C)         ((C)->u.C_type.u.C_float)
 #define IDIO_C_TYPE_double(C)        ((C)->u.C_type.u.C_double)
-#define IDIO_C_TYPE_longdouble(C)    ((C)->u.C_type.u.C_longdouble)
-/*
-#define IDIO_C_TYPE_POINTER(C)       ((C)->u.C_type->u.C_pointer)
-*/
-#define IDIO_C_TYPE_POINTER_PTYPE(C)	((C)->u.C_type.u.C_pointer->ptype)
-#define IDIO_C_TYPE_POINTER_P(C)	((C)->u.C_type.u.C_pointer->p)
-#define IDIO_C_TYPE_POINTER_FREEP(C)	((C)->u.C_type.u.C_pointer->freep)
+#define IDIO_C_TYPE_longdouble(C)    (*((C)->u.C_type.u.C_longdouble))
+#define IDIO_C_TYPE_POINTER_PTYPE(C) ((C)->u.C_type.u.C_pointer->ptype)
+#define IDIO_C_TYPE_POINTER_P(C)     ((C)->u.C_type.u.C_pointer->p)
+#define IDIO_C_TYPE_POINTER_FREEP(C) ((C)->u.C_type.u.C_pointer->freep)
 
 typedef unsigned char IDIO_FLAGS_T;
 
