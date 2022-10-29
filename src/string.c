@@ -1882,6 +1882,24 @@ IDIO idio_string_ref_C (IDIO s, ssize_t i)
 	}
     }
 
+    /*
+     * We can allow negative indices -- within the length of the
+     * string
+     */
+    if (i < 0) {
+	ssize_t i0 = i;
+	i += slen;
+
+	if (i < 0) {
+	    /*
+	     * Test Case: string-errors/string-ref-too-negative.idio
+	     *
+	     * string-ref "hello world" -100
+	     */
+	    i = i0;
+	}
+    }
+
     if (i < 0 ||
 	i >= slen) {
 	/*
@@ -2112,6 +2130,22 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 	idio_string_width_error ("replacement char too wide", s, c, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
+    }
+
+    /*
+     * We can allow negative indices -- within the length of the
+     * string
+     */
+    if (i < 0) {
+	ssize_t i0 = i;
+	i += slen;
+
+	if (i < 0) {
+	    /*
+	     * Test Case: string-errors/string-set-too-negative.idio
+	     */
+	    i = i0;
+	}
     }
 
     if (i < 0 ||
