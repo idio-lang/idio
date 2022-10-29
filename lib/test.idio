@@ -179,13 +179,19 @@ map (function (d) {
        }
      })
      (else {
-       tf := append-string d "/test-operator.idio"
-       if (e? tf) {
-	 testdir = d
-	 (regex-case d
-		     ("^(.*)/tests" {
-		       topdir = r.1
-		     }))
+       for ext in '(#n "tests") {
+	 td := d
+	 if (string? ext) {
+	   td = append-string td "/" ext
+	 }
+	 tf := append-string td "/test-operator.idio"
+	 if (e? tf) {
+	   testdir = td
+	   (regex-case td
+		       ("^(.*)/tests" {
+			 topdir = r.1
+		       }))
+	 }
        }
      }))
   }
