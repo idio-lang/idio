@@ -135,7 +135,7 @@ local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)
 	(cd $(EXTDIR)/empty/src; $(MAKE) local-install)
 	(cd $(EXTDIR)/SRFI-14/src; $(MAKE) local-install)
 
-pre-compile: $(LI_BINDIR)/idio
+pre-compile: local-install
 	$(LI_BINDIR)/idio --save-xenvs </dev/null
 
 clean-pre-compile:
@@ -158,7 +158,7 @@ $(LI_BINDIR) $(LI_LIBVERDIR) :
 clean-local-install :
 	rm -rf $(LI_TOPDIR)
 
-user-install : local-install $(UI_BINDIR)/idio | $(UI_LIBVERDIR)
+user-install : local-install $(UI_BINDIR)/idio pre-compile | $(UI_LIBVERDIR)
 	(cd $(LI_LIBDIR); tar cf - ${IDIO_SYSTEM_VERSION_MM}) | (cd $(UI_LIBDIR); tar xf -)
 
 $(UI_BINDIR)/idio : $(UI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
@@ -182,7 +182,7 @@ clean-user-install :
 	rm -f $(UI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} $(UI_BINDIR)/idio
 	rm -rf $(UI_LIBVERDIR)
 
-system-install : local-install $(SI_BINDIR)/idio | $(SI_LIBVERDIR)
+system-install : local-install $(SI_BINDIR)/idio pre-compile | $(SI_LIBVERDIR)
 	(cd $(LI_LIBDIR); tar cf - ${IDIO_SYSTEM_VERSION_MM}) | (cd $(SI_LIBDIR); tar xf -)
 
 $(SI_BINDIR)/idio : $(SI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
@@ -209,7 +209,7 @@ clean-system-install :
 lib%.so : %.o
 	$(CC) -shared -o $@ $^
 
-clean : build-clean clean-ext-src clean-ext-api clean-rfc6234 run-clean edit-clean clean-pre-compile
+clean : clean-ext-src clean-ext-api clean-rfc6234 run-clean edit-clean clean-pre-compile build-clean
 	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system $(IDIO_SYSTEM)
 
 clean-ext-src: $(EXTDIR)/*/src
