@@ -24,5 +24,6 @@ html text : source
 source :
 	../../.local/bin/idio ../../utils/bin/gen-ref-docs $$PWD/index.tree
 	(cd sphinx-source; tar cf - *) | (cd source; tar xf -)
+	sed -i -e "s/^release = .*/release = '${IDIO_VERSION}'/" source/conf.py
 
 .PHONY : source
