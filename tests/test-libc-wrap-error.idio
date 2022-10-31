@@ -470,6 +470,20 @@ libc-wrap-error-load "libc-wrap-errors/strsignal-bad-type.idio" "bad parameter t
       "uname/sysname/Darwin") {
    test (strsignal (C/integer-> -1)) "Unknown signal: -1"
  })
+
+ ;; This Alpine clause is probably a musl libc clause but
+ ;; https://wiki.musl-libc.org/faq.html says they refuse to be
+ ;; identified
+ ("os-release/ID/alpine" {
+   (pattern-case
+    IDIO_SYSTEM_ARCH
+    ("*-musl" {
+      test (strsignal (C/integer-> -1)) "Unknown signal"
+    })
+    (else {
+      test (strsignal (C/integer-> -1)) "Unknown signal -1"
+    }))
+ })
  (else {
    test (strsignal (C/integer-> -1)) "Unknown signal -1"
  }))
@@ -554,6 +568,20 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
    ;; NetBSD ignores a negative GID
    libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
+
+ ;; This Alpine clause is probably a musl libc clause but
+ ;; https://wiki.musl-libc.org/faq.html says they refuse to be
+ ;; identified
+ ("os-release/ID/alpine" {
+   (pattern-case
+    IDIO_SYSTEM_ARCH
+    ("*-musl" {
+      libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+    })
+    (else {
+      libc-wrap-error-load "libc-wrap-errors/EGID-set-invalid-gid.idio" "Invalid argument" EINVAL "setegid"
+    }))
+ })
  ((or "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"
       "uname/sysname/Darwin") {
@@ -594,6 +622,20 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
  ("uname/sysname/NetBSD" {
    ;; NetBSD ignores a negative UID
    libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+ })
+
+ ;; This Alpine clause is probably a musl libc clause but
+ ;; https://wiki.musl-libc.org/faq.html says they refuse to be
+ ;; identified
+ ("os-release/ID/alpine" {
+   (pattern-case
+    IDIO_SYSTEM_ARCH
+    ("*-musl" {
+      libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+    })
+    (else {
+      libc-wrap-error-load "libc-wrap-errors/EGID-set-invalid-gid.idio" "Invalid argument" EINVAL "setegid"
+    }))
  })
  ((or "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"

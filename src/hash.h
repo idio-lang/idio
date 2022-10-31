@@ -46,7 +46,6 @@ idio_hi_t idio_hash_default_hash_C_hash (IDIO h);
 idio_hi_t idio_hash_default_hash_C (IDIO h, void const *k);
 IDIO idio_hash_put (IDIO h, void *k, IDIO v);
 int idio_hash_exists_key (IDIO h, void *kv);
-IDIO idio_hash_exists (IDIO h, void *k);
 IDIO idio_hash_ref (IDIO h, void const *k);
 int idio_hash_delete (IDIO h, void *k);
 IDIO idio_hash_keys_to_list (IDIO h);

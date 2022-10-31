@@ -399,6 +399,10 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 
 	IDIO si = IDIO_PAIR_H (si_ci);
 	if (! idio_isa_fixnum (si)) {
+#ifdef IDIO_DEBUG
+	    idio_debug ("symbols: not a fixnum: %s ", si);
+	    fprintf (stderr, "in %s\n", file);
+#endif
 	    return 0;
 	}
 	idio_ai_t C_si = IDIO_FIXNUM_VAL (si);
@@ -468,6 +472,10 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 
 	IDIO si = IDIO_PAIR_H (si_ci);
 	if (! idio_isa_fixnum (si)) {
+#ifdef IDIO_DEBUG
+	    idio_debug ("operators: not a fixnum: %s ", si);
+	    fprintf (stderr, "in %s\n", file);
+#endif
 	    return 0;
 	}
 	idio_ai_t C_si = IDIO_FIXNUM_VAL (si);
@@ -536,6 +544,10 @@ int idio_compile_file_reader (IDIO eenv, IDIO I_file, char *file, size_t file_le
 
 	IDIO si = IDIO_PAIR_H (pd);
 	if (! idio_isa_fixnum (si)) {
+#ifdef IDIO_DEBUG
+	    idio_debug ("predefs: not a fixnum %s ", si);
+	    fprintf (stderr, "in %s\n", file);
+#endif
 	    return 0;
 	}
 	idio_ai_t C_si = IDIO_FIXNUM_VAL (si);

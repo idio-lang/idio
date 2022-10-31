@@ -148,7 +148,8 @@ void idio_module_table_register (void (*ap_func) (void), void (*f_func) (void), 
      * If we are already running, rather than in bootstrap (or
      * shutdown??)  then call the add_primitives function now.
      */
-    if (IDIO_STATE_RUNNING == idio_state) {
+    if (IDIO_STATE_RUNNING == idio_state &&
+	NULL != ap_func) {
 	(ap_func) ();
     }
 }
@@ -354,7 +355,8 @@ void idio_final ()
     idio_final_vtable ();
 
 #ifdef IDIO_VM_PROF
-    if (fclose (idio_vm_perf_FILE)) {
+    if (idio_vm_perf_FILE != stderr &&
+	fclose (idio_vm_perf_FILE)) {
 	perror ("fclose " IDIO_VM_PROF_FILE_NAME);
     }
     idio_vm_perf_FILE = stderr;
@@ -680,7 +682,7 @@ int main (int argc, char **argv, char **envp)
     IDIO bootstrap_eenv = idio_evaluate_eenv (thr,
 					      IDIO_STRING ("> load bootstrap"),
 					      IDIO_THREAD_MODULE (thr));
-    idio_gc_protect (bootstrap_eenv);
+    idio_gc_protect_auto (bootstrap_eenv);
     idio_load_file_name (IDIO_STRING ("bootstrap"), bootstrap_eenv);
 
     idio_gc_collect_all ("post-bootstrap");

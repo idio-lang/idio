@@ -179,13 +179,19 @@ map (function (d) {
        }
      })
      (else {
-       tf := append-string d "/test-operator.idio"
-       if (e? tf) {
-	 testdir = d
-	 (regex-case d
-		     ("^(.*)/tests" {
-		       topdir = r.1
-		     }))
+       for ext in '(#n "tests") {
+	 td := d
+	 if (string? ext) {
+	   td = append-string td "/" ext
+	 }
+	 tf := append-string td "/test-operator.idio"
+	 if (e? tf) {
+	   testdir = td
+	   (regex-case td
+		       ("^(.*)/tests" {
+			 topdir = r.1
+		       }))
+	 }
        }
      }))
   }
@@ -261,6 +267,10 @@ if running-as-root {
   eprintf "NOTICE: EUID/UID == %d/%d; EGID/GID == %d/%d: some tests will be skipped\n" EUID UID EGID GID
 }
 
+;; musl libc uses different error strings, ENAMETOOLONG is used
+;; frequently enough
+ENAMETOOLONG-str := strerror ENAMETOOLONG
+
 test-load := {
   n := 0
 
@@ -280,9 +290,6 @@ test-load := {
     tv-delta := libc/subtract-struct-timeval tv-after tv-before
     delta := (C/->integer (libc/struct-timeval-ref tv-delta 'tv_sec)) + ((C/->integer (libc/struct-timeval-ref tv-delta 'tv_usec)) / 1000000)
     printf "[%s/%d] %3ds %4d tests in %5.2fs %s\n" (getpid) PID SECONDS (Tests - tests0) delta filename
-
-    ; clean up lost file descriptors
-    (gc/collect)
   }
 }
 
@@ -440,7 +447,7 @@ if (ARGC gt 0) {
   ;; that?  Erm, they've not been counted and are dynamic in number so
   ;; test we've seen at least as many as the largest number we've
   ;; seen.  Wait, some tests are OS-specific.  Drat!
-  Tests? (8158 - Skipped)
+  Tests? (8162 - Skipped)
 }
 
 if (e? testfile) (delete-file testfile)

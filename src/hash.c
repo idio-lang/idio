@@ -1269,36 +1269,6 @@ int idio_hash_exists_key (IDIO h, void *kv)
     }
 }
 
-/*
- * Code coverage:
- *
- * Notionally called from idio_C_typedefs_exists() in c-struct.c --
- * code that is "in flux."
- */
-IDIO idio_hash_exists (IDIO h, void *kv)
-{
-    IDIO_ASSERT (h);
-
-    if (idio_S_nil == kv) {
-	/*
-	 * Test Case: hash-errors/hash-exists-nil-key.idio
-	 *
-	 * hash-exists? ht #n
-	 */
-	idio_error_param_nil ("idio_hash_exists", "key", IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    IDIO_TYPE_ASSERT (hash, h);
-
-    if (NULL == idio_hash_he (h, kv)) {
-	return idio_S_nil;
-    } else {
-	return kv;
-    }
-}
-
 IDIO_DEFINE_PRIMITIVE2_DS ("hash-exists?", hash_existsp, (IDIO ht, IDIO key), "ht key", "\
 assert whether index of `key` in hash table `ht` exists	\n\
 							\n\

@@ -583,6 +583,8 @@ IDIO idio_C_longdouble (long double const v)
     IDIO co = idio_gc_get (IDIO_TYPE_C_LONGDOUBLE);
     co->vtable = idio_vtable (IDIO_TYPE_C_LONGDOUBLE);
 
+    IDIO_GC_ALLOC (co->u.C_type.u.C_longdouble, sizeof (long double));
+
     IDIO_C_TYPE_longdouble (co) = v;
 
     return co;
@@ -611,6 +613,13 @@ test if `o` is a C/longdouble			\n\
     }
 
     return r;
+}
+
+void idio_free_C_longdouble (IDIO co)
+{
+    IDIO_ASSERT (co);
+
+    IDIO_GC_FREE (co->u.C_type.u.C_longdouble, sizeof (long double));
 }
 
 IDIO idio_C_pointer (void * v)

@@ -54,6 +54,14 @@ test "Hello" "Hello"
 test "Hello
 World" "Hello\nWorld"
 
+;; negative indices
+str := copy-value "hello"
+test (string-ref str 0)	 #\h
+test (string-ref str -1) #\o
+test (string-ref str -5) #\h
+string-set! str -5 #\H
+test str		 "Hello"
+
 test (make-string 0)        ""
 test (make-string 1)        " "
 test (make-string 0 #\a)    ""
@@ -787,7 +795,7 @@ for (x y z) in strings {
 }
 
 ;; all done?
-Tests? (string0 + 477)
+Tests? (string0 + 481)
 
 ;Local Variables:
 ;mode: Idio

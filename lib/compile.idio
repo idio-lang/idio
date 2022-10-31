@@ -116,7 +116,7 @@ define (compile-file-writer file eenv pc) {
     cs := %eenv-cs eenv
     puts #S{
 ; The ${array-length cs} constants
-#\[
+#=\[
 }
 
     i := 0
@@ -181,8 +181,19 @@ ${array-length (%eenv-st eenv)}
 
       for pd in predefs {
 	puts " "
-	write pd
-	(newline)
+	name := pht pd
+	if (operator? name) {
+	  puts "("
+	  write (ph pd)
+	  puts " \\"
+	  write (pht pd)
+	  puts " "
+	  write (phtt pd)
+	  puts ")\n"
+	} {
+	  write pd
+	  (newline)
+	}
       }
 
     puts #S{)
@@ -233,13 +244,13 @@ ${pc}
 
     puts #S{
 ; The 0 source expression properties
-#\[ \]
+#=\[ \]
 }
 
     sps := %eenv-sps eenv
     puts #S{
 ; The ${array-length sps} source expression properties (ci line)
-#\[ }
+#=\[ }
 
     for sp in sps {
       write sp

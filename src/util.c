@@ -754,6 +754,8 @@ int idio_equal (IDIO o1, IDIO o2, idio_equal_enum eqp)
 			    idio_equal_stat_increment (o1, o2, t0);
 #endif
 			    return idio_string_equal (o1, o2);
+			default:
+			    break;
 			}
 		    }
 		    break;
@@ -769,8 +771,12 @@ int idio_equal (IDIO o1, IDIO o2, idio_equal_enum eqp)
 			    idio_equal_stat_increment (o1, o2, t0);
 #endif
 			    return idio_string_equal (o1, o2);
+			default:
+			    break;
 			}
 		    }
+		    break;
+		default:
 		    break;
 		}
 	    }
@@ -2376,7 +2382,7 @@ void idio_dump (IDIO o, int detail)
 		    fprintf (stderr, "-> %10p ", o->next);
 		}
 	    }
-	    fprintf (stderr, "t=%2d/%4.4s f=%2x gcf=%2x ", o->type, idio_type2string (o), o->flags, o->gc_flags);
+	    fprintf (stderr, "t=%2d/%4.4s f=%2x c=%2x ", o->type, idio_type2string (o), o->flags, o->colour);
 
 	    switch (o->type) {
 	    case IDIO_TYPE_STRING:

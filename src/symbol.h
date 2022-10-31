@@ -68,7 +68,6 @@ extern IDIO_SYMBOL_DECL (c_pointer);
 extern IDIO_SYMBOL_DECL (c_void);
 
 extern IDIO_SYMBOL_DECL (2string);
-extern IDIO_SYMBOL_DECL (C_struct);
 extern IDIO_SYMBOL_DECL (after);
 extern IDIO_SYMBOL_DECL (ampersand);
 extern IDIO_SYMBOL_DECL (and);

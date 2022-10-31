@@ -298,7 +298,7 @@ void idio_vm_prim_time (IDIO clos, struct timespec *ts0p, struct timespec *tsep,
 IDIO idio_vm_invoke_C_thread (IDIO thr, IDIO command);
 IDIO idio_vm_invoke_C (IDIO command);
 IDIO idio_vm_run_xenv (idio_xi_t xi, IDIO pc);
-idio_xi_t idio_vm_add_xenv (IDIO desc, IDIO st, IDIO cs, IDIO ch, IDIO vt, IDIO ses, IDIO sps, IDIO bs);
+idio_xi_t idio_vm_add_xenv (int protect, IDIO desc, IDIO st, IDIO cs, IDIO ch, IDIO vt, IDIO ses, IDIO sps, IDIO bs);
 idio_xi_t idio_vm_add_xenv_from_eenv (IDIO thr, IDIO eenv);
 void idio_vm_save_xenvs (idio_xi_t from);
 IDIO idio_vm_source_location ();

@@ -210,34 +210,6 @@ typedef int32_t idio_unicode_t;	/* must handle EOF as well! */
 typedef uint8_t IDIO_I;
 #define IDIO_I_MAX	UINT8_MAX
 
-#define IDIO_GC_FLAG_NONE		0
-#define IDIO_GC_FLAG_GCC_SHIFT		0	/* GC colours -- four bits */
-#define IDIO_GC_FLAG_FREE_SHIFT		4	/* debug */
-#define IDIO_GC_FLAG_STICKY_SHIFT	5	/* memory pinning */
-#define IDIO_GC_FLAG_FINALIZER_SHIFT	6
-
-#define IDIO_GC_FLAG_GCC_MASK		(0xf << IDIO_GC_FLAG_GCC_SHIFT)
-#define IDIO_GC_FLAG_GCC_UMASK		(~ IDIO_GC_FLAG_GCC_MASK)
-#define IDIO_GC_FLAG_GCC_BLACK		(1 << (IDIO_GC_FLAG_GCC_SHIFT+0))
-#define IDIO_GC_FLAG_GCC_DGREY		(1 << (IDIO_GC_FLAG_GCC_SHIFT+1))
-#define IDIO_GC_FLAG_GCC_LGREY		(1 << (IDIO_GC_FLAG_GCC_SHIFT+2))
-#define IDIO_GC_FLAG_GCC_WHITE		(1 << (IDIO_GC_FLAG_GCC_SHIFT+3))
-
-#define IDIO_GC_FLAG_FREE_MASK		(1 << IDIO_GC_FLAG_FREE_SHIFT)
-#define IDIO_GC_FLAG_FREE_UMASK		(~ IDIO_GC_FLAG_FREE_MASK)
-#define IDIO_GC_FLAG_NOTFREE		(0 << IDIO_GC_FLAG_FREE_SHIFT)
-#define IDIO_GC_FLAG_FREE		(1 << IDIO_GC_FLAG_FREE_SHIFT)
-
-#define IDIO_GC_FLAG_STICKY_MASK	(1 << IDIO_GC_FLAG_STICKY_SHIFT)
-#define IDIO_GC_FLAG_STICKY_UMASK	(~ IDIO_GC_FLAG_STICKY_MASK)
-#define IDIO_GC_FLAG_NOTSTICKY		(0 << IDIO_GC_FLAG_STICKY_SHIFT)
-#define IDIO_GC_FLAG_STICKY		(1 << IDIO_GC_FLAG_STICKY_SHIFT)
-
-#define IDIO_GC_FLAG_FINALIZER_MASK	(1 << IDIO_GC_FLAG_FINALIZER_SHIFT)
-#define IDIO_GC_FLAG_FINALIZER_UMASK	(~ IDIO_GC_FLAG_FINALIZER_MASK)
-#define IDIO_GC_FLAG_NOFINALIZER	(0 << IDIO_GC_FLAG_FINALIZER_SHIFT)
-#define IDIO_GC_FLAG_FINALIZER		(1 << IDIO_GC_FLAG_FINALIZER_SHIFT)
-
 /*
  * A vtable method is a C function and a block of data for the
  * function, if required.
@@ -1117,7 +1089,7 @@ typedef struct idio_C_type_s {
 	unsigned long long int	C_ulonglong;
 	float			C_float;
 	double			C_double;
-	long double		C_longdouble;
+	long double	       *C_longdouble;
 	idio_C_pointer_t       *C_pointer;
     } u;
 } idio_C_type_t;
@@ -1140,63 +1112,43 @@ typedef struct idio_C_type_s {
 #define IDIO_C_TYPE_ulonglong(C)     ((C)->u.C_type.u.C_ulonglong)
 #define IDIO_C_TYPE_float(C)         ((C)->u.C_type.u.C_float)
 #define IDIO_C_TYPE_double(C)        ((C)->u.C_type.u.C_double)
-#define IDIO_C_TYPE_longdouble(C)    ((C)->u.C_type.u.C_longdouble)
-/*
-#define IDIO_C_TYPE_POINTER(C)       ((C)->u.C_type->u.C_pointer)
-*/
-#define IDIO_C_TYPE_POINTER_PTYPE(C)	((C)->u.C_type.u.C_pointer->ptype)
-#define IDIO_C_TYPE_POINTER_P(C)	((C)->u.C_type.u.C_pointer->p)
-#define IDIO_C_TYPE_POINTER_FREEP(C)	((C)->u.C_type.u.C_pointer->freep)
-
-typedef struct idio_C_typedef_s {
-    struct idio_s *grey;
-    struct idio_s *sym;		/* a symbol */
-} idio_C_typedef_t;
-
-#define IDIO_C_TYPEDEF_GREY(C) ((C)->u.C_typedef->grey)
-#define IDIO_C_TYPEDEF_SYM(C)  ((C)->u.C_typedef->sym)
-
-typedef struct idio_C_struct_s {
-    struct idio_s *grey;
-    struct idio_s *fields;
-    struct idio_s *methods;
-    struct idio_s *frame;
-    size_t size;
-} idio_C_struct_t;
-
-#define IDIO_C_STRUCT_GREY(C)    ((C)->u.C_struct->grey)
-#define IDIO_C_STRUCT_FIELDS(C)  ((C)->u.C_struct->fields)
-#define IDIO_C_STRUCT_METHODS(C) ((C)->u.C_struct->methods)
-#define IDIO_C_STRUCT_FRAME(C)   ((C)->u.C_struct->frame)
-#define IDIO_C_STRUCT_SIZE(C)    ((C)->u.C_struct->size)
-
-typedef struct idio_C_instance_s {
-    struct idio_s *grey;
-    void *p;
-    struct idio_s *C_struct;
-    struct idio_s *frame;
-} idio_C_instance_t;
-
-#define IDIO_C_INSTANCE_GREY(C)     ((C)->u.C_instance->grey)
-#define IDIO_C_INSTANCE_P(C)        ((C)->u.C_instance->p)
-#define IDIO_C_INSTANCE_C_STRUCT(C) ((C)->u.C_instance->C_struct)
-#define IDIO_C_INSTANCE_FRAME(C)    ((C)->u.C_instance->frame)
-
-typedef struct idio_opaque_s {
-    struct idio_s *grey;
-    void *p;
-    struct idio_s *args;
-} idio_opaque_t;
-
-#define IDIO_OPAQUE_GREY(C) ((C)->u.opaque->grey)
-#define IDIO_OPAQUE_P(C)    ((C)->u.opaque->p)
-#define IDIO_OPAQUE_ARGS(C) ((C)->u.opaque->args)
+#define IDIO_C_TYPE_longdouble(C)    (*((C)->u.C_type.u.C_longdouble))
+#define IDIO_C_TYPE_POINTER_PTYPE(C) ((C)->u.C_type.u.C_pointer->ptype)
+#define IDIO_C_TYPE_POINTER_P(C)     ((C)->u.C_type.u.C_pointer->p)
+#define IDIO_C_TYPE_POINTER_FREEP(C) ((C)->u.C_type.u.C_pointer->freep)
 
 typedef unsigned char IDIO_FLAGS_T;
 
-#define IDIO_FLAG_NONE		0
-#define IDIO_FLAG_CONST		(1<<0)
-#define IDIO_FLAG_TAINTED	(1<<1)
+typedef enum {
+    IDIO_GC_FLAG_GCC_BLACK,
+    IDIO_GC_FLAG_GCC_DGREY,
+    IDIO_GC_FLAG_GCC_LGREY,
+    IDIO_GC_FLAG_GCC_WHITE
+} idio_gc_flag_gcc_enum;
+
+typedef enum {
+    IDIO_GC_FLAG_NOTFREE,
+    IDIO_GC_FLAG_FREE
+} idio_gc_flag_free_enum;
+
+typedef enum {
+    IDIO_GC_FLAG_NOTSTICKY,
+    IDIO_GC_FLAG_STICKY
+} idio_gc_flag_sticky_enum;
+
+typedef enum {
+    IDIO_GC_FLAG_NOFINALIZER,
+    IDIO_GC_FLAG_FINALIZER
+} idio_gc_flag_finalizer_enum;
+
+/*
+ * generic type flags
+ */
+typedef enum {
+    IDIO_FLAG_NONE,
+    IDIO_FLAG_CONST,
+    IDIO_FLAG_TAINTED
+} idio_flag_enum;
 
 /**
  * struct idio_s - Idio type structure
@@ -1211,62 +1163,97 @@ struct idio_s {
     idio_vtable_t *vtable;
 
     /*
-     * The union will be word-aligned (or larger) so we have 4 or 8
-     * bytes of room for "stuff"
+     * The union will be word-aligned (or larger, see below) so we
+     * have several bytes of room for "stuff".  (Once we use one
+     * bit/char/whatever for flags then we'll get the space for the
+     * full 4/8/16 byte alignment.)
+     *
+     * It doesn't *seem* to matter where in the structure these
+     * bitfields live (other than together) suggesting the compiler is
+     * quite good at deferencing the member fields.
      */
-    idio_type_e type;
-    IDIO_FLAGS_T gc_flags;
-    IDIO_FLAGS_T flags;		/* generic type flags */
-    IDIO_FLAGS_T tflags;	/* type-specific flags (since we have
-				   room here) */
+    idio_type_enum              type     :6; /* 40-ish types is < 64 */
+    idio_gc_flag_gcc_enum       colour   :2;
+    idio_gc_flag_free_enum      free     :1;
+    idio_gc_flag_sticky_enum    sticky   :1;
+    idio_gc_flag_finalizer_enum finalizer:1;
+
+    idio_flag_enum              flags    :2; /* generic type flags */
+
+    /*
+     * type-specific flags (since we have room here)
+     */
+    IDIO_FLAGS_T tflags;
+
+    /*
+     * The garbage collection generation this was allocated in
+     */
+    unsigned char gen;
+
     /*
      * Rationale for union.  We need to decide whether the union
-     * should embed the object or have a pointer to it.
+     * should embed the type-specific structure or have a pointer to
+     * it.
      *
-     * Far and away the most commonly used object is a pair(*) which
+     * Far and away the most commonly used type is a pair(*) which
      * consists of three pointers (grey, head and tail).  If this
-     * union is a pointer to such an object then we use a pointer here
-     * in the union and then two pointers from malloc(3) as well as
-     * the three pointers in the pair.
+     * union is a pointer to such an structure then we use a pointer
+     * here in the union and then two pointers from malloc(3) as well
+     * as the three pointers in the pair.
      *
      * (*) Unless you start using bignums (two pointers) in which case
-     * they dominate.
+     * they may come to dominate.
      *
-     * Of course, the moment we use the (three pointer) object
+     * Of course, the moment we use the (three pointer) structure
      * directly in the union then the original pointer from the union
      * is shadowed by the three pointers of the pair directly here.
      * We still save the two malloc(3) pointers and the cost of
      * malloc(3)/free(3).
      *
-     * Any other object that is three pointers or less can then also
-     * be used directly in the union with no extra cost.
+     * Any other structure that is three pointers or less can then
+     * also be used directly in the union with no extra cost.
+     *
+     * ----
+     *
+     * idio_C_type_t is the alignment culprit with long double being
+     * the forcing type, here for a couple of examples (YMMV):
+     *
+     * 32-bit - 8 byte alignment (along with long long etc.)
+     *
+     * 64-bit - 16 byte alignment
+     *
+     * The alignment is both before and after.  It appears to be an
+     * integer multiple of the largest element, so n*8 or n*16 >= max
+     * (sizeof (union members)).
+     *
+     * In particular, the union, targeting 3 * sizeof (pointer),
+     * actually becomes 2 * sizeof (long double), ie. 4 * sizeof
+     * (pointer).  In other words there's a pointer's worth of empty
+     * space at the end of the union.
+     *
+     * Maybe a struct-instance (three pointers and a size_t) could be
+     * promoted to fit in the union directly.
      */
     union idio_s_u {
-	idio_string_t          string;
-	idio_substring_t       substring;
-	idio_symbol_t          symbol;
-	idio_keyword_t         keyword;
-	idio_pair_t            pair;
+	idio_string_t           string;
+	idio_substring_t        substring;
+	idio_symbol_t           symbol;
+	idio_keyword_t          keyword;
+	idio_pair_t             pair;
 	idio_array_t           *array;
 	idio_hash_t            *hash;
 	idio_closure_t         *closure;
 	idio_primitive_t       *primitive;
-	idio_bignum_t          bignum;
+	idio_bignum_t           bignum;
 	idio_module_t          *module;
 	idio_frame_t           *frame;
 	idio_handle_t          *handle;
 	idio_struct_type_t     *struct_type;
 	idio_struct_instance_t *struct_instance;
 	idio_thread_t	       *thread;
-
-	idio_C_type_t          C_type;
-
-	idio_C_typedef_t       *C_typedef;
-	idio_C_struct_t        *C_struct;
-	idio_C_instance_t      *C_instance;
-	idio_opaque_t          *opaque;
 	idio_continuation_t    *continuation;
-	idio_bitset_t	       bitset;
+	idio_bitset_t	        bitset;
+	idio_C_type_t           C_type;
     } u;
 };
 
@@ -1303,14 +1290,14 @@ typedef struct idio_root_s {
 typedef struct idio_gc_s {
     struct idio_gc_s *next;
     idio_root_t *roots;
-    IDIO dynamic_roots;
+    idio_root_t *autos;
     IDIO free;
     IDIO used;
     IDIO grey;
     IDIO weak;
     int pause;
     unsigned char verbose;
-    unsigned char inst;
+    unsigned char gen;
     IDIO_FLAGS_T flags;		/* generic GC flags */
     struct stats {
 	long long nfree; /* # on free list */
@@ -1324,7 +1311,8 @@ typedef struct idio_gc_s {
 	long long nused[IDIO_TYPE_MAX]; /* per-type usage */
 	long long collections;	/* # times gc has been run */
 	long long bounces;
-	struct timeval dur;
+	struct timeval mark_dur;
+	struct timeval sweep_dur;
 	struct timeval ru_utime;
 	struct timeval ru_stime;
     }  stats;
@@ -1595,16 +1583,12 @@ void IDIO_FPRINTF (FILE *stream, char const *format, ...);
 #else
 #define IDIO_FPRINTF(...)	((void) 0)
 #endif
-void idio_gc_dump ();
 void idio_gc_stats_inc (idio_type_e type);
 void idio_gc_protect (IDIO o);
 void idio_gc_protect_auto (IDIO o);
 void idio_gc_expose (IDIO o);
-void idio_gc_expose_all ();
 void idio_gc_add_weak_object (IDIO o);
 void idio_gc_remove_weak_object (IDIO o);
-void idio_gc_mark (idio_gc_t *idio_gc);
-void idio_gc_sweep (idio_gc_t *idio_gc);
 void idio_gc_possibly_collect ();
 #define IDIO_GC_COLLECT_GEN	0
 #define IDIO_GC_COLLECT_ALL	1

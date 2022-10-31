@@ -90,7 +90,6 @@
 IDIO idio_libc_module = idio_S_nil;
 IDIO idio_vm_signal_handler_conditions;
 char **idio_libc_signal_names = NULL;
-IDIO idio_vm_errno_conditions;
 char **idio_libc_errno_names = NULL;
 char **idio_libc_rlimit_names = NULL;
 IDIO idio_libc_open_flag_names = idio_S_nil;
@@ -3715,9 +3714,6 @@ void idio_init_libc_wrap ()
     idio_array_insert_index (idio_vm_signal_handler_conditions, idio_S_nil, (idio_ai_t) IDIO_LIBC_NSIG);
     idio_libc_set_signal_names ();
 
-    idio_vm_errno_conditions = idio_array (IDIO_LIBC_NERRNO + 1);
-    idio_gc_protect_auto (idio_vm_errno_conditions);
-    idio_array_insert_index (idio_vm_errno_conditions, idio_S_nil, (idio_ai_t) IDIO_LIBC_NERRNO);
     idio_libc_set_errno_names ();
 
     idio_libc_set_rlimit_names ();
@@ -3854,6 +3850,10 @@ void idio_init_libc_wrap ()
 
 #ifdef IDIO_POLLHUP_OCCLUDES_POLLIN
     idio_add_feature (IDIO_SYMBOL ("IDIO_POLLHUP_OCCLUDES_POLLIN"));
+#endif
+
+#ifdef IDIO_HAVE_TERMIOS_SPEEDS
+    idio_add_feature (IDIO_SYMBOL ("IDIO_HAVE_TERMIOS_SPEEDS"));
 #endif
 
     idio_S_mtd = IDIO_SYMBOL ("make-tmp-dir");

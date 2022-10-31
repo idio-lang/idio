@@ -100,11 +100,11 @@ extern FILE *idio_vm_perf_FILE;
  *
  * obviously some random C pointer might pass but that's *always* true
  */
-#define IDIO_ASSERT(x)		(assert(x),(((intptr_t) x)&3)?1:(assert((x)->type),assert((x)->type < IDIO_TYPE_MAX)))
-#define IDIO_ASSERT_FREE(x)	((((intptr_t) x)&3)?1:(assert(((x)->gc_flags & IDIO_GC_FLAG_FREE_MASK) == IDIO_GC_FLAG_FREE)))
-#define IDIO_ASSERT_NOT_FREED(x) ((((intptr_t) x)&3)?1:(assert(((x)->gc_flags & IDIO_GC_FLAG_FREE_MASK) != IDIO_GC_FLAG_FREE)))
-#define IDIO_EXIT(x)		{IDIO_C_ASSERT(0);exit(x);}
-#define IDIO_C_EXIT(x)		{IDIO_C_ASSERT(0);exit(x);}
+#define IDIO_ASSERT(x)		 (assert(x),(((intptr_t) x)&3)?1:(assert((x)->type),assert((x)->type < IDIO_TYPE_MAX)))
+#define IDIO_ASSERT_FREE(x)	 ((((intptr_t) x)&3)?1:(assert(IDIO_GC_FLAG_FREE == (x)->free)))
+#define IDIO_ASSERT_NOT_FREED(x) ((((intptr_t) x)&3)?1:(assert(IDIO_GC_FLAG_FREE != (x)->free)))
+#define IDIO_EXIT(x)		 {IDIO_C_ASSERT(0);exit(x);}
+#define IDIO_C_EXIT(x)		 {IDIO_C_ASSERT(0);exit(x);}
 
 #define IDIO_S1(x)			#x
 #define IDIO_S2(x)			IDIO_S1(x)
@@ -147,7 +147,7 @@ extern FILE *idio_vm_perf_FILE;
 	}								\
     }
 
-#define IDIO_GC_FLAG_FREE_SET(x) ((((x)->gc_flags & IDIO_GC_FLAG_FREE_MASK) == IDIO_GC_FLAG_FREE))
+#define IDIO_GC_FLAG_FREE_SET(x) (IDIO_GC_FLAG_FREE == (x)->free)
 /*
 #define IDIO_IS_FREE(x)       (idio_S_nil == (x) || IDIO_GC_FLAG_FREE_SET (x))
 */

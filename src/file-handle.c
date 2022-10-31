@@ -2925,8 +2925,8 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 	 * Obviously a library missing the symbol will trigger this.
 	 * Coding error?
 	 */
-	char em[BUFSIZ];
-	snprintf (em, BUFSIZ, "%s", func);
+	char em[PATH_MAX];
+	snprintf (em, PATH_MAX, "%s", func);
 
 	char ed[BUFSIZ];
 	snprintf (ed, BUFSIZ, "%s", error);
@@ -3777,19 +3777,25 @@ int idio_load_idio_cache (char *pathname, size_t pathname_len, IDIO eenv)
 
     /* no dot no deal */
     if (NULL == pathname_dot) {
-	/* fprintf (stderr, "no dot in %s\n", pathname); */
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "no dot in %s\n", pathname);
+#endif
 	return 0;
     }
 
     size_t iie_len = sizeof (IDIO_IDIO_EXT) - 1;
     size_t dot_len = pathname_len - (pathname_dot - pathname);
     if (dot_len != iie_len) {
-	/* fprintf (stderr, "len (%s) != len (%s) in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname); */
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "len (%s) != len (%s) in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname);
+#endif
 	return 0;
     }
 
     if (strncmp (pathname_dot, IDIO_IDIO_EXT, iie_len)) {
-	/* fprintf (stderr, "ext %s != %s in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname); */
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "ext %s != %s in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname);
+#endif
 	return 0;
     }
 
@@ -3824,6 +3830,9 @@ int idio_load_idio_cache (char *pathname, size_t pathname_len, IDIO eenv)
     end[0] = '\0';
 
     if (access (cfn, R_OK)) {
+#ifdef IDIO_DEBUG
+	/* fprintf (stderr, "access (%s) != R_OK\n", cfn); */
+#endif
 	return 0;
     }
 
@@ -4098,11 +4107,21 @@ This is the `load` primitive.					\n\
 
     IDIO eenv = idio_evaluate_eenv (thr, desc, cm);
 
-    idio_gc_protect (eenv);
+    /*
+     * It is not beyond the bounds of possibility that loading a file
+     * might result in a condition being raised (think: test suite) in
+     * which case we don't want to idio_gc_protect() eenv because that
+     * will leave (roughly 1300) eenvs as root objects even though
+     * they are invalid.
+     *
+     * So, use the stack instead.
+     */
+    IDIO stack = IDIO_THREAD_STACK (thr);
+    idio_array_push (stack, eenv);
 
     IDIO r = idio_load_file_name (filename, eenv);
 
-    idio_gc_expose (eenv);
+    idio_array_pop (stack);
 
     idio_pc_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -4241,5 +4260,4 @@ void idio_init_file_handle ()
     idio_gc_protect_auto (idio_dl_handles);
 
     idio_compile_file_reader_sym = IDIO_SYMBOL ("compile-file-reader");
-    idio_gc_protect_auto (idio_compile_file_reader_sym);
 }

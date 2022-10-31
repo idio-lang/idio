@@ -199,6 +199,12 @@ compiler      := #f
       }
     }))
 
+   (pattern-case
+    IDIO_SYSTEM_ARCH
+    ("*-musl" {
+      OS = sprintf "%s (musl)" OS
+    }))
+
    ;; WSL? https://stackoverflow.com/questions/38086185/how-to-check-if-a-program-is-run-in-bash-on-ubuntu-on-windows-and-not-just-plain
    pv := "/proc/sys/kernel/osrelease"
    if (r? pv) {

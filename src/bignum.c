@@ -782,7 +782,7 @@ IDIO idio_bignum_longdouble (long double ld)
  *
  * This is the iterative version
  */
-double idio_bignum_pow (double x, IDIO_BE_T y)
+double idio_bignum_double_pow (double x, IDIO_BE_T y)
 {
     if (y < 0) {
 	x = 1 / x;
@@ -792,6 +792,30 @@ double idio_bignum_pow (double x, IDIO_BE_T y)
 	return 1;
     }
     double n = 1;
+    while (y > 1) {
+	if (y % 2) {
+	    n = x * n;
+	    x = x * x;
+	    y = (y - 1) / 2;
+	} else {
+	    x = x * x;
+	    y = y / 2;
+	}
+    }
+
+    return x * n;
+}
+
+long double idio_bignum_longdouble_pow (long double x, IDIO_BE_T y)
+{
+    if (y < 0) {
+	x = 1 / x;
+	y = -y;
+    }
+    if (0 == y) {
+	return 1;
+    }
+    long double n = 1;
     while (y > 1) {
 	if (y % 2) {
 	    n = x * n;
@@ -838,24 +862,11 @@ float idio_bignum_float_value (IDIO bn)
 
     IDIO_BE_T exp = IDIO_BIGNUM_EXP (bn);
 
-    /*
-     * We should range check at this point (to avoid pow()) for
-     * extreme exp as the chances are we're using IEEE 754 floating
-     * point and those have exponent limits (2^+/-126 or roughly
-     * 10^+/-38)
-     */
-    if (exp > 38 ||
-	exp < -38) {
-#ifdef IDIO_DEBUG
-	fprintf (stderr, "C float range conversion issue pending? exp=%" PRId32 " exceeds (+/-38)\n", exp);
-#endif
-    }
-
     if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
 	r = -r;
     }
 
-    return r * (float) idio_bignum_pow (10, exp);
+    return r * (float) idio_bignum_double_pow (10, exp);
 }
 
 double idio_bignum_double_value (IDIO bn)
@@ -880,24 +891,11 @@ double idio_bignum_double_value (IDIO bn)
 
     IDIO_BE_T exp = IDIO_BIGNUM_EXP (bn);
 
-    /*
-     * We should range check at this point (to avoid pow()) for
-     * extreme exp as the chances are we're using IEEE 754 floating
-     * point and those have exponent limits (2^+/-1022 or roughly
-     * 10^+/-308)
-     */
-    if (exp > 308 ||
-	exp < -308) {
-#ifdef IDIO_DEBUG
-	fprintf (stderr, "double range conversion issue pending? exp=%" PRId32 " exceeds (+/-308)\n", exp);
-#endif
-    }
-
     if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
 	r = -r;
     }
 
-    return r * idio_bignum_pow (10, exp);
+    return r * idio_bignum_double_pow (10, exp);
 }
 
 long double idio_bignum_longdouble_value (IDIO bn)
@@ -922,24 +920,11 @@ long double idio_bignum_longdouble_value (IDIO bn)
 
     IDIO_BE_T exp = IDIO_BIGNUM_EXP (bn);
 
-    /*
-     * We should range check at this point (to avoid pow()) for
-     * extreme exp as the chances are we're using IEEE 754 floating
-     * point and those have exponent limits (2^+/-16382 or roughly
-     * 10^+/-4934)
-     */
-    if (exp > 4934 ||
-	exp < -4934) {
-#ifdef IDIO_DEBUG
-	fprintf (stderr, "long double range conversion issue pending? exp=%" PRId32 " exceeds (+/-4934)\n", exp);
-#endif
-    }
-
     if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
 	r = -r;
     }
 
-    return r * idio_bignum_pow (10, exp);
+    return r * idio_bignum_longdouble_pow (10, exp);
 }
 
 

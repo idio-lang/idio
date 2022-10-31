@@ -1,4 +1,4 @@
 
 s := copy-string "hello"
 
-string-set! s -1 #\a
+string-set! s -100 #\a

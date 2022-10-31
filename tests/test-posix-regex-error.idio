@@ -85,6 +85,20 @@ posix-regex-error-load "posix-regex-errors/regcomp-bad-flag-type.idio" "bad para
       posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: repetition-operator operand invalid"
     }))
  })
+
+ ;; This Alpine clause is really a musl libc clause but
+ ;; https://wiki.musl-libc.org/faq.html says they refuse to be
+ ;; identified
+ ("os-release/ID/alpine" {
+   (pattern-case
+    IDIO_SYSTEM_ARCH
+    ("*-musl" {
+      posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: Repetition not preceded by valid expression"
+    })
+    (else {
+      posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: Invalid preceding regular expression"
+    }))
+ })
  (else {
    posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: Invalid preceding regular expression"
  }))

@@ -164,6 +164,7 @@ static IDIO idio_meaning_dotted_abstraction_string = idio_S_nil;
 
 IDIO idio_evaluate_eenv_type = idio_S_nil;
 IDIO idio_evaluate_eenv_map = idio_S_nil;
+IDIO idio_evaluate_eenvs = idio_S_nil;
 
 static IDIO idio_S_evaluate;
 static IDIO idio_S_list2array;
@@ -5930,6 +5931,7 @@ IDIO idio_evaluate_eenv (IDIO thr, IDIO desc, IDIO module)
 					     idio_S_false                     /* xi */
 				     ));
 
+    idio_array_push (idio_evaluate_eenvs, eenv);
     idio_vm_add_xenv_from_eenv (thr, eenv);
 
     return eenv;
@@ -6200,6 +6202,10 @@ void idio_init_evaluate ()
     idio_gc_protect_auto (idio_evaluate_eenv_map);
 
     idio_module_set_symbol_value (IDIO_SYMBOL ("%%eenv-map"), idio_evaluate_eenv_map, idio_evaluate_module);
+
+    idio_evaluate_eenvs = idio_array (4);
+    idio_gc_protect_auto (idio_evaluate_eenvs);
+
 }
 
 /* Local Variables: */

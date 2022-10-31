@@ -171,16 +171,16 @@ command-parent-error-load "command-errors/PATH-format.idio" "find-exe 'PATH' con
  }))
 
 OPATH := PATH
-command-parent-error-load "command-errors/find-exe-cmd-PATH_MAX.idio" "File name too long" "cwd+command exename length"
+command-parent-error-load "command-errors/find-exe-cmd-PATH_MAX.idio" ENAMETOOLONG-str "cwd+command exename length"
 PATH = OPATH
 
-command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-1.idio" "File name too long" "PATH+command exename length"
+command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-1.idio" ENAMETOOLONG-str "PATH+command exename length"
 PATH = OPATH
 
-command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-2.idio" "File name too long" "cwd+command exename length"
+command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-2.idio" ENAMETOOLONG-str "cwd+command exename length"
 PATH = OPATH
 
-command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-3.idio" "File name too long" "dir+command exename length"
+command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-3.idio" ENAMETOOLONG-str "dir+command exename length"
 PATH = OPATH
 
 command-parent-error-load "command-errors/find-exe-bad-format.idio" "command contains an ASCII NUL"

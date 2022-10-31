@@ -95,7 +95,7 @@ string-error-load "string-errors/string-length-bad-type.idio" "bad parameter typ
 string-error-load "string-errors/string-ref-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
 string-error-load "string-errors/string-ref-float.idio" "bad parameter type: '1.5e+0' a bignum is not a integer"
 string-error-load "string-errors/string-ref-unicode.idio" "bad parameter type: 'a' a unicode is not a integer"
-string-error-load "string-errors/string-ref-negative.idio" "string length: out of bounds"
+string-error-load "string-errors/string-ref-too-negative.idio" "string length: out of bounds"
 string-error-load "string-errors/string-ref-too-large.idio" "string length: out of bounds"
 string-error-load "string-errors/string-ref-bignum.idio" "string length: out of bounds"
 
@@ -105,7 +105,7 @@ string-error-load "string-errors/string-set-constant.idio" "bad parameter: strin
 string-error-load "string-errors/string-set-float.idio" "bad parameter type: '1.5e+0' a bignum is not a integer"
 string-error-load "string-errors/string-set-unicode.idio" "bad parameter type: 'a' a unicode is not a integer"
 string-error-load "string-errors/string-set-too-wide.idio" "string width: replacement char too wide"
-string-error-load "string-errors/string-set-negative.idio" "string length: out of bounds"
+string-error-load "string-errors/string-set-too-negative.idio" "string length: out of bounds"
 string-error-load "string-errors/string-set-too-large.idio" "string length: out of bounds"
 string-error-load "string-errors/string-set-bignum.idio" "string length: out of bounds"
 string-error-load "string-errors/string-set-too-wide.idio" "string width: replacement char too wide"

@@ -180,9 +180,9 @@ file-handle-error-load "file-handle-errors/open-file-exists.idio" "open-file: Fi
 ;; This is slightly different to those above as it is the Operating
 ;; System generating the errors not us catching overly long filenames
 ;; in pre-checks.
-file-handle-error-load "file-handle-errors/open-file-filename-PATH_MAX.idio" "open-file: File name too long"
-file-handle-error-load "file-handle-errors/open-input-file-filename-PATH_MAX.idio" "open-input-file: File name too long"
-file-handle-error-load "file-handle-errors/open-output-file-filename-PATH_MAX.idio" "open-output-file: File name too long"
+file-handle-error-load "file-handle-errors/open-file-filename-PATH_MAX.idio" (append-string "open-file: " ENAMETOOLONG-str)
+file-handle-error-load "file-handle-errors/open-input-file-filename-PATH_MAX.idio" (append-string "open-input-file: " ENAMETOOLONG-str)
+file-handle-error-load "file-handle-errors/open-output-file-filename-PATH_MAX.idio" (append-string "open-output-file: " ENAMETOOLONG-str)
 
 ;; ^i/o-filename-error
 ;;
@@ -205,7 +205,7 @@ file-handle-error-load "file-handle-errors/open-input-file-filename-missing.idio
 
 ;; Technically this could fail with EMFILE or ENFILE, depending on the
 ;; state of the system.
-file-handle-error-load "file-handle-errors/EMFILE.idio" "Too many open files" "open (final)"
+file-handle-error-load "file-handle-errors/EMFILE.idio" (strerror EMFILE) "open (final)"
 (cond-expand
  ("uname/sysname/Darwin" {
    eprintf "XXX: Darwin: requiring extra GC collection\n"
@@ -250,15 +250,15 @@ file-handle-error-load "file-handle-errors/find-lib-bad-type.idio" "bad paramete
    chdir cwd
  }))
 
-file-handle-error-load "file-handle-errors/find-lib-abs-file-PATH_MAX.idio" "File name too long" "/file.idio libname length"
+file-handle-error-load "file-handle-errors/find-lib-abs-file-PATH_MAX.idio" ENAMETOOLONG-str "/file.idio libname length"
 
-file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-1.idio" "File name too long" "IDIOLIB+file.idio libname length"
+file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-1.idio" ENAMETOOLONG-str "IDIOLIB+file.idio libname length"
 IDIOLIB = OIDIOLIB
 
-file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-2.idio" "File name too long" "cwd+file.idio libname length"
+file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-2.idio" ENAMETOOLONG-str "cwd+file.idio libname length"
 IDIOLIB = OIDIOLIB
 
-file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-3.idio" "File name too long" "dir+file.idio libname length"
+file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-3.idio" ENAMETOOLONG-str "dir+file.idio libname length"
 IDIOLIB = OIDIOLIB
 
 file-handle-error-load "file-handle-errors/find-lib-format.idio" "find-lib filename contains an ASCII NUL"

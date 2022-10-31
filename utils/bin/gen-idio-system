@@ -119,16 +119,30 @@ case "${uname_a[0]}" in
     build_timestamp=$(date -r "${now}" +%Y-%m-%dT%H:%M:%SZ%z)
     ;;
 *)
+    busybox=
     case "${uname_a[0]}" in
     SunOS)
 	PATH=/usr/gnu/bin:$PATH
+	;;
+    Linux)
+	if test -h /bin/ls ; then
+	    case "$(readlink /bin/ls)" in
+	    */busybox)
+		busybox=1
+		;;
+	    esac
+	fi
 	;;
     esac
 
     # we're going to generate more than one date output so use a
     # consistent date input (including zone information otherwise it
     # gets added again!)
-    now=$(date +'%Y-%m-%d %H:%M:%SZ%z')
+    if [[ ${busybox} ]] ; then
+	now=$(date +%Y%m%d%H%M.%S)
+    else
+	now=$(date +'%Y-%m-%d %H:%M:%SZ%z')
+    fi
 
     # build date and timestamp using a consistent {now}
     build_date=$(date -d "${now}" +%Y-%m-%d)
@@ -296,7 +310,7 @@ CC_path=$(type -p ${CC})
 
 ######################################################################
 
-var_MODULE=$( echo ${opt_module} | tr '[a-z]' '[A-Z]' )
+var_MODULE=$( echo -n ${opt_module} | tr '[a-z]' '[A-Z]' | tr -c '[A-Z0-9]' _)
 var_header=${opt_module}-system.h
 
 # Bah!  The extensions want a generic name, MODULE_* so the make rules

@@ -513,6 +513,30 @@ if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
     IDIO_HAVE_REG_STARTEND=0
 fi
 
+##############################
+
+# SunOS never had the termios->c_[io]speed fields and Alpine/musl
+# doesn't either
+
+names+=(IDIO_HAVE_TERMIOS_SPEEDS)
+cat <<EOF > ${tmpdir}/test.c
+#define _GNU_SOURCE
+#include <termios.h>
+#include <unistd.h>
+
+int main (int argc, char **argv)
+{
+    struct termios *termiosp;
+    speed_t is = termiosp->c_ispeed;
+    return 0;
+}
+EOF
+
+IDIO_HAVE_TERMIOS_SPEEDS=1
+if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
+    IDIO_HAVE_TERMIOS_SPEEDS=0
+fi
+
 ######################################################################
 
 var_MODULE=$( echo ${opt_module} | tr '[a-z]' '[A-Z]' )

@@ -170,6 +170,7 @@ int idio_isa_C_double (IDIO co);
 
 IDIO idio_C_longdouble (long double v);
 int idio_isa_C_longdouble (IDIO co);
+void idio_free_C_longdouble (IDIO co);
 
 IDIO idio_C_pointer (void * v);
 int idio_isa_C_pointer (IDIO co);
