@@ -1,6 +1,8 @@
-include ../../../src/Makefile.common
+TOPDIR	:= ../../../src
 
-CFLAGS		:= -std=c99 -Wall -Wno-unused-function -Wno-unused-variable -g $(CFLAGS) $(LIBFFI_INC)
+include $(TOPDIR)/Makefile.common
+
+CFLAGS		:= -std=c99 -Wall -Wno-unused-function -Wno-unused-variable -I$(TOPDIR) -g $(CFLAGS) $(LIBFFI_INC)
 LDFLAGS		:= $(LDFLAGS)
 LIBS		:= -lffi $(LIBS)
 

@@ -3852,6 +3852,10 @@ void idio_init_libc_wrap ()
     idio_add_feature (IDIO_SYMBOL ("IDIO_POLLHUP_OCCLUDES_POLLIN"));
 #endif
 
+#ifdef IDIO_HAVE_TERMIOS_SPEEDS
+    idio_add_feature (IDIO_SYMBOL ("IDIO_HAVE_TERMIOS_SPEEDS"));
+#endif
+
     idio_S_mtd = IDIO_SYMBOL ("make-tmp-dir");
 
     idio_str_np_prefix = IDIO_STRING ("idio-np-");

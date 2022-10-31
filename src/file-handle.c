@@ -2925,8 +2925,8 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
 	 * Obviously a library missing the symbol will trigger this.
 	 * Coding error?
 	 */
-	char em[BUFSIZ];
-	snprintf (em, BUFSIZ, "%s", func);
+	char em[PATH_MAX];
+	snprintf (em, PATH_MAX, "%s", func);
 
 	char ed[BUFSIZ];
 	snprintf (ed, BUFSIZ, "%s", error);

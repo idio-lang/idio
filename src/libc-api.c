@@ -378,8 +378,8 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-tms-as-string", libc_struct_tms_as_string, (I
 	  tcflag_t             c_lflag;
 	  cc_t                 c_line;		Linux
 	  cc_t[]               c_cc;
-	  speed_t              c_ispeed;	not SunOS; int on OpenBSD
-	  speed_t              c_ospeed;	not SunOS; int on OpenBSD
+	  speed_t              c_ispeed;	not SunOS or Alpine/musl; int on OpenBSD
+	  speed_t              c_ospeed;	not SunOS or Alpine/musl; int on OpenBSD
 	};
 */
 
@@ -390,8 +390,10 @@ IDIO_SYMBOL_DECL (c_cflag);
 IDIO_SYMBOL_DECL (c_lflag);
 IDIO_SYMBOL_DECL (c_line);
 IDIO_SYMBOL_DECL (c_cc);
+#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
 IDIO_SYMBOL_DECL (c_ispeed);
 IDIO_SYMBOL_DECL (c_ospeed);
+#endif
 
 IDIO_DEFINE_PRIMITIVE2_DS ("struct-termios-ref", libc_struct_termios_ref, (IDIO termios, IDIO member), "termios member", "\
 in C, :samp:`{termios}->{member}`	\n\
@@ -454,8 +456,7 @@ in C, :samp:`{termios}->{member}`	\n\
         memcpy ((void *) rp, (void *) &termiosp->c_cc, alen);
         return idio_C_pointer_free_me (rp);
     }
-#if defined (__sun) && defined (__SVR4)
-#else
+#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
     else if (idio_S_c_ispeed == member) {
         return idio_libc_speed_t (termiosp->c_ispeed);
     } else if (idio_S_c_ospeed == member) {
@@ -580,8 +581,7 @@ The C/ types for `val` are `libc/tcflag_t`, `libc/speed_t` and `C/pointer` for `
         memcpy ((void *) &termiosp->c_cc, (void *) valp, alen);
         return idio_S_unspec;
     }
-#if defined (__sun) && defined (__SVR4)
-#else
+#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
     else if (idio_S_c_ispeed == member) {
        /*
 	* Test Case: libc-errors/struct-termios-set-c_ispeed-bad-value-type.idio
@@ -660,8 +660,7 @@ IDIO idio_libc_struct_termios_as_string (struct termios *termiosp)
 
     idio_display_C ("<<1cc_t[]>>", CSI_sh);
 
-#if defined (__sun) && defined (__SVR4)
-#else
+#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
     idio_display_C (" c_ispeed:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_speed_t);
@@ -6411,8 +6410,7 @@ void idio_libc_api_add_primitives ()
     IDIO_FIELD_DEF ("c_lflag", c_lflag);
     IDIO_FIELD_DEF ("c_line", c_line);
     IDIO_FIELD_DEF ("c_cc", c_cc);
-#if defined (__sun) && defined (__SVR4)
-#else
+#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
     IDIO_FIELD_DEF ("c_ispeed", c_ispeed);
     IDIO_FIELD_DEF ("c_ospeed", c_ospeed);
 #endif

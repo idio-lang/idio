@@ -267,6 +267,10 @@ if running-as-root {
   eprintf "NOTICE: EUID/UID == %d/%d; EGID/GID == %d/%d: some tests will be skipped\n" EUID UID EGID GID
 }
 
+;; musl libc uses different error strings, ENAMETOOLONG is used
+;; frequently enough
+ENAMETOOLONG-str := strerror ENAMETOOLONG
+
 test-load := {
   n := 0
 

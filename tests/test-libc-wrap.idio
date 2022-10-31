@@ -108,7 +108,7 @@ struct-termios-ref termios 'c_cflag
 struct-termios-ref termios 'c_lflag
 struct-termios-ref termios 'c_cc
 (cond-expand
- ((not "uname/sysname/SunOS") {
+ (IDIO_HAVE_TERMIOS_SPEEDS {
    struct-termios-ref termios 'c_ispeed
    struct-termios-ref termios 'c_ospeed
  }))
@@ -119,7 +119,7 @@ struct-termios-set! termios 'c_cflag (C/integer-> 0 libc/tcflag_t)
 struct-termios-set! termios 'c_lflag (C/integer-> 0 libc/tcflag_t)
 struct-termios-set! termios 'c_cc    (struct-termios-ref termios 'c_cc)
 (cond-expand
- ((not "uname/sysname/SunOS") {
+ (IDIO_HAVE_TERMIOS_SPEEDS {
    struct-termios-set! termios 'c_ispeed (C/integer-> 0 libc/speed_t)
    struct-termios-set! termios 'c_ospeed (C/integer-> 0 libc/speed_t)
  }))

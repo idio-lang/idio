@@ -32,6 +32,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "idio-config.h"
+
 /*
  * Solaris and CentOS 6  don't typedef suseconds_t
  *
@@ -429,8 +431,7 @@ int main (int argc, char **argv)
 	 * speed_t which we use with idio_libc_speed_t in
 	 * src/libc-api.c.
 	 */
-#if defined (__sun) && defined (__SVR4)
-#else
+#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
 	speed_t ospeed = (speed_t) t.c_ospeed;
 #endif
     }
