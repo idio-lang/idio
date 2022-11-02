@@ -1,6 +1,8 @@
 :var:`IDIOLIB` is the search path used by :program:`idio` to find
 libraries and extension code.
 
+Any non-absolute directories are ignored.
+
 The construction of :var:`IDIOLIB` is complicated but there are two
 things to note:
 

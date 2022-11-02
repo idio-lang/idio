@@ -1,0 +1,11 @@
+
+# Generally, the Unicode files can be download as:
+
+ucd=https://unicode.org/Public/15.0.0/ucd
+for x in DerivedCoreProperties.txt  PropList.txt  UnicodeData.txt ; do
+    curl -sLo $x ${ucd}/$x
+done
+
+for x in GraphemeBreakProperty.txt ; do
+    curl -sLo $x ${ucd}/auxiliary/$x
+done

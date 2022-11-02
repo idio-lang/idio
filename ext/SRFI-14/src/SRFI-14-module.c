@@ -166,7 +166,7 @@ void idio_init_SRFI_14 (void *handle)
 
     /* idio_module_table_register (idio_SRFI_14_add_primitives, idio_final_SRFI_14, handle); */
 
-    idio_module_export_symbol_value (IDIO_SYMBOL ("version"),
+    idio_module_export_symbol_value (idio_S_version,
 				     idio_string_C_len (SRFI_14_SYSTEM_VERSION, sizeof (SRFI_14_SYSTEM_VERSION) - 1),
 				     idio_SRFI_14_module);
 

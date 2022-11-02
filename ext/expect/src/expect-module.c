@@ -413,7 +413,7 @@ void idio_init_expect (void *handle)
 
     idio_expect_exp_human_sym = IDIO_SYMBOL ("exp-human");
 
-    idio_module_export_symbol_value (IDIO_SYMBOL ("version"),
+    idio_module_export_symbol_value (idio_S_version,
 				     idio_string_C_len (EXPECT_SYSTEM_VERSION, sizeof (EXPECT_SYSTEM_VERSION) - 1),
 				     idio_expect_module);
 

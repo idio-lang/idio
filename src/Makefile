@@ -289,3 +289,6 @@ $(objects) : libc-api.h
 
 libc-api.h :
 	$(MAKE) -f Makefile.bootstrap $@
+
+rebuild-usi: $(LI_BINDIR)/idio
+	PATH=$$PATH:$(LI_BINDIR):$(BINDIR) gen-usi-c $(UTILSDIR)/Unicode/UnicodeData.txt
