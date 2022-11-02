@@ -89,7 +89,7 @@ IDIO_C_STRUCT_IDENT_DECL (libc_struct_utsname);
 IDIO_SYMBOL_DECL (sysname);
 IDIO_SYMBOL_DECL (nodename);
 IDIO_SYMBOL_DECL (release);
-IDIO_SYMBOL_DECL (version);
+/* version is defined by Idio */
 IDIO_SYMBOL_DECL (machine);
 
 IDIO_DEFINE_PRIMITIVE2_DS ("struct-utsname-ref", libc_struct_utsname_ref, (IDIO utsname, IDIO member), "utsname member", "\
@@ -1909,7 +1909,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-rlimit-as-string", libc_struct_rlimit_as_stri
 */
 
 IDIO_C_STRUCT_IDENT_DECL (libc_struct_timeval);
-/* tv_sec already declared */
+/* tv_sec previously declared */
 IDIO_SYMBOL_DECL (tv_usec);
 
 IDIO_DEFINE_PRIMITIVE2_DS ("struct-timeval-ref", libc_struct_timeval_ref, (IDIO timeval, IDIO member), "timeval member", "\

@@ -1955,15 +1955,23 @@ export \(
 		if member-type-name {
 		  member-name := hash-ref member 'name #f
 		  if member-name {
-		    if (not (hash-exists? used-symbols member-name)) {
-		      ;; use #f here and upgrade to #t later
-		      hash-set! used-symbols member-name #f
-		      hprintf api-h-fh "extern IDIO_SYMBOL_DECL (%s);\n" member-name
-		      hprintf api-c-fh "IDIO_SYMBOL_DECL (%s);\n" member-name
-		    } {
-		      hprintf api-h-fh "/* %s already declared */\n" member-name
-		      hprintf api-c-fh "/* %s already declared */\n" member-name
-		    }
+		    member-name-sym := string->symbol member-name
+		    (cond
+		     ;; hmm, how to automate this known-symbols list?
+		     ((memq member-name-sym '(version)) {
+		       hprintf api-h-fh "/* %s is defined by Idio */\n" member-name
+		       hprintf api-c-fh "/* %s is defined by Idio */\n" member-name
+		     })
+		     ((not (hash-exists? used-symbols member-name)) {
+		       ;; use #f here and upgrade to #t later
+		       hash-set! used-symbols member-name #f
+		       hprintf api-h-fh "extern IDIO_SYMBOL_DECL (%s);\n" member-name
+		       hprintf api-c-fh "IDIO_SYMBOL_DECL (%s);\n" member-name
+		     })
+		     (else {
+		       hprintf api-h-fh "/* %s previously declared */\n" member-name
+		       hprintf api-c-fh "/* %s previously declared */\n" member-name
+		     }))
 		  }
 		}
 	      }) member*

@@ -209,6 +209,7 @@ IDIO_SYMBOL_DECL (typename);
 IDIO_SYMBOL_DECL (unquote);
 IDIO_SYMBOL_DECL (unquotesplicing);
 IDIO_SYMBOL_DECL (value_index);
+IDIO_SYMBOL_DECL (version);
 IDIO_SYMBOL_DECL (virtualisation_WSL);
 
 IDIO_SYMBOL_DECL (char);
@@ -1213,6 +1214,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("unquote", unquote);
     IDIO_SYMBOL_DEF ("unquotesplicing", unquotesplicing);
     IDIO_SYMBOL_DEF ("value-index", value_index);
+    IDIO_SYMBOL_DEF ("version", version);
     IDIO_SYMBOL_DEF ("virtualisation/WSL", virtualisation_WSL);
 
     IDIO_SYMBOL_DEF ("char", char);

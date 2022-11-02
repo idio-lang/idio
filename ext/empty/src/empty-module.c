@@ -95,7 +95,7 @@ void idio_init_empty (void *handle)
 
     idio_module_table_register (idio_empty_add_primitives, idio_final_empty, handle);
 
-    idio_module_export_symbol_value (IDIO_SYMBOL ("version"),
+    idio_module_export_symbol_value (idio_S_version,
 				     idio_string_C_len (EMPTY_SYSTEM_VERSION, sizeof (EMPTY_SYSTEM_VERSION) - 1),
 				     idio_empty_module);
 }
