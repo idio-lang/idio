@@ -24,7 +24,7 @@ Suppose we want to match a common :samp:`{var}={value}` assignment:
 .. code-block:: idio
 
    (regex-case (read-line)
-     ("^([:alpha:][[:alnum:]_]*)=(.*)" {
+     ("^([[:alpha:]][[:alnum:]_]*)=(.*)" {
        printf "%s is '%s'\n" r.1 r.2
      }))
 
