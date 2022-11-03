@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -39,6 +39,7 @@ typedef struct json5_unicode_string_s {
 } json5_unicode_string_t;
 
 unsigned int h2i (char c);
+int json5_unicode_valid_code_point (json5_unicode_t cp);
 int json5_ECMA_LineTerminator (json5_unicode_string_t *s, json5_unicode_t *cpp);
 int json5_ECMA_LineTerminatorSequence (json5_unicode_string_t *s, json5_unicode_t *cpp);
 int json5_ECMA_SingleEscapeCharacter (json5_unicode_string_t *s, json5_unicode_t *cpp);

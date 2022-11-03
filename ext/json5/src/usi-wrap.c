@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -24,11 +24,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "json5-token.h"
 #include "json5-unicode.h"
 #include "usi.h"
 #include "usi-wrap.h"
 
-int idio_usi_codepoint_is_category (json5_unicode_t cp, int cat)
+int idio_usi_codepoint_is_category (json5_unicode_t cp, idio_USI_Category_t cat)
 {
     int r = 0;
 
