@@ -363,7 +363,7 @@ void idio_free_handle (IDIO h)
  * Basic IO on handles
  */
 
-int idio_readyp_handle (IDIO h)
+int idio_ready_handlep (IDIO h)
 {
     IDIO_ASSERT (h);
 
@@ -371,7 +371,7 @@ int idio_readyp_handle (IDIO h)
 	/*
 	 * Test Case: ??
 	 *
-	 * The problem, here, is that ready? has invoked
+	 * The problem, here, is that ready-handle? has invoked
 	 * idio_handle_or_current() which does this test for us.
 	 *
 	 * Otherwise a coding error?
@@ -394,7 +394,7 @@ int idio_readyp_handle (IDIO h)
     return IDIO_HANDLE_M_READYP (h) (h);
 }
 
-IDIO_DEFINE_PRIMITIVE0V_DS ("ready?", readyp, (IDIO args), "[handle]", "\
+IDIO_DEFINE_PRIMITIVE0V_DS ("ready-handle?", ready_handlep, (IDIO args), "[handle]", "\
 test if `handle` has input available or is at end-of-file	\n\
 								\n\
 :param handle: handle to test, defaults to the current input handle	\n\
@@ -409,7 +409,7 @@ test if `handle` has input available or is at end-of-file	\n\
 
     IDIO r = idio_S_false;
 
-    if (idio_readyp_handle (h)) {
+    if (idio_ready_handlep (h)) {
 	r = idio_S_true;
     }
 
@@ -632,7 +632,7 @@ int idio_eofp_handle (IDIO h)
     return IDIO_HANDLE_M_EOFP (h) (h);
 }
 
-IDIO_DEFINE_PRIMITIVE0V_DS ("eof?", eofp, (IDIO args), "[handle]", "\
+IDIO_DEFINE_PRIMITIVE0V_DS ("eof-handle?", eof_handlep, (IDIO args), "[handle]", "\
 test if `handle` is not supplied is at end-of-file	\n\
 							\n\
 :param handle: handle to test, defaults to the current input handle	\n\
@@ -765,7 +765,7 @@ Close the output handle `handle`				\n\
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("closed-handle?", closedp_handle, (IDIO h), "handle", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("closed-handle?", closed_handlep, (IDIO h), "handle", "\
 Is handle `handle` closed?				\n\
 							\n\
 :param handle: handle to test				\n\
@@ -1325,7 +1325,7 @@ Set the current error handle to `handle`		\n\
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("eof-object?", eof_objectp, (IDIO o), "o", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("eof?", eofp, (IDIO o), "o", "\
 Is `o` the end-of-file value?				\n\
 							\n\
 :param o: value to test					\n\
@@ -2517,9 +2517,9 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (close_handle);
     IDIO_ADD_PRIMITIVE (close_input_handle);
     IDIO_ADD_PRIMITIVE (close_output_handle);
-    IDIO_ADD_PRIMITIVE (closedp_handle);
-    IDIO_ADD_PRIMITIVE (eof_objectp);
-    IDIO_ADD_PRIMITIVE (readyp);
+    IDIO_ADD_PRIMITIVE (closed_handlep);
+    IDIO_ADD_PRIMITIVE (eofp);
+    IDIO_ADD_PRIMITIVE (ready_handlep);
     IDIO_ADD_PRIMITIVE (read);
     IDIO_ADD_PRIMITIVE (read_expr);
     IDIO_ADD_PRIMITIVE (read_line);
@@ -2527,7 +2527,7 @@ void idio_handle_add_primitives ()
     /* IDIO_ADD_PRIMITIVE (scm_read); */
     IDIO_ADD_PRIMITIVE (read_char);
     IDIO_ADD_PRIMITIVE (peek_char);
-    IDIO_ADD_PRIMITIVE (eofp);
+    IDIO_ADD_PRIMITIVE (eof_handlep);
     IDIO_ADD_PRIMITIVE (write);
     IDIO_ADD_PRIMITIVE (write_char);
     IDIO_ADD_PRIMITIVE (newline);

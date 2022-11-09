@@ -228,7 +228,7 @@ define-template (cond-expand & clause*) {
        if (e? fn) {
 	 fh := open-input-file fn
 	 line-loop :+ function () {
-	   if (eof? fh) #n {
+	   if (eof-handle? fh) #n {
 	     (regex-case
 	      (read-line fh)
 	      ("^#" {
@@ -301,7 +301,7 @@ define-template (cond-expand & clause*) {
        if (e? fn) {
 	 fh := open-input-file fn
 	 line-loop :+ function () {
-	   if (eof? fh) #n {
+	   if (eof-handle? fh) #n {
 	     (regex-case
 	      (read-line fh)
 	      ("^#" {

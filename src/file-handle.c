@@ -1957,7 +1957,7 @@ void idio_free_file_handle (IDIO fh)
 }
 
 /*
- * ready? (char-ready? in Scheme) is true if
+ * ready-handle? (char-ready? in Scheme) is true if
  *
  * 1. there is input available (without the need to block, ie. already
  *    buffered from a previous read) or
@@ -1968,8 +1968,8 @@ void idio_free_file_handle (IDIO fh)
  * at end of file, a port at end of file would be indistinguishable
  * from an interactive port that has no ready characters.
  *
- * I've augmented this as ready? can't be true for a closed handle.
- * Surely?
+ * I've augmented this as ready-handle? can't be true for a closed
+ * handle.  Surely?
  */
 int idio_readyp_file_handle (IDIO fh)
 {
@@ -1977,11 +1977,11 @@ int idio_readyp_file_handle (IDIO fh)
 
     if (IDIO_CLOSEDP_HANDLE (fh)) {
 	/*
-	 * Test Case: file-handle-errors/ready-closed-handle.idio
+	 * Test Case: file-handle-errors/ready-handlep-closed-handle.idio
 	 *
 	 * fh := open-file ...
 	 * close-handle fh
-	 * ready? fh
+	 * ready-handle? fh
 	 */
 	idio_handle_closed_error (fh, IDIO_C_FUNC_LOCATION ());
 
@@ -1991,12 +1991,13 @@ int idio_readyp_file_handle (IDIO fh)
 
     if (! idio_input_fd_handlep (fh)) {
 	/*
-	 * Test Case: ?? not file-handle-errors/ready-bad-handle.idio
+	 * Test Case: ?? not file-handle-errors/ready-handlep-bad-handle.idio
 	 *
-	 * ready? (current-output-handle)
+	 * ready-handle? (current-output-handle)
 	 *
-	 * The ready? function has called idio_handle_or_current()
-	 * which has done the IDIO_HANDLE_INPUTP() check for us
+	 * The ready-handle? function has called
+	 * idio_handle_or_current() which has done the
+	 * IDIO_HANDLE_INPUTP() check for us
 	 */
 	idio_handle_read_error (fh, IDIO_C_FUNC_LOCATION ());
 

@@ -1143,7 +1143,7 @@ define (exp-case-poll) "
 	    define (read-poll poll-fd sid all) {
 	      data := libc/read poll-fd 1024
 	      if data {
-		if (eof-object? data) {
+		if (eof? data) {
 		  close-poll poll-fd sid (sprintf "exp-case: %@: poll (fd=%d): POLLIN EOF\n" (struct-spawn-argv sid) poll-fd)
 		} {
 		  set-struct-spawn-buffer! sid (append-string (struct-spawn-buffer sid) data)
@@ -1319,7 +1319,7 @@ define (exp-case-select) "
 		 }) {
 		   data := libc/read fd 1024
 		   if data {
-		     if (eof-object? data) {
+		     if (eof? data) {
 		       set-struct-spawn-eof! sid #t
 		       expect/exp-log sid #t (sprintf "exp-case: %@: select (fd=%d): EOF\n" (struct-spawn-argv sid) fd)
 		     } {
@@ -1611,7 +1611,7 @@ returned will be a list of individual result lists.
 	  }) {
 	    data := libc/read mfd
 	    if data {
-	      if (eof-object? data) #t (loop mfd)
+	      if (eof? data) #t (loop mfd)
 	    } (loop mfd)
 	  }
 	}

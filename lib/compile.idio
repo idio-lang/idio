@@ -317,7 +317,7 @@ define (compile-file file & args) "
 
   loop :+ function #n {
     e := read fh
-    if (eof-object? e) #n {
+    if (eof? e) #n {
       ;;printf "compile-file: e %s\n" e
       m := #f
       trap (^rt-parameter-error

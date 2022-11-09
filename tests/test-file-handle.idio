@@ -344,48 +344,48 @@ close-handle ifh
 ifh := open-input-file testfile
 test (input-file-handle? ifh) #t
 
-;; ready? code coverage!
+;; ready-handle? code coverage!
 ofh = open-file testfile "w"
 hprintf ofh "hello\n"
 close-handle ofh
 
 ifh = open-file testfile "r"
-test (ready? ifh)	#f	     ; not buffered anything
+test (ready-handle? ifh)	#f	     ; not buffered anything
 ;; buffered byte count code path!
-test (read-char ifh)	#\h
-test (ready? ifh)	#t
+test (read-char ifh)		#\h
+test (ready-handle? ifh)	#t
 read-line ifh				; stops having read the \n but
 					; not yet EOF
-test (eof? ifh)		#f
-test (ready? ifh)	#f		; nothing left in the buffer,
+test (eof-handle? ifh)		#f
+test (ready-handle? ifh)	#f		; nothing left in the buffer,
 					; though
 read-line ifh				; should have provoked EOF
-test (eof? ifh)		#t
-test (ready? ifh)	#t
+test (eof-handle? ifh)		#t
+test (ready-handle? ifh)	#t
 close-handle ifh
-test (eof? ifh)		#t
+test (eof-handle? ifh)		#t
 
 ; code coverage: "+" modes
 r+-fh := open-file testfile "r+"
 test (input-file-handle? r+-fh)		#t
 test (output-file-handle? r+-fh)	#t
-test (ready? r+-fh)			#f ; not buffered anything
+test (ready-handle? r+-fh)		#f ; not buffered anything
 test (read-char r+-fh)			#\h
-test (ready? r+-fh)			#t
+test (ready-handle? r+-fh)		#t
 close-handle r+-fh
 
 a+-fh := open-file testfile "a+"
 test (output-file-handle? a+-fh)	#t
 test (input-file-handle? a+-fh)		#t
-test (ready? a+-fh)			#f ; not buffered anything
+test (ready-handle? a+-fh)		#f ; not buffered anything
 test (read-char a+-fh)			#\h
-test (ready? a+-fh)			#t
+test (ready-handle? a+-fh)		#t
 close-handle a+-fh
 
 w+-fh := open-file testfile "w+"	; testfile now truncated
 test (output-file-handle? w+-fh)	#t
 test (input-file-handle? w+-fh)		#t
-test (ready? w+-fh)			#f ; not buffered anything
+test (ready-handle? w+-fh)		#f ; not buffered anything
 close-handle w+-fh
 
 ;; trigger some internal buffer (BUFSIZ) flushing with a single
@@ -419,11 +419,11 @@ close-handle ofh
 
 ifh = open-input-file testfile
 read-line ifh
-test (eof? ifh) #f
+test (eof-handle? ifh) #f
 read-line ifh				; EOF
-test (eof? ifh) #t
+test (eof-handle? ifh) #t
 test (seek-handle ifh 0) 0
-test (eof? ifh) #f
+test (eof-handle? ifh) #f
 test (string-length (read-line ifh)) 5
 close-handle ifh
 

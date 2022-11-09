@@ -432,7 +432,7 @@ for-each (function (lib-n) {
 	 p-depth := 0
 
 	 define (dwarfdump-loop depth DIE) {
-	   if (eof? oph) DIE {
+	   if (eof-handle? oph) DIE {
 	     (regex-case (read-line oph)
 			 ("(0x[[:xdigit:]]+):([[:space:]]+)(DW_)?TAG_([[:alnum:]_]+)" {
 			   id := r.1
@@ -631,7 +631,7 @@ for-each (function (lib-n) {
 	 oph := pipe-from objdump objdump-flags api-o-fn
 
 	 define (objdump-loop depth DIE) {
-	   if (eof? oph) DIE {
+	   if (eof-handle? oph) DIE {
 	     (regex-case (read-line oph)
 			 ("<([[:xdigit:]]+)><([[:xdigit:]]+)>: Abbrev Number: ([[:digit:]]+) \\(DW_TAG_([^)]+)\\)" {
 			   c-depth := read-number r.1

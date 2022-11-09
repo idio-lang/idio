@@ -1255,7 +1255,7 @@ delete-file testfile
 ;;              (let* ((in (open-input-file testfile))
 ;;                     (e (read-expr in)))
 ;;                (close-input-handle in)
-;;                (eof-object? e)))
+;;                (eof? e)))
 ;;       #t)
 test {
   close-output-handle (open-output-file testfile)
@@ -1263,7 +1263,7 @@ test {
     in := open-input-file testfile
     e := read-expr in
     close-input-handle in
-    eof-object? e
+    eof? e
   }
 } #t
 

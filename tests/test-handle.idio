@@ -137,10 +137,10 @@ close-handle ifh
 ;; code coverage
 handle-location (current-input-handle)
 
-;; ready? after a peek-char
+;; ready-handle? after a peek-char
 ish := open-input-string "hello"
 test (peek-char ish) #\h
-test (ready? ish) #t
+test (ready-handle? ish) #t
 
 test (closed-handle? ish) #f
 close-handle ish

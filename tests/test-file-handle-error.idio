@@ -223,8 +223,8 @@ file-handle-error-load "file-handle-errors/open-input-file-filename-type.idio" "
 file-handle-error-load "file-handle-errors/open-output-file-filename-format.idio" "open-output-file filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-output-file-filename-type.idio" "bad parameter type: '#t' a constant is not a string"
 
-file-handle-error-load "file-handle-errors/ready-closed-handle.idio" "handle already closed"
-file-handle-error-load "file-handle-errors/ready-bad-handle.idio" "handle read error"
+file-handle-error-load "file-handle-errors/ready-handlep-closed-handle.idio" "handle already closed"
+file-handle-error-load "file-handle-errors/ready-handlep-bad-handle.idio" "handle read error"
 
 file-handle-error-load "file-handle-errors/close-closed-handle.idio" "handle already closed"
 

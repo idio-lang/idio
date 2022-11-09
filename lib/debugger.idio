@@ -89,7 +89,7 @@ debug := #n
 
       (cond
        ((and (eqv? "" line)
-	     (eof? (current-input-handle))) {
+	     (eof-handle? (current-input-handle))) {
 	 debug-k 'debugger-eof
        })
        ((eq? 'c cmd) {
