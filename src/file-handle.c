@@ -2528,7 +2528,7 @@ int idio_flush_file_handle (IDIO fh)
 	       * Hmm, not sure...
 	       */
 
-	     fprintf (stderr, "%6" PRIdMAX ": flush %ld bytes failed for fd=%3d",
+	     fprintf (stderr, "%6" PRIdMAX ": flush %td bytes failed for fd=%3d",
 		      (intmax_t) getpid (),
 		      len,
 		      IDIO_FILE_HANDLE_FD (fh));
