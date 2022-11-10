@@ -2561,7 +2561,7 @@ int idio_flush_file_handle (IDIO fh)
 	      r = 0;
 	 } else {
 #ifdef IDIO_DEBUG
-	      fprintf (stderr, "write: %4zd / %4ld\n", n, len);
+	      fprintf (stderr, "write: %4zd / %4td\n", n, len);
 #endif
 	 }
     }
