@@ -39,13 +39,14 @@ issues-load := {
 ;
 ; 1 - Ian's Gitlab
 ;
-; 2 - Githib
+; 2 - Github
 
 issues-load "issues/1-173.idio"
 issues-load "issues/1-178.idio"
 issues-load "issues/2-2.idio"
 issues-load "issues/1-209.idio"
 issues-load "issues/1-229.idio"
+issues-load "issues/1-268.idio"
 
 ;; all done?
-Tests? (issues0 + 19)
+Tests? (issues0 + 21)
