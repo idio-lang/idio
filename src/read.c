@@ -846,7 +846,6 @@ idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
 	if (IDIO_UTF8_ACCEPT == state) {
 	    break;
 	} else if (IDIO_UTF8_REJECT == state) {
-	    fprintf (stderr, "R<%x>", ucv);
 	    /*
 	     * Test Case: read-errors/character-invalid-utf8.idio
 	     *
