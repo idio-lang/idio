@@ -785,61 +785,81 @@ idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
 	IDIO_TYPE_ASSERT (struct_instance, lo);
     }
 
-    idio_unicode_t codepoint;
+    idio_unicode_t codepoint = EOF;
     idio_unicode_t state = 0;
 
     int i;
     for (i = 0; ; i++) {
-	uint8_t uc = idio_getb_handle (handle);
+	int ucv = idio_getb_handle (handle);
 
-	idio_utf8_decode (&state, &codepoint, uc);
+	if (EOF == ucv) {
+	    if (IDIO_READ_CHARACTER_SIMPLE == kind) {
+		return EOF;
+	    } else {
+		/*
+		 * Test Case(s):
+		 *
+		 *   read-errors/character-eof.idio
+		 *   read-errors/character-incomplete-eof.idio
+		 *   read-errors/character-invalid-utf8-eof.idio
+		 *
+		 * #\
+		 * #\x
+		 *
+		 * 1) where x is a literal byte which *is* a UTF-8
+		 * prefix
+		 *
+		 * For character-incomplete-eof, the test uses 0xC3
+		 * from the start of the sequence 0xC3 0xBE the UTF-8
+		 * sequence for Unicode U+00FE LATIN SMALL LETTER
+		 * THORN
+		 *
+		 * 2) where x is a literal byte which is not a UTF-8
+		 * prefix of some sort (as you'll get EOF, above,
+		 * instead when this goes round the loop).  0xFE and
+		 * 0xFF cannot appear in a valid UTF-8 sequence --
+		 * remember UTF-8 != Unicode.
+		 *
+		 * For character-invalid-utf8-eof, the test uses a
+		 * literal 0xFE byte which, depending on the mood/whim
+		 * of your editor, may appear as LATIN SMALL LETTER
+		 * THORN from C1 Controls and Latin-1 Supplement.
+		 * Emacs and vi seem to guess at ISO 8859-1 whereas
+		 * less displays <FE>.
+		 *
+		 * Also be leery of cut'n'paste as your GUI may do the
+		 * decent thing and convert the, Unicode code point
+		 * U+00FE LATIN SMALL LETTER THORN into a UTF-8 0xC3
+		 * 0xBE sequence which is correctly 0xFE in Unicode
+		 * thus defeating the point of our invalid UTF-8 test.
+		 *
+		 * *shakes fist*
+		 */
+		idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
+
+		/* notreached */
+		return EOF;
+	    }
+	}
+
+	idio_utf8_decode (&state, &codepoint, (uint8_t) ucv);
 	if (IDIO_UTF8_ACCEPT == state) {
 	    break;
 	} else if (IDIO_UTF8_REJECT == state) {
-	    /*
-	     * First up, check if we've hit EOF
-	     */
-	    if (idio_eofp_handle (handle)) {
-		if (IDIO_READ_CHARACTER_SIMPLE == kind) {
-		    return EOF;
-		} else {
-		    /*
-		     * Test Case: read-errors/character-eof.idio
-		     *
-		     * #\
-		     */
-		    idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
-
-		    /* notreached */
-		    return EOF;
-		}
-	    }
-
+	    fprintf (stderr, "R<%x>", ucv);
 	    /*
 	     * Test Case: read-errors/character-invalid-utf8.idio
 	     *
-	     * #\x
+	     * #\xy
 	     *
-	     * where x is a literal byte which is not a UTF-8 prefix
-	     * of some sort (as you'll get EOF, above, instead when
-	     * this goes round the loop).  0xFE and 0xFF cannot appear
-	     * in a valid UTF-8 sequence -- remember UTF-8 != Unicode.
+	     * where x is a literal byte which *is* a UTF-8 prefix and
+	     * y is not a suitable following byte
 	     *
-	     * The test uses a literal 0xFE byte which, depending on
-	     * the mood/whim of your editor, may appear as LATIN SMALL
-	     * LETTER THORN from C1 Controls and Latin-1 Supplement.
-	     * Emacs and vi seem to guess at ISO 8859-1 whereas less
-	     * displays <FE>.
-	     *
-	     * Also be leery of cut'n'paste as your GUI may do the
-	     * decent thing and convert the, Unicode code point U+00FE
-	     * LATIN SMALL LETTER THORN into a UTF-8 0xC3 0xBE
-	     * sequence which is correctly 0xFE in Unicode thus
-	     * defeating the point of our invalid UTF-8 test.
-	     *
-	     * *shakes fist*
+	     * From the example above, the test uses 0xC3 from the
+	     * start of the sequence 0xC3 0xBE the UTF-8 sequence for
+	     * Unicode U+00FE LATIN SMALL LETTER THORN and follows it
+	     * with an ASCII NUL
 	     */
-
 	    if (IDIO_READ_CHARACTER_SIMPLE == kind) {
 		return IDIO_UNICODE_REPLACEMENT_CHARACTER;
 	    } else {
@@ -865,17 +885,9 @@ idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
 		return EOF;
 	    } else {
 		/*
-		 * Test Case: read-errors/character-incomplete-eof.idio
-		 *
-		 * #\x
-		 *
-		 * where x is a literal byte which *is* a UTF-8 prefix
-		 *
-		 * From the example above, the test uses 0xC3 from the
-		 * start of the sequence 0xC3 0xBE the UTF-8 sequence
-		 * for Unicode U+00FE LATIN SMALL LETTER THORN
+		 * Test Case: ??
 		 */
-		idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
+		idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF!");
 
 		/* notreached */
 		return EOF;
@@ -883,17 +895,12 @@ idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
 	}
 
 	/*
-	 * Test Case: read-errors/character-invalid-utf8.idio
-	 *
-	 * #\x
-	 *
-	 * where x is a literal byte which is not a UTF-8 prefix of
-	 * some sort (as you'll get EOF, above, instead)
+	 * Test Case: ??
 	 */
 	if (IDIO_READ_CHARACTER_SIMPLE == kind) {
 	    return IDIO_UNICODE_REPLACEMENT_CHARACTER;
 	} else {
-	    idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
+	    idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed!");
 
 	    /* notreached */
 	    return EOF;
