@@ -1,0 +1,63 @@
+#*
+
+Issue #268: seek-handle on files breaks things
+
+Seeking (backwards?) on files and modifying them causes the file
+length to be perturbed apparently missing the EOF amongst other
+things.
+
+The problem lies in that we seek backwards then overwrite part of the
+file.  Internally, all we've done is update a buffer so any subsequent
+flush needs to ensure that we overwrite the file contents that match
+the buffer.
+
+The algorithm in the loop is looking for ASCII uppercase letters and
+replacing them with the equivalent lowercase letter (which should be
+the same width).
+
+Even though the file is small, without the lseek(2) of the underlying
+file back to where the buffered data begins, the subsequent flush of
+the buffer contents would be appended to the file as that's where we
+left the file pointer.
+
+*#
+
+ofh := open-output-file testfile
+puts "\u0127eLLo\nw" ofh
+close-handle ofh
+
+sb1 := libc/stat testfile
+
+ifh := open-file testfile "r+"
+
+while #t {
+  ;; remember pos so we can seek correctly
+  pos := handle-pos ifh
+  cp := read-char ifh
+
+  (cond
+   ((eof? cp) {
+     (break)
+   })
+   ((unicode/Uppercase? cp) {
+     ;; cp is not a fixnum so no comparators
+     cv := unicode/unicode->integer cp
+
+     ;; Only ASCII in case the Uppercase UTF-8 encoding is a different
+     ;; number of bytes
+     if (cv lt #x80) {
+       seek-handle ifh pos
+       write-char (unicode/->Lowercase cp) ifh
+     }
+   }))
+}
+
+close-handle ifh
+
+sb2 := libc/stat testfile
+
+test sb1.st_size sb2.st_size
+
+ifh := open-input-file testfile
+test (read-lines ifh) "\u0127ello\nw"
+close-handle ifh
