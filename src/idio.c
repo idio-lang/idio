@@ -194,8 +194,19 @@ void idio_module_table_add_primitives ()
 void idio_module_table_final ()
 {
     ptrdiff_t i;
+    /*
+     * Pesky cross-referencing!
+     *
+     * 1) run all the idio_X_final() functions
+     */
     for (i = idio_final_table.used - 1; i >= 0; i--) {
 	(idio_final_table.table[i]) ();
+    }
+
+    /*
+     * 2) dlclose() the shared libraries
+     */
+    for (i = idio_final_table.used - 1; i >= 0; i--) {
 	if (NULL != idio_final_table.handle &&
 	    NULL != idio_final_table.handle[i]) {
 	    /*

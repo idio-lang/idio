@@ -52,6 +52,7 @@
 #include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
+#include "unicode.h"
 #include "util.h"
 #include "vm.h"
 #include "vtable.h"
@@ -374,10 +375,205 @@ IDIO idio_path_expand (IDIO p)
     return idio_glob_expand (pat);
 }
 
+/******************************
+ *
+ * The basename and dirname functionality is re-imagined from the GNU
+ * coreutils equivalents' algorithms (note: most of the code is in
+ * gnulib) rather than a previous (dubious) interpretation of
+ * behaviour.
+ *
+ * The GNU code is concerned with "//" being a distinct root and/or
+ * drive letters.  Idio does not have that problem so we can reduce
+ * the complexity.
+ *
+ * Neither is particularly concerned with directory or filename
+ * mechanics, they're in the string matching business.  However, the
+ * following semantic is observed:
+ *
+ * if lstat (FILE) would succeed then
+ *   chdir (dirname (FILE)) ; lstat (basename (FILE))
+ * should access the same file.
+ *
+ * The existing tests are just string comparisons.
+ *
+ * NB The two primitives defined here will be shadowed by two
+ * function* instances which handle the optional sep parameter.
+ */
+
+/*
+ * idio_path_last_component() is a useful utility to find the start of
+ * the last filename component and thus, implicitly, the end of the
+ * directory component.  Varying from the GNU implementation we set
+ * the length of the last component in passing, a value used by both
+ * functions.
+ */
+const char *idio_path_last_component (const char *path, size_t path_len, idio_unicode_t const sep, size_t *last_len)
+{
+    IDIO_C_ASSERT (path);
+
+    /*
+     * If there are no seps the result is path
+     */
+    const char *last = path;
+
+    /*
+     * Walk over leading seps, ////foo -> foo.
+     *
+     * This can return last pointing at the trailing NUL.
+     */
+    while (*last &&
+	   sep == *last) {
+	last++;
+    }
+
+    /*
+     * Iterate along bumping last up to any non-sep following a sep,
+     * /foo/bar/baz -> foo/bar/baz -> bar/baz -> baz
+     */
+    const char *l = last;
+    int is_sep = 0;
+    for (; *l; l++) {
+	if (sep == *l) {
+	    is_sep = 1;
+	} else if (is_sep) {
+	    is_sep = 0;
+	    last = l;
+	}
+    }
+
+    *last_len = path_len - (last - path);
+
+    return last;
+}
+
+IDIO idio_path_basename (IDIO val, IDIO sep)
+{
+    IDIO_ASSERT (val);
+    IDIO_ASSERT (sep);
+
+    IDIO_TYPE_ASSERT (string, val);
+    IDIO_TYPE_ASSERT (unicode, sep);
+
+    size_t val_len = 0;
+    char *val_C = idio_string_as_C (val, &val_len);
+
+    idio_unicode_t sep_C = IDIO_UNICODE_VAL (sep);
+
+    size_t last_len = 0;
+    const char *last_C = idio_path_last_component (val_C, val_len, sep_C, &last_len);
+
+    const char *base_C = val_C;
+    size_t base_len = val_len;
+
+    if ('\0' != *last_C) {
+	base_C = last_C;
+	base_len = last_len;
+    }
+
+    /*
+     * Strip any trailing seps, foo/// -> foo
+     */
+    while (base_len > 1 &&
+	   sep_C == base_C[base_len - 1]) {
+	base_len--;
+    }
+
+    return idio_string_C_len (base_C, base_len);
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("basename-pathname", basename_pathname, (IDIO val, IDIO sep), "path sep", "\
+Return the basename of pathname `val`		\n\
+						\n\
+:param val: the pathname to be examined		\n\
+:type val: string				\n\
+:keyword :sep: the element separator		\n\
+:type :sep: unicode				\n\
+")
+{
+    IDIO_ASSERT (val);
+    IDIO_ASSERT (sep);
+
+    IDIO_USER_TYPE_ASSERT (string, val);
+    IDIO_USER_TYPE_ASSERT (unicode, sep);
+
+    return idio_path_basename (val, sep);
+}
+
+IDIO idio_path_dirname (IDIO val, IDIO sep)
+{
+    IDIO_ASSERT (val);
+    IDIO_ASSERT (sep);
+
+    IDIO_TYPE_ASSERT (string, val);
+    IDIO_TYPE_ASSERT (unicode, sep);
+
+    size_t val_len = 0;
+    char *val_C = idio_string_as_C (val, &val_len);
+
+    idio_unicode_t sep_C = IDIO_UNICODE_VAL (sep);
+
+    size_t last_len = 0;
+    idio_path_last_component (val_C, val_len, sep_C, &last_len);
+
+    const char *dir_C = val_C;
+    size_t dir_len = val_len - last_len;
+
+    size_t leading_sep = (sep_C == dir_C[0]);
+
+    /*
+     * Without the leading_sep (0 or 1) > comparison then
+     *
+     * "///" -> "" -> "."
+     */
+    while (dir_len > leading_sep &&
+	   sep_C == dir_C[dir_len - 1]) {
+	dir_len--;
+    }
+
+    /*
+     * We could have leading seps: ///a -> ///a (which is what dirname
+     * produces).
+     *
+     * We should walk over these.
+     */
+    while (dir_len > leading_sep &&
+	   sep_C == dir_C[0] &&
+	   sep_C == dir_C[1]) {
+	dir_C++;
+	dir_len--;
+    }
+
+    if (0 == dir_len) {
+	return IDIO_STRING (".");
+    } else {
+	return idio_string_C_len (dir_C, dir_len);
+    }
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("dirname-pathname", dirname_pathname, (IDIO val, IDIO sep), "path sep", "\
+Return the dirname of pathname `val`		\n\
+						\n\
+:param val: the pathname to be examined		\n\
+:type val: string				\n\
+:keyword :sep: the element separator		\n\
+:type :sep: unicode				\n\
+")
+{
+    IDIO_ASSERT (val);
+    IDIO_ASSERT (sep);
+
+    IDIO_USER_TYPE_ASSERT (string, val);
+    IDIO_USER_TYPE_ASSERT (unicode, sep);
+
+    return idio_path_dirname (val, sep);
+}
+
 void idio_path_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (pathname_p);
     IDIO_ADD_PRIMITIVE (glob);
+    IDIO_ADD_PRIMITIVE (basename_pathname);
+    IDIO_ADD_PRIMITIVE (dirname_pathname);
 }
 
 void idio_init_path ()

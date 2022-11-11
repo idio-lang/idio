@@ -43,13 +43,14 @@ all : libjson5.so
 coverage :
 	$(MAKE) COVFLAGS="-fprofile-arcs -ftest-coverage"
 
-test : test.o libjson5-bare.so
+test : usi.c test.o libjson5-bare.so
 	$(CC) -o test $(LDFLAGS) $^ -ljson5-bare
 
 clean :
 	rm -f test *.so *.o *.d *.gcda *.gcno *.gcov gmon.out map o e
 	rm -f *.so.*
 	rm -f json5-system.h Makefile.system
+	rm -f usi.[ch]
 
 debug :
 	$(MAKE) MAKE_DEBUG=1
@@ -89,6 +90,8 @@ libjson5-bare.so : $(LIBOBJS) $(USIOBJS)
 	$(CC) $(LD_DLFLAGS) -o $@ $^
 
 %.o : %.d
+
+usi.c : usi.h
 
 usi.c usi.h :
 	cp $(SRCDIR)/$@ .

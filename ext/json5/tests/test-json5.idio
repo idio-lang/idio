@@ -257,8 +257,8 @@ test (json5/parse-string "'ħ\\uD83C\\uDFBCħ'") "\u127\U1F3BC\u127"
 ; two byte
 json5/parse-string "{ I\u0127: 10 }"
 
-; four byte -- note must be a valid IdentifierPart so we can'y use the
-; musical score from earlieeeeeeeeeeeeeeeeeer.  Let's go with
+; four byte -- note must be a valid IdentifierPart so we can't use the
+; musical score from earlier.  Let's go with
 ; 1030D;OLD ITALIC LETTER EN;Lo
 json5/parse-string "{ I\U1030D: 10 }"
 

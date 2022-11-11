@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -36,8 +36,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "json5-unicode.h"
 #include "json5-token.h"
+#include "json5-unicode.h"
 #include "json5-parser.h"
 
 void json5_error_alloc (char *m)
@@ -60,7 +60,7 @@ void json5_error_alloc (char *m)
 char *json5_error_string (char *format, va_list argp)
 {
     char *s;
-    if (-1 == idio_vasprintf (&s, format, argp)) {
+    if (-1 == vasprintf (&s, format, argp)) {
 	json5_error_alloc ("asprintf");
     }
 
@@ -230,14 +230,14 @@ void json5_value_object_print (json5_object_t *o, int depth)
 	switch (o->type) {
 	case JSON5_MEMBER_STRING:
 	    printf ("\"");
-	    json5_print_unicode_string (o->name);
+	    json5_print_unicode_string (o->name->u.s);
 	    printf ("\"");
 	    break;
 	case JSON5_MEMBER_IDENTIFIER:
-	    json5_print_unicode_string (o->name);
+	    json5_print_unicode_string (o->name->u.s);
 	    break;
 	case JSON5_MEMBER_LITERAL:
-	    json5_value_print (o->name);
+	    json5_value_print (o->name, 1);
 	    break;
 	default:
 	    json5_error_printf ("?member %d?", o->type);

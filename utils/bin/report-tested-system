@@ -103,7 +103,7 @@ compiler      := #f
        if (e? fn) {
 	 fh := open-input-file fn
 	 line-loop :+ function () {
-	   if (eof? fh) #n {
+	   if (eof-handle? fh) #n {
 	     (regex-case
 	      (read-line fh)
 	      ("^#" {
@@ -245,7 +245,7 @@ compiler      := #f
        if (e? fn) {
 	 fh := open-input-file fn
 	 line-loop :+ function () {
-	   if (eof? fh) #n {
+	   if (eof-handle? fh) #n {
 	     (regex-case
 	      (read-line fh)
 	      ("^#" {
@@ -312,7 +312,7 @@ compiler      := #f
 
    ph := pipe-from sw_vers
    line-loop :+ function () {
-     if (eof? ph) #n {
+     if (eof-handle? ph) #n {
        (regex-case
 	(read-line ph)
 	( ; macOS

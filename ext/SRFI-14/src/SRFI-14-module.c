@@ -49,6 +49,7 @@
 #include "array.h"
 #include "bitset.h"
 #include "error.h"
+#include "evaluate.h"
 #include "fixnum.h"
 #include "idio-string.h"
 #include "module.h"
@@ -60,16 +61,14 @@
 #include "util.h"
 
 IDIO idio_SRFI_14_module;
+IDIO idio_sparse_char_set_type;
 
-void idio_SRFI_14_add_primitives ()
-{
-}
+typedef enum {
+    IDIO_SPARSE_CHAR_SET_SIZE,
+    IDIO_SPARSE_CHAR_SET_PLANES
+} idio_SRFI_14_sparse_char_set_fields_enum;
 
-void idio_final_SRFI_14 ()
-{
-}
-
-enum SRFI_14_char_set_IDs {
+typedef enum {
     lower_case,
     upper_case,
     title_case,
@@ -110,10 +109,10 @@ enum SRFI_14_char_set_IDs {
     hangul_t,
     hangul_lv,
     hangul_lvt,
-};
+} idio_SRFI_14_char_set_IDs_enum;
 
 typedef struct SRFI_14_char_set_s {
-    enum SRFI_14_char_set_IDs index;
+    idio_SRFI_14_char_set_IDs_enum index;
     char const *name;
 } SRFI_14_char_set_t;
 
@@ -160,11 +159,313 @@ const SRFI_14_char_set_t idio_SRFI_14_char_sets[] = {
     { hangul_lvt,             "char-set:hangul-lvt" },
 };
 
+IDIO_DEFINE_PRIMITIVE2_DS ("make-sparse-char-set", SRFI_14_make_sparse_char_set, (IDIO size, IDIO planes), "size planes", "\
+make a sparse-char-set of size `size` using `planes`	\n\
+						\n\
+:param size: size of the sparse-char-set	\n\
+:type size: integer				\n\
+:param planes: planes of the sparse-char-set	\n\
+:type planes: array (of bitsets or ``#f``)	\n\
+:return: sparse-char-set			\n\
+")
+{
+    IDIO_ASSERT (size);
+    IDIO_ASSERT (planes);
+
+    /*
+     * Test Case: SRFI-14-errors/make-sparse-char-set-bad-size-type.idio
+     *
+     * make-sparse-char-set #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (integer, size);
+    /*
+     * Test Case: SRFI-14-errors/make-sparse-char-set-bad-planes-type.idio
+     *
+     * make-sparse-char-set 1 #t
+     */
+    IDIO_USER_TYPE_ASSERT (array, planes);
+
+    return idio_struct_instance (idio_sparse_char_set_type, IDIO_LIST2 (size, planes));
+}
+
+int idio_isa_sparse_char_set (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    if (idio_isa_struct_instance (o) &&
+	idio_struct_instance_isa (o, idio_sparse_char_set_type)) {
+	return 1;
+    }
+
+    return 0;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("sparse-char-set?", SRFI_14_sparse_char_set_p, (IDIO o), "o", "\
+test if `o` is an sparse-char-set		\n\
+						\n\
+:param o: object to test			\n\
+:return: ``#t`` if `o` is an sparse-char-set, ``#f`` otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_sparse_char_set (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("sparse-char-set-size", SRFI_14_sparse_char_set_size, (IDIO scs), "scs", "\
+return the `size` field of `scs`		\n\
+						\n\
+:param scs: sparse-char-set			\n\
+:type scs: struct-instance			\n\
+:return: `size` field				\n\
+")
+{
+    IDIO_ASSERT (scs);
+
+    /*
+     * Test Case: SRFI-14-errors/sparse-char-set-size-bad-scs-type.idio
+     *
+     * sparse-char-set-size #t
+     */
+    IDIO_USER_TYPE_ASSERT (struct_instance, scs);
+
+    if (! idio_isa_sparse_char_set (scs)) {
+	/*
+	 * Test Case: SRFI-14-errors/sparse-char-set-size-bad-scs-struct-instance-type.idio
+	 *
+	 * sparse-char-set-size <class>
+	 */
+	idio_error_param_type ("sparse-char-set", scs, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_struct_instance_ref_direct (scs, IDIO_SPARSE_CHAR_SET_SIZE);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("sparse-char-set-planes", SRFI_14_sparse_char_set_planes, (IDIO scs), "scs", "\
+return the `planes` field of `scs`		\n\
+						\n\
+:param scs: sparse-char-set			\n\
+:type scs: struct-instance			\n\
+:return: `planes` field				\n\
+")
+{
+    IDIO_ASSERT (scs);
+
+    /*
+     * Test Case: SRFI-14-errors/sparse-char-set-planes-bad-scs-type.idio
+     *
+     * sparse-char-set-planes #t
+     */
+    IDIO_USER_TYPE_ASSERT (struct_instance, scs);
+
+    if (! idio_isa_sparse_char_set (scs)) {
+	/*
+	 * Test Case: SRFI-14-errors/sparse-char-set-planes-bad-scs-struct-instance-type.idio
+	 *
+	 * sparse-char-set-planes <class>
+	 */
+	idio_error_param_type ("sparse-char-set", scs, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_struct_instance_ref_direct (scs, IDIO_SPARSE_CHAR_SET_PLANES);
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("char-set-ref", SRFI_14_char_set_ref, (IDIO scs, IDIO cp), "scs cp", "\
+Is the code point `cp` in the character set `cs`?	\n\
+						\n\
+:param scs: char-set				\n\
+:type scs: struct-instance			\n\
+:param cp: code point				\n\
+:type cp: unicode or fixnum			\n\
+:return: boolean				\n\
+")
+{
+    IDIO_ASSERT (scs);
+    IDIO_ASSERT (cp);
+
+    /*
+     * Test Case: SRFI-14-errors/char-set-ref-bad-scs-type.idio
+     *
+     * char-set-ref #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (struct_instance, scs);
+
+    if (! idio_isa_sparse_char_set (scs)) {
+	/*
+	 * Test Case: SRFI-14-errors/char-set-ref-bad-scs-struct-instance-type.idio
+	 *
+	 * char-set-ref <class> #t
+	 */
+	idio_error_param_type ("char-set", scs, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    size_t bit = 0;
+    if (idio_isa_unicode (cp)) {
+	bit = IDIO_UNICODE_VAL (cp);
+    } else if (idio_isa_fixnum (cp)) {
+	bit = IDIO_FIXNUM_VAL (cp);
+    } else {
+	/*
+	 * Test Case: SRFI-14-errors/char-set-ref-bad-cp-type.idio
+	 *
+	 * char-set-ref SRFI-14/char-set:lower-case #t
+	 */
+	idio_error_param_type ("unicode|fixnum", cp, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    size_t cs_size = IDIO_FIXNUM_VAL (idio_struct_instance_ref_direct (scs, IDIO_SPARSE_CHAR_SET_SIZE));
+
+    if (bit >= cs_size) {
+	/*
+	 * Test Case: SRFI-14-errors/char-set-ref-cp-too-big.idio
+	 *
+	 * char-set-ref SRFI-14/char-set:lower-case FIXNUM-MAX
+	 */
+	idio_error_param_value_msg ("char-set-ref", "cp", cp, "cp greater than char-set size", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO planes = idio_struct_instance_ref_direct (scs, IDIO_SPARSE_CHAR_SET_PLANES);
+
+    /*
+     * see unicode->plane in src/unicode.c
+     */
+    size_t plane = bit >> 16;
+    IDIO bs = idio_array_ref_index (planes, plane);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_bitset (bs)) {
+	/*
+	 * see unicode->plane-codepoint in src/unicode.c
+	 */
+	r = idio_bitset_ref (bs, bit & 0xffff);
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("char-set-set!", SRFI_14_char_set_set, (IDIO scs, IDIO cp), "scs cp", "\
+Add the code point `cp` to the character set `cs`	\n\
+						\n\
+:param scs: char-set				\n\
+:type scs: struct-instance			\n\
+:param cp: code point				\n\
+:type cp: unicode or fixnum			\n\
+:return: boolean				\n\
+")
+{
+    IDIO_ASSERT (scs);
+    IDIO_ASSERT (cp);
+
+    /*
+     * Test Case: SRFI-14-errors/char-set-set-bad-scs-type.idio
+     *
+     * char-set-set #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (struct_instance, scs);
+
+    if (! idio_isa_sparse_char_set (scs)) {
+	/*
+	 * Test Case: SRFI-14-errors/char-set-set-bad-scs-struct-instance-type.idio
+	 *
+	 * char-set-set <class> #t
+	 */
+	idio_error_param_type ("char-set", scs, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    size_t bit = 0;
+    if (idio_isa_unicode (cp)) {
+	bit = IDIO_UNICODE_VAL (cp);
+    } else if (idio_isa_fixnum (cp)) {
+	bit = IDIO_FIXNUM_VAL (cp);
+    } else {
+	/*
+	 * Test Case: SRFI-14-errors/char-set-set-bad-cp-type.idio
+	 *
+	 * char-set-set SRFI-14/char-set:lower-case #t
+	 */
+	idio_error_param_type ("unicode|fixnum", cp, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    size_t cs_size = IDIO_FIXNUM_VAL (idio_struct_instance_ref_direct (scs, IDIO_SPARSE_CHAR_SET_SIZE));
+
+    if (bit >= cs_size) {
+	/*
+	 * Test Case: SRFI-14-errors/char-set-set-cp-too-big.idio
+	 *
+	 * char-set-set SRFI-14/char-set:lower-case FIXNUM-MAX
+	 */
+	idio_error_param_value_msg ("char-set-set", "cp", cp, "cp greater than char-set size", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO planes = idio_struct_instance_ref_direct (scs, IDIO_SPARSE_CHAR_SET_PLANES);
+
+    /*
+     * see unicode->plane in src/unicode.c
+     */
+    size_t plane = bit >> 16;
+    IDIO bs = idio_array_ref_index (planes, plane);
+
+    if (! idio_isa_bitset (bs)) {
+	size_t nplanes = (cs_size - 1) >> 16;
+	if (plane < nplanes) {
+	    bs = idio_bitset (0x10000);
+	} else {
+	    size_t m = cs_size & 0xffff;
+	    if (m) {
+		bs = idio_bitset (m);
+	    } else {
+		bs = idio_bitset (0x10000);
+	    }
+	}
+
+	idio_array_insert_index (planes, bs, plane);
+    }
+
+    return idio_bitset_set (bs, bit & 0xffff);
+}
+
+void idio_SRFI_14_add_primitives ()
+{
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_SRFI_14_module, SRFI_14_make_sparse_char_set);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_SRFI_14_module, SRFI_14_sparse_char_set_p);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_SRFI_14_module, SRFI_14_sparse_char_set_size);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_SRFI_14_module, SRFI_14_sparse_char_set_planes);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_SRFI_14_module, SRFI_14_char_set_ref);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_SRFI_14_module, SRFI_14_char_set_set);
+}
+
+void idio_final_SRFI_14 ()
+{
+}
+
 void idio_init_SRFI_14 (void *handle)
 {
     idio_SRFI_14_module = idio_module (IDIO_SYMBOL ("SRFI-14"));
 
-    /* idio_module_table_register (idio_SRFI_14_add_primitives, idio_final_SRFI_14, handle); */
+    idio_module_table_register (idio_SRFI_14_add_primitives, idio_final_SRFI_14, handle);
 
     idio_module_export_symbol_value (idio_S_version,
 				     idio_string_C_len (SRFI_14_SYSTEM_VERSION, sizeof (SRFI_14_SYSTEM_VERSION) - 1),
@@ -174,12 +475,12 @@ void idio_init_SRFI_14 (void *handle)
      * Create the SRFI-14 char-sets
      */
     IDIO sym = IDIO_SYMBOL ("sparse-char-set");
-    IDIO sparse_char_set_type = idio_struct_type (sym,
+    idio_sparse_char_set_type = idio_struct_type (sym,
 						  idio_S_nil,
 						  IDIO_LIST2 (IDIO_SYMBOL ("size"),
 							      IDIO_SYMBOL ("planes")));
 
-    idio_module_set_symbol_value (sym, sparse_char_set_type, idio_SRFI_14_module);
+    idio_module_set_symbol_value (sym, idio_sparse_char_set_type, idio_SRFI_14_module);
 
     /*
      * We're going to run through those char-sets where, once we get
@@ -212,7 +513,7 @@ void idio_init_SRFI_14 (void *handle)
 	 */
 	IDIO_ARRAY_USIZE (as[csi]) = IDIO_ARRAY_ASIZE (as[csi]);
 
-	css[csi] = idio_struct_instance (sparse_char_set_type, IDIO_LIST2 (idio_integer (IDIO_UNICODE_SIZE), as[csi]));
+	css[csi] = idio_struct_instance (idio_sparse_char_set_type, IDIO_LIST2 (idio_integer (IDIO_UNICODE_SIZE), as[csi]));
 
 	/*
 	 * The longest idio_SRFI_14_char_sets[csi].name is 31 chars

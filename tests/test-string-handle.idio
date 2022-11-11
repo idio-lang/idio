@@ -120,7 +120,7 @@ test (handle-pos ish)   2
 
 ;; code coverage
 ish := open-input-string "hello"
-test (ready? ish) #t
+test (ready-handle? ish) #t
 
 ;; trigger some internal (putb) buffer resizing which is only possible
 ;; when redirecting IO.  NB. BUFSIZ is *probably* bigger than the

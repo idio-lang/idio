@@ -5,7 +5,7 @@
 
 ;; (define (catport port)
 ;;   (let ((x (read-char port)))
-;;     (if (eof-object? x)
+;;     (if (eof? x)
 ;;         (close-output-port outport)
 ;;         (begin
 ;;           (write-char x outport)
@@ -35,7 +35,7 @@ if (not (e? testin)) {
 {
   catport :+ function (port) {
     x := read-char port
-    if (eof-object? x) \
+    if (eof? x) \
        (close-output-handle outport) {
          write-char x outport
          catport port

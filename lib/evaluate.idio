@@ -2527,7 +2527,7 @@ define (meaning-escape-label src label ve nametree flags eenv) {
 ;; XXX is this the C code's "load e"?
 define (evaluate-include-file fh eenv) {
   e := Idio/read fh
-  if (not (eof? fh)) {
+  if (not (eof-handle? fh)) {
     m := evaluate e eenv
     pc := codegen m eenv
     ;r := vm-run (current-thread) pc

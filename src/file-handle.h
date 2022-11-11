@@ -35,7 +35,7 @@ typedef struct idio_file_handle_stream_s {
     char *buf;			/* buffer */
     int bufsiz;
     char *ptr;			/* ptr into buffer */
-    int count;			/* bytes in buffer */
+    char *end;			/* end of buffer (one beyond) */
 } idio_file_handle_stream_t;
 
 #define IDIO_FILE_HANDLE_STREAM_FD(S)     ((S)->fd)
@@ -43,14 +43,14 @@ typedef struct idio_file_handle_stream_s {
 #define IDIO_FILE_HANDLE_STREAM_BUF(S)    ((S)->buf)
 #define IDIO_FILE_HANDLE_STREAM_BUFSIZ(S) ((S)->bufsiz)
 #define IDIO_FILE_HANDLE_STREAM_PTR(S)    ((S)->ptr)
-#define IDIO_FILE_HANDLE_STREAM_COUNT(S)  ((S)->count)
+#define IDIO_FILE_HANDLE_STREAM_END(S)    ((S)->end)
 
 #define IDIO_FILE_HANDLE_FD(H)     IDIO_FILE_HANDLE_STREAM_FD((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 #define IDIO_FILE_HANDLE_FLAGS(H)  IDIO_FILE_HANDLE_STREAM_FLAGS((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 #define IDIO_FILE_HANDLE_BUF(H)    IDIO_FILE_HANDLE_STREAM_BUF((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 #define IDIO_FILE_HANDLE_BUFSIZ(H) IDIO_FILE_HANDLE_STREAM_BUFSIZ((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 #define IDIO_FILE_HANDLE_PTR(H)    IDIO_FILE_HANDLE_STREAM_PTR((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
-#define IDIO_FILE_HANDLE_COUNT(H)  IDIO_FILE_HANDLE_STREAM_COUNT((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
+#define IDIO_FILE_HANDLE_END(H)    IDIO_FILE_HANDLE_STREAM_END((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 
 #define IDIO_IDIO_EXT	".idio"
 #define IDIO_SO_EXT	".so"

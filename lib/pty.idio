@@ -206,7 +206,7 @@ write `mfd` (`in-read` STDIN_FILENO)
 	    ((POLLIN? revents) {
 	      data := m-read fd
 	      if data {
-		if (eof-object? data) {
+		if (eof? data) {
 		  poller-deregister poller fd
 		} {
 		  n := write STDOUT_FILENO data
@@ -225,7 +225,7 @@ write `mfd` (`in-read` STDIN_FILENO)
 	    ((POLLIN? revents) {
 	      data := in-read fd
 	      if data {
-		if (eof-object? data) {
+		if (eof? data) {
 		  poller-deregister poller fd
 		} {
 		  n := write mfd data

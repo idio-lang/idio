@@ -579,8 +579,6 @@ Append ``\"/usr/local/bin\"`` to :envvar:`PATH`, ``\"/usr/local/lib\"`` to
 define* (reduce-pathname val (:sep sep #\/)) "
 Reduce pathname `val` by:
 
-* non-absolute pathnames are made absolute
-
 * removing ``.`` and ``..`` elements as appropriate
 
 :param val: the pathname to be normalized
@@ -594,34 +592,39 @@ Reduce pathname `val` by:
   if ((string-length val) gt 0) {
     str-sep := make-string 1 sep
 
-    for-each (function (e) {
-      (case e
-       (("")
-	;; "///foo" -> ("" "" "" "foo" )
-	#n)
-       ((".") #n)
-       (("..") {
-	 if (pair? r) {
-	   r = pt r
-	 }
-       })
-       (else {
-	 r = pair e r
-       }))
-    }) (split-string-exactly val str-sep)
+    (case
+     val
+     ((".") val)
+     (else {
+       for-each (function (e) {
+	 (case e
+	  (("")
+	   ;; "///foo" -> ("" "" "" "foo" )
+	   #n)
+	  ((".") #n)
+	  (("..") {
+	    if (pair? r) {
+	      r = pt r
+	    }
+	  })
+	  (else {
+	    r = pair e r
+	  }))
+       }) (split-string-exactly val str-sep)
 
-    r = reverse! r
+       r = reverse! r
 
-    if (null? r) {
-      if (eq? (string-ref val 0) sep) {
-	str-sep
-      } ""
-    } {
-      rs := join-string str-sep r
-      if (eq? (string-ref val 0) sep) {
-	append-string str-sep rs
-      } rs
-    }
+       if (null? r) {
+	 if (eq? (string-ref val 0) sep) {
+	   str-sep
+	 } ""
+       } {
+	 rs := join-string str-sep r
+	 if (eq? (string-ref val 0) sep) {
+	   append-string str-sep rs
+	 } rs
+       }
+     }))
   } val
 }
 
@@ -652,7 +655,10 @@ Normalize pathname `val` by:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-define* (dirname-pathname val (:sep sep #\/)) "
+{
+  orig-dirname-pathname := dirname-pathname
+
+  dirname-pathname = function* (val (:sep sep #\/)) "
 Return the dirname of pathname `val`
 
 :param val: the pathname to be examined
@@ -661,19 +667,14 @@ Return the dirname of pathname `val`
 :type :sep: unicode, optional
 
 " {
-  val = reduce-pathname val :sep sep
-
-  i := string-rindex val sep
-  if i {
-    if (i eq 0) {
-      substring val 0 1
-    } {
-      substring val 0 i
-    }
-  } "."
+    orig-dirname-pathname val sep
+  }
 }
 
-define* (basename-pathname val (:sep sep #\/)) "
+{
+  orig-basename-pathname := basename-pathname
+
+  basename-pathname = function* (val (:sep sep #\/)) "
 Return the basename of pathname `val`
 
 :param val: the pathname to be examined
@@ -682,12 +683,8 @@ Return the basename of pathname `val`
 :type :sep: unicode, optional
 
 " {
-  val = reduce-pathname val :sep sep
-
-  i := string-rindex val sep
-  if i {
-    substring val (i + 1)
-  } val
+    orig-basename-pathname val sep
+  }
 }
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -473,7 +473,7 @@ define (prop-list-reader file) {
   fh := open-input-file file
 
   loop :+ function (fh) {
-    if (not (eof? fh)) {
+    if (not (eof-handle? fh)) {
       line := read-line fh
       if ((string-length line) gt 0) {
 	(regex-case
@@ -640,7 +640,7 @@ define (UD-reader file) {
   fh := open-input-file UD-file
 
   loop :+ function (fh) {
-    if (not (eof? fh)) {
+    if (not (eof-handle? fh)) {
       line := read-line fh
       if ((string-length line) gt 0) {
 	(regex-case

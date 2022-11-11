@@ -131,7 +131,7 @@ define (insert-file out-fh level fn) {
     leader := make-string (level * 3)
 
     loop :+ function (fh) {
-      if (not (eof? fh)) {
+      if (not (eof-handle? fh)) {
 	hprintf out-fh "%s%s\n" leader (read-line fh)
 	loop fh
       }

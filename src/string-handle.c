@@ -385,11 +385,11 @@ int idio_readyp_string_handle (IDIO sh)
 
     if (IDIO_CLOSEDP_HANDLE (sh)) {
 	/*
-	 * Test Case: string-handle-errors/ready-closed-handle.idio
+	 * Test Case: string-handle-errors/ready-handlep-closed-handle.idio
 	 *
 	 * sh := open-input-string ""
 	 * close-handle sh
-	 * ready? sh
+	 * ready-handle? sh
 	 */
 	idio_handle_closed_error (sh, IDIO_C_FUNC_LOCATION ());
 

@@ -66,8 +66,6 @@ export (
 	 char-set-contains?
 	 char-upcase
 	 char-downcase
-	 char-set-ref
-	 char-set-set!
 	 char-set-clear!
 	 and-char-set
 	 ior-char-set
@@ -94,8 +92,6 @@ import unicode
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; sparse-char-set is defined in SRFI-14-module.c
-
-define-struct-accessors-only sparse-char-set size planes
 
 define (sparse-char-set-as-string scs seen-scss) {
   if (sparse-char-set? scs) {
@@ -356,60 +352,7 @@ Return the lowercase variant of ``cp`` if one exists or cp
   ->Lowercase cp
 }
 
-define (char-set-ref cs cp) "
-Is the code point cp in the character set cs?
-" {
-  if (integer? cp) {
-    cp = integer->unicode cp
-  }
-
-  (cond
-   ((sparse-char-set? cs) {
-     if (ge (unicode->integer cp) (sparse-char-set-size cs)) (error/type ^rt-parameter-value-error 'char-set-ref "cp greater than char-set size" cp (sparse-char-set-size cs))
-
-     bs := array-ref (sparse-char-set-planes cs) (unicode->plane cp)
-     if bs {
-       bitset-ref bs (unicode->plane-codepoint cp)
-     } #f
-   })
-   (else (error/type ^rt-parameter-type-error 'char-set-ref "not a char-set" cs)))
-}
-
 define char-set-contains? char-set-ref
-
-define (char-set-set! cs cp) "
-Add the code point to character set cs.
-" {
-  if (integer? cp) {
-    cp = integer->unicode cp
-  }
-
-  (cond
-   ((sparse-char-set? cs) {
-     if (ge (unicode->integer cp) (sparse-char-set-size cs)) (error/type ^rt-parameter-value-error 'char-set-set! "cp greater than char-set size" cp (sparse-char-set-size cs))
-
-     plane := unicode->plane cp
-     bs := array-ref (sparse-char-set-planes cs) plane
-
-     if (not bs) {
-       nplanes := count-sparse-char-set-planes cs
-       if (plane lt nplanes) {
-	 bs = make-bitset #x10000
-       } {
-	 m := modulo (sparse-char-set-size cs) #x10000
-	 if (m gt 0) {
-	   bs = make-bitset m
-	 } {
-	   bs = make-bitset #x10000
-	 }
-       }
-       array-set! (sparse-char-set-planes cs) plane bs
-     }
-
-     bitset-set! bs (unicode->plane-codepoint cp)
-   })
-   (else (error/type ^rt-parameter-type-error 'char-set-set! "not a char-set" cs)))
-}
 
 define (char-set-clear! cs cp) "
 Remove the code point from character set cs.

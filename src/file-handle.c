@@ -475,7 +475,7 @@ static IDIO idio_open_file_handle (IDIO filename, char const *pathname, size_t c
     IDIO_FILE_HANDLE_STREAM_BUF (fhsp) = idio_alloc (bufsiz);
     IDIO_FILE_HANDLE_STREAM_BUFSIZ (fhsp) = bufsiz;
     IDIO_FILE_HANDLE_STREAM_PTR (fhsp) = IDIO_FILE_HANDLE_STREAM_BUF (fhsp);
-    IDIO_FILE_HANDLE_STREAM_COUNT (fhsp) = 0;
+    IDIO_FILE_HANDLE_STREAM_END (fhsp) = IDIO_FILE_HANDLE_STREAM_BUF (fhsp);
 
     IDIO fh = idio_handle ();
 
@@ -485,7 +485,14 @@ static IDIO idio_open_file_handle (IDIO filename, char const *pathname, size_t c
     IDIO_HANDLE_STREAM (fh) = fhsp;
     switch (h_type) {
     case IDIO_HANDLE_FLAG_FILE:
-	IDIO_HANDLE_METHODS (fh) = &idio_file_handle_file_methods;
+	if (s_flags & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+	    /*
+	     * Can't seek on a terminal
+	     */
+	    IDIO_HANDLE_METHODS (fh) = &idio_file_handle_pipe_methods;
+	} else {
+	    IDIO_HANDLE_METHODS (fh) = &idio_file_handle_file_methods;
+	}
 	break;
     case IDIO_HANDLE_FLAG_PIPE:
 	IDIO_HANDLE_METHODS (fh) = &idio_file_handle_pipe_methods;
@@ -1957,7 +1964,7 @@ void idio_free_file_handle (IDIO fh)
 }
 
 /*
- * ready? (char-ready? in Scheme) is true if
+ * ready-handle? (char-ready? in Scheme) is true if
  *
  * 1. there is input available (without the need to block, ie. already
  *    buffered from a previous read) or
@@ -1968,8 +1975,8 @@ void idio_free_file_handle (IDIO fh)
  * at end of file, a port at end of file would be indistinguishable
  * from an interactive port that has no ready characters.
  *
- * I've augmented this as ready? can't be true for a closed handle.
- * Surely?
+ * I've augmented this as ready-handle? can't be true for a closed
+ * handle.  Surely?
  */
 int idio_readyp_file_handle (IDIO fh)
 {
@@ -1977,11 +1984,11 @@ int idio_readyp_file_handle (IDIO fh)
 
     if (IDIO_CLOSEDP_HANDLE (fh)) {
 	/*
-	 * Test Case: file-handle-errors/ready-closed-handle.idio
+	 * Test Case: file-handle-errors/ready-handlep-closed-handle.idio
 	 *
 	 * fh := open-file ...
 	 * close-handle fh
-	 * ready? fh
+	 * ready-handle? fh
 	 */
 	idio_handle_closed_error (fh, IDIO_C_FUNC_LOCATION ());
 
@@ -1991,12 +1998,13 @@ int idio_readyp_file_handle (IDIO fh)
 
     if (! idio_input_fd_handlep (fh)) {
 	/*
-	 * Test Case: ?? not file-handle-errors/ready-bad-handle.idio
+	 * Test Case: ?? not file-handle-errors/ready-handlep-bad-handle.idio
 	 *
-	 * ready? (current-output-handle)
+	 * ready-handle? (current-output-handle)
 	 *
-	 * The ready? function has called idio_handle_or_current()
-	 * which has done the IDIO_HANDLE_INPUTP() check for us
+	 * The ready-handle? function has called
+	 * idio_handle_or_current() which has done the
+	 * IDIO_HANDLE_INPUTP() check for us
 	 */
 	idio_handle_read_error (fh, IDIO_C_FUNC_LOCATION ());
 
@@ -2004,7 +2012,7 @@ int idio_readyp_file_handle (IDIO fh)
 	return EOF;
     }
 
-    if (IDIO_FILE_HANDLE_COUNT (fh) > 0) {
+    if (IDIO_FILE_HANDLE_PTR (fh) < IDIO_FILE_HANDLE_END (fh)) {
 	/*
 	 * Code coverage:
 	 *
@@ -2036,7 +2044,7 @@ void idio_file_handle_read_more (IDIO fh)
 	IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_EOF;
     } else {
 	IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
-	IDIO_FILE_HANDLE_COUNT (fh) = nread;
+	IDIO_FILE_HANDLE_END (fh) = IDIO_FILE_HANDLE_BUF (fh) + nread;
     }
 }
 
@@ -2060,9 +2068,8 @@ int idio_getb_file_handle (IDIO fh)
     }
 
     for (;;) {
-	if (IDIO_FILE_HANDLE_COUNT (fh) >= 1) {
-	    IDIO_FILE_HANDLE_COUNT (fh) -= 1;
-	    int c = (int) *(IDIO_FILE_HANDLE_PTR (fh));
+	if (IDIO_FILE_HANDLE_PTR (fh) < IDIO_FILE_HANDLE_END (fh)) {
+	    char c = *(IDIO_FILE_HANDLE_PTR (fh));
 	    IDIO_FILE_HANDLE_PTR (fh) += 1;
 	    return c;
 	} else {
@@ -2076,7 +2083,6 @@ int idio_getb_file_handle (IDIO fh)
 		 *
 		 * Clearly needs to be interactive!
 		 */
-		IDIO_FILE_HANDLE_COUNT (fh) -= 1;
 		int c = (int) *(IDIO_FILE_HANDLE_PTR (fh));
 		IDIO_FILE_HANDLE_PTR (fh) += 1;
 		return c;
@@ -2085,7 +2091,7 @@ int idio_getb_file_handle (IDIO fh)
     }
 }
 
-int idio_eofp_file_handle (IDIO fh)
+inline int idio_eofp_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
@@ -2159,22 +2165,26 @@ int idio_putb_file_handle (IDIO fh, uint8_t c)
     }
 
     for (;;) {
-	if (IDIO_FILE_HANDLE_COUNT (fh) < IDIO_FILE_HANDLE_BUFSIZ (fh)) {
+	if (IDIO_FILE_HANDLE_PTR (fh) < IDIO_FILE_HANDLE_END (fh)) {
 	    *(IDIO_FILE_HANDLE_PTR (fh)) = (char) c;
 	    IDIO_FILE_HANDLE_PTR (fh) += 1;
-	    IDIO_FILE_HANDLE_COUNT (fh) += 1;
-
-	    if ('\n' == c &&
-		IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
-		if (EOF == idio_flush_file_handle (fh)) {
-		    return EOF;
-		}
-	    }
+	    break;
+	} else if (IDIO_FILE_HANDLE_END (fh) < (IDIO_FILE_HANDLE_BUF (fh) + IDIO_FILE_HANDLE_BUFSIZ (fh))) {
+	    *(IDIO_FILE_HANDLE_PTR (fh)) = (char) c;
+	    IDIO_FILE_HANDLE_PTR (fh) += 1;
+	    IDIO_FILE_HANDLE_END (fh) += 1;
 	    break;
 	} else {
 	    if (EOF == idio_flush_file_handle (fh)) {
 		return EOF;
 	    }
+	}
+    }
+
+    if ('\n' == c &&
+	IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+	if (EOF == idio_flush_file_handle (fh)) {
+	    return EOF;
 	}
     }
 
@@ -2206,22 +2216,14 @@ int idio_putc_file_handle (IDIO fh, idio_unicode_t c)
     idio_utf8_code_point (c, buf, &size);
 
     for (int n = 0;n < size;n++) {
-	if (IDIO_FILE_HANDLE_COUNT (fh) < IDIO_FILE_HANDLE_BUFSIZ (fh)) {
+	if (IDIO_FILE_HANDLE_PTR (fh) < (IDIO_FILE_HANDLE_END (fh))) {
 	    *(IDIO_FILE_HANDLE_PTR (fh)) = buf[n];
 	    IDIO_FILE_HANDLE_PTR (fh) += 1;
-	    IDIO_FILE_HANDLE_COUNT (fh) += 1;
-
-	    if ('\n' == c &&
-		IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
-		/*
-		 * Code coverage:
-		 *
-		 * Requires, uh, interaction...
-		 */
-		if (EOF == idio_flush_file_handle (fh)) {
-		    return EOF;
-		}
-	    }
+	    break;
+	} else if (IDIO_FILE_HANDLE_END (fh) < (IDIO_FILE_HANDLE_BUF (fh) + IDIO_FILE_HANDLE_BUFSIZ (fh))) {
+	    *(IDIO_FILE_HANDLE_PTR (fh)) = buf[n];
+	    IDIO_FILE_HANDLE_PTR (fh) += 1;
+	    IDIO_FILE_HANDLE_END (fh) += 1;
 	    break;
 	} else {
 	    /*
@@ -2239,6 +2241,18 @@ int idio_putc_file_handle (IDIO fh, idio_unicode_t c)
 		 */
 		return EOF;
 	    }
+	}
+    }
+
+    if ('\n' == c &&
+	IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+	/*
+	 * Code coverage:
+	 *
+	 * Requires, uh, interaction...
+	 */
+	if (EOF == idio_flush_file_handle (fh)) {
+	    return EOF;
 	}
     }
 
@@ -2273,7 +2287,7 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char const *s, size_t const slen)
      * the string directly out
      */
     if (sslen > IDIO_FILE_HANDLE_BUFSIZ (fh) ||
-	sslen > (IDIO_FILE_HANDLE_BUFSIZ (fh) - IDIO_FILE_HANDLE_COUNT (fh))) {
+	sslen > (IDIO_FILE_HANDLE_END (fh) - IDIO_FILE_HANDLE_PTR (fh))) {
 	if (EOF == idio_flush_file_handle (fh)) {
 	    /*
 	     * Code coverage:
@@ -2347,11 +2361,10 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char const *s, size_t const slen)
 	}
 
 	IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
-	IDIO_FILE_HANDLE_COUNT (fh) = 0;
+	IDIO_FILE_HANDLE_END (fh) = IDIO_FILE_HANDLE_BUF (fh);
     } else {
 	memcpy (IDIO_FILE_HANDLE_PTR (fh), s, slen);
 	IDIO_FILE_HANDLE_PTR (fh) += slen;
-	IDIO_FILE_HANDLE_COUNT (fh) += slen;
 	r = slen;
     }
 
@@ -2409,12 +2422,13 @@ int idio_flush_file_handle (IDIO fh)
     if (IDIO_INPUTP_HANDLE (fh) &&
 	! IDIO_OUTPUTP_HANDLE (fh)) {
 	IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
-	IDIO_FILE_HANDLE_COUNT (fh) = 0;
+	IDIO_FILE_HANDLE_END (fh) = IDIO_FILE_HANDLE_BUF (fh);
 
 	return 0;
     }
 
-    if (0 == IDIO_FILE_HANDLE_COUNT (fh)) {
+    ptrdiff_t len = IDIO_FILE_HANDLE_END (fh) - IDIO_FILE_HANDLE_BUF (fh);
+    if (0 == len) {
 	/*
 	 * This is almost certainly a flush -- which is fine.
 	 *
@@ -2450,7 +2464,42 @@ int idio_flush_file_handle (IDIO fh)
 	 }
     }
 
-    ssize_t n = write (IDIO_FILE_HANDLE_FD (fh), IDIO_FILE_HANDLE_BUF (fh), IDIO_FILE_HANDLE_COUNT (fh));
+    /*
+     * If we have been moving about in the file/buffer then the writes
+     * we want to commit might be meant to overwrite part of the file
+     * rather than the more regular append.
+     *
+     * So seek to the nominal start of BUF which should be a no-op for
+     * regular output files.
+     *
+     * Slightly annoyingly, idio_seek_file_handle() is smart enough to
+     * bounce around inside the buffer implementing a pseudo-seek when
+     * we want to force a true seek.  So we'll have to do the legwork
+     * ourselves.
+     *
+     * Also, calculate an absolute offset for a SEEK_CUR as (BUF -
+     * PTR) gives the correct relative offset but for our buffer which
+     * may not have been written to anything yet.
+     */
+    if (NULL != IDIO_HANDLE_M_SEEK (fh)) {
+	off_t lseek_r = lseek (IDIO_FILE_HANDLE_FD (fh),
+			       IDIO_HANDLE_POS (fh) + (IDIO_FILE_HANDLE_BUF (fh) - IDIO_FILE_HANDLE_PTR (fh)),
+			       SEEK_SET);
+
+	if (-1 == lseek_r) {
+	    /*
+	     * Test Case: ??
+	     */
+	    idio_error_system_errno ("lseek", fh, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return -1;
+	}
+    }
+
+    ssize_t n = write (IDIO_FILE_HANDLE_FD (fh),
+		       IDIO_FILE_HANDLE_BUF (fh),
+		       len);
 
     if (! idio_isa_file_handle (fh)) {
 	 if (sigaction (SIGPIPE, &osa, NULL) == -1) {
@@ -2479,7 +2528,10 @@ int idio_flush_file_handle (IDIO fh)
 	       * Hmm, not sure...
 	       */
 
-	     fprintf (stderr, "%6" PRIdMAX ": flush %d bytes failed for fd=%3d", (intmax_t) getpid (), IDIO_FILE_HANDLE_COUNT (fh), IDIO_FILE_HANDLE_FD (fh));
+	     fprintf (stderr, "%6" PRIdMAX ": flush %td bytes failed for fd=%3d",
+		      (intmax_t) getpid (),
+		      len,
+		      IDIO_FILE_HANDLE_FD (fh));
 	      fprintf (stderr, " hflags=%#x", IDIO_HANDLE_FLAGS (fh));
 	      idio_debug (" fh=%s\n", fh);
 	      if (EBADF == errno) {
@@ -2505,17 +2557,17 @@ int idio_flush_file_handle (IDIO fh)
 	      return r;
 	 }
     } else {
-	 if (n == IDIO_FILE_HANDLE_COUNT (fh)) {
+	 if (n == len) {
 	      r = 0;
 	 } else {
 #ifdef IDIO_DEBUG
-	      fprintf (stderr, "write: %4zd / %4d\n", n, IDIO_FILE_HANDLE_COUNT (fh));
+	      fprintf (stderr, "write: %4zd / %4td\n", n, len);
 #endif
 	 }
     }
 
     IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
-    IDIO_FILE_HANDLE_COUNT (fh) = 0;
+    IDIO_FILE_HANDLE_END (fh) = IDIO_FILE_HANDLE_BUF (fh);
 
     return r;
 }
@@ -2526,7 +2578,74 @@ off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence)
 
     IDIO_TYPE_ASSERT (file_handle, fh);
 
-    off_t lseek_r = lseek (IDIO_FILE_HANDLE_FD (fh), offset, whence);
+    /*
+     * Just in case we are called with SEEK_CUR, convert to a SEEK_SET
+     * then we can have all of the buffer range logic in one clause.
+     */
+    switch (whence) {
+    case SEEK_CUR:
+	offset += IDIO_HANDLE_POS (fh);
+	whence = SEEK_SET;
+	break;
+    default:
+	break;
+    }
+
+    off_t lseek_r = offset;
+    int req_seek = 0;
+    switch (whence) {
+    case SEEK_SET:
+	{
+	    if (IDIO_HANDLE_LC (fh) != EOF) {
+		IDIO_FILE_HANDLE_PTR (fh)--;
+	    }
+	    ptrdiff_t seek_pos = offset - IDIO_HANDLE_POS (fh);
+	    if (seek_pos < 0) {
+		if (IDIO_FILE_HANDLE_PTR (fh) - IDIO_FILE_HANDLE_BUF (fh) + seek_pos < 0) {
+		    req_seek = 1;
+		} else {
+		    IDIO_FILE_HANDLE_PTR (fh) += seek_pos;
+		}
+	    } else {
+		if (seek_pos >= (IDIO_FILE_HANDLE_END (fh) - IDIO_FILE_HANDLE_PTR (fh))) {
+		    req_seek = 1;
+		} else {
+		    IDIO_FILE_HANDLE_PTR (fh) += seek_pos;
+		}
+	    }
+	}
+	break;
+    case SEEK_END:
+	/*
+	 * XXX need to do the maths in case BUF overlaps the end
+	 * of the file!
+	 */
+	req_seek = 1;
+	break;
+    default:
+	{
+	    /*
+	     * Test Case: ??
+	     *
+	     * Coding error.
+	     */
+	    char em[BUFSIZ];
+	    idio_snprintf (em, BUFSIZ, "'%#x' is invalid", whence);
+
+	    idio_error_param_value_msg_only ("seek", "whence", em, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return -1;
+	}
+    }
+
+    if (req_seek) {
+	IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
+	IDIO_FILE_HANDLE_END (fh) = IDIO_FILE_HANDLE_BUF (fh);
+
+	lseek_r = lseek (IDIO_FILE_HANDLE_FD (fh), offset, whence);
+    }
+
     if (-1 == lseek_r) {
 	/*
 	 * Test Case: file-handle-errors/lseek-negative-offset.idio
@@ -2551,93 +2670,6 @@ off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence)
      * handle EOF.
      */
     IDIO_FILE_HANDLE_FLAGS (fh) &= ~IDIO_FILE_HANDLE_FLAG_EOF;
-
-    if (IDIO_FILE_HANDLE_COUNT (fh)) {
-	/*
-	 * We need to be careful about what we have buffered as the
-	 * seek may well have invalidated it.
-	 *
-	 * But it might not have invalidated it saving us a
-	 * re-buffering!
-	 *
-	 * The buffer PTR range is: BUF <= PTR < BUF+BUFSIZ
-	 *
-	 * We can invalidate the buffer by setting COUNT, the number
-	 * of bytes remaining in the current buffer, to 0.
-	 *
-	 * If we haven't invalidated the buffer we need to adjust PTR
-	 * and COUNT.
-	 *
-	 * There's potential for off-by-one errors:
-	 *
-	 * 1. If the lookahead char is not EOF then PTR is one more
-	 *    than POS thinks it should be.
-	 */
-
-	int invalid = 0;
-	switch (whence) {
-	case SEEK_SET:
-	    {
-		if (IDIO_HANDLE_LC (fh) != EOF) {
-		    IDIO_FILE_HANDLE_PTR (fh)--;
-		}
-		ptrdiff_t seek_pos = offset - IDIO_HANDLE_POS (fh);
-		if (seek_pos < 0) {
-		    if (IDIO_FILE_HANDLE_PTR (fh) - IDIO_FILE_HANDLE_BUF (fh) + seek_pos < 0) {
-			invalid = 1;
-		    } else {
-			IDIO_FILE_HANDLE_PTR (fh) += seek_pos;
-			IDIO_FILE_HANDLE_COUNT (fh) -= seek_pos;
-		    }
-		} else {
-		    if (seek_pos >= (IDIO_FILE_HANDLE_COUNT (fh))) {
-			invalid = 1;
-		    } else {
-			IDIO_FILE_HANDLE_PTR (fh) += seek_pos;
-			IDIO_FILE_HANDLE_COUNT (fh) -= seek_pos;
-		    }
-		}
-	    }
-	    break;
-	case SEEK_END:
-	    /*
-	     * XXX need to do the maths in case BUF overlaps the end
-	     * of the file!
-	     */
-	    invalid = 1;
-	    break;
-	case SEEK_CUR:
-	    /*
-	     * Code coverage:
-	     *
-	     * Should not occur as SEEK_CUR was transformed into a
-	     * SEEK_SET.
-	     */
-	    if (offset) {
-		invalid = 1;
-	    }
-	    break;
-	default:
-	    {
-		/*
-		 * Test Case: ??
-		 *
-		 * Coding error.
-		 */
-		char em[BUFSIZ];
-		idio_snprintf (em, BUFSIZ, "'%#x' is invalid", whence);
-
-		idio_error_param_value_msg_only ("seek", "whence", em, IDIO_C_FUNC_LOCATION ());
-
-		/* notreached */
-		return -1;
-	    }
-	}
-
-	if (invalid) {
-	    IDIO_FILE_HANDLE_COUNT (fh) = 0;
-	}
-    }
 
     return lseek_r;
 }

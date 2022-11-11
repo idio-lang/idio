@@ -353,6 +353,36 @@ P = "c.d"
 
 test (dirname-pathname P) "."
 
+; leading seps
+P = "///a"
+
+test (dirname-pathname P) "/"
+
+; leading seps
+P = "///a/b"
+
+test (dirname-pathname P) "/a"		; dirname: ///a
+
+; many seps
+P = "///a///b"
+
+test (dirname-pathname P) "/a"		; dirname: ///a
+
+; trailing seps
+P = "a///"
+
+test (dirname-pathname P) "."
+
+; trailing seps
+P = "a/b///"
+
+test (dirname-pathname P) "a"
+
+; leading and trailing seps
+P = "///a///b///"
+
+test (dirname-pathname P) "/a"		; dirname: ///a
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; basename-pathname calls reduce-pathname so no need to retest that
@@ -376,5 +406,30 @@ P = "c.d"
 
 test (basename-pathname P) "c.d"
 
+; leading seps
+P = "///a"
+
+test (basename-pathname P) "a"
+
+; leading seps
+P = "///a/b"
+
+test (basename-pathname P) "b"
+
+; many seps
+P = "///a///b"
+
+test (basename-pathname P) "b"
+
+; trailing seps
+P = "a///"
+
+test (basename-pathname P) "a"
+
+; leading and trailing seps
+P = "///a///b///"
+
+test (basename-pathname P) "b"
+
 ;; all done?
-Tests? (path-functions0 + 63)
+Tests? (path-functions0 + 74)

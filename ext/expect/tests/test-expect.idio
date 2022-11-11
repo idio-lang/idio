@@ -382,7 +382,7 @@ dd-args := #f
    ;; older Mac OS X.
    ph := pipe-from sw_vers
    line-loop :+ function () {
-     if (eof? ph) #n {
+     if (eof-handle? ph) #n {
        (regex-case
 	(read-line ph)
 	("ProductVersion:[[:space:]]+([[:digit:]]+)\\." {
