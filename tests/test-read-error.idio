@@ -154,7 +154,7 @@ read-error-load "read-errors/string-unicode-invalid-code-point-2.idio" "string: 
 
 read-error-load "read-errors/character-eof.idio" "UTF-8 decode: EOF" 1
 read-error-load "read-errors/character-incomplete-eof.idio" "UTF-8 decode: EOF" 1
-read-error-load "read-errors/character-invalid-utf8-eof.idio" "UTF-8 decode: EOF" 1
+read-error-load "read-errors/character-invalid-utf8-eof.idio" "UTF-8 decode: not well-formed" 1
 read-error-load "read-errors/character-invalid-utf8.idio" "UTF-8 decode: not well-formed" 1
 read-error-load "read-errors/named-character-eof.idio" "named character: EOF" 1
 read-error-load "read-errors/named-character-eof-emb.idio" "named character: EOF" 2

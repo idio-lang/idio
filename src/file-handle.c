@@ -2069,7 +2069,7 @@ int idio_getb_file_handle (IDIO fh)
 
     for (;;) {
 	if (IDIO_FILE_HANDLE_PTR (fh) < IDIO_FILE_HANDLE_END (fh)) {
-	    int c = (int) *(IDIO_FILE_HANDLE_PTR (fh));
+	    char c = *(IDIO_FILE_HANDLE_PTR (fh));
 	    IDIO_FILE_HANDLE_PTR (fh) += 1;
 	    return c;
 	} else {
@@ -2091,7 +2091,7 @@ int idio_getb_file_handle (IDIO fh)
     }
 }
 
-int idio_eofp_file_handle (IDIO fh)
+inline int idio_eofp_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
 

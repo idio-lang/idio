@@ -785,14 +785,27 @@ idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
 	IDIO_TYPE_ASSERT (struct_instance, lo);
     }
 
-    idio_unicode_t codepoint = EOF;
-    idio_unicode_t state = 0;
+    idio_unicode_t codepoint;
+    idio_unicode_t state = IDIO_UTF8_ACCEPT;
 
     int i;
     for (i = 0; ; i++) {
 	int ucv = idio_getb_handle (handle);
 
-	if (EOF == ucv) {
+	/*
+	 * XXX - do NOT use the (ucv == EOF) comparison
+	 *
+	 * On ARM systems, char is unsigned meaning you'll get 255 for
+	 * the byte 0xFF (one of the tests).  On x86 systems, char is
+	 * signed meaning you'll get -1 which *does*, incorrectly,
+	 * equal EOF and gets your thinking in a pickle.
+	 *
+	 * Always check with: idio_eofp_handle(handle).
+	 *
+	 * [[ I've made this mistake twice, now.  *sigh* ]]
+	 */
+
+	if (idio_eofp_handle (handle)) {
 	    if (IDIO_READ_CHARACTER_SIMPLE == kind) {
 		return EOF;
 	    } else {
@@ -801,39 +814,16 @@ idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
 		 *
 		 *   read-errors/character-eof.idio
 		 *   read-errors/character-incomplete-eof.idio
-		 *   read-errors/character-invalid-utf8-eof.idio
 		 *
 		 * #\
 		 * #\x
 		 *
-		 * 1) where x is a literal byte which *is* a UTF-8
-		 * prefix
+		 * where x is a literal byte which *is* a UTF-8 prefix
 		 *
 		 * For character-incomplete-eof, the test uses 0xC3
 		 * from the start of the sequence 0xC3 0xBE the UTF-8
 		 * sequence for Unicode U+00FE LATIN SMALL LETTER
 		 * THORN
-		 *
-		 * 2) where x is a literal byte which is not a UTF-8
-		 * prefix of some sort (as you'll get EOF, above,
-		 * instead when this goes round the loop).  0xFE and
-		 * 0xFF cannot appear in a valid UTF-8 sequence --
-		 * remember UTF-8 != Unicode.
-		 *
-		 * For character-invalid-utf8-eof, the test uses a
-		 * literal 0xFE byte which, depending on the mood/whim
-		 * of your editor, may appear as LATIN SMALL LETTER
-		 * THORN from C1 Controls and Latin-1 Supplement.
-		 * Emacs and vi seem to guess at ISO 8859-1 whereas
-		 * less displays <FE>.
-		 *
-		 * Also be leery of cut'n'paste as your GUI may do the
-		 * decent thing and convert the, Unicode code point
-		 * U+00FE LATIN SMALL LETTER THORN into a UTF-8 0xC3
-		 * 0xBE sequence which is correctly 0xFE in Unicode
-		 * thus defeating the point of our invalid UTF-8 test.
-		 *
-		 * *shakes fist*
 		 */
 		idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
@@ -847,17 +837,59 @@ idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
 	    break;
 	} else if (IDIO_UTF8_REJECT == state) {
 	    /*
-	     * Test Case: read-errors/character-invalid-utf8.idio
+	     * Test Case:
+	     *
+	     *   read-errors/character-invalid-utf8.idio
+	     *   read-errors/character-invalid-utf8-eof.idio
 	     *
 	     * #\xy
 	     *
-	     * where x is a literal byte which *is* a UTF-8 prefix and
-	     * y is not a suitable following byte
+	     * 1) where x is a literal byte which *is* a UTF-8 prefix
+	     * and y is not a suitable following byte
 	     *
 	     * From the example above, the test uses 0xC3 from the
 	     * start of the sequence 0xC3 0xBE the UTF-8 sequence for
 	     * Unicode U+00FE LATIN SMALL LETTER THORN and follows it
-	     * with an ASCII NUL
+	     * with an ASCII NUL.
+	     *
+	     * 2) where x is a literal byte which is not a UTF-8
+	     * prefix of some sort.  0xFE and 0xFF cannot appear in a
+	     * valid UTF-8 sequence -- remember UTF-8 != Unicode so,
+	     * for example, 0xFF, which we might read as U+00FF LATIN
+	     * SMALL LETTER Y WITH DIAERESIS, is the UTF-8 sequence
+	     * 0xC3 0xBF.
+	     *
+	     * For character-invalid-utf8-eof, the test uses a literal
+	     * 0xFF byte, where platforms (ISAs?) using a signed char
+	     * might implicitly cast 0xFF as -1 (aka EOF).  We should
+	     * be testing for EOF another way leaving the 0xFF byte
+	     * coming through to here where it is picked up as "not
+	     * well-formed".
+	     *
+	     * The actual EOF after 0xFF is moot as we should have
+	     * raised a condition on the invalid 0xFF first!  We
+	     * tested for EOF mid-sequence above.
+	     *
+	     *
+	     * Convincing your editor to shake off its insistence on
+	     * "doing the right thing" with data entry is tricky.  One
+	     * option is to generate the test file(s) with explicit
+	     * escape sequences for bytes.  Something like:
+	     *
+	     *   Idio> puts "#\\\xFF" > tests/read-errors/character-invalid-utf8-eof.idio
+	     *   $ echo -ne "#\\\xFF" > tests/read-errors/character-invalid-utf8-eof.idio
+	     *
+	     * You can test the validity of your efforts with:
+	     *
+	     *   od -t x1 tests/read-errors/character-invalid-utf8-eof.idio
+	     *
+	     * Also be leery of cut'n'paste as your GUI may do the
+	     * decent thing and convert the 0xFF byte into a UTF-8
+	     * 0xC3 0xBF sequence which is correctly Unicode code
+	     * point U+00FF LATIN SMALL LETTER Y WITH DIAERESIS thus
+	     * defeating the point of our invalid UTF-8 test.
+	     *
+	     * *shakes fist*
 	     */
 	    if (IDIO_READ_CHARACTER_SIMPLE == kind) {
 		return IDIO_UNICODE_REPLACEMENT_CHARACTER;
