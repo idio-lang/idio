@@ -1,3 +1,0 @@
-
-;; tmpfile should be in scope!
-open-input-file tmpfile

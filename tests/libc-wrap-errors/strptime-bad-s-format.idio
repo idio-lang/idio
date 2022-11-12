@@ -1,2 +1,0 @@
-
-strptime "hello\x00world" #t

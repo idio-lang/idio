@@ -1,2 +1,0 @@
-
-struct-instance-ref (make-struct-instance ^error) #t

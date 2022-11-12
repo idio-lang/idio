@@ -1,3 +1,0 @@
-Idio Functions
---------------
-

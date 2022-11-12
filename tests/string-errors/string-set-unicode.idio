@@ -1,2 +1,0 @@
-
-string-set! (copy-string "hello") #\a #\a

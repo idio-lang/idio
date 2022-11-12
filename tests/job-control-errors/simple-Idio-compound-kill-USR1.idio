@@ -1,5 +1,0 @@
-
-{
-  libc/sleep 0
-  libc/kill PID libc/SIGUSR1
-}

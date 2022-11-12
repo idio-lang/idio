@@ -1,2 +1,0 @@
-
-struct-termios-ref (libc/tcgetattr libc/STDIN_FILENO) 'not-likely

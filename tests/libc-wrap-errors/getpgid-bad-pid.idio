@@ -1,2 +1,0 @@
-
-getpgid (C/integer-> -1 libc/pid_t)

@@ -1,6 +1,0 @@
-
-module tests/libc-wrap
-import libc
-
-;; technically risky as 98765 could be a valid signal...
-kill (C/integer-> PID libc/pid_t) (C/integer-> 98765)

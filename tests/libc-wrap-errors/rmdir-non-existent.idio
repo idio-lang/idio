@@ -1,4 +1,0 @@
-
-tmpdir := (make-tmp-dir)
-rmdir tmpdir
-rmdir tmpdir

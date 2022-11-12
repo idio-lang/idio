@@ -1,2 +1,0 @@
-
-struct-passwd-ref (libc/getpwuid 0) #t

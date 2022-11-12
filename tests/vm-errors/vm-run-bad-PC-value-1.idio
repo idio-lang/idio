@@ -1,4 +1,0 @@
-
-module vm
-
-vm-run (threading/current-thread) -1

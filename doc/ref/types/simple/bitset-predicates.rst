@@ -1,3 +1,0 @@
-Bitset Predicates
------------------
-

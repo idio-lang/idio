@@ -1,2 +1,0 @@
-
-keyword-set! (make-keyword-table) #t #t

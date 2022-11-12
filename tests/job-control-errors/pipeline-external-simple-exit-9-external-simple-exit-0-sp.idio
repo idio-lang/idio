@@ -1,7 +1,0 @@
-
-suppress-pipefail! = #t
-
-auto-exit -E 9 | auto-exit -E 0
-
-;; controlled exit
-libc/exit 3

@@ -1,2 +1,0 @@
-
-C/integer-> ((C/->number libc/UINT_MAX) + 1) 'uint

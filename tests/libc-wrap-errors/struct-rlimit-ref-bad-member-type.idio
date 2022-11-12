@@ -1,2 +1,0 @@
-
-struct-rlimit-ref (libc/getrlimit libc/RLIMIT_NOFILE) #t

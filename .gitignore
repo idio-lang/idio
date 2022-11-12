@@ -1,46 +1,5 @@
 # use glob syntax.
 syntax: glob
 
-*.elc
-*.pyc
 *~
-*.cnf
-*.key
-*.req
-*.crt
-*.pem
-*.srl
-*.0
-*.o
-*.d
-TAGS
-core.*
-vgcore.*
-*.so
-*.so.*
-*.a
-*.orig
-vm-perf.log
-src/map
 
-bin/idio
-src/idio-system.h
-src/idio-config.h
-src/libc-api.h
-lib/libc-api.idio
-lib/idio-system.idio
-Makefile.system
-main
-scm1-c-structs
-scm1-c-structs.scm1
-auto-c-type.[ch]
-doc/src/_build
-doc/src/kernel-autodoc-out
-tests/*.class
-ext/*/gen
-*.gcda
-*.gcno
-*.gcov
-coverage.xml
-.local
-__idio__

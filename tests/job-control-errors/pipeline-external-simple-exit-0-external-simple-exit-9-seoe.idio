@@ -1,8 +1,0 @@
-
-suppress-exit-on-error! = #t
-
-auto-exit -E 0 | auto-exit -E 9
-
-;; controlled exit
-libc/exit 3
-

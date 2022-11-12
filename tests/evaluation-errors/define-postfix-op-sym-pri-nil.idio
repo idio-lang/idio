@@ -1,3 +1,0 @@
-module tests/evaluation/define-postfix-operator
-
-define-postfix-operator qqq 10

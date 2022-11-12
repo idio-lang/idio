@@ -1,4 +1,0 @@
-
-sh := open-input-string ""
-close-handle sh
-ready? sh

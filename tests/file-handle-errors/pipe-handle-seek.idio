@@ -1,7 +1,0 @@
-
-{
-  ;; XXX run in a block and everything will be reclaimed
-  p := (libc/pipe)
-  rph := open-input-pipe (libc/pipe-reader p)
-  seek-handle rph 0
-}

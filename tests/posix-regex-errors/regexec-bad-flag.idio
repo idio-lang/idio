@@ -1,5 +1,0 @@
-
-;; hopefully there isn't a REG_BOTH!
-
-; SunOS regcomp() doesn't like an empty string!
-regexec (regcomp "a") "" 'REG_BOTH

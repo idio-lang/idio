@@ -1,1 +1,0 @@
-type [field-bindings]

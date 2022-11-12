@@ -1,8 +1,0 @@
-
-module tests/bignum
-
-;; assuming a 32 bit exponent
-
-;; Careful, this should be because the number of digits in the
-;; numerator is less than the number of digits in the denominator
-1e-2147483648 / 10

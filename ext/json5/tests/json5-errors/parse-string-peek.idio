@@ -1,6 +1,0 @@
-
-module tests/json5-error
-import json5
-
-; NB double-\ as this is an Idio string
-json5/parse-string "'\\"

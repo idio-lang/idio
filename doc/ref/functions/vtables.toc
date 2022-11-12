@@ -1,8 +1,0 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-; Thread state
-
-(rst "vtables" 0)
-
-(document Idio dump-vtable)
-(document Idio vtable-add-method)

@@ -1,8 +1,0 @@
-
-module tests/libc-wrap
-import libc
-
-;; EBADF
-isatty (C/integer-> nofiles_lim)
-
-;; NB nofiles_lim was defined in test.idio

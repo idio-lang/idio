@@ -1,5 +1,0 @@
-
-module tests/libc-wrap
-import libc
-
-fcntl C/0i F_SETFD #t

@@ -1,4 +1,0 @@
-
-s := (gensym)
-%set-properties! s (make-keyword-table)
-%property s :name

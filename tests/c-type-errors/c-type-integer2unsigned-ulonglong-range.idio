@@ -1,2 +1,0 @@
-
-C/integer->unsigned ((C/->number libc/ULLONG_MAX) + 1) 'ulonglong

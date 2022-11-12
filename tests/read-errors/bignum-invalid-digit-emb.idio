@@ -1,4 +1,0 @@
-{
-  ; #d is base-10 so 1a should be invalid
-  bn := #d1a
-}

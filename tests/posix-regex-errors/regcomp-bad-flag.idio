@@ -1,3 +1,0 @@
-
-;; hopefully there isn't a REG_PCRE!
-regcomp "" 'REG_PCRE

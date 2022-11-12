@@ -1,7 +1,0 @@
-
-module tests/json5-error
-import json5
-
-; ECMAIdentifierPart can be the usual suspects but not punctuation,
-; say
-json5/generate '*invalid

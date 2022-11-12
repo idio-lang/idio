@@ -1,4 +1,0 @@
-(rst "command-intro" 0)
-
-(document command %find-exe)
-(document command %exec)

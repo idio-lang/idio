@@ -1,7 +1,0 @@
-(rst "chdir" 0)
-
-(document Idio cd)
-(document Idio pushd)
-(document Idio popd)
-(document Idio dirs)
-(document Idio setd)

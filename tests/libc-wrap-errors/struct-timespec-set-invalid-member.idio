@@ -1,3 +1,0 @@
-
-statbuf := libc/stat "."
-struct-timespec-set! statbuf.st_atim 'not-likely #t

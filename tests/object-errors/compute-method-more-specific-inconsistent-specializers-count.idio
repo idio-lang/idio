@@ -1,8 +1,0 @@
-
-module test/compute-method-more-specific-inconsistent-specializers-count
-import object
-
-define-method (foo (f <fixnum>))   "fixnum"
-define-method (foo (f <fixnum>) o) "fixnum other"
-
-foo 1

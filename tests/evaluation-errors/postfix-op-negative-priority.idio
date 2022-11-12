@@ -1,5 +1,0 @@
-module tests/evaluation/postfix-operator
-
-define-postfix-operator qqq -300 {
-  edisplay* "operator" op before after
-}

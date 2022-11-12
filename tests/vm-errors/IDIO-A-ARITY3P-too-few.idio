@@ -1,6 +1,0 @@
-
-module tests/vm/IDIO-A-ARITY3P
-
-define (fn a b) #t
-
-fn 1

@@ -1,5 +1,0 @@
-
-module test/object
-import object
-
-%allocate-entity <class> -1

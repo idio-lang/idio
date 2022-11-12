@@ -1,3 +1,0 @@
-
-;; probably a fail...
-EUID = (C/integer-> unused-UID libc/uid_t)

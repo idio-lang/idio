@@ -1,7 +1,0 @@
-(rst "syntax-intro" 0)
-
-(document Idio define-syntax)
-(document Idio define-syntax-rule)
-(nodocument Idio syntax-expand)
-(nodocument Idio alpha-conv)
-(nodocument Idio syntax-match)

@@ -1,5 +1,0 @@
-
-{
-  IFS :~ #t
-  fields "abc"
-}

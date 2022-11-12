@@ -1,2 +1,0 @@
-
-trap ^error #t #t

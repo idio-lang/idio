@@ -1,6 +1,0 @@
-(import SRFI-14)
-
-(rst "leader" 0)
-
-(toc-file functions)
-(toc-file values)

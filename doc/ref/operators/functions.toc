@@ -1,3 +1,0 @@
-(rst "functions-intro" 0)
-
-(nodocument Idio operator-expand)

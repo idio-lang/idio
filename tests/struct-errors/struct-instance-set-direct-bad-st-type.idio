@@ -1,2 +1,0 @@
-
-%struct-instance-set-direct! (make-struct-instance ^error) #t #t #t

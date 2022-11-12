@@ -1,2 +1,0 @@
-
-equal? (C/number-> 1.0 'longdouble) (C/number-> 2.0 'longdouble)

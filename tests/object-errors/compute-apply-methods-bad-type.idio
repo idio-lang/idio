@@ -1,7 +1,0 @@
-
-module test/compute-apply-methods-bad-type
-import object
-
-define-method (foo (f <fixnum>))   "fixnum"
-
-foo #t

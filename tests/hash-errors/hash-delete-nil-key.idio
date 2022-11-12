@@ -1,6 +1,0 @@
-
-module tests/hash
-
-ht := (make-hash)
-
-hash-delete! ht #n

@@ -1,6 +1,0 @@
-
-module tests/util/copy
-
-define-struct st x y
-si := make-struct-instance st 1 2
-copy-value si

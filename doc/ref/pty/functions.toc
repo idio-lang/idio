@@ -1,8 +1,0 @@
-(rst "functions-intro" 0)
-
-(document pty openpty)
-(document pty forkpty)
-(document pty spawn)
-(document pty spawn-sync)
-(nodocument pty spawn-async)
-

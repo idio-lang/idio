@@ -1,2 +1,0 @@
-
-open-output-file-from-fd (stdin-fileno) "bob" #t

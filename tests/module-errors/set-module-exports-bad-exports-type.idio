@@ -1,2 +1,0 @@
-
-%set-module-exports! (find-module 'Idio) #t

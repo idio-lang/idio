@@ -1,6 +1,0 @@
-* `message`
-
-* `location`
-
-* `detail`
-

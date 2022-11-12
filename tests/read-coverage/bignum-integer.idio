@@ -1,9 +1,0 @@
-;; #e should provoke the bignum code but as the bignum is one digit
-;; more than can be stored in a bignum segment then the code refuses
-;; to downgrade it to a fixnum
-
-if (gt FIXNUM-MAX 536870911) {
-  #e1000000000000000000
-} {
-  #e1000000000
-}

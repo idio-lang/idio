@@ -1,2 +1,0 @@
-
-add-struct-timeval (gettimeofday) #t

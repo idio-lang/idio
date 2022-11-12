@@ -1,2 +1,0 @@
-
-condition-ref (make-condition ^error) #t

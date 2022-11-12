@@ -1,2 +1,0 @@
-
-setrlimit (C/integer-> -1) (getrlimit RLIMIT_CPU)

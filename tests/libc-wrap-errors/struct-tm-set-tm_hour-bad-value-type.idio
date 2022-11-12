@@ -1,2 +1,0 @@
-
-struct-tm-set! v 'tm_hour #t

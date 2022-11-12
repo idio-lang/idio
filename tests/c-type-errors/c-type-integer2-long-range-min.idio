@@ -1,2 +1,0 @@
-
-C/integer-> ((C/->number libc/LONG_MAX) + 1) 'long

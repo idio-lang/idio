@@ -1,5 +1,0 @@
-
-module command
-
-PATH = ""
-%find-exe (string->symbol (make-string (C/->integer libc/PATH_MAX) #\A))

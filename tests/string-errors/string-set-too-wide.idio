@@ -1,6 +1,0 @@
-
-; "hello" is 1-byte code points
-
-; U+0127 LATIN SMALL LETTER H WITH STROKE is 2-bytes
-
-string-set! (copy-string "hello") 0 #U+0127

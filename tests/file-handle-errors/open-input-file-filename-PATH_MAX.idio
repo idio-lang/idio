@@ -1,6 +1,0 @@
-
-;; We need a long filename to trigger the PATH_MAX tests.
-;; AAAA....AAAA should do it.
-
-open-input-file (make-string (C/->integer PATH_MAX) #\A)
-

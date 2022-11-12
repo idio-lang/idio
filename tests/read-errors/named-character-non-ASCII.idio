@@ -1,4 +1,0 @@
-; The i in newline is replaced with the UTF-8 for U+00EF LATIN SMALL
-; LETTER I WITH DIAERESIS -- that is encoded as 0xC3 0xAF, neither of
-; which is ASCII
-#\{newlïne}

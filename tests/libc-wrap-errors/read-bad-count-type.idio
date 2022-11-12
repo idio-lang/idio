@@ -1,5 +1,0 @@
-
-module test/libc-wrap
-import libc
-
-read (C/integer-> 0) #t

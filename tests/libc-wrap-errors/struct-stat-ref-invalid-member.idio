@@ -1,2 +1,0 @@
-
-struct-stat-ref (libc/stat ".") 'not-likely

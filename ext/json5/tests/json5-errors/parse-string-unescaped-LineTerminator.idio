@@ -1,6 +1,0 @@
-
-module tests/json5-error
-import json5
-
-; Note this is an Idio \n becoming a real newline
-json5/parse-string "'\n'"

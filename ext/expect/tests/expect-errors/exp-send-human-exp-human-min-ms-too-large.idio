@@ -1,5 +1,0 @@
-
-{
-  exp-human :~ (list 1 2 3 large-int 5)
-  exp-send-human C/0i "hello"
-}

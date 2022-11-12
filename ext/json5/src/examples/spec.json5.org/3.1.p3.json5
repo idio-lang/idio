@@ -1,8 +1,0 @@
-// Objects can be nested
-{
-    image: {
-        width: 1920,
-        height: 1080,
-        'aspect-ratio': '16:9',
-    }
-}

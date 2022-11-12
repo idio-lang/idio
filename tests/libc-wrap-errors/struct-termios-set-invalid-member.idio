@@ -1,2 +1,0 @@
-
-struct-termios-set! (libc/tcgetattr libc/STDIN_FILENO) 'not-likely #t

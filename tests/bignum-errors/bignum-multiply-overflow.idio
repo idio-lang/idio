@@ -1,6 +1,0 @@
-
-module tests/bignum
-
-;; assuming a 32 bit exponent
-
-1e2147483647 * 10

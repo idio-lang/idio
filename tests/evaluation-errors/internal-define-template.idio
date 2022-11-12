@@ -1,6 +1,0 @@
-
-{
-  define-template (bar) {
-    #T{ 1 }
-  }
-}

@@ -1,4 +1,0 @@
-
-module evaluate
-
-symbol-direct-reference #t

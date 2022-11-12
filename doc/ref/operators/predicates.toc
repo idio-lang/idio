@@ -1,5 +1,0 @@
-(rst "predicates-intro" 0)
-
-(document Idio infix-operator?)
-(document Idio postfix-operator?)
-(document Idio operator?)

@@ -1,4 +1,0 @@
-
-module evaluate
-
-set-symbol! 'read #t #t

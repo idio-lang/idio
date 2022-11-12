@@ -1,4 +1,0 @@
-(rst "values-intro" 0)
-
-(document libc errno)
-(document libc idio-uname)

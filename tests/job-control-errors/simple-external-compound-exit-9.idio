@@ -1,6 +1,0 @@
-
-{
-  'sleep 0
-  auto-exit -E 9
-}
-

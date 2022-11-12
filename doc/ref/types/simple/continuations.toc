@@ -1,7 +1,0 @@
-(rst "continuations-intro" 0)
-
-(rst "continuation-predicates" 0)
-(document Idio continuation?)
-
-(rst "continuation-constructors" 0)
-(document Idio call/cc)

@@ -1,4 +1,0 @@
-
-ht := (make-hash)
-
-copy-hash ht #t

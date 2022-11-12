@@ -1,2 +1,0 @@
-
-write (C/integer-> -1) "hello\n"

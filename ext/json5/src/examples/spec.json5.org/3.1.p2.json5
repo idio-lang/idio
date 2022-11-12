@@ -1,6 +1,0 @@
-// An object with two properties
-// and a trailing comma
-{
-    width: 1920,
-    height: 1080,
-}

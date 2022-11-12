@@ -1,4 +1,0 @@
-module tests/evaluation/abstraction
-
-(function (x) x) 1 2
-

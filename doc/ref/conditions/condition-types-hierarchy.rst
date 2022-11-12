@@ -1,3 +1,0 @@
-Condition Types Hierarchy
-^^^^^^^^^^^^^^^^^^^^^^^^^
-

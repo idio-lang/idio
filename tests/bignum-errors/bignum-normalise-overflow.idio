@@ -1,8 +1,0 @@
-
-module tests/bignum
-
-;; assuming a 32 bit exponent
-
-;; NB this provokes the second trigger in idio_bignum_normalize() as
-;; the trailing zeroes push the exponent into overflow
-10e2147483647

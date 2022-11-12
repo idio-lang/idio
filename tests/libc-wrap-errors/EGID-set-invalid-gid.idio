@@ -1,3 +1,0 @@
-
-;; probably a fail...
-EGID = (C/integer-> -1 libc/gid_t)

@@ -1,6 +1,0 @@
-
-module tests/struct/make-struct-instance
-
-define-struct foo x y
-f := make-struct-instance foo 1 2
-struct-instance-set! f 'z #t

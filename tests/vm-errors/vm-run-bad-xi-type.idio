@@ -1,4 +1,0 @@
-
-module vm
-
-vm-run #t #t

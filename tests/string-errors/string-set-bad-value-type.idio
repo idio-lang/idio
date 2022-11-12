@@ -1,2 +1,0 @@
-
-string-set! (make-string 5) 0 #t

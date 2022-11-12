@@ -1,2 +1,0 @@
-
-strftime "%c" libc/NULL

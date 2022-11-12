@@ -1,7 +1,0 @@
-
-; We're assuming that 1) INT_MAX is not a valid pid (to generate the
-; error) and 2) that INT_MAX (a C/int) is less than or equal to the
-; maximum value in the range of a libc/pid_t (which is probably a
-; C/int or a C/long but you never know)
-int-max := C/->number INT_MAX
-getsid (C/integer-> int-max libc/pid_t)

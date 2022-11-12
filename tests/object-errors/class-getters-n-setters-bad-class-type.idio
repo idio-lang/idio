@@ -1,5 +1,0 @@
-
-module test/object
-import object
-
-class-getters-n-setters #t

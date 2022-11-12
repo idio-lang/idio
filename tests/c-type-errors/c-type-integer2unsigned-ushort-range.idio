@@ -1,2 +1,0 @@
-
-C/integer->unsigned ((C/->number libc/USHRT_MAX) + 1) 'ushort

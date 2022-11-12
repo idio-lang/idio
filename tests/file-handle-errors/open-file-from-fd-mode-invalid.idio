@@ -1,2 +1,0 @@
-
-open-file-from-fd (stdin-fileno) "bob" "q"

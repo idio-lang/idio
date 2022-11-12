@@ -1,7 +1,0 @@
-
-module tests/json5-error
-import json5
-
-; a primitive is chosen because the printed form (in the error
-; message) is consistent.  Otherwise a closure would be equally good.
-json5/generate-json Idio/read

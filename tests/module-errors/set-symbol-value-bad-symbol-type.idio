@@ -1,4 +1,0 @@
-
-module evaluate
-
-set-symbol-value! #t #t #t

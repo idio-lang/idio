@@ -1,6 +1,0 @@
-{
-    integer: 123,
-    withFractionPart: 123.456,
-    onlyFractionPart: .456,
-    withExponent: 123e-456,
-}

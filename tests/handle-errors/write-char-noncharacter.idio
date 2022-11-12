@@ -1,2 +1,0 @@
-
-write-char (integer->unicode #xFDD0)

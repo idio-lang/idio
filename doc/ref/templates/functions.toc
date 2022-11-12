@@ -1,2 +1,0 @@
-(rst "functions-intro" 0)
-

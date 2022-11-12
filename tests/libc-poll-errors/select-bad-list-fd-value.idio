@@ -1,2 +1,0 @@
-
-libc/select (list (C/integer-> 98765)) #n #n

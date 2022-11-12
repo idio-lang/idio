@@ -1,9 +1,0 @@
-fd+name := mkstemp "XXXXXX"
-close (ph fd+name)
-
-unwind-protect {
-  ;; EEXIST
-  mkdir (pht fd+name) (C/integer-> #o555 libc/mode_t)
-} {
-  delete-file (pht fd+name)
-}

@@ -1,9 +1,0 @@
-; provoke a bignum rather than a fixnum which will obviously be too
-; big for a Unicode code point but we get some code coverage for the
-; result of scanning the number
-
-; 64bit FIXNUM-MAX is 2305843009213693951 or 1FFFFFFFFFFFFFFF
-; 32bit FIXNUM-MAX is 536870911 or 0x1fffffff
-
-; keep the following on one line
-if (gt FIXNUM-MAX 536870911) #U+2000000000000000 #U+20000000

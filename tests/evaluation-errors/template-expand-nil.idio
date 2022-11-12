@@ -1,4 +1,0 @@
-module tests/evaluation/template-expand
-
-(template-expand)
-

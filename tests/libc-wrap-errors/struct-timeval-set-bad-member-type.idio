@@ -1,2 +1,0 @@
-
-struct-timeval-set! (libc/gettimeofday) #t #t

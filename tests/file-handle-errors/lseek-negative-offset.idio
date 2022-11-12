@@ -1,3 +1,0 @@
-
-ifh := open-input-file testfile
-seek-handle ifh -1

@@ -1,3 +1,0 @@
-Struct Instance Constructors
-----------------------------
-

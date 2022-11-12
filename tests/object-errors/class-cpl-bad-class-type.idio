@@ -1,5 +1,0 @@
-
-module test/object
-import object
-
-class-cpl #t

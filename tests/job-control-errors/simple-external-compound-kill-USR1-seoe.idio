@@ -1,9 +1,0 @@
-
-suppress-exit-on-error! = #t
-{
-  'sleep 0
-  auto-exit -K libc/SIGUSR1
-}
-
-;; controlled exit
-libc/exit 3

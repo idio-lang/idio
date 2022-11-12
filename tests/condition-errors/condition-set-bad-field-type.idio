@@ -1,2 +1,0 @@
-
-condition-set! (make-condition ^error) #t #t

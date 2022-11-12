@@ -1,2 +1,0 @@
-
-write-char #\a (current-input-handle)

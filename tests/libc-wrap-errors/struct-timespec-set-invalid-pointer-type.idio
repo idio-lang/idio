@@ -1,2 +1,0 @@
-
-struct-timespec-set! libc/NULL #t #t

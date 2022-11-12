@@ -1,4 +1,0 @@
-
-bs := #B{ 3 }
-
-bitset-set! bs 5

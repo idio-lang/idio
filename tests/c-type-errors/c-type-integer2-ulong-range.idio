@@ -1,2 +1,0 @@
-
-C/integer-> ((C/->number libc/ULONG_MAX) + 1) 'ulong

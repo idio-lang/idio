@@ -1,6 +1,0 @@
-
-module tests/vm/computed
-
-cvar-go :$ (function #n "got me") #n
-
-cvar-go = 3

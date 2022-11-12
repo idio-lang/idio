@@ -1,6 +1,0 @@
-
-module tests/vm/computed
-
-cvar-so :$ #n (function (v) v)
-
-cvar-so
