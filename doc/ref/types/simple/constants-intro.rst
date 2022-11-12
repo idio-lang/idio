@@ -90,8 +90,8 @@ Other constants that may appear include:
 
    A flag indicating that a read has reached end of file (or string!).
 
-   .. seealso:: :ref:`eof? <eof?>` and :ref:`eof-object?
-                <eof-object?>`.
+   .. seealso:: :ref:`eof? <eof?>` and :ref:`eof-handle?
+                <eof-handle?>`.
 
 Other Kinds of Constants
 ^^^^^^^^^^^^^^^^^^^^^^^^
