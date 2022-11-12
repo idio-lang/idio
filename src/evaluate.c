@@ -1084,21 +1084,22 @@ IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO eenv)
     IDIO si = idio_meaning_find_symbol (name, eenv, scope);
 
     IDIO curscope = IDIO_SI_SCOPE (si);
-    if (scope != curscope) {
-	if (idio_S_predef != curscope) {
-	    /*
-	     * I'm not sure we can get here as once the name
-	     * exists in a toplevel then it we be found again
-	     * before we can re-extend the toplevel.
-	     *
-	     * One to look out for.
-	     */
-	    idio_meaning_error_static_redefine (src, IDIO_C_FUNC_LOCATION (), "toplevel-extend: type change", name, si, scope);
 
-	    return idio_S_notreached;
-	}
-    } else {
+    if (scope == curscope) {
 	return IDIO_SI_SI (si);
+    }
+
+    if (idio_S_predef != curscope) {
+	/*
+	 * I'm not sure we can get here as once the name
+	 * exists in a toplevel then it we be found again
+	 * before we can re-extend the toplevel.
+	 *
+	 * One to look out for.
+	 */
+	idio_meaning_error_static_redefine (src, IDIO_C_FUNC_LOCATION (), "toplevel-extend: type change", name, si, scope);
+
+	return idio_S_notreached;
     }
 
 #ifdef IDIO_EVALUATE_DEBUG
