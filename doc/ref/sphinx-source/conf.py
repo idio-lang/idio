@@ -84,13 +84,13 @@ html_theme_options = {
     # (which we comment out below) but we re-use in the header
     'extra_nav_links': {
         'Home': '/',
-        'Guide': '/docs/guide/',
+        # 'Guide': '/docs/guide/',
 	'By Example': '/docs/idio-by-example/',
         'Reference': '/docs/ref/',
         'Getting': '/get.html',
-        'Roadmap': '/roadmap.html',
         'DIPS': '/docs/DIPS/',
         'Support': '/support.html',
+        'Roadmap': '/roadmap.html',
     },
 }
 
