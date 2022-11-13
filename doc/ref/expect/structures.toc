@@ -26,3 +26,5 @@
 (nodocument expect set-struct-spawn-lfh!)
 (nodocument expect struct-spawn-status)
 (nodocument expect set-struct-spawn-status!)
+(nodocument expect struct-spawn-pending-eof)
+(nodocument expect set-struct-spawn-pending-eof!)

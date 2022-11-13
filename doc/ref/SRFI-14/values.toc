@@ -42,3 +42,5 @@
 (document SRFI-14 %char-set:upper-case ASCII-char-set:upper-case)
 (document SRFI-14 %char-set:whitespace ASCII-char-set:whitespace)
 (document SRFI-14 %char-set:word-constituent ASCII-char-set:word-constituent)
+
+(nodocument SRFI-14 version)

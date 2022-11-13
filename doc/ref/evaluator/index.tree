@@ -1,4 +1,5 @@
 (import evaluate)
+(import SRFI-0)
 
 (rst "leader" 0)
 

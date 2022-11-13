@@ -2,3 +2,6 @@
 
 (document command %find-exe)
 (document command %exec)
+
+;; this is a value not a function but we have no other values...
+(nodocument command %suppress-rcse)

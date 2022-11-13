@@ -103,6 +103,7 @@
 
 (document libc errno-name)
 (document libc errno-names)
+(nodocument libc system-error)
 
 (document libc rlimit-name)
 (document libc rlimit-names)

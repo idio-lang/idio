@@ -102,3 +102,8 @@
 (nodocument Idio 3pi/4)
 (nodocument Idio 5pi/4)
 (nodocument Idio 7pi/4)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; path-functions is picked up as a symbol
+(nodocument Idio path-functions)
