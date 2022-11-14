@@ -191,6 +191,8 @@ create a temporary file and return an open file descriptor to it
 :rtype: C/int
 
 The file is created in a temporary directory (commonly :file:`/tmp`).
+The file's name is unlinked therefore the returned file descriptor is
+the only reference to the file.
 " {
   fd+name := apply %make-tmp-fd prefix
 
