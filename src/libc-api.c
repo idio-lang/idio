@@ -2787,6 +2787,42 @@ Options will be IORed together			     \n\
     }
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("unlockpt", libc_unlockpt, (IDIO fd), "fd", "\
+in C, :samp:`unlockpt ({fd})`			\n\
+a wrapper to libc :manpage:`unlockpt(3)`	\n\
+						\n\
+:param fd: fd to unlockpt			\n\
+:type fd: C/int					\n\
+:return: 0					\n\
+:rtype: C/int					\n\
+:raises ^system-error:				\n\
+")
+{
+    IDIO_ASSERT (fd);
+
+    /*
+     * Test Case: libc-wrap-errors/unlockpt-bad-type.idio
+     *
+     * unlockpt #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+    int unlockpt_r = unlockpt (C_fd);
+
+    if (-1 == unlockpt_r) {
+	/*
+	 * Test Case: ??
+	 */
+        idio_error_system_errno ("unlockpt", fd, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (unlockpt_r);
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("unlink", libc_unlink, (IDIO pathname), "pathname", "\
 in C, :samp:`unlink ({pathname})`		\n\
 a wrapper to libc :manpage:`unlink(2)`		\n\
@@ -3420,179 +3456,6 @@ a wrapper to libc :manpage:`sleep(3)`				\n\
     return idio_C_uint (sleep_r);
 }
 
-IDIO_DEFINE_PRIMITIVE0V_DS ("posix_openpt", libc_posix_openpt, (IDIO args), "[flags]", "\
-in C, :samp:`posix_openpt ({flags})`			\n\
-a wrapper to libc :manpage:`posix_openpt(3)`		\n\
-							\n\
-:param flags: flags to posix_openpt, defaults to ``O_RDWR [| O_NOCTTY]``	\n\
-:type flags: C/int, optional				\n\
-:return: file descriptor for master			\n\
-:rtype: C/int						\n\
-:raises ^system-error:					\n\
-							\n\
-``O_NOCTTY`` is not available on some systems.		\n\
-")
-{
-    IDIO_ASSERT (args);
-
-#if defined (__APPLE__) && defined (__MACH__)
-    int C_flags = O_RDWR;
-#else
-    int C_flags = O_RDWR | O_NOCTTY;
-#endif
-    IDIO flags = args;
-    if (idio_isa_pair (args)) {
-	flags = IDIO_PAIR_H (args);
-
-	/*
-	 * Test Case: libc-wrap-errors/posix_openpt-bad-type.idio
-	 *
-	 * posix_openpt #t
-	 */
-	IDIO_USER_C_TYPE_ASSERT (int, flags);
-
-	C_flags = IDIO_C_TYPE_int (flags);
-    }
-
-    int posix_openpt_r = posix_openpt (C_flags);
-
-    if (-1 == posix_openpt_r) {
-	/*
-	 * Test Case: ??
-	 */
-        idio_error_system_errno ("posix_openpt", flags, IDIO_C_FUNC_LOCATION ());
-
-        return idio_S_notreached;
-    }
-
-    return idio_C_int (posix_openpt_r);
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("grantpt", libc_grantpt, (IDIO fd), "fd", "\
-in C, :samp:`grantpt ({fd})`			\n\
-a wrapper to libc :manpage:`grantpt(3)`		\n\
-						\n\
-:param fd: fd to grantpt			\n\
-:type fd: C/int					\n\
-:return: 0					\n\
-:rtype: C/int					\n\
-:raises ^system-error:				\n\
-")
-{
-    IDIO_ASSERT (fd);
-
-    /*
-     * Test Case: libc-wrap-errors/grantpt-bad-type.idio
-     *
-     * grantpt #t
-     */
-    IDIO_USER_C_TYPE_ASSERT (int, fd);
-
-    int C_fd = IDIO_C_TYPE_int (fd);
-
-    int grantpt_r = grantpt (C_fd);
-
-    if (-1 == grantpt_r) {
-	/*
-	 * Test Case: ??
-	 */
-        idio_error_system_errno ("grantpt", fd, IDIO_C_FUNC_LOCATION ());
-
-        return idio_S_notreached;
-    }
-
-    return idio_C_int (grantpt_r);
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("unlockpt", libc_unlockpt, (IDIO fd), "fd", "\
-in C, :samp:`unlockpt ({fd})`			\n\
-a wrapper to libc :manpage:`unlockpt(3)`	\n\
-						\n\
-:param fd: fd to unlockpt			\n\
-:type fd: C/int					\n\
-:return: 0					\n\
-:rtype: C/int					\n\
-:raises ^system-error:				\n\
-")
-{
-    IDIO_ASSERT (fd);
-
-    /*
-     * Test Case: libc-wrap-errors/unlockpt-bad-type.idio
-     *
-     * unlockpt #t
-     */
-    IDIO_USER_C_TYPE_ASSERT (int, fd);
-
-    int C_fd = IDIO_C_TYPE_int (fd);
-
-    int unlockpt_r = unlockpt (C_fd);
-
-    if (-1 == unlockpt_r) {
-	/*
-	 * Test Case: ??
-	 */
-        idio_error_system_errno ("unlockpt", fd, IDIO_C_FUNC_LOCATION ());
-
-        return idio_S_notreached;
-    }
-
-    return idio_C_int (unlockpt_r);
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("ptsname", libc_ptsname, (IDIO fd), "fd", "\
-in C, :samp:`ptsname ({fd})`			\n\
-a wrapper to libc :manpage:`ptsname(3)`		\n\
-						\n\
-:param fd: fd to ptsname			\n\
-:type fd: C/int					\n\
-:return: ptsname				\n\
-:rtype: C/int					\n\
-:raises ^system-error:				\n\
-")
-{
-    IDIO_ASSERT (fd);
-
-    /*
-     * Test Case: libc-wrap-errors/ptsname-bad-type.idio
-     *
-     * ptsname #t
-     */
-    IDIO_USER_C_TYPE_ASSERT (int, fd);
-
-    int C_fd = IDIO_C_TYPE_int (fd);
-
-#if defined (IDIO_HAVE_PTSNAME_R)
-    char buf[PATH_MAX];
-    buf[0] = '\0';
-    int ptsname_r_r = ptsname_r (C_fd, buf, PATH_MAX);
-
-    if (-1 == ptsname_r_r) {
-	/*
-	 * Test Case: ??
-	 */
-        idio_error_system_errno ("ptsname", fd, IDIO_C_FUNC_LOCATION ());
-
-        return idio_S_notreached;
-    }
-
-    return idio_pathname_C (buf);
-#else
-    char *ptsname_r = ptsname (C_fd);
-
-    if (NULL == ptsname_r) {
-	/*
-	 * Test Case: ??
-	 */
-        idio_error_system_errno ("ptsname", fd, IDIO_C_FUNC_LOCATION ());
-
-        return idio_S_notreached;
-    }
-
-    return idio_pathname_C (ptsname_r);
-#endif
-}
-
 IDIO_DEFINE_PRIMITIVE2_DS ("signal", libc_signal, (IDIO sig, IDIO handler), "sig handler", "\
 in C, :samp:`signal ({sig}, {handler})`				\n\
 a wrapper to libc :manpage:`signal(2)`				\n\
@@ -3643,6 +3506,31 @@ The following dispositions are defined:				\n\
     }
 
     return idio_C_pointer (signal_r);
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("setsid", libc_setsid, (void), "", "\
+in C, :samp:`setsid ()`						\n\
+a wrapper to libc :manpage:`setsid(2)`				\n\
+								\n\
+:return: Process Group ID of progress group			\n\
+:rtype: libc/pid_t						\n\
+:raises ^system-error:						\n\
+")
+{
+    pid_t C_pid = setsid ();
+
+    if (-1 == C_pid) {
+	/*
+	 * Test Case: ??
+	 *
+	 * How do you make setsid(2) fail?
+	 */
+	idio_error_system_errno ("setsid", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_libc_pid_t (C_pid);
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("setrlimit", libc_setrlimit, (IDIO resource, IDIO rlim), "resource rlim", "\
@@ -3709,31 +3597,6 @@ and ``RLIMIT_NOFILE``.						\n\
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE0_DS ("setsid", libc_setsid, (void), "", "\
-in C, :samp:`setsid ()`						\n\
-a wrapper to libc :manpage:`setsid(2)`				\n\
-								\n\
-:return: Process Group ID of progress group			\n\
-:rtype: libc/pid_t						\n\
-:raises ^system-error:						\n\
-")
-{
-    pid_t C_pid = setsid ();
-
-    if (-1 == C_pid) {
-	/*
-	 * Test Case: ??
-	 *
-	 * How do you make setsid(2) fail?
-	 */
-	idio_error_system_errno ("setsid", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    return idio_libc_pid_t (C_pid);
-}
-
 IDIO_DEFINE_PRIMITIVE2_DS ("setpgid", libc_setpgid, (IDIO pid, IDIO pgid), "pid pgid", "\
 in C, :samp:`setpgid ({pid}, {pgid})`				\n\
 a wrapper to libc :manpage:`setpgid(2)`				\n\
@@ -3789,43 +3652,6 @@ a wrapper to libc :manpage:`setpgid(2)`				\n\
     }
 
     return idio_C_int (setpgid_r);
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("getpgid", libc_getpgid, (IDIO pid), "pid", "\
-in C, :samp:`getpgid ({pid})`		\n\
-a wrapper to libc :manpage:`getpgid(2)`	\n\
-					\n\
-:param pid: 				\n\
-:type pid: libc/pid_t			\n\
-:return: Process Group ID		\n\
-:rtype: libc/pid_t			\n\
-:raises ^system-error:			\n\
-")
-{
-    IDIO_ASSERT (pid);
-
-   /*
-    * Test Case: libc-errors/getpgid-bad-pid-type.idio
-    *
-    * getpgid #t
-    */
-    IDIO_USER_libc_TYPE_ASSERT (pid_t, pid);
-    pid_t C_pid = IDIO_C_TYPE_libc_pid_t (pid);
-
-    pid_t getpgid_r = getpgid (C_pid);
-
-    if (-1 == getpgid_r) {
-	/*
-	 * Test Case: libc-errors/getpgid-bad-pid.idio
-	 *
-	 * getpgid (C/integer-> -1)
-	 */
-        idio_error_system_errno ("getpgid", pid, IDIO_C_FUNC_LOCATION ());
-
-        return idio_S_notreached;
-    }
-
-    return idio_libc_pid_t (getpgid_r);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("rmdir", libc_rmdir, (IDIO pathname), "pathname", "\
@@ -3977,6 +3803,107 @@ If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
     idio_free (buf);
 
     return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("ptsname", libc_ptsname, (IDIO fd), "fd", "\
+in C, :samp:`ptsname ({fd})`			\n\
+a wrapper to libc :manpage:`ptsname(3)`		\n\
+						\n\
+:param fd: fd to ptsname			\n\
+:type fd: C/int					\n\
+:return: ptsname				\n\
+:rtype: C/int					\n\
+:raises ^system-error:				\n\
+")
+{
+    IDIO_ASSERT (fd);
+
+    /*
+     * Test Case: libc-wrap-errors/ptsname-bad-type.idio
+     *
+     * ptsname #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+#if defined (IDIO_HAVE_PTSNAME_R)
+    char buf[PATH_MAX];
+    buf[0] = '\0';
+    int ptsname_r_r = ptsname_r (C_fd, buf, PATH_MAX);
+
+    if (-1 == ptsname_r_r) {
+	/*
+	 * Test Case: ??
+	 */
+        idio_error_system_errno ("ptsname", fd, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_pathname_C (buf);
+#else
+    char *ptsname_r = ptsname (C_fd);
+
+    if (NULL == ptsname_r) {
+	/*
+	 * Test Case: ??
+	 */
+        idio_error_system_errno ("ptsname", fd, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_pathname_C (ptsname_r);
+#endif
+}
+
+IDIO_DEFINE_PRIMITIVE0V_DS ("posix_openpt", libc_posix_openpt, (IDIO args), "[flags]", "\
+in C, :samp:`posix_openpt ({flags})`			\n\
+a wrapper to libc :manpage:`posix_openpt(3)`		\n\
+							\n\
+:param flags: flags to posix_openpt, defaults to ``O_RDWR [| O_NOCTTY]``	\n\
+:type flags: C/int, optional				\n\
+:return: file descriptor for master			\n\
+:rtype: C/int						\n\
+:raises ^system-error:					\n\
+							\n\
+``O_NOCTTY`` is not available on some systems.		\n\
+")
+{
+    IDIO_ASSERT (args);
+
+#if defined (__APPLE__) && defined (__MACH__)
+    int C_flags = O_RDWR;
+#else
+    int C_flags = O_RDWR | O_NOCTTY;
+#endif
+    IDIO flags = args;
+    if (idio_isa_pair (args)) {
+	flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-wrap-errors/posix_openpt-bad-type.idio
+	 *
+	 * posix_openpt #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags = IDIO_C_TYPE_int (flags);
+    }
+
+    int posix_openpt_r = posix_openpt (C_flags);
+
+    if (-1 == posix_openpt_r) {
+	/*
+	 * Test Case: ??
+	 */
+        idio_error_system_errno ("posix_openpt", flags, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (posix_openpt_r);
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("pipe", libc_pipe, (void), "", "\
@@ -4859,6 +4786,42 @@ Supported commands include:					\n\
     return idio_C_int (ioctl_r);
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("grantpt", libc_grantpt, (IDIO fd), "fd", "\
+in C, :samp:`grantpt ({fd})`			\n\
+a wrapper to libc :manpage:`grantpt(3)`		\n\
+						\n\
+:param fd: fd to grantpt			\n\
+:type fd: C/int					\n\
+:return: 0					\n\
+:rtype: C/int					\n\
+:raises ^system-error:				\n\
+")
+{
+    IDIO_ASSERT (fd);
+
+    /*
+     * Test Case: libc-wrap-errors/grantpt-bad-type.idio
+     *
+     * grantpt #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+    int grantpt_r = grantpt (C_fd);
+
+    if (-1 == grantpt_r) {
+	/*
+	 * Test Case: ??
+	 */
+        idio_error_system_errno ("grantpt", fd, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (grantpt_r);
+}
+
 IDIO_DEFINE_PRIMITIVE0V_DS ("gmtime", libc_gmtime, (IDIO args), "[t]", "\
 in C, :samp:`gmtime ({t})`		\n\
 a wrapper to libc :manpage:`gmtime(3)`	\n\
@@ -5379,6 +5342,43 @@ a wrapper to libc :manpage:`getpgrp(2)`				\n\
     }
 
     return idio_libc_pid_t (pid);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("getpgid", libc_getpgid, (IDIO pid), "pid", "\
+in C, :samp:`getpgid ({pid})`		\n\
+a wrapper to libc :manpage:`getpgid(2)`	\n\
+					\n\
+:param pid: 				\n\
+:type pid: libc/pid_t			\n\
+:return: Process Group ID		\n\
+:rtype: libc/pid_t			\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (pid);
+
+   /*
+    * Test Case: libc-errors/getpgid-bad-pid-type.idio
+    *
+    * getpgid #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (pid_t, pid);
+    pid_t C_pid = IDIO_C_TYPE_libc_pid_t (pid);
+
+    pid_t getpgid_r = getpgid (C_pid);
+
+    if (-1 == getpgid_r) {
+	/*
+	 * Test Case: libc-errors/getpgid-bad-pid.idio
+	 *
+	 * getpgid (C/integer-> -1)
+	 */
+        idio_error_system_errno ("getpgid", pid, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_libc_pid_t (getpgid_r);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("getgrgid", libc_getgrgid, (IDIO gid), "gid", "\
@@ -6530,6 +6530,7 @@ void idio_libc_api_add_primitives ()
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_write);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_waitpid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlockpt);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlink);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_uname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_times);
@@ -6543,16 +6544,14 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strerror);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_stat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_sleep);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_posix_openpt);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_grantpt);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlockpt);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ptsname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_signal);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setsid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_read);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ptsname);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_posix_openpt);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_open);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_nanosleep);
@@ -6563,10 +6562,10 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lstat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_killpg);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_kill);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_isatty);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ioctl);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_grantpt);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_gmtime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_gettimeofday);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getsid);
@@ -6577,6 +6576,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getppid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgrp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrnam);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getcwd);

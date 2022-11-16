@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 
 #include <sys/types.h>
+#include <sys/ioctl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -165,6 +166,11 @@ int main (int argc, char **argv)
 	struct group *getgrgid_r = getgrgid (0);
     }
 
+    /* getpgid(2) */
+    {
+	pid_t pgid = getpgid (0);
+    }
+
     /* getpgrp(2) */
     {
 	pid_t getpgrp_r = getpgrp ();
@@ -222,6 +228,22 @@ int main (int argc, char **argv)
 	struct tm *gmtime_r = gmtime (&t);
     }
 
+    /* grantpt(3) */
+    {
+	int grantpt_r = grantpt (0);
+    }
+
+    /* ioctl(2) */
+    {
+	/*
+	 * Arguments to ioctl(2) are platform-specific so we can't be
+	 * very portable, here.  However, we're not trying to run
+	 * anything but merely trying to generate a .o we can trawl
+	 * for APIs.
+	 */
+	int ioctl_r = ioctl (0, 0);
+    }
+
     /* isatty(3) */
     {
 	int fd = STDIN_FILENO;
@@ -237,12 +259,16 @@ int main (int argc, char **argv)
 
     /* killpg(2) */
     {
-	int pgrp = getpgid (0);
+	pid_t pgrp = getpgid (0);
 	int sig = SIGINT;
-	int killpg_r = killpg (pgrp, sig);
+	int killpg_r = killpg ((int) pgrp, sig);
     }
 
-    /* localtime(3) is pulled in by strftime(3) et el. */
+    /* localtime(3) */
+    {
+	time_t t = time (NULL);
+	struct tm *tmp = localtime (&t);
+    }
 
     /* lstat(2) */
     {
@@ -295,6 +321,11 @@ int main (int argc, char **argv)
 	int nanosleep_r = nanosleep (req, rem);
     }
 
+    /* open(2) */
+    {
+	int open_r = open ("/dev/tty", O_RDONLY);
+    }
+
     /* pipe(2) */
     {
 	int pipefd[2];
@@ -305,6 +336,16 @@ int main (int argc, char **argv)
     {
 	nfds_t nfds = 2;
 	struct pollfd fds[nfds];
+    }
+
+    /* posix_openpt(3) */
+    {
+	int posix_openpt_r = posix_openpt (O_RDWR);
+    }
+
+    /* ptsname(3) */
+    {
+	char *ptsname_r = ptsname (0);
     }
 
     /* read(2) */
@@ -332,6 +373,11 @@ int main (int argc, char **argv)
     {
 	struct rlimit rlim;
 	int setrlimit_r = setrlimit (RLIMIT_NOFILE, &rlim);
+    }
+
+    /* setsid(2) */
+    {
+	pid_t setsid_r = setsid ();
     }
 
     /* signal(2) */
@@ -456,7 +502,10 @@ int main (int argc, char **argv)
 	pid_t tcsetpgrp_r = tcsetpgrp (fd, pgrp);
     }
 
-    /* time(2) is pulled in by strftime(3) et al. */
+    /* time(2) */
+    {
+	time_t t = time (NULL);
+    }
 
     /* times(3) */
     {
@@ -474,6 +523,11 @@ int main (int argc, char **argv)
     {
 	char *pathname = ".";
 	int unlink_r = unlink (pathname);
+    }
+
+    /* unlockpt(3) */
+    {
+	int unlockpt_r = unlockpt (0);
     }
 
     /* waitpid(2) */
