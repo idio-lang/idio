@@ -2649,7 +2649,7 @@ no ^system-error is raised.					\n\
     size_t free_pathname_C = 0;
 
     /*
-     * Test Case: libc-wrap-errors/access-bad-format.idio
+     * Test Case: libc-wrap-errors/access-bad-pathname-format.idio
      *
      * access (join-string (make-string 1 #U+0) '("hello" "world")) libc/R_OK
      */
@@ -2769,7 +2769,7 @@ a wrapper to libc :manpage:`chdir(2)`				\n\
     IDIO_ASSERT (path);
 
     /*
-     * Test Case: libc-wrap-errors/chdir-bad-type.idio
+     * Test Case: libc-wrap-errors/chdir-bad-path-type.idio
      *
      * chdir #t
      */
@@ -2778,7 +2778,7 @@ a wrapper to libc :manpage:`chdir(2)`				\n\
     size_t free_path_C = 0;
 
     /*
-     * Test Case: libc-wrap-errors/chdir-bad-format.idio
+     * Test Case: libc-wrap-errors/chdir-bad-path-format.idio
      *
      * chdir (join-string (make-string 1 #U+0) '("hello" "world"))
      */
@@ -2816,6 +2816,8 @@ a wrapper to libc chmod()		\n\
 :type mode: libc/mode_t			\n\
 :return:				\n\
 :rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -2830,7 +2832,7 @@ a wrapper to libc chmod()		\n\
 
     size_t free_pathname_C = 0;
     /*
-     * Test Case: libc-wrap-errors/chmod-bad-format.idio
+     * Test Case: libc-wrap-errors/chmod-bad-pathname-format.idio
      *
      * chmod (join-string (make-string 1 #U+0) '("hello" "world")) (C/integer-> #o555)
      */
@@ -2877,6 +2879,8 @@ a wrapper to libc chown()		\n\
 :type group: libc/gid_t			\n\
 :return:				\n\
 :rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -2892,7 +2896,7 @@ a wrapper to libc chown()		\n\
 
     size_t free_pathname_C = 0;
     /*
-     * Test Case: libc-wrap-errors/chown-bad-format.idio
+     * Test Case: libc-wrap-errors/chown-bad-pathname-format.idio
      *
      * chown (join-string (make-string 1 #U+0) '("hello" "world")) #t #t
      */
@@ -2932,6 +2936,56 @@ a wrapper to libc chown()		\n\
     }
 
     return idio_C_int (chown_r);
+
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("chroot", libc_chroot, (IDIO path), "path", "\
+in C: chroot (path)		\n\
+a wrapper to libc chroot()		\n\
+					\n\
+:param path: 				\n\
+:type path: string			\n\
+:return:				\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `path` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (path);
+
+   /*
+    * Test Case: libc-errors/chroot-bad-path-type.idio
+    *
+    * chroot #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, path);
+
+    size_t free_pathname_C = 0;
+    /*
+     * Test Case: libc-wrap-errors/chroot-bad-path-format.idio
+     *
+     * chroot (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *C_path = idio_libc_string_C (path, "chroot", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+
+    int chroot_r = chroot (C_path);
+
+    /* check for errors */
+    if (-1 == chroot_r) {
+	/*
+	 * Test Case: libc-wrap-errors/chroot-path-ENOENT.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * chroot (pht fd+name)
+	 */
+        idio_error_system_errno ("chroot", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (chroot_r);
 
 }
 
@@ -4566,7 +4620,7 @@ a wrapper to libc :manpage:`lstat(2)`		\n\
     IDIO_ASSERT (pathname);
 
     /*
-     * Test Case: libc-wrap-errors/lstat-bad-type.idio
+     * Test Case: libc-wrap-errors/lstat-bad-pathname-type.idio
      *
      * lstat #t
      */
@@ -4575,7 +4629,7 @@ a wrapper to libc :manpage:`lstat(2)`		\n\
     size_t free_pathname_C = 0;
 
     /*
-     * Test Case: libc-wrap-errors/lstat-bad-format.idio
+     * Test Case: libc-wrap-errors/lstat-bad-pathname-format.idio
      *
      * lstat (join-string (make-string 1 #U+0) '("hello" "world"))
      */
@@ -4631,7 +4685,7 @@ a wrapper to libc :manpage:`mkdir(2)`				\n\
 
     size_t free_pathname_C = 0;
     /*
-     * Test Case: libc-wrap-errors/mkdir-bad-format.idio
+     * Test Case: libc-wrap-errors/mkdir-bad-pathname-format.idio
      *
      * mkdir (join-string (make-string 1 #U+0) '("hello" "world")) (C/integer-> #o555)
      */
@@ -4685,7 +4739,7 @@ a wrapper to libc :manpage:`mkdtemp(3)`				\n\
     IDIO_ASSERT (template);
 
     /*
-     * Test Case: libc-wrap-errors/mkdtemp-bad-type.idio
+     * Test Case: libc-wrap-errors/mkdtemp-bad-template-type.idio
      *
      * mkdtemp #t
      */
@@ -4699,7 +4753,7 @@ a wrapper to libc :manpage:`mkdtemp(3)`				\n\
     size_t free_template_C = 0;
 
     /*
-     * Test Case: libc-wrap-errors/mkdtemp-bad-format.idio
+     * Test Case: libc-wrap-errors/mkdtemp-bad-template-format.idio
      *
      * mkdtemp (join-string (make-string 1 #U+0) '("hello" "world"))
      */
@@ -4806,7 +4860,7 @@ a wrapper to libc :manpage:`mkstemp(3)`				\n\
     IDIO_ASSERT (template);
 
     /*
-     * Test Case: libc-wrap-errors/mkstemp-bad-type.idio
+     * Test Case: libc-wrap-errors/mkstemp-bad-template-type.idio
      *
      * mkstemp #t
      */
@@ -4819,7 +4873,7 @@ a wrapper to libc :manpage:`mkstemp(3)`				\n\
 
     size_t free_template_C = 0;
     /*
-     * Test Case: libc-wrap-errors/mkstemp-bad-format.idio
+     * Test Case: libc-wrap-errors/mkstemp-bad-template-format.idio
      *
      * mkstemp (join-string (make-string 1 #U+0) '("hello" "world"))
      */
@@ -5400,7 +5454,7 @@ a wrapper to libc :manpage:`rmdir(2)`				\n\
     IDIO_ASSERT (pathname);
 
     /*
-     * Test Case: libc-wrap-errors/rmdir-bad-type.idio
+     * Test Case: libc-wrap-errors/rmdir-bad-pathname-type.idio
      *
      * rmdir #t
      */
@@ -5408,7 +5462,7 @@ a wrapper to libc :manpage:`rmdir(2)`				\n\
 
     size_t free_pathname_C = 0;
     /*
-     * Test Case: libc-wrap-errors/rmdir-bad-format.idio
+     * Test Case: libc-wrap-errors/rmdir-bad-pathname-format.idio
      *
      * rmdir (join-string (make-string 1 #U+0) '("hello" "world"))
      */
@@ -5681,7 +5735,7 @@ a wrapper to libc :manpage:`stat(2)`		\n\
     IDIO_ASSERT (pathname);
 
     /*
-     * Test Case: libc-wrap-errors/stat-bad-type.idio
+     * Test Case: libc-wrap-errors/stat-bad-pathname-type.idio
      *
      * stat #t
      */
@@ -5689,7 +5743,7 @@ a wrapper to libc :manpage:`stat(2)`		\n\
 
     size_t free_pathname_C = 0;
     /*
-     * Test Case: libc-wrap-errors/stat-bad-format.idio
+     * Test Case: libc-wrap-errors/stat-bad-pathname-format.idio
      *
      * stat (join-string (make-string 1 #U+0) '("hello" "world"))
      */
@@ -5797,7 +5851,7 @@ a wrapper to libc :manpage:`strftime(3)`\n\
 
     size_t free_C_format = 0;
     /*
-     * Test Case: libc-wrap-errors/strftime-bad-s-format.idio
+     * Test Case: libc-wrap-errors/strftime-bad-format-format.idio
      *
      * strftime "hello\x00world" #t
      */
@@ -5880,7 +5934,7 @@ a wrapper to libc :manpage:`strptime(3)`\n\
 
     size_t free_C_format = 0;
     /*
-     * Test Case: libc-wrap-errors/strptime-bad-s-format.idio
+     * Test Case: libc-wrap-errors/strptime-bad-format-format.idio
      *
      * strptime "hello\x00world" #t
      */
@@ -6250,7 +6304,7 @@ a wrapper to libc :manpage:`unlink(2)`		\n\
     IDIO_ASSERT (pathname);
 
     /*
-     * Test Case: libc-wrap-errors/unlink-bad-type.idio
+     * Test Case: libc-wrap-errors/unlink-bad-pathname-type.idio
      *
      * unlink #t
      */
@@ -6258,7 +6312,7 @@ a wrapper to libc :manpage:`unlink(2)`		\n\
 
     size_t free_pathname_C = 0;
     /*
-     * Test Case: libc-wrap-errors/unlink-bad-format.idio
+     * Test Case: libc-wrap-errors/unlink-bad-pathname-format.idio
      *
      * unlink (join-string (make-string 1 #U+0) '("hello" "world"))
      */
@@ -6662,6 +6716,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_chdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_chmod);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_chown);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_chroot);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_close);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ctime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup);

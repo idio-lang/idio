@@ -169,6 +169,12 @@ int main (int argc, char **argv)
 	int chown_r = chown (pathname, owner, group);
     }
 
+    /* chroot(2) */
+    {
+	char *path = ".";
+	int chroot_r = chroot (path);
+    }
+
     /* close(2) */
     {
 	int fd = STDIN_FILENO;
@@ -198,7 +204,8 @@ int main (int argc, char **argv)
     {
 	int status = EXIT_SUCCESS;
 	/*
-	 * XXX The presence of exit() stops the debuggger generating subprogram tags...
+	 * XXX The presence of exit() stops the debuggger generating
+	 * subprogram tags...
 	 
 	  exit (status);
 

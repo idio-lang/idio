@@ -215,26 +215,30 @@ libc-wrap-error-load "libc-wrap-errors/struct-utsname-as-string-bad-pointer-type
 libc-wrap-error-load "libc-wrap-errors/struct-utsname-as-string-invalid-pointer-type.idio" "struct-utsname-as-string utsname='#<C/* C/pointer>' a C/pointer is not a libc/struct-utsname"
 
 libc-wrap-error-load "libc-wrap-errors/access-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
-libc-wrap-error-load "libc-wrap-errors/access-bad-format.idio" "access: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/access-bad-pathname-format.idio" "access: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/access-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 
 libc-wrap-error-load "libc-wrap-errors/asctime-bad-tm-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/asctime-tm-invalid-pointer-type.idio" "asctime tm='#<C/* C/pointer>' a C/pointer is not a libc/struct-tm"
 
-libc-wrap-error-load "libc-wrap-errors/chdir-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
-libc-wrap-error-load "libc-wrap-errors/chdir-bad-format.idio" "chdir: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/chdir-bad-path-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/chdir-bad-path-format.idio" "chdir: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/chdir-non-existent.idio" "No such file or directory" ENOENT "chdir"
 
 libc-wrap-error-load "libc-wrap-errors/chmod-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
-libc-wrap-error-load "libc-wrap-errors/chmod-bad-format.idio" "chmod: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/chmod-bad-pathname-format.idio" "chmod: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/chmod-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
 libc-wrap-error-load "libc-wrap-errors/chmod-pathname-ENOENT.idio" "No such file or directory" ENOENT "chmod"
 
 libc-wrap-error-load "libc-wrap-errors/chown-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
-libc-wrap-error-load "libc-wrap-errors/chown-bad-format.idio" "chown: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/chown-bad-pathname-format.idio" "chown: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/chown-bad-owner-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
 libc-wrap-error-load "libc-wrap-errors/chown-bad-group-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
 libc-wrap-error-load "libc-wrap-errors/chown-pathname-ENOENT.idio" "No such file or directory" ENOENT "chown"
+
+libc-wrap-error-load "libc-wrap-errors/chroot-bad-path-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/chroot-bad-path-format.idio" "chroot: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/chroot-path-ENOENT.idio" "No such file or directory" ENOENT "chroot"
 
 libc-wrap-error-load "libc-wrap-errors/close-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/close-bad-fd.idio" strerror-EBADF EBADF "close"
@@ -285,7 +289,7 @@ libc-wrap-error-load "libc-wrap-errors/fstat-bad-fd.idio" strerror-EBADF EBADF "
 libc-wrap-error-load "libc-wrap-errors/getgrgid-bad-gid-type.idio" "bad parameter type: '#t' a constant is not a unsigned fixnum|libc/gid_t"
 
 libc-wrap-error-load "libc-wrap-errors/getgrnam-bad-name-type.idio" "bad parameter type: '#t' a constant is not a string"
-libc-wrap-error-load "libc-wrap-errors/getgrnam-name-bad-format.idio" "getgrnam: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/getgrnam-bad-name-format.idio" "getgrnam: contains an ASCII NUL"
 
 libc-wrap-error-load "libc-wrap-errors/getpgid-bad-pid-type.idio" "bad parameter type: '#t' a constant is not a libc/pid_t"
 (cond-expand
@@ -297,7 +301,7 @@ libc-wrap-error-load "libc-wrap-errors/getpgid-bad-pid-type.idio" "bad parameter
  }))
 
 libc-wrap-error-load "libc-wrap-errors/getpwnam-bad-name-type.idio" "bad parameter type: '#t' a constant is not a string"
-libc-wrap-error-load "libc-wrap-errors/getpwnam-name-bad-format.idio" "getpwnam: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/getpwnam-bad-name-format.idio" "getpwnam: contains an ASCII NUL"
 
 libc-wrap-error-load "libc-wrap-errors/getpwuid-bad-uid-type.idio" "bad parameter type: '#t' a constant is not a unsigned fixnum|libc/uid_t"
 
@@ -346,17 +350,17 @@ libc-wrap-error-load "libc-wrap-errors/killpg-bad-sig-type.idio" "bad parameter 
 
 libc-wrap-error-load "libc-wrap-errors/localtime-bad-t-type.idio" "bad parameter type: '#t' a constant is not a libc/time_t"
 
-libc-wrap-error-load "libc-wrap-errors/lstat-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
-libc-wrap-error-load "libc-wrap-errors/lstat-bad-format.idio" "lstat: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/lstat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/lstat-bad-pathname-format.idio" "lstat: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/lstat-empty-pathname.idio" "No such file or directory" ENOENT "lstat"
 
 libc-wrap-error-load "libc-wrap-errors/mkdir-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
-libc-wrap-error-load "libc-wrap-errors/mkdir-bad-format.idio" "mkdir: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/mkdir-bad-pathname-format.idio" "mkdir: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/mkdir-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
 libc-wrap-error-load "libc-wrap-errors/mkdir-pathname-exists.idio" "File exists" EEXIST "mkdir"
 
-libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
-libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-format.idio" "mkdtemp: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-template-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-template-format.idio" "mkdtemp: contains an ASCII NUL"
 (cond-expand
  ((or "uname/sysname/SunOS"
       "uname/sysname/FreeBSD"
@@ -374,8 +378,8 @@ libc-wrap-error-load "libc-wrap-errors/mkfifo-bad-path-type.idio" "bad parameter
 libc-wrap-error-load "libc-wrap-errors/mkfifo-bad-path-format.idio" "mkfifo: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/mkfifo-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
 
-libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
-libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-format.idio" "mkstemp: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-template-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-template-format.idio" "mkstemp: contains an ASCII NUL"
 (cond-expand
  ((or "uname/sysname/SunOS"
       "uname/sysname/FreeBSD"
@@ -427,8 +431,8 @@ libc-wrap-error-load "libc-wrap-errors/ptsname-bad-type.idio" "bad parameter typ
 libc-wrap-error-load "libc-wrap-errors/read-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/read-bad-count-type.idio" "bad parameter type: '#t' a constant is not a fixnum|libc/size_t"
 
-libc-wrap-error-load "libc-wrap-errors/rmdir-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
-libc-wrap-error-load "libc-wrap-errors/rmdir-bad-format.idio" "rmdir: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/rmdir-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/rmdir-bad-pathname-format.idio" "rmdir: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/rmdir-non-existent.idio" "No such file or directory" ENOENT "rmdir"
 
 libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pid-type.idio" "bad parameter type: '#t' a constant is not a libc/pid_t"
@@ -450,8 +454,8 @@ libc-wrap-error-load "libc-wrap-errors/signal-handler-bad-signal.idio" "Invalid 
 
 libc-wrap-error-load "libc-wrap-errors/sleep-bad-type.idio" "bad parameter type: '#t' a constant is not a unsigned fixnum|C/uint"
 
-libc-wrap-error-load "libc-wrap-errors/stat-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
-libc-wrap-error-load "libc-wrap-errors/stat-bad-format.idio" "stat: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/stat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/stat-bad-pathname-format.idio" "stat: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/stat-empty-pathname.idio" "No such file or directory" ENOENT "stat"
 
 libc-wrap-error-load "libc-wrap-errors/strerror-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
@@ -524,8 +528,8 @@ libc-wrap-error-load "libc-wrap-errors/tcsetpgrp-bad-fd-type.idio" "bad paramete
 libc-wrap-error-load "libc-wrap-errors/tcsetpgrp-bad-pgrp-type.idio" "bad parameter type: '#t' a constant is not a libc/pid_t"
 libc-wrap-error-load "libc-wrap-errors/tcsetpgrp-bad-fd.idio" strerror-EBADF EBADF "tcsetpgrp"
 
-libc-wrap-error-load "libc-wrap-errors/unlink-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
-libc-wrap-error-load "libc-wrap-errors/unlink-bad-format.idio" "unlink: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/unlink-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/unlink-bad-pathname-format.idio" "unlink: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/unlink-non-existent.idio" "No such file or directory" ENOENT "unlink"
 
 libc-wrap-error-load "libc-wrap-errors/unlockpt-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
@@ -840,4 +844,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 386 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 391 - libc-wrap-error-skipped)
