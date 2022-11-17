@@ -161,6 +161,14 @@ int main (int argc, char **argv)
 	int chmod_r = chmod (pathname, mode);
     }
 
+    /* chown(2) */
+    {
+	char *pathname = ".";
+	uid_t owner = 0;
+	gid_t group = 0;
+	int chown_r = chown (pathname, owner, group);
+    }
+
     /* close(2) */
     {
 	int fd = STDIN_FILENO;

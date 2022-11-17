@@ -1,0 +1,5 @@
+fd+name := mkstemp "XXXXXX"
+close (ph fd+name)
+
+delete-file (pht fd+name)
+chown (pht fd+name) (C/integer-> 0 libc/uid_t) (C/integer-> 0 libc/gid_t)

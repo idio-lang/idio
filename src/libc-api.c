@@ -2865,6 +2865,76 @@ a wrapper to libc chmod()		\n\
 
 }
 
+IDIO_DEFINE_PRIMITIVE3_DS ("chown", libc_chown, (IDIO pathname, IDIO owner, IDIO group), "pathname owner group", "\
+in C: chown (pathname, owner, group)		\n\
+a wrapper to libc chown()		\n\
+					\n\
+:param pathname: 			\n\
+:type pathname: string			\n\
+:param owner: 				\n\
+:type owner: libc/uid_t			\n\
+:param group: 				\n\
+:type group: libc/gid_t			\n\
+:return:				\n\
+:rtype: C/int				\n\
+")
+{
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (owner);
+    IDIO_ASSERT (group);
+
+   /*
+    * Test Case: libc-errors/chown-bad-pathname-type.idio
+    *
+    * chown #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_pathname_C = 0;
+    /*
+     * Test Case: libc-wrap-errors/chown-bad-format.idio
+     *
+     * chown (join-string (make-string 1 #U+0) '("hello" "world")) #t #t
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "chown", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/chown-bad-owner-type.idio
+    *
+    * chown "." #t #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (uid_t, owner);
+    uid_t C_owner = IDIO_C_TYPE_libc_uid_t (owner);
+
+   /*
+    * Test Case: libc-errors/chown-bad-group-type.idio
+    *
+    * chown "." (C/integer-> 0 libc/uid_t) #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (gid_t, group);
+    gid_t C_group = IDIO_C_TYPE_libc_gid_t (group);
+
+    int chown_r = chown (C_pathname, C_owner, C_group);
+
+    /* check for errors */
+    if (-1 == chown_r) {
+	/*
+	 * Test Case: libc-wrap-errors/chown-pathname-ENOENT.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * chown (pht fd+name) (C/integer-> 0 libc/uid_t) (C/integer-> 0 libc/gid_t)
+	 */
+        idio_error_system_errno ("chown", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (chown_r);
+
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("close", libc_close, (IDIO fd), "fd", "\
 in C, :samp:`close ({fd})`					\n\
 a wrapper to libc :manpage:`close(2)`				\n\
@@ -6591,6 +6661,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_asctime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_chdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_chmod);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_chown);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_close);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ctime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup);
