@@ -2806,6 +2806,67 @@ a wrapper to libc :manpage:`chdir(2)`				\n\
     return idio_C_int (chdir_r);
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("chmod", libc_chmod, (IDIO pathname, IDIO mode), "pathname mode", "\
+in C: chmod (pathname, mode)		\n\
+a wrapper to libc chmod()		\n\
+					\n\
+:param pathname: 			\n\
+:type pathname: string			\n\
+:param mode: 				\n\
+:type mode: libc/mode_t			\n\
+:return:				\n\
+:rtype: C/int				\n\
+")
+{
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (mode);
+
+   /*
+    * Test Case: libc-errors/chmod-bad-pathname-type.idio
+    *
+    * chmod #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_pathname_C = 0;
+    /*
+     * Test Case: libc-wrap-errors/chmod-bad-format.idio
+     *
+     * chmod (join-string (make-string 1 #U+0) '("hello" "world")) (C/integer-> #o555)
+     */
+    char *pathname_C = idio_libc_string_C (pathname, "chmod", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/chmod-bad-mode-type.idio
+    *
+    * chmod #t #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    mode_t C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    int chmod_r = chmod (pathname_C, C_mode);
+
+    /* check for errors */
+    if (-1 == chmod_r) {
+	/*
+	 * Test Case: libc-wrap-errors/chmod-pathname-exists.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * chmod (pht fd+name) (C/integer-> #o555 libc/mode_t)
+	 *
+	 * XXX You'll want an unwind-protect to actually delete the
+	 * file!
+	 */
+        idio_error_system_errno ("chmod", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (chmod_r);
+
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("close", libc_close, (IDIO fd), "fd", "\
 in C, :samp:`close ({fd})`					\n\
 a wrapper to libc :manpage:`close(2)`				\n\
@@ -6531,6 +6592,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_access);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_asctime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_chdir);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_chmod);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_close);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ctime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup);

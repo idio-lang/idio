@@ -157,7 +157,7 @@ tmpfile := (make-tmp-file)
 ;; NB. Nothing internally generates a ^i/o-file-is-read-only-error and
 ;; read-only issues are collected under the guise of protection errors
 ;; (EACCES)
-chmod \= tmpfile
+'chmod \= tmpfile
 if running-as-root {
   eprintf "NOTICE: EUID == 0: skipping 3 permission failure tests\n"
   file-handle-error-skipped = file-handle-error-skipped + 3
@@ -166,7 +166,7 @@ if running-as-root {
   file-handle-error-load "file-handle-errors/open-input-file-protection.idio" "open-input-file: Permission denied"
   file-handle-error-load "file-handle-errors/open-output-file-protection.idio" "open-output-file: Permission denied"
 }
-chmod +r tmpfile
+'chmod +r tmpfile
 
 ;; ^i/o-file-already-exists-error
 ;;
@@ -370,7 +370,7 @@ if parts {
   echo "1234567890" > "foo-bar/latest"
 
   ;; we actually want to make the file unreadable
-  chmod 0 "foo-bar/latest"
+  'chmod 0 "foo-bar/latest"
 
   if running-as-root {
     eprintf "NOTICE: EUID == 0: skipping 1 permission failure test\n"
@@ -380,7 +380,7 @@ if parts {
   }
 
   ;; now it isn't of the form {mod}@{mod-ver}
-  chmod a+r,u+w "foo-bar/latest"
+  'chmod a+r,u+w "foo-bar/latest"
 
   extension-error-load "find-lib: no @ in \"1234567890\n\""
 

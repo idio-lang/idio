@@ -198,7 +198,7 @@ trap ^i/o-closed-error (function (c) {
   #t
 }) {
   touch test_filename
-  chmod +r test_filename
+  'chmod +r test_filename
 
   ifh := open-input-file test_filename
   close-handle ifh

@@ -225,6 +225,11 @@ libc-wrap-error-load "libc-wrap-errors/chdir-bad-type.idio" "bad parameter type:
 libc-wrap-error-load "libc-wrap-errors/chdir-bad-format.idio" "chdir: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/chdir-non-existent.idio" "No such file or directory" ENOENT "chdir"
 
+libc-wrap-error-load "libc-wrap-errors/chmod-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/chmod-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
+libc-wrap-error-load "libc-wrap-errors/chmod-bad-format.idio" "chmod: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/chmod-pathname-exists.idio" "No such file or directory" ENOENT "chmod"
+
 libc-wrap-error-load "libc-wrap-errors/close-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/close-bad-fd.idio" strerror-EBADF EBADF "close"
 
@@ -829,4 +834,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 373 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 379 - libc-wrap-error-skipped)

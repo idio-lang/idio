@@ -537,7 +537,7 @@ OPATH := PATH
   ofh := open-output-file trt-file
   hprintf ofh "#! /bin/sh\n%s\n" (command/%find-exe 'true)
   close-handle ofh
-  chmod +x trt-file
+  'chmod +x trt-file
 
   chdir tmpdir
 

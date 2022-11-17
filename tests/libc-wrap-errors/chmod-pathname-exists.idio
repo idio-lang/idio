@@ -1,0 +1,5 @@
+fd+name := mkstemp "XXXXXX"
+close (ph fd+name)
+
+delete-file (pht fd+name)
+chmod (pht fd+name) (C/integer-> #o555 libc/mode_t)

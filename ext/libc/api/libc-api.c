@@ -154,6 +154,13 @@ int main (int argc, char **argv)
 	int chdir_r = chdir (path);
     }
 
+    /* chmod(2) */
+    {
+	char *pathname = ".";
+	mode_t mode = S_IRWXU;
+	int chmod_r = chmod (pathname, mode);
+    }
+
     /* close(2) */
     {
 	int fd = STDIN_FILENO;
