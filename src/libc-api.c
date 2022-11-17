@@ -2839,7 +2839,7 @@ a wrapper to libc chmod()		\n\
    /*
     * Test Case: libc-errors/chmod-bad-mode-type.idio
     *
-    * chmod #t #t
+    * chmod "." #t
     */
     IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
     mode_t C_mode = IDIO_C_TYPE_libc_mode_t (mode);
@@ -2849,14 +2849,12 @@ a wrapper to libc chmod()		\n\
     /* check for errors */
     if (-1 == chmod_r) {
 	/*
-	 * Test Case: libc-wrap-errors/chmod-pathname-exists.idio
+	 * Test Case: libc-wrap-errors/chmod-pathname-ENOENT.idio
 	 *
 	 * fd+name := mkstemp "XXXXXX"
 	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
 	 * chmod (pht fd+name) (C/integer-> #o555 libc/mode_t)
-	 *
-	 * XXX You'll want an unwind-protect to actually delete the
-	 * file!
 	 */
         idio_error_system_errno ("chmod", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
