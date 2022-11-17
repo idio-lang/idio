@@ -1,3 +1,64 @@
+/*
+ * This file contains nominal applications of each standard library
+ * API we want to be able to use in Idio in order that we can
+ * post-process the .o and determine the set of typedefs and structs
+ * we need to support through libc.
+ *
+ * That immediately raises the question as to what *is* the set of
+ * APIs that we want to have in libc?
+ *
+ * There are various considerations about POSIX, SUS (Single Unix
+ * Specification) and the ANSI C library definitions of the set of
+ * APIs.  We can also look to which APIs similar languages support --
+ * the reasoning being that they've had a few decades to figure out
+ * which APIs are required: Perl's POSIX module, Python's posix module
+ * (though you are directed to the os module in preference), etc..
+ *
+ * Then you get to worry about whether or not any particular platform
+ * supports whatever set of APIs you do want to use.
+ *
+ * There is an edge towards a generally portable set of APIs -- noting
+ * some more elderly platforms in the mix -- but also that you want to
+ * be supporting a modern set of APIs which clearly excludes those
+ * more long in the tooth.
+ *
+ * All of this requires some conditional testing for which we have the
+ * autoconf-lite, utils/bin/gen-idio-config, which creates
+ * src/idio-config.h.
+ *
+ *
+ * The Minimal Viable Product is that which is required for Idio to
+ * run.  Using "to run the test suite" has a rolling scope as each
+ * interface over and above the MVP will have at least as many "error"
+ * tests as there are arguments to the interface (for validating
+ * types) and possibly more validation tests for values.
+ *
+ * Furthermore, the corollary is that, in all probability, once an
+ * interface (over and above the MVP) has been added then it is at
+ * risk of being used in the core Idio tree and thus becomes part of
+ * the MVP.
+ *
+ *
+ * Each nominal snippet wants to use portable typedefs and where a
+ * struct is involved to use portable typedef'd access to elements of
+ * the struct.
+ *
+ * If you don't use a dev_t, say, to access the st_dev member of a
+ * struct stat then the typedef will not appear in the .o and Idio
+ * won't get a definition for it.
+ *
+ *
+ * Not all platforms produce the same DWARF output.  This is generally
+ * run on a Fedora system which produces almost everything we need.
+ * It doesn't produce API argument names, which is slightly annoying
+ * but not surprising as this is the DWARF output for this file, not
+ * the DWARF output for the standard library.  It does produce the
+ * interfaces (subprograms in DWARF-speak) in a reversed order.  That
+ * might be important (to DWARF) or just an artifact.  Whatever the
+ * cause, subprograms (and structs) are sorted by name and generated
+ * lexicographically.
+ */
+
 #define _GNU_SOURCE
 
 #include <sys/types.h>
