@@ -2973,7 +2973,7 @@ a wrapper to libc chroot()		\n\
     /* check for errors */
     if (-1 == chroot_r) {
 	/*
-	 * Test Case: libc-wrap-errors/chroot-path-ENOENT.idio
+	 * Test Case: libc-wrap-errors/chroot-path-non-existent.idio
 	 *
 	 * fd+name := mkstemp "XXXXXX"
 	 * close (ph fd+name)

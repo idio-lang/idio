@@ -238,7 +238,16 @@ libc-wrap-error-load "libc-wrap-errors/chown-pathname-ENOENT.idio" "No such file
 
 libc-wrap-error-load "libc-wrap-errors/chroot-bad-path-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/chroot-bad-path-format.idio" "chroot: contains an ASCII NUL"
-libc-wrap-error-load "libc-wrap-errors/chroot-path-ENOENT.idio" "No such file or directory" ENOENT "chroot"
+(cond-expand
+ ((or "uname/sysname/OpenBSD"
+      "uname/sysname/FreeBSD"
+      "uname/sysname/NetBSD"
+      "uname/sysname/Darwin") {
+   libc-wrap-error-load "libc-wrap-errors/chroot-path-non-existent.idio" "Operation not permitted" EPERM "chroot"
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/chroot-path-non-existent.idio" "No such file or directory" ENOENT "chroot"
+ }))
 
 libc-wrap-error-load "libc-wrap-errors/close-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/close-bad-fd.idio" strerror-EBADF EBADF "close"
