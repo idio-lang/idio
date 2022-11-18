@@ -5363,7 +5363,40 @@ a wrapper to libc open()		\n\
 	C_mode = IDIO_C_TYPE_libc_mode_t (mode);
     }
 
-    int open_r = open (pathname_C, C_flags, C_mode);
+    int open_r;
+
+    int tries;
+    for (tries = 2; tries > 0 ; tries--) {
+	open_r = open (pathname_C, C_flags, C_mode);
+
+	if (-1 == open_r) {
+	    switch (errno) {
+	    case EMFILE:	/* process max */
+	    case ENFILE:	/* system max */
+		idio_gc_collect_all ("libc/open");
+		break;
+	    default:
+		/*
+		 * Test Case: ??
+		 */
+
+		if (free_pathname_C) {
+		    IDIO_GC_FREE (pathname_C, free_pathname_C);
+		}
+
+		IDIO a = IDIO_LIST2 (pathname, flags);
+		if (idio_S_nil != mode) {
+		    a = IDIO_LIST3 (pathname, flags, mode);
+		}
+
+		idio_error_system_errno ("open", a, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	} else {
+	    break;
+	}
+    }
 
     if (free_pathname_C) {
 	IDIO_GC_FREE (pathname_C, free_pathname_C);
@@ -5374,7 +5407,8 @@ a wrapper to libc open()		\n\
 	if (idio_S_nil != mode) {
 	    a = IDIO_LIST3 (pathname, flags, mode);
 	}
-        idio_error_system_errno ("open", a, IDIO_C_FUNC_LOCATION ());
+
+        idio_error_system_errno ("open (final)", a, IDIO_C_FUNC_LOCATION ());
 
         return idio_S_notreached;
     }
@@ -5400,17 +5434,42 @@ a wrapper to libc :manpage:`pipe(2)`			       \n\
 {
     int *pipefd = idio_alloc (2 * sizeof (int));
 
-    int pipe_r = pipe (pipefd);
+    int pipe_r;
+    int tries;
+    for (tries = 2; tries > 0 ; tries--) {
+	pipe_r = pipe (pipefd);
+
+	if (-1 == pipe_r) {
+	    switch (errno) {
+	    case EMFILE:	/* process max */
+	    case ENFILE:	/* system max */
+		idio_gc_collect_all ("libc/pipe");
+		break;
+	    default:
+		idio_free (pipefd);
+
+		/*
+		 * Test Case: ??
+		 */
+		idio_error_system_errno ("pipe", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	} else {
+	    break;
+	}
+    }
 
     if (-1 == pipe_r) {
-	idio_free (pipefd);
-
 	/*
-	 * Test Case: ??
+	 * Test Case: cf. file-handle-errors/EMFILE.idio
 	 *
-	 * Short of reaching EMFILE/ENFILE there's not much we can do.
+	 * I did start getting this after adding some fchown
+	 * etc. tests but only on some systems and only in some
+	 * compilation modes.  It does suggest that garbage collection
+	 * isn't happening at the same time across the piece.
 	 */
-	idio_error_system_errno ("pipe", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("pipe (final)", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
