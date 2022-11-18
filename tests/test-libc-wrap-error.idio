@@ -268,7 +268,7 @@ libc-wrap-error-load "libc-wrap-errors/fchdir-not-a-directory.idio" "Not a direc
 
 libc-wrap-error-load "libc-wrap-errors/fchmod-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fchmod-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
-libc-wrap-error-load "libc-wrap-errors/fchmod-non-existent.idio" "Bad file descriptor" EBADF "fchmod"
+libc-wrap-error-load "libc-wrap-errors/fchmod-non-existent.idio" strerror-EBADF EBADF "fchmod"
 
 libc-wrap-error-load "libc-wrap-errors/fcntl-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fcntl-bad-cmd-type.idio" "bad parameter type: '1' a fixnum is not a C/int"
@@ -354,7 +354,7 @@ libc-wrap-error-load "libc-wrap-errors/isatty-bad-type.idio" "bad parameter type
    ;; The Linux manpage notes: On some older kernels, some types of files
    ;; resulted in the error EINVAL in this case (which is a violation of
    ;; POSIX, which specifies the error ENOTTY).
-   libc-wrap-error-load "libc-wrap-errors/isatty-not-tty.idio" "Bad file descriptor" EBADF "isatty"
+   libc-wrap-error-load "libc-wrap-errors/isatty-not-tty.idio" strerror-EBADF EBADF "isatty"
  }))
 
 libc-wrap-error-load "libc-wrap-errors/kill-bad-pid-type.idio" "bad parameter type: '#t' a constant is not a libc/pid_t"
