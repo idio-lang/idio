@@ -266,6 +266,10 @@ libc-wrap-error-load "libc-wrap-errors/exit-bad-type.idio" "bad parameter type: 
 libc-wrap-error-load "libc-wrap-errors/fchdir-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fchdir-not-a-directory.idio" "Not a directory" ENOTDIR "fchdir"
 
+libc-wrap-error-load "libc-wrap-errors/fchmod-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/fchmod-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
+libc-wrap-error-load "libc-wrap-errors/fchmod-non-existent.idio" "Bad file descriptor" EBADF "fchmod"
+
 libc-wrap-error-load "libc-wrap-errors/fcntl-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fcntl-bad-cmd-type.idio" "bad parameter type: '1' a fixnum is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
@@ -856,4 +860,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 395 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 400 - libc-wrap-error-skipped)

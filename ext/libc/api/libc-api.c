@@ -230,6 +230,13 @@ int main (int argc, char **argv)
 	int fchdir_r = fchdir (fd);
     }
 
+    /* fchmod(2) */
+    {
+	int fd = STDIN_FILENO;
+	mode_t mode = S_IRWXU;
+	int fchmod_r = fchmod (fd, mode);
+    }
+
     /* fcntl(2) */
     {
 	int fd = STDIN_FILENO;

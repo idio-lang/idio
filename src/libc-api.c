@@ -3253,6 +3253,57 @@ a wrapper to libc fchdir()		\n\
 
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("fchmod", libc_fchmod, (IDIO fd, IDIO mode), "fd mode", "\
+in C: fchmod (fd, mode)		\n\
+a wrapper to libc fchmod()		\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:param mode: mode flags			\n\
+:type mode: libc/mode_t			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (fd);
+    IDIO_ASSERT (mode);
+
+   /*
+    * Test Case: libc-errors/fchmod-bad-fd-type.idio
+    *
+    * fchmod #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+   /*
+    * Test Case: libc-errors/fchmod-bad-mode-type.idio
+    *
+    * fchmod STDIN_FILENO #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    mode_t C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    int fchmod_r = fchmod (C_fd, C_mode);
+
+    /* check for errors */
+    if (-1 == fchmod_r) {
+	/*
+	 * Test Case: libc-wrap-errors/fchmod-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * delete-file (pht fd+name)
+	 * fchmod (ph fd+name) (C/integer-> #o555 libc/mode_t)
+	 */
+        idio_error_system_errno ("fchmod", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (fchmod_r);
+}
+
 IDIO_DEFINE_PRIMITIVE2V_DS ("fcntl", libc_fcntl, (IDIO fd, IDIO cmd, IDIO args), "fd cmd [args]", "\
 in C, :samp:`fcntl ({fd}, {cmd}[, {args}])`			\n\
 a wrapper to libc :manpage:`fcntl(2)`				\n\
@@ -6789,6 +6840,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup2);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchdir);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchmod);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fcntl);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fork);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstat);
