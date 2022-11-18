@@ -237,6 +237,14 @@ int main (int argc, char **argv)
 	int fchmod_r = fchmod (fd, mode);
     }
 
+    /* fchown(2) */
+    {
+	int fd = STDIN_FILENO;
+	uid_t owner = 0;
+	gid_t group = 0;
+	int fchown_r = fchown (fd, owner, group);
+    }
+
     /* fcntl(2) */
     {
 	int fd = STDIN_FILENO;

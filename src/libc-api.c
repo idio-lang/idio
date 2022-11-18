@@ -3304,6 +3304,69 @@ a wrapper to libc fchmod()		\n\
     return idio_C_int (fchmod_r);
 }
 
+IDIO_DEFINE_PRIMITIVE3_DS ("fchown", libc_fchown, (IDIO fd, IDIO owner, IDIO group), "fd owner group", "\
+in C: fchown (fd, owner, group)		\n\
+a wrapper to libc fchown()		\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:param owner: User ID			\n\
+:type owner: libc/uid_t			\n\
+:param group: Group ID			\n\
+:type group: libc/gid_t			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (fd);
+    IDIO_ASSERT (owner);
+    IDIO_ASSERT (group);
+
+   /*
+    * Test Case: libc-errors/fchown-bad-fd-type.idio
+    *
+    * fchown #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+   /*
+    * Test Case: libc-errors/fchown-bad-owner-type.idio
+    *
+    * fchown STDIN_FILENO #t #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (uid_t, owner);
+    uid_t C_owner = IDIO_C_TYPE_libc_uid_t (owner);
+
+   /*
+    * Test Case: libc-errors/fchown-bad-group-type.idio
+    *
+    * fchown STDIN_FILENO (C/integer-> 0 libc/uid_t) #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (gid_t, group);
+    gid_t C_group = IDIO_C_TYPE_libc_gid_t (group);
+
+    int fchown_r = fchown (C_fd, C_owner, C_group);
+
+    /* check for errors */
+    if (-1 == fchown_r) {
+	/*
+	 * Test Case: libc-wrap-errors/fchown-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * fchown (ph fd+name) (C/integer-> 0 libc/uid_t) (C/integer-> 0 libc/gid_t)
+	 */
+        idio_error_system_errno ("fchown", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (fchown_r);
+}
+
 IDIO_DEFINE_PRIMITIVE2V_DS ("fcntl", libc_fcntl, (IDIO fd, IDIO cmd, IDIO args), "fd cmd [args]", "\
 in C, :samp:`fcntl ({fd}, {cmd}[, {args}])`			\n\
 a wrapper to libc :manpage:`fcntl(2)`				\n\
@@ -6841,6 +6904,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup2);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchmod);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchown);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fcntl);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fork);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstat);
