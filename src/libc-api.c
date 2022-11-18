@@ -2810,11 +2810,11 @@ IDIO_DEFINE_PRIMITIVE2_DS ("chmod", libc_chmod, (IDIO pathname, IDIO mode), "pat
 in C: chmod (pathname, mode)		\n\
 a wrapper to libc chmod()		\n\
 					\n\
-:param pathname: 			\n\
+:param pathname: pathname		\n\
 :type pathname: string			\n\
-:param mode: 				\n\
+:param mode: mode flags			\n\
 :type mode: libc/mode_t			\n\
-:return:				\n\
+:return: 0				\n\
 :rtype: C/int				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 :raises ^system-error:			\n\
@@ -2871,13 +2871,13 @@ IDIO_DEFINE_PRIMITIVE3_DS ("chown", libc_chown, (IDIO pathname, IDIO owner, IDIO
 in C: chown (pathname, owner, group)		\n\
 a wrapper to libc chown()		\n\
 					\n\
-:param pathname: 			\n\
+:param pathname: pathname		\n\
 :type pathname: string			\n\
-:param owner: 				\n\
+:param owner: User ID			\n\
 :type owner: libc/uid_t			\n\
-:param group: 				\n\
+:param group: Group ID			\n\
 :type group: libc/gid_t			\n\
-:return:				\n\
+:return: 0				\n\
 :rtype: C/int				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 :raises ^system-error:			\n\
@@ -2943,9 +2943,9 @@ IDIO_DEFINE_PRIMITIVE1_DS ("chroot", libc_chroot, (IDIO path), "path", "\
 in C: chroot (path)		\n\
 a wrapper to libc chroot()		\n\
 					\n\
-:param path: 				\n\
+:param path: path			\n\
 :type path: string			\n\
-:return:				\n\
+:return: 0				\n\
 :rtype: C/int				\n\
 :raises ^rt-libc-format-error: if `path` contains an ASCII NUL	\n\
 :raises ^system-error:			\n\
@@ -3210,6 +3210,47 @@ a wrapper to libc :manpage:`dup2(2)`				\n\
     }
 
     return idio_C_int (dup2_r);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("fchdir", libc_fchdir, (IDIO fd), "fd", "\
+in C: fchdir (fd)		\n\
+a wrapper to libc fchdir()		\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (fd);
+
+   /*
+    * Test Case: libc-errors/fchdir-bad-fd-type.idio
+    *
+    * fchdir #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+    int fchdir_r = fchdir (C_fd);
+
+    /* check for errors */
+    if (-1 == fchdir_r) {
+	/*
+	 * Test Case: libc-wrap-errors/fchdir-not-a-directory.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * unlink (pht fd+name)
+	 * fchdir (ph fd+name)
+	 */
+        idio_error_system_errno ("fchdir", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (fchdir_r);
+
 }
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("fcntl", libc_fcntl, (IDIO fd, IDIO cmd, IDIO args), "fd cmd [args]", "\
@@ -6747,6 +6788,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ctime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup2);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fcntl);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fork);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstat);

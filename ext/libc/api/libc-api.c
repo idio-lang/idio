@@ -224,6 +224,12 @@ int main (int argc, char **argv)
 	*/
     }
 
+    /* fchdir(2) */
+    {
+	int fd = STDIN_FILENO;
+	int fchdir_r = fchdir (fd);
+    }
+
     /* fcntl(2) */
     {
 	int fd = STDIN_FILENO;

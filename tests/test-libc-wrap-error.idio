@@ -263,6 +263,9 @@ libc-wrap-error-load "libc-wrap-errors/dup2-bad-fd.idio" strerror-EBADF EBADF "d
 
 libc-wrap-error-load "libc-wrap-errors/exit-bad-type.idio" "bad parameter type: '#t' a constant is not a fixnum|C/int"
 
+libc-wrap-error-load "libc-wrap-errors/fchdir-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/fchdir-not-a-directory.idio" "Not a directory" ENOTDIR "fchdir"
+
 libc-wrap-error-load "libc-wrap-errors/fcntl-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fcntl-bad-cmd-type.idio" "bad parameter type: '1' a fixnum is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
@@ -853,4 +856,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 391 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 395 - libc-wrap-error-skipped)
