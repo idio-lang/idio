@@ -65,6 +65,7 @@
 #include <sys/ioctl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/time.h>
 #include <sys/times.h>
 #include <sys/utsname.h>
@@ -263,6 +264,16 @@ int main (int argc, char **argv)
 
 	/*
 	 * struct stat is expanded in stat(2)
+	 */
+    }
+
+    /* fstatvfs(3) */
+    {
+	struct statvfs buf;
+	int stat_r = fstatvfs (0, &buf);
+
+	/*
+	 * struct statvfs is expanded in statvfs(3)
 	 */
     }
 
@@ -542,6 +553,25 @@ int main (int argc, char **argv)
 
 	/* time_t */
 	time_t t = statbuf.st_mtime;
+    }
+
+    /* statvfs(3) */
+    {
+	char *pathname = ".";
+	struct statvfs buf;
+	int statvfs_r = statvfs (pathname, &buf);
+
+	unsigned long bsize   = buf.f_bsize;
+	unsigned long frsize  = buf.f_frsize;
+	fsblkcnt_t blocks     = buf.f_blocks;
+	fsblkcnt_t bfree      = buf.f_bfree;
+	fsblkcnt_t bavail     = buf.f_bavail;
+	fsfilcnt_t files      = buf.f_files;
+	fsfilcnt_t ffree      = buf.f_ffree;
+	fsfilcnt_t favail     = buf.f_favail;
+	unsigned long fsid    = buf.f_fsid;
+	unsigned long flag    = buf.f_flag;
+	unsigned long namemax = buf.f_namemax;
     }
 
     /* strerror(3) */

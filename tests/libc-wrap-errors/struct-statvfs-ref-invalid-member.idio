@@ -1,0 +1,2 @@
+
+struct-statvfs-ref (libc/statvfs ".") 'not-likely

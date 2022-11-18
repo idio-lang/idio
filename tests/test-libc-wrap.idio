@@ -81,24 +81,82 @@ trap ^rt-bignum-conversion-error (function (c) {
   test INTMAX_MIN*100000 'bignum-conversion-error
 }
 
-;; struct uts: code coverage
-utsname := libc/idio-uname
-struct-utsname-ref utsname 'sysname
-struct-utsname-ref utsname 'nodename
-struct-utsname-ref utsname 'release
-struct-utsname-ref utsname 'version
-struct-utsname-ref utsname 'machine
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-sprintf "%s" utsname
+;; struct group: code coverage
+group := (libc/getgrgid EGID)
+struct-group-ref group 'gr_name
+struct-group-ref group 'gr_passwd
+struct-group-ref group 'gr_gid
+struct-group-ref group 'gr_mem
 
-;; struct tms: code coverage
-tms := (pht (libc/times))
-struct-tms-ref tms 'tms_utime
-struct-tms-ref tms 'tms_stime
-struct-tms-ref tms 'tms_cutime
-struct-tms-ref tms 'tms_cstime
+sprintf "%s" group
 
-sprintf "%s" tms
+;; struct passwd: code coverage
+passwd := (libc/getpwuid EUID)
+struct-passwd-ref passwd 'pw_name
+struct-passwd-ref passwd 'pw_passwd
+struct-passwd-ref passwd 'pw_uid
+struct-passwd-ref passwd 'pw_gid
+struct-passwd-ref passwd 'pw_gecos
+struct-passwd-ref passwd 'pw_dir
+struct-passwd-ref passwd 'pw_shell
+
+sprintf "%s" passwd
+
+;; struct rlimit: code coverage
+rlimit := (libc/getrlimit libc/RLIMIT_NOFILE)
+struct-rlimit-ref rlimit 'rlim_cur
+struct-rlimit-ref rlimit 'rlim_max
+
+struct-rlimit-set! rlimit 'rlim_cur (C/integer-> 0 libc/rlim_t)
+struct-rlimit-set! rlimit 'rlim_max (C/integer-> 0 libc/rlim_t)
+
+sprintf "%s" rlimit
+
+;; struct rusage: code coverage
+rusage := (libc/getrusage libc/RUSAGE_SELF)
+struct-rusage-ref rusage 'ru_utime
+struct-rusage-ref rusage 'ru_stime
+
+sprintf "%s" rusage
+
+;; struct stat: code coverage
+st := (libc/stat ".")
+struct-stat-ref st 'st_dev
+struct-stat-ref st 'st_ino
+struct-stat-ref st 'st_nlink
+struct-stat-ref st 'st_mode
+struct-stat-ref st 'st_uid
+struct-stat-ref st 'st_gid
+struct-stat-ref st 'st_rdev
+struct-stat-ref st 'st_size
+struct-stat-ref st 'st_blksize
+struct-stat-ref st 'st_blocks
+struct-stat-ref st 'st_atim
+struct-stat-ref st 'st_mtim
+struct-stat-ref st 'st_ctim
+struct-stat-ref st 'st_atime
+struct-stat-ref st 'st_mtime
+struct-stat-ref st 'st_ctime
+
+sprintf "%s" st
+
+;; struct statvfs: code coverage
+stvfs := (libc/statvfs ".")
+struct-statvfs-ref stvfs 'f_bsize
+struct-statvfs-ref stvfs 'f_frsize
+struct-statvfs-ref stvfs 'f_blocks
+struct-statvfs-ref stvfs 'f_bfree
+struct-statvfs-ref stvfs 'f_bavail
+struct-statvfs-ref stvfs 'f_files
+struct-statvfs-ref stvfs 'f_ffree
+struct-statvfs-ref stvfs 'f_favail
+struct-statvfs-ref stvfs 'f_fsid
+struct-statvfs-ref stvfs 'f_flag
+struct-statvfs-ref stvfs 'f_namemax
+
+sprintf "%s" st
 
 ;; struct termios: code coverage
 termios := (libc/tcgetattr libc/STDIN_FILENO)
@@ -125,6 +183,26 @@ struct-termios-set! termios 'c_cc    (struct-termios-ref termios 'c_cc)
  }))
 
 sprintf "%s" termios
+
+;; struct timespec: code coverage
+timespec := (pht (libc/nanosleep '(0)))
+struct-timespec-ref timespec 'tv_sec
+struct-timespec-ref timespec 'tv_nsec
+
+struct-timespec-set! timespec 'tv_sec (C/integer-> 0 libc/time_t)
+struct-timespec-set! timespec 'tv_nsec (C/integer-> 0 'long)
+
+sprintf "%s" timespec
+
+;; struct timeval: code coverage
+timeval := (libc/gettimeofday)
+struct-timeval-ref timeval 'tv_sec
+struct-timeval-ref timeval 'tv_usec
+
+struct-timeval-set! timeval 'tv_sec (C/integer-> 0 libc/time_t)
+struct-timeval-set! timeval 'tv_usec (C/integer-> 0 libc/suseconds_t)
+
+sprintf "%s" timeval
 
 ;; struct tm: code coverage
 tm := (libc/localtime)
@@ -160,63 +238,26 @@ struct-tm-set! tm 'tm_isdst C/0i
 
 sprintf "%s" tm
 
-;; struct stat: code coverage
-st := (libc/stat ".")
-struct-stat-ref st 'st_dev
-struct-stat-ref st 'st_ino
-struct-stat-ref st 'st_nlink
-struct-stat-ref st 'st_mode
-struct-stat-ref st 'st_uid
-struct-stat-ref st 'st_gid
-struct-stat-ref st 'st_rdev
-struct-stat-ref st 'st_size
-struct-stat-ref st 'st_blksize
-struct-stat-ref st 'st_blocks
-struct-stat-ref st 'st_atim
-struct-stat-ref st 'st_mtim
-struct-stat-ref st 'st_ctim
-struct-stat-ref st 'st_atime
-struct-stat-ref st 'st_mtime
-struct-stat-ref st 'st_ctime
+;; struct tms: code coverage
+tms := (pht (libc/times))
+struct-tms-ref tms 'tms_utime
+struct-tms-ref tms 'tms_stime
+struct-tms-ref tms 'tms_cutime
+struct-tms-ref tms 'tms_cstime
 
-sprintf "%s" st
+sprintf "%s" tms
 
-;; struct timespec: code coverage
-timespec := (pht (libc/nanosleep '(0)))
-struct-timespec-ref timespec 'tv_sec
-struct-timespec-ref timespec 'tv_nsec
+;; struct uts: code coverage
+utsname := libc/idio-uname
+struct-utsname-ref utsname 'sysname
+struct-utsname-ref utsname 'nodename
+struct-utsname-ref utsname 'release
+struct-utsname-ref utsname 'version
+struct-utsname-ref utsname 'machine
 
-struct-timespec-set! timespec 'tv_sec (C/integer-> 0 libc/time_t)
-struct-timespec-set! timespec 'tv_nsec (C/integer-> 0 'long)
+sprintf "%s" utsname
 
-sprintf "%s" timespec
-
-;; struct rlimit: code coverage
-rlimit := (libc/getrlimit libc/RLIMIT_NOFILE)
-struct-rlimit-ref rlimit 'rlim_cur
-struct-rlimit-ref rlimit 'rlim_max
-
-struct-rlimit-set! rlimit 'rlim_cur (C/integer-> 0 libc/rlim_t)
-struct-rlimit-set! rlimit 'rlim_max (C/integer-> 0 libc/rlim_t)
-
-sprintf "%s" rlimit
-
-;; struct timeval: code coverage
-timeval := (libc/gettimeofday)
-struct-timeval-ref timeval 'tv_sec
-struct-timeval-ref timeval 'tv_usec
-
-struct-timeval-set! timeval 'tv_sec (C/integer-> 0 libc/time_t)
-struct-timeval-set! timeval 'tv_usec (C/integer-> 0 libc/suseconds_t)
-
-sprintf "%s" timeval
-
-;; struct rusage: code coverage
-rusage := (libc/getrusage libc/RUSAGE_SELF)
-struct-rusage-ref rusage 'ru_utime
-struct-rusage-ref rusage 'ru_stime
-
-sprintf "%s" rusage
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 access "." (C/integer-> #o400)
 

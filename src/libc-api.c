@@ -13,6 +13,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/times.h>
@@ -1042,6 +1043,234 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-stat-as-string", libc_struct_stat_as_string, 
     }
 
     return idio_libc_struct_stat_as_string (IDIO_C_TYPE_POINTER_P (stat));
+}
+
+/*
+	/usr/include/bits/statvfs.h
+
+	struct statvfs
+	{
+	  long unsigned int    f_bsize;
+	  long unsigned int    f_frsize;
+	  fsblkcnt_t         f_blocks;
+	  fsblkcnt_t         f_bfree;
+	  fsblkcnt_t         f_bavail;
+	  fsfilcnt_t         f_files;
+	  fsfilcnt_t         f_ffree;
+	  fsfilcnt_t         f_favail;
+	  long unsigned int    f_fsid;
+	  long unsigned int    f_flag;
+	  long unsigned int    f_namemax;
+	};
+*/
+
+IDIO_C_STRUCT_IDENT_DECL (libc_struct_statvfs);
+IDIO_SYMBOL_DECL (f_bsize);
+IDIO_SYMBOL_DECL (f_frsize);
+IDIO_SYMBOL_DECL (f_blocks);
+IDIO_SYMBOL_DECL (f_bfree);
+IDIO_SYMBOL_DECL (f_bavail);
+IDIO_SYMBOL_DECL (f_files);
+IDIO_SYMBOL_DECL (f_ffree);
+IDIO_SYMBOL_DECL (f_favail);
+IDIO_SYMBOL_DECL (f_fsid);
+IDIO_SYMBOL_DECL (f_flag);
+IDIO_SYMBOL_DECL (f_namemax);
+
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-statvfs-ref", libc_struct_statvfs_ref, (IDIO statvfs, IDIO member), "statvfs member", "\
+in C, :samp:`{statvfs}->{member}`			\n\
+					\n\
+:param statvfs: :ref:`struct-statvfs <libc/struct-statvfs>`	\n\
+:type statvfs: C/pointer		\n\
+:param member: member name		\n\
+:type member: symbol			\n\
+:return: `statvfs` -> `member`		\n\
+:rtype:	varies on `member`		\n\
+")
+{
+    IDIO_ASSERT (statvfs);
+    IDIO_ASSERT (member);
+
+    /*
+     * Test Case: libc-errors/struct-statvfs-ref-bad-pointer-type.idio
+     *
+     * struct-statvfs-ref #t #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, statvfs);
+    if (idio_CSI_libc_struct_statvfs != IDIO_C_TYPE_POINTER_PTYPE (statvfs)) {
+	/*
+	 * Test Case: libc-errors/struct-statvfs-ref-invalid-pointer-type.idio
+	 *
+	 * struct-statvfs-ref libc/NULL #t
+	 */
+	idio_error_param_value_exp ("struct-statvfs-ref", "statvfs", statvfs, "libc/struct-statvfs", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/struct-statvfs-ref-bad-member-type.idio
+     *
+     * struct-statvfs-ref v #t
+     */
+    IDIO_USER_TYPE_ASSERT (symbol, member);
+
+    struct statvfs *statvfsp = IDIO_C_TYPE_POINTER_P (statvfs);
+    if (idio_S_f_bsize == member) {
+        return idio_C_ulong (statvfsp->f_bsize);
+    } else if (idio_S_f_frsize == member) {
+        return idio_C_ulong (statvfsp->f_frsize);
+    } else if (idio_S_f_blocks == member) {
+        return idio_libc_fsblkcnt_t (statvfsp->f_blocks);
+    } else if (idio_S_f_bfree == member) {
+        return idio_libc_fsblkcnt_t (statvfsp->f_bfree);
+    } else if (idio_S_f_bavail == member) {
+        return idio_libc_fsblkcnt_t (statvfsp->f_bavail);
+    } else if (idio_S_f_files == member) {
+        return idio_libc_fsfilcnt_t (statvfsp->f_files);
+    } else if (idio_S_f_ffree == member) {
+        return idio_libc_fsfilcnt_t (statvfsp->f_ffree);
+    } else if (idio_S_f_favail == member) {
+        return idio_libc_fsfilcnt_t (statvfsp->f_favail);
+    } else if (idio_S_f_fsid == member) {
+        return idio_C_ulong (statvfsp->f_fsid);
+    } else if (idio_S_f_flag == member) {
+        return idio_C_ulong (statvfsp->f_flag);
+    } else if (idio_S_f_namemax == member) {
+        return idio_C_ulong (statvfsp->f_namemax);
+    } else {
+	/*
+	 * Test Case: libc-errors/struct-statvfs-ref-invalid-member.idio
+	 *
+	 * struct-statvfs-ref v 'not-likely
+	 */
+        idio_error_param_value_exp ("struct-statvfs-ref", "member", member, "libc/struct-statvfs member", IDIO_C_FUNC_LOCATION());
+
+        return idio_S_notreached;
+    }
+
+    return idio_S_notreached;
+}
+
+IDIO idio_libc_struct_statvfs_as_string (struct statvfs *statvfsp)
+{
+    IDIO_C_ASSERT (statvfsp);
+
+    IDIO CSI_sh = idio_open_output_string_handle_C ();
+    idio_display_C ("#<CSI libc/struct-statvfs", CSI_sh);
+
+    char buf[BUFSIZ];
+    char *fmt;
+
+    idio_display_C (" f_bsize:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_ULONG);
+    idio_snprintf (buf, BUFSIZ, fmt, statvfsp->f_bsize);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    idio_display_C (" f_frsize:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_ULONG);
+    idio_snprintf (buf, BUFSIZ, fmt, statvfsp->f_frsize);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    idio_display_C (" f_blocks:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_fsblkcnt_t);
+    idio_snprintf (buf, BUFSIZ, fmt, statvfsp->f_blocks);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    idio_display_C (" f_bfree:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_fsblkcnt_t);
+    idio_snprintf (buf, BUFSIZ, fmt, statvfsp->f_bfree);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    idio_display_C (" f_bavail:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_fsblkcnt_t);
+    idio_snprintf (buf, BUFSIZ, fmt, statvfsp->f_bavail);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    idio_display_C (" f_files:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_fsfilcnt_t);
+    idio_snprintf (buf, BUFSIZ, fmt, statvfsp->f_files);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    idio_display_C (" f_ffree:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_fsfilcnt_t);
+    idio_snprintf (buf, BUFSIZ, fmt, statvfsp->f_ffree);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    idio_display_C (" f_favail:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_fsfilcnt_t);
+    idio_snprintf (buf, BUFSIZ, fmt, statvfsp->f_favail);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    idio_display_C (" f_fsid:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_ULONG);
+    idio_snprintf (buf, BUFSIZ, fmt, statvfsp->f_fsid);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    idio_display_C (" f_flag:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_ULONG);
+    idio_snprintf (buf, BUFSIZ, fmt, statvfsp->f_flag);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    idio_display_C (" f_namemax:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_ULONG);
+    idio_snprintf (buf, BUFSIZ, fmt, statvfsp->f_namemax);
+    idio_display_C (buf, CSI_sh);
+    idio_free (fmt);
+
+    idio_display_C (">", CSI_sh);
+
+    return idio_get_output_string (CSI_sh);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("struct-statvfs-as-string", libc_struct_statvfs_as_string, (IDIO statvfs), "statvfs", "\
+:param statvfs: :ref:`struct-statvfs <libc/struct-statvfs>`	\n\
+:type statvfs: C/pointer			\n\
+:return: string				\n\
+:rtype:	string				\n\
+")
+{
+    IDIO_ASSERT (statvfs);
+
+    /*
+     * Test Case: libc-errors/struct-statvfs-as-string-bad-pointer-type.idio
+     *
+     * struct-statvfs-as-string #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, statvfs);
+    if (idio_CSI_libc_struct_statvfs != IDIO_C_TYPE_POINTER_PTYPE (statvfs)) {
+	/*
+	 * Test Case: libc-errors/struct-statvfs-as-string-invalid-pointer-type.idio
+	 *
+	 * struct-statvfs-as-string libc/NULL
+	 */
+	idio_error_param_value_exp ("struct-statvfs-as-string", "statvfs", statvfs, "libc/struct-statvfs", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_libc_struct_statvfs_as_string (IDIO_C_TYPE_POINTER_P (statvfs));
 }
 
 /*
@@ -2848,7 +3077,6 @@ a wrapper to libc chmod()		\n\
 
     int chmod_r = chmod (pathname_C, C_mode);
 
-    /* check for errors */
     if (-1 == chmod_r) {
 	/*
 	 * Test Case: libc-wrap-errors/chmod-pathname-ENOENT.idio
@@ -2920,7 +3148,6 @@ a wrapper to libc chown()		\n\
 
     int chown_r = chown (C_pathname, C_owner, C_group);
 
-    /* check for errors */
     if (-1 == chown_r) {
 	/*
 	 * Test Case: libc-wrap-errors/chown-pathname-ENOENT.idio
@@ -2970,7 +3197,6 @@ a wrapper to libc chroot()		\n\
 
     int chroot_r = chroot (C_path);
 
-    /* check for errors */
     if (-1 == chroot_r) {
 	/*
 	 * Test Case: libc-wrap-errors/chroot-path-non-existent.idio
@@ -3235,7 +3461,6 @@ a wrapper to libc fchdir()		\n\
 
     int fchdir_r = fchdir (C_fd);
 
-    /* check for errors */
     if (-1 == fchdir_r) {
 	/*
 	 * Test Case: libc-wrap-errors/fchdir-not-a-directory.idio
@@ -3287,7 +3512,6 @@ a wrapper to libc fchmod()		\n\
 
     int fchmod_r = fchmod (C_fd, C_mode);
 
-    /* check for errors */
     if (-1 == fchmod_r) {
 	/*
 	 * Test Case: libc-wrap-errors/fchmod-non-existent.idio
@@ -3349,7 +3573,6 @@ a wrapper to libc fchown()		\n\
 
     int fchown_r = fchown (C_fd, C_owner, C_group);
 
-    /* check for errors */
     if (-1 == fchown_r) {
 	/*
 	 * Test Case: libc-wrap-errors/fchown-non-existent.idio
@@ -3568,6 +3791,48 @@ a wrapper to libc :manpage:`fstat(2)`		\n\
     }
 
     return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("fstatvfs", libc_fstatvfs, (IDIO fd), "fd", "\
+in C: fstatvfs (fd)			\n\
+a wrapper to libc fstatvfs()		\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:return: :ref:`struct-statvfs <libc/struct-statvfs>`	\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (fd);
+
+   /*
+    * Test Case: libc-errors/fstatvfs-bad-fd-type.idio
+    *
+    * fstatvfs #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+    struct statvfs *statvfsp = idio_alloc (sizeof (struct statvfs));
+
+    int fstatvfs_r = fstatvfs (C_fd, statvfsp);
+
+    if (-1 == fstatvfs_r) {
+	/*
+	 * Test Case: libc-wrap-errors/fstavfs-bad-fd.idio
+	 *
+	 * fstavfs (C/integer-> 99)
+	 *
+	 * Obviously, this is a risky test.  perhaps we should get a
+	 * new fd then close it and reuse that fd?
+	 */
+        idio_error_system_errno ("fstatvfs", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_pointer_type (idio_CSI_libc_struct_statvfs, statvfsp);
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getcwd", libc_getcwd, (void), "", "\
@@ -6012,6 +6277,59 @@ a wrapper to libc :manpage:`stat(2)`		\n\
     return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("statvfs", libc_statvfs, (IDIO path), "path", "\
+in C: statvfs (path)			\n\
+a wrapper to libc statvfs()		\n\
+					\n\
+:param path: filename to stat		\n\
+:type path: string			\n\
+:return: :ref:`struct-statvfs <libc/struct-statvfs>`	\n\
+:rtype: C/pointer			\n\
+:raises ^rt-libc-format-error: if `path` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (path);
+
+   /*
+    * Test Case: libc-errors/statvfs-bad-path-type.idio
+    *
+    * statvfs #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, path);
+
+    size_t free_path_C = 0;
+    /*
+     * Test Case: libc-wrap-errors/statvfs-bad-path-format.idio
+     *
+     * statvfs (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *C_path = idio_libc_string_C (path, "statvfs", &free_path_C, IDIO_C_FUNC_LOCATION ());
+
+    struct statvfs* statvfsp = idio_alloc (sizeof (struct statvfs));
+
+    int statvfs_r = statvfs (C_path, statvfsp);
+
+    if (free_path_C) {
+	IDIO_GC_FREE (C_path, free_path_C);
+    }
+
+    if (-1 == statvfs_r) {
+	idio_free (statvfsp);
+
+	/*
+	 * Test Case: libc-wrap-errors/statvfs-empty-pathname.idio
+	 *
+	 * statvfs ""
+	 */
+        idio_error_system_errno ("statvfs", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_pointer_type (idio_CSI_libc_struct_statvfs, statvfsp);
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("strerror", libc_strerror, (IDIO errnum), "errnum", "\
 in C, :samp:`strerror ({errnum}`)`				\n\
 a wrapper to libc :manpage:`strerror(3)`			\n\
@@ -6805,62 +7123,42 @@ void idio_libc_api_add_primitives ()
 								 IDIO_LIST2 (printer_func, idio_S_nil))); \
     }
 
-    /* libc struct utsname is defined in /usr/include/sys/utsname.h */
+    /* libc struct group is defined in /usr/include/grp.h */
     struct_fields = idio_S_nil;
-    IDIO_FIELD_DEF ("sysname", sysname);
-    IDIO_FIELD_DEF ("nodename", nodename);
-    IDIO_FIELD_DEF ("release", release);
-    IDIO_FIELD_DEF ("version", version);
-    IDIO_FIELD_DEF ("machine", machine);
+    IDIO_FIELD_DEF ("gr_name", gr_name);
+    IDIO_FIELD_DEF ("gr_passwd", gr_passwd);
+    IDIO_FIELD_DEF ("gr_gid", gr_gid);
+    IDIO_FIELD_DEF ("gr_mem", gr_mem);
 
-    IDIO_ADD_STRUCT ("libc/struct-utsname", libc_struct_utsname, libc)
+    IDIO_ADD_STRUCT ("libc/struct-group", libc_struct_group, libc)
 
-    /* libc struct tms is defined in /usr/include/sys/times.h */
+    /* libc struct passwd is defined in /usr/include/pwd.h */
     struct_fields = idio_S_nil;
-    IDIO_FIELD_DEF ("tms_utime", tms_utime);
-    IDIO_FIELD_DEF ("tms_stime", tms_stime);
-    IDIO_FIELD_DEF ("tms_cutime", tms_cutime);
-    IDIO_FIELD_DEF ("tms_cstime", tms_cstime);
+    IDIO_FIELD_DEF ("pw_name", pw_name);
+    IDIO_FIELD_DEF ("pw_passwd", pw_passwd);
+    IDIO_FIELD_DEF ("pw_uid", pw_uid);
+    IDIO_FIELD_DEF ("pw_gid", pw_gid);
+    IDIO_FIELD_DEF ("pw_gecos", pw_gecos);
+    IDIO_FIELD_DEF ("pw_dir", pw_dir);
+    IDIO_FIELD_DEF ("pw_shell", pw_shell);
 
-    IDIO_ADD_STRUCT ("libc/struct-tms", libc_struct_tms, libc)
+    IDIO_ADD_STRUCT ("libc/struct-passwd", libc_struct_passwd, libc)
 
-    /* libc struct termios is defined in /usr/include/bits/termios-struct.h */
+    /* libc struct rlimit is defined in /usr/include/bits/resource.h */
     struct_fields = idio_S_nil;
-    IDIO_FIELD_DEF ("c_iflag", c_iflag);
-    IDIO_FIELD_DEF ("c_oflag", c_oflag);
-    IDIO_FIELD_DEF ("c_cflag", c_cflag);
-    IDIO_FIELD_DEF ("c_lflag", c_lflag);
-    IDIO_FIELD_DEF ("c_line", c_line);
-    IDIO_FIELD_DEF ("c_cc", c_cc);
-#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
-    IDIO_FIELD_DEF ("c_ispeed", c_ispeed);
-    IDIO_FIELD_DEF ("c_ospeed", c_ospeed);
-#endif
+    IDIO_FIELD_DEF ("rlim_cur", rlim_cur);
+    IDIO_FIELD_DEF ("rlim_max", rlim_max);
 
-    IDIO_ADD_STRUCT ("libc/struct-termios", libc_struct_termios, libc)
+    IDIO_ADD_STRUCT ("libc/struct-rlimit", libc_struct_rlimit, libc)
 
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_termios_set);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rlimit_set);
 
-    /* libc struct tm is defined in /usr/include/bits/types/struct_tm.h */
+    /* libc struct rusage is defined in /usr/include/bits/types/struct_rusage.h */
     struct_fields = idio_S_nil;
-    IDIO_FIELD_DEF ("tm_sec", tm_sec);
-    IDIO_FIELD_DEF ("tm_min", tm_min);
-    IDIO_FIELD_DEF ("tm_hour", tm_hour);
-    IDIO_FIELD_DEF ("tm_mday", tm_mday);
-    IDIO_FIELD_DEF ("tm_mon", tm_mon);
-    IDIO_FIELD_DEF ("tm_year", tm_year);
-    IDIO_FIELD_DEF ("tm_wday", tm_wday);
-    IDIO_FIELD_DEF ("tm_yday", tm_yday);
-    IDIO_FIELD_DEF ("tm_isdst", tm_isdst);
-#if defined (__sun) && defined (__SVR4)
-#else
-    IDIO_FIELD_DEF ("tm_gmtoff", tm_gmtoff);
-    IDIO_FIELD_DEF ("tm_zone", tm_zone);
-#endif
+    IDIO_FIELD_DEF ("ru_utime", ru_utime);
+    IDIO_FIELD_DEF ("ru_stime", ru_stime);
 
-    IDIO_ADD_STRUCT ("libc/struct-tm", libc_struct_tm, libc)
-
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tm_set);
+    IDIO_ADD_STRUCT ("libc/struct-rusage", libc_struct_rusage, libc)
 
     /* libc struct stat is defined in /usr/include/bits/struct_stat.h */
     struct_fields = idio_S_nil;
@@ -6894,6 +7192,39 @@ void idio_libc_api_add_primitives ()
 
     IDIO_ADD_STRUCT ("libc/struct-stat", libc_struct_stat, libc)
 
+    /* libc struct statvfs is defined in /usr/include/bits/statvfs.h */
+    struct_fields = idio_S_nil;
+    IDIO_FIELD_DEF ("f_bsize", f_bsize);
+    IDIO_FIELD_DEF ("f_frsize", f_frsize);
+    IDIO_FIELD_DEF ("f_blocks", f_blocks);
+    IDIO_FIELD_DEF ("f_bfree", f_bfree);
+    IDIO_FIELD_DEF ("f_bavail", f_bavail);
+    IDIO_FIELD_DEF ("f_files", f_files);
+    IDIO_FIELD_DEF ("f_ffree", f_ffree);
+    IDIO_FIELD_DEF ("f_favail", f_favail);
+    IDIO_FIELD_DEF ("f_fsid", f_fsid);
+    IDIO_FIELD_DEF ("f_flag", f_flag);
+    IDIO_FIELD_DEF ("f_namemax", f_namemax);
+
+    IDIO_ADD_STRUCT ("libc/struct-statvfs", libc_struct_statvfs, libc)
+
+    /* libc struct termios is defined in /usr/include/bits/termios-struct.h */
+    struct_fields = idio_S_nil;
+    IDIO_FIELD_DEF ("c_iflag", c_iflag);
+    IDIO_FIELD_DEF ("c_oflag", c_oflag);
+    IDIO_FIELD_DEF ("c_cflag", c_cflag);
+    IDIO_FIELD_DEF ("c_lflag", c_lflag);
+    IDIO_FIELD_DEF ("c_line", c_line);
+    IDIO_FIELD_DEF ("c_cc", c_cc);
+#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
+    IDIO_FIELD_DEF ("c_ispeed", c_ispeed);
+    IDIO_FIELD_DEF ("c_ospeed", c_ospeed);
+#endif
+
+    IDIO_ADD_STRUCT ("libc/struct-termios", libc_struct_termios, libc)
+
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_termios_set);
+
     /* libc struct timespec is defined in /usr/include/bits/types/struct_timespec.h */
     struct_fields = idio_S_nil;
     IDIO_FIELD_DEF ("tv_sec", tv_sec);
@@ -6902,15 +7233,6 @@ void idio_libc_api_add_primitives ()
     IDIO_ADD_STRUCT ("libc/struct-timespec", libc_struct_timespec, libc)
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timespec_set);
-
-    /* libc struct rlimit is defined in /usr/include/bits/resource.h */
-    struct_fields = idio_S_nil;
-    IDIO_FIELD_DEF ("rlim_cur", rlim_cur);
-    IDIO_FIELD_DEF ("rlim_max", rlim_max);
-
-    IDIO_ADD_STRUCT ("libc/struct-rlimit", libc_struct_rlimit, libc)
-
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rlimit_set);
 
     /* libc struct timeval is defined in /usr/include/bits/types/struct_timeval.h */
     struct_fields = idio_S_nil;
@@ -6922,33 +7244,45 @@ void idio_libc_api_add_primitives ()
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timeval_set);
 
-    /* libc struct rusage is defined in /usr/include/bits/types/struct_rusage.h */
+    /* libc struct tm is defined in /usr/include/bits/types/struct_tm.h */
     struct_fields = idio_S_nil;
-    IDIO_FIELD_DEF ("ru_utime", ru_utime);
-    IDIO_FIELD_DEF ("ru_stime", ru_stime);
+    IDIO_FIELD_DEF ("tm_sec", tm_sec);
+    IDIO_FIELD_DEF ("tm_min", tm_min);
+    IDIO_FIELD_DEF ("tm_hour", tm_hour);
+    IDIO_FIELD_DEF ("tm_mday", tm_mday);
+    IDIO_FIELD_DEF ("tm_mon", tm_mon);
+    IDIO_FIELD_DEF ("tm_year", tm_year);
+    IDIO_FIELD_DEF ("tm_wday", tm_wday);
+    IDIO_FIELD_DEF ("tm_yday", tm_yday);
+    IDIO_FIELD_DEF ("tm_isdst", tm_isdst);
+#if defined (__sun) && defined (__SVR4)
+#else
+    IDIO_FIELD_DEF ("tm_gmtoff", tm_gmtoff);
+    IDIO_FIELD_DEF ("tm_zone", tm_zone);
+#endif
 
-    IDIO_ADD_STRUCT ("libc/struct-rusage", libc_struct_rusage, libc)
+    IDIO_ADD_STRUCT ("libc/struct-tm", libc_struct_tm, libc)
 
-    /* libc struct passwd is defined in /usr/include/pwd.h */
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tm_set);
+
+    /* libc struct tms is defined in /usr/include/sys/times.h */
     struct_fields = idio_S_nil;
-    IDIO_FIELD_DEF ("pw_name", pw_name);
-    IDIO_FIELD_DEF ("pw_passwd", pw_passwd);
-    IDIO_FIELD_DEF ("pw_uid", pw_uid);
-    IDIO_FIELD_DEF ("pw_gid", pw_gid);
-    IDIO_FIELD_DEF ("pw_gecos", pw_gecos);
-    IDIO_FIELD_DEF ("pw_dir", pw_dir);
-    IDIO_FIELD_DEF ("pw_shell", pw_shell);
+    IDIO_FIELD_DEF ("tms_utime", tms_utime);
+    IDIO_FIELD_DEF ("tms_stime", tms_stime);
+    IDIO_FIELD_DEF ("tms_cutime", tms_cutime);
+    IDIO_FIELD_DEF ("tms_cstime", tms_cstime);
 
-    IDIO_ADD_STRUCT ("libc/struct-passwd", libc_struct_passwd, libc)
+    IDIO_ADD_STRUCT ("libc/struct-tms", libc_struct_tms, libc)
 
-    /* libc struct group is defined in /usr/include/grp.h */
+    /* libc struct utsname is defined in /usr/include/sys/utsname.h */
     struct_fields = idio_S_nil;
-    IDIO_FIELD_DEF ("gr_name", gr_name);
-    IDIO_FIELD_DEF ("gr_passwd", gr_passwd);
-    IDIO_FIELD_DEF ("gr_gid", gr_gid);
-    IDIO_FIELD_DEF ("gr_mem", gr_mem);
+    IDIO_FIELD_DEF ("sysname", sysname);
+    IDIO_FIELD_DEF ("nodename", nodename);
+    IDIO_FIELD_DEF ("release", release);
+    IDIO_FIELD_DEF ("version", version);
+    IDIO_FIELD_DEF ("machine", machine);
 
-    IDIO_ADD_STRUCT ("libc/struct-group", libc_struct_group, libc)
+    IDIO_ADD_STRUCT ("libc/struct-utsname", libc_struct_utsname, libc)
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_access);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_asctime);
@@ -6967,6 +7301,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fcntl);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fork);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstat);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstatvfs);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getcwd);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrnam);
@@ -7006,6 +7341,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_signal);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_sleep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_stat);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_statvfs);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strerror);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strftime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strptime);

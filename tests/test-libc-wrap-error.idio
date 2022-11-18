@@ -140,6 +140,14 @@ libc-wrap-error-load "libc-wrap-errors/struct-stat-ref-invalid-member.idio" "str
 libc-wrap-error-load "libc-wrap-errors/struct-stat-as-string-bad-pointer-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-stat-as-string-invalid-pointer-type.idio" "struct-stat-as-string stat='#<C/* C/pointer>' a C/pointer is not a libc/struct-stat"
 
+libc-wrap-error-load "libc-wrap-errors/struct-statvfs-ref-bad-pointer-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/struct-statvfs-ref-invalid-pointer-type.idio" "struct-statvfs-ref statvfs='#<C/* C/pointer>' a C/pointer is not a libc/struct-statvfs"
+libc-wrap-error-load "libc-wrap-errors/struct-statvfs-ref-bad-member-type.idio" "bad parameter type: '#t' a constant is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-statvfs-ref-invalid-member.idio" "struct-statvfs-ref member='not-likely' a symbol is not a libc/struct-statvfs member"
+
+libc-wrap-error-load "libc-wrap-errors/struct-statvfs-as-string-bad-pointer-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/struct-statvfs-as-string-invalid-pointer-type.idio" "struct-statvfs-as-string statvfs='#<C/* C/pointer>' a C/pointer is not a libc/struct-statvfs"
+
 libc-wrap-error-load "libc-wrap-errors/struct-termios-ref-bad-pointer-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-termios-ref-invalid-pointer-type.idio" "struct-termios-ref termios='#<C/* C/pointer>' a C/pointer is not a libc/struct-termios"
 libc-wrap-error-load "libc-wrap-errors/struct-termios-ref-bad-member-type.idio" "bad parameter type: '#t' a constant is not a symbol"
@@ -294,6 +302,9 @@ libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-fd.idio" strerror-EBADF
 
 libc-wrap-error-load "libc-wrap-errors/fstat-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fstat-bad-fd.idio" strerror-EBADF EBADF "fstat"
+
+libc-wrap-error-load "libc-wrap-errors/fstatvfs-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/fstatvfs-bad-fd.idio" strerror-EBADF EBADF "fstatvfs"
 
 (cond-expand
  ("uname/sysname/SunOS" {
@@ -478,6 +489,10 @@ libc-wrap-error-load "libc-wrap-errors/sleep-bad-type.idio" "bad parameter type:
 libc-wrap-error-load "libc-wrap-errors/stat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/stat-bad-pathname-format.idio" "stat: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/stat-empty-pathname.idio" "No such file or directory" ENOENT "stat"
+
+libc-wrap-error-load "libc-wrap-errors/statvfs-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/statvfs-bad-pathname-format.idio" "statvfs: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/statvfs-empty-pathname.idio" "No such file or directory" ENOENT "statvfs"
 
 libc-wrap-error-load "libc-wrap-errors/strerror-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 
@@ -865,4 +880,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 406 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 421 - libc-wrap-error-skipped)
