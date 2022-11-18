@@ -181,6 +181,18 @@ int main (int argc, char **argv)
 	int close_r = close (fd);
     }
 
+    /* ctermid(3) */
+    {
+	/*
+	 * "The symbolic constant L_ctermid is the maximum number of
+	 * characters in the returned pathname."
+	 *
+	 * So, including NUL or not?
+	 */
+	char s[L_ctermid + 1];
+	char *ctermid_r = ctermid (s);
+    }
+
     /* ctime(3) */
     {
 	time_t t = time (NULL);

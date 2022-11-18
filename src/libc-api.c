@@ -3029,6 +3029,31 @@ a wrapper to libc :manpage:`close(2)`				\n\
     return idio_C_int (close_r);
 }
 
+IDIO_DEFINE_PRIMITIVE0_DS ("ctermid", libc_ctermid, (void), "", "\
+in C: ctermid ()		\n\
+a wrapper to libc ctermid()		\n\
+					\n\
+:return: controlling terminal pathname	\n\
+:rtype: string				\n\
+")
+{
+    /*
+     * "The symbolic constant L_ctermid is the maximum number of
+     * characters in the returned pathname."
+     *
+     * So, including NUL or not?
+     */
+    char s[L_ctermid + 1];
+
+    ctermid (s);
+
+    /*
+     * No errors for ctermid(3)
+     */
+
+    return idio_pathname_C (s);
+}
+
 IDIO_DEFINE_PRIMITIVE0V_DS ("ctime", libc_ctime, (IDIO args), "[t]", "\
 in C, :samp:`ctime ({t})`		\n\
 a wrapper to libc :manpage:`ctime(3)`	\n\
@@ -6718,6 +6743,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_chown);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_chroot);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_close);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ctermid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ctime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup2);
