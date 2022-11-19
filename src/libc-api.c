@@ -4329,13 +4329,19 @@ a wrapper to libc getlogin()	\n\
 ")
 {
     char buf[L_cuserid+1];
+#if defined (__sun) && defined (__SVR4) && defined (__USE_DRAFT6_PROTOTYPES__)
+    char *getlogin_r_r;
+    char *fail = NULL;
+#else
     int getlogin_r_r;
+    int fail = -1;
+#endif
 
     int tries;
     for (tries = 2; tries > 0 ; tries--) {
 	getlogin_r_r = getlogin_r (buf, L_cuserid);
 
-	if (-1 == getlogin_r_r) {
+	if (fail == getlogin_r_r) {
 	    switch (errno) {
 	    case EMFILE:	/* process max */
 	    case ENFILE:	/* system max */
