@@ -4023,6 +4023,48 @@ a wrapper to libc :manpage:`getcwd(3)`				\n\
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE0_DS ("getegid", libc_getegid, (), "", "\
+in C: getegid ()		\n\
+a wrapper to libc getegid()	\n\
+				\n\
+:return: effective group ID	\n\
+:rtype: libc/gid_t		\n\
+")
+{
+    /*
+     * XXX getegid(2) is always successful.
+     */
+    return idio_libc_gid_t (getegid ());
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("geteuid", libc_geteuid, (), "", "\
+in C: geteuid ()		\n\
+a wrapper to libc geteuid()	\n\
+				\n\
+:return: effective user ID	\n\
+:rtype: libc/uid_t		\n\
+")
+{
+    /*
+     * XXX geteuid(2) is always successful.
+     */
+    return idio_libc_uid_t (geteuid ());
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("getgid", libc_getgid, (), "", "\
+in C: getgid ()			\n\
+a wrapper to libc getgid()	\n\
+				\n\
+:return: real group ID		\n\
+:rtype: libc/gid_t		\n\
+")
+{
+    /*
+     * XXX getgid(2) is always successful.
+     */
+    return idio_libc_gid_t (getgid ());
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("getgrgid", libc_getgrgid, (IDIO gid), "gid", "\
 in C: getgrgid (gid)			\n\
 a wrapper to libc getgrgid(3)		\n\
@@ -4785,6 +4827,20 @@ a wrapper to libc :manpage:`gettimeofday(2)`			\n\
     }
 
     return idio_libc_struct_timeval_pointer (tvp);
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("getuid", libc_getuid, (), "", "\
+in C: getuid ()			\n\
+a wrapper to libc getuid()	\n\
+				\n\
+:return: real user ID		\n\
+:rtype: libc/uid_t		\n\
+")
+{
+    /*
+     * XXX getuid(2) is always successful.
+     */
+    return idio_libc_uid_t (getuid ());
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("gmtime", libc_gmtime, (IDIO args), "[t]", "\
@@ -7499,6 +7555,9 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fsync);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ftruncate);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getcwd);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getegid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_geteuid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrnam);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgid);
@@ -7511,6 +7570,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getrusage);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getsid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_gettimeofday);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getuid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_gmtime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_grantpt);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ioctl);

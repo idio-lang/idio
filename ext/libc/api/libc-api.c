@@ -343,6 +343,21 @@ int main (int argc, char **argv)
 	char *getcwd_r = getcwd (buf, PATH_MAX);
     }
 
+    /* getegid(2) */
+    {
+	gid_t getegid_r = getegid ();
+    }
+
+    /* geteuid(2) */
+    {
+	uid_t geteuid_r = geteuid ();
+    }
+
+    /* getgid(2) */
+    {
+	gid_t getgid_r = getgid ();
+    }
+
     /* getgrnam(3) */
     {
 	struct group *getgrnam_r = getgrnam ("root");
@@ -407,6 +422,11 @@ int main (int argc, char **argv)
 	int gettimeofday_r = gettimeofday (&tv, NULL);
 	time_t sec = tv.tv_sec;
 	suseconds_t usec = tv.tv_usec;
+    }
+
+    /* getuid(2) */
+    {
+	uid_t getuid_r = getuid ();
     }
 
     /* gmtime(3) */

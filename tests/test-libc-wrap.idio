@@ -318,9 +318,15 @@ fsync (fd-handle-fd ofh)
 ftruncate (fd-handle-fd ofh) (C/integer-> 3 libc/off_t)
 close-handle ofh
 
+(getegid)
+(geteuid)
+(getgid)
+
 getpgid (getpid)
 (getpgrp)
 (getppid)
+
+(getuid)
 
 ;; isatty -> ENOTTY -> #f
 fd+name := mkstemp "XXXXXX"
