@@ -2005,9 +2005,11 @@ IDIO idio_C_integer2 (IDIO i, IDIO t)
 
     intmax_t C_i;
 
-    if (idio_isa_fixnum (i)) {
+    switch (idio_type (i)) {
+    case IDIO_TYPE_FIXNUM:
 	C_i = IDIO_FIXNUM_VAL (i);
-    } else if (idio_isa_integer_bignum (i)) {
+	break;
+    case IDIO_TYPE_BIGNUM:
 	if (! IDIO_BIGNUM_INTEGER_P (i)) {
 	    /*
 	     * Annoyingly, idio_isa_integer_bignum() has probably just
@@ -2029,7 +2031,41 @@ IDIO idio_C_integer2 (IDIO i, IDIO t)
 	 * I've tried to annotate them below.
 	 */
 	C_i = idio_bignum_intmax_t_value (i);
-    } else {
+	break;
+    case IDIO_TYPE_C_CHAR:
+	C_i = IDIO_C_TYPE_char (i);
+	break;
+    case IDIO_TYPE_C_SCHAR:
+	C_i = IDIO_C_TYPE_schar (i);
+	break;
+    case IDIO_TYPE_C_UCHAR:
+	C_i = IDIO_C_TYPE_uchar (i);
+	break;
+    case IDIO_TYPE_C_SHORT:
+	C_i = IDIO_C_TYPE_short (i);
+	break;
+    case IDIO_TYPE_C_USHORT:
+	C_i = IDIO_C_TYPE_ushort (i);
+	break;
+    case IDIO_TYPE_C_INT:
+	C_i = IDIO_C_TYPE_int (i);
+	break;
+    case IDIO_TYPE_C_UINT:
+	C_i = IDIO_C_TYPE_uint (i);
+	break;
+    case IDIO_TYPE_C_LONG:
+	C_i = IDIO_C_TYPE_long (i);
+	break;
+    case IDIO_TYPE_C_ULONG:
+	C_i = IDIO_C_TYPE_ulong (i);
+	break;
+    case IDIO_TYPE_C_LONGLONG:
+	C_i = IDIO_C_TYPE_longlong (i);
+	break;
+    case IDIO_TYPE_C_ULONGLONG:
+	C_i = IDIO_C_TYPE_ulonglong (i);
+	break;
+    default:
 	/*
 	 * Test Case: c-type-errors/c-type-integer2-bad-type.idio
 	 *
@@ -2038,6 +2074,7 @@ IDIO idio_C_integer2 (IDIO i, IDIO t)
 	idio_error_param_type ("integer", i, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
+	break;
     }
 
     if (idio_S_char == t) {
@@ -2274,10 +2311,6 @@ see :ref:`C/integer->unsigned <C/integer->unsigned>`	\n\
 {
     IDIO_ASSERT (i);
 
-    if (idio_isa_C_integral (i)) {
-	return i;
-    }
-
     IDIO t = idio_S_int;
 
     if (idio_isa_pair (args)) {
@@ -2296,20 +2329,24 @@ IDIO idio_C_integer2unsigned (IDIO i, IDIO t)
 
     uintmax_t u;
 
-    if (idio_isa_fixnum (i)) {
-	intmax_t C_i = IDIO_FIXNUM_VAL (i);
-	if (C_i < 0) {
-	    /*
-	     * Test Case: c-type-errors/c-type-integer2unsigned-fixnum-negative.idio
-	     *
-	     * C/integer->unsigned -1
-	     */
-	    idio_error_param_value_msg ("C/integer->unsigned", "i", i, "should be a positive integer", IDIO_C_FUNC_LOCATION ());
+    switch (idio_type (i)) {
+    case IDIO_TYPE_FIXNUM:
+	{
+	    intmax_t C_i = IDIO_FIXNUM_VAL (i);
+	    if (C_i < 0) {
+		/*
+		 * Test Case: c-type-errors/c-type-integer2unsigned-fixnum-negative.idio
+		 *
+		 * C/integer->unsigned -1
+		 */
+		idio_error_param_value_msg ("C/integer->unsigned", "i", i, "should be a positive integer", IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
+		return idio_S_notreached;
+	    }
+	    u = C_i;
 	}
-	u = C_i;
-    } else if (idio_isa_integer_bignum (i)) {
+	break;
+    case IDIO_TYPE_BIGNUM:
 	if (! IDIO_BIGNUM_INTEGER_P (i)) {
 	    /*
 	     * Annoyingly, idio_isa_integer_bignum() has probably just
@@ -2341,7 +2378,26 @@ IDIO idio_C_integer2unsigned (IDIO i, IDIO t)
 	 * I've tried to annotate them below.
 	 */
 	u = idio_bignum_uintmax_t_value (i);
-    } else {
+	break;
+    case IDIO_TYPE_C_CHAR:
+	u = IDIO_C_TYPE_char (i);
+	break;
+    case IDIO_TYPE_C_UCHAR:
+	u = IDIO_C_TYPE_uchar (i);
+	break;
+    case IDIO_TYPE_C_USHORT:
+	u = IDIO_C_TYPE_ushort (i);
+	break;
+    case IDIO_TYPE_C_UINT:
+	u = IDIO_C_TYPE_uint (i);
+	break;
+    case IDIO_TYPE_C_ULONG:
+	u = IDIO_C_TYPE_ulong (i);
+	break;
+    case IDIO_TYPE_C_ULONGLONG:
+	u = IDIO_C_TYPE_ulonglong (i);
+	break;
+    default:
 	/*
 	 * Test Case: c-type-errors/c-type-integer2unsigned-bad-type.idio
 	 *
@@ -2350,6 +2406,7 @@ IDIO idio_C_integer2unsigned (IDIO i, IDIO t)
 	idio_error_param_type ("positive integer", i, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
+	break;
     }
 
     if (idio_S_uchar == t) {
@@ -2464,10 +2521,6 @@ or an alias thereof, eg. ``libc/size_t``.	\n\
 ")
 {
     IDIO_ASSERT (i);
-
-    if (idio_isa_C_unsigned (i)) {
-	return i;
-    }
 
     IDIO t = idio_S_uint;
 
