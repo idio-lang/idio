@@ -3835,6 +3835,46 @@ a wrapper to libc fstatvfs()		\n\
     return idio_C_pointer_type (idio_CSI_libc_struct_statvfs, statvfsp);
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("fsync", libc_fsync, (IDIO fd), "fd", "\
+in C: fsync (fd)		\n\
+a wrapper to libc fsync()		\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (fd);
+
+   /*
+    * Test Case: libc-errors/fsync-bad-fd-type.idio
+    *
+    * fsync #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+    int fsync_r = fsync (C_fd);
+
+    if (-1 == fsync_r) {
+	/*
+	 * Test Case: libc-wrap-errors/fsync-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * fsync (ph fd+name)
+	 */
+        idio_error_system_errno ("fsync", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (fsync_r);
+}
+
 IDIO_DEFINE_PRIMITIVE0_DS ("getcwd", libc_getcwd, (void), "", "\
 in C, :samp:`getcwd (buf, size)`				\n\
 a wrapper to libc :manpage:`getcwd(3)`				\n\
@@ -7302,6 +7342,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fork);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstatvfs);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fsync);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getcwd);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrnam);

@@ -306,6 +306,9 @@ libc-wrap-error-load "libc-wrap-errors/fstat-bad-fd.idio" strerror-EBADF EBADF "
 libc-wrap-error-load "libc-wrap-errors/fstatvfs-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fstatvfs-bad-fd.idio" strerror-EBADF EBADF "fstatvfs"
 
+libc-wrap-error-load "libc-wrap-errors/fsync-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/fsync-not-a-directory.idio" strerror-EBADF EBADF "fsync"
+
 (cond-expand
  ("uname/sysname/SunOS" {
    ;; SunOS won't let you rmdir "." or any equivalent => EINVAL
@@ -880,4 +883,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 421 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 425 - libc-wrap-error-skipped)

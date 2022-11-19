@@ -324,6 +324,12 @@ int main (int argc, char **argv)
 	 */
     }
 
+    /* fsync(2) */
+    {
+	int fd = STDIN_FILENO;
+	int fsync_r = fsync (fd);
+    }
+
     /* getcwd(3) */
     {
 	char buf[PATH_MAX];
