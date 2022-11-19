@@ -261,12 +261,21 @@ sprintf "%s" utsname
 
 access "." (C/integer-> #o400)
 
+chdir "."
+
+sb := stat testfile
+chmod testfile sb.st_mode
+
+chown "." EUID EGID
+
 nfd := dup C/0i
 close nfd
 
 ;; Sorry, fd 99, you're about to get squelched
 nfd := dup2 C/0i (C/integer-> 99)
 close nfd
+
+(ctermid)
 
 nfd := fcntl C/0i F_DUPFD (C/integer-> 99)
 close nfd
@@ -286,7 +295,19 @@ close nfd
 ;; get the file descriptor flags -- CLOEXEC?
 fd-flags := fcntl C/0i F_GETFD
 
+dh := open-file "." "r"
+fchdir (file-handle-fd dh)
+close-handle dh
+
 fcntl C/0i F_SETFD fd-flags
+
+ofh := open-output-file testfile
+fchmod (fd-handle-fd ofh) sb.st_mode
+fchown (fd-handle-fd ofh) EUID EGID
+fstat (fd-handle-fd ofh)
+fstatvfs (fd-handle-fd ofh)
+fsync (fd-handle-fd ofh)
+close-handle ofh
 
 getpgid (getpid)
 (getpgrp)
