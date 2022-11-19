@@ -133,6 +133,53 @@ typedef long suseconds_t;
 #endif
 #endif
 
+#if defined (__NetBSD__)
+/*
+ * In both sys/types.h and sys/statvfs.h, NetBSD 9 says:
+
+#ifndef	fsblkcnt_t
+typedef	__fsblkcnt_t	fsblkcnt_t;
+#define	fsblkcnt_t	__fsblkcnt_t
+#endif
+
+#ifndef	fsfilcnt_t
+typedef	__fsfilcnt_t	fsfilcnt_t;
+#define	fsfilcnt_t	__fsfilcnt_t
+#endif
+
+ * which 1) creates the typedef we want but 2) creates a pre-processor
+ * macro which will replace, say, fsblkcnt_t with __fsblkcnt_t.
+ *
+ * If you were just compiling on NetBSD you wouldn't see much effect
+ * but what cpp does is replace, say:
+
+fsblkcnt_t blocks     = buf.f_blocks;
+
+ * with:
+
+__fsblkcnt_t blocks     = buf.f_blocks;
+
+ * and we don't get to see the fsblkcnt_t typedef being used and
+ * therefore we won't generate the various accessors and predicates.
+ *
+ * This means that when src/libc-api.c tries to use the expected
+ * portable accessor, say, idio_libc_fsblkcnt_t (statvfsp->f_blocks),
+ * then on NetBSD it complains that there is no such function.
+ *
+ * So, and I don't like this but, we #undef the macro.
+ *
+ * Other systems evidently have a similar problem and, for example,
+ * Fedora uses a __fsblkcnt_t_defined macro rather than the typedef
+ * name.
+ */
+#ifdef	fsblkcnt_t
+#undef	fsblkcnt_t
+#endif
+#ifdef	fsfilcnt_t
+#undef	fsfilcnt_t
+#endif
+#endif
+
 int main (int argc, char **argv)
 {
     /* access(2) */
