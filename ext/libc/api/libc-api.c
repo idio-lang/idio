@@ -483,6 +483,13 @@ int main (int argc, char **argv)
 	int killpg_r = killpg ((int) pgrp, sig);
     }
 
+    /* link(3) */
+    {
+	char *oldpath = "old";
+	char *newpath = "new";
+	int link_r = link (oldpath, newpath);
+    }
+
     /* localtime(3) */
     {
 	time_t t = time (NULL);

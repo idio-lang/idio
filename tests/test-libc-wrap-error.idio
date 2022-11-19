@@ -398,6 +398,12 @@ libc-wrap-error-load "libc-wrap-errors/kill-invalid-signal.idio" "Invalid argume
 libc-wrap-error-load "libc-wrap-errors/killpg-bad-pgrp-type.idio" "bad parameter type: '#t' a constant is not a libc/pid_t"
 libc-wrap-error-load "libc-wrap-errors/killpg-bad-sig-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 
+libc-wrap-error-load "libc-wrap-errors/link-bad-oldpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/link-bad-oldpath-format.idio" "link: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/link-bad-newpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/link-bad-newpath-format.idio" "link: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/link-same-pathname.idio" "File exists" EEXIST "link"
+
 libc-wrap-error-load "libc-wrap-errors/localtime-bad-t-type.idio" "bad parameter type: '#t' a constant is not a libc/time_t"
 
 libc-wrap-error-load "libc-wrap-errors/lstat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
@@ -903,4 +909,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 441 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 448 - libc-wrap-error-skipped)

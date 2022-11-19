@@ -346,6 +346,12 @@ trap ^system-error (function (c) {
 
 kill (C/integer-> PID libc/pid_t) C/0i
 
+tmp := (make-tmp-file)
+tmp2 := append-string tmp ".2"
+link tmp tmp2
+unlink tmp2
+unlink tmp
+
 ;; test mkdir(2) for which we need a directory we can mkdir safely --
 ;; how about a random one we just deleted?
 tmpdir := (make-tmp-dir)

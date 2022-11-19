@@ -5292,6 +5292,79 @@ a wrapper to libc killpg(3)		\n\
     return idio_C_int (killpg_r);
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("link", libc_link, (IDIO oldpath, IDIO newpath), "oldpath newpath", "\
+in C: link (oldpath, newpath)		\n\
+a wrapper to libc link()		\n\
+					\n\
+:param oldpath: existing file name	\n\
+:type oldpath: string			\n\
+:param newpath: new file name		\n\
+:type newpath: string			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `oldpath` or `newpath` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (oldpath);
+    IDIO_ASSERT (newpath);
+
+   /*
+    * Test Case: libc-errors/link-bad-oldpath-type.idio
+    *
+    * link #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, oldpath);
+
+    size_t free_C_oldpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/link-bad-oldpath-format.idio
+     *
+     * link (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     */
+    char *C_oldpath = idio_libc_string_C (oldpath, "link", &free_C_oldpath, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/link-bad-newpath-type.idio
+    *
+    * link "foo" #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, newpath);
+
+    size_t free_C_newpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/link-bad-newpath-format.idio
+     *
+     * link "foo" (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *C_newpath = idio_libc_string_C (newpath, "link", &free_C_newpath, IDIO_C_FUNC_LOCATION ());
+
+    int link_r = link (C_oldpath, C_newpath);
+
+    if (free_C_oldpath) {
+	IDIO_GC_FREE (C_oldpath, free_C_oldpath);
+    }
+
+    if (free_C_newpath) {
+	IDIO_GC_FREE (C_newpath, free_C_newpath);
+    }
+
+    if (-1 == link_r) {
+	/*
+	 * Test Case: libc-wrap-errors/link-same-pathname.idio
+	 *
+	 * link "foo" "foo"
+	 */
+        idio_error_system_errno ("link", IDIO_LIST2 (oldpath, newpath), IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (link_r);
+}
+
 IDIO_DEFINE_PRIMITIVE0V_DS ("localtime", libc_localtime, (IDIO args), "[t]", "\
 in C, :samp:`localtime ({t})`			\n\
 a wrapper to libc :manpage:`localtime(3)`	\n\
@@ -7693,6 +7766,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_isatty);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_kill);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_killpg);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_link);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_localtime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lstat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdir);
