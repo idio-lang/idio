@@ -322,6 +322,8 @@ close-handle ofh
 (geteuid)
 (getgid)
 
+(getlogin)
+
 getpgid (getpid)
 (getpgrp)
 (getppid)

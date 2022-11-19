@@ -4312,6 +4312,51 @@ a wrapper to libc getgrnam(3)		\n\
     return r;
 }
 
+/*
+ * Mac OS 10.5.8
+ */
+#ifndef L_cuserid
+#include <sys/param.h>
+#define L_cuserid MAXLOGNAME
+#endif
+
+IDIO_DEFINE_PRIMITIVE0_DS ("getlogin", libc_getlogin, (), "", "\
+in C: getlogin ()		\n\
+a wrapper to libc getlogin()	\n\
+				\n\
+:return: user name		\n\
+:rtype: string			\n\
+")
+{
+    char buf[L_cuserid+1];
+    int getlogin_r_r;
+
+    int tries;
+    for (tries = 2; tries > 0 ; tries--) {
+	getlogin_r_r = getlogin_r (buf, L_cuserid);
+
+	if (-1 == getlogin_r_r) {
+	    switch (errno) {
+	    case EMFILE:	/* process max */
+	    case ENFILE:	/* system max */
+		idio_gc_collect_all ("libc/getlogin");
+		break;
+	    default:
+		/*
+		 * Test Case: ??
+		 */
+		idio_error_system_errno ("getlogin", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	} else {
+	    break;
+	}
+    }
+
+    return idio_string_C (buf);
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("getpgid", libc_getpgid, (IDIO pid), "pid", "\
 in C, :samp:`getpgid ({pid})`		\n\
 a wrapper to libc :manpage:`getpgid(2)`	\n\
@@ -7560,6 +7605,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrnam);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getlogin);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgrp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpid);

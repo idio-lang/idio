@@ -368,6 +368,11 @@ int main (int argc, char **argv)
 	struct group *getgrgid_r = getgrgid (0);
     }
 
+    /* getlogin(3) */
+    {
+	char *getlogin_r = getlogin ();
+    }
+
     /* getpgid(2) */
     {
 	pid_t pgid = getpgid (0);
