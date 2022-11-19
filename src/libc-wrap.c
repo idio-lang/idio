@@ -436,6 +436,33 @@ a wrapper to libc :manpage:`exit(3)`				\n\
     return idio_S_notreached;
 }
 
+int idio_pipe (int *pipefdp)
+{
+    IDIO_C_ASSERT (pipefdp);
+
+    int pipe_r;
+
+    int tries;
+    for (tries = 2; tries > 0 ; tries--) {
+	pipe_r = pipe (pipefdp);
+
+	if (-1 == pipe_r) {
+	    switch (errno) {
+	    case EMFILE:	/* process max */
+	    case ENFILE:	/* system max */
+		idio_gc_collect_all ("idio_pipe");
+		break;
+	    default:
+		break;
+	    }
+	} else {
+	    break;
+	}
+    }
+
+    return pipe_r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("pipe-reader", libc_pipe_reader, (IDIO ipipefd), "pipefd", "\
 Return the read end of the pipe array				\n\
 								\n\
@@ -530,7 +557,7 @@ IDIO idio_libc_proc_subst_named_pipe (int into)
 #ifdef IDIO_DEV_FD
     int pipefd[2];
 
-    int pipe_r = pipe (pipefd);
+    int pipe_r = idio_pipe (pipefd);
 
     if (-1 == pipe_r) {
 	/*
