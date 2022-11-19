@@ -309,6 +309,10 @@ libc-wrap-error-load "libc-wrap-errors/fstatvfs-bad-fd.idio" strerror-EBADF EBAD
 libc-wrap-error-load "libc-wrap-errors/fsync-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fsync-not-a-directory.idio" strerror-EBADF EBADF "fsync"
 
+libc-wrap-error-load "libc-wrap-errors/ftruncate-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/ftruncate-bad-length-type.idio" "bad parameter type: '#t' a constant is not a libc/off_t"
+libc-wrap-error-load "libc-wrap-errors/ftruncate-none-existent.idio" strerror-EBADF EBADF "ftruncate"
+
 (cond-expand
  ("uname/sysname/SunOS" {
    ;; SunOS won't let you rmdir "." or any equivalent => EINVAL
@@ -566,6 +570,11 @@ libc-wrap-error-load "libc-wrap-errors/tcsetattr-bad-tcattrs-type.idio" "bad par
 libc-wrap-error-load "libc-wrap-errors/tcsetpgrp-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/tcsetpgrp-bad-pgrp-type.idio" "bad parameter type: '#t' a constant is not a libc/pid_t"
 libc-wrap-error-load "libc-wrap-errors/tcsetpgrp-bad-fd.idio" strerror-EBADF EBADF "tcsetpgrp"
+
+libc-wrap-error-load "libc-wrap-errors/truncate-bad-path-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/truncate-bad-path-format.idio" "truncate: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/truncate-bad-length-type.idio" "bad parameter type: '#t' a constant is not a libc/off_t"
+libc-wrap-error-load "libc-wrap-errors/truncate-none-existent.idio" "No such file or directory" ENOENT "truncate"
 
 libc-wrap-error-load "libc-wrap-errors/unlink-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/unlink-bad-pathname-format.idio" "unlink: contains an ASCII NUL"
@@ -883,4 +892,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 425 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 436 - libc-wrap-error-skipped)

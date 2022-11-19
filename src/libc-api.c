@@ -3887,6 +3887,58 @@ a wrapper to libc fsync()		\n\
     return idio_C_int (fsync_r);
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("ftruncate", libc_ftruncate, (IDIO fd, IDIO length), "fd length", "\
+in C: ftruncate (fd, length)		\n\
+a wrapper to libc ftruncate()		\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:param length: length			\n\
+:type length: libc/off_t		\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (fd);
+    IDIO_ASSERT (length);
+
+   /*
+    * Test Case: libc-errors/ftruncate-bad-fd-type.idio
+    *
+    * ftruncate #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+   /*
+    * Test Case: libc-errors/ftruncate-bad-length-type.idio
+    *
+    * ftruncate STDIN_FILENO #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (off_t, length);
+    off_t C_length = IDIO_C_TYPE_libc_off_t (length);
+
+    int ftruncate_r = ftruncate (C_fd, C_length);
+
+    /* check for errors */
+    if (-1 == ftruncate_r) {
+	/*
+	 * Test Case: libc-wrap-errors/ftruncate-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * ftruncate (ph fd+name) (C/integer-> 0 libc/off_t)
+	 */
+        idio_error_system_errno ("ftruncate", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (ftruncate_r);
+}
+
 IDIO_DEFINE_PRIMITIVE0_DS ("getcwd", libc_getcwd, (void), "", "\
 in C, :samp:`getcwd (buf, size)`				\n\
 a wrapper to libc :manpage:`getcwd(3)`				\n\
@@ -6896,6 +6948,68 @@ is available for reference as ``libc/CLK_TCK``.			\n\
     return IDIO_LIST2 (idio_libc_clock_t (times_r), idio_C_pointer_type (idio_CSI_libc_struct_tms, tmsp));
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("truncate", libc_truncate, (IDIO path, IDIO length), "path length", "\
+in C: truncate (path, length)		\n\
+a wrapper to libc truncate()		\n\
+					\n\
+:param path: file name			\n\
+:type path: string			\n\
+:param length: length			\n\
+:type length: libc/off_t		\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (path);
+    IDIO_ASSERT (length);
+
+   /*
+    * Test Case: libc-errors/truncate-bad-path-type.idio
+    *
+    * truncate #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, path);
+
+    size_t free_C_path = 0;
+    /*
+     * Test Case: libc-wrap-errors/truncate-bad-path-format.idio
+     *
+     * truncate (join-string (make-string 1 #U+0) #t
+     */
+    char *C_path = idio_libc_string_C (path, "truncate", &free_C_path, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/truncate-bad-length-type.idio
+    *
+    * truncate "foo" #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (off_t, length);
+    off_t C_length = IDIO_C_TYPE_libc_off_t (length);
+
+    int truncate_r = truncate (C_path, C_length);
+
+    if (free_C_path) {
+	IDIO_GC_FREE (C_path, free_C_path);
+    }
+
+    if (-1 == truncate_r) {
+	/*
+	 * Test Case: libc-wrap-errors/truncate-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * truncate (pht fd+name) (C/integer-> 0 libc/off_t)
+	 */
+        idio_error_system_errno ("truncate", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (truncate_r);
+}
+
 IDIO_DEFINE_PRIMITIVE0_DS ("uname", libc_uname, (void), "", "\
 in C, :samp:`uname (utsname)`					\n\
 a wrapper to libc :manpage:`uname(3)`				\n\
@@ -7383,6 +7497,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstatvfs);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fsync);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ftruncate);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getcwd);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getgrnam);
@@ -7433,6 +7548,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcsetpgrp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_time);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_times);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_truncate);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_uname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlink);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlockpt);

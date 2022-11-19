@@ -330,6 +330,13 @@ int main (int argc, char **argv)
 	int fsync_r = fsync (fd);
     }
 
+    /* ftruncate(2) */
+    {
+	int fd = STDIN_FILENO;
+	off_t length = 0;
+	int ftruncate_r = ftruncate (fd, length);
+    }
+
     /* getcwd(3) */
     {
 	char buf[PATH_MAX];
@@ -710,6 +717,13 @@ int main (int argc, char **argv)
     {
 	struct tms buffer;
 	clock_t times_r = times (&buffer);
+    }
+
+    /* truncate(2) */
+    {
+	char *path = ".";
+	off_t length = 0;
+	int truncate_r = truncate (path, length);
     }
 
     /* uname(3) */

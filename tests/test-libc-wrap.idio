@@ -302,11 +302,13 @@ close-handle dh
 fcntl C/0i F_SETFD fd-flags
 
 ofh := open-output-file testfile
+puts "hello world\n" ofh
 fchmod (fd-handle-fd ofh) sb.st_mode
 fchown (fd-handle-fd ofh) EUID EGID
 fstat (fd-handle-fd ofh)
 fstatvfs (fd-handle-fd ofh)
 fsync (fd-handle-fd ofh)
+ftruncate (fd-handle-fd ofh) (C/integer-> 3 libc/off_t)
 close-handle ofh
 
 getpgid (getpid)
@@ -453,6 +455,8 @@ mktime tm
 
 strptime "1999" "%Y"
 strftime "%F" (libc/localtime)
+
+truncate testfile (C/integer-> 0 libc/off_t)
 
 linkfile := "__link__"
 ln -sf testfile linkfile
