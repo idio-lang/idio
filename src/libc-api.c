@@ -2875,14 +2875,14 @@ no ^system-error is raised.					\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    size_t free_pathname_C = 0;
+    size_t free_C_pathname = 0;
 
     /*
      * Test Case: libc-wrap-errors/access-bad-pathname-format.idio
      *
      * access (join-string (make-string 1 #U+0) '("hello" "world")) libc/R_OK
      */
-    char *pathname_C = idio_libc_string_C (pathname, "access", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+    char *C_pathname = idio_libc_string_C (pathname, "access", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
     /*
      * Test Case: libc-wrap-errors/access-bad-mode-type.idio
@@ -2905,12 +2905,12 @@ no ^system-error is raised.					\n\
      * So, we'll just fail and let the user figure it out...
      */
 
-    if (0 == access (pathname_C, C_mode)) {
+    if (0 == access (C_pathname, C_mode)) {
 	access_r = idio_S_true;
     }
 
-    if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C, free_pathname_C);
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
     }
 
     return access_r;
@@ -3004,19 +3004,19 @@ a wrapper to libc :manpage:`chdir(2)`				\n\
      */
     IDIO_USER_TYPE_ASSERT (string, path);
 
-    size_t free_path_C = 0;
+    size_t free_C_path = 0;
 
     /*
      * Test Case: libc-wrap-errors/chdir-bad-path-format.idio
      *
      * chdir (join-string (make-string 1 #U+0) '("hello" "world"))
      */
-    char *path_C = idio_libc_string_C (path, "chdir", &free_path_C, IDIO_C_FUNC_LOCATION ());
+    char *C_path = idio_libc_string_C (path, "chdir", &free_C_path, IDIO_C_FUNC_LOCATION ());
 
-    int chdir_r = chdir (path_C);
+    int chdir_r = chdir (C_path);
 
-    if (free_path_C) {
-	IDIO_GC_FREE (path_C, free_path_C);
+    if (free_C_path) {
+	IDIO_GC_FREE (C_path, free_C_path);
     }
 
     if (-1 == chdir_r) {
@@ -3059,13 +3059,13 @@ a wrapper to libc chmod()		\n\
     */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    size_t free_pathname_C = 0;
+    size_t free_C_pathname = 0;
     /*
      * Test Case: libc-wrap-errors/chmod-bad-pathname-format.idio
      *
      * chmod (join-string (make-string 1 #U+0) '("hello" "world")) (C/integer-> #o555)
      */
-    char *pathname_C = idio_libc_string_C (pathname, "chmod", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+    char *C_pathname = idio_libc_string_C (pathname, "chmod", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
    /*
     * Test Case: libc-errors/chmod-bad-mode-type.idio
@@ -3075,7 +3075,11 @@ a wrapper to libc chmod()		\n\
     IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
     mode_t C_mode = IDIO_C_TYPE_libc_mode_t (mode);
 
-    int chmod_r = chmod (pathname_C, C_mode);
+    int chmod_r = chmod (C_pathname, C_mode);
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
 
     if (-1 == chmod_r) {
 	/*
@@ -3122,13 +3126,13 @@ a wrapper to libc chown()		\n\
     */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    size_t free_pathname_C = 0;
+    size_t free_C_pathname = 0;
     /*
      * Test Case: libc-wrap-errors/chown-bad-pathname-format.idio
      *
      * chown (join-string (make-string 1 #U+0) '("hello" "world")) #t #t
      */
-    char *C_pathname = idio_libc_string_C (pathname, "chown", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+    char *C_pathname = idio_libc_string_C (pathname, "chown", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
    /*
     * Test Case: libc-errors/chown-bad-owner-type.idio
@@ -3147,6 +3151,10 @@ a wrapper to libc chown()		\n\
     gid_t C_group = IDIO_C_TYPE_libc_gid_t (group);
 
     int chown_r = chown (C_pathname, C_owner, C_group);
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
 
     if (-1 == chown_r) {
 	/*
@@ -3187,15 +3195,19 @@ a wrapper to libc chroot()		\n\
     */
     IDIO_USER_TYPE_ASSERT (string, path);
 
-    size_t free_pathname_C = 0;
+    size_t free_C_path = 0;
     /*
      * Test Case: libc-wrap-errors/chroot-bad-path-format.idio
      *
      * chroot (join-string (make-string 1 #U+0) '("hello" "world"))
      */
-    char *C_path = idio_libc_string_C (path, "chroot", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+    char *C_path = idio_libc_string_C (path, "chroot", &free_C_path, IDIO_C_FUNC_LOCATION ());
 
     int chroot_r = chroot (C_path);
+
+    if (free_C_path) {
+	IDIO_GC_FREE (C_path, free_C_path);
+    }
 
     if (-1 == chroot_r) {
 	/*
@@ -4100,13 +4112,13 @@ a wrapper to libc getgrnam(3)		\n\
      */
     IDIO_USER_TYPE_ASSERT (string, name);
 
-    size_t free_name_C = 0;
+    size_t free_C_name = 0;
     /*
      * Test Case: libc-wrap-errors/getgrnam-bad-name-format.idio
      *
      * getgrnam "ro\x0ot"
      */
-    char *C_name = idio_libc_string_C (name, "getgrnam", &free_name_C, IDIO_C_FUNC_LOCATION ());
+    char *C_name = idio_libc_string_C (name, "getgrnam", &free_C_name, IDIO_C_FUNC_LOCATION ());
 
     /*
      * Note that as we want to save grp we can't use an automatic
@@ -4140,6 +4152,9 @@ a wrapper to libc getgrnam(3)		\n\
 		    idio_gc_collect_all ("getgrnam");
 		    break;
 		default:
+		    if (free_C_name) {
+			IDIO_GC_FREE (C_name, free_C_name);
+		    }
 		    idio_free (grp);
 
 		    /*
@@ -4167,6 +4182,9 @@ a wrapper to libc getgrnam(3)		\n\
 		    idio_gc_collect_all ("getgrnam");
 		    break;
 		default:
+		    if (free_C_name) {
+			IDIO_GC_FREE (C_name, free_C_name);
+		    }
 		    idio_free (grp);
 
 		    /*
@@ -4184,6 +4202,10 @@ a wrapper to libc getgrnam(3)		\n\
 	    done = 1;
 	}
 #endif
+    }
+
+    if (free_C_name) {
+	IDIO_GC_FREE (C_name, free_C_name);
     }
 
     IDIO r = idio_S_false;
@@ -4309,13 +4331,13 @@ a wrapper to libc getpwnam(3)		\n\
      */
     IDIO_USER_TYPE_ASSERT (string, name);
 
-    size_t free_name_C = 0;
+    size_t free_C_name = 0;
     /*
      * Test Case: libc-wrap-errors/getpwnam-bad-name-format.idio
      *
      * getpwnam "ro\x0ot"
      */
-    char *C_name = idio_libc_string_C (name, "getpwnam", &free_name_C, IDIO_C_FUNC_LOCATION ());
+    char *C_name = idio_libc_string_C (name, "getpwnam", &free_C_name, IDIO_C_FUNC_LOCATION ());
 
     /*
      * From getpwnam(3) on CentOS
@@ -4351,6 +4373,9 @@ a wrapper to libc getpwnam(3)		\n\
 		    idio_gc_collect_all ("getpwnam");
 		    break;
 		default:
+		    if (free_C_name) {
+			IDIO_GC_FREE (C_name, free_C_name);
+		    }
 		    idio_free (pwd);
 
 		    /*
@@ -4378,6 +4403,9 @@ a wrapper to libc getpwnam(3)		\n\
 		    idio_gc_collect_all ("getpwnam");
 		    break;
 		default:
+		    if (free_C_name) {
+			IDIO_GC_FREE (C_name, free_C_name);
+		    }
 		    idio_free (pwd);
 
 		    /*
@@ -4395,6 +4423,10 @@ a wrapper to libc getpwnam(3)		\n\
 	    done = 1;
 	}
 #endif
+    }
+
+    if (free_C_name) {
+	IDIO_GC_FREE (C_name, free_C_name);
     }
 
     IDIO r = idio_S_false;
@@ -5111,21 +5143,21 @@ a wrapper to libc :manpage:`lstat(2)`		\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    size_t free_pathname_C = 0;
+    size_t free_C_pathname = 0;
 
     /*
      * Test Case: libc-wrap-errors/lstat-bad-pathname-format.idio
      *
      * lstat (join-string (make-string 1 #U+0) '("hello" "world"))
      */
-    char *pathname_C = idio_libc_string_C (pathname, "lstat", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+    char *C_pathname = idio_libc_string_C (pathname, "lstat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
     struct stat* statp = idio_alloc (sizeof (struct stat));
 
-    int lstat_r = lstat (pathname_C, statp);
+    int lstat_r = lstat (C_pathname, statp);
 
-    if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C, free_pathname_C);
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
     }
 
     if (-1 == lstat_r) {
@@ -5168,13 +5200,13 @@ a wrapper to libc :manpage:`mkdir(2)`				\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    size_t free_pathname_C = 0;
+    size_t free_C_pathname = 0;
     /*
      * Test Case: libc-wrap-errors/mkdir-bad-pathname-format.idio
      *
      * mkdir (join-string (make-string 1 #U+0) '("hello" "world")) (C/integer-> #o555)
      */
-    char *pathname_C = idio_libc_string_C (pathname, "mkdir", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+    char *C_pathname = idio_libc_string_C (pathname, "mkdir", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
     /*
      * Test Case: libc-wrap-errors/mkdir-bad-mode-type.idio
@@ -5184,10 +5216,10 @@ a wrapper to libc :manpage:`mkdir(2)`				\n\
     IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
     int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
 
-    int mkdir_r = mkdir (pathname_C, C_mode);
+    int mkdir_r = mkdir (C_pathname, C_mode);
 
-    if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C, free_pathname_C);
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
     }
 
     if (-1 == mkdir_r) {
@@ -5235,16 +5267,16 @@ a wrapper to libc :manpage:`mkdtemp(3)`				\n\
      * modify the template part.
      */
 
-    size_t free_template_C = 0;
+    size_t free_C_template = 0;
 
     /*
      * Test Case: libc-wrap-errors/mkdtemp-bad-template-format.idio
      *
      * mkdtemp (join-string (make-string 1 #U+0) '("hello" "world"))
      */
-    char *template_C = idio_libc_string_C (template, "mkdtemp", &free_template_C, IDIO_C_FUNC_LOCATION ());
+    char *C_template = idio_libc_string_C (template, "mkdtemp", &free_C_template, IDIO_C_FUNC_LOCATION ());
 
-    char *mkdtemp_r = mkdtemp (template_C);
+    char *mkdtemp_r = mkdtemp (C_template);
 
     if (NULL == mkdtemp_r) {
 	/*
@@ -5252,8 +5284,8 @@ a wrapper to libc :manpage:`mkdtemp(3)`				\n\
 	 *
 	 * mkdtemp "XXX"
 	 */
-	if (free_template_C) {
-	    IDIO_GC_FREE (template_C, free_template_C);
+	if (free_C_template) {
+	    IDIO_GC_FREE (C_template, free_C_template);
 	}
 
 	idio_error_system_errno ("mkdtemp", template, IDIO_C_FUNC_LOCATION ());
@@ -5266,8 +5298,8 @@ a wrapper to libc :manpage:`mkdtemp(3)`				\n\
     /*
      * XXX free this after using mkdtemp_r
      */
-    if (free_template_C) {
-	IDIO_GC_FREE (template_C, free_template_C);
+    if (free_C_template) {
+	IDIO_GC_FREE (C_template, free_C_template);
     }
 
     return r;
@@ -5297,14 +5329,14 @@ a wrapper to libc mkfifo()		\n\
      */
     IDIO_USER_TYPE_ASSERT (string, path);
 
-    size_t free_path_C = 0;
+    size_t free_C_path = 0;
 
     /*
      * Test Case: libc-wrap-errors/mkfifo-bad-path-format.idio
      *
      * mkfifo (join-string (make-string 1 #U+0) '("hello" "world"))
      */
-    char *path_C = idio_libc_string_C (path, "mkfifo", &free_path_C, IDIO_C_FUNC_LOCATION ());
+    char *C_path = idio_libc_string_C (path, "mkfifo", &free_C_path, IDIO_C_FUNC_LOCATION ());
 
     /*
      * Test Case: libc-errors/mkfifo-bad-mode-type.idio
@@ -5314,10 +5346,10 @@ a wrapper to libc mkfifo()		\n\
     IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
     mode_t C_mode = IDIO_C_TYPE_libc_mode_t (mode);
 
-    int mkfifo_r = mkfifo (path_C, C_mode);
+    int mkfifo_r = mkfifo (C_path, C_mode);
 
-    if (free_path_C) {
-	IDIO_GC_FREE (path_C, free_path_C);
+    if (free_C_path) {
+	IDIO_GC_FREE (C_path, free_C_path);
     }
 
     if (-1 == mkfifo_r) {
@@ -5356,15 +5388,15 @@ a wrapper to libc :manpage:`mkstemp(3)`				\n\
      * modify the template part.
      */
 
-    size_t free_template_C = 0;
+    size_t free_C_template = 0;
     /*
      * Test Case: libc-wrap-errors/mkstemp-bad-template-format.idio
      *
      * mkstemp (join-string (make-string 1 #U+0) '("hello" "world"))
      */
-    char *template_C = idio_libc_string_C (template, "mkstemp", &free_template_C, IDIO_C_FUNC_LOCATION ());
+    char *C_template = idio_libc_string_C (template, "mkstemp", &free_C_template, IDIO_C_FUNC_LOCATION ());
 
-    int mkstemp_r = mkstemp (template_C);
+    int mkstemp_r = mkstemp (C_template);
 
     if (-1 == mkstemp_r) {
 	/*
@@ -5372,8 +5404,8 @@ a wrapper to libc :manpage:`mkstemp(3)`				\n\
 	 *
 	 * mkstemp "XXX"
 	 */
-	if (free_template_C) {
-	    IDIO_GC_FREE (template_C, free_template_C);
+	if (free_C_template) {
+	    IDIO_GC_FREE (C_template, free_C_template);
 	}
 
 	idio_error_system_errno ("mkstemp", template, IDIO_C_FUNC_LOCATION ());
@@ -5393,10 +5425,10 @@ a wrapper to libc :manpage:`mkstemp(3)`				\n\
      * Therefore, we need to return a tuple of the file descriptor and
      * a string of the created file name.
      */
-    IDIO filename = idio_pathname_C (template_C);
+    IDIO filename = idio_pathname_C (C_template);
 
-    if (free_template_C) {
-	IDIO_GC_FREE (template_C, free_template_C);
+    if (free_C_template) {
+	IDIO_GC_FREE (C_template, free_C_template);
     }
 
     return IDIO_LIST2 (idio_C_int (mkstemp_r), filename);
@@ -5636,14 +5668,14 @@ a wrapper to libc open()		\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    size_t free_pathname_C = 0;
+    size_t free_C_pathname = 0;
 
     /*
      * Test Case: libc-wrap-errors/open-bad-pathname-format.idio
      *
      * open (join-string (make-string 1 #U+0) '("hello" "world")) #t
      */
-    char *pathname_C = idio_libc_string_C (pathname, "open", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+    char *C_pathname = idio_libc_string_C (pathname, "open", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
     /*
      * Test Case: libc-errors/open-bad-flags-type.idio
@@ -5672,7 +5704,7 @@ a wrapper to libc open()		\n\
 
     int tries;
     for (tries = 2; tries > 0 ; tries--) {
-	open_r = open (pathname_C, C_flags, C_mode);
+	open_r = open (C_pathname, C_flags, C_mode);
 
 	if (-1 == open_r) {
 	    switch (errno) {
@@ -5685,8 +5717,8 @@ a wrapper to libc open()		\n\
 		 * Test Case: ??
 		 */
 
-		if (free_pathname_C) {
-		    IDIO_GC_FREE (pathname_C, free_pathname_C);
+		if (free_C_pathname) {
+		    IDIO_GC_FREE (C_pathname, free_C_pathname);
 		}
 
 		IDIO a = IDIO_LIST2 (pathname, flags);
@@ -5703,8 +5735,8 @@ a wrapper to libc open()		\n\
 	}
     }
 
-    if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C, free_pathname_C);
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
     }
 
     if (-1 == open_r) {
@@ -6004,18 +6036,18 @@ a wrapper to libc :manpage:`rmdir(2)`				\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    size_t free_pathname_C = 0;
+    size_t free_C_pathname = 0;
     /*
      * Test Case: libc-wrap-errors/rmdir-bad-pathname-format.idio
      *
      * rmdir (join-string (make-string 1 #U+0) '("hello" "world"))
      */
-    char *pathname_C = idio_libc_string_C (pathname, "rmdir", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+    char *C_pathname = idio_libc_string_C (pathname, "rmdir", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
-    int rmdir_r = rmdir (pathname_C);
+    int rmdir_r = rmdir (C_pathname);
 
-    if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C, free_pathname_C);
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
     }
 
     if (-1 == rmdir_r) {
@@ -6285,20 +6317,20 @@ a wrapper to libc :manpage:`stat(2)`		\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    size_t free_pathname_C = 0;
+    size_t free_C_pathname = 0;
     /*
      * Test Case: libc-wrap-errors/stat-bad-pathname-format.idio
      *
      * stat (join-string (make-string 1 #U+0) '("hello" "world"))
      */
-    char *pathname_C = idio_libc_string_C (pathname, "stat", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+    char *C_pathname = idio_libc_string_C (pathname, "stat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
     struct stat* statp = idio_alloc (sizeof (struct stat));
 
-    int stat_r = stat (pathname_C, statp);
+    int stat_r = stat (C_pathname, statp);
 
-    if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C, free_pathname_C);
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
     }
 
     if (-1 == stat_r) {
@@ -6338,20 +6370,20 @@ a wrapper to libc statvfs()		\n\
     */
     IDIO_USER_TYPE_ASSERT (string, path);
 
-    size_t free_path_C = 0;
+    size_t free_C_path = 0;
     /*
      * Test Case: libc-wrap-errors/statvfs-bad-path-format.idio
      *
      * statvfs (join-string (make-string 1 #U+0) '("hello" "world"))
      */
-    char *C_path = idio_libc_string_C (path, "statvfs", &free_path_C, IDIO_C_FUNC_LOCATION ());
+    char *C_path = idio_libc_string_C (path, "statvfs", &free_C_path, IDIO_C_FUNC_LOCATION ());
 
     struct statvfs* statvfsp = idio_alloc (sizeof (struct statvfs));
 
     int statvfs_r = statvfs (C_path, statvfsp);
 
-    if (free_path_C) {
-	IDIO_GC_FREE (C_path, free_path_C);
+    if (free_C_path) {
+	IDIO_GC_FREE (C_path, free_C_path);
     }
 
     if (-1 == statvfs_r) {
@@ -6461,6 +6493,10 @@ a wrapper to libc :manpage:`strftime(3)`\n\
      */
     IDIO_USER_C_TYPE_ASSERT (pointer, tm);
     if (idio_CSI_libc_struct_tm != IDIO_C_TYPE_POINTER_PTYPE (tm)) {
+	if (free_C_format) {
+	    IDIO_GC_FREE (C_format, free_C_format);
+	}
+
 	/*
 	 * Test Case: libc-errors/strftime-tm-invalid-pointer-type.idio
 	 *
@@ -6475,6 +6511,10 @@ a wrapper to libc :manpage:`strftime(3)`\n\
     char *s = idio_alloc (BUFSIZ);
 
     size_t strftime_r = strftime (s, BUFSIZ, C_format, C_tm);
+
+    if (free_C_format) {
+	IDIO_GC_FREE (C_format, free_C_format);
+    }
 
     if (0 == strftime_r) {
 	idio_free (s);
@@ -6907,18 +6947,18 @@ a wrapper to libc :manpage:`unlink(2)`		\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    size_t free_pathname_C = 0;
+    size_t free_C_pathname = 0;
     /*
      * Test Case: libc-wrap-errors/unlink-bad-pathname-format.idio
      *
      * unlink (join-string (make-string 1 #U+0) '("hello" "world"))
      */
-    char *pathname_C = idio_libc_string_C (pathname, "unlink", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
+    char *C_pathname = idio_libc_string_C (pathname, "unlink", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
-    int unlink_r = unlink (pathname_C);
+    int unlink_r = unlink (C_pathname);
 
-    if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C, free_pathname_C);
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
     }
 
     if (-1 == unlink_r) {
