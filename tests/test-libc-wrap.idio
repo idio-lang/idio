@@ -328,6 +328,8 @@ getpgid (getpid)
 (getpgrp)
 (getppid)
 
+getpriority PRIO_PROCESS (C/integer-> PID id_t)
+
 (getuid)
 
 ;; isatty -> ENOTTY -> #f

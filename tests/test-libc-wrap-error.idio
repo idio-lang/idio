@@ -339,6 +339,17 @@ libc-wrap-error-load "libc-wrap-errors/getpgid-bad-pid-type.idio" "bad parameter
    libc-wrap-error-load "libc-wrap-errors/getpgid-bad-pid.idio" "No such process" ESRCH "getpgid"
  }))
 
+libc-wrap-error-load "libc-wrap-errors/getpriority-bad-which-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/getpriority-bad-who-type.idio" "bad parameter type: '#t' a constant is not a libc/id_t"
+(cond-expand
+ ((or "uname/sysname/Darwin"
+      "uname/sysname/SunOS") {
+   libc-wrap-error-load "libc-wrap-errors/getpriority-bad-pid.idio" "Invalid argument" EINVAL "getpriority"
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/getpriority-bad-pid.idio" "No such process" ESRCH "getpriority"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/getpwnam-bad-name-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/getpwnam-bad-name-format.idio" "getpwnam: contains an ASCII NUL"
 
@@ -892,4 +903,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 436 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 441 - libc-wrap-error-skipped)

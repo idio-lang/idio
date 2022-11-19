@@ -50,6 +50,18 @@ export (
 	size_t?
 
 	;; /usr/include/sys/resource.h
+	__priority_which_t
+	__priority_which_t?
+
+	;; /usr/include/bits/types.h
+	__id_t
+	__id_t?
+
+	;; /usr/include/sys/types.h
+	id_t
+	id_t?
+
+	;; /usr/include/sys/resource.h
 	__rlimit_resource_t
 	__rlimit_resource_t?
 
@@ -100,6 +112,8 @@ export (
 	gid_t?
 	pid_t
 	pid_t?
+	off_t
+	off_t?
 	suseconds_t
 	suseconds_t?
 
@@ -120,8 +134,6 @@ export (
 	ino_t?
 	nlink_t
 	nlink_t?
-	off_t
-	off_t?
 	blksize_t
 	blksize_t?
 	blkcnt_t
@@ -146,6 +158,12 @@ export (
 	;; /usr/include/bits/types/clock_t.h
 	clock_t
 	clock_t?
+
+	;; /usr/include/bits/resource.h
+	;; enum __priority_which
+	;PRIO_PROCESS
+	;PRIO_PGRP
+	;PRIO_USER
 
 	;; /usr/include/bits/resource.h
 	;; enum __rlimit_resource
@@ -234,6 +252,21 @@ define size_t?                        C/ulong?
 
 
 ;; /usr/include/sys/resource.h
+__priority_which_t                 := 'uint
+define __priority_which_t?            C/uint?
+
+
+;; /usr/include/bits/types.h
+__id_t                             := 'uint
+define __id_t?                        C/uint?
+
+
+;; /usr/include/sys/types.h
+id_t                               := __id_t
+define id_t?                          libc/__id_t?
+
+
+;; /usr/include/sys/resource.h
 __rlimit_resource_t                := 'uint
 define __rlimit_resource_t?           C/uint?
 
@@ -299,6 +332,9 @@ define gid_t?                         libc/__gid_t?
 pid_t                              := __pid_t
 define pid_t?                         libc/__pid_t?
 
+off_t                              := __off_t
+define off_t?                         libc/__off_t?
+
 suseconds_t                        := __suseconds_t
 define suseconds_t?                   libc/__suseconds_t?
 
@@ -325,9 +361,6 @@ define ino_t?                         libc/__ino_t?
 
 nlink_t                            := __nlink_t
 define nlink_t?                       libc/__nlink_t?
-
-off_t                              := __off_t
-define off_t?                         libc/__off_t?
 
 blksize_t                          := __blksize_t
 define blksize_t?                     libc/__blksize_t?

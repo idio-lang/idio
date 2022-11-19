@@ -393,6 +393,13 @@ int main (int argc, char **argv)
 	pid_t getppid_r = getppid ();
     }
 
+    /* getpriority(2) */
+    {
+	int which = PRIO_PROCESS;
+	id_t who = 1;
+	int getpriority_r = getpriority (which, who);
+    }
+
     /* getpwnam(3) */
     {
 	struct passwd *getpwnam_r = getpwnam ("root");

@@ -4456,6 +4456,69 @@ a wrapper to libc :manpage:`getppid(2)`				\n\
     return idio_libc_pid_t (getppid ());
 }
 
+
+/*
+ * This is interesting.  which should be an int, according to the
+ * interface.  Fedora defines an enum, __priority_which_t, which is a
+ * uint.
+ */
+IDIO_DEFINE_PRIMITIVE2_DS ("getpriority", libc_getpriority, (IDIO which, IDIO who), "which who", "\
+in C: getpriority (which, who)		\n\
+a wrapper to libc getpriority()		\n\
+					\n\
+:param which: see below			\n\
+:type which: C/int			\n\
+:param who: dependent on `which`	\n\
+:type who: libc/id_t			\n\
+:return: nice value			\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+					\n\
+					\n\
+`which` should be one of the values: ``PRIO_PROCESS``,	\n\
+``PRIO_PGRP`` or ``PRIO_USER``.  `who` is then an	\n\
+appropriate value.					\n\
+")
+{
+    IDIO_ASSERT (which);
+    IDIO_ASSERT (who);
+
+   /*
+    * Test Case: libc-errors/getpriority-bad-which-type.idio
+    *
+    * getpriority #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, which);
+    int C_which = IDIO_C_TYPE_int (which);
+
+   /*
+    * Test Case: libc-errors/getpriority-bad-who-type.idio
+    *
+    * getpriority PRIO_USER #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (id_t, who);
+    id_t C_who = IDIO_C_TYPE_libc_id_t (who);
+
+    /*
+     * XXX -1 is a valid nice value so clear errno
+     */
+    errno = 0;
+    int getpriority_r = getpriority (C_which, C_who);
+
+    if (0 != errno) {
+	/*
+	 * Test Case: libc-errors/getpriority-non-existent.idio
+	 *
+	 * getpriority PRIO_PROCESS (C/integer-> -1 libc/id_t)
+	 */
+        idio_error_system_errno ("getpriority", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (getpriority_r);
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("getpwnam", libc_getpwnam, (IDIO name), "name", "\
 in C: getpwnam (name)			\n\
 a wrapper to libc getpwnam(3)		\n\
@@ -7616,6 +7679,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgrp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getppid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpriority);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpwnam);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpwuid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getrlimit);
@@ -7707,4 +7771,8 @@ void idio_init_libc_api ()
     idio_module_export_symbol_value (IDIO_SYMBOL ("RUSAGE_CHILDREN"), idio_C_int (RUSAGE_CHILDREN), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("RUSAGE_THREAD"), idio_C_int (RUSAGE_THREAD), idio_libc_module);
 #endif  /* __rusage_who */
+
+    idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_PROCESS"), idio_C_int (PRIO_PROCESS), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_PGRP"), idio_C_int (PRIO_PGRP), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_USER"), idio_C_int (PRIO_USER), idio_libc_module);
 }

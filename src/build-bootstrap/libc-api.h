@@ -122,6 +122,24 @@
 #define idio_isa_libc_size_t                idio_isa_C_ulong
 
 /* /usr/include/sys/resource.h */
+#define IDIO_TYPE_C_libc___priority_which_t IDIO_TYPE_C_uint
+#define idio_libc___priority_which_t        idio_C_uint
+#define IDIO_C_TYPE_libc___priority_which_t IDIO_C_TYPE_uint
+#define idio_isa_libc___priority_which_t    idio_isa_C_uint
+
+/* /usr/include/bits/types.h */
+#define IDIO_TYPE_C_libc___id_t             IDIO_TYPE_C_UINT
+#define idio_libc___id_t                    idio_C_uint
+#define IDIO_C_TYPE_libc___id_t             IDIO_C_TYPE_uint
+#define idio_isa_libc___id_t                idio_isa_C_uint
+
+/* /usr/include/sys/types.h */
+#define IDIO_TYPE_C_libc_id_t               IDIO_TYPE_C_libc___id_t
+#define idio_libc_id_t                      idio_libc___id_t
+#define IDIO_C_TYPE_libc_id_t               IDIO_C_TYPE_libc___id_t
+#define idio_isa_libc_id_t                  idio_isa_libc___id_t
+
+/* /usr/include/sys/resource.h */
 #define IDIO_TYPE_C_libc___rlimit_resource_t IDIO_TYPE_C_uint
 #define idio_libc___rlimit_resource_t       idio_C_uint
 #define IDIO_C_TYPE_libc___rlimit_resource_t IDIO_C_TYPE_uint
@@ -207,6 +225,11 @@
 #define IDIO_C_TYPE_libc_pid_t              IDIO_C_TYPE_libc___pid_t
 #define idio_isa_libc_pid_t                 idio_isa_libc___pid_t
 
+#define IDIO_TYPE_C_libc_off_t              IDIO_TYPE_C_libc___off_t
+#define idio_libc_off_t                     idio_libc___off_t
+#define IDIO_C_TYPE_libc_off_t              IDIO_C_TYPE_libc___off_t
+#define idio_isa_libc_off_t                 idio_isa_libc___off_t
+
 #define IDIO_TYPE_C_libc_suseconds_t        IDIO_TYPE_C_libc___suseconds_t
 #define idio_libc_suseconds_t               idio_libc___suseconds_t
 #define IDIO_C_TYPE_libc_suseconds_t        IDIO_C_TYPE_libc___suseconds_t
@@ -244,11 +267,6 @@
 #define idio_libc_nlink_t                   idio_libc___nlink_t
 #define IDIO_C_TYPE_libc_nlink_t            IDIO_C_TYPE_libc___nlink_t
 #define idio_isa_libc_nlink_t               idio_isa_libc___nlink_t
-
-#define IDIO_TYPE_C_libc_off_t              IDIO_TYPE_C_libc___off_t
-#define idio_libc_off_t                     idio_libc___off_t
-#define IDIO_C_TYPE_libc_off_t              IDIO_C_TYPE_libc___off_t
-#define idio_isa_libc_off_t                 idio_isa_libc___off_t
 
 #define IDIO_TYPE_C_libc_blksize_t          IDIO_TYPE_C_libc___blksize_t
 #define idio_libc_blksize_t                 idio_libc___blksize_t
