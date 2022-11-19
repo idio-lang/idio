@@ -266,7 +266,15 @@ chdir "."
 sb := stat testfile
 chmod testfile sb.st_mode
 
-chown "." EUID EGID
+;; chown "." EUID EGID gets EPERM in CI (running as root?) so use a
+;; file we've just created (we should be allowed to chown that,
+;; surely?)
+tmp := (make-tmp-file)
+chown tmp EUID EGID
+tmp-fh := open-input-file tmp
+fchown (file-handle-fd tmp-fh) EUID EGID
+close-handle tmp-fh
+rm tmp
 
 nfd := dup C/0i
 close nfd
@@ -304,7 +312,6 @@ fcntl C/0i F_SETFD fd-flags
 ofh := open-output-file testfile
 puts "hello world\n" ofh
 fchmod (fd-handle-fd ofh) sb.st_mode
-fchown (fd-handle-fd ofh) EUID EGID
 fstat (fd-handle-fd ofh)
 fstatvfs (fd-handle-fd ofh)
 fsync (fd-handle-fd ofh)
