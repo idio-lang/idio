@@ -388,6 +388,10 @@ test (read (fd-handle-fd ifh) (C/integer-> 2 libc/size_t)) "he"
 test (pread (fd-handle-fd ifh) (C/integer-> 0 libc/off_t) (C/integer-> 2 libc/size_t)) "he"
 close-handle ifh
 
+setegid EGID
+seteuid EUID
+setgid EGID
+
 ;; should be safe...except if running under, say, rlwrap which has
 ;; made us a session leader and so we'll get an EPERM from setpgid
 if (C/== (getsid (C/integer-> 0 libc/pid_t)) (getpid)) {
@@ -395,6 +399,8 @@ if (C/== (getsid (C/integer-> 0 libc/pid_t)) (getpid)) {
 } {
   setpgid (getpid) (getpgrp)
 }
+
+setuid EUID
 
 ;; should be safe...
 signal SIGUSR1 (signal-handler SIGUSR1)

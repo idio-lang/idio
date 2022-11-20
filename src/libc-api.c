@@ -3921,7 +3921,6 @@ a wrapper to libc :manpage:`ftruncate(2)`	\n\
 
     int ftruncate_r = ftruncate (C_fd, C_length);
 
-    /* check for errors */
     if (-1 == ftruncate_r) {
 	/*
 	 * Test Case: libc-wrap-errors/ftruncate-non-existent.idio
@@ -6419,7 +6418,6 @@ a wrapper to libc :manpage:`pwrite(2)`	\n\
 
     ssize_t pwrite_r = pwrite (C_fd, C_str, blen, C_offset);
 
-    /* check for errors */
     if (-1 == pwrite_r) {
 	/*
 	 * Test Case: libc-wrap-errors/pwrite-bad-fd.idio
@@ -6566,7 +6564,6 @@ a wrapper to libc :manpage:`readlink(2)`	\n\
     char buf[PATH_MAX];
     ssize_t readlink_r = readlink (C_pathname, buf, PATH_MAX);
 
-    /* check for errors */
     if (-1 == readlink_r) {
 	/*
 	 * Test Case: libc-wrap-errors/readlink-not-a-symlink.idio
@@ -6709,6 +6706,117 @@ a wrapper to libc :manpage:`rmdir(2)`				\n\
     }
 
     return idio_C_int (rmdir_r);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("setegid", libc_setegid, (IDIO egid), "egid", "\
+in C: :samp:`setegid ({egid})`		\n\
+a wrapper to libc :manpage:`setegid(2)`	\n\
+					\n\
+:param egid: effective group ID		\n\
+:type egid: libc/gid_t			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (egid);
+
+   /*
+    * Test Case: libc-errors/setegid-bad-egid-type.idio
+    *
+    * setegid #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (gid_t, egid);
+    gid_t C_egid = IDIO_C_TYPE_libc_gid_t (egid);
+
+    int setegid_r = setegid (C_egid);
+
+    if (-1 == setegid_r) {
+	/*
+	 * Test Case: libc-wrap-errors/setegid-negative-egid.idio
+	 *
+	 * setegid (C/integer-> -1 libc/gid_t)
+	 */
+        idio_error_system_errno ("setegid", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (setegid_r);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("seteuid", libc_seteuid, (IDIO euid), "euid", "\
+in C: :samp:`seteuid ({euid})`		\n\
+a wrapper to libc :manpage:`seteuid(2)`	\n\
+					\n\
+:param euid: effective user ID		\n\
+:type euid: libc/uid_t			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (euid);
+
+   /*
+    * Test Case: libc-errors/seteuid-bad-euid-type.idio
+    *
+    * seteuid #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (uid_t, euid);
+    uid_t C_euid = IDIO_C_TYPE_libc_uid_t (euid);
+
+    int seteuid_r = seteuid (C_euid);
+
+    if (-1 == seteuid_r) {
+	/*
+	 * Test Case: libc-wrap-errors/seteuid-negative-euid.idio
+	 *
+	 * seteuid (C/integer-> -1 libc/uid_t)
+	 */
+        idio_error_system_errno ("seteuid", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (seteuid_r);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("setgid", libc_setgid, (IDIO gid), "gid", "\
+in C: :samp:`setgid ({gid})`		\n\
+a wrapper to libc :manpage:`setgid(2)`	\n\
+					\n\
+:param gid: group ID			\n\
+:type gid: libc/gid_t			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (gid);
+
+   /*
+    * Test Case: libc-errors/setgid-bad-gid-type.idio
+    *
+    * setgid #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (gid_t, gid);
+    gid_t C_gid = IDIO_C_TYPE_libc_gid_t (gid);
+
+    int setgid_r = setgid (C_gid);
+
+    if (-1 == setgid_r) {
+	/*
+	 * Test Case: libc-wrap-errors/setgid-negative-gid.idio
+	 *
+	 * setgid (C/integer-> -1 libc/gid_t)
+	 */
+        idio_error_system_errno ("setgid", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (setgid_r);
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("setpgid", libc_setpgid, (IDIO pid, IDIO pgid), "pid pgid", "\
@@ -6855,6 +6963,43 @@ a wrapper to libc :manpage:`setsid(2)`				\n\
     }
 
     return idio_libc_pid_t (C_pid);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("setuid", libc_setuid, (IDIO uid), "uid", "\
+in C: :samp:`setuid ({uid})`		\n\
+a wrapper to libc :manpage:`setuid(2)`	\n\
+					\n\
+:param uid: user ID			\n\
+:type uid: libc/uid_t			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (uid);
+
+   /*
+    * Test Case: libc-errors/setuid-bad-uid-type.idio
+    *
+    * setuid #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (uid_t, uid);
+    uid_t C_uid = IDIO_C_TYPE_libc_uid_t (uid);
+
+    int setuid_r = setuid (C_uid);
+
+    if (-1 == setuid_r) {
+	/*
+	 * Test Case: libc-wrap-errors/setuid-negative-uid.idio
+	 *
+	 * setuid (C/integer-> -1 libc/uid_t)
+	 */
+        idio_error_system_errno ("setuid", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (setuid_r);
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("signal", libc_signal, (IDIO sig, IDIO handler), "sig handler", "\
@@ -8137,9 +8282,13 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_readlink);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rename);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setegid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_seteuid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setsid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setuid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_signal);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_sleep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_stat);

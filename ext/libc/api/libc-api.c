@@ -629,6 +629,24 @@ int main (int argc, char **argv)
 	int rmdir_r = rmdir (pathname);
     }
 
+    /* setegid(2) */
+    {
+	gid_t egid = 0;
+	int setegid_r = setegid (egid);
+    }
+
+    /* seteuid(2) */
+    {
+	uid_t euid = 0;
+	int seteuid_r = seteuid (euid);
+    }
+
+    /* setgid(2) */
+    {
+	gid_t gid = 0;
+	int setgid_r = setgid (gid);
+    }
+
     /* setpgid(2) */
     {
 	pid_t pid = getpid ();
@@ -645,6 +663,12 @@ int main (int argc, char **argv)
     /* setsid(2) */
     {
 	pid_t setsid_r = setsid ();
+    }
+
+    /* setuid(2) */
+    {
+	uid_t uid = 0;
+	int setuid_r = setuid (uid);
     }
 
     /* signal(2) */

@@ -515,6 +515,15 @@ libc-wrap-error-load "libc-wrap-errors/rmdir-bad-pathname-type.idio" "bad parame
 libc-wrap-error-load "libc-wrap-errors/rmdir-bad-pathname-format.idio" "rmdir: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/rmdir-non-existent.idio" "No such file or directory" ENOENT "rmdir"
 
+libc-wrap-error-load "libc-wrap-errors/setegid-bad-egid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
+libc-wrap-error-load "libc-wrap-errors/setegid-negative-egid.idio" "Invalid argument" EINVAL "setegid"
+
+libc-wrap-error-load "libc-wrap-errors/seteuid-bad-euid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
+libc-wrap-error-load "libc-wrap-errors/seteuid-negative-euid.idio" "Invalid argument" EINVAL "seteuid"
+
+libc-wrap-error-load "libc-wrap-errors/setgid-bad-gid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
+libc-wrap-error-load "libc-wrap-errors/setgid-negative-gid.idio" "Invalid argument" EINVAL "setgid"
+
 libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pid-type.idio" "bad parameter type: '#t' a constant is not a libc/pid_t"
 libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pgid-type.idio" "bad parameter type: '#t' a constant is not a libc/pid_t"
 libc-wrap-error-load "libc-wrap-errors/setpgid-negative-pgid.idio" "Invalid argument" EINVAL "setpgid"
@@ -524,6 +533,9 @@ libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-resource-nickname.idio" "se
 libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-rlim-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/setrlimit-rlim-invalid-pointer-type.idio" "setrlimit rlim='#<C/* C/pointer>' a C/pointer is not a libc/struct-rlimit"
 libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-rlim.idio" "Invalid argument" EINVAL "setrlimit"
+
+libc-wrap-error-load "libc-wrap-errors/setuid-bad-uid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
+libc-wrap-error-load "libc-wrap-errors/setuid-negative-uid.idio" "Invalid argument" EINVAL "setuid"
 
 libc-wrap-error-load "libc-wrap-errors/signal-bad-sig-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/signal-bad-handler-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
@@ -933,4 +945,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 475 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 491 - libc-wrap-error-skipped)
