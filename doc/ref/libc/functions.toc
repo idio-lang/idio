@@ -74,6 +74,7 @@
 (document libc seteuid)
 (document libc setgid)
 (document libc setpgid)
+(document libc setpriority)
 (document libc setrlimit)
 (document libc setsid)
 (document libc setuid)

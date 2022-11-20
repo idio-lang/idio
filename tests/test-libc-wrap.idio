@@ -400,6 +400,8 @@ if (C/== (getsid (C/integer-> 0 libc/pid_t)) (getpid)) {
   setpgid (getpid) (getpgrp)
 }
 
+setpriority PRIO_PROCESS (C/integer-> PID id_t) C/0i
+
 setuid EUID
 
 ;; should be safe...

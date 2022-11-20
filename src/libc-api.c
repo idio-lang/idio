@@ -4474,7 +4474,6 @@ a wrapper to libc :manpage:`getpriority(2)`	\n\
 :rtype: C/int				\n\
 :raises ^system-error:			\n\
 					\n\
-					\n\
 `which` should be one of the values: ``PRIO_PROCESS``,	\n\
 ``PRIO_PGRP`` or ``PRIO_USER``.  `who` is then an	\n\
 appropriate value.					\n\
@@ -6876,6 +6875,69 @@ a wrapper to libc :manpage:`setpgid(2)`				\n\
     return idio_C_int (setpgid_r);
 }
 
+IDIO_DEFINE_PRIMITIVE3_DS ("setpriority", libc_setpriority, (IDIO which, IDIO who, IDIO prio), "which who prio", "\
+in C: :samp:`setpriority ({which}, {who}, {prio})`	\n\
+a wrapper to libc :manpage:`setpriority(2)`	\n\
+					\n\
+:param which: see below			\n\
+:type which: C/int			\n\
+:param who: dependent on `which`	\n\
+:type who: libc/id_t			\n\
+:param prio: priority			\n\
+:type prio: C/int			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+					\n\
+`which` should be one of the values: ``PRIO_PROCESS``,	\n\
+``PRIO_PGRP`` or ``PRIO_USER``.  `who` is then an	\n\
+appropriate value.					\n\
+")
+{
+    IDIO_ASSERT (which);
+    IDIO_ASSERT (who);
+    IDIO_ASSERT (prio);
+
+   /*
+    * Test Case: libc-errors/setpriority-bad-which-type.idio
+    *
+    * setpriority #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, which);
+    int C_which = IDIO_C_TYPE_int (which);
+
+   /*
+    * Test Case: libc-errors/setpriority-bad-who-type.idio
+    *
+    * setpriority PRIO_USER #t #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (id_t, who);
+    id_t C_who = IDIO_C_TYPE_libc_id_t (who);
+
+   /*
+    * Test Case: libc-errors/setpriority-bad-prio-type.idio
+    *
+    * setpriority PRIO_USER UID #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, prio);
+    int C_prio = IDIO_C_TYPE_int (prio);
+
+    int setpriority_r = setpriority (C_which, C_who, C_prio);
+
+    if (-1 == setpriority_r) {
+	/*
+	 * Test Case: libc-errors/setpriority-non-existent.idio
+	 *
+	 * setpriority PRIO_PROCESS (C/integer-> -1 libc/id_t) C/0i
+	 */
+        idio_error_system_errno ("setpriority", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (setpriority_r);
+}
+
 IDIO_DEFINE_PRIMITIVE2_DS ("setrlimit", libc_setrlimit, (IDIO resource, IDIO rlim), "resource rlim", "\
 in C, :samp:`setrlimit ({resource}, {rlim})`			\n\
 a wrapper to libc :manpage:`setrlimit(2)`			\n\
@@ -8286,6 +8348,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_seteuid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpgid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpriority);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setsid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setuid);

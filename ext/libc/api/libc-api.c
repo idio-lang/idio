@@ -660,6 +660,14 @@ int main (int argc, char **argv)
 	int setrlimit_r = setrlimit (RLIMIT_NOFILE, &rlim);
     }
 
+    /* setpriority(2) */
+    {
+	int which = PRIO_PROCESS;
+	id_t who = 1;
+	int prio = 0;
+	int setpriority_r = setpriority (which, who, prio);
+    }
+
     /* setsid(2) */
     {
 	pid_t setsid_r = setsid ();
