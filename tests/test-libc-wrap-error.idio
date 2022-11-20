@@ -493,6 +493,11 @@ libc-wrap-error-load "libc-wrap-errors/pread-bad-count-type.idio" "bad parameter
 
 libc-wrap-error-load "libc-wrap-errors/ptsname-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 
+libc-wrap-error-load "libc-wrap-errors/pwrite-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/pwrite-bad-str-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/pwrite-bad-offset-type.idio" "bad parameter type: '#t' a constant is not a libc/off_t"
+libc-wrap-error-load "libc-wrap-errors/pwrite-bad-fd.idio" strerror-EBADF EBADF "pwrite"
+
 libc-wrap-error-load "libc-wrap-errors/read-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/read-bad-count-type.idio" "bad parameter type: '#t' a constant is not a fixnum|libc/size_t"
 
@@ -918,4 +923,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 457 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 463 - libc-wrap-error-skipped)

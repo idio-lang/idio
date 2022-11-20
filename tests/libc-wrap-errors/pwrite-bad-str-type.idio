@@ -1,0 +1,2 @@
+
+pwrite STDOUT_FILENO #t #t

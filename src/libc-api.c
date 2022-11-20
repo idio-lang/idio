@@ -6227,10 +6227,10 @@ a wrapper to libc :manpage:`pread(2)`	\n\
 					\n\
 :param fd: file descriptor		\n\
 :type fd: C/int				\n\
+:param offset: offset			\n\
+:type offset: libc/off_t		\n\
 :param count: number of bytes to read, defaults to ``libc/BUFSIZ``	\n\
 :type count: fixnum or libc/size_t, optional	\n\
-:param offset: 				\n\
-:type offset: libc/off_t		\n\
 :return: string of bytes read or see below			\n\
 :rtype: string or see below					\n\
 :raises ^system-error:						\n\
@@ -6370,6 +6370,68 @@ a wrapper to libc :manpage:`ptsname(3)`		\n\
 
     return idio_pathname_C (ptsname_r);
 #endif
+}
+
+IDIO_DEFINE_PRIMITIVE3_DS ("pwrite", libc_pwrite, (IDIO fd, IDIO str, IDIO offset), "fd str offset", "\
+in C: :samp:`pwrite ({fd}, {str}, {offset})`	\n\
+a wrapper to libc :manpage:`pwrite(2)`	\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:param str: string 			\n\
+:type buf: string			\n\
+:param offset: offset			\n\
+:type offset: libc/off_t		\n\
+:return: number of bytes written	\n\
+:rtype: libc/ssize_t			\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (fd);
+    IDIO_ASSERT (str);
+    IDIO_ASSERT (offset);
+
+   /*
+    * Test Case: libc-errors/pwrite-bad-fd-type.idio
+    *
+    * pwrite #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+   /*
+    * Test Case: libc-errors/pwrite-bad-str-type.idio
+    *
+    * pwrite STDOUT_FILENO #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, str);
+
+   /*
+    * Test Case: libc-errors/pwrite-bad-offset-type.idio
+    *
+    * pwrite STDOUT_FILENO "foo" #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (off_t, offset);
+    off_t C_offset = IDIO_C_TYPE_libc_off_t (offset);
+
+    size_t blen = 0;
+    char *C_str = idio_string_as_C (str, &blen);
+
+    ssize_t pwrite_r = pwrite (C_fd, C_str, blen, C_offset);
+
+    /* check for errors */
+    if (-1 == pwrite_r) {
+	/*
+	 * Test Case: libc-wrap-errors/pwrite-bad-fd.idio
+	 *
+	 * pwrite (C/integer-> -1) "hello\n" (C/integer-> 0 libc/off_t)
+	 */
+        idio_error_system_errno ("pwrite", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_libc_ssize_t (pwrite_r);
 }
 
 /*
@@ -7944,6 +8006,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_posix_openpt);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pread);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ptsname);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pwrite);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_read);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpgid);

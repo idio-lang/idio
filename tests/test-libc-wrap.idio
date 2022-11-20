@@ -434,6 +434,7 @@ tcsetpgrp C/0i (tcgetpgrp C/0i)
 
 ofh := open-output-file testfile
 test (write (fd-handle-fd ofh) "hello\n") (C/integer-> 6 libc/ssize_t)
+test (pwrite (fd-handle-fd ofh) "world\n" (C/integer-> 0 libc/off_t)) (C/integer-> 6 libc/ssize_t)
 close-handle ofh
 
 sig-name SIGHUP
@@ -647,4 +648,4 @@ test STDERR (current-error-handle)
 module tests/libc-wrap
 
 ;; all done?
-Tests? (libc-wrap0 + 126)
+Tests? (libc-wrap0 + 127)

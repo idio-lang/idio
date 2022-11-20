@@ -591,6 +591,15 @@ int main (int argc, char **argv)
 	char *ptsname_r = ptsname (0);
     }
 
+    /* pwrite(2) */
+    {
+	int fd = STDIN_FILENO;
+	char buf[BUFSIZ];
+	size_t count = BUFSIZ;
+	off_t offset = 0;
+	ssize_t pwrite_r = pwrite (fd, buf, count, offset);
+    }
+
     /* read(2) */
     {
 	int fd = STDIN_FILENO;
