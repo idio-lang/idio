@@ -6534,6 +6534,54 @@ If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("readlink", libc_readlink, (IDIO pathname), "pathname", "\
+in C: :samp:`readlink ({pathname}, buf, bufsiz)`	\n\
+a wrapper to libc :manpage:`readlink(2)`	\n\
+					\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:return: contents of symlink		\n\
+:rtype: string				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (pathname);
+
+   /*
+    * Test Case: libc-errors/readlink-bad-pathname-type.idio
+    *
+    * readlink #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+    /*
+     * Test Case: libc-wrap-errors/readlink-bad-pathname-format.idio
+     *
+     * readlink (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "readlink", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+    char buf[PATH_MAX];
+    ssize_t readlink_r = readlink (C_pathname, buf, PATH_MAX);
+
+    /* check for errors */
+    if (-1 == readlink_r) {
+	/*
+	 * Test Case: libc-wrap-errors/readlink-not-a-symlink.idio
+	 *
+	 * touch testfile
+	 * readlink testfile
+	 */
+        idio_error_system_errno ("readlink", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_pathname_C_len (buf, readlink_r);
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("rmdir", libc_rmdir, (IDIO pathname), "pathname", "\
 in C, :samp:`rmdir ({pathname})`				\n\
 a wrapper to libc :manpage:`rmdir(2)`				\n\
@@ -8008,6 +8056,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ptsname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pwrite);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_read);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_readlink);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setrlimit);

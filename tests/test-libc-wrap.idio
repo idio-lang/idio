@@ -486,6 +486,8 @@ truncate testfile (C/integer-> 0 libc/off_t)
 
 linkfile := "__link__"
 ln -sf testfile linkfile
+test (readlink linkfile) (string->pathname testfile)
+
 ; block special devices?
 test (b? "/dev/tty") #f
 test (b? ".")        #f
@@ -648,4 +650,4 @@ test STDERR (current-error-handle)
 module tests/libc-wrap
 
 ;; all done?
-Tests? (libc-wrap0 + 127)
+Tests? (libc-wrap0 + 128)

@@ -608,6 +608,14 @@ int main (int argc, char **argv)
 	ssize_t read_r = read (fd, buf, count);
     }
 
+    /* readlink(2) */
+    {
+	char *pathname = ".";
+	char buf[BUFSIZ];
+	size_t bufsiz = BUFSIZ;
+	ssize_t readlink_r = readlink (pathname, buf, bufsiz);
+    }
+
     /* rmdir(2) */
     {
 	char *pathname = ".";

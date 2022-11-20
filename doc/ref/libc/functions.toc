@@ -66,6 +66,7 @@
 (document libc ptsname)
 (document libc pwrite)
 (document libc read)
+(document libc readlink)
 (document libc rmdir)
 (document libc select)
 (document libc setpgid)
