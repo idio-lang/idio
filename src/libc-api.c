@@ -6221,6 +6221,104 @@ a wrapper to libc :manpage:`posix_openpt(3)`		\n\
     return idio_C_int (posix_openpt_r);
 }
 
+IDIO_DEFINE_PRIMITIVE2V_DS ("pread", libc_pread, (IDIO fd, IDIO offset, IDIO args), "fd offset [count]", "\
+in C: :samp:`pread ({fd}, buf, {count}, {offset})`	\n\
+a wrapper to libc :manpage:`pread(2)`	\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:param count: number of bytes to read, defaults to ``libc/BUFSIZ``	\n\
+:type count: fixnum or libc/size_t, optional	\n\
+:param offset: 				\n\
+:type offset: libc/off_t		\n\
+:return: string of bytes read or see below			\n\
+:rtype: string or see below					\n\
+:raises ^system-error:						\n\
+								\n\
+If :manpage:`read(2)` returned 0 then this code returns ``#<eof>``.	\n\
+								\n\
+If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
+")
+{
+    IDIO_ASSERT (fd);
+    IDIO_ASSERT (offset);
+
+   /*
+    * Test Case: libc-errors/pread-bad-fd-type.idio
+    *
+    * pread #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+   /*
+    * Test Case: libc-errors/pread-bad-offset-type.idio
+    *
+    * pread STDIN_FILENO #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (off_t, offset);
+    off_t C_offset = IDIO_C_TYPE_libc_off_t (offset);
+
+    size_t C_count = BUFSIZ;
+
+    if (idio_isa_pair (args)) {
+	IDIO count = IDIO_PAIR_H (args);
+
+	if (idio_isa_fixnum (count)) {
+	    C_count = IDIO_FIXNUM_VAL (count);
+	} else if (idio_isa_libc_size_t (count)) {
+	    C_count = IDIO_C_TYPE_libc_size_t (count);
+	} else {
+	    /*
+	     * Test Case: libc-wrap-errors/pread-bad-count-type.idio
+	     *
+	     * pread STDIN_FILENO (C/integer-> 0 libc/off_t) #t
+	     */
+	    idio_error_param_type ("fixnum|libc/size_t", count, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
+    char *buf = idio_alloc (C_count);
+
+    ssize_t pread_r = pread (C_fd, buf, C_count, C_offset);
+
+    IDIO r;
+
+    if (-1 == pread_r) {
+	idio_free (buf);
+
+	/*
+	 * Test Case: ??
+	 */
+	if (EAGAIN == errno) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * The Open Group:
+	     *
+	     *   If some process has the pipe open for writing and
+	     *   O_NONBLOCK is set, pread() will return -1 and set
+	     *   errno to [EAGAIN].
+	     */
+	    return idio_S_false;
+	}
+	args = idio_pair (fd, args);
+	idio_error_system_errno ("pread", args, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    } else if (pread_r) {
+	r = idio_string_C_len (buf, pread_r);
+    } else {
+	r = idio_S_eof;
+    }
+
+    idio_free (buf);
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("ptsname", libc_ptsname, (IDIO fd), "fd", "\
 in C, :samp:`ptsname ({fd})`			\n\
 a wrapper to libc :manpage:`ptsname(3)`		\n\
@@ -7844,6 +7942,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_open);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_posix_openpt);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pread);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ptsname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_read);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);

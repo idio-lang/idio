@@ -62,6 +62,7 @@
 (document libc pipe-reader)
 (document libc pipe-writer)
 (document libc posix_openpt)
+(document libc pread)
 (document libc ptsname)
 (document libc read)
 (document libc rmdir)

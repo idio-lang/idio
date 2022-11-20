@@ -487,6 +487,10 @@ libc-wrap-error-load "libc-wrap-errors/pipe-writer-bad-type.idio" "bad parameter
 
 libc-wrap-error-load "libc-wrap-errors/posix_openpt-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 
+libc-wrap-error-load "libc-wrap-errors/pread-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/pread-bad-offset-type.idio" "bad parameter type: '#t' a constant is not a libc/off_t"
+libc-wrap-error-load "libc-wrap-errors/pread-bad-count-type.idio" "bad parameter type: '#t' a constant is not a fixnum|libc/size_t"
+
 libc-wrap-error-load "libc-wrap-errors/ptsname-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 
 libc-wrap-error-load "libc-wrap-errors/read-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
@@ -914,4 +918,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 454 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 457 - libc-wrap-error-skipped)

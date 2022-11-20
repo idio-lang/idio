@@ -384,6 +384,7 @@ close-handle ofh
 
 ifh := open-input-file testfile
 test (read (fd-handle-fd ifh) (C/integer-> 2 libc/size_t)) "he"
+test (pread (fd-handle-fd ifh) (C/integer-> 0 libc/off_t) (C/integer-> 2 libc/size_t)) "he"
 close-handle ifh
 
 ;; should be safe...except if running under, say, rlwrap which has
@@ -646,4 +647,4 @@ test STDERR (current-error-handle)
 module tests/libc-wrap
 
 ;; all done?
-Tests? (libc-wrap0 + 125)
+Tests? (libc-wrap0 + 126)
