@@ -4194,6 +4194,7 @@ a wrapper to libc getgrnam(3)		\n\
 :type name: string			\n\
 :return: :ref:`struct-group <libc/struct-group>` or ``#f``	\n\
 :rtype: C/pointer			\n\
+:raises ^rt-libc-format-error: if `name` contains an ASCII NUL	\n\
 :raises ^system-error:			\n\
 ")
 {
@@ -4527,6 +4528,7 @@ a wrapper to libc getpwnam(3)		\n\
 :type name: string			\n\
 :return: :ref:`struct-passwd <libc/struct-passwd>` or ``#f``	\n\
 :rtype: C/pointer			\n\
+:raises ^rt-libc-format-error: if `name` contains an ASCII NUL	\n\
 :raises ^system-error:			\n\
 ")
 {
@@ -5302,7 +5304,7 @@ a wrapper to libc link()		\n\
 :type newpath: string			\n\
 :return: 0				\n\
 :rtype: C/int				\n\
-:raises ^rt-libc-format-error: if `oldpath` or `newpath` contains an ASCII NUL	\n\
+:raises ^rt-libc-format-error: if `oldpath` or `newpath` contain an ASCII NUL	\n\
 :raises ^system-error:			\n\
 ")
 {
@@ -5415,6 +5417,68 @@ a wrapper to libc :manpage:`localtime(3)`	\n\
     }
 
     return idio_C_pointer_type (idio_CSI_libc_struct_tm, result);
+}
+
+IDIO_DEFINE_PRIMITIVE3_DS ("lockf", libc_lockf, (IDIO fd, IDIO cmd, IDIO len), "fd cmd len", "\
+in C: lockf (fd, cmd, len)		\n\
+a wrapper to libc lockf()		\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:param cmd: see below			\n\
+:type cmd: C/int			\n\
+:param len: relative offset		\n\
+:type len: libc/off_t			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (fd);
+    IDIO_ASSERT (cmd);
+    IDIO_ASSERT (len);
+
+   /*
+    * Test Case: libc-errors/lockf-bad-fd-type.idio
+    *
+    * lockf #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+   /*
+    * Test Case: libc-errors/lockf-bad-cmd-type.idio
+    *
+    * lockf STDIN_FILENO #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, cmd);
+    int C_cmd = IDIO_C_TYPE_int (cmd);
+
+   /*
+    * Test Case: libc-errors/lockf-bad-len-type.idio
+    *
+    * lockf STDIN_FILENO F_LOCK #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (off_t, len);
+    off_t C_len = IDIO_C_TYPE_libc_off_t (len);
+
+    int lockf_r = lockf (C_fd, C_cmd, C_len);
+
+    if (-1 == lockf_r) {
+	/*
+	 * Test Case: libc-wrap-errors/lockf-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * lockf (ph fd+name) F_LOCK (C/integer-> 0 libc/off_t)
+	 */
+        idio_error_system_errno ("lockf", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (lockf_r);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("lstat", libc_lstat, (IDIO pathname), "pathname", "\
@@ -7201,6 +7265,7 @@ a wrapper to libc truncate()		\n\
 :type length: libc/off_t		\n\
 :return: 0				\n\
 :rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `path` contains an ASCII NUL	\n\
 :raises ^system-error:			\n\
 ")
 {
@@ -7768,6 +7833,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_killpg);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_link);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_localtime);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lockf);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lstat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdtemp);
@@ -7849,4 +7915,9 @@ void idio_init_libc_api ()
     idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_PROCESS"), idio_C_int (PRIO_PROCESS), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_PGRP"), idio_C_int (PRIO_PGRP), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_USER"), idio_C_int (PRIO_USER), idio_libc_module);
+
+    idio_module_export_symbol_value (IDIO_SYMBOL ("F_LOCK"), idio_C_int (F_LOCK), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("F_TLOCK"), idio_C_int (F_TLOCK), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("F_ULOCK"), idio_C_int (F_ULOCK), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("F_TEST"), idio_C_int (F_TEST), idio_libc_module);
 }

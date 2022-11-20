@@ -406,6 +406,11 @@ libc-wrap-error-load "libc-wrap-errors/link-same-pathname.idio" "File exists" EE
 
 libc-wrap-error-load "libc-wrap-errors/localtime-bad-t-type.idio" "bad parameter type: '#t' a constant is not a libc/time_t"
 
+libc-wrap-error-load "libc-wrap-errors/lockf-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/lockf-bad-cmd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/lockf-bad-length-type.idio" "bad parameter type: '#t' a constant is not a libc/off_t"
+libc-wrap-error-load "libc-wrap-errors/lockf-none-existent.idio" strerror-EBADF EBADF "lockf"
+
 libc-wrap-error-load "libc-wrap-errors/lstat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/lstat-bad-pathname-format.idio" "lstat: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/lstat-empty-pathname.idio" "No such file or directory" ENOENT "lstat"
@@ -909,4 +914,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 448 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 454 - libc-wrap-error-skipped)

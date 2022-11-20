@@ -316,6 +316,7 @@ fstat (fd-handle-fd ofh)
 fstatvfs (fd-handle-fd ofh)
 fsync (fd-handle-fd ofh)
 ftruncate (fd-handle-fd ofh) (C/integer-> 3 libc/off_t)
+lockf (fd-handle-fd ofh) F_TEST (C/integer-> 3 libc/off_t)
 close-handle ofh
 
 (getegid)

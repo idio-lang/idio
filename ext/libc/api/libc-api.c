@@ -496,6 +496,14 @@ int main (int argc, char **argv)
 	struct tm *tmp = localtime (&t);
     }
 
+    /* lockf(3) */
+    {
+	int fd = STDIN_FILENO;
+	int cmd = F_LOCK;
+	off_t len = 0;
+	int lockf_r = lockf (fd, cmd, len);
+    }
+
     /* lstat(2) */
     {
 	char *pathname = ".";
