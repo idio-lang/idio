@@ -668,6 +668,38 @@ int main (int argc, char **argv)
 	int setpriority_r = setpriority (which, who, prio);
     }
 
+    /* setregid(2) */
+    {
+	gid_t rgid = 0;
+	gid_t egid = 0;
+	int setregid_r = setregid (rgid, egid);
+    }
+
+#ifdef IDIO_HAVE_SET_SAVED_IDS
+    /* setresgid(2) */
+    {
+	gid_t rgid = 0;
+	gid_t egid = 0;
+	gid_t sgid = 0;
+	int setresgid_r = setresgid (rgid, egid, sgid);
+    }
+
+    /* setresuid(2) */
+    {
+	uid_t ruid = 0;
+	uid_t euid = 0;
+	uid_t suid = 0;
+	int setresuid_r = setresuid (ruid, euid, suid);
+    }
+#endif
+
+    /* setreuid(2) */
+    {
+	uid_t ruid = 0;
+	uid_t euid = 0;
+	int setreuid_r = setreuid (ruid, euid);
+    }
+
     /* setsid(2) */
     {
 	pid_t setsid_r = setsid ();

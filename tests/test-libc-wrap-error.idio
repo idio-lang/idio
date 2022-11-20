@@ -540,6 +540,30 @@ libc-wrap-error-load "libc-wrap-errors/setpriority-bad-prio-type.idio" "bad para
    libc-wrap-error-load "libc-wrap-errors/setpriority-bad-pid.idio" "No such process" ESRCH "setpriority"
  }))
 
+libc-wrap-error-load "libc-wrap-errors/setregid-bad-rgid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
+libc-wrap-error-load "libc-wrap-errors/setregid-bad-egid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
+; libc-wrap-errors/setregid-negative-gid.idio is with GID
+
+(cond-expand
+ (IDIO_HAVE_SET_SAVED_IDS {
+   libc-wrap-error-load "libc-wrap-errors/setresgid-bad-rgid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
+   libc-wrap-error-load "libc-wrap-errors/setresgid-bad-egid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
+   libc-wrap-error-load "libc-wrap-errors/setresgid-bad-sgid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
+   ; libc-wrap-errors/setresgid-negative-gid.idio is with GID
+
+   libc-wrap-error-load "libc-wrap-errors/setresuid-bad-ruid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
+   libc-wrap-error-load "libc-wrap-errors/setresuid-bad-euid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
+   libc-wrap-error-load "libc-wrap-errors/setresuid-bad-suid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
+   ; libc-wrap-errors/setresuid-negative-uid.idio is with UID
+ })
+ (else {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 6
+ }))
+
+libc-wrap-error-load "libc-wrap-errors/setreuid-bad-ruid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
+libc-wrap-error-load "libc-wrap-errors/setreuid-bad-euid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
+; libc-wrap-errors/setreuid-negative-uid.idio is with UID
+
 libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-resource-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-resource-nickname.idio" "setrlimit bad resource (:NOT_LIKELY)"
 libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-rlim-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
@@ -704,7 +728,7 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
 (cond-expand
  ("uname/sysname/NetBSD" {
    ;; NetBSD ignores a negative GID
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 6
  })
 
  ;; This Alpine clause is probably a musl libc clause but
@@ -726,7 +750,7 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
       "uname/sysname/Darwin") {
    if running-as-root {
      eprintf "NOTICE: EUID == 0: skipping set EGID invalid GID failure test\n"
-     libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+     libc-wrap-error-skipped = libc-wrap-error-skipped + 6
    } {
      libc-wrap-error-load "libc-wrap-errors/setegid-negative-egid.idio" "Operation not permitted" EPERM "setegid"
      libc-wrap-error-load "libc-wrap-errors/EGID-set-invalid-gid.idio" "Operation not permitted" EPERM "setegid"
@@ -762,7 +786,7 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
 (cond-expand
  ("uname/sysname/NetBSD" {
    ;; NetBSD ignores a negative UID
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 6
  })
 
  ;; This Alpine clause is probably a musl libc clause but
@@ -784,7 +808,7 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
       "uname/sysname/Darwin") {
    if running-as-root {
      eprintf "NOTICE: EUID == 0: skipping set EUID invalid UID failure test\n"
-     libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+     libc-wrap-error-skipped = libc-wrap-error-skipped + 6
    } {
      libc-wrap-error-load "libc-wrap-errors/seteuid-negative-euid.idio" "Operation not permitted" EPERM "seteuid"
      libc-wrap-error-load "libc-wrap-errors/EUID-set-invalid-uid.idio" "Operation not permitted" EPERM "seteuid"
@@ -821,11 +845,11 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
  (virtualisation/WSL {
    ;; WSL doesn't generate an error...
    eprintf "NOTICE: WSL: skipping GID assignment test\n"
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 6
  })
  ("uname/sysname/NetBSD" {
    ;; NetBSD ignores a negative GID
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 6
  })
  ((or "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"
@@ -834,7 +858,7 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
 	   "os-release/VERSION_ID/6")) {
    if running-as-root {
      eprintf "NOTICE: EUID == 0: skipping set GID invalid GID failure test\n"
-     libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+     libc-wrap-error-skipped = libc-wrap-error-skipped + 6
    } {
      libc-wrap-error-load "libc-wrap-errors/setgid-negative-gid.idio" "Operation not permitted" EPERM "setgid"
      libc-wrap-error-load "libc-wrap-errors/GID-set-invalid-gid.idio" "Operation not permitted" EPERM "setgid"
@@ -845,6 +869,22 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
    libc-wrap-error-load "libc-wrap-errors/GID-set-invalid-gid.idio" "Invalid argument" EINVAL "setgid"
  })
 )
+
+(cond-expand
+ ("uname/sysname/SunOS" {
+   libc-wrap-error-load "libc-wrap-errors/setregid-negative-gid.idio" "Invalid argument" EINVAL "setregid"
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/setregid-negative-gid.idio" "Operation not permitted" EPERM "setregid"
+ }))
+
+(cond-expand
+ (IDIO_HAVE_SET_SAVED_IDS {
+   libc-wrap-error-load "libc-wrap-errors/setresgid-negative-gid.idio" "Operation not permitted" EPERM "setresgid"
+ })
+ (else {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+ }))
 
 if running-as-root {
   eprintf "NOTICE: EUID == 0: skipping set GID unused GID failure test\n"
@@ -871,11 +911,11 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
  (virtualisation/WSL {
    ;; WSL doesn't generate an error...
    eprintf "NOTICE: WSL: skipping UID assignment test\n"
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 6
  })
  ("uname/sysname/NetBSD" {
    ;; NetBSD ignores a negative UID
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 6
  })
  ((or "uname/sysname/FreeBSD"
       "uname/sysname/OpenBSD"
@@ -884,7 +924,7 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
 	   "os-release/VERSION_ID/6")) {
    if running-as-root {
      eprintf "NOTICE: EUID == 0: skipping set UID invalid UID failure test\n"
-     libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+     libc-wrap-error-skipped = libc-wrap-error-skipped + 6
    } {
      libc-wrap-error-load "libc-wrap-errors/setuid-negative-uid.idio" "Operation not permitted" EPERM "setuid"
      libc-wrap-error-load "libc-wrap-errors/UID-set-invalid-uid.idio" "Operation not permitted" EPERM "setuid"
@@ -895,6 +935,22 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
    libc-wrap-error-load "libc-wrap-errors/UID-set-invalid-uid.idio" "Invalid argument" EINVAL "setuid"
  })
 )
+
+(cond-expand
+ ("uname/sysname/SunOS" {
+   libc-wrap-error-load "libc-wrap-errors/setreuid-negative-uid.idio" "Invalid argument" EINVAL "setreuid"
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/setreuid-negative-uid.idio" "Operation not permitted" EPERM "setreuid"
+ }))
+
+(cond-expand
+ (IDIO_HAVE_SET_SAVED_IDS {
+   libc-wrap-error-load "libc-wrap-errors/setresuid-negative-uid.idio" "Operation not permitted" EPERM "setresuid"
+ })
+ (else {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+ }))
 
 if running-as-root {
   eprintf "NOTICE: EUID == 0: skipping set UID unused UID failure test\n"
@@ -967,4 +1023,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 497 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 519 - libc-wrap-error-skipped)

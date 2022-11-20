@@ -402,6 +402,14 @@ if (C/== (getsid (C/integer-> 0 libc/pid_t)) (getpid)) {
 
 setpriority PRIO_PROCESS (C/integer-> PID id_t) C/0i
 
+setregid GID EGID
+(cond-expand
+ (IDIO_HAVE_SET_SAVED_IDS {
+   setresgid GID EGID EGID
+   setresuid UID EUID EUID
+ }))
+setreuid UID EUID
+
 setuid EUID
 
 ;; should be safe...

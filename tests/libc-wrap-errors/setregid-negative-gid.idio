@@ -1,0 +1,3 @@
+
+;; XXX -1 == leave unchanged
+setregid (C/integer-> -2 libc/gid_t) (C/integer-> -2 libc/gid_t)

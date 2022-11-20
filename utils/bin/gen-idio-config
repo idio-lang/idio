@@ -221,6 +221,12 @@ idio_have REG_STARTEND
 
 idio_have termios_speeds
 
+##############################
+
+# SunOS, Mac OS and NetBSD do not have setresgid/setresuid
+
+idio_have set_saved_ids
+
 ######################################################################
 
 var_MODULE=$( echo ${opt_module} | tr '[a-z]' '[A-Z]' )
