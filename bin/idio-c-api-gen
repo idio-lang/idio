@@ -2703,13 +2703,14 @@ if (and (function? struct-${struct-idio-id}-ref)
 	    comma-sep-arg* := join-string ", " i-arg-name*
 	    comma-sep-c-arg* := join-string ", " c-arg-name*
 	    space-sep-arg* := join-string " " i-arg-name*
+	    rst-arg* := join-string ", " (map (function (n) (sprintf "{%s}" n)) i-arg-name*)
 
 	    hprintf api-c-fh #S{
 IDIO_DEFINE_PRIMITIVE${fpc}_DS ("${sp-name}", ${lib-n}_${sp-name}, (${comma-sep-fp*}), \"${space-sep-arg*}\", \"\\
-in C: ${sp-name} \(${comma-sep-arg*})		\\n\\
+in C: :samp:`${sp-name} \(${rst-arg*})`		\\n\\
 }
 
-	    hprintf api-c-fh #S{a wrapper to libc ${sp-name}()		\\n\\
+	    hprintf api-c-fh #S{a wrapper to libc :manpage:`${sp-name}()`	\\n\\
 					\\n\\}
 
 	    pc := 1
