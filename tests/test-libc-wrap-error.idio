@@ -516,13 +516,102 @@ libc-wrap-error-load "libc-wrap-errors/rmdir-bad-pathname-format.idio" "rmdir: c
 libc-wrap-error-load "libc-wrap-errors/rmdir-non-existent.idio" "No such file or directory" ENOENT "rmdir"
 
 libc-wrap-error-load "libc-wrap-errors/setegid-bad-egid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
-libc-wrap-error-load "libc-wrap-errors/setegid-negative-egid.idio" "Invalid argument" EINVAL "setegid"
+(cond-expand
+ ("uname/sysname/NetBSD" {
+   ;; NetBSD ignores a negative GID
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+ })
+
+ ;; This Alpine clause is probably a musl libc clause but
+ ;; https://wiki.musl-libc.org/faq.html says they refuse to be
+ ;; identified
+ ("os-release/ID/alpine" {
+   (pattern-case
+    IDIO_SYSTEM_ARCH
+    ("*-musl" {
+      libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+    })
+    (else {
+      libc-wrap-error-load "libc-wrap-errors/setegid-negative-egid.idio" "Invalid argument" EINVAL "setegid"
+    }))
+ })
+ ((or "uname/sysname/FreeBSD"
+      "uname/sysname/OpenBSD"
+      "uname/sysname/Darwin") {
+   if running-as-root {
+     eprintf "NOTICE: EUID == 0: skipping setegid invalid GID failure test\n"
+     libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   } {
+     libc-wrap-error-load "libc-wrap-errors/setegid-negative-egid.idio" "Operation not permitted" EPERM "setegid"
+   }
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/setegid-negative-egid.idio" "Invalid argument" EINVAL "setegid"
+ })
+)
 
 libc-wrap-error-load "libc-wrap-errors/seteuid-bad-euid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
-libc-wrap-error-load "libc-wrap-errors/seteuid-negative-euid.idio" "Invalid argument" EINVAL "seteuid"
+(cond-expand
+ ("uname/sysname/NetBSD" {
+   ;; NetBSD ignores a negative UID
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+ })
+
+ ;; This Alpine clause is probably a musl libc clause but
+ ;; https://wiki.musl-libc.org/faq.html says they refuse to be
+ ;; identified
+ ("os-release/ID/alpine" {
+   (pattern-case
+    IDIO_SYSTEM_ARCH
+    ("*-musl" {
+      libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+    })
+    (else {
+      libc-wrap-error-load "libc-wrap-errors/seteuid-negative-euid.idio" "Invalid argument" EINVAL "setegid"
+    }))
+ })
+ ((or "uname/sysname/FreeBSD"
+      "uname/sysname/OpenBSD"
+      "uname/sysname/Darwin") {
+   if running-as-root {
+     eprintf "NOTICE: EUID == 0: skipping seteuid invalid UID failure test\n"
+     libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   } {
+     libc-wrap-error-load "libc-wrap-errors/seteuid-negative-euid.idio" "Operation not permitted" EPERM "seteuid"
+   }
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/seteuid-negative-euid.idio" "Invalid argument" EINVAL "seteuid"
+ })
+)
 
 libc-wrap-error-load "libc-wrap-errors/setgid-bad-gid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
-libc-wrap-error-load "libc-wrap-errors/setgid-negative-gid.idio" "Invalid argument" EINVAL "setgid"
+(cond-expand
+ (virtualisation/WSL {
+   ;; WSL doesn't generate an error...
+   eprintf "NOTICE: WSL: skipping setgid test\n"
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+ })
+ ("uname/sysname/NetBSD" {
+   ;; NetBSD ignores a negative GID
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+ })
+ ((or "uname/sysname/FreeBSD"
+      "uname/sysname/OpenBSD"
+      "uname/sysname/Darwin"
+      (and "os-release/ID/CentOS"
+	   "os-release/VERSION_ID/6")) {
+   if running-as-root {
+     eprintf "NOTICE: EUID == 0: skipping setgid invalid GID failure test\n"
+     libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   } {
+     libc-wrap-error-load "libc-wrap-errors/setgid-negative-gid.idio" "Operation not permitted" EPERM "setgid"
+   }
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/setgid-negative-gid.idio" "Invalid argument" EINVAL "setgid"
+ })
+)
 
 libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pid-type.idio" "bad parameter type: '#t' a constant is not a libc/pid_t"
 libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pgid-type.idio" "bad parameter type: '#t' a constant is not a libc/pid_t"
@@ -535,7 +624,32 @@ libc-wrap-error-load "libc-wrap-errors/setrlimit-rlim-invalid-pointer-type.idio"
 libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-rlim.idio" "Invalid argument" EINVAL "setrlimit"
 
 libc-wrap-error-load "libc-wrap-errors/setuid-bad-uid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
-libc-wrap-error-load "libc-wrap-errors/setuid-negative-uid.idio" "Invalid argument" EINVAL "setuid"
+(cond-expand
+ (virtualisation/WSL {
+   ;; WSL doesn't generate an error...
+   eprintf "NOTICE: WSL: skipping setuid test\n"
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+ })
+ ("uname/sysname/NetBSD" {
+   ;; NetBSD ignores a negative UID
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+ })
+ ((or "uname/sysname/FreeBSD"
+      "uname/sysname/OpenBSD"
+      "uname/sysname/Darwin"
+      (and "os-release/ID/CentOS"
+	   "os-release/VERSION_ID/6")) {
+   if running-as-root {
+     eprintf "NOTICE: EUID == 0: skipping setuid invalid UID failure test\n"
+     libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   } {
+     libc-wrap-error-load "libc-wrap-errors/setuid-negative-uid.idio" "Operation not permitted" EPERM "setuid"
+   }
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/setuid-negative-uid.idio" "Invalid argument" EINVAL "setuid"
+ })
+)
 
 libc-wrap-error-load "libc-wrap-errors/signal-bad-sig-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/signal-bad-handler-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
@@ -760,7 +874,7 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
       libc-wrap-error-skipped = libc-wrap-error-skipped + 3
     })
     (else {
-      libc-wrap-error-load "libc-wrap-errors/EGID-set-invalid-gid.idio" "Invalid argument" EINVAL "setegid"
+      libc-wrap-error-load "libc-wrap-errors/EUID-set-invalid-uid.idio" "Invalid argument" EINVAL "setegid"
     }))
  })
  ((or "uname/sysname/FreeBSD"
