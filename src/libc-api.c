@@ -6582,6 +6582,84 @@ a wrapper to libc :manpage:`readlink(2)`	\n\
     return idio_pathname_C_len (buf, readlink_r);
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("rename", libc_rename, (IDIO oldpath, IDIO newpath), "oldpath newpath", "\
+in C: :samp:`rename ({oldpath}, {newpath})`		\n\
+a wrapper to libc :manpage:`rename(2)`	\n\
+					\n\
+:param oldpath: existing file name	\n\
+:type oldpath: string			\n\
+:param newpath: new file name		\n\
+:type newpath: string			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `oldpath` or `newpath` contain an ASCII NUL	\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (oldpath);
+    IDIO_ASSERT (newpath);
+
+   /*
+    * Test Case: libc-errors/rename-bad-oldpath-type.idio
+    *
+    * rename #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, oldpath);
+
+    size_t free_C_oldpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/rename-bad-oldpath-format.idio
+     *
+     * rename (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     */
+    char *C_oldpath = idio_libc_string_C (oldpath, "rename", &free_C_oldpath, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/rename-bad-newpath-type.idio
+    *
+    * rename "foo" #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, newpath);
+
+    size_t free_C_newpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/rename-bad-newpath-format.idio
+     *
+     * rename "foo" (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *C_newpath = idio_libc_string_C (newpath, "rename", &free_C_newpath, IDIO_C_FUNC_LOCATION ());
+
+    int rename_r = rename (C_oldpath, C_newpath);
+
+    if (free_C_oldpath) {
+	IDIO_GC_FREE (C_oldpath, free_C_oldpath);
+    }
+
+    if (free_C_newpath) {
+	IDIO_GC_FREE (C_newpath, free_C_newpath);
+    }
+
+    if (-1 == rename_r) {
+	/*
+	 * Test Case: libc-wrap-errors/rename-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * tmp := pht fd+name
+	 * unlink tmp
+	 * tmp2 := append-string tmp ".2"
+	 * rename tmp tmp2
+	 */
+        idio_error_system_errno ("rename", IDIO_LIST2 (oldpath, newpath), IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (rename_r);
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("rmdir", libc_rmdir, (IDIO pathname), "pathname", "\
 in C, :samp:`rmdir ({pathname})`				\n\
 a wrapper to libc :manpage:`rmdir(2)`				\n\
@@ -8057,6 +8135,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pwrite);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_read);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_readlink);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rename);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setrlimit);

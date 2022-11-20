@@ -1,0 +1,8 @@
+
+fd+name := mkstemp "XXXXXX"
+close (ph fd+name)
+tmp := pht fd+name
+unlink tmp
+
+tmp2 := append-string tmp ".2"
+rename tmp tmp2

@@ -483,7 +483,7 @@ int main (int argc, char **argv)
 	int killpg_r = killpg ((int) pgrp, sig);
     }
 
-    /* link(3) */
+    /* link(2) */
     {
 	char *oldpath = "old";
 	char *newpath = "new";
@@ -614,6 +614,13 @@ int main (int argc, char **argv)
 	char buf[BUFSIZ];
 	size_t bufsiz = BUFSIZ;
 	ssize_t readlink_r = readlink (pathname, buf, bufsiz);
+    }
+
+    /* rename(2) */
+    {
+	char *oldpath = "old";
+	char *newpath = "new";
+	int rename_r = rename (oldpath, newpath);
     }
 
     /* rmdir(2) */

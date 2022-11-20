@@ -505,6 +505,12 @@ libc-wrap-error-load "libc-wrap-errors/readlink-bad-pathname-type.idio" "bad par
 libc-wrap-error-load "libc-wrap-errors/readlink-bad-pathname-format.idio" "readlink: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/readlink-not-a-symlink.idio" "Invalid argument" EINVAL "readlink"
 
+libc-wrap-error-load "libc-wrap-errors/rename-bad-oldpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/rename-bad-oldpath-format.idio" "rename: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/rename-bad-newpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/rename-bad-newpath-format.idio" "rename: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/rename-non-existent.idio" "No such file or directory" ENOENT "rename"
+
 libc-wrap-error-load "libc-wrap-errors/rmdir-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/rmdir-bad-pathname-format.idio" "rmdir: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/rmdir-non-existent.idio" "No such file or directory" ENOENT "rmdir"
@@ -927,4 +933,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 468 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 475 - libc-wrap-error-skipped)

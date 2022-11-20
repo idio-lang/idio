@@ -351,7 +351,8 @@ tmp := (make-tmp-file)
 tmp2 := append-string tmp ".2"
 link tmp tmp2
 unlink tmp2
-unlink tmp
+rename tmp tmp2
+unlink tmp2
 
 ;; test mkdir(2) for which we need a directory we can mkdir safely --
 ;; how about a random one we just deleted?
