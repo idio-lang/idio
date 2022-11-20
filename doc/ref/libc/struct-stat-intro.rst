@@ -32,5 +32,5 @@ In addition the pseudo-member names ``st_atime``, ``st_mtime`` and
 :ref:`struct-timespec <libc/struct-timespec>` members to maintain the
 legacy interface.
 
-See also :ref:`stat <libc/stat>`.
+See also :ref:`stat <libc/stat>` and :ref:`fstat <libc/fstat>`.
 

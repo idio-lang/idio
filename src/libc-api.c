@@ -3036,8 +3036,8 @@ a wrapper to libc :manpage:`chdir(2)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("chmod", libc_chmod, (IDIO pathname, IDIO mode), "pathname mode", "\
-in C: chmod (pathname, mode)		\n\
-a wrapper to libc chmod()		\n\
+in C: :samp:`chmod ({pathname}, {mode})`	\n\
+a wrapper to libc :manpage:`chmod(2)`		\n\
 					\n\
 :param pathname: pathname		\n\
 :type pathname: string			\n\
@@ -3100,8 +3100,8 @@ a wrapper to libc chmod()		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("chown", libc_chown, (IDIO pathname, IDIO owner, IDIO group), "pathname owner group", "\
-in C: chown (pathname, owner, group)		\n\
-a wrapper to libc chown()		\n\
+in C: :samp:`chown ({pathname}, {owner}, {group})`	\n\
+a wrapper to libc :manpage:`chown(2)`	\n\
 					\n\
 :param pathname: pathname		\n\
 :type pathname: string			\n\
@@ -3175,8 +3175,8 @@ a wrapper to libc chown()		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("chroot", libc_chroot, (IDIO path), "path", "\
-in C: chroot (path)		\n\
-a wrapper to libc chroot()		\n\
+in C: :samp:`chroot ({path})`		\n\
+a wrapper to libc :manpage:`chroot(2)`	\n\
 					\n\
 :param path: path			\n\
 :type path: string			\n\
@@ -3268,8 +3268,8 @@ a wrapper to libc :manpage:`close(2)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("ctermid", libc_ctermid, (void), "", "\
-in C: ctermid ()		\n\
-a wrapper to libc ctermid()		\n\
+in C: :samp:`ctermid (s)`		\n\
+a wrapper to libc :manpage:`ctermid(3)`	\n\
 					\n\
 :return: controlling terminal pathname	\n\
 :rtype: string				\n\
@@ -3451,8 +3451,8 @@ a wrapper to libc :manpage:`dup2(2)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("fchdir", libc_fchdir, (IDIO fd), "fd", "\
-in C: fchdir (fd)		\n\
-a wrapper to libc fchdir()		\n\
+in C: :samp:`fchdir ({fd})`		\n\
+a wrapper to libc :manpage:`fchdir(2)`	\n\
 					\n\
 :param fd: file descriptor		\n\
 :type fd: C/int				\n\
@@ -3491,8 +3491,8 @@ a wrapper to libc fchdir()		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("fchmod", libc_fchmod, (IDIO fd, IDIO mode), "fd mode", "\
-in C: fchmod (fd, mode)		\n\
-a wrapper to libc fchmod()		\n\
+in C: :samp:`fchmod ({fd}, {mode})`	\n\
+a wrapper to libc :manpage:`fchmod(2)`	\n\
 					\n\
 :param fd: file descriptor		\n\
 :type fd: C/int				\n\
@@ -3541,8 +3541,8 @@ a wrapper to libc fchmod()		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("fchown", libc_fchown, (IDIO fd, IDIO owner, IDIO group), "fd owner group", "\
-in C: fchown (fd, owner, group)		\n\
-a wrapper to libc fchown()		\n\
+in C: :samp:`fchown ({fd}, {owner}, {group})`	\n\
+a wrapper to libc :manpage:`fchown(2)`	\n\
 					\n\
 :param fd: file descriptor		\n\
 :type fd: C/int				\n\
@@ -3806,8 +3806,8 @@ a wrapper to libc :manpage:`fstat(2)`		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("fstatvfs", libc_fstatvfs, (IDIO fd), "fd", "\
-in C: fstatvfs (fd)			\n\
-a wrapper to libc fstatvfs()		\n\
+in C: :samp:`fstatvfs ({fd})`		\n\
+a wrapper to libc :manpage:`fstatvfs(3)`	\n\
 					\n\
 :param fd: file descriptor		\n\
 :type fd: C/int				\n\
@@ -3848,8 +3848,8 @@ a wrapper to libc fstatvfs()		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("fsync", libc_fsync, (IDIO fd), "fd", "\
-in C: fsync (fd)		\n\
-a wrapper to libc fsync()		\n\
+in C: :samp:`fsync ({fd})`		\n\
+a wrapper to libc :manpage:`fsync(2)`	\n\
 					\n\
 :param fd: file descriptor		\n\
 :type fd: C/int				\n\
@@ -3888,8 +3888,8 @@ a wrapper to libc fsync()		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("ftruncate", libc_ftruncate, (IDIO fd, IDIO length), "fd length", "\
-in C: ftruncate (fd, length)		\n\
-a wrapper to libc ftruncate()		\n\
+in C: :samp:`ftruncate ({fd}, {length})`	\n\
+a wrapper to libc :manpage:`ftruncate(2)`	\n\
 					\n\
 :param fd: file descriptor		\n\
 :type fd: C/int				\n\
@@ -4024,8 +4024,8 @@ a wrapper to libc :manpage:`getcwd(3)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getegid", libc_getegid, (), "", "\
-in C: getegid ()		\n\
-a wrapper to libc getegid()	\n\
+in C: :samp:`getegid ()`		\n\
+a wrapper to libc :manpage:`getegid(2)`	\n\
 				\n\
 :return: effective group ID	\n\
 :rtype: libc/gid_t		\n\
@@ -4038,8 +4038,8 @@ a wrapper to libc getegid()	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("geteuid", libc_geteuid, (), "", "\
-in C: geteuid ()		\n\
-a wrapper to libc geteuid()	\n\
+in C: :samp:`geteuid ()`	\n\
+a wrapper to libc :manpage:`geteuid(2)`	\n\
 				\n\
 :return: effective user ID	\n\
 :rtype: libc/uid_t		\n\
@@ -4052,8 +4052,8 @@ a wrapper to libc geteuid()	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getgid", libc_getgid, (), "", "\
-in C: getgid ()			\n\
-a wrapper to libc getgid()	\n\
+in C: :samp:`getgid ()`		\n\
+a wrapper to libc :manpage:`getgid(2)`	\n\
 				\n\
 :return: real group ID		\n\
 :rtype: libc/gid_t		\n\
@@ -4066,8 +4066,8 @@ a wrapper to libc getgid()	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("getgrgid", libc_getgrgid, (IDIO gid), "gid", "\
-in C: getgrgid (gid)			\n\
-a wrapper to libc getgrgid(3)		\n\
+in C: :samp:`getgrgid ({gid})`			\n\
+a wrapper to libc :manpage:`getgrgid(3)`	\n\
 					\n\
 :param gid: 				\n\
 :type gid: unsigned fixnum or libc/gid_t	\n\
@@ -4187,8 +4187,8 @@ a wrapper to libc getgrgid(3)		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("getgrnam", libc_getgrnam, (IDIO name), "name", "\
-in C: getgrnam (name)			\n\
-a wrapper to libc getgrnam(3)		\n\
+in C: :samp:`getgrnam ({name})`		\n\
+a wrapper to libc :manpage:`getgrnam(3)`	\n\
 					\n\
 :param name: 				\n\
 :type name: string			\n\
@@ -4322,8 +4322,8 @@ a wrapper to libc getgrnam(3)		\n\
 #endif
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getlogin", libc_getlogin, (), "", "\
-in C: getlogin ()		\n\
-a wrapper to libc getlogin()	\n\
+in C: :samp:`getlogin ()`	\n\
+a wrapper to libc :manpage:`getlogin(3)`	\n\
 				\n\
 :return: user name		\n\
 :rtype: string			\n\
@@ -4464,8 +4464,8 @@ a wrapper to libc :manpage:`getppid(2)`				\n\
  * uint.
  */
 IDIO_DEFINE_PRIMITIVE2_DS ("getpriority", libc_getpriority, (IDIO which, IDIO who), "which who", "\
-in C: getpriority (which, who)		\n\
-a wrapper to libc getpriority()		\n\
+in C: :samp:`getpriority ({which}, {who})`	\n\
+a wrapper to libc :manpage:`getpriority(2)`	\n\
 					\n\
 :param which: see below			\n\
 :type which: C/int			\n\
@@ -4521,8 +4521,8 @@ appropriate value.					\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("getpwnam", libc_getpwnam, (IDIO name), "name", "\
-in C: getpwnam (name)			\n\
-a wrapper to libc getpwnam(3)		\n\
+in C: :samp:`getpwnam ({name})`		\n\
+a wrapper to libc :manpage:`getpwnam(3)`	\n\
 					\n\
 :param name: 				\n\
 :type name: string			\n\
@@ -4650,8 +4650,8 @@ a wrapper to libc getpwnam(3)		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("getpwuid", libc_getpwuid, (IDIO uid), "uid", "\
-in C: getpwuid (uid)			\n\
-a wrapper to libc getpwuid(3)		\n\
+in C: :samp:`getpwuid ({uid})`			\n\
+a wrapper to libc :manpage:`getpwuid(3)`	\n\
 					\n\
 :param uid: 				\n\
 :type uid: unsigned fixnum or libc/uid_t	\n\
@@ -4946,8 +4946,8 @@ a wrapper to libc :manpage:`gettimeofday(2)`			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getuid", libc_getuid, (), "", "\
-in C: getuid ()			\n\
-a wrapper to libc getuid()	\n\
+in C: :samp:`getuid ()`		\n\
+a wrapper to libc :manpage:`getuid(2)`	\n\
 				\n\
 :return: real user ID		\n\
 :rtype: libc/uid_t		\n\
@@ -5295,8 +5295,8 @@ a wrapper to libc killpg(3)		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("link", libc_link, (IDIO oldpath, IDIO newpath), "oldpath newpath", "\
-in C: link (oldpath, newpath)		\n\
-a wrapper to libc link()		\n\
+in C: :samp:`link ({oldpath}, {newpath})`	\n\
+a wrapper to libc :manpage:`link(2)`		\n\
 					\n\
 :param oldpath: existing file name	\n\
 :type oldpath: string			\n\
@@ -5420,8 +5420,8 @@ a wrapper to libc :manpage:`localtime(3)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("lockf", libc_lockf, (IDIO fd, IDIO cmd, IDIO len), "fd cmd len", "\
-in C: lockf (fd, cmd, len)		\n\
-a wrapper to libc lockf()		\n\
+in C: :samp:`lockf ({fd}, {cmd}, {len})`	\n\
+a wrapper to libc :manpage:`lockf(3)`		\n\
 					\n\
 :param fd: file descriptor		\n\
 :type fd: C/int				\n\
@@ -5666,7 +5666,7 @@ a wrapper to libc :manpage:`mkdtemp(3)`				\n\
 
 IDIO_DEFINE_PRIMITIVE2_DS ("mkfifo", libc_mkfifo, (IDIO path, IDIO mode), "path mode", "\
 in C, :samp:`mkfifo ({path}, {mode})`	\n\
-a wrapper to libc mkfifo()		\n\
+a wrapper to libc :manpage:`mkfifo(2)`	\n\
 					\n\
 :param path: filename of FIFO		\n\
 :type path: string			\n\
@@ -6002,7 +6002,7 @@ and `nsec` can be a ``C/long`` | fixnum | bignum	\n\
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("open", libc_open, (IDIO pathname, IDIO flags, IDIO args), "pathname flags [mode]", "\
 in C, :samp:`open ({pathname}, {mode})`	\n\
-a wrapper to libc open()		\n\
+a wrapper to libc :manpage:`open(2)`	\n\
 					\n\
 :param pathname: filename		\n\
 :type pathname: string			\n\
@@ -6288,7 +6288,7 @@ a wrapper to libc :manpage:`ptsname(3)`		\n\
  * We allow a fixnum (2 bits short of an intptr_t) or a libc/size_t.
  */
 IDIO_DEFINE_PRIMITIVE1V_DS ("read", libc_read, (IDIO fd, IDIO args), "fd [count]", "\
-in C, :samp:`read ({fd}[, {count}])`				\n\
+in C, :samp:`read ({fd}, buf, {count})`				\n\
 a wrapper to libc :manpage:`read(2)`				\n\
 								\n\
 :param fd: file descriptor					\n\
@@ -6709,8 +6709,8 @@ a wrapper to libc :manpage:`stat(2)`		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("statvfs", libc_statvfs, (IDIO path), "path", "\
-in C: statvfs (path)			\n\
-a wrapper to libc statvfs()		\n\
+in C: :samp:`statvfs ({path})`		\n\
+a wrapper to libc :manpage:`statvfs(3)`	\n\
 					\n\
 :param path: filename to stat		\n\
 :type path: string			\n\
@@ -6762,7 +6762,7 @@ a wrapper to libc statvfs()		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("strerror", libc_strerror, (IDIO errnum), "errnum", "\
-in C, :samp:`strerror ({errnum}`)`				\n\
+in C, :samp:`strerror ({errnum})`				\n\
 a wrapper to libc :manpage:`strerror(3)`			\n\
 								\n\
 :param errnum: error code to describe				\n\
@@ -7256,8 +7256,8 @@ is available for reference as ``libc/CLK_TCK``.			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("truncate", libc_truncate, (IDIO path, IDIO length), "path length", "\
-in C: truncate (path, length)		\n\
-a wrapper to libc truncate()		\n\
+in C: :samp:`truncate ({path}, {length})`	\n\
+a wrapper to libc :manpage:`truncate(2)`	\n\
 					\n\
 :param path: file name			\n\
 :type path: string			\n\

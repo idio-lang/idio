@@ -577,6 +577,15 @@ int main (int argc, char **argv)
 	int posix_openpt_r = posix_openpt (O_RDWR);
     }
 
+    /* pread(2) */
+    {
+	int fd = STDIN_FILENO;
+	char buf[BUFSIZ];
+	size_t count = BUFSIZ;
+	off_t offset = 0;
+	ssize_t pread_r = pread (fd, buf, count, offset);
+    }
+
     /* ptsname(3) */
     {
 	char *ptsname_r = ptsname (0);
