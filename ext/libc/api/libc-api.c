@@ -337,7 +337,7 @@ int main (int argc, char **argv)
 	int ftruncate_r = ftruncate (fd, length);
     }
 
-#ifdef IDIO_HAVE_FUTIMES
+#if ! defined (IDIO_NO_FUTIMES)
     /* futimes(2) */
     {
 	int fd = STDIN_FILENO;
@@ -684,7 +684,7 @@ int main (int argc, char **argv)
 	int setregid_r = setregid (rgid, egid);
     }
 
-#ifdef IDIO_HAVE_SET_SAVED_IDS
+#if ! defined (IDIO_NO_SET_SAVED_IDS)
     /* setresgid(2) */
     {
 	gid_t rgid = 0;
@@ -848,7 +848,7 @@ int main (int argc, char **argv)
 	 * speed_t which we use with idio_libc_speed_t in
 	 * src/libc-api.c.
 	 */
-#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
+#if ! defined (IDIO_NO_TERMIOS_SPEEDS)
 	speed_t ospeed = (speed_t) t.c_ospeed;
 #endif
     }

@@ -2815,7 +2815,7 @@ void *memrchr (void const *s, int const c, size_t n)
 }
 #endif
 
-#if ! defined (IDIO_HAVE_CLOCK_GETTIME)
+#if defined (IDIO_NO_CLOCK_GETTIME)
 #ifdef __MACH__
 /*
  * Originally https://gist.github.com/jbenet/1087739 from

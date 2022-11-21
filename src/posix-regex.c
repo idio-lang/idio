@@ -68,7 +68,7 @@ static IDIO idio_S_REG_NOSUB;
 static IDIO idio_S_REG_NEWLINE;
 static IDIO idio_S_REG_NOTBOL;
 static IDIO idio_S_REG_NOTEOL;
-#ifdef IDIO_HAVE_REG_STARTEND
+#if ! defined (IDIO_NO_REG_STARTEND)
 static IDIO idio_S_REG_STARTEND;
 #endif
 static IDIO idio_S_REG_VERBOSE;
@@ -280,7 +280,7 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
 		eflags |= REG_NOTBOL;
 	    } else if (idio_S_REG_NOTEOL == flag) {
 		eflags |= REG_NOTEOL;
-#ifdef IDIO_HAVE_REG_STARTEND
+#if ! defined (IDIO_NO_REG_STARTEND)
 	    } else if (idio_S_REG_STARTEND == flag) {
 		/*
 		 * We don't support this anyway as we're not in a
@@ -472,9 +472,10 @@ void idio_init_posix_regex ()
     idio_S_REG_NEWLINE  = IDIO_SYMBOL ("REG_NEWLINE");
     idio_S_REG_NOTBOL   = IDIO_SYMBOL ("REG_NOTBOL");
     idio_S_REG_NOTEOL   = IDIO_SYMBOL ("REG_NOTEOL");
-#ifdef IDIO_HAVE_REG_STARTEND
+#ifdef IDIO_NO_REG_STARTEND
+    idio_add_feature (IDIO_SYMBOL ("IDIO_NO_REG_STARTEND"));
+#else
     idio_S_REG_STARTEND = IDIO_SYMBOL ("REG_STARTEND");
-    idio_add_module_feature (idio_libc_module, idio_S_REG_STARTEND);
 #endif
     idio_S_REG_VERBOSE  = IDIO_SYMBOL ("REG_VERBOSE");
 }

@@ -166,7 +166,7 @@ struct-termios-ref termios 'c_cflag
 struct-termios-ref termios 'c_lflag
 struct-termios-ref termios 'c_cc
 (cond-expand
- (IDIO_HAVE_TERMIOS_SPEEDS {
+ ((not IDIO_NO_TERMIOS_SPEEDS) {
    struct-termios-ref termios 'c_ispeed
    struct-termios-ref termios 'c_ospeed
  }))
@@ -177,7 +177,7 @@ struct-termios-set! termios 'c_cflag (C/integer-> 0 libc/tcflag_t)
 struct-termios-set! termios 'c_lflag (C/integer-> 0 libc/tcflag_t)
 struct-termios-set! termios 'c_cc    (struct-termios-ref termios 'c_cc)
 (cond-expand
- (IDIO_HAVE_TERMIOS_SPEEDS {
+ ((not IDIO_NO_TERMIOS_SPEEDS) {
    struct-termios-set! termios 'c_ispeed (C/integer-> 0 libc/speed_t)
    struct-termios-set! termios 'c_ospeed (C/integer-> 0 libc/speed_t)
  }))
@@ -289,15 +289,15 @@ nfd := fcntl C/0i F_DUPFD (C/integer-> 99)
 close nfd
 
 (cond-expand
- (libc/F_DUPFD_CLOEXEC {
+ (IDIO_NO_F_DUPFD_CLOEXEC {
+   printf "no F_DUPFD_CLOEXEC on this system, skipping code coverage\n"
+ })
+ (else {
    nfd := fcntl C/0i F_DUPFD_CLOEXEC (C/integer-> 99)
    close nfd
 
    nfd := fcntl C/0i F_DUPFD_CLOEXEC (C/integer-> 99)
    close nfd
- })
- (else {
-   printf "no F_DUPFD_CLOEXEC on this system, skipping code coverage\n"
  }))
 
 ;; get the file descriptor flags -- CLOEXEC?
@@ -317,7 +317,7 @@ fstatvfs (fd-handle-fd ofh)
 fsync (fd-handle-fd ofh)
 ftruncate (fd-handle-fd ofh) (C/integer-> 3 libc/off_t)
 (cond-expand
- (IDIO_HAVE_FUTIMES {
+ ((not IDIO_NO_FUTIMES) {
    tv := (gettimeofday)
    futimes (fd-handle-fd ofh) tv tv
  }))
@@ -409,7 +409,7 @@ setpriority PRIO_PROCESS (C/integer-> PID id_t) C/0i
 
 setregid GID EGID
 (cond-expand
- (IDIO_HAVE_SET_SAVED_IDS {
+ ((not IDIO_NO_SET_SAVED_IDS) {
    setresgid GID EGID EGID
    setresuid UID EUID EUID
  }))

@@ -1296,7 +1296,7 @@ IDIO_SYMBOL_DECL (c_cflag);
 IDIO_SYMBOL_DECL (c_lflag);
 IDIO_SYMBOL_DECL (c_line);
 IDIO_SYMBOL_DECL (c_cc);
-#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
+#if ! defined (IDIO_NO_TERMIOS_SPEEDS)
 IDIO_SYMBOL_DECL (c_ispeed);
 IDIO_SYMBOL_DECL (c_ospeed);
 #endif
@@ -1362,7 +1362,7 @@ in C, :samp:`{termios}->{member}`	\n\
         memcpy ((void *) rp, (void *) &termiosp->c_cc, alen);
         return idio_C_pointer_free_me (rp);
     }
-#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
+#if ! defined (IDIO_NO_TERMIOS_SPEEDS)
     else if (idio_S_c_ispeed == member) {
         return idio_libc_speed_t (termiosp->c_ispeed);
     } else if (idio_S_c_ospeed == member) {
@@ -1487,7 +1487,7 @@ The C/ types for `val` are `libc/tcflag_t`, `libc/speed_t` and `C/pointer` for `
         memcpy ((void *) &termiosp->c_cc, (void *) valp, alen);
         return idio_S_unspec;
     }
-#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
+#if ! defined (IDIO_NO_TERMIOS_SPEEDS)
     else if (idio_S_c_ispeed == member) {
        /*
 	* Test Case: libc-errors/struct-termios-set-c_ispeed-bad-value-type.idio
@@ -1566,7 +1566,7 @@ IDIO idio_libc_struct_termios_as_string (struct termios *termiosp)
 
     idio_display_C ("<<1cc_t[]>>", CSI_sh);
 
-#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
+#if ! defined (IDIO_NO_TERMIOS_SPEEDS)
     idio_display_C (" c_ispeed:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_speed_t);
@@ -3938,7 +3938,7 @@ a wrapper to libc :manpage:`ftruncate(2)`	\n\
     return idio_C_int (ftruncate_r);
 }
 
-#ifdef IDIO_HAVE_FUTIMES
+#if ! defined (IDIO_NO_FUTIMES)
 IDIO_DEFINE_PRIMITIVE3_DS ("futimes", libc_futimes, (IDIO fd, IDIO atime, IDIO mtime), "fd atime mtime", "\
 in C: :samp:`futimes ({fd}, ({atime}, {mtime}))`	\n\
 a wrapper to libc :manpage:`futimes(3)`	\n\
@@ -4403,7 +4403,7 @@ a wrapper to libc :manpage:`getgrnam(3)`	\n\
 /*
  * Mac OS 10.5.8
  */
-#ifndef L_cuserid
+#if ! defined (L_cuserid)
 #include <sys/param.h>
 #define L_cuserid MAXLOGNAME
 #endif
@@ -7075,7 +7075,7 @@ a wrapper to libc :manpage:`setregid(2)`	\n\
     return idio_C_int (setregid_r);
 }
 
-#ifdef IDIO_HAVE_SET_SAVED_IDS
+#if ! defined (IDIO_NO_SET_SAVED_IDS)
 IDIO_DEFINE_PRIMITIVE3_DS ("setresgid", libc_setresgid, (IDIO rgid, IDIO egid, IDIO sgid), "rgid egid sgid", "\
 in C: :samp:`setresgid ({rgid}, {egid}, {sgid})`	\n\
 a wrapper to libc :manpage:`setresgid(2)`	\n\
@@ -8841,7 +8841,7 @@ void idio_libc_api_add_primitives ()
     IDIO_FIELD_DEF ("c_lflag", c_lflag);
     IDIO_FIELD_DEF ("c_line", c_line);
     IDIO_FIELD_DEF ("c_cc", c_cc);
-#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
+#if ! defined (IDIO_NO_TERMIOS_SPEEDS)
     IDIO_FIELD_DEF ("c_ispeed", c_ispeed);
     IDIO_FIELD_DEF ("c_ospeed", c_ospeed);
 #endif
@@ -8930,7 +8930,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fsync);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ftruncate);
 
-#ifdef IDIO_HAVE_FUTIMES
+#if ! defined (IDIO_NO_FUTIMES)
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_futimes);
 #endif
 
@@ -8986,7 +8986,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpriority);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setregid);
 
-#ifdef IDIO_HAVE_SET_SAVED_IDS
+#if ! defined (IDIO_NO_SET_SAVED_IDS)
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setresgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setresuid);
 #endif

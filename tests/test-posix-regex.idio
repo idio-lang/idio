@@ -127,7 +127,7 @@ test (array->list (regexec crx "ab1\nab2" 'REG_NOTEOL)) '("b1" "b1")
 
 ; REG_STARTEND is silently ignored
 (cond-expand
- (libc/REG_STARTEND {
+ ((not IDIO_NO_REG_STARTEND) {
    regexec crx "" 'REG_STARTEND
  }))
 

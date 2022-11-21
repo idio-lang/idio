@@ -3651,9 +3651,9 @@ void idio_init_libc_wrap ()
     idio_module_export_symbol_value (IDIO_SYMBOL ("FD_CLOEXEC"), idio_C_int (FD_CLOEXEC), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("F_DUPFD"), idio_C_int (F_DUPFD), idio_libc_module);
 #if defined (F_DUPFD_CLOEXEC)
-    IDIO sym = IDIO_SYMBOL ("F_DUPFD_CLOEXEC");
-    idio_add_module_feature (idio_libc_module, sym);
-    idio_module_export_symbol_value (sym, idio_C_int (F_DUPFD_CLOEXEC), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("F_DUPFD_CLOEXEC"), idio_C_int (F_DUPFD_CLOEXEC), idio_libc_module);
+#else
+    idio_add_feature (IDIO_SYMBOL ("IDIO_NO_F_DUPFD_CLOEXEC"));
 #endif
     idio_S_F_GETFL = IDIO_SYMBOL ("F_GETFL");
     idio_S_F_SETFL = IDIO_SYMBOL ("F_SETFL");
@@ -3872,24 +3872,24 @@ void idio_init_libc_wrap ()
     idio_add_feature (IDIO_SYMBOL ("/dev/fd"));
 #endif
 
-#ifdef IDIO_CAN_POLL_DEVICE
-    idio_add_feature (IDIO_SYMBOL ("IDIO_CAN_POLL_DEVICE"));
+#ifdef IDIO_NO_POLL_DEVICE
+    idio_add_feature (IDIO_SYMBOL ("IDIO_NO_POLL_DEVICE"));
 #endif
 
 #ifdef IDIO_POLLHUP_OCCLUDES_POLLIN
     idio_add_feature (IDIO_SYMBOL ("IDIO_POLLHUP_OCCLUDES_POLLIN"));
 #endif
 
-#ifdef IDIO_HAVE_TERMIOS_SPEEDS
-    idio_add_feature (IDIO_SYMBOL ("IDIO_HAVE_TERMIOS_SPEEDS"));
+#ifdef IDIO_NO_TERMIOS_SPEEDS
+    idio_add_feature (IDIO_SYMBOL ("IDIO_NO_TERMIOS_SPEEDS"));
 #endif
 
-#ifdef IDIO_HAVE_SET_SAVED_IDS
-    idio_add_feature (IDIO_SYMBOL ("IDIO_HAVE_SET_SAVED_IDS"));
+#ifdef IDIO_NO_SET_SAVED_IDS
+    idio_add_feature (IDIO_SYMBOL ("IDIO_NO_SET_SAVED_IDS"));
 #endif
 
-#ifdef IDIO_HAVE_FUTIMES
-    idio_add_feature (IDIO_SYMBOL ("IDIO_HAVE_FUTIMES"));
+#ifdef IDIO_NO_FUTIMES
+    idio_add_feature (IDIO_SYMBOL ("IDIO_NO_FUTIMES"));
 #endif
 
     idio_S_mtd = IDIO_SYMBOL ("make-tmp-dir");

@@ -287,12 +287,12 @@ libc-wrap-error-load "libc-wrap-errors/fcntl-bad-fd-type.idio" "bad parameter ty
 libc-wrap-error-load "libc-wrap-errors/fcntl-bad-cmd-type.idio" "bad parameter type: '1' a fixnum is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 (cond-expand
- (libc/F_DUPFD_CLOEXEC {
-   libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD_CLOEXEC-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
- })
- (else {
+ (IDIO_NO_F_DUPFD_CLOEXEC {
    printf "no F_DUPFD_CLOEXEC on this system, skipping\n"
    test #t #t
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD_CLOEXEC-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
  }))
 libc-wrap-error-load "libc-wrap-errors/fcntl-F_SETFD-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fcntl-F_SETFL-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
@@ -314,16 +314,16 @@ libc-wrap-error-load "libc-wrap-errors/ftruncate-bad-length-type.idio" "bad para
 libc-wrap-error-load "libc-wrap-errors/ftruncate-none-existent.idio" strerror-EBADF EBADF "ftruncate"
 
 (cond-expand
- (IDIO_HAVE_FUTIMES {
+ (IDIO_NO_FUTIMES {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 8
+ })
+ (else {
    libc-wrap-error-load "libc-wrap-errors/futimes-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
    libc-wrap-error-load "libc-wrap-errors/futimes-bad-atime-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
    libc-wrap-error-load "libc-wrap-errors/futimes-atime-invalid-pointer-type.idio" "futimes atime='#<C/* C/pointer>' a C/pointer is not a libc/struct-timeval"
    libc-wrap-error-load "libc-wrap-errors/futimes-bad-mtime-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
    libc-wrap-error-load "libc-wrap-errors/futimes-mtime-invalid-pointer-type.idio" "futimes mtime='#<C/* C/pointer>' a C/pointer is not a libc/struct-timeval"
    libc-wrap-error-load "libc-wrap-errors/futimes-bad-fd.idio" strerror-EBADF EBADF "futimes"
- })
- (else {
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 8
  }))
 
 (cond-expand
@@ -558,7 +558,10 @@ libc-wrap-error-load "libc-wrap-errors/setregid-bad-egid-type.idio" "bad paramet
 ; libc-wrap-errors/setregid-negative-gid.idio is with GID
 
 (cond-expand
- (IDIO_HAVE_SET_SAVED_IDS {
+ (IDIO_NO_SET_SAVED_IDS {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 6
+ })
+ (else {
    libc-wrap-error-load "libc-wrap-errors/setresgid-bad-rgid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
    libc-wrap-error-load "libc-wrap-errors/setresgid-bad-egid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
    libc-wrap-error-load "libc-wrap-errors/setresgid-bad-sgid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
@@ -568,9 +571,6 @@ libc-wrap-error-load "libc-wrap-errors/setregid-bad-egid-type.idio" "bad paramet
    libc-wrap-error-load "libc-wrap-errors/setresuid-bad-euid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
    libc-wrap-error-load "libc-wrap-errors/setresuid-bad-suid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
    ; libc-wrap-errors/setresuid-negative-uid.idio is with UID
- })
- (else {
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 6
  }))
 
 libc-wrap-error-load "libc-wrap-errors/setreuid-bad-ruid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
@@ -915,11 +915,11 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
  }))
 
 (cond-expand
- (IDIO_HAVE_SET_SAVED_IDS {
-   libc-wrap-error-load "libc-wrap-errors/setresgid-negative-gid.idio" "Operation not permitted" EPERM "setresgid"
+ (IDIO_NO_SET_SAVED_IDS {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  (else {
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   libc-wrap-error-load "libc-wrap-errors/setresgid-negative-gid.idio" "Operation not permitted" EPERM "setresgid"
  }))
 
 if running-as-root {
@@ -981,11 +981,11 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
  }))
 
 (cond-expand
- (IDIO_HAVE_SET_SAVED_IDS {
-   libc-wrap-error-load "libc-wrap-errors/setresuid-negative-uid.idio" "Operation not permitted" EPERM "setresuid"
+ (IDIO_NO_SET_SAVED_IDS {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  (else {
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   libc-wrap-error-load "libc-wrap-errors/setresuid-negative-uid.idio" "Operation not permitted" EPERM "setresuid"
  }))
 
 if running-as-root {

@@ -57,6 +57,24 @@ idio_have ()
     fi
 }
 
+# The tests for IDIO_NO_* are generic (barring the test code itself)
+idio_no ()
+{
+    feature=$1
+
+    # Old Bash's don't have ${feature^^}
+    FEATURE=IDIO_NO_$(echo ${feature} | tr '[a-z]' '[A-Z]')
+
+    names+=(${FEATURE})
+
+    # older Bash's don't support declare -g so resort to eval
+    eval ${FEATURE}=0
+
+    if ! ${CC} -o ${tmpdir}/a.out ${PROG_LIB}/config-tests/have-${feature}.c >/dev/null 2>&1 ; then
+	eval ${FEATURE}=1
+    fi
+}
+
 usage ()
 {
     cat << EOF >&2
@@ -135,17 +153,17 @@ idio_have ptsname_r
 # OS 10.15.7 doesn't (even if the manual page suggests that it
 # should).
 
-names+=(IDIO_CAN_POLL_DEVICE)
+names+=(IDIO_NO_POLL_DEVICE)
 
-IDIO_CAN_POLL_DEVICE=1
+IDIO_NO_POLL_DEVICE=0
 if ! ${CC} -o ${tmpdir}/a.out ${PROG_LIB}/config-tests/can-poll-device.c >/dev/null 2>&1 ; then
-    echo "Failed to compile IDIO_CAN_POLL_DEVICE test" >&2
+    echo "Failed to compile IDIO_NO_POLL_DEVICE test" >&2
     exit 1
 elif ! ${tmpdir}/a.out >/dev/null 2>&1 ; then
-    IDIO_CAN_POLL_DEVICE=0
+    IDIO_NO_POLL_DEVICE=1
 fi
 
-if [[ ${IDIO_CAN_POLL_DEVICE} ]] ; then
+if [[ ${IDIO_NO_POLL_DEVICE} ]] ; then
 
     # WSL1 anomalous behaviour wants us to go a step further.
     #
@@ -206,32 +224,32 @@ fi
 # Mac OS 10.5.8 doesn't have clock_gettime(2) but there is a
 # workaround
 
-idio_have clock_gettime
+idio_no clock_gettime
 
 ##############################
 
 # Oracle Solaris 11.4 doesn't have REG_STARTEND
 
-idio_have REG_STARTEND
+idio_no REG_STARTEND
 
 ##############################
 
 # SunOS never had the termios->c_[io]speed fields and Alpine/musl
 # doesn't either
 
-idio_have termios_speeds
+idio_no termios_speeds
 
 ##############################
 
 # SunOS, Mac OS and NetBSD do not have setresgid/setresuid
 
-idio_have set_saved_ids
+idio_no set_saved_ids
 
 ##############################
 
 # SunOS does not have futimes (but does have futimesat)
 
-idio_have futimes
+idio_no futimes
 
 ######################################################################
 
