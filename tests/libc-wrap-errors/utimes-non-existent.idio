@@ -1,0 +1,12 @@
+
+module tests/libc-wrap/utimes
+import libc
+
+fd+name := mkstemp "XXXXXX"
+close (ph fd+name)
+delete-file (pht fd+name)
+
+tv := (gettimeofday)
+
+;; ENOENT
+utimes (pht fd+name) tv tv

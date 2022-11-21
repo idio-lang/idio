@@ -314,6 +314,19 @@ libc-wrap-error-load "libc-wrap-errors/ftruncate-bad-length-type.idio" "bad para
 libc-wrap-error-load "libc-wrap-errors/ftruncate-none-existent.idio" strerror-EBADF EBADF "ftruncate"
 
 (cond-expand
+ (IDIO_HAVE_FUTIMES {
+   libc-wrap-error-load "libc-wrap-errors/futimes-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/futimes-bad-atime-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+   libc-wrap-error-load "libc-wrap-errors/futimes-atime-invalid-pointer-type.idio" "futimes atime='#<C/* C/pointer>' a C/pointer is not a libc/struct-timeval"
+   libc-wrap-error-load "libc-wrap-errors/futimes-bad-mtime-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+   libc-wrap-error-load "libc-wrap-errors/futimes-mtime-invalid-pointer-type.idio" "futimes mtime='#<C/* C/pointer>' a C/pointer is not a libc/struct-timeval"
+   libc-wrap-error-load "libc-wrap-errors/futimes-bad-fd.idio" strerror-EBADF EBADF "futimes"
+ })
+ (else {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 8
+ }))
+
+(cond-expand
  ("uname/sysname/SunOS" {
    ;; SunOS won't let you rmdir "." or any equivalent => EINVAL
    eprintf "NOTICE: SunOS: skipping test using rmdir .\n"
@@ -687,6 +700,13 @@ libc-wrap-error-load "libc-wrap-errors/unlink-non-existent.idio" "No such file o
 
 libc-wrap-error-load "libc-wrap-errors/unlockpt-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 
+libc-wrap-error-load "libc-wrap-errors/utimes-bad-filename-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/utimes-bad-atime-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/utimes-atime-invalid-pointer-type.idio" "utimes atime='#<C/* C/pointer>' a C/pointer is not a libc/struct-timeval"
+libc-wrap-error-load "libc-wrap-errors/utimes-bad-mtime-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/utimes-mtime-invalid-pointer-type.idio" "utimes mtime='#<C/* C/pointer>' a C/pointer is not a libc/struct-timeval"
+libc-wrap-error-load "libc-wrap-errors/utimes-non-existent.idio" "No such file or directory" ENOENT "utimes"
+
 libc-wrap-error-load "libc-wrap-errors/waitpid-bad-pid-type.idio" "bad parameter type: '#t' a constant is not a libc/pid_t"
 libc-wrap-error-load "libc-wrap-errors/waitpid-bad-options-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/waitpid-bad-options.idio" "Invalid argument" EINVAL "waitpid"
@@ -1039,4 +1059,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 530 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 546 - libc-wrap-error-skipped)

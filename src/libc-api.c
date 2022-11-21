@@ -3938,6 +3938,94 @@ a wrapper to libc :manpage:`ftruncate(2)`	\n\
     return idio_C_int (ftruncate_r);
 }
 
+#ifdef IDIO_HAVE_FUTIMES
+IDIO_DEFINE_PRIMITIVE3_DS ("futimes", libc_futimes, (IDIO fd, IDIO atime, IDIO mtime), "fd atime mtime", "\
+in C: :samp:`futimes ({fd}, ({atime}, {mtime}))`	\n\
+a wrapper to libc :manpage:`futimes(3)`	\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:param atime: :ref:`struct-timeval <libc/struct-timeval>`	\n\
+:type atime: C/pointer			\n\
+:param mtime: :ref:`struct-timeval <libc/struct-timeval>`	\n\
+:type mtime: C/pointer			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+					\n\
+``futimes`` is not available on some systems.	\n\
+")
+{
+    IDIO_ASSERT (fd);
+    IDIO_ASSERT (atime);
+    IDIO_ASSERT (mtime);
+
+   /*
+    * Test Case: libc-errors/futimes-bad-fd-type.idio
+    *
+    * futimes #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+   /*
+    * Test Case: libc-errors/futimes-bad-atime-type.idio
+    *
+    * futimes STDIN_FILENO #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (pointer, atime);
+    if (idio_CSI_libc_struct_timeval != IDIO_C_TYPE_POINTER_PTYPE (atime)) {
+	/*
+	 * Test Case: libc-errors/futimes-atime-invalid-pointer-type.idio
+	 *
+	 * struct-timeval-ref libc/NULL #t
+	 */
+	idio_error_param_value_exp ("futimes", "atime", atime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+   /*
+    * Test Case: libc-errors/futimes-bad-mtime-type.idio
+    *
+    * futimes STDIN_FILENO timeval #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (pointer, mtime);
+    if (idio_CSI_libc_struct_timeval != IDIO_C_TYPE_POINTER_PTYPE (mtime)) {
+	/*
+	 * Test Case: libc-errors/futimes-mtime-invalid-pointer-type.idio
+	 *
+	 * struct-timeval-ref timeval libc/NULL
+	 */
+	idio_error_param_value_exp ("futimes", "mtime", mtime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    struct timeval times[2];
+    memcpy (&times[0], IDIO_C_TYPE_POINTER_P (atime), sizeof (struct timeval));
+    memcpy (&times[1], IDIO_C_TYPE_POINTER_P (mtime), sizeof (struct timeval));
+
+    int futimes_r = futimes (C_fd, times);
+
+    if (-1 == futimes_r) {
+	/*
+	 * Test Case: libc-wrap-errors/futimes-bad-fd.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * futimes (ph fd+name) timeval timeval
+	 */
+        idio_error_system_errno ("futimes", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (futimes_r);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE0_DS ("getcwd", libc_getcwd, (void), "", "\
 in C, :samp:`getcwd (buf, size)`				\n\
 a wrapper to libc :manpage:`getcwd(3)`				\n\
@@ -8338,6 +8426,100 @@ a wrapper to libc :manpage:`unlockpt(3)`	\n\
     return idio_C_int (unlockpt_r);
 }
 
+IDIO_DEFINE_PRIMITIVE3_DS ("utimes", libc_utimes, (IDIO filename, IDIO atime, IDIO mtime), "filename atime mtime", "\
+in C: :samp:`utimes ({filename}, ({atime}, {mtime}))`		\n\
+a wrapper to libc :manpage:`utimes(2)`	\n\
+					\n\
+:param filename: filename		\n\
+:type filename: string			\n\
+:param atime: :ref:`struct-timeval <libc/struct-timeval>`	\n\
+:type atime: C/pointer			\n\
+:param mtime: :ref:`struct-timeval <libc/struct-timeval>`	\n\
+:type mtime: C/pointer			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (filename);
+    IDIO_ASSERT (atime);
+
+   /*
+    * Test Case: libc-errors/utimes-bad-filename-type.idio
+    *
+    * utimes #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, filename);
+
+    size_t free_C_filename = 0;
+    /*
+     * Test Case: libc-wrap-errors/utimes-bad-filename-format.idio
+     *
+     * utimes (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *C_filename = idio_libc_string_C (filename, "utimes", &free_C_filename, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/utimes-bad-atime-type.idio
+    *
+    * utimes STDIN_FILENO #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (pointer, atime);
+    if (idio_CSI_libc_struct_timeval != IDIO_C_TYPE_POINTER_PTYPE (atime)) {
+	/*
+	 * Test Case: libc-errors/utimes-atime-invalid-pointer-type.idio
+	 *
+	 * struct-timeval-ref libc/NULL #t
+	 */
+	idio_error_param_value_exp ("utimes", "atime", atime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+   /*
+    * Test Case: libc-errors/utimes-bad-mtime-type.idio
+    *
+    * utimes STDIN_FILENO timeval #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (pointer, mtime);
+    if (idio_CSI_libc_struct_timeval != IDIO_C_TYPE_POINTER_PTYPE (mtime)) {
+	/*
+	 * Test Case: libc-errors/utimes-mtime-invalid-pointer-type.idio
+	 *
+	 * struct-timeval-ref timeval libc/NULL
+	 */
+	idio_error_param_value_exp ("utimes", "mtime", mtime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    struct timeval times[2];
+    memcpy (&times[0], IDIO_C_TYPE_POINTER_P (atime), sizeof (struct timeval));
+    memcpy (&times[1], IDIO_C_TYPE_POINTER_P (mtime), sizeof (struct timeval));
+
+    int utimes_r = utimes (C_filename, times);
+
+    if (free_C_filename) {
+	IDIO_GC_FREE (C_filename, free_C_filename);
+    }
+
+    if (-1 == utimes_r) {
+	/*
+	 * Test Case: libc-wrap-errors/utimes-bad-fd.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * utimes (pht fd+name) timeval timeval
+	 */
+        idio_error_system_errno ("utimes", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (utimes_r);
+}
+
 IDIO_DEFINE_PRIMITIVE1V_DS ("waitpid", libc_waitpid, (IDIO pid, IDIO args), "pid [options]", "\
 in C, :samp:`waitpid ({pid}, status[, {options}])`   \n\
 a wrapper to libc :manpage:`waitpid(2)`		     \n\
@@ -8708,6 +8890,11 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstatvfs);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fsync);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ftruncate);
+
+#ifdef IDIO_HAVE_FUTIMES
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_futimes);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getcwd);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getegid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_geteuid);
@@ -8791,6 +8978,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_uname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlink);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlockpt);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_utimes);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_waitpid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_write);
 }

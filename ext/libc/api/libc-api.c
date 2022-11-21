@@ -337,6 +337,15 @@ int main (int argc, char **argv)
 	int ftruncate_r = ftruncate (fd, length);
     }
 
+#ifdef IDIO_HAVE_FUTIMES
+    /* futimes(2) */
+    {
+	int fd = STDIN_FILENO;
+	struct timeval times[2] = { {0, 0}, {0, 0} };
+	int futimes_r = futimes (fd, times);
+    }
+#endif
+
     /* getcwd(3) */
     {
 	char buf[PATH_MAX];
@@ -909,6 +918,13 @@ int main (int argc, char **argv)
     /* unlockpt(3) */
     {
 	int unlockpt_r = unlockpt (0);
+    }
+
+    /* utimes(2) */
+    {
+	char *filename = ".";
+	struct timeval times[2] = { {0, 0}, {0, 0} };
+	int utimes_r = utimes (filename, times);
     }
 
     /* waitpid(2) */

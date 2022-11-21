@@ -316,6 +316,11 @@ fstat (fd-handle-fd ofh)
 fstatvfs (fd-handle-fd ofh)
 fsync (fd-handle-fd ofh)
 ftruncate (fd-handle-fd ofh) (C/integer-> 3 libc/off_t)
+(cond-expand
+ (IDIO_HAVE_FUTIMES {
+   tv := (gettimeofday)
+   futimes (fd-handle-fd ofh) tv tv
+ }))
 lockf (fd-handle-fd ofh) F_TEST (C/integer-> 3 libc/off_t)
 close-handle ofh
 
@@ -450,6 +455,9 @@ tcsetpgrp C/0i (tcgetpgrp C/0i)
 (times)
 
 (uname)
+
+tv := (gettimeofday)
+utimes testfile tv tv
 
 ofh := open-output-file testfile
 test (write (fd-handle-fd ofh) "hello\n") (C/integer-> 6 libc/ssize_t)
