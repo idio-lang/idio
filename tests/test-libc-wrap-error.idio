@@ -671,6 +671,16 @@ libc-wrap-error-load "libc-wrap-errors/truncate-bad-path-format.idio" "truncate:
 libc-wrap-error-load "libc-wrap-errors/truncate-bad-length-type.idio" "bad parameter type: '#t' a constant is not a libc/off_t"
 libc-wrap-error-load "libc-wrap-errors/truncate-none-existent.idio" "No such file or directory" ENOENT "truncate"
 
+libc-wrap-error-load "libc-wrap-errors/ttyname-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+(cond-expand
+ ((and "uname/sysname/SunOS"
+       "release/OpenIndiana") {
+   libc-wrap-error-load "libc-wrap-errors/ttyname-bad-fd.idio" "No such file or directory" ENOENT "ttyname"
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/ttyname-bad-fd.idio" strerror-EBADF EBADF "ttyname"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/unlink-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/unlink-bad-pathname-format.idio" "unlink: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/unlink-non-existent.idio" "No such file or directory" ENOENT "unlink"
@@ -1029,4 +1039,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 526 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 530 - libc-wrap-error-skipped)

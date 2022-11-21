@@ -7735,10 +7735,11 @@ a wrapper to libc :manpage:`symlink(2)`	\n\
 					\n\
 :param target: 				\n\
 :type target: C/pointer			\n\
-:param linkpath: 				\n\
-:type linkpath: C/pointer			\n\
+:param linkpath: 			\n\
+:type linkpath: C/pointer		\n\
 :return:				\n\
-:rtype: C/int	\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (target);
@@ -8121,6 +8122,74 @@ a wrapper to libc :manpage:`truncate(2)`	\n\
     }
 
     return idio_C_int (truncate_r);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("ttyname", libc_ttyname, (IDIO fd), "fd", "\
+in C: :samp:`ttyname ({fd})`		\n\
+a wrapper to libc :manpage:`ttyname(3)`	\n\
+					\n\
+:param fd: terminal device file descriptor	\n\
+:type fd: C/int				\n\
+:return: pathname of the terminal device	\n\
+:rtype: pathname			\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (fd);
+
+   /*
+    * Test Case: libc-errors/ttyname-bad-fd-type.idio
+    *
+    * ttyname #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+    char buf[PATH_MAX];
+    buf[0] = '\0';
+
+    /*
+     * This is portability at its best.  SunOS has two ttyname_r()
+     * prototypes depending on the use of _POSIX_PTHREAD_SEMANTICS
+     * and/or __USE_DRAFT6_PROTOTYPES__ (the choice based on the
+     * supplier...).
+     *
+     * In the meanwhile, the int ttyname_r() returns the errno number
+     * (rather returning a fixed number and setting errno).  This
+     * means the char * or int tests are == or != which is why we have
+     * the test clause repeated because the comparators are different
+     * (cf. getlogin where we can use a common fail == getlogin_r_r).
+     */
+#if defined (__sun) && defined (__SVR4) && defined (__USE_DRAFT6_PROTOTYPES__)
+    char *ttyname_r_r = ttyname_r (C_fd, buf, PATH_MAX);
+
+    if (NULL == ttyname_r_r) {
+	/*
+	 * Test Case: libc-wrap-errors/ttyname-bad-fd.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * ttyname (ph fd+name)
+	 */
+        idio_error_system_errno ("ttyname", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+#else
+    int ttyname_r_r = ttyname_r (C_fd, buf, PATH_MAX);
+
+    if (ttyname_r_r) {
+	/*
+	 * Test Case: libc-wrap-errors/ttyname-bad-fd.idio
+	 */
+        idio_error_system_errno ("ttyname", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+#endif
+
+    return idio_pathname_C (buf);
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("uname", libc_uname, (void), "", "\
@@ -8689,6 +8758,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_time);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_times);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_truncate);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ttyname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_uname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlink);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlockpt);

@@ -882,6 +882,12 @@ int main (int argc, char **argv)
 	int truncate_r = truncate (path, length);
     }
 
+    /* ttyname(3) */
+    {
+	int fd = STDIN_FILENO;
+	char *ttyname_r = ttyname (fd);
+    }
+
     /* uname(3) */
     {
 	struct utsname name;
