@@ -812,6 +812,11 @@ int main (int argc, char **argv)
 	int symlink_r = symlink (target, linkpath);
     }
 
+    /* sync(2) */
+    {
+	sync ();
+    }
+
     /* tcgetattr(3) */
     {
 	int fd = STDIN_FILENO;

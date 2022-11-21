@@ -7215,7 +7215,9 @@ and ``RLIMIT_NOFILE``.						\n\
     }
     struct rlimit *C_rlim = IDIO_C_TYPE_POINTER_P (rlim);
 
-    if (setrlimit (C_resource, C_rlim) == -1) {
+    int setrlimit_r = setrlimit (C_resource, C_rlim);
+
+    if (-1 == setrlimit_r) {
 	/*
 	 * Test Case:  libc-wrap-errors/setrlimit-bad-rlim.idio
 	 *
@@ -7226,7 +7228,7 @@ and ``RLIMIT_NOFILE``.						\n\
 	return idio_S_notreached;
     }
 
-    return idio_S_unspec;
+    return idio_C_int (setrlimit_r);
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("setsid", libc_setsid, (void), "", "\
@@ -7729,7 +7731,7 @@ signal number.							\n\
 
 IDIO_DEFINE_PRIMITIVE2_DS ("symlink", libc_symlink, (IDIO target, IDIO linkpath), "target linkpath", "\
 in C: :samp:`symlink ({target}, {linkpath})`		\n\
-a wrapper to libc :manpage:`symlink()`	\n\
+a wrapper to libc :manpage:`symlink(2)`	\n\
 					\n\
 :param target: 				\n\
 :type target: C/pointer			\n\
@@ -7796,6 +7798,18 @@ a wrapper to libc :manpage:`symlink()`	\n\
     }
 
     return idio_C_int (symlink_r);
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("sync", libc_sync, (), "", "\
+in C: :samp:`sync ()`			\n\
+a wrapper to libc :manpage:`sync(2)`	\n\
+					\n\
+:return: ``#<unspec>``			\n\
+")
+{
+    sync ();
+
+    return idio_S_unspec;
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("tcgetattr", libc_tcgetattr, (IDIO fd), "fd", "\
@@ -8667,6 +8681,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strptime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strsignal);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_symlink);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_sync);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcgetattr);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcgetpgrp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcsetattr);

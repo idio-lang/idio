@@ -433,6 +433,8 @@ strerror EPERM
 
 strsignal SIGHUP
 
+(sync)
+
 ;; should be safe to set the termios of stdin to stdin...
 (cond-expand
  ("uname/sysname/SunOS" {
