@@ -92,6 +92,7 @@
 (document libc strftime)
 (document libc strptime)
 (document libc strsignal)
+(document libc symlink)
 (document libc tcgetattr)
 (document libc tcgetpgrp)
 (document libc tcsetattr)

@@ -502,7 +502,7 @@ strftime "%F" (libc/localtime)
 truncate testfile (C/integer-> 0 libc/off_t)
 
 linkfile := "__link__"
-ln -sf testfile linkfile
+symlink testfile linkfile
 test (readlink linkfile) (string->pathname testfile)
 
 ; block special devices?

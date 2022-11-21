@@ -639,6 +639,12 @@ libc-wrap-error-load "libc-wrap-errors/strsignal-bad-type.idio" "bad parameter t
    test (strsignal (C/integer-> -1)) "Unknown signal -1"
  }))
 
+libc-wrap-error-load "libc-wrap-errors/symlink-bad-target-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/symlink-bad-target-format.idio" "symlink: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/symlink-bad-linkpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+libc-wrap-error-load "libc-wrap-errors/symlink-bad-linkpath-format.idio" "symlink: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/symlink-same-pathname.idio" "File exists" EEXIST "symlink"
+
 libc-wrap-error-load "libc-wrap-errors/tcgetattr-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/tcgetattr-bad-fd.idio" strerror-EBADF EBADF "tcgetattr"
 
@@ -1023,4 +1029,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 519 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 526 - libc-wrap-error-skipped)

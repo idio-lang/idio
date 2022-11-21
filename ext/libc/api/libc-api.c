@@ -805,6 +805,13 @@ int main (int argc, char **argv)
 	char *strsignal_r = strsignal (SIGINT);
     }
 
+    /* symlink(2) */
+    {
+	char *target = "target";
+	char *linkpath = "link";
+	int symlink_r = symlink (target, linkpath);
+    }
+
     /* tcgetattr(3) */
     {
 	int fd = STDIN_FILENO;

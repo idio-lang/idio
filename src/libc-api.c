@@ -3272,7 +3272,7 @@ in C: :samp:`ctermid (s)`		\n\
 a wrapper to libc :manpage:`ctermid(3)`	\n\
 					\n\
 :return: controlling terminal pathname	\n\
-:rtype: string				\n\
+:rtype: pathname			\n\
 ")
 {
     /*
@@ -6324,7 +6324,7 @@ a wrapper to libc :manpage:`ptsname(3)`		\n\
 :param fd: fd to ptsname			\n\
 :type fd: C/int					\n\
 :return: ptsname				\n\
-:rtype: C/int					\n\
+:rtype: pathname				\n\
 :raises ^system-error:				\n\
 ")
 {
@@ -6538,7 +6538,7 @@ a wrapper to libc :manpage:`readlink(2)`	\n\
 :param pathname: pathname		\n\
 :type pathname: string			\n\
 :return: contents of symlink		\n\
-:rtype: string				\n\
+:rtype: pathname				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 :raises ^system-error:			\n\
 ")
@@ -7727,6 +7727,77 @@ signal number.							\n\
     }
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("symlink", libc_symlink, (IDIO target, IDIO linkpath), "target linkpath", "\
+in C: :samp:`symlink ({target}, {linkpath})`		\n\
+a wrapper to libc :manpage:`symlink()`	\n\
+					\n\
+:param target: 				\n\
+:type target: C/pointer			\n\
+:param linkpath: 				\n\
+:type linkpath: C/pointer			\n\
+:return:				\n\
+:rtype: C/int	\n\
+")
+{
+    IDIO_ASSERT (target);
+    IDIO_ASSERT (linkpath);
+
+   /*
+    * Test Case: libc-errors/symlink-bad-target-type.idio
+    *
+    * symlink #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, target);
+
+    size_t free_C_target = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/symlink-bad-target-format.idio
+     *
+     * symlink (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     */
+    char *C_target = idio_libc_string_C (target, "symlink", &free_C_target, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/symlink-bad-linkpath-type.idio
+    *
+    * symlink #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, linkpath);
+
+    size_t free_C_linkpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/symlink-bad-linkpath-format.idio
+     *
+     * symlink (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     */
+    char *C_linkpath = idio_libc_string_C (linkpath, "symlink", &free_C_linkpath, IDIO_C_FUNC_LOCATION ());
+
+    int symlink_r = symlink (C_target, C_linkpath);
+
+    if (free_C_target) {
+	IDIO_GC_FREE (C_target, free_C_target);
+    }
+
+    if (free_C_linkpath) {
+	IDIO_GC_FREE (C_linkpath, free_C_linkpath);
+    }
+
+    if (-1 == symlink_r) {
+	/*
+	 * Test Case: libc-wrap-errors/symlink-same-pathname.idio
+	 *
+	 * symlink "foo" "foo"
+	 */
+        idio_error_system_errno ("symlink", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (symlink_r);
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("tcgetattr", libc_tcgetattr, (IDIO fd), "fd", "\
 in C, :samp:`tcgetattr ({fd}, termiosp)`			\n\
 a wrapper to libc :manpage:`tcgetattr(3)`			\n\
@@ -8595,6 +8666,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strftime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strptime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strsignal);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_symlink);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcgetattr);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcgetpgrp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcsetattr);
