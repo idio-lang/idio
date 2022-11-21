@@ -888,6 +888,12 @@ int main (int argc, char **argv)
 	char *ttyname_r = ttyname (fd);
     }
 
+    /* umask(2) */
+    {
+	mode_t mask = S_IRWXU;
+	mode_t umask_r = umask (mask);
+    }
+
     /* uname(3) */
     {
 	struct utsname name;

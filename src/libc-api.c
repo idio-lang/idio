@@ -8192,6 +8192,34 @@ a wrapper to libc :manpage:`ttyname(3)`	\n\
     return idio_pathname_C (buf);
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("umask", libc_umask, (IDIO mask), "mask", "\
+in C: :samp:`umask ({mask})`		\n\
+a wrapper to libc :manpage:`umask(2)`	\n\
+					\n\
+:param mask: file mode creation mask	\n\
+:type mask: libc/mode_t			\n\
+:return: previous value			\n\
+:rtype: libc/mode_t			\n\
+")
+{
+    IDIO_ASSERT (mask);
+
+   /*
+    * Test Case: libc-errors/umask-bad-mask-type.idio
+    *
+    * umask #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mask);
+    mode_t C_mask = IDIO_C_TYPE_libc_mode_t (mask);
+
+    /*
+     * umask(2) always succeeds
+     */
+    mode_t umask_r = umask (C_mask);
+
+    return idio_libc_mode_t (umask_r);
+}
+
 IDIO_DEFINE_PRIMITIVE0_DS ("uname", libc_uname, (void), "", "\
 in C, :samp:`uname (utsname)`					\n\
 a wrapper to libc :manpage:`uname(3)`				\n\
@@ -8759,6 +8787,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_times);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_truncate);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ttyname);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_umask);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_uname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlink);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlockpt);

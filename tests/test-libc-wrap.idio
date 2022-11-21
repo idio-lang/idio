@@ -503,6 +503,16 @@ strftime "%F" (libc/localtime)
 
 truncate testfile (C/integer-> 0 libc/off_t)
 
+;; ttyname is hard to test as we can't guarantee an fd is a tty unless
+;; we call the expect stuff -- which we haven't tested works, yet.
+
+;; there is no atomic means to discover the current umask and you
+;; can't use umask(2) without setting the umask to something else.
+;; Which gives a teeny opportunity for a race condition in between
+;; these calls to get the umask and to set it back to the origin
+;; value.
+umask (umask (C/integer-> 0 libc/mode_t))
+
 linkfile := "__link__"
 symlink testfile linkfile
 test (readlink linkfile) (string->pathname testfile)
