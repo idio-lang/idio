@@ -1,0 +1,4 @@
+fd+name := mkstemp "XXXXXX"
+close (ph fd+name)
+unlink (pht fd+name)
+lockf (ph fd+name) F_LOCK (C/integer-> 0 libc/off_t)

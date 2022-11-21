@@ -1,0 +1,2 @@
+
+setpriority PRIO_USER (C/integer-> UID libc/id_t) #t

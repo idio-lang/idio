@@ -122,6 +122,7 @@ class GitCommitDirective (SphinxDirective):
             text += " ({0})".format (self.branch_name)
         if 'uncommitted' in self.options and self.repo.is_dirty ():
             text += " *"
+        text += " for Idio " + self.env.config.release
         self.text = text
         markup = gitcommit ()
         markup.append (nodes.paragraph (text=text))

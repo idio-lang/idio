@@ -1,5 +1,7 @@
 
-tmpdir := (make-tmp-dir)
+module tests/file-handle
+
+tmpdir := (libc/make-tmp-dir)
 tmpfile := append-string tmpdir "/foo"
 chmod 0 tmpdir
 

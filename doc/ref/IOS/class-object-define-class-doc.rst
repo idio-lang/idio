@@ -34,8 +34,8 @@ Slot options include:
 
   Here, if no ``:initarg`` overrides then :samp:`{func}` is applied to
   the `initargs` passed to :ref:`make-instance <object/make-instance>`
-  to get the default slot value instead of :ref:`default-slot-value
-  <object/default-slot-value>`.
+  to get the default slot value instead of a "default slot value"
+  function which returns ``#f``.
 
   :samp:`{func}` should expect to be passed any number of arguments.
 

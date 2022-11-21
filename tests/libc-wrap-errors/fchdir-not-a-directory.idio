@@ -1,0 +1,4 @@
+fd+name := mkstemp "XXXXXX"
+unlink (pht fd+name)
+
+fchdir (ph fd+name)

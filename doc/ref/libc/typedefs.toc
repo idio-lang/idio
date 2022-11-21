@@ -15,8 +15,17 @@
 (document libc dev_t)
 (document libc dev_t?)
 
+(document libc fsblkcnt_t)
+(document libc fsblkcnt_t?)
+
+(document libc fsfilcnt_t)
+(document libc fsfilcnt_t?)
+
 (document libc gid_t)
 (document libc gid_t?)
+
+(document libc id_t)
+(document libc id_t?)
 
 (document libc ino_t)
 (document libc ino_t?)

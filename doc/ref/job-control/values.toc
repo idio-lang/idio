@@ -3,3 +3,5 @@
 (document job-control %%last-job last-job)
 (document job-control %idio-jobs idio-jobs)
 (document job-control %%process-substitution-jobs process-substitution-jobs)
+
+(nodocument job-control %idio-interactive)

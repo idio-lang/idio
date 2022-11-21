@@ -1,0 +1,2 @@
+
+setresgid GID EGID #t

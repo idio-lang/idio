@@ -1,0 +1,2 @@
+
+pwrite (C/integer-> -1) "hello\n" (C/integer-> 0 libc/off_t)

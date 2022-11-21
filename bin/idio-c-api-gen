@@ -47,11 +47,13 @@ typedef mappings.
 
 Output Ordering
 
-The outputs are generated in the order seen in the objdump output.
-These are generally backward referencing (ie. a type is defined before
-it is used) but far from necessarily so.  (There appears to be a
+The outputs are mostly generated in the order seen in the objdump
+output.  These are generally backward referencing (ie. a type is
+defined before it is used) but far from necessarily so.  There is a
 peculiarity where the "subprograms" (function calls) in main() are
-generated in reverse order.  That could be a transient effect.)
+generated in reverse order.  That could be a transient effect.
+Whatever the cause, subprograms (and structs) are sorted by name and
+generated lexicographically.
 
 However, the ordering will be inconsistent between platforms (and/or
 versions of the compiler and objdump itself).  Running diff on the
@@ -1480,6 +1482,7 @@ ${i-module-name}-error-load := \{
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/times.h>
@@ -1619,12 +1622,18 @@ ${i-module-name}-error-load := \{
 	}
       }
 
+      sorted-structure-types := #f
+      sorted-subprograms := #f
+
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;
       ;; discover all used types
 
       subprograms := hash-ref base-DIE 'subprogram #f
+
       if subprograms {
+
+	sorted-subprograms = sort (array->list subprograms) string<? (function (DIE) (hash-ref DIE 'name ""))
 
 	define (variables DIE) {
 	  variables := hash-ref DIE 'variable #f
@@ -1676,7 +1685,7 @@ ${i-module-name}-error-load := \{
 
 	  ;; lexical blocks
 	  lexical-blocks DIE
-	}) (array->list subprograms)
+	}) sorted-subprograms
       } {
 	printf "no subprograms\n"
       }
@@ -1733,14 +1742,22 @@ ${i-module-name}-error-load := \{
  *
 }
 
+	sorted-base-types = sort (array->list base-types) (function (d1 d2) {
+	  d1-bs := hash-ref d1 'byte_size 0
+	  d2-bs := hash-ref d2 'byte_size 0
+	  (or (lt d1-bs d2-bs)
+	      (and (eq d1-bs d2-bs)
+		   (lt (string-length (hash-ref d1 'name ""))
+		       (string-length (hash-ref d2 'name "")))))
+	}); \lt (function (DIE) (hash-ref DIE 'byte_size #f))
+
 	for-each (function (DIE) {
 	  DIE-name := hash-ref DIE 'name #f
 	  DIE-bytes := hash-ref DIE 'byte_size #f
 	  hprintf api-h-fh " * %-30s %2s bytes\n" DIE-name DIE-bytes
-	}) (array->list base-types)
+	}) sorted-base-types
 
-	hprintf api-h-fh #S{
- *
+	hprintf api-h-fh #S{ *
  * Pointer size                    ${pointer-size} bytes
 */
 
@@ -1889,6 +1906,8 @@ export \(
       }
 
       if used-structure-types {
+
+	sorted-structure-types = sort (array->list used-structure-types) string<? (function (DIE) (hash-ref DIE 'name ""))
 
 	;; setter commentary
 	hprintf api-i-fh #S{
@@ -2615,7 +2634,7 @@ if (and (function? struct-${struct-idio-id}-ref)
 	  }
 
 	  hprintf errors-fh "\n"
-	}) (array->list used-structure-types)
+	}) sorted-structure-types
 
       } {
 	printf "no structure_types\n"
@@ -2684,13 +2703,14 @@ if (and (function? struct-${struct-idio-id}-ref)
 	    comma-sep-arg* := join-string ", " i-arg-name*
 	    comma-sep-c-arg* := join-string ", " c-arg-name*
 	    space-sep-arg* := join-string " " i-arg-name*
+	    rst-arg* := join-string ", " (map (function (n) (sprintf "{%s}" n)) i-arg-name*)
 
 	    hprintf api-c-fh #S{
 IDIO_DEFINE_PRIMITIVE${fpc}_DS ("${sp-name}", ${lib-n}_${sp-name}, (${comma-sep-fp*}), \"${space-sep-arg*}\", \"\\
-in C: ${sp-name} \(${comma-sep-arg*})		\\n\\
+in C: :samp:`${sp-name} \(${rst-arg*})`		\\n\\
 }
 
-	    hprintf api-c-fh #S{a wrapper to libc ${sp-name}()		\\n\\
+	    hprintf api-c-fh #S{a wrapper to libc :manpage:`${sp-name}()`	\\n\\
 					\\n\\}
 
 	    pc := 1
@@ -2825,7 +2845,7 @@ ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a constant is n
 
 	  hprintf errors-fh "\n"
 
-	}) (array->list subprograms)
+	}) sorted-subprograms
 
 	;; C add_primitives
 	hprintf api-h-fh #S{
@@ -2894,7 +2914,7 @@ void idio_${c-module-name}_api_add_primitives ()
 	      hprintf api-c-fh #S{
 }
 	    }
-	  }) (array->list used-structure-types)
+	  }) sorted-structure-types
 	}
 
 	for-each (function (sp) {
@@ -2903,7 +2923,7 @@ void idio_${c-module-name}_api_add_primitives ()
 	    hprintf api-c-fh #S{    IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${lib-n}_${sp-name});
 }
 	  }
-	}) (array->list subprograms)
+	}) sorted-subprograms
 		  
 	hprintf api-c-fh #S{
 \}

@@ -5,8 +5,8 @@
 (document Idio input-handle?)
 (document Idio output-handle?)
 (document Idio closed-handle?)
-(document Idio ready?)
-(document Idio eof?)
+(document Idio ready-handle?)
+(document Idio eof-handle?)
 
 (rst "handle-attributes" 0)
 (document Idio handle-line)

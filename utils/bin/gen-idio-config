@@ -39,6 +39,24 @@ note ()
     :
 }
 
+# The tests for IDIO_HAVE_* are generic (barring the test code itself)
+idio_have ()
+{
+    feature=$1
+
+    # Old Bash's don't have ${feature^^}
+    FEATURE=IDIO_HAVE_$(echo ${feature} | tr '[a-z]' '[A-Z]')
+
+    names+=(${FEATURE})
+
+    # older Bash's don't support declare -g so resort to eval
+    eval ${FEATURE}=1
+
+    if ! ${CC} -o ${tmpdir}/a.out ${PROG_LIB}/config-tests/have-${feature}.c >/dev/null 2>&1 ; then
+	eval ${FEATURE}=0
+    fi
+}
+
 usage ()
 {
     cat << EOF >&2
@@ -49,6 +67,10 @@ ${0##*/} generates a system-specific header/makefile
   -v		verbose
 EOF
 }
+
+PROG_DIR=${0%/*}
+PROG_TOP=${PROG_DIR%/*}
+PROG_LIB=${PROG_TOP}/lib
 
 opt_module=idio
 opt_verbose=
@@ -93,65 +115,19 @@ names=()
 
 # Mac OS 10.5.8 doesn't have strnlen(3)
 
-names+=(IDIO_HAVE_STRNLEN)
-cat <<EOF > ${tmpdir}/test.c
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <string.h>
-
-int main (int argc, char **argv)
-{
-    size_t strnlen_r = strnlen ("hello", 2);
-    return 0;
-}
-EOF
-
-IDIO_HAVE_STRNLEN=1
-if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
-    IDIO_HAVE_STRNLEN=0
-fi
+idio_have strnlen
 
 ##############################
 
 # SunOS (OpenIndiana) and Mac OS don't have memrchr(3)
 
-names+=(IDIO_HAVE_MEMRCHR)
-cat <<EOF > ${tmpdir}/test.c
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <string.h>
-
-int main (int argc, char **argv)
-{
-    char *memrchr_r = memrchr ("hello", 'h', 5);
-    return 0;
-}
-EOF
-
-IDIO_HAVE_MEMRCHR=1
-if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
-    IDIO_HAVE_MEMRCHR=0
-fi
+idio_have memrchr
 
 ##############################
 
-names+=(IDIO_HAVE_PTSNAME_R)
-cat <<EOF > ${tmpdir}/test.c
-#define _GNU_SOURCE
-#include <stdlib.h>
+# SunOS, OpenBSD, Mac OS X 10.5.8 do not have ptsname_r
 
-int main (int argc, char **argv)
-{
-    char buf[512];
-    ptsname_r (0, buf, 512);
-    return 0;
-}
-EOF
-
-IDIO_HAVE_PTSNAME_R=1
-if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
-    IDIO_HAVE_PTSNAME_R=0
-fi
+idio_have ptsname_r
 
 ##############################
 
@@ -160,84 +136,9 @@ fi
 # should).
 
 names+=(IDIO_CAN_POLL_DEVICE)
-cat <<EOF > ${tmpdir}/test.c
-#define _GNU_SOURCE
-#include <fcntl.h>
-#include <poll.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#if defined (__sun) && defined (__SVR4)
-#include <stropts.h>
-#endif
-
-
-int main (int argc, char **argv)
-{
-    int mfd = posix_openpt (O_RDWR | O_NOCTTY);
-
-    if (-1 == mfd) {
-	perror ("posix_openpt");
-	exit (1);
-    }
-
-    if (grantpt (mfd) == -1) {
-	perror ("grantpt");
-	exit (1);
-    }
-
-    if (unlockpt (mfd) == -1) {
-	perror ("unlockpt");
-	exit (1);
-    }
-
-    char *sn = ptsname (mfd);
-
-    if (NULL == sn) {
-	perror ("ptsname");
-	exit (1);
-    }
-
-    int sfd = open (sn, O_RDWR | O_NOCTTY);
-
-    if (-1 == sfd) {
-	perror ("open");
-	exit (1);
-    }
-
-#if defined (__sun) && defined (__SVR4)
-    if (ioctl (sfd, I_PUSH, "ptem") == -1) {
-	perror ("ioctl (I_PUSH, ptem)");
-	exit (1);
-    }
-
-    if (ioctl (sfd, I_PUSH, "ldterm") == -1) {
-	perror ("ioctl (I_PUSH, ldterm)");
-	exit (1);
-    }
-#endif
-
-    struct pollfd fds[1];
-
-    fds[0].fd = sfd;
-    fds[0].events = POLLIN;
-
-    int poll_r = poll (fds, 1, 1);
-
-    if (fds[0].revents & POLLNVAL) {
-	exit (1);
-    }
-
-    close (sfd);
-    close (mfd);
-
-    return 0;
-}
-EOF
 
 IDIO_CAN_POLL_DEVICE=1
-if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
+if ! ${CC} -o ${tmpdir}/a.out ${PROG_LIB}/config-tests/can-poll-device.c >/dev/null 2>&1 ; then
     echo "Failed to compile IDIO_CAN_POLL_DEVICE test" >&2
     exit 1
 elif ! ${tmpdir}/a.out >/dev/null 2>&1 ; then
@@ -286,179 +187,13 @@ if [[ ${IDIO_CAN_POLL_DEVICE} ]] ; then
     # we can exit (0).  Any other failure is, um, a success.
 
     names+=(IDIO_POLLHUP_OCCLUDES_POLLIN)
-    cat <<EOF > ${tmpdir}/test.c
-#define _GNU_SOURCE
-#include <fcntl.h>
-#include <inttypes.h>
-#include <poll.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <sys/wait.h>
-
-#if defined (__sun) && defined (__SVR4)
-#include <stropts.h>
-#endif
-
-
-int main (int argc, char **argv)
-{
-    int mfd = posix_openpt (O_RDWR | O_NOCTTY);
-
-    if (-1 == mfd) {
-	perror ("posix_openpt");
-	exit (1);
-    }
-
-    if (grantpt (mfd) == -1) {
-	perror ("grantpt");
-	exit (1);
-    }
-
-    if (unlockpt (mfd) == -1) {
-	perror ("unlockpt");
-	exit (1);
-    }
-
-    char *sn = ptsname (mfd);
-
-    if (NULL == sn) {
-	perror ("ptsname");
-	exit (1);
-    }
-
-    int sfd = open (sn, O_RDWR | O_NOCTTY);
-
-    if (-1 == sfd) {
-	perror ("open");
-	exit (1);
-    }
-
-#if defined (__sun) && defined (__SVR4)
-    if (ioctl (sfd, I_PUSH, "ptem") == -1) {
-	perror ("ioctl (I_PUSH, ptem)");
-	exit (1);
-    }
-
-    if (ioctl (sfd, I_PUSH, "ldterm") == -1) {
-	perror ("ioctl (I_PUSH, ldterm)");
-	exit (1);
-    }
-#endif
-
-    pid_t pid = fork ();
-
-    if (-1 == pid) {
-	perror ("fork");
-	exit (1);
-    }
-
-    if (0 == pid) {
-	close (mfd);
-
-	setsid ();
-
-	dup2 (sfd, STDIN_FILENO);
-	dup2 (sfd, STDOUT_FILENO);
-	dup2 (sfd, STDERR_FILENO);
-
-	if (sfd > STDERR_FILENO) {
-	    close (sfd);
-	}
-
-	/* tty -> controlling tty */
-	int ctty = open (sn, O_RDWR);
-
-	if (-1 == ctty) {
-	    /* "open (sn, O_RDWR)" */
-	    size_t emlen = 6 + strlen (sn) + 9 + 1;
-	    char em[emlen];
-	    snprintf (em, emlen, "open (%s, O_RDWR)", sn);
-	    perror (em);
-	    exit (1);
-	}
-	close (ctty);
-
-	char cmdstr[BUFSIZ];
-	snprintf (cmdstr, BUFSIZ, "hello from %" PRIdMAX, (intmax_t) getpid ());
-
-	execl ("/bin/echo", "/bin/echo", cmdstr, (char *) NULL);
-
-	perror ("execl /bin/echo");
-	exit (1);
-    } else {
-	close (sfd);
-
-	/*
-	 * exit (0) and only exit (0) is satisfactory
-	 *
-	 * XXX OpenBSD/NetBSD both get a 5s timeout here.
-	 */
-	int wstatus;
-	pid_t waitpid_r = waitpid (pid, &wstatus, 0);
-
-	if (-1 == waitpid_r) {
-	    perror ("waitpid");
-	    exit (1);
-	}
-
-	if (! WIFEXITED (wstatus)) {
-	    fprintf (stderr, "/bin/echo: did not exit (killed/signalled/stopped)\n");
-	    exit (1);
-	}
-
-	if (0 != WEXITSTATUS (wstatus)) {
-	    fprintf (stderr, "/bin/echo: exit (%d)\n", WEXITSTATUS (wstatus));
-	    exit (1);
-	}
-
-	/*
-	 * Finally, we get to see if a process that output something
-	 * (POLLIN) and has exited (POLLHUP) generates POLLIN|POLLHUP
-	 * or just POLLHUP.
-	 */
-	struct pollfd fds[1];
-	fds[0].fd = mfd;
-	fds[0].events = POLLIN;
-
-	/*
-	 * 1ms timeout as the POLLIN|POLLHUP should be there as the
-	 * process has been reaped.
-	 */
-	int poll_r = poll (fds, 1, 1);
-
-	if (-1 == poll_r) {
-	    perror ("poll mfd");
-	    exit (1);
-	}
-
-	if (0 == poll_r) {
-	    fprintf (stderr, "poll mfd: timeout\n");
-	    exit (1);
-	}
-
-	if (fds[0].revents & POLLHUP) {
-	    if (0 == (fds[0].revents & POLLIN)) {
-		exit (0);
-	    }
-	}
-    }
-
-    close (sfd);
-    close (mfd);
-
-    return 1;
-}
-EOF
 
     # NB The logic of these tests are reversed with respect to similar
     # tests.  Only if we can definitively prove that POLLHUP occludes
     # POLLIN can we set the value.
 
     IDIO_POLLHUP_OCCLUDES_POLLIN=0
-    if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
+    if ! ${CC} -o ${tmpdir}/a.out ${PROG_LIB}/config-tests/test-POLLHUP-occludes-POLLIN.c >/dev/null 2>&1 ; then
 	echo "Failed to compile IDIO_POLLHUP_OCCLUDES_POLLIN test" >&2
 	exit 1
     elif ${tmpdir}/a.out >/dev/null 2>&1 ; then
@@ -471,71 +206,32 @@ fi
 # Mac OS 10.5.8 doesn't have clock_gettime(2) but there is a
 # workaround
 
-names+=(IDIO_HAVE_CLOCK_GETTIME)
-cat <<EOF > ${tmpdir}/test.c
-#define _GNU_SOURCE
-#include <time.h>
-
-int main (int argc, char **argv)
-{
-    struct timespec ts;
-    clock_gettime (CLOCK_MONOTONIC, &ts);
-    return 0;
-}
-EOF
-
-IDIO_HAVE_CLOCK_GETTIME=1
-if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
-    IDIO_HAVE_CLOCK_GETTIME=0
-fi
+idio_have clock_gettime
 
 ##############################
 
 # Oracle Solaris 11.4 doesn't have REG_STARTEND
 
-names+=(IDIO_HAVE_REG_STARTEND)
-cat <<EOF > ${tmpdir}/test.c
-#define _GNU_SOURCE
-#include <regex.h>
-
-int main (int argc, char **argv)
-{
-    regex_t reg;
-    regmatch_t matches[1];
-
-    regexec (&reg, "", 1, &matches, REG_STARTEND);
-    return 0;
-}
-EOF
-
-IDIO_HAVE_REG_STARTEND=1
-if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
-    IDIO_HAVE_REG_STARTEND=0
-fi
+idio_have REG_STARTEND
 
 ##############################
 
 # SunOS never had the termios->c_[io]speed fields and Alpine/musl
 # doesn't either
 
-names+=(IDIO_HAVE_TERMIOS_SPEEDS)
-cat <<EOF > ${tmpdir}/test.c
-#define _GNU_SOURCE
-#include <termios.h>
-#include <unistd.h>
+idio_have termios_speeds
 
-int main (int argc, char **argv)
-{
-    struct termios *termiosp;
-    speed_t is = termiosp->c_ispeed;
-    return 0;
-}
-EOF
+##############################
 
-IDIO_HAVE_TERMIOS_SPEEDS=1
-if ! ${CC} -o ${tmpdir}/a.out ${tmpdir}/test.c >/dev/null 2>&1 ; then
-    IDIO_HAVE_TERMIOS_SPEEDS=0
-fi
+# SunOS, Mac OS and NetBSD do not have setresgid/setresuid
+
+idio_have set_saved_ids
+
+##############################
+
+# SunOS does not have futimes (but does have futimesat)
+
+idio_have futimes
 
 ######################################################################
 

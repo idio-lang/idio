@@ -1,0 +1,2 @@
+
+chown "." (C/integer-> 0 libc/uid_t) #t

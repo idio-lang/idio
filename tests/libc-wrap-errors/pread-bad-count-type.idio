@@ -1,0 +1,5 @@
+
+module test/libc-wrap
+import libc
+
+pread (C/integer-> 0) (C/integer-> 0 libc/off_t) #t

@@ -2,4 +2,4 @@
 
 (toc-file predicates)
 (toc-file constructors)
-;(toc-file functions)
+(toc-file functions)

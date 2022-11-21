@@ -151,9 +151,8 @@ its name
 :return: list of open fd and file name
 :rtype: list
 
-This is a wrapper to :ref:`libc/mkstemp <libc/mkstemp>` using the
-temporary directory from :ref:`libc/%get-tmpdir <libc/%get-tmpdir>`.
-
+This is a wrapper to :ref:`libc/mkstemp <libc/mkstemp>` using a
+temporary directory (commonly :file:`/tmp`).
 " {
   tmpdir := (%get-tmpdir)
   prefix := %default-tmpname-prefix
@@ -175,9 +174,7 @@ create a temporary file and return its name
 :return: file name
 :rtype: pathname
 
-This is a wrapper to :ref:`libc/%make-tmp-fd <libc/make-tmp-fd>` and
-closing the returned file descriptor.
-
+The file is created in a temporary directory (commonly :file:`/tmp`).
 " {
   fd+name := apply %make-tmp-fd prefix
 
@@ -193,9 +190,9 @@ create a temporary file and return an open file descriptor to it
 :return: open file descriptor
 :rtype: C/int
 
-This is a wrapper to :ref:`libc/%make-tmp-fd <libc/make-tmp-fd>` and
-unlinking the returned file name.
-
+The file is created in a temporary directory (commonly :file:`/tmp`).
+The file's name is unlinked therefore the returned file descriptor is
+the only reference to the file.
 " {
   fd+name := apply %make-tmp-fd prefix
 
@@ -211,10 +208,7 @@ create a temporary file and return an open file handle to it
 :return: file handle
 :rtype: handle
 
-This is a wrapper to :ref:`libc/%make-tmp-fd <libc/make-tmp-fd>` and
-unlinking the returned file name and opening a file handle from the
-returned file descriptor.
-
+The file is created in a temporary directory (commonly :file:`/tmp`).
 " {
   fd+name := apply %make-tmp-fd prefix
 
@@ -232,9 +226,8 @@ create a temporary directory and return its name
 :return: directory name
 :rtype: pathname
 
-This is a wrapper to :ref:`libc/mkdtemp <libc/mkdtemp>` using the
-temporary directory from :ref:`libc/%get-tmpdir <libc/%get-tmpdir>`.
-
+The directory is created in a temporary directory (commonly
+:file:`/tmp`).
 " {
   tmpdir := (%get-tmpdir)
   prefix := %default-tmpname-prefix

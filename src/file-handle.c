@@ -2486,7 +2486,19 @@ int idio_flush_file_handle (IDIO fh)
 			       IDIO_HANDLE_POS (fh) + (IDIO_FILE_HANDLE_BUF (fh) - IDIO_FILE_HANDLE_PTR (fh)),
 			       SEEK_SET);
 
-	if (-1 == lseek_r) {
+	/*
+	 * We *will* get errors here, notably where we are writing to
+	 * the current-output-handle and no controlling tty has been
+	 * allocated.
+	 *
+	 * You can conveniently emulate that scenario using ssh's -T
+	 * option:
+	 *
+	 *   ssh -T localhost idio --version
+	 *
+	 */
+	if (-1 == lseek_r &&
+	    ESPIPE != errno) {
 	    /*
 	     * Test Case: ??
 	     */

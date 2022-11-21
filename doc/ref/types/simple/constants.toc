@@ -5,7 +5,7 @@
 (document Idio null?)
 (document Idio void?)
 (document Idio undef?)
-(document Idio eof-object?)
+(document Idio eof?)
 
 (rst "constant-functions" 0)
 (document Idio void)

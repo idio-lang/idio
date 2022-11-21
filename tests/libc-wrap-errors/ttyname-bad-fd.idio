@@ -1,0 +1,5 @@
+
+fd+name := mkstemp "XXXXXX"
+delete-file (pht fd+name)
+close (ph fd+name)
+ttyname (ph fd+name)

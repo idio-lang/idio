@@ -1,0 +1,3 @@
+
+;; XXX -1 == leave unchanged
+setresgid (C/integer-> -2 libc/gid_t) (C/integer-> -2 libc/gid_t) (C/integer-> -2 libc/gid_t)

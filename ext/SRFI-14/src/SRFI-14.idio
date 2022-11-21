@@ -55,7 +55,6 @@ char-set.
 
 module SRFI-14
 export (
-	 make-sparse-char-set
 	 char-set?
 	 char-set-for-each-set
 	 char-set

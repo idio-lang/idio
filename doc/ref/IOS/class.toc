@@ -10,10 +10,8 @@
 (document object define-class)
 (document object make-class)
 (document object define-generic)
-(document object make-generic)
 (document object define-method)
 (document object make-instance)
-(document object default-slot-value)
 
 (rst "class-accessors" 0)
 (document object class-name)

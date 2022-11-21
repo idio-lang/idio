@@ -33,6 +33,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/times.h>
@@ -1592,7 +1593,7 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
 	procs = IDIO_PAIR_T (procs);
 
 	if (idio_S_nil != procs) {
-	    if (pipe (proc_pipe) < 0) {
+	    if (idio_pipe (proc_pipe) < 0) {
 		idio_error_system_errno ("pipe", IDIO_LIST2 (proc, job), IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -1742,7 +1743,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char const *pa
 	 * operator.idio).
 	 */
 	int pgrp_pipe[2];
-	if (pipe (pgrp_pipe) < 0) {
+	if (idio_pipe (pgrp_pipe) < 0) {
 	    idio_command_free_argv1 (argv);
 	    IDIO_GC_FREE (envp, envp_size);
 

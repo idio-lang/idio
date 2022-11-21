@@ -1,0 +1,2 @@
+
+ftruncate STDIN_FILENO #t

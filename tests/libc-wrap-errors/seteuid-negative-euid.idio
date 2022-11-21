@@ -1,0 +1,2 @@
+
+seteuid (C/integer-> -1 libc/uid_t)

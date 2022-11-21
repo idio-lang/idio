@@ -1,0 +1,2 @@
+
+lockf STDIN_FILENO #t #t

@@ -1,0 +1,2 @@
+
+setpriority PRIO_PROCESS (C/integer-> -1 libc/id_t) C/0i

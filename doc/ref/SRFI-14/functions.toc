@@ -4,6 +4,10 @@
 (document SRFI-14 char-set? char-set-p)
 
 (document SRFI-14 make-sparse-char-set)
+(document SRFI-14 sparse-char-set?)
+(nodocument SRFI-14 sparse-char-set-size)
+(nodocument SRFI-14 sparse-char-set-planes)
+
 (document SRFI-14 char-set)
 (document SRFI-14 copy-char-set)
 

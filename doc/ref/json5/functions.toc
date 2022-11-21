@@ -5,3 +5,6 @@
 (document json5 parse-string)
 (document json5 generate)
 (document json5 generate-json)
+
+;; no other values to document so here will do
+(nodocument json5 version)

@@ -27,6 +27,10 @@
 (document libc struct-stat-as-string)
 (document libc struct-stat-ref)
 
+(rst "struct-statvfs-intro" 0)
+(document libc struct-statvfs-as-string)
+(document libc struct-statvfs-ref)
+
 (rst "struct-termios-intro" 0)
 (document libc struct-termios-ref)
 (document libc struct-termios-set!)

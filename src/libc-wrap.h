@@ -137,6 +137,7 @@ void idio_libc_format_error (char const *msg, IDIO name, IDIO c_location);
 IDIO idio_libc_export_symbol_value (IDIO symbol, IDIO value);
 char *idio_libc_string_C (IDIO val, char const *func_C, size_t *free_me_p, IDIO c_location);
 char *idio_getcwd (char const *func, char *buf, size_t size);
+int idio_pipe (int *pipefdp);
 char *idio_libc_signal_name (int signum);
 extern char **idio_libc_errno_names;
 char *idio_libc_errno_name (int errnum);

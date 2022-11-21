@@ -16,6 +16,8 @@
 (document Idio current-module)
 (nodocument Idio %set-current-module!)
 
+(nodocument Idio current-env)
+
 (document Idio idio-thread-state)
 
 (document Idio run-in-thread)
@@ -62,6 +64,10 @@
 (nodocument Idio %idio-src-properties)
 (nodocument Idio %interactive?)
 
+(nodocument Idio %vm-abort)
+(document Idio %vm-call-tree)
+(document Idio %vm-decode-stack)
+(document Idio %vm-tables)
 (document Idio %vm-frame-tree)
 (document Idio %vm-trap-state)
 

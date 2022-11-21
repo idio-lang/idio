@@ -65,7 +65,7 @@ define (nt-param-j si)     (phtt si)
 define (eenv-as-string eenv seen) {
   if (%eenv? eenv) {
     r := (open-output-string)
-    hprintf r "#<SI %%eenv %s [%s] " (%eenv-desc eenv) (%eenv-file eenv)
+    hprintf r "#<SI %%eenv \"%s\" [%s] %s. " (%eenv-desc eenv) (%eenv-file eenv) (%eenv-xi eenv)
 
     hprintf r "st #%s " (length (%eenv-symbols eenv))
     hprintf r "ct #%s " (array-length (%eenv-cs eenv))
@@ -222,6 +222,18 @@ define (meaning-constants-lookup-or-extend eenv name) {
   }
 
   ci
+}
+
+define (meaning-eenv-add-predef eenv sym-idx name module) "
+
+" {
+  pht := %eenv-ph eenv
+  he := hash-ref pht sym-idx #f
+  if (not he) {
+    pd := list sym-idx name (module-name module)
+    hash-set! pht sym-idx pd
+    set-%eenv-predefs! eenv (pair pd (%eenv-predefs eenv))
+  }
 }
 
 define (meaning-extend-tables eenv name scope ci module desc set-symbol?) "
@@ -402,30 +414,32 @@ define (meaning-toplevel-extend src name flags eenv) {
 
   cur-scope := si-scope si
 
-  if (not (eq? cur-scope scope)) {
-    meaning-error-static-redefine src "toplevel-extend: type change" name si scope
+  if (eq? cur-scope scope) {
+      si-si si
   } {
+    if (not (eq? 'predef cur-scope)) {
+      meaning-error-static-redefine src "toplevel-extend: type change" name si scope
+    }
+
+    (cond-expand
+     (IDIO_EVALUATE_DEBUG {
+       if (and (eq? scope 'toplevel)
+	       (not (eval-flags-define flags))) {
+	 eprintf "toplevel-extend: forward reference: %s at %s\n" name (meaning-error-location src)
+       }
+     }))
+
+    ;; We get here in the C codebase when we shadow predefs
+    ci := meaning-constants-lookup-or-extend eenv name
+
+    ;; NB a vi of 0 indicates an unresolved value index to be resolved
+    ;; (based on the current set of imports) during runtime
+    meaning-extend-tables eenv name scope ci #f "meaning-toplevel-extend" #t
+
+    si = meaning-find-symbol name eenv scope
+
     si-si si
   }
-
-  (cond-expand
-   (IDIO_EVALUATE_DEBUG {
-     if (and (eq? scope 'toplevel)
-	     (not (eval-flags-define flags))) {
-       eprintf "toplevel-extend: forward reference: %s at %s\n" name (meaning-error-location src)
-     }
-   }))
-
-  ;; We get here in the C codebase when we shadow predefs
-  ci := meaning-constants-lookup-or-extend eenv name
-
-  ;; NB a vi of 0 indicates an unresolved value index to be resolved
-  ;; (based on the current set of imports) during runtime
-  meaning-extend-tables eenv name scope ci #f "meaning-toplevel-extend" #t
-
-  si = meaning-find-symbol name eenv scope
-
-  si-si si
 }
 
 ;; idio_dynamic_extend() is only called from C
@@ -1081,7 +1095,20 @@ define (meaning-assignment src name e nametree flags eenv) {
 	;; your intention that by changing ph everything should use
 	;; the new definition of ph immediately or just that functions
 	;; defined after this should use the new definition?
+
+	;; First up, record the predef details we're overwriting as
+	;; when the saved xenv is run nothing forces the assignment of
+	;; the predef to its xi.vi and we can have set the symbol
+	;; information tuple for the symbol to the closure before the
+	;; predef is (attempted to be) run.  When the primitive does
+	;; get run, the symbol data is looked up and you get the
+	;; closure data.  Oops.
 	;;
+	;; For the future VM to look this predef up we need its name
+	;; and the module it was found in and also the si in this
+	;; eenv.
+	meaning-eenv-add-predef eenv sym-idx name (si-module si)
+
 	;; We need a new symbol index as the existing one is tagged as
 	;; a predef.  This new one will be tagged as a toplevel.
 	sym-idx = meaning-toplevel-extend src name (define-scope 'toplevel flags) eenv
