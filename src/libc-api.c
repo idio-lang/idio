@@ -8520,6 +8520,45 @@ a wrapper to libc :manpage:`utimes(2)`	\n\
     return idio_C_int (utimes_r);
 }
 
+IDIO_DEFINE_PRIMITIVE0_DS ("wait", libc_wait, (), "", "\
+in C, :samp:`wait (status)`			     \n\
+a wrapper to libc :manpage:`wait(2)`		     \n\
+						     \n\
+:return: list of (pid, *status*)		     \n\
+:rtype: list  of (libc/pid_t, C/pointer or ``#n``)   \n\
+:raises ^system-error:				     \n\
+						     \n\
+*status* is a `C/pointer` to a C ``int``.	     \n\
+						     \n\
+.. seealso:: :ref:`WIFEXITED <libc/WIFEXITED>`,	     \n\
+	:ref:`WEXITSTATUS <libc/WEXITSTATUS>`,	     \n\
+	:ref:`WIFSIGNALED <libc/WIFSIGNALED>`,	     \n\
+	:ref:`WTERMSIG <libc/WTERMSIG>`,	     \n\
+	:ref:`WIFSTOPPED <libc/WIFSTOPPED>`	     \n\
+	for functions to manipulate *status*.	     \n\
+")
+{
+    int *statusp = idio_alloc (sizeof (int));
+    IDIO istatus = idio_C_pointer_free_me (statusp);
+
+    pid_t wait_r = wait (statusp);
+
+    if (-1 == wait_r) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_system_errno ("wait", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * wait_r > 0: there is some status for pid
+     * wait_r == 0: no status for pid (caller to handle!)
+     */
+    return IDIO_LIST2 (idio_libc_pid_t (wait_r), istatus);
+}
+
 IDIO_DEFINE_PRIMITIVE1V_DS ("waitpid", libc_waitpid, (IDIO pid, IDIO args), "pid [options]", "\
 in C, :samp:`waitpid ({pid}, status[, {options}])`   \n\
 a wrapper to libc :manpage:`waitpid(2)`		     \n\
@@ -8979,6 +9018,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlink);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlockpt);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_utimes);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_wait);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_waitpid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_write);
 }

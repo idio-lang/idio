@@ -927,6 +927,12 @@ int main (int argc, char **argv)
 	int utimes_r = utimes (filename, times);
     }
 
+    /* wait(2) */
+    {
+	int wstatus;
+	pid_t wait_r = wait (&wstatus);
+    }
+
     /* waitpid(2) */
     {
 	pid_t pid = getpid ();

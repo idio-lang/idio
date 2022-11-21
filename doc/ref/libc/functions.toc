@@ -108,6 +108,7 @@
 (document libc unlink)
 (document libc unlockpt)
 (document libc utimes)
+(document libc wait)
 (document libc waitpid)
 (document libc write)
 (document libc WEXITSTATUS)
