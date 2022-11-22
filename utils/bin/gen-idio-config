@@ -163,7 +163,7 @@ elif ! ${tmpdir}/a.out >/dev/null 2>&1 ; then
     IDIO_NO_POLL_DEVICE=1
 fi
 
-if [[ ${IDIO_NO_POLL_DEVICE} ]] ; then
+if [[ ${IDIO_NO_POLL_DEVICE} -eq 0 ]] ; then
 
     # WSL1 anomalous behaviour wants us to go a step further.
     #
