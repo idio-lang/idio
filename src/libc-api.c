@@ -9194,6 +9194,19 @@ void idio_init_libc_api ()
     idio_module_export_symbol_value (IDIO_SYMBOL ("RUSAGE_THREAD"), idio_C_int (RUSAGE_THREAD), idio_libc_module);
 #endif  /* __rusage_who */
 
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_ISUID"), idio_C_int (S_ISUID), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_ISGID"), idio_C_int (S_ISGID), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_ISVTX"), idio_C_int (S_ISVTX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IRUSR"), idio_C_int (S_IRUSR), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IWUSR"), idio_C_int (S_IWUSR), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IXUSR"), idio_C_int (S_IXUSR), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IRGRP"), idio_C_int (S_IRGRP), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IWGRP"), idio_C_int (S_IWGRP), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IXGRP"), idio_C_int (S_IXGRP), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IROTH"), idio_C_int (S_IROTH), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IWOTH"), idio_C_int (S_IWOTH), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IXOTH"), idio_C_int (S_IXOTH), idio_libc_module);
+
     idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_PROCESS"), idio_C_int (PRIO_PROCESS), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_PGRP"), idio_C_int (PRIO_PGRP), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_USER"), idio_C_int (PRIO_USER), idio_libc_module);
