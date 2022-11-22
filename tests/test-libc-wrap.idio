@@ -579,6 +579,15 @@ umask (umask (C/integer-> 0 libc/mode_t))
 linkfile := "__link__"
 symlink testfile linkfile
 test (readlink linkfile) (string->pathname testfile)
+(cond-expand
+ (IDIO_NO_READLINKAT {
+   test #t #t
+ })
+ (else {
+   dirfd := open (dirname-pathname linkfile) O_RDONLY
+   test (readlinkat dirfd (basename-pathname linkfile)) (string->pathname testfile)
+   close dirfd
+ }))
 
 ; block special devices?
 test (b? "/dev/tty") #f
@@ -742,4 +751,4 @@ test STDERR (current-error-handle)
 module tests/libc-wrap
 
 ;; all done?
-Tests? (libc-wrap0 + 128)
+Tests? (libc-wrap0 + 129)

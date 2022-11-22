@@ -703,6 +703,16 @@ int main (int argc, char **argv)
 	ssize_t readlink_r = readlink (pathname, buf, bufsiz);
     }
 
+#if ! defined (IDIO_NO_READLINKAT)
+    /* readlinkat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	char buf[PATH_MAX];
+	readlinkat (dirfd, pathname, buf, PATH_MAX);
+    }
+#endif
+
     /* rename(2) */
     {
 	char *oldpath = "old";

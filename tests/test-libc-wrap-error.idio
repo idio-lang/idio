@@ -609,6 +609,17 @@ libc-wrap-error-load "libc-wrap-errors/readlink-bad-pathname-type.idio" "bad par
 libc-wrap-error-load "libc-wrap-errors/readlink-bad-pathname-format.idio" "readlink: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/readlink-not-a-symlink.idio" "Invalid argument" EINVAL "readlink"
 
+(cond-expand
+ (IDIO_NO_READLINKAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 6
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/readlinkat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/readlinkat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/readlinkat-bad-pathname-format.idio" "readlinkat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/readlinkat-not-a-symlink.idio" "Invalid argument" EINVAL "readlinkat"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/rename-bad-oldpath-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/rename-bad-oldpath-format.idio" "rename: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/rename-bad-newpath-type.idio" "bad parameter type: '#t' a constant is not a string"
@@ -1150,4 +1161,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 600 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 606 - libc-wrap-error-skipped)

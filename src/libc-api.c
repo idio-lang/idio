@@ -7453,6 +7453,66 @@ a wrapper to libc :manpage:`readlink(2)`	\n\
     return idio_pathname_C_len (buf, readlink_r);
 }
 
+#if ! defined (IDIO_NO_READLINKAT)
+IDIO_DEFINE_PRIMITIVE2_DS ("readlinkat", libc_readlinkat, (IDIO dirfd, IDIO pathname), "dirfd pathname", "\
+in C: :samp:`readlinkat ({dirfd}, {pathname}, buf, bufsiz)`	\n\
+a wrapper to libc :manpage:`readlinkat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:return: contents of symlink		\n\
+:rtype: pathname			\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+
+   /*
+    * Test Case: libc-errors/readlinkat-bad-dirfd-type.idio
+    *
+    * readlinkat #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/readlinkat-bad-pathname-type.idio
+    *
+    * readlinkat C/0i #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+    /*
+     * Test Case: libc-wrap-errors/readlinkat-bad-pathname-format.idio
+     *
+     * readlinkat C/0i "hello\x0world"
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "readlinkat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+    char buf[PATH_MAX];
+    ssize_t readlinkat_r = readlinkat (C_dirfd, C_pathname, buf, PATH_MAX);
+
+    if (-1 == readlinkat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/readlink-not-a-symlink.idio
+	 *
+	 * touch testfile
+	 * readlinkat AT_FDCWD testfile
+	 */
+        idio_error_system_errno ("readlinkat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_pathname_C_len (buf, readlinkat_r);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE2_DS ("rename", libc_rename, (IDIO oldpath, IDIO newpath), "oldpath newpath", "\
 in C: :samp:`rename ({oldpath}, {newpath})`		\n\
 a wrapper to libc :manpage:`rename(2)`	\n\
@@ -9802,6 +9862,11 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pwrite);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_read);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_readlink);
+
+#if ! defined (IDIO_NO_READLINKAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_readlinkat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rename);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setegid);
