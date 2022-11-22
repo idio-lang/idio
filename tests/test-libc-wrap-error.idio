@@ -271,6 +271,18 @@ libc-wrap-error-load "libc-wrap-errors/dup2-bad-fd.idio" strerror-EBADF EBADF "d
 
 libc-wrap-error-load "libc-wrap-errors/exit-bad-type.idio" "bad parameter type: '#t' a constant is not a fixnum|C/int"
 
+(cond-expand
+ (IDIO_NO_FACCESSAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 5
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/faccessat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/faccessat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/faccessat-bad-pathname-format.idio" "faccessat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/faccessat-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/faccessat-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/fchdir-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fchdir-not-a-directory.idio" "Not a directory" ENOTDIR "fchdir"
 
@@ -289,7 +301,7 @@ libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-arg-type.idio" "bad par
 (cond-expand
  (IDIO_NO_F_DUPFD_CLOEXEC {
    printf "no F_DUPFD_CLOEXEC on this system, skipping\n"
-   test #t #t
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 1
  })
  (else {
    libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD_CLOEXEC-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
@@ -1059,4 +1071,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 546 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 551 - libc-wrap-error-skipped)

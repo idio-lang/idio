@@ -228,7 +228,7 @@ idio_no clock_gettime
 
 ##############################
 
-# Oracle Solaris 11.4 doesn't have REG_STARTEND
+# Oracle Solaris 11.4 and Alpine/musl don't have REG_STARTEND
 
 idio_no REG_STARTEND
 
@@ -250,6 +250,12 @@ idio_no set_saved_ids
 # SunOS does not have futimes (but does have futimesat)
 
 idio_no futimes
+
+######################################################################
+
+# Mac OS 10.5.8
+
+idio_no faccessat
 
 ######################################################################
 

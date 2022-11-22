@@ -1,0 +1,2 @@
+
+faccessat C/0i "hello\x0world" #t

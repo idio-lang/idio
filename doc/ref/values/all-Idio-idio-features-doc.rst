@@ -19,8 +19,8 @@ By default, :lname:`Idio` adds the following features:
 * :samp:`sizeof/pointer/{value}` -- where `value` is ``sizeof (void
   *) * CHAR_BIT``
 
-* ``F_DUPFD_CLOEXEC`` if :ref:`libc <libc module>` defines
-  ``F_DUPFD_CLOEXEC``
+* ``IDIO_NO_F_DUPFD_CLOEXEC`` if :ref:`libc <libc module>` does not
+  define ``F_DUPFD_CLOEXEC``
 
 * ``/dev/fd`` if this system uses the :file:`/dev/fd` system for
   accessing *all* file descriptors

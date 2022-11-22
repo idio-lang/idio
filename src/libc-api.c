@@ -2863,6 +2863,9 @@ a wrapper to libc :manpage:`access(2)`				\n\
 								\n\
 Any non-zero value from :manpage:`access(2)` returns ``#f``,	\n\
 no ^system-error is raised.					\n\
+								\n\
+.. warning::							\n\
+	Use of this function is discouraged.			\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -3450,6 +3453,120 @@ a wrapper to libc :manpage:`dup2(2)`				\n\
     return idio_C_int (dup2_r);
 }
 
+#if ! defined (IDIO_NO_FACCESSAT)
+IDIO_DEFINE_PRIMITIVE3V_DS ("faccessat", libc_faccessat, (IDIO dirfd, IDIO pathname, IDIO mode, IDIO args), "dirfd pathname mode [flag ...]", "\
+in C: :samp:`faccessat ({dirfd}, {pathname}, {mode}, {flags})`		\n\
+a wrapper to libc :manpage:`faccessat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param mode: accessibility check(s)	\n\
+:type mode: C/int			\n\
+:param flags: see below, default none	\n\
+:type args: C/int, optional		\n\
+:return: ``#t`` or ``#f``		\n\
+:rtype: boolean				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+								\n\
+Any non-zero value from :manpage:`faccessat(2)` returns ``#f``,	\n\
+no ^system-error is raised.					\n\
+								\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+								\n\
+The following values are defined for `flags`: ``AT_EACCESS``	\n\
+``AT_SYMLINK_NOFOLLOW``	``AT_SYMLINK_FOLLOW``.  They can be	\n\
+``C/|``-bitwise OR'd together or passed as a sequence.		\n\
+								\n\
+.. warning::							\n\
+	Use of this function is discouraged.			\n\
+								\n\
+.. note::							\n\
+								\n\
+   ``faccessat`` is not available on all systems.		\n\
+   Use the ``IDIO_NO_FACCESSAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (mode);
+    IDIO_ASSERT (args);
+
+    /*
+     * Test Case: libc-errors/faccessat-bad-dirfd-type.idio
+     *
+     * faccessat #t #t #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+    /*
+     * Test Case: libc-errors/faccessat-bad-pathname-type.idio
+     *
+     * faccessat C/0i #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/faccessat-bad-pathname-format.idio
+     *
+     * faccessat C/0i (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "faccessat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+    /*
+     * Test Case: libc-errors/faccessat-bad-mode-type.idio
+     *
+     * faccessat C/0i "." #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, mode);
+    int C_mode = IDIO_C_TYPE_int (mode);
+
+    int C_flags = 0;
+
+    while (idio_S_nil != args) {
+	IDIO flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/faccessat-bad-flags-type.idio
+	 *
+	 * faccessat C/0i "." C/0i #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags |= IDIO_C_TYPE_int (flags);
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    IDIO faccessat_r = idio_S_false;
+
+    /*
+     * faccess(2) errors are a bit vague:
+     *
+     *   On error (at least one bit in mode asked for a permission
+     *   that is denied, or mode is F_OK and the file does not exist,
+     *   or some other error occurred), -1 is returned, and errno is
+     *   set appropriately.
+     *
+     * So, we'll just fail and let the user figure it out...
+     */
+
+    if (0 == faccessat (C_dirfd, C_pathname, C_mode, C_flags)) {
+	faccessat_r = idio_S_true;
+    }
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
+
+    return faccessat_r;
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE1_DS ("fchdir", libc_fchdir, (IDIO fd), "fd", "\
 in C: :samp:`fchdir ({fd})`		\n\
 a wrapper to libc :manpage:`fchdir(2)`	\n\
@@ -3953,7 +4070,10 @@ a wrapper to libc :manpage:`futimes(3)`	\n\
 :rtype: C/int				\n\
 :raises ^system-error:			\n\
 					\n\
-``futimes`` is not available on some systems.	\n\
+.. note::				\n\
+					\n\
+   ``futimes`` is not available on all systems.	\n\
+   Use the ``IDIO_NO_FUTIMES`` feature in :ref:`cond-expand <cond-expand>`.	\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -6269,7 +6389,7 @@ a wrapper to libc :manpage:`posix_openpt(3)`		\n\
 :rtype: C/int						\n\
 :raises ^system-error:					\n\
 							\n\
-``O_NOCTTY`` is not available on some systems.		\n\
+.. note:: ``O_NOCTTY`` is not available on all systems.	\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -7090,7 +7210,10 @@ a wrapper to libc :manpage:`setresgid(2)`	\n\
 :rtype: C/int				\n\
 :raises ^system-error:			\n\
 					\n\
-``setresgid`` is not available on some systems.		\n\
+.. note::				\n\
+					\n\
+   ``setresgid`` is not available on all systems.	\n\
+   Use the ``IDIO_NO_SET_SAVED_IDS`` feature in :ref:`cond-expand <cond-expand>`.	\n\
 ")
 {
     IDIO_ASSERT (rgid);
@@ -7153,7 +7276,10 @@ a wrapper to libc :manpage:`setresuid(2)`	\n\
 :rtype: C/int				\n\
 :raises ^system-error:			\n\
 					\n\
-``setresuid`` is not available on some systems.		\n\
+.. note::				\n\
+					\n\
+   ``setresuid`` is not available on all systems.	\n\
+   Use the ``IDIO_NO_SET_SAVED_IDS`` feature in :ref:`cond-expand <cond-expand>`.	\n\
 ")
 {
     IDIO_ASSERT (ruid);
@@ -8920,6 +9046,11 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ctime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup2);
+
+#if ! defined (IDIO_NO_FACCESSAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_faccessat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchmod);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchown);
@@ -9071,4 +9202,11 @@ void idio_init_libc_api ()
     idio_module_export_symbol_value (IDIO_SYMBOL ("F_TLOCK"), idio_C_int (F_TLOCK), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("F_ULOCK"), idio_C_int (F_ULOCK), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("F_TEST"), idio_C_int (F_TEST), idio_libc_module);
+
+#if ! defined (IDIO_NO_FACCESSAT)
+    idio_module_export_symbol_value (IDIO_SYMBOL ("AT_FDCWD"), idio_C_int (AT_FDCWD), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("AT_EACCESS"), idio_C_int (AT_EACCESS), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("AT_SYMLINK_NOFOLLOW"), idio_C_int (AT_SYMLINK_NOFOLLOW), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("AT_SYMLINK_FOLLOW"), idio_C_int (AT_SYMLINK_FOLLOW), idio_libc_module);
+#endif
 }

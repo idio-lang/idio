@@ -259,7 +259,7 @@ sprintf "%s" utsname
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-access "." (C/integer-> #o400)
+access "." R_OK
 
 chdir "."
 
@@ -306,6 +306,11 @@ fd-flags := fcntl C/0i F_GETFD
 dh := open-file "." "r"
 fchdir (file-handle-fd dh)
 close-handle dh
+
+(cond-expand
+ ((not IDIO_NO_FACCESSAT) {
+   faccessat AT_FDCWD "." R_OK
+ }))
 
 fcntl C/0i F_SETFD fd-flags
 

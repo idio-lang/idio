@@ -13,6 +13,7 @@
 (document libc dup)
 (document libc dup2)
 (document libc exit)
+(document libc faccessat)
 (document libc fchdir)
 (document libc fchmod)
 (document libc fchown)

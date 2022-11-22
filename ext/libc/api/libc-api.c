@@ -272,6 +272,17 @@ int main (int argc, char **argv)
 	*/
     }
 
+#if ! defined (IDIO_NO_FACCESSAT)
+    /* faccessat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	int mode = 0;
+	int flags = AT_EACCESS;
+	faccessat (dirfd, pathname, mode, flags);
+    }
+#endif
+
     /* fchdir(2) */
     {
 	int fd = STDIN_FILENO;
