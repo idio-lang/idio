@@ -720,6 +720,17 @@ int main (int argc, char **argv)
 	int rename_r = rename (oldpath, newpath);
     }
 
+#if ! defined (IDIO_NO_RENAMEAT)
+    /* renameat(2) */
+    {
+	int olddirfd = 0;
+	char *oldpath = ".";
+	int newdirfd = 0;
+	char *newpath = ".";
+	renameat (olddirfd, oldpath, newdirfd, newpath);
+    }
+#endif
+
     /* rmdir(2) */
     {
 	char *pathname = ".";

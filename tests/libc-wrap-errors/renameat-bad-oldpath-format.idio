@@ -1,0 +1,3 @@
+
+; "hello[NUL]world"
+renameat C/0i "hello\x0world" #t #t

@@ -392,6 +392,19 @@ unlink tmp2
  }))
 rename tmp tmp2
 unlink tmp2
+(cond-expand
+ ((not IDIO_NO_RENAMEAT) {
+   tmp := (make-tmp-file)
+   tmp2 := append-string tmp ".2"
+
+   dirfd := open (dirname-pathname tmp) O_RDONLY
+
+   renameat dirfd tmp dirfd tmp2
+
+   close dirfd
+
+   unlink tmp2
+ }))
 
 ;; test mkdir(2) for which we need a directory we can mkdir safely --
 ;; how about a random one we just deleted?

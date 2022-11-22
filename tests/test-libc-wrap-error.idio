@@ -626,6 +626,20 @@ libc-wrap-error-load "libc-wrap-errors/rename-bad-newpath-type.idio" "bad parame
 libc-wrap-error-load "libc-wrap-errors/rename-bad-newpath-format.idio" "rename: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/rename-non-existent.idio" "No such file or directory" ENOENT "rename"
 
+(cond-expand
+ (IDIO_NO_RENAMEAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 9
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/renameat-bad-olddirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/renameat-bad-oldpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/renameat-bad-oldpath-format.idio" "renameat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/renameat-bad-newdirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/renameat-bad-newpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/renameat-bad-newpath-format.idio" "renameat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/renameat-non-existent.idio" "No such file or directory" ENOENT "renameat"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/rmdir-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/rmdir-bad-pathname-format.idio" "rmdir: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/rmdir-non-existent.idio" "No such file or directory" ENOENT "rmdir"
@@ -1161,4 +1175,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 606 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 615 - libc-wrap-error-skipped)

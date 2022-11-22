@@ -263,6 +263,7 @@ idio_no linkat
 idio_no mkdirat
 idio_no openat
 idio_no readlinkat
+idio_no renameat
 
 ######################################################################
 

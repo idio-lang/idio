@@ -7591,6 +7591,109 @@ a wrapper to libc :manpage:`rename(2)`	\n\
     return idio_C_int (rename_r);
 }
 
+#if ! defined (IDIO_NO_RENAMEAT)
+IDIO_DEFINE_PRIMITIVE4_DS ("renameat", libc_renameat, (IDIO olddirfd, IDIO oldpath, IDIO newdirfd, IDIO newpath), "olddirfd oldpath newdirfd newpath", "\
+in C: :samp:`renameat ({olddirfd}, {oldpath}, {newdirfd}, {newpath})`		\n\
+a wrapper to libc :manpage:`renameat()`	\n\
+					\n\
+:param olddirfd: file descriptor for a directory	\n\
+:type olddirfd: C/int			\n\
+:param oldpath: pathname		\n\
+:type oldpath: string			\n\
+:param newdirfd: file descriptor for a directory	\n\
+:type newdirfd: C/int			\n\
+:param newpath: pathname		\n\
+:type newpath: string			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `oldpath` or `newpath` contain an ASCII NUL	\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (olddirfd);
+    IDIO_ASSERT (oldpath);
+    IDIO_ASSERT (newdirfd);
+    IDIO_ASSERT (newpath);
+
+   /*
+    * Test Case: libc-errors/renameat-bad-olddirfd-type.idio
+    *
+    * renameat #t #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, olddirfd);
+    int C_olddirfd = IDIO_C_TYPE_int (olddirfd);
+
+   /*
+    * Test Case: libc-errors/renameat-bad-oldpath-type.idio
+    *
+    * renameat C/0i #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, oldpath);
+
+    size_t free_C_oldpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/renameat-bad-oldpath-format.idio
+     *
+     * renameat C/0i "hello\x0world" #t #t
+     */
+    char *C_oldpath = idio_libc_string_C (oldpath, "renameat", &free_C_oldpath, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/renameat-bad-newdirfd-type.idio
+    *
+    * renameat C/0i "." #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, newdirfd);
+    int C_newdirfd = IDIO_C_TYPE_int (newdirfd);
+
+   /*
+    * Test Case: libc-errors/renameat-bad-newpath-type.idio
+    *
+    * renameat C/0i "." C/0i #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, newpath);
+
+    size_t free_C_newpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/renameat-bad-newpath-format.idio
+     *
+     * renameat C/0i "." C/0i "hello\x0world"
+     */
+    char *C_newpath = idio_libc_string_C (newpath, "renameat", &free_C_newpath, IDIO_C_FUNC_LOCATION ());
+
+    int renameat_r = renameat (C_olddirfd, C_oldpath, C_newdirfd, C_newpath);
+
+    if (free_C_oldpath) {
+	IDIO_GC_FREE (C_oldpath, free_C_oldpath);
+    }
+
+    if (free_C_newpath) {
+	IDIO_GC_FREE (C_newpath, free_C_newpath);
+    }
+
+    if (-1 == renameat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/renameat-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * tmp := pht fd+name
+	 * unlink tmp
+	 * dirfd := open (dirname-pathname tmp) O_RDONLY
+	 * tmp2 := append-string tmp ".2"
+	 * renameat dirfd tmp dirfd tmp2
+	 */
+        idio_error_system_errno ("renameat", IDIO_LIST2 (oldpath, newpath), IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (renameat_r);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE1_DS ("rmdir", libc_rmdir, (IDIO pathname), "pathname", "\
 in C, :samp:`rmdir ({pathname})`				\n\
 a wrapper to libc :manpage:`rmdir(2)`				\n\
@@ -9868,6 +9971,11 @@ void idio_libc_api_add_primitives ()
 #endif
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rename);
+
+#if ! defined (IDIO_NO_RENAMEAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_renameat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setegid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_seteuid);

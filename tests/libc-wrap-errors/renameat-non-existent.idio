@@ -1,0 +1,14 @@
+
+fd+name := mkstemp "XXXXXX"
+close (ph fd+name)
+tmp := pht fd+name
+unlink tmp
+
+dirfd := open (dirname-pathname tmp) O_RDONLY
+tmp2 := append-string tmp ".2"
+
+unwind-protect {
+  renameat dirfd tmp dirfd tmp2
+} {
+  close dirfd
+}
