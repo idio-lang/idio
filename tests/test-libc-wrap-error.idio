@@ -290,6 +290,19 @@ libc-wrap-error-load "libc-wrap-errors/fchmod-bad-fd-type.idio" "bad parameter t
 libc-wrap-error-load "libc-wrap-errors/fchmod-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
 libc-wrap-error-load "libc-wrap-errors/fchmod-non-existent.idio" strerror-EBADF EBADF "fchmod"
 
+(cond-expand
+ (IDIO_NO_FCHMODAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 8
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/fchmodat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/fchmodat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/fchmodat-bad-pathname-format.idio" "fchmodat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/fchmodat-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
+   libc-wrap-error-load "libc-wrap-errors/fchmodat-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/fchmodat-non-existent.idio" "No such file or directory" ENOENT "fchmodat"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/fchown-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fchown-bad-owner-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
 libc-wrap-error-load "libc-wrap-errors/fchown-bad-group-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
@@ -1071,4 +1084,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 551 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 559 - libc-wrap-error-skipped)

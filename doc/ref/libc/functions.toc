@@ -16,6 +16,7 @@
 (document libc faccessat)
 (document libc fchdir)
 (document libc fchmod)
+(document libc fchmodat)
 (document libc fchown)
 (document libc fcntl)
 (document libc fork)

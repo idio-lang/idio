@@ -1,0 +1,6 @@
+fd+name := mkstemp "XXXXXX"
+close (ph fd+name)
+delete-file (pht fd+name)
+
+dirfd := open (dirname-pathname (pht fd+name)) O_RDONLY
+fchmodat dirfd (pht fd+name) S_IRUSR

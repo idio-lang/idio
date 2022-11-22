@@ -314,9 +314,15 @@ close-handle dh
 
 fcntl C/0i F_SETFD fd-flags
 
+dirfd := open (dirname-pathname testfile) O_RDONLY
+
 ofh := open-output-file testfile
 puts "hello world\n" ofh
 fchmod (fd-handle-fd ofh) sb.st_mode
+(cond-expand
+ ((not IDIO_NO_FCHMODAT) {
+   fchmodat dirfd testfile sb.st_mode
+ }))
 fstat (fd-handle-fd ofh)
 fstatvfs (fd-handle-fd ofh)
 fsync (fd-handle-fd ofh)

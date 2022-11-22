@@ -296,6 +296,17 @@ int main (int argc, char **argv)
 	int fchmod_r = fchmod (fd, mode);
     }
 
+#if ! defined (IDIO_NO_FCHMODAT)
+    /* fchmodat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	int mode = S_IRUSR;
+	int flags = 0;
+	fchmodat (dirfd, pathname, mode, flags);
+    }
+#endif
+
     /* fchown(2) */
     {
 	int fd = STDIN_FILENO;

@@ -3896,6 +3896,10 @@ void idio_init_libc_wrap ()
     idio_add_feature (IDIO_SYMBOL ("IDIO_NO_FACCESSAT"));
 #endif
 
+#ifdef IDIO_NO_FCHMODAT
+    idio_add_feature (IDIO_SYMBOL ("IDIO_NO_FCHMODAT"));
+#endif
+
     idio_S_mtd = IDIO_SYMBOL ("make-tmp-dir");
 
     idio_str_np_prefix = IDIO_STRING ("idio-np-");

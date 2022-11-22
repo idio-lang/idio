@@ -259,6 +259,12 @@ idio_no faccessat
 
 ######################################################################
 
+# Mac OS 10.5.8
+
+idio_no fchmodat
+
+######################################################################
+
 var_MODULE=$( echo ${opt_module} | tr '[a-z]' '[A-Z]' )
 var_header=${opt_module}-config.h
 

@@ -3465,7 +3465,7 @@ a wrapper to libc :manpage:`faccessat(2)`	\n\
 :param mode: accessibility check(s)	\n\
 :type mode: C/int			\n\
 :param flags: see below, default none	\n\
-:type args: C/int, optional		\n\
+:type flags: C/int, optional		\n\
 :return: ``#t`` or ``#f``		\n\
 :rtype: boolean				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
@@ -3477,7 +3477,7 @@ The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
 								\n\
 The following values are defined for `flags`: ``AT_EACCESS``	\n\
 ``AT_SYMLINK_NOFOLLOW``	``AT_SYMLINK_FOLLOW``.  They can be	\n\
-``C/|``-bitwise OR'd together or passed as a sequence.		\n\
+``C/|``-bitwise OR'd together or passed as extra arguments.	\n\
 								\n\
 .. warning::							\n\
 	Use of this function is discouraged.			\n\
@@ -3656,6 +3656,115 @@ a wrapper to libc :manpage:`fchmod(2)`	\n\
 
     return idio_C_int (fchmod_r);
 }
+
+#if ! defined (IDIO_NO_FCHMODAT)
+IDIO_DEFINE_PRIMITIVE3V_DS ("fchmodat", libc_fchmodat, (IDIO dirfd, IDIO pathname, IDIO mode, IDIO args), "dirfd pathname mode [flag ...]", "\
+in C: :samp:`fchmodat ({dirfd}, {pathname}, {mode}, {flags})`	\n\
+a wrapper to libc :manpage:`fchmodat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param mode: mode flags			\n\
+:type mode: libc/mode_t			\n\
+:param flags: see below, default none	\n\
+:type flags: C/int			\n\
+:return: 0				\n\
+:rtype: C/int	\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+								\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+								\n\
+The following values are defined for `flags`: ``AT_EACCESS``	\n\
+``AT_SYMLINK_NOFOLLOW``	``AT_SYMLINK_FOLLOW``.  They can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments.	\n\
+								\n\
+.. note::							\n\
+								\n\
+   ``fchmodat`` is not available on all systems.		\n\
+   Use the ``IDIO_NO_FCHMODAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (mode);
+    IDIO_ASSERT (args);
+
+   /*
+    * Test Case: libc-errors/fchmodat-bad-dirfd-type.idio
+    *
+    * fchmodat #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/fchmodat-bad-pathname-type.idio
+    *
+    * fchmodat C/0i #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/fchmodat-bad-pathname-format.idio
+     *
+     * fchmodat C/0i (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "fchmodat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/fchmodat-bad-mode-type.idio
+    *
+    * fchmodat C/0i "." #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    mode_t C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    int C_flags = 0;
+
+    while (idio_S_nil != args) {
+	IDIO flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/fchmodat-bad-flags-type.idio
+	 *
+	 * fchmodat C/0i "." S_IRUSR #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags |= IDIO_C_TYPE_int (flags);
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    int fchmodat_r = fchmodat (C_dirfd, C_pathname, C_mode, C_flags);
+
+    /* check for errors */
+    if (-1 == fchmodat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/fchmodat-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * delete-file (pht fd+name)
+	 * fchmodat (ph fd+name) (C/integer-> #o555 libc/mode_t)
+	 */
+        idio_error_system_errno ("fchmodat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+
+    /*
+     * WARNING: this is probably an incorrect return
+     */
+    return idio_C_int (fchmodat_r);
+
+}
+#endif
 
 IDIO_DEFINE_PRIMITIVE3_DS ("fchown", libc_fchown, (IDIO fd, IDIO owner, IDIO group), "fd owner group", "\
 in C: :samp:`fchown ({fd}, {owner}, {group})`	\n\
@@ -9053,6 +9162,11 @@ void idio_libc_api_add_primitives ()
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchmod);
+
+#if ! defined (IDIO_NO_FCHMODAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchmodat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchown);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fcntl);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fork);
@@ -9194,18 +9308,18 @@ void idio_init_libc_api ()
     idio_module_export_symbol_value (IDIO_SYMBOL ("RUSAGE_THREAD"), idio_C_int (RUSAGE_THREAD), idio_libc_module);
 #endif  /* __rusage_who */
 
-    idio_module_export_symbol_value (IDIO_SYMBOL ("S_ISUID"), idio_C_int (S_ISUID), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("S_ISGID"), idio_C_int (S_ISGID), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("S_ISVTX"), idio_C_int (S_ISVTX), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IRUSR"), idio_C_int (S_IRUSR), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IWUSR"), idio_C_int (S_IWUSR), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IXUSR"), idio_C_int (S_IXUSR), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IRGRP"), idio_C_int (S_IRGRP), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IWGRP"), idio_C_int (S_IWGRP), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IXGRP"), idio_C_int (S_IXGRP), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IROTH"), idio_C_int (S_IROTH), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IWOTH"), idio_C_int (S_IWOTH), idio_libc_module);
-    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IXOTH"), idio_C_int (S_IXOTH), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_ISUID"), idio_libc_mode_t (S_ISUID), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_ISGID"), idio_libc_mode_t (S_ISGID), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_ISVTX"), idio_libc_mode_t (S_ISVTX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IRUSR"), idio_libc_mode_t (S_IRUSR), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IWUSR"), idio_libc_mode_t (S_IWUSR), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IXUSR"), idio_libc_mode_t (S_IXUSR), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IRGRP"), idio_libc_mode_t (S_IRGRP), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IWGRP"), idio_libc_mode_t (S_IWGRP), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IXGRP"), idio_libc_mode_t (S_IXGRP), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IROTH"), idio_libc_mode_t (S_IROTH), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IWOTH"), idio_libc_mode_t (S_IWOTH), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IXOTH"), idio_libc_mode_t (S_IXOTH), idio_libc_module);
 
     idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_PROCESS"), idio_C_int (PRIO_PROCESS), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_PGRP"), idio_C_int (PRIO_PGRP), idio_libc_module);
