@@ -4142,6 +4142,103 @@ a wrapper to libc :manpage:`fstat(2)`		\n\
     return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
 }
 
+#if ! defined (IDIO_NO_FSTATAT)
+IDIO_DEFINE_PRIMITIVE2V_DS ("fstatat", libc_fstatat, (IDIO dirfd, IDIO pathname, IDIO args), "dirfd pathname [flag ...]", "\
+in C: :samp:`fstatat ({dirfd}, {pathname}, statbuf, {flags})`		\n\
+a wrapper to libc :manpage:`fstatat()`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int				\n\
+:param pathname: pathname			\n\
+:type pathname: string				\n\
+:param flags: see below, default none		\n\
+:type flags: C/int, optional			\n\
+:return: :ref:`struct-stat <libc/struct-stat>`	\n\
+:rtype: C/pointer				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:				\n\
+								\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+								\n\
+The following values are defined for `flags`: ``AT_EACCESS``	\n\
+``AT_SYMLINK_NOFOLLOW``	``AT_SYMLINK_FOLLOW``.  They can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments.	\n\
+								\n\
+.. note::							\n\
+								\n\
+   ``fstatat`` is not available on all systems.		\n\
+   Use the ``IDIO_NO_FSTATAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (flags);
+
+   /*
+    * Test Case: libc-errors/fstatat-bad-dirfd-type.idio
+    *
+    * fstatat #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/fstatat-bad-pathname-type.idio
+    *
+    * fstatat C/0i #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/fstatat-bad-pathname-format.idio
+     *
+     * fstatat C/0i (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "fstatat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+    int C_flags = 0;
+
+    while (idio_S_nil != args) {
+	IDIO flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/fstatat-bad-flags-type.idio
+	 *
+	 * fstatat C/0i "." #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags |= IDIO_C_TYPE_int (flags);
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    struct stat* statp = idio_alloc (sizeof (struct stat));
+
+    int fstatat_r = fstatat (C_dirfd, C_pathname, statp, C_flags);
+
+    if (-1 == fstatat_r) {
+	idio_free (statp);
+
+	/*
+	 * Test Case: libc-wrap-errors/fstatat-bad-fd.idio
+	 *
+	 * fstatat (C/integer-> 99) "."
+	 *
+	 * Obviously, this is a risky test.  perhaps we should get a
+	 * new fd then close it and reuse that fd?
+	 */
+        idio_error_system_errno ("fstatat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE1_DS ("fstatvfs", libc_fstatvfs, (IDIO fd), "fd", "\
 in C: :samp:`fstatvfs ({fd})`		\n\
 a wrapper to libc :manpage:`fstatvfs(3)`	\n\
@@ -9284,6 +9381,11 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fcntl);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fork);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstat);
+
+#if ! defined (IDIO_NO_FSTATAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstatat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstatvfs);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fsync);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ftruncate);

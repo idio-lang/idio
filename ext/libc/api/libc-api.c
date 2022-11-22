@@ -348,6 +348,17 @@ int main (int argc, char **argv)
 	 */
     }
 
+#if ! defined (IDIO_NO_FSTATAT)
+    /* fstatat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	struct stat statbuf;
+	int flags = 0;
+	fstatat (dirfd, pathname, &statbuf, flags);
+    }
+#endif
+
     /* fstatvfs(3) */
     {
 	struct statvfs buf;

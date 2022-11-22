@@ -258,6 +258,7 @@ idio_no futimes
 idio_no faccessat
 idio_no fchmodat
 idio_no fchownat
+idio_no fstatat
 
 ######################################################################
 

@@ -342,6 +342,18 @@ libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-fd.idio" strerror-EBADF
 libc-wrap-error-load "libc-wrap-errors/fstat-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fstat-bad-fd.idio" strerror-EBADF EBADF "fstat"
 
+(cond-expand
+ (IDIO_NO_FSTATAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 7
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/fstatat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/fstatat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/fstatat-bad-pathname-format.idio" "fstatat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/fstatat-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/fstatat-non-existent.idio" "No such file or directory" ENOENT "fstatat"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/fstatvfs-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fstatvfs-bad-fd.idio" strerror-EBADF EBADF "fstatvfs"
 
@@ -1098,4 +1110,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 568 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 575 - libc-wrap-error-skipped)

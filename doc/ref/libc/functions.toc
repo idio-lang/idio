@@ -22,6 +22,7 @@
 (document libc fcntl)
 (document libc fork)
 (document libc fstat)
+(document libc fstatat)
 (document libc fstatvfs)
 (document libc fsync)
 (document libc ftruncate)

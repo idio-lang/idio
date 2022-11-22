@@ -330,6 +330,10 @@ fchmod (fd-handle-fd ofh) sb.st_mode
    fchmodat dirfd testfile sb.st_mode
  }))
 fstat (fd-handle-fd ofh)
+(cond-expand
+ ((not IDIO_NO_FSTATAT) {
+   fstatat dirfd testfile
+ }))
 fstatvfs (fd-handle-fd ofh)
 fsync (fd-handle-fd ofh)
 ftruncate (fd-handle-fd ofh) (C/integer-> 3 libc/off_t)
