@@ -18,6 +18,7 @@
 (document libc fchmod)
 (document libc fchmodat)
 (document libc fchown)
+(document libc fchownat)
 (document libc fcntl)
 (document libc fork)
 (document libc fstat)

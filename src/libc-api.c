@@ -3743,26 +3743,21 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
 
     int fchmodat_r = fchmodat (C_dirfd, C_pathname, C_mode, C_flags);
 
-    /* check for errors */
     if (-1 == fchmodat_r) {
 	/*
 	 * Test Case: libc-wrap-errors/fchmodat-non-existent.idio
 	 *
 	 * fd+name := mkstemp "XXXXXX"
 	 * delete-file (pht fd+name)
-	 * fchmodat (ph fd+name) (C/integer-> #o555 libc/mode_t)
+	 * dirfd := open (dirname-pathname (pht fd+name)) O_RDONLY
+	 * fchmodat dirfd (pht fd+name) S_IRUSR
 	 */
         idio_error_system_errno ("fchmodat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
         return idio_S_notreached;
     }
 
-
-    /*
-     * WARNING: this is probably an incorrect return
-     */
     return idio_C_int (fchmodat_r);
-
 }
 #endif
 
@@ -3827,6 +3822,122 @@ a wrapper to libc :manpage:`fchown(2)`	\n\
 
     return idio_C_int (fchown_r);
 }
+
+#if ! defined (IDIO_NO_FCHOWNAT)
+IDIO_DEFINE_PRIMITIVE4V_DS ("fchownat", libc_fchownat, (IDIO dirfd, IDIO pathname, IDIO owner, IDIO group, IDIO args), "dirfd pathname owner group [flag ...]", "\
+in C: :samp:`fchownat ({dirfd}, {pathname}, {owner}, {group}, {flags})`		\n\
+a wrapper to libc :manpage:`fchownat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param owner: user ID			\n\
+:type owner: libc/uid_t			\n\
+:param group: group ID			\n\
+:type group: libc/gid_t			\n\
+:param flags: see below, default none	\n\
+:type flags: C/int, optional		\n\
+:return: 0				\n\
+:rtype: C/int	\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+								\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+								\n\
+The following values are defined for `flags`: ``AT_EACCESS``	\n\
+``AT_SYMLINK_NOFOLLOW``	``AT_SYMLINK_FOLLOW``.  They can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments.	\n\
+								\n\
+.. note::							\n\
+								\n\
+   ``fchownat`` is not available on all systems.		\n\
+   Use the ``IDIO_NO_FCHOWNAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (owner);
+    IDIO_ASSERT (group);
+    IDIO_ASSERT (args);
+
+   /*
+    * Test Case: libc-errors/fchownat-bad-dirfd-type.idio
+    *
+    * fchownat #t #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/fchownat-bad-pathname-type.idio
+    *
+    * fchownat C/0i #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/fchownat-bad-pathname-format.idio
+     *
+     * fchownat C/0i (join-string (make-string 1 #U+0) '("hello" "world")) #t #t
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "fchownat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/fchownat-bad-owner-type.idio
+    *
+    * fchownat C/0i "." #t #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (uid_t, owner);
+    uid_t C_owner = IDIO_C_TYPE_libc_uid_t (owner);
+
+   /*
+    * Test Case: libc-errors/fchownat-bad-group-type.idio
+    *
+    * fchownat C/0i "." UID #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (gid_t, group);
+    gid_t C_group = IDIO_C_TYPE_libc_gid_t (group);
+
+    int C_flags = 0;
+
+    while (idio_S_nil != args) {
+	IDIO flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/fchownat-bad-flags-type.idio
+	 *
+	 * fchownat C/0i "." UID GID #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags |= IDIO_C_TYPE_int (flags);
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    int fchownat_r = fchownat (C_dirfd, C_pathname, C_owner, C_group, C_flags);
+
+    if (-1 == fchownat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/fchownat-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * dirfd := open (dirname-pathname (pht fd+name)) O_RDONLY
+	 * fchownat dirfd (pht fd+name) UID GID
+	 */
+        idio_error_system_errno ("fchownat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (fchownat_r);
+}
+#endif
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("fcntl", libc_fcntl, (IDIO fd, IDIO cmd, IDIO args), "fd cmd [args]", "\
 in C, :samp:`fcntl ({fd}, {cmd}[, {args}])`			\n\
@@ -7355,7 +7466,6 @@ a wrapper to libc :manpage:`setresgid(2)`	\n\
 
     int setresgid_r = setresgid (C_rgid, C_egid, C_sgid);
 
-    /* check for errors */
     if (-1 == setresgid_r) {
 	/*
 	 * Test Case: libc-wrap-errors/setresgid-negative-gid.idio
@@ -7421,7 +7531,6 @@ a wrapper to libc :manpage:`setresuid(2)`	\n\
 
     int setresuid_r = setresuid (C_ruid, C_euid, C_suid);
 
-    /* check for errors */
     if (-1 == setresuid_r) {
 	/*
 	 * Test Case: libc-wrap-errors/setresuid-negative-gid.idio
@@ -7472,7 +7581,6 @@ a wrapper to libc :manpage:`setreuid(2)`	\n\
 
     int setreuid_r = setreuid (C_ruid, C_euid);
 
-    /* check for errors */
     if (-1 == setreuid_r) {
 	/*
 	 * Test Case: libc-wrap-errors/setreuid-negative-gid.idio
@@ -9168,6 +9276,11 @@ void idio_libc_api_add_primitives ()
 #endif
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchown);
+
+#if ! defined (IDIO_NO_FCHOWNAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchownat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fcntl);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fork);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstat);

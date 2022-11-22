@@ -273,6 +273,12 @@ tmp := (make-tmp-file)
 chown tmp EUID EGID
 tmp-fh := open-input-file tmp
 fchown (file-handle-fd tmp-fh) EUID EGID
+(cond-expand
+ ((not IDIO_NO_FCHOWNAT) {
+   dirfd := open (dirname-pathname testfile) O_RDONLY
+   fchownat dirfd testfile sb.st_uid sb.st_gid
+   close dirfd
+ }))
 close-handle tmp-fh
 rm tmp
 
@@ -334,6 +340,8 @@ ftruncate (fd-handle-fd ofh) (C/integer-> 3 libc/off_t)
  }))
 lockf (fd-handle-fd ofh) F_TEST (C/integer-> 3 libc/off_t)
 close-handle ofh
+
+close dirfd
 
 (getegid)
 (geteuid)

@@ -315,6 +315,18 @@ int main (int argc, char **argv)
 	int fchown_r = fchown (fd, owner, group);
     }
 
+#if ! defined (IDIO_NO_FCHOWNAT)
+    /* fchownat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	uid_t owner = 0;
+	gid_t group = 0;
+	int flags = 0;
+	fchownat (dirfd, pathname, owner, group, flags);
+    }
+#endif
+
     /* fcntl(2) */
     {
 	int fd = STDIN_FILENO;
