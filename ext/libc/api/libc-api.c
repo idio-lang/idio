@@ -920,6 +920,16 @@ int main (int argc, char **argv)
 	int symlink_r = symlink (target, linkpath);
     }
 
+#if ! defined (IDIO_NO_SYMLINKAT)
+    /* symlinkat(2) */
+    {
+	char *target = ".";
+	int newdirfd = 0;
+	char *linkpath = ".";
+	symlinkat (target, newdirfd, linkpath);
+    }
+#endif
+
     /* sync(2) */
     {
 	sync ();

@@ -1,0 +1,3 @@
+
+; "hello[NUL]world"
+symlinkat "hello\x0world" #t #t

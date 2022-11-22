@@ -774,6 +774,19 @@ libc-wrap-error-load "libc-wrap-errors/symlink-bad-linkpath-type.idio" "bad para
 libc-wrap-error-load "libc-wrap-errors/symlink-bad-linkpath-format.idio" "symlink: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/symlink-same-pathname.idio" "File exists" EEXIST "symlink"
 
+(cond-expand
+ (IDIO_NO_SYMLINKAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 8
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/symlinkat-bad-target-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/symlinkat-bad-target-format.idio" "symlinkat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/symlinkat-bad-newdirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/symlinkat-bad-linkpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/symlinkat-bad-linkpath-format.idio" "symlinkat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/symlinkat-same-pathname.idio" "File exists" EEXIST "symlinkat"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/tcgetattr-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/tcgetattr-bad-fd.idio" strerror-EBADF EBADF "tcgetattr"
 
@@ -1175,4 +1188,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 615 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 623 - libc-wrap-error-skipped)

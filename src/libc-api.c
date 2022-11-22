@@ -3513,7 +3513,7 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
     /*
      * Test Case: libc-wrap-errors/faccessat-bad-pathname-format.idio
      *
-     * faccessat C/0i (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     * faccessat C/0i "hello\x0world" #t
      */
     char *C_pathname = idio_libc_string_C (pathname, "faccessat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
@@ -3712,7 +3712,7 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
     /*
      * Test Case: libc-wrap-errors/fchmodat-bad-pathname-format.idio
      *
-     * fchmodat C/0i (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     * fchmodat C/0i "hello\x0world" #t
      */
     char *C_pathname = idio_libc_string_C (pathname, "fchmodat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
@@ -3885,7 +3885,7 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
     /*
      * Test Case: libc-wrap-errors/fchownat-bad-pathname-format.idio
      *
-     * fchownat C/0i (join-string (make-string 1 #U+0) '("hello" "world")) #t #t
+     * fchownat C/0i "hello\x0world" #t #t
      */
     char *C_pathname = idio_libc_string_C (pathname, "fchownat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
@@ -4202,7 +4202,7 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
     /*
      * Test Case: libc-wrap-errors/fstatat-bad-pathname-format.idio
      *
-     * fstatat C/0i (join-string (make-string 1 #U+0) '("hello" "world"))
+     * fstatat C/0i "hello\x0world"
      */
     char *C_pathname = idio_libc_string_C (pathname, "fstatat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
@@ -5960,7 +5960,7 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
     /*
      * Test Case: libc-wrap-errors/linkat-bad-oldpath-format.idio
      *
-     * linkat C/0i (join-string (make-string 1 #U+0) '("hello" "world")) #t #t
+     * linkat C/0i "hello\x0world" #t #t
      */
     char *C_oldpath = idio_libc_string_C (oldpath, "linkat", &free_C_oldpath, IDIO_C_FUNC_LOCATION ());
 
@@ -5984,7 +5984,7 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
     /*
      * Test Case: libc-wrap-errors/linkat-bad-newpath-format.idio
      *
-     * linkat C/0i "." C/0i (join-string (make-string 1 #U+0) '("hello" "world"))
+     * linkat C/0i "." C/0i "hello\x0world"
      */
     char *C_newpath = idio_libc_string_C (newpath, "linkat", &free_C_newpath, IDIO_C_FUNC_LOCATION ());
 
@@ -6307,7 +6307,7 @@ The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
     /*
      * Test Case: libc-wrap-errors/mkdirat-bad-pathname-format.idio
      *
-     * mkdirat C/0i (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     * mkdirat C/0i "hello\x0world" #t
      */
     char *C_pathname = idio_libc_string_C (pathname, "mkdirat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
@@ -6902,7 +6902,7 @@ a wrapper to libc :manpage:`openat(2)`	\n\
     /*
      * Test Case: libc-wrap-errors/openat-bad-pathname-format.idio
      *
-     * openat C/0i (join-string (make-string 1 #U+0) '("hello" "world"))
+     * openat C/0i "hello\x0world"
      */
     char *C_pathname = idio_libc_string_C (pathname, "openat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
@@ -7593,8 +7593,8 @@ a wrapper to libc :manpage:`rename(2)`	\n\
 
 #if ! defined (IDIO_NO_RENAMEAT)
 IDIO_DEFINE_PRIMITIVE4_DS ("renameat", libc_renameat, (IDIO olddirfd, IDIO oldpath, IDIO newdirfd, IDIO newpath), "olddirfd oldpath newdirfd newpath", "\
-in C: :samp:`renameat ({olddirfd}, {oldpath}, {newdirfd}, {newpath})`		\n\
-a wrapper to libc :manpage:`renameat()`	\n\
+in C: :samp:`renameat ({olddirfd}, {oldpath}, {newdirfd}, {newpath})`	\n\
+a wrapper to libc :manpage:`renameat(2)`	\n\
 					\n\
 :param olddirfd: file descriptor for a directory	\n\
 :type olddirfd: C/int			\n\
@@ -8774,11 +8774,11 @@ IDIO_DEFINE_PRIMITIVE2_DS ("symlink", libc_symlink, (IDIO target, IDIO linkpath)
 in C: :samp:`symlink ({target}, {linkpath})`		\n\
 a wrapper to libc :manpage:`symlink(2)`	\n\
 					\n\
-:param target: 				\n\
-:type target: C/pointer			\n\
-:param linkpath: 			\n\
-:type linkpath: C/pointer		\n\
-:return:				\n\
+:param target: file name		\n\
+:type target: string			\n\
+:param linkpath: file name		\n\
+:type linkpath: string			\n\
+:return: 0				\n\
 :rtype: C/int				\n\
 :raises ^system-error:			\n\
 ")
@@ -8841,6 +8841,83 @@ a wrapper to libc :manpage:`symlink(2)`	\n\
 
     return idio_C_int (symlink_r);
 }
+
+#if ! defined (IDIO_NO_SYMLINKAT)
+IDIO_DEFINE_PRIMITIVE3_DS ("symlinkat", libc_symlinkat, (IDIO target, IDIO newdirfd, IDIO linkpath), "target newdirfd linkpath", "\
+in C: :samp:`symlinkat ({target}, {newdirfd}, {linkpath})`		\n\
+a wrapper to libc :manpage:`symlinkat()`	\n\
+					\n\
+:param target: 				\n\
+:type target: C/pointer			\n\
+:param newdirfd: 				\n\
+:type newdirfd: C/int			\n\
+:param linkpath: 				\n\
+:type linkpath: C/pointer			\n\
+:return:				\n\
+:rtype: C/int	\n\
+")
+{
+    IDIO_ASSERT (target);
+    IDIO_ASSERT (newdirfd);
+    IDIO_ASSERT (linkpath);
+
+   /*
+    * Test Case: libc-errors/symlinkat-bad-target-type.idio
+    *
+    * symlinkat #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, target);
+
+    size_t free_C_target = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/symlinkat-bad-target-format.idio
+     *
+     * symlinkat "hello\x0world" #t #t
+     */
+    char *C_target = idio_libc_string_C (target, "symlinkat", &free_C_target, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/symlinkat-bad-newdirfd-type.idio
+    *
+    * symlinkat "." #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, newdirfd);
+    int C_newdirfd = IDIO_C_TYPE_int (newdirfd);
+
+   /*
+    * Test Case: libc-errors/symlinkat-bad-linkpath-type.idio
+    *
+    * symlinkat "." C/0i #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, linkpath);
+
+    size_t free_C_linkpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/symlinkat-bad-linkpath-format.idio
+     *
+     * symlinkat "." C/0i "hello\x0world"
+     */
+    char *C_linkpath = idio_libc_string_C (linkpath, "symlinkat", &free_C_linkpath, IDIO_C_FUNC_LOCATION ());
+
+    int symlinkat_r = symlinkat (C_target, C_newdirfd, C_linkpath);
+
+    /* check for errors */
+    if (-1 == symlinkat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/symlinkat-same-pathname.idio
+	 *
+	 * symlinkat "foo" AT_FDCWD "foo"
+	 */
+        idio_error_system_errno ("symlinkat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (symlinkat_r);
+}
+#endif
 
 IDIO_DEFINE_PRIMITIVE0_DS ("sync", libc_sync, (), "", "\
 in C: :samp:`sync ()`			\n\
@@ -10002,6 +10079,11 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strptime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strsignal);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_symlink);
+
+#if ! defined (IDIO_NO_SYMLINKAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_symlinkat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_sync);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcgetattr);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcgetpgrp);

@@ -591,6 +591,14 @@ umask (umask (C/integer-> 0 libc/mode_t))
 
 linkfile := "__link__"
 symlink testfile linkfile
+(cond-expand
+ ((not IDIO_NO_SYMLINKAT) {
+   link2 := append-string linkfile ".2"
+   dirfd := open (dirname-pathname linkfile) O_RDONLY
+   symlinkat testfile dirfd (basename-pathname link2)
+   close dirfd
+   unlink link2
+ }))
 test (readlink linkfile) (string->pathname testfile)
 (cond-expand
  (IDIO_NO_READLINKAT {

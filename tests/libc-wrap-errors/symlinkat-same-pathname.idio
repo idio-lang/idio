@@ -1,0 +1,9 @@
+
+touch testfile
+dirfd := open (dirname-pathname testfile) O_RDONLY
+
+unwind-protect {
+  symlinkat testfile dirfd (basename-pathname testfile)
+} {
+  close dirfd
+}
