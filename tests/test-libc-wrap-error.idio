@@ -499,6 +499,18 @@ libc-wrap-error-load "libc-wrap-errors/mkdir-bad-pathname-format.idio" "mkdir: c
 libc-wrap-error-load "libc-wrap-errors/mkdir-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
 libc-wrap-error-load "libc-wrap-errors/mkdir-pathname-exists.idio" "File exists" EEXIST "mkdir"
 
+(cond-expand
+ (IDIO_NO_MKDIRAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 7
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/mkdirat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/mkdirat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/mkdirat-bad-pathname-format.idio" "mkdirat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/mkdirat-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
+   libc-wrap-error-load "libc-wrap-errors/mkdirat-pathname-exists.idio" "File exists" EEXIST "mkdirat"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-template-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-template-format.idio" "mkdtemp: contains an ASCII NUL"
 (cond-expand
@@ -1125,4 +1137,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 585 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 592 - libc-wrap-error-skipped)

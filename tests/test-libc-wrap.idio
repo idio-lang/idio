@@ -399,6 +399,15 @@ tmpdir := (make-tmp-dir)
 rmdir tmpdir
 mkdir tmpdir (C/integer-> #o555 libc/mode_t)
 rmdir tmpdir
+(cond-expand
+ ((not IDIO_NO_MKDIRAT) {
+   dirfd := open (dirname-pathname tmpdir) O_RDONLY
+
+   mkdirat dirfd (basename-pathname tmpdir) (C/integer-> #o555 libc/mode_t)
+
+   close dirfd
+   rmdir tmpdir
+ }))
 
 ;; mkfifo -- quick, reuse that tmpname!
 mkfifo tmpdir (C/integer-> #o600 libc/mode_t)

@@ -58,6 +58,7 @@
 (document libc lockf)
 (document libc lstat)
 (document libc mkdir)
+(document libc mkdirat)
 (document libc mkdtemp)
 (document libc mkfifo)
 (document libc mkstemp)

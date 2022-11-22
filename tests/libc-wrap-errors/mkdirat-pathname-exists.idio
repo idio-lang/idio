@@ -1,0 +1,12 @@
+fd+name := mkstemp "XXXXXX"
+close (ph fd+name)
+
+dirfd := open (dirname-pathname (pht fd+name)) O_RDONLY
+
+unwind-protect {
+  ;; EEXIST
+  mkdirat dirfd (pht fd+name) (C/integer-> #o555 libc/mode_t)
+} {
+  close dirfd
+  delete-file (pht fd+name)
+}

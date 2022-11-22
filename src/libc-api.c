@@ -4145,7 +4145,7 @@ a wrapper to libc :manpage:`fstat(2)`		\n\
 #if ! defined (IDIO_NO_FSTATAT)
 IDIO_DEFINE_PRIMITIVE2V_DS ("fstatat", libc_fstatat, (IDIO dirfd, IDIO pathname, IDIO args), "dirfd pathname [flag ...]", "\
 in C: :samp:`fstatat ({dirfd}, {pathname}, statbuf, {flags})`		\n\
-a wrapper to libc :manpage:`fstatat()`	\n\
+a wrapper to libc :manpage:`fstatat(2)`	\n\
 					\n\
 :param dirfd: file descriptor for a directory	\n\
 :type dirfd: C/int				\n\
@@ -6244,6 +6244,83 @@ a wrapper to libc :manpage:`mkdir(2)`				\n\
 
     return idio_C_int (mkdir_r);
 }
+
+#if ! defined (IDIO_NO_MKDIRAT)
+IDIO_DEFINE_PRIMITIVE3_DS ("mkdirat", libc_mkdirat, (IDIO dirfd, IDIO pathname, IDIO mode), "dirfd pathname mode", "\
+in C: :samp:`mkdirat ({dirfd}, {pathname}, {mode})`		\n\
+a wrapper to libc :manpage:`mkdirat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param mode: mode flags			\n\
+:type mode: libc/mode_t			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+					\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (mode);
+
+   /*
+    * Test Case: libc-errors/mkdirat-bad-dirfd-type.idio
+    *
+    * mkdirat #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/mkdirat-bad-pathname-type.idio
+    *
+    * mkdirat #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/mkdirat-bad-pathname-format.idio
+     *
+     * mkdirat C/0i (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "mkdirat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/mkdirat-bad-mode-type.idio
+    *
+    * mkdirat #t #t #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    mode_t C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    int mkdirat_r = mkdirat (C_dirfd, C_pathname, C_mode);
+
+    if (-1 == mkdirat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/mkdirat-pathname-exists.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * mkdirat (pht fd+name) (C/integer-> #o555 libc/mode_t)
+	 *
+	 * XXX You'll want an unwind-protect to actually delete the
+	 * file!
+	 */
+        idio_error_system_errno ("mkdirat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (mkdirat_r);
+}
+#endif
 
 IDIO_DEFINE_PRIMITIVE1_DS ("mkdtemp", libc_mkdtemp, (IDIO template), "template", "\
 in C, :samp:`mkdtemp ({template})`				\n\
@@ -9551,6 +9628,11 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lockf);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lstat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdir);
+
+#if ! defined (IDIO_NO_MKDIRAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdirat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdtemp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkfifo);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkstemp);

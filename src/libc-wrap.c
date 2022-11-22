@@ -3912,6 +3912,10 @@ void idio_init_libc_wrap ()
     idio_add_feature (IDIO_SYMBOL ("IDIO_NO_LINKAT"));
 #endif
 
+#ifdef IDIO_NO_MKDIRAT
+    idio_add_feature (IDIO_SYMBOL ("IDIO_NO_MKDIRAT"));
+#endif
+
     idio_S_mtd = IDIO_SYMBOL ("make-tmp-dir");
 
     idio_str_np_prefix = IDIO_STRING ("idio-np-");
