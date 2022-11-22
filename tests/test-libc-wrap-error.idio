@@ -573,6 +573,19 @@ libc-wrap-error-load "libc-wrap-errors/open-bad-pathname-format.idio" "open: con
 libc-wrap-error-load "libc-wrap-errors/open-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/open-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
 
+(cond-expand
+ (IDIO_NO_OPENAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 8
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/openat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/openat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/openat-bad-pathname-format.idio" "openat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/openat-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/openat-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
+   libc-wrap-error-load "libc-wrap-errors/openat-bad-dirfd.idio" "Not a directory" ENOTDIR "openat"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/pipe-reader-bad-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/pipe-writer-bad-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
 
@@ -1137,4 +1150,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 592 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 600 - libc-wrap-error-skipped)

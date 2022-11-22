@@ -413,6 +413,18 @@ rmdir tmpdir
 mkfifo tmpdir (C/integer-> #o600 libc/mode_t)
 rm tmpdir
 
+;; tmp is still from make-tmp-file, above, hopefully...
+(cond-expand
+ ((not IDIO_NO_OPENAT) {
+   td := dirname-pathname tmp
+   dirfd := open td O_RDONLY
+
+   fd := openat dirfd "foo" O_CREAT
+   close fd
+
+   unlink (append-string td "/foo")
+ }))
+
 ;; (nanosleep req) has a number of formats for {req}
 ;;
 ;; it is a common practice to reuse {rem} for {req} to complete a

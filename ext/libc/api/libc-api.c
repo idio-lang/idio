@@ -636,6 +636,17 @@ int main (int argc, char **argv)
 	int open_r = open ("/dev/tty", O_RDONLY);
     }
 
+#if ! defined (IDIO_NO_OPENAT)
+    /* openat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	int flags = 0;
+	mode_t mode = 0;
+	openat (dirfd, pathname, flags, mode);
+    }
+#endif
+
     /* pipe(2) */
     {
 	int pipefd[2];

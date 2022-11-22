@@ -3743,6 +3743,10 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
 
     int fchmodat_r = fchmodat (C_dirfd, C_pathname, C_mode, C_flags);
 
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
+
     if (-1 == fchmodat_r) {
 	/*
 	 * Test Case: libc-wrap-errors/fchmodat-non-existent.idio
@@ -3919,6 +3923,10 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
     }
 
     int fchownat_r = fchownat (C_dirfd, C_pathname, C_owner, C_group, C_flags);
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
 
     if (-1 == fchownat_r) {
 	/*
@@ -4218,6 +4226,10 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
     struct stat* statp = idio_alloc (sizeof (struct stat));
 
     int fstatat_r = fstatat (C_dirfd, C_pathname, statp, C_flags);
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
 
     if (-1 == fstatat_r) {
 	idio_free (statp);
@@ -5931,7 +5943,7 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
    /*
     * Test Case: libc-errors/linkat-bad-olddirfd-type.idio
     *
-    * linkat #t #t #t #t #t
+    * linkat #t #t #t #t
     */
     IDIO_USER_C_TYPE_ASSERT (int, olddirfd);
     int C_olddirfd = IDIO_C_TYPE_int (olddirfd);
@@ -5939,7 +5951,7 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
    /*
     * Test Case: libc-errors/linkat-bad-oldpath-type.idio
     *
-    * linkat #t #t #t #t #t
+    * linkat C/0i #t #t #t
     */
     IDIO_USER_TYPE_ASSERT (string, oldpath);
 
@@ -5948,14 +5960,14 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
     /*
      * Test Case: libc-wrap-errors/linkat-bad-oldpath-format.idio
      *
-     * linkat (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     * linkat C/0i (join-string (make-string 1 #U+0) '("hello" "world")) #t #t
      */
     char *C_oldpath = idio_libc_string_C (oldpath, "linkat", &free_C_oldpath, IDIO_C_FUNC_LOCATION ());
 
    /*
     * Test Case: libc-errors/linkat-bad-newdirfd-type.idio
     *
-    * linkat #t #t #t #t #t
+    * linkat C/0i "." #t #t
     */
     IDIO_USER_C_TYPE_ASSERT (int, newdirfd);
     int C_newdirfd = IDIO_C_TYPE_int (newdirfd);
@@ -5963,7 +5975,7 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
    /*
     * Test Case: libc-errors/linkat-bad-newpath-type.idio
     *
-    * linkat #t #t #t #t #t
+    * linkat C/0i "." C/0i #t
     */
     IDIO_USER_TYPE_ASSERT (string, newpath);
 
@@ -5972,7 +5984,7 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
     /*
      * Test Case: libc-wrap-errors/linkat-bad-newpath-format.idio
      *
-     * linkat (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     * linkat C/0i "." C/0i (join-string (make-string 1 #U+0) '("hello" "world"))
      */
     char *C_newpath = idio_libc_string_C (newpath, "linkat", &free_C_newpath, IDIO_C_FUNC_LOCATION ());
 
@@ -5982,9 +5994,9 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
 	IDIO flags = IDIO_PAIR_H (args);
 
 	/*
-	 * Test Case: libc-errors/fstatat-bad-flags-type.idio
+	 * Test Case: libc-errors/linkat-bad-flags-type.idio
 	 *
-	 * fstatat C/0i "." #t
+	 * linkat C/0i "." C/0i "." #t
 	 */
 	IDIO_USER_C_TYPE_ASSERT (int, flags);
 
@@ -5995,7 +6007,14 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
 
     int linkat_r = linkat (C_olddirfd, C_oldpath, C_newdirfd, C_newpath, C_flags);
 
-    /* check for errors */
+    if (free_C_oldpath) {
+	IDIO_GC_FREE (C_oldpath, free_C_oldpath);
+    }
+
+    if (free_C_newpath) {
+	IDIO_GC_FREE (C_newpath, free_C_newpath);
+    }
+
     if (-1 == linkat_r) {
 	/*
 	 * Test Case: libc-wrap-errors/linkat-same-pathname.idio
@@ -6247,7 +6266,7 @@ a wrapper to libc :manpage:`mkdir(2)`				\n\
 
 #if ! defined (IDIO_NO_MKDIRAT)
 IDIO_DEFINE_PRIMITIVE3_DS ("mkdirat", libc_mkdirat, (IDIO dirfd, IDIO pathname, IDIO mode), "dirfd pathname mode", "\
-in C: :samp:`mkdirat ({dirfd}, {pathname}, {mode})`		\n\
+in C: :samp:`mkdirat ({dirfd}, {pathname}, {mode})`	\n\
 a wrapper to libc :manpage:`mkdirat(2)`	\n\
 					\n\
 :param dirfd: file descriptor for a directory	\n\
@@ -6279,7 +6298,7 @@ The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
    /*
     * Test Case: libc-errors/mkdirat-bad-pathname-type.idio
     *
-    * mkdirat #t #t #t
+    * mkdirat C/0i #t #t
     */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
@@ -6288,19 +6307,23 @@ The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
     /*
      * Test Case: libc-wrap-errors/mkdirat-bad-pathname-format.idio
      *
-     * mkdirat C/0i (join-string (make-string 1 #U+0) '("hello" "world"))
+     * mkdirat C/0i (join-string (make-string 1 #U+0) '("hello" "world")) #t
      */
     char *C_pathname = idio_libc_string_C (pathname, "mkdirat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
 
    /*
     * Test Case: libc-errors/mkdirat-bad-mode-type.idio
     *
-    * mkdirat #t #t #t
+    * mkdirat C/0i "." #t
     */
     IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
     mode_t C_mode = IDIO_C_TYPE_libc_mode_t (mode);
 
     int mkdirat_r = mkdirat (C_dirfd, C_pathname, C_mode);
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
 
     if (-1 == mkdirat_r) {
 	/*
@@ -6308,7 +6331,8 @@ The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
 	 *
 	 * fd+name := mkstemp "XXXXXX"
 	 * close (ph fd+name)
-	 * mkdirat (pht fd+name) (C/integer-> #o555 libc/mode_t)
+	 * dirfd := open (dirname-pathname (pht fd+name)) O_RDONLY
+	 * mkdirat dirfd (basename-pathname (pht fd+name)) (C/integer-> #o555 libc/mode_t)
 	 *
 	 * XXX You'll want an unwind-protect to actually delete the
 	 * file!
@@ -6832,8 +6856,135 @@ a wrapper to libc :manpage:`open(2)`	\n\
     }
 
     return idio_C_int (open_r);
-
 }
+
+#if ! defined (IDIO_NO_OPENAT)
+IDIO_DEFINE_PRIMITIVE3V_DS ("openat", libc_openat, (IDIO dirfd, IDIO pathname, IDIO flags, IDIO args), "dirfd pathname flags [mode]", "\
+in C: :samp:`openat ({dirfd}, {pathname}, {flags}, {mode})`	\n\
+a wrapper to libc :manpage:`openat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param flags: access/creation flags	\n\
+:type flags: C/int			\n\
+:param mode: mode flags, defaults to 0	\n\
+:type mode: libc/mode_t, optional	\n\
+:return: file descriptor		\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (flags);
+    IDIO_ASSERT (args);
+
+   /*
+    * Test Case: libc-errors/openat-bad-dirfd-type.idio
+    *
+    * openat #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/openat-bad-pathname-type.idio
+    *
+    * openat C/0i #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/openat-bad-pathname-format.idio
+     *
+     * openat C/0i (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "openat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/openat-bad-flags-type.idio
+    *
+    * openat C/0i "." #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, flags);
+    int C_flags = IDIO_C_TYPE_int (flags);
+
+    IDIO mode = idio_S_nil;
+    mode_t C_mode = 0;
+    if (idio_isa_pair (args)) {
+	mode = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/openat-bad-mode-type.idio
+	 *
+	 * openat C/0i "." C/0i #t
+	 */
+	IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+
+	C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+    }
+
+    int openat_r;
+
+    int tries;
+    for (tries = 2; tries > 0 ; tries--) {
+	openat_r = openat (C_dirfd, C_pathname, C_flags, C_mode);
+
+	if (-1 == openat_r) {
+	    switch (errno) {
+	    case EMFILE:	/* process max */
+	    case ENFILE:	/* system max */
+		idio_gc_collect_all ("libc/openat");
+		break;
+	    default:
+		/*
+		 * Test Case: libc-errors/openat-bad-dirfd.idio
+		 *
+		 * ;; fd 0 is *probably* not a directory fd
+		 * openat C/0i "." C/0i
+		 */
+
+		if (free_C_pathname) {
+		    IDIO_GC_FREE (C_pathname, free_C_pathname);
+		}
+
+		IDIO a = IDIO_LIST2 (pathname, flags);
+		if (idio_S_nil != mode) {
+		    a = IDIO_LIST3 (pathname, flags, mode);
+		}
+
+		idio_error_system_errno ("openat", a, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	} else {
+	    break;
+	}
+    }
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
+
+    if (-1 == openat_r) {
+	IDIO a = IDIO_LIST2 (pathname, flags);
+	if (idio_S_nil != mode) {
+	    a = IDIO_LIST3 (pathname, flags, mode);
+	}
+
+        idio_error_system_errno ("openat (final)", a, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (openat_r);
+}
+#endif
 
 IDIO_DEFINE_PRIMITIVE0_DS ("pipe", libc_pipe, (void), "", "\
 in C, :samp:`pipe (pipefd)`				       \n\
@@ -9639,6 +9790,11 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mktime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_nanosleep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_open);
+
+#if ! defined (IDIO_NO_OPENAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_openat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_posix_openpt);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pread);
