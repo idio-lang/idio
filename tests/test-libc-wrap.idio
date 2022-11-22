@@ -295,10 +295,7 @@ nfd := fcntl C/0i F_DUPFD (C/integer-> 99)
 close nfd
 
 (cond-expand
- (IDIO_NO_F_DUPFD_CLOEXEC {
-   printf "no F_DUPFD_CLOEXEC on this system, skipping code coverage\n"
- })
- (else {
+ ((not IDIO_NO_F_DUPFD_CLOEXEC) {
    nfd := fcntl C/0i F_DUPFD_CLOEXEC (C/integer-> 99)
    close nfd
 
@@ -379,6 +376,20 @@ tmp := (make-tmp-file)
 tmp2 := append-string tmp ".2"
 link tmp tmp2
 unlink tmp2
+(cond-expand
+ ((not IDIO_NO_LINKAT) {
+   olddirfd := open (dirname-pathname tmp) O_RDONLY
+   td := (make-tmp-dir)
+   newdirfd := open (dirname-pathname td) O_RDONLY
+
+   linkat olddirfd tmp newdirfd tmp2
+
+   close newdirfd
+   rmdir td
+   close olddirfd
+
+   unlink tmp2
+ }))
 rename tmp tmp2
 unlink tmp2
 

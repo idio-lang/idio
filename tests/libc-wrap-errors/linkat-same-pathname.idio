@@ -1,0 +1,10 @@
+
+touch testfile
+
+dirfd := open (dirname-pathname testfile) O_RDONLY
+
+unwind-protect {
+  linkat dirfd testfile dirfd testfile
+} {
+  close dirfd
+}

@@ -544,6 +544,18 @@ int main (int argc, char **argv)
 	int link_r = link (oldpath, newpath);
     }
 
+#if ! defined (IDIO_NO_LINKAT)
+    /* linkat(2) */
+    {
+	int olddirfd = 0;
+	char *oldpath = ".";
+	int newdirfd = 0;
+	char *newpath = ".";
+	int flags = 0;
+	linkat (olddirfd, oldpath, newdirfd, newpath, flags);
+    }
+#endif
+
     /* localtime(3) */
     {
 	time_t t = time (NULL);

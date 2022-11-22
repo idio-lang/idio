@@ -53,6 +53,7 @@
 (document libc kill)
 (document libc killpg)
 (document libc link)
+(document libc linkat)
 (document libc localtime)
 (document libc lockf)
 (document libc lstat)

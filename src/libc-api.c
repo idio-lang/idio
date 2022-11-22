@@ -4172,7 +4172,7 @@ The following values are defined for `flags`: ``AT_EACCESS``	\n\
 {
     IDIO_ASSERT (dirfd);
     IDIO_ASSERT (pathname);
-    IDIO_ASSERT (flags);
+    IDIO_ASSERT (args);
 
    /*
     * Test Case: libc-errors/fstatat-bad-dirfd-type.idio
@@ -5889,6 +5889,128 @@ a wrapper to libc :manpage:`link(2)`		\n\
 
     return idio_C_int (link_r);
 }
+
+#if ! defined (IDIO_NO_LINKAT)
+IDIO_DEFINE_PRIMITIVE4V_DS ("linkat", libc_linkat, (IDIO olddirfd, IDIO oldpath, IDIO newdirfd, IDIO newpath, IDIO args), "olddirfd oldpath newdirfd newpath [flag ...]", "\
+in C: :samp:`linkat ({olddirfd}, {oldpath}, {newdirfd}, {newpath}, {flags})`		\n\
+a wrapper to libc :manpage:`linkat(2)`	\n\
+					\n\
+:param olddirfd: file descriptor for a directory	\n\
+:type olddirfd: C/int			\n\
+:param oldpath: existing file name	\n\
+:type oldpath: string			\n\
+:param newdirfd: file descriptor for a directory	\n\
+:type newdirfd: C/int			\n\
+:param newpath: new file name		\n\
+:type newpath: string			\n\
+:param flags: see below, default none	\n\
+:type flags: C/int, optional		\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:				\n\
+								\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+								\n\
+The following values are defined for `flags`: ``AT_EACCESS``	\n\
+``AT_SYMLINK_NOFOLLOW``	``AT_SYMLINK_FOLLOW``.  They can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments.	\n\
+								\n\
+.. note::							\n\
+								\n\
+   ``linkat`` is not available on all systems.		\n\
+   Use the ``IDIO_NO_LINKAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+")
+{
+    IDIO_ASSERT (olddirfd);
+    IDIO_ASSERT (oldpath);
+    IDIO_ASSERT (newdirfd);
+    IDIO_ASSERT (newpath);
+    IDIO_ASSERT (args);
+
+   /*
+    * Test Case: libc-errors/linkat-bad-olddirfd-type.idio
+    *
+    * linkat #t #t #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, olddirfd);
+    int C_olddirfd = IDIO_C_TYPE_int (olddirfd);
+
+   /*
+    * Test Case: libc-errors/linkat-bad-oldpath-type.idio
+    *
+    * linkat #t #t #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, oldpath);
+
+    size_t free_C_oldpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/linkat-bad-oldpath-format.idio
+     *
+     * linkat (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     */
+    char *C_oldpath = idio_libc_string_C (oldpath, "linkat", &free_C_oldpath, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/linkat-bad-newdirfd-type.idio
+    *
+    * linkat #t #t #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, newdirfd);
+    int C_newdirfd = IDIO_C_TYPE_int (newdirfd);
+
+   /*
+    * Test Case: libc-errors/linkat-bad-newpath-type.idio
+    *
+    * linkat #t #t #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, newpath);
+
+    size_t free_C_newpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/linkat-bad-newpath-format.idio
+     *
+     * linkat (join-string (make-string 1 #U+0) '("hello" "world")) #t
+     */
+    char *C_newpath = idio_libc_string_C (newpath, "linkat", &free_C_newpath, IDIO_C_FUNC_LOCATION ());
+
+    int C_flags = 0;
+
+    while (idio_S_nil != args) {
+	IDIO flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/fstatat-bad-flags-type.idio
+	 *
+	 * fstatat C/0i "." #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags |= IDIO_C_TYPE_int (flags);
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    int linkat_r = linkat (C_olddirfd, C_oldpath, C_newdirfd, C_newpath, C_flags);
+
+    /* check for errors */
+    if (-1 == linkat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/linkat-same-pathname.idio
+	 *
+	 * touch "foo"
+	 * linkat AT_FDCWD "foo" AT_FDCWD "foo"
+	 */
+        idio_error_system_errno ("linkat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (linkat_r);
+}
+#endif
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("localtime", libc_localtime, (IDIO args), "[t]", "\
 in C, :samp:`localtime ({t})`			\n\
@@ -9420,6 +9542,11 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_kill);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_killpg);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_link);
+
+#if ! defined (IDIO_NO_LINKAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_linkat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_localtime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lockf);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lstat);

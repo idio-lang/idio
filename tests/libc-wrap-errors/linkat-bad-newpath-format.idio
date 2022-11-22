@@ -1,0 +1,3 @@
+
+; "hello[NUL]world"
+linkat C/0i "." C/0i "hello\x0world"

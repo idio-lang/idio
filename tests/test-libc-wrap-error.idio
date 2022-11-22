@@ -327,7 +327,7 @@ libc-wrap-error-load "libc-wrap-errors/fcntl-bad-cmd-type.idio" "bad parameter t
 libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 (cond-expand
  (IDIO_NO_F_DUPFD_CLOEXEC {
-   printf "no F_DUPFD_CLOEXEC on this system, skipping\n"
+   ;printf "no F_DUPFD_CLOEXEC on this system, skipping\n"
    libc-wrap-error-skipped = libc-wrap-error-skipped + 1
  })
  (else {
@@ -467,6 +467,21 @@ libc-wrap-error-load "libc-wrap-errors/link-bad-oldpath-format.idio" "link: cont
 libc-wrap-error-load "libc-wrap-errors/link-bad-newpath-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/link-bad-newpath-format.idio" "link: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/link-same-pathname.idio" "File exists" EEXIST "link"
+
+(cond-expand
+ (IDIO_NO_LINKAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 10
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-olddirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-oldpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-oldpath-format.idio" "linkat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-newdirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-newpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-newpath-format.idio" "linkat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/linkat-same-pathname.idio" "File exists" EEXIST "linkat"
+ }))
 
 libc-wrap-error-load "libc-wrap-errors/localtime-bad-t-type.idio" "bad parameter type: '#t' a constant is not a libc/time_t"
 
@@ -1110,4 +1125,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 575 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 585 - libc-wrap-error-skipped)
