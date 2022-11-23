@@ -4278,6 +4278,8 @@ a wrapper to libc :manpage:`fstatvfs(3)`	\n\
     int fstatvfs_r = fstatvfs (C_fd, statvfsp);
 
     if (-1 == fstatvfs_r) {
+	idio_free (statvfsp);
+
 	/*
 	 * Test Case: libc-wrap-errors/fstavfs-bad-fd.idio
 	 *
@@ -7150,6 +7152,8 @@ a wrapper to libc :manpage:`pipe(2)`	\n\
     }
 
     if (-1 == pipe_r) {
+	idio_free (pipefd);
+
 	/*
 	 * Test Case: cf. file-handle-errors/EMFILE.idio
 	 *
@@ -9863,7 +9867,7 @@ Options will be IORed together		\n\
      * waitpid (C/integer-> 0 libc/pid_t) #t
      */
     int C_options = 0;
-    if (idio_isa_pair (args)) {
+    while (idio_S_nil != args) {
 	IDIO option = IDIO_PAIR_H (args);
 
 	IDIO_USER_C_TYPE_ASSERT (int, option);
