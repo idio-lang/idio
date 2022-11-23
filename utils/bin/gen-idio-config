@@ -265,6 +265,7 @@ idio_no openat
 idio_no readlinkat
 idio_no renameat
 idio_no symlinkat
+idio_no unlinkat
 
 ######################################################################
 

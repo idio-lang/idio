@@ -116,6 +116,7 @@
 (document libc umask)
 (document libc uname)
 (document libc unlink)
+(document libc unlinkat)
 (document libc unlockpt)
 (document libc utimes)
 (document libc wait)

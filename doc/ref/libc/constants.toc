@@ -6,6 +6,7 @@
 
 (document libc AT_EACCESS)
 (document libc AT_FDCWD)
+(document libc AT_REMOVEDIR)
 (document libc AT_SYMLINK_FOLLOW)
 (document libc AT_SYMLINK_NOFOLLOW)
 

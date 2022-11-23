@@ -590,6 +590,9 @@ truncate testfile (C/integer-> 0 libc/off_t)
 umask (umask (C/integer-> 0 libc/mode_t))
 
 linkfile := "__link__"
+if (e? linkfile) {
+  delete-file linkfile
+}
 symlink testfile linkfile
 (cond-expand
  ((not IDIO_NO_SYMLINKAT) {
@@ -718,6 +721,14 @@ test (x? ".")	     #t
 T? (stdin-fileno)
 
 rm -f linkfile
+
+(cond-expand
+ ((not IDIO_NO_UNLINKAT) {
+   touch testfile
+   dirfd := open (dirname-pathname testfile) O_RDONLY
+   unlinkat dirfd (basename-pathname testfile)
+   close dirfd
+ }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; passwd

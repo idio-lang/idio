@@ -3475,9 +3475,10 @@ no ^system-error is raised.					\n\
 								\n\
 The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
 								\n\
-The following values are defined for `flags`: ``AT_EACCESS``	\n\
-``AT_SYMLINK_NOFOLLOW``	``AT_SYMLINK_FOLLOW``.  They can be	\n\
-``C/|``-bitwise OR'd together or passed as extra arguments.	\n\
+The following values are defined for `flags`, they can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments:	\n\
+``AT_EACCESS``							\n\
+``AT_SYMLINK_NOFOLLOW``						\n\
 								\n\
 .. warning::							\n\
 	Use of this function is discouraged.			\n\
@@ -3677,9 +3678,9 @@ a wrapper to libc :manpage:`fchmodat(2)`	\n\
 								\n\
 The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
 								\n\
-The following values are defined for `flags`: ``AT_EACCESS``	\n\
-``AT_SYMLINK_NOFOLLOW``	``AT_SYMLINK_FOLLOW``.  They can be	\n\
-``C/|``-bitwise OR'd together or passed as extra arguments.	\n\
+The following values are defined for `flags`, they can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments:	\n\
+``AT_SYMLINK_NOFOLLOW``						\n\
 								\n\
 .. note::							\n\
 								\n\
@@ -3849,9 +3850,9 @@ a wrapper to libc :manpage:`fchownat(2)`	\n\
 								\n\
 The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
 								\n\
-The following values are defined for `flags`: ``AT_EACCESS``	\n\
-``AT_SYMLINK_NOFOLLOW``	``AT_SYMLINK_FOLLOW``.  They can be	\n\
-``C/|``-bitwise OR'd together or passed as extra arguments.	\n\
+The following values are defined for `flags`, they can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments:	\n\
+``AT_SYMLINK_NOFOLLOW``						\n\
 								\n\
 .. note::							\n\
 								\n\
@@ -4168,9 +4169,9 @@ a wrapper to libc :manpage:`fstatat(2)`	\n\
 								\n\
 The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
 								\n\
-The following values are defined for `flags`: ``AT_EACCESS``	\n\
-``AT_SYMLINK_NOFOLLOW``	``AT_SYMLINK_FOLLOW``.  They can be	\n\
-``C/|``-bitwise OR'd together or passed as extra arguments.	\n\
+The following values are defined for `flags`, they can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments:	\n\
+``AT_SYMLINK_NOFOLLOW``						\n\
 								\n\
 .. note::							\n\
 								\n\
@@ -5924,9 +5925,9 @@ a wrapper to libc :manpage:`linkat(2)`	\n\
 								\n\
 The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
 								\n\
-The following values are defined for `flags`: ``AT_EACCESS``	\n\
-``AT_SYMLINK_NOFOLLOW``	``AT_SYMLINK_FOLLOW``.  They can be	\n\
-``C/|``-bitwise OR'd together or passed as extra arguments.	\n\
+The following values are defined for `flags`, they can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments:	\n\
+``AT_SYMLINK_FOLLOW``						\n\
 								\n\
 .. note::							\n\
 								\n\
@@ -9423,6 +9424,99 @@ a wrapper to libc :manpage:`unlink(2)`	\n\
     return idio_C_int (unlink_r);
 }
 
+#if ! defined (IDIO_NO_UNLINKAT)
+IDIO_DEFINE_PRIMITIVE2V_DS ("unlinkat", libc_unlinkat, (IDIO dirfd, IDIO pathname, IDIO args), "dirfd pathname [flag ...]", "\
+in C: :samp:`unlinkat ({dirfd}, {pathname}, {flags})`		\n\
+a wrapper to libc :manpage:`unlinkat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param flags: see below, default none	\n\
+:type flags: C/int, optional		\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+								\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+								\n\
+The following values are defined for `flags`, they can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments:	\n\
+``AT_REMOVEDIR``						\n\
+								\n\
+.. note::							\n\
+								\n\
+   ``unlinkat`` is not available on all systems.		\n\
+   Use the ``IDIO_NO_UNLINKAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (args);
+
+   /*
+    * Test Case: libc-errors/unlinkat-bad-dirfd-type.idio
+    *
+    * unlinkat #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/unlinkat-bad-pathname-type.idio
+    *
+    * unlinkat C/0i #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/unlinkat-bad-pathname-format.idio
+     *
+     * unlinkat C/0i "hello\x0world"
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "unlinkat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+    int C_flags = 0;
+
+    while (idio_S_nil != args) {
+	IDIO flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/unlinkat-bad-flags-type.idio
+	 *
+	 * unlinkat C/0i "." #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags |= IDIO_C_TYPE_int (flags);
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    int unlinkat_r = unlinkat (C_dirfd, C_pathname, C_flags);
+
+    if (-1 == unlinkat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/unlinkat-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * unlinkat (pht fd+name)
+	 */
+        idio_error_system_errno ("unlinkat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (unlinkat_r);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE1_DS ("unlockpt", libc_unlockpt, (IDIO fd), "fd", "\
 in C, :samp:`unlockpt ({fd})`		\n\
 a wrapper to libc :manpage:`unlockpt(3)`	\n\
@@ -10099,6 +10193,11 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_umask);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_uname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlink);
+
+#if ! defined (IDIO_NO_UNLINKAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlinkat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlockpt);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_utimes);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_wait);
@@ -10173,5 +10272,6 @@ void idio_init_libc_api ()
     idio_module_export_symbol_value (IDIO_SYMBOL ("AT_EACCESS"), idio_C_int (AT_EACCESS), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("AT_SYMLINK_NOFOLLOW"), idio_C_int (AT_SYMLINK_NOFOLLOW), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("AT_SYMLINK_FOLLOW"), idio_C_int (AT_SYMLINK_FOLLOW), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("AT_REMOVEDIR"), idio_C_int (AT_REMOVEDIR), idio_libc_module);
 #endif
 }

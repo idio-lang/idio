@@ -1024,6 +1024,16 @@ int main (int argc, char **argv)
 	int unlink_r = unlink (pathname);
     }
 
+#if ! defined (IDIO_NO_UNLINKAT)
+    /* unlinkat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	int flags = 0;
+	unlinkat (dirfd, pathname, flags);
+    }
+#endif
+
     /* unlockpt(3) */
     {
 	int unlockpt_r = unlockpt (0);
