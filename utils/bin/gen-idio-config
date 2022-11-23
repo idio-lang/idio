@@ -247,9 +247,25 @@ idio_no set_saved_ids
 
 ##############################
 
-# SunOS does not have futimes (but does have futimesat)
+# futimes and futimesat are alternately available on some systems
+
+# SunOS does not have futimes
 
 idio_no futimes
+
+# Mac OS, OpenBSD and NetBSD do not have futimesat
+
+idio_no futimesat
+
+# XXX WSL1: ENOSYS: Function not implemented
+
+case "$(uname -r)" in
+*-Microsoft)
+    if ! ${tmpdir}/a.out ${tmpdir}/a.out >/dev/null 2>&1 ; then
+	eval IDIO_NO_FUTIMESAT=1
+    fi
+    ;;
+esac
 
 ######################################################################
 

@@ -378,6 +378,21 @@ libc-wrap-error-load "libc-wrap-errors/ftruncate-none-existent.idio" strerror-EB
  }))
 
 (cond-expand
+ (IDIO_NO_FUTIMESAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 10
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/futimesat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-bad-pathname-format.idio" "futimesat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-bad-atime-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-atime-invalid-pointer-type.idio" "futimesat atime='#<C/* C/pointer>' a C/pointer is not a libc/struct-timeval"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-bad-mtime-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-mtime-invalid-pointer-type.idio" "futimesat mtime='#<C/* C/pointer>' a C/pointer is not a libc/struct-timeval"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-bad-fd.idio" strerror-EBADF EBADF "futimesat"
+ }))
+
+(cond-expand
  ("uname/sysname/SunOS" {
    ;; SunOS won't let you rmdir "." or any equivalent => EINVAL
    eprintf "NOTICE: SunOS: skipping test using rmdir .\n"
@@ -1200,4 +1215,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 630 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 640 - libc-wrap-error-skipped)

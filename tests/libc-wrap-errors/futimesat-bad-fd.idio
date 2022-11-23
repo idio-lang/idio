@@ -1,0 +1,3 @@
+tv := (gettimeofday)
+
+futimesat (C/integer-> -1) "." tv tv

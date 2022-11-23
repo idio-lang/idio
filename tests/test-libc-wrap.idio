@@ -339,6 +339,11 @@ ftruncate (fd-handle-fd ofh) (C/integer-> 3 libc/off_t)
    tv := (gettimeofday)
    futimes (fd-handle-fd ofh) tv tv
  }))
+(cond-expand
+ ((not IDIO_NO_FUTIMESAT) {
+   tv := (gettimeofday)
+   futimesat dirfd (basename-pathname testfile) tv tv
+ }))
 lockf (fd-handle-fd ofh) F_TEST (C/integer-> 3 libc/off_t)
 close-handle ofh
 

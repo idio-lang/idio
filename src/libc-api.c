@@ -4404,6 +4404,10 @@ a wrapper to libc :manpage:`futimes(3)`	\n\
 					\n\
    ``futimes`` is not available on all systems.	\n\
    Use the ``IDIO_NO_FUTIMES`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+					\n\
+.. seealso::				\n\
+					\n\
+   :ref:`futimesat <libc/futimesat>`	\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -4428,7 +4432,7 @@ a wrapper to libc :manpage:`futimes(3)`	\n\
 	/*
 	 * Test Case: libc-errors/futimes-atime-invalid-pointer-type.idio
 	 *
-	 * struct-timeval-ref libc/NULL #t
+	 * futimes C/0i "." libc/NULL #t
 	 */
 	idio_error_param_value_exp ("futimes", "atime", atime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
 
@@ -4445,7 +4449,7 @@ a wrapper to libc :manpage:`futimes(3)`	\n\
 	/*
 	 * Test Case: libc-errors/futimes-mtime-invalid-pointer-type.idio
 	 *
-	 * struct-timeval-ref timeval libc/NULL
+	 * futimes C/0i "." timeval libc/NULL
 	 */
 	idio_error_param_value_exp ("futimes", "mtime", mtime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
 
@@ -4473,6 +4477,121 @@ a wrapper to libc :manpage:`futimes(3)`	\n\
     }
 
     return idio_C_int (futimes_r);
+}
+#endif
+
+#if ! defined (IDIO_NO_FUTIMESAT)
+IDIO_DEFINE_PRIMITIVE4_DS ("futimesat", libc_futimesat, (IDIO dirfd, IDIO pathname, IDIO atime, IDIO mtime), "dirfd pathname atime mtime", "\
+in C: :samp:`futimesat ({dirfd}, {pathname}, ({atime}, {mtime}))`	\n\
+a wrapper to libc :manpage:`futimesat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param atime: :ref:`struct-timeval <libc/struct-timeval>`	\n\
+:type atime: C/pointer			\n\
+:param mtime: :ref:`struct-timeval <libc/struct-timeval>`	\n\
+:type mtime: C/pointer			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+					\n\
+.. note::				\n\
+					\n\
+   ``futimesat`` is not available on all systems.	\n\
+   Use the ``IDIO_NO_FUTIMESAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+					\n\
+.. seealso::				\n\
+					\n\
+   :ref:`futimes <libc/futimes>`	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (atime);
+    IDIO_ASSERT (mtime);
+
+   /*
+    * Test Case: libc-errors/futimesat-bad-dirfd-type.idio
+    *
+    * futimesat #t #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/futimesat-bad-pathname-type.idio
+    *
+    * futimesat C/0i #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/futimesat-bad-pathname-format.idio
+     *
+     * futimesat C/0i "hello\x0world" #t #t
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "futimesat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/futimesat-bad-atime-type.idio
+    *
+    * futimesat C/0i "." #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (pointer, atime);
+    if (idio_CSI_libc_struct_timeval != IDIO_C_TYPE_POINTER_PTYPE (atime)) {
+	/*
+	 * Test Case: libc-errors/futimesat-atime-invalid-pointer-type.idio
+	 *
+	 * futimesat C/0i "." libc/NULL #t
+	 */
+	idio_error_param_value_exp ("futimesat", "atime", atime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+   /*
+    * Test Case: libc-errors/futimesat-bad-mtime-type.idio
+    *
+    * futimesat C/0i "." timeval #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (pointer, mtime);
+    if (idio_CSI_libc_struct_timeval != IDIO_C_TYPE_POINTER_PTYPE (mtime)) {
+	/*
+	 * Test Case: libc-errors/futimesat-mtime-invalid-pointer-type.idio
+	 *
+	 * futimesat C/0i "." timeval libc/NULL
+	 */
+	idio_error_param_value_exp ("futimesat", "mtime", mtime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    struct timeval times[2];
+    memcpy (&times[0], IDIO_C_TYPE_POINTER_P (atime), sizeof (struct timeval));
+    memcpy (&times[1], IDIO_C_TYPE_POINTER_P (mtime), sizeof (struct timeval));
+
+    int futimesat_r = futimesat (C_dirfd, C_pathname, times);
+
+    if (-1 == futimesat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/futimesat-bad-fd.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * dirfd := open (dirname-pathname (pht fd+name)) O_RDONLY
+	 * futimesat dirfd (basename-pathname (pht fd+name)) timeval timeval
+	 */
+        idio_error_system_errno ("futimesat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (futimesat_r);
 }
 #endif
 
@@ -8907,7 +9026,14 @@ a wrapper to libc :manpage:`symlinkat(2)`	\n\
 
     int symlinkat_r = symlinkat (C_target, C_newdirfd, C_linkpath);
 
-    /* check for errors */
+    if (free_C_target) {
+	IDIO_GC_FREE (C_target, free_C_target);
+    }
+
+    if (free_C_linkpath) {
+	IDIO_GC_FREE (C_linkpath, free_C_linkpath);
+    }
+
     if (-1 == symlinkat_r) {
 	/*
 	 * Test Case: libc-wrap-errors/symlinkat-same-pathname.idio
@@ -9499,6 +9625,10 @@ The following values are defined for `flags`, they can be	\n\
 
     int unlinkat_r = unlinkat (C_dirfd, C_pathname, C_flags);
 
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
+
     if (-1 == unlinkat_r) {
 	/*
 	 * Test Case: libc-wrap-errors/unlinkat-non-existent.idio
@@ -9596,7 +9726,7 @@ a wrapper to libc :manpage:`utimes(2)`	\n\
 	/*
 	 * Test Case: libc-errors/utimes-atime-invalid-pointer-type.idio
 	 *
-	 * struct-timeval-ref libc/NULL #t
+	 * utimes "." libc/NULL #t
 	 */
 	idio_error_param_value_exp ("utimes", "atime", atime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
 
@@ -9613,7 +9743,7 @@ a wrapper to libc :manpage:`utimes(2)`	\n\
 	/*
 	 * Test Case: libc-errors/utimes-mtime-invalid-pointer-type.idio
 	 *
-	 * struct-timeval-ref timeval libc/NULL
+	 * utimes "." timeval libc/NULL
 	 */
 	idio_error_param_value_exp ("utimes", "mtime", mtime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
 
@@ -10079,6 +10209,11 @@ void idio_libc_api_add_primitives ()
 
 #if ! defined (IDIO_NO_FUTIMES)
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_futimes);
+#endif
+
+
+#if ! defined (IDIO_NO_FUTIMESAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_futimesat);
 #endif
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getcwd);

@@ -3892,6 +3892,10 @@ void idio_init_libc_wrap ()
     idio_add_feature (IDIO_SYMBOL ("IDIO_NO_FUTIMES"));
 #endif
 
+#ifdef IDIO_NO_FUTIMESAT
+    idio_add_feature (IDIO_SYMBOL ("IDIO_NO_FUTIMESAT"));
+#endif
+
 #ifdef IDIO_NO_FACCESSAT
     idio_add_feature (IDIO_SYMBOL ("IDIO_NO_FACCESSAT"));
 #endif

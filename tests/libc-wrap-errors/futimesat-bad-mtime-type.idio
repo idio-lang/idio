@@ -1,0 +1,3 @@
+tv := (gettimeofday)
+
+futimesat C/0i "." tv #t

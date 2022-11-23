@@ -391,6 +391,16 @@ int main (int argc, char **argv)
     }
 #endif
 
+#if ! defined (IDIO_NO_FUTIMESAT)
+    /* futimesat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	struct timeval times[2] = { {0, 0}, {0, 0} };
+	int futimesat_r = futimesat (dirfd, pathname, times);
+    }
+#endif
+
     /* getcwd(3) */
     {
 	char buf[PATH_MAX];

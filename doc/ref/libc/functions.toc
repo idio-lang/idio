@@ -27,6 +27,7 @@
 (document libc fsync)
 (document libc ftruncate)
 (document libc futimes)
+(document libc futimesat)
 (document libc getcwd)
 (document libc getegid)
 (document libc geteuid)
