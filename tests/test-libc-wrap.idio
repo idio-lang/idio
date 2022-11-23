@@ -462,8 +462,8 @@ hprintf ofh "hello\n"
 close-handle ofh
 
 ifh := open-input-file testfile
-test (read (fd-handle-fd ifh) (C/integer-> 2 libc/size_t)) "he"
-test (pread (fd-handle-fd ifh) (C/integer-> 0 libc/off_t) (C/integer-> 2 libc/size_t)) "he"
+test (read (fd-handle-fd ifh) (C/integer-> 2 libc/size_t)) (string->octet-string "he")
+test (pread (fd-handle-fd ifh) (C/integer-> 0 libc/off_t) (C/integer-> 2 libc/size_t)) (string->octet-string "he")
 close-handle ifh
 
 setegid EGID

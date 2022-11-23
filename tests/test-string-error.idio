@@ -73,6 +73,8 @@ string-error-load "string-errors/make-string-bad-fill-type.idio" "bad parameter 
 
 string-error-load "string-errors/string2octet-string-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
 
+string-error-load "string-errors/octet-string2string-bad-type.idio" "bad parameter type: '#t' a constant is not a octet_string"
+
 string-error-load "string-errors/string2pathname-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
 
 string-error-load "string-errors/string2list-bad-type.idio" "bad parameter type: '#t' a constant is not a string"
@@ -158,4 +160,4 @@ string-error-load "string-errors/strip-string-bad-str-type.idio" "bad parameter 
 string-error-load "string-errors/strip-string-bad-discard-type.idio" "bad parameter type: '#t' a constant is not a string"
 
 ;; all done?
-Tests? (string-error0 + 68)
+Tests? (string-error0 + 69)

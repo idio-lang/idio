@@ -13,6 +13,7 @@
 (document Idio keyword->string)
 (document Idio string->pathname)
 (document Idio string->octet-string)
+(document Idio octet-string->string)
 
 ; util.c
 (document Idio ->string)

@@ -7229,12 +7229,16 @@ a wrapper to libc :manpage:`pread(2)`	\n\
 :param count: number of bytes to read, defaults to ``libc/BUFSIZ``	\n\
 :type count: fixnum or libc/size_t, optional	\n\
 :return: string of bytes read or see below	\n\
-:rtype: string or see below			\n\
+:rtype: octet string or see below		\n\
 :raises ^system-error:				\n\
 						\n\
 If :manpage:`read(2)` returned 0 then this code returns ``#<eof>``.	\n\
 						\n\
 If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
+					\n\
+.. seealso::				\n\
+					\n\
+   :ref:`octet-string->string <octet-string->string>`	\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -7306,7 +7310,7 @@ If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
 
 	return idio_S_notreached;
     } else if (pread_r) {
-	r = idio_string_C_len (buf, pread_r);
+	r = idio_octet_string_C_len (buf, pread_r);
     } else {
 	r = idio_S_eof;
     }
@@ -7452,12 +7456,16 @@ a wrapper to libc :manpage:`read(2)`	\n\
 :param count: number of bytes to read, defaults to ``libc/BUFSIZ``	\n\
 :type count: fixnum or libc/size_t, optional	\n\
 :return: string of bytes read or see below	\n\
-:rtype: string or see below		\n\
+:rtype: octet string or see below	\n\
 :raises ^system-error:			\n\
 					\n\
 If :manpage:`read(2)` returned 0 then this code returns ``#<eof>``.	\n\
 					\n\
 If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
+					\n\
+.. seealso::				\n\
+					\n\
+   :ref:`octet-string->string <octet-string->string>`	\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -7520,7 +7528,7 @@ If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
 
 	return idio_S_notreached;
     } else if (n) {
-	r = idio_string_C_len (buf, n);
+	r = idio_octet_string_C_len (buf, n);
     } else {
 	r = idio_S_eof;
     }
