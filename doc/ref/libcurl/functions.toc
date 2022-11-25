@@ -1,0 +1,10 @@
+(rst "functions-intro" 0)
+
+(document libcurl curl-version)
+(document libcurl curl-easy-init)
+(document libcurl curl-easy-setopt)
+(document libcurl curl-easy-perform)
+(document libcurl curl-easy-reset)
+
+; no values
+(nodocument libcurl version)

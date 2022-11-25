@@ -54,6 +54,25 @@ note ()
     :
 }
 
+# The tests for IDIO_HAVE_* are generic (barring the test code itself)
+idio_have ()
+{
+    feature=$1
+    shift
+
+    # Old Bash's don't have ${feature^^}
+    FEATURE=IDIO_HAVE_$(echo ${feature} | tr '[a-z]' '[A-Z]')
+
+    names+=(${FEATURE})
+
+    # older Bash's don't support declare -g so resort to eval
+    eval ${FEATURE}=1
+
+    if ! ${CC} -o ${tmpdir}/a.out ${PROG_LIB}/config-tests/have-${feature}.c ${1+"$@"} >/dev/null 2>&1 ; then
+	eval ${FEATURE}=
+    fi
+}
+
 usage ()
 {
     cat << EOF >&2
@@ -64,6 +83,10 @@ ${0##*/} generates a system-specific header/makefile
   -v		verbose
 EOF
 }
+
+PROG_DIR=${0%/*}
+PROG_TOP=${PROG_DIR%/*}
+PROG_LIB=${PROG_TOP}/lib
 
 opt_module=idio
 opt_verbose=
@@ -303,6 +326,25 @@ if ! ${CC} -o ${tmpdir}/a.out -Werror -O3 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=${
 fi
 
 ######################################################################
+
+# Everything has libcurl.so but we need to check we have the headers
+# too!  We want to know here so that we can choose to include the
+# extension or not.
+#
+# There's a further complication in that we rely on
+# curl_easy_option_by_name() which is only in v7.73.0 and later.
+
+# libcurl-devel / libcurl4-openssl-dev
+
+LIBCURL_CFLAGS=
+LIBCURL_LIBS=-lcurl
+if type -p curl-config >/dev/null 2>&1 ; then
+    LIBCURL_CFLAGS=$(curl-config --cflags)
+    LIBCURL_LIBS=$(curl-config --libs)
+fi
+idio_have libcurl_dev ${LIBCURL_CFLAGS} ${LIBCURL_LIBS}
+
+######################################################################
 #
 # CC
 
@@ -376,6 +418,7 @@ idio)
 # Some systems get upset if _FORTIFY_SOURCE is already defined
 FORTIFY_CFLAGS			:= -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=${IDIO_CC_FORTIFY_SOURCE}
 
+IDIO_LIBCURL_DEV		:= ${IDIO_HAVE_LIBCURL_DEV}
 EOF
     ;;
 esac

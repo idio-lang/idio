@@ -1,0 +1,4 @@
+
+module tests/libcurl-error
+
+curl-easy-perform libc/NULL

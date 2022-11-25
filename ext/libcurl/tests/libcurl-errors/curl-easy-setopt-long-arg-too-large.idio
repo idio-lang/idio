@@ -1,0 +1,5 @@
+
+module tests/libcurl-error
+
+;; 64-bit LONG_MAX + 1
+curl-easy-setopt curl :SSL_VERIFYPEER 9223372036854775808

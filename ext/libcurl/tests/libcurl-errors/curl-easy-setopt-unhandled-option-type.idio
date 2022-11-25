@@ -1,0 +1,4 @@
+
+module tests/libcurl-error
+
+curl-easy-setopt curl :POSTFIELDS #t

@@ -5,6 +5,9 @@ all : local-install
 	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
 	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
 	(cd $(EXTDIR)/SRFI-14/src; $(MAKE) $@)
+ifneq ($(IDIO_LIBCURL_DEV),)
+	(cd $(EXTDIR)/libcurl/src; $(MAKE) $@)
+endif
 
 ifneq ($(MAKECMDGOALS),clean)
 # XXX put these on the same line otherwise the generator and then the
@@ -71,6 +74,9 @@ debug :
 	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
 	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
 	(cd $(EXTDIR)/SRFI-14/src; $(MAKE) $@)
+ifneq ($(IDIO_LIBCURL_DEV),)
+	(cd $(EXTDIR)/libcurl/src; $(MAKE) $@)
+endif
 
 test : local-install
 	$(LI_BINDIR)/idio test
@@ -130,10 +136,13 @@ doc :
 
 local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)
 	cp -r $(LIBDIR)/*.idio $(LIBDIR)/bootstrap $(LI_LIBVERDIR)
-	(cd $(EXTDIR)/json5/src; $(MAKE) local-install)
-	(cd $(EXTDIR)/expect/src; $(MAKE) local-install)
-	(cd $(EXTDIR)/empty/src; $(MAKE) local-install)
-	(cd $(EXTDIR)/SRFI-14/src; $(MAKE) local-install)
+	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
+	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
+	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
+	(cd $(EXTDIR)/SRFI-14/src; $(MAKE) $@)
+ifneq ($(IDIO_LIBCURL_DEV),)
+	(cd $(EXTDIR)/libcurl/src; $(MAKE) $@)
+endif
 
 pre-compile: local-install
 	$(LI_BINDIR)/idio --save-xenvs </dev/null
