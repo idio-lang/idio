@@ -617,6 +617,7 @@ IDIO idio_bignum_copy_to_integer (IDIO bn)
 	return (T) idio_bsa_get (sig_a, ai - 1);			\
     }
 
+IDIO_BIGNUM_C_TYPE_VALUE  (long,      "ld",    LONG_MAX)
 IDIO_BIGNUM_C_TYPE_VALUE  (int64_t,   PRId64,  INT64_MAX)
 IDIO_BIGNUM_C_TYPE_UVALUE (uint64_t,  PRIu64,  UINT64_MAX)
 IDIO_BIGNUM_C_TYPE_VALUE  (ptrdiff_t, PRIdPTR, PTRDIFF_MAX)

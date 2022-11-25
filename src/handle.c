@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -252,11 +253,11 @@ IDIO idio_handle ()
     return h;
 }
 
-int idio_isa_handle (IDIO h)
+int idio_isa_handle (IDIO o)
 {
-    IDIO_ASSERT (h);
+    IDIO_ASSERT (o);
 
-    return idio_isa (h, IDIO_TYPE_HANDLE);
+    return idio_isa (o, IDIO_TYPE_HANDLE);
 }
 
 /*
@@ -308,6 +309,20 @@ test if `o` is a handle				\n\
     return r;
 }
 
+int idio_isa_input_handle (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    int r = 0;
+
+    if (idio_isa_handle (o) &&
+	IDIO_INPUTP_HANDLE (o)) {
+	r = 1;
+    }
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("input-handle?", input_handlep, (IDIO o), "o", "\
 test if `o` is an input handle				\n\
 							\n\
@@ -320,9 +335,22 @@ test if `o` is an input handle				\n\
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_handle (o) &&
-	IDIO_INPUTP_HANDLE (o)) {
+    if (idio_isa_input_handle (o)) {
 	r = idio_S_true;
+    }
+
+    return r;
+}
+
+int idio_isa_output_handle (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    int r = 0;
+
+    if (idio_isa_handle (o) &&
+	IDIO_OUTPUTP_HANDLE (o)) {
+	r = 1;
     }
 
     return r;
@@ -340,8 +368,7 @@ test if `o` is an output handle				\n\
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_handle (o) &&
-	IDIO_OUTPUTP_HANDLE (o)) {
+    if (idio_isa_output_handle (o)) {
 	r = idio_S_true;
     }
 

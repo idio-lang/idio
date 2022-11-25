@@ -187,6 +187,22 @@
  * The lower limit for an unsigned quantity is 0.
  */
 
+#if LONG_MAX == 9223372036854775807LL
+#if __LP64__
+#define IDIO_BIGNUM_long_WORDS 2
+#else
+#define IDIO_BIGNUM_long_WORDS 3
+#endif
+#define IDIO_BIGNUM_long_FIRST 9
+#else
+#if LONG_MAX == 2147483647L
+#define IDIO_BIGNUM_long_WORDS 2
+#define IDIO_BIGNUM_long_FIRST 2
+#else
+#error unexpected LONG_MAX
+#endif
+#endif
+
 #if PTRDIFF_MAX == 9223372036854775807LL
 #if __LP64__
 #define IDIO_BIGNUM_ptrdiff_t_WORDS 2
@@ -275,12 +291,15 @@ int idio_bignum_real_zero_p (IDIO a);
 int idio_bignum_real_equal_p (IDIO a, IDIO b);
 IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BE_T desired_exp, IDIO_BE_T max_digits);
 IDIO idio_bignum_integer_argument (IDIO bn);
+
+long idio_bignum_long_value (IDIO bn);
 int64_t idio_bignum_int64_t_value (IDIO bn);
 uint64_t idio_bignum_uint64_t_value (IDIO bn);
 ptrdiff_t idio_bignum_ptrdiff_t_value (IDIO bn);
 intptr_t idio_bignum_intptr_t_value (IDIO bn);
 intmax_t idio_bignum_intmax_t_value (IDIO bn);
 uintmax_t idio_bignum_uintmax_t_value (IDIO bn);
+
 IDIO idio_bignum_float (float f);
 IDIO idio_bignum_double (double d);
 IDIO idio_bignum_longdouble (long double ld);

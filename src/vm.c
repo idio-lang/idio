@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stdarg.h>

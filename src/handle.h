@@ -28,9 +28,11 @@ void idio_handle_write_error (IDIO h, IDIO c_location);
 void idio_handle_closed_error (IDIO h, IDIO c_location);
 
 IDIO idio_handle ();
-int idio_isa_handle (IDIO d);
+int idio_isa_handle (IDIO o);
+int idio_isa_input_handle (IDIO o);
+int idio_isa_output_handle (IDIO o);
 char *idio_handle_name_as_C (IDIO h, size_t *sizep);
-void idio_free_handle (IDIO d);
+void idio_free_handle (IDIO h);
 void idio_handle_finalizer (IDIO handle);
 
 void idio_free_handle (IDIO h);

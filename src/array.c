@@ -52,6 +52,7 @@
 #include <sys/resource.h>
 
 #include <assert.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
