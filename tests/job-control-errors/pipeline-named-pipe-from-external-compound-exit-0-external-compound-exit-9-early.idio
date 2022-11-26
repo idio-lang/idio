@@ -10,8 +10,7 @@ ipn := named-pipe-from {
      libc/nanosleep '(0 5e8)
    })
    ((and IDIO_DEBUG
-	 "uname/sysname/Darwin"
-	 "uname/release/9.8.0") {
+	 "uname/sysname/Darwin") {
      libc/nanosleep '(0 5e8)
    }))
   libc/exit 9

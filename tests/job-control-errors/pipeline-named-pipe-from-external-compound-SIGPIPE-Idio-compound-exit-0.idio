@@ -8,8 +8,7 @@ ipn := named-pipe-from {
 
   (cond-expand
    ((and IDIO_DEBUG
-	 "uname/sysname/Darwin"
-	 "uname/release/9.8.0") {
+	 "uname/sysname/Darwin") {
      libc/nanosleep '(0 5e8)
    })
    ("uname/sysname/OpenBSD" {
