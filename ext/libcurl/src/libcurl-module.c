@@ -493,6 +493,7 @@ perform libcurl easy transfer for `curl`	\n\
 :param curl: libcurl easy handle	\n\
 :type curl: :ref:`libcurl/CURL <libcurl/CURL>`	\n\
 :return: ``#<unspec>``			\n\
+:raises ^rt-libcurl-error:		\n\
 ")
 {
     IDIO_ASSERT (curl);
@@ -535,6 +536,7 @@ reset libcurl easy transfer for `curl`	\n\
 :param curl: libcurl easy handle	\n\
 :type curl: :ref:`libcurl/CURL <libcurl/CURL>`	\n\
 :return: ``#<unspec>``			\n\
+:raises ^rt-libcurl-error:		\n\
 ")
 {
     IDIO_ASSERT (curl);
@@ -562,6 +564,50 @@ reset libcurl easy transfer for `curl`	\n\
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("curl-easy-cleanup", curl_easy_cleanup, (IDIO curl), "curl", "\
+cleanup libcurl easy transfer for `curl`	\n\
+					\n\
+:param curl: libcurl easy handle	\n\
+:type curl: :ref:`libcurl/CURL <libcurl/CURL>`	\n\
+:return: ``#<unspec>``			\n\
+:raises ^rt-libcurl-error:		\n\
+					\n\
+In normal circumstances, :manpage:`curl_easy_cleanup(3)`	\n\
+will be called by the garbage collector however you may		\n\
+need to call ``curl-easy-cleanup`` directly.			\n\
+					\n\
+`curl` will be reset to a NULL pointer	\n\
+")
+{
+    IDIO_ASSERT (curl);
+
+    /*
+     * Test Case: libcurl-errors/curl-easy-cleanup-bad-curl-type.idio
+     *
+     * curl-easy-cleanup #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, curl);
+    if (idio_CSI_libcurl_CURL != IDIO_C_TYPE_POINTER_PTYPE (curl)) {
+	/*
+	 * Test Case: libcurl-errors/curl-easy-cleanup-invalid-curl-type.idio
+	 *
+	 * curl-easy-cleanup libc/NULL
+	 */
+	idio_error_param_value_exp ("curl-easy-cleanup", "curl", curl, "libcurl/CURL", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+    CURL *C_curl = IDIO_C_TYPE_POINTER_P (curl);
+
+    idio_gc_deregister_finalizer (curl);
+
+    curl_easy_cleanup (C_curl);
+
+    idio_invalidate_C_pointer (curl);
+
+    return idio_S_unspec;
+}
+
 void idio_libcurl_CURL_finalizer (IDIO C_p)
 {
     IDIO_ASSERT (C_p);
@@ -579,6 +625,7 @@ void idio_libcurl_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libcurl_module, curl_easy_setopt);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libcurl_module, curl_easy_perform);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libcurl_module, curl_easy_reset);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libcurl_module, curl_easy_cleanup);
 }
 
 void idio_final_libcurl ()

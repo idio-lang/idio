@@ -5,6 +5,7 @@
 (document libcurl curl-easy-setopt)
 (document libcurl curl-easy-perform)
 (document libcurl curl-easy-reset)
+(document libcurl curl-easy-cleanup)
 
 ; no values
 (nodocument libcurl version)

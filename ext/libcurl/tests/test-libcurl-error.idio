@@ -105,5 +105,8 @@ libcurl-error-load "libcurl-errors/curl-easy-perform-invalid-curl-type.idio" "cu
 libcurl-error-load "libcurl-errors/curl-easy-reset-bad-curl-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
 libcurl-error-load "libcurl-errors/curl-easy-reset-invalid-curl-type.idio" "curl-easy-reset curl='#<C/* C/pointer>' a C/pointer is not a libcurl/CURL"
 
+libcurl-error-load "libcurl-errors/curl-easy-cleanup-bad-curl-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+libcurl-error-load "libcurl-errors/curl-easy-cleanup-invalid-curl-type.idio" "curl-easy-cleanup curl='#<C/* C/pointer>' a C/pointer is not a libcurl/CURL"
+
 ;; all done?
-Tests? (libcurl-error-0 + 18)
+Tests? (libcurl-error-0 + 20)

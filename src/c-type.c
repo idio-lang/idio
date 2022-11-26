@@ -641,6 +641,33 @@ IDIO idio_C_pointer (void * v)
     return co;
 }
 
+/*
+ * XXX this is for specialist operations where we have wrapped a
+ * third-party pointer and we have called the third-pary's mechanism
+ * for freeing the pointer.
+ *
+ * Here we want to ensure that we don't go trying to use the
+ * third-party's data again.  Any subsequent use of this will either
+ * get a warning about using the wrong C/pointer type (because we've
+ * lost the CSI information) or a segfault from us, rather than the
+ * third-party.
+ *
+ * This still leaves the Idio C/pointer hanging about which will be
+ * garbage collected in due course.
+ */
+void idio_invalidate_C_pointer (IDIO po)
+{
+    IDIO_ASSERT (po);
+
+    IDIO_TYPE_ASSERT (C_pointer, po);
+
+    po->vtable = idio_vtable (IDIO_TYPE_C_POINTER);
+
+    IDIO_C_TYPE_POINTER_PTYPE (po) = idio_S_nil;
+    IDIO_C_TYPE_POINTER_P (po) = NULL;
+    IDIO_C_TYPE_POINTER_FREEP (po) = 0;
+}
+
 IDIO idio_C_pointer_free_me (void * v)
 {
     /*
