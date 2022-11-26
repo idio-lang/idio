@@ -145,11 +145,18 @@ Return a libcurl easy handle	\n\
 				\n\
 :return: :ref:`libcurl/CURL <libcurl/CURL>`	\n\
 :rtype: C/pointer		\n\
+:raises ^rt-libcurl-error:	\n\
 ")
 {
     CURL *curl = curl_easy_init ();
 
     if (NULL == curl) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_libcurl_error_printf (idio_S_nil, "curl_easy_init(): failed\n");
+
+	return idio_S_notreached;
     }
 
     IDIO C_p = idio_C_pointer_type (idio_CSI_libcurl_CURL, curl);
@@ -245,8 +252,12 @@ set libcurl easy options on `curl`	\n\
 :raises ^rt-libc-format-error: if `arg` contains an ASCII NUL for a string option	\n\
 :raises ^rt-bignum-conversion-error: if `arg` exceeds limits for a long option	\n\
 					\n\
+`kw` and `arg` should be supplied as two arguments and any	\n\
+number of `kw`/`arg` tuples can be passed.			\n\
+					\n\
 `kw` can be either :samp:`:CURLOPT_{name}` or :samp:`:{name}` for	\n\
-some libcurl option :samp:`CURLOPT_{name}`.	\n\
+some libcurl option :samp:`CURLOPT_{name}`.  :samp:`:{name}` is	\n\
+case-insensitive.			\n\
 					\n\
 In addition `kw` can be :samp:`:reader` or :samp:`:writer` to	\n\
 use input or output handles as source or sink for libcurl data.	\n\
