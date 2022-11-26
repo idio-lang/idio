@@ -287,7 +287,11 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 		     eprintf "%s/%s: overridding '%s' with '%s'\n" mod sym orig-sigstr sigstr
 		   }
 		 }))
-		hprintf out-fh ".. idio:function:: %s %s\n\n" mod-str sigstr
+		if sigstr {
+		  hprintf out-fh ".. idio:function:: %s %s\n\n" mod-str sigstr
+		} {
+		  hprintf out-fh ".. idio:function:: %s\n\n" mod-str
+		}
 		hprintf out-fh "\n"
 
 		leader := "   "
