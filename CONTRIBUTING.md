@@ -46,8 +46,8 @@ Documentation might be more widespread:
 * variables (and more awkward functions) can be documented in the
   `doc/ref` hierarchy
 
-* examples might want to go in the [Idio User
-  Guide](https://github.com/idio-lang/guide)
+* examples might want to go into [Idio By
+  Example](https://github.com/idio-lang/idio-by-example)
 
 * complex contributions might want to be added to
   [DIPS](https://github.com/idio-lang/DIPS)
