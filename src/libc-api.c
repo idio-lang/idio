@@ -7232,9 +7232,9 @@ a wrapper to libc :manpage:`pread(2)`	\n\
 :rtype: octet string or see below		\n\
 :raises ^system-error:				\n\
 						\n\
-If :manpage:`read(2)` returned 0 then this code returns ``#<eof>``.	\n\
+If :manpage:`pread(2)` returned 0 then this code returns ``#<eof>``.	\n\
 						\n\
-If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
+If :manpage:`pread(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
 					\n\
 .. seealso::				\n\
 					\n\
