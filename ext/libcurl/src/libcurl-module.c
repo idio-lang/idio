@@ -85,6 +85,28 @@ IDIO idio_libcurl_error_string (char *format, va_list argp)
     return idio_get_output_string (sh);
 }
 
+void idio_libcurl_error_printf (IDIO detail, char *format, ...)
+{
+    IDIO_ASSERT (detail);
+    assert (format);
+
+    va_list fmt_args;
+    va_start (fmt_args, format);
+    IDIO msg = idio_libcurl_error_string (format, fmt_args);
+    va_end (fmt_args);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO c = idio_struct_instance (idio_condition_rt_libcurl_error_type,
+				   IDIO_LIST3 (msg,
+					       location,
+					       detail));
+
+    idio_raise_condition (idio_S_false, c);
+
+    /* notreached */
+}
+
 size_t idio_libcurl_read_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
     IDIO h = (IDIO) userdata;
@@ -106,28 +128,6 @@ size_t idio_libcurl_read_callback(char *ptr, size_t size, size_t nmemb, void *us
 size_t idio_libcurl_write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
     return idio_puts_handle ((IDIO) userdata, ptr, size * nmemb);
-}
-
-void idio_libcurl_error_printf (IDIO detail, char *format, ...)
-{
-    IDIO_ASSERT (detail);
-    assert (format);
-
-    va_list fmt_args;
-    va_start (fmt_args, format);
-    IDIO msg = idio_libcurl_error_string (format, fmt_args);
-    va_end (fmt_args);
-
-    IDIO location = idio_vm_source_location ();
-
-    IDIO c = idio_struct_instance (idio_condition_rt_libcurl_error_type,
-				   IDIO_LIST3 (msg,
-					       location,
-					       detail));
-
-    idio_raise_condition (idio_S_false, c);
-
-    /* notreached */
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("curl-version", curl_version, (), "", "\
