@@ -8,6 +8,9 @@ all : local-install
 ifneq ($(IDIO_LIBCURL_DEV),)
 	(cd $(EXTDIR)/libcurl/src; $(MAKE) $@)
 endif
+ifneq ($(IDIO_ZLIB_DEV),)
+	(cd $(EXTDIR)/zlib/src; $(MAKE) $@)
+endif
 
 ifneq ($(MAKECMDGOALS),clean)
 # XXX put these on the same line otherwise the generator and then the
@@ -77,6 +80,9 @@ debug :
 ifneq ($(IDIO_LIBCURL_DEV),)
 	(cd $(EXTDIR)/libcurl/src; $(MAKE) $@)
 endif
+ifneq ($(IDIO_ZLIB_DEV),)
+	(cd $(EXTDIR)/zlib/src; $(MAKE) $@)
+endif
 
 test : local-install
 	$(LI_BINDIR)/idio test
@@ -142,6 +148,9 @@ local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)
 	(cd $(EXTDIR)/SRFI-14/src; $(MAKE) $@)
 ifneq ($(IDIO_LIBCURL_DEV),)
 	(cd $(EXTDIR)/libcurl/src; $(MAKE) $@)
+endif
+ifneq ($(IDIO_ZLIB_DEV),)
+	(cd $(EXTDIR)/zlib/src; $(MAKE) $@)
 endif
 
 pre-compile: local-install

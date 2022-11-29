@@ -1,0 +1,114 @@
+;;
+;; Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-zlib-error.idio
+;;
+
+module tests/zlib-error
+
+import zlib
+
+zlib-error-0 := Tests
+
+#*
+
+We have a bunch of test cases which should provoke an
+^rt-zlib-error or some generic Idio parameter and system errors.
+So we can write a load function which will wrapper the actual load
+with a trap for (^rt-zlib-error ^rt-parameter-error ...)  and
+compare the message strings.
+
+*#
+
+zlib-error-load := {
+  n := 0
+
+  function/name zlib-error-load (filename msg) {
+    if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "not a string" filename)
+
+    n = n + 1
+
+    exp-tests := 1
+
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^rt-zlib-error
+	  ^rt-bignum-conversion-error
+	  ^rt-libc-format-error
+	  ^rt-parameter-error
+	  ^system-error) (function (c) {
+			    ;eprintf "zlib-error #%s: %s %s\n" n msg (idio-error-location c)
+			    test (idio-error-message c) msg
+
+			    if (not (string=? (idio-error-message c) msg)) {
+			      condition-report (append-string "zlib-error-load: " filename) c (current-error-handle)
+			    }
+
+			    trap-return 'zlib-error
+	  }) {
+	    t0 := Tests
+	    (symbol-value 'load 'Idio) filename
+	    if (not (equal? Tests (t0 + exp-tests))) {
+	      eprintf "zlib-error #%s: %s did not generate \"%s\"\n" n filename msg
+	      Errors = Errors + 1
+	      Tests = t0 + exp-tests
+	    }
+	  }
+  }
+}
+
+zlib-error-load "zlib-errors/deflate-bad-handle-type.idio" "bad parameter type: '#t' a constant is not a input_handle"
+zlib-error-load "zlib-errors/deflate-bad-level-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
+zlib-error-load "zlib-errors/deflate-bad-level-value.idio" "deflate level='99': should be 0 <= int <= 9"
+zlib-error-load "zlib-errors/deflate-bad-windowBits-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
+zlib-error-load "zlib-errors/deflate-bad-windowBits-positive-value.idio" "deflate windowBits='99': should be [16+]9 <= int <= [16+]15"
+zlib-error-load "zlib-errors/deflate-bad-windowBits-negative-value.idio" "deflate windowBits='-99': should be -15 <= int <= -9"
+zlib-error-load "zlib-errors/deflate-bad-strategy-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
+
+zlib-error-load "zlib-errors/zlib-compress-bad-handle-type.idio" "bad parameter type: '#t' a constant is not a input_handle"
+zlib-error-load "zlib-errors/zlib-compress-bad-level-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
+zlib-error-load "zlib-errors/zlib-compress-bad-level-value.idio" "zlib-compress level='99': should be 0 <= int <= 9"
+zlib-error-load "zlib-errors/zlib-compress-bad-windowBits-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
+zlib-error-load "zlib-errors/zlib-compress-bad-windowBits-positive-value.idio" "zlib-compress windowBits='99': should be 9 <= int <= 15"
+zlib-error-load "zlib-errors/zlib-compress-bad-windowBits-negative-value.idio" "zlib-compress windowBits='-99': should be 9 <= int <= 15"
+zlib-error-load "zlib-errors/zlib-compress-bad-strategy-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
+
+zlib-error-load "zlib-errors/gzip-compress-bad-handle-type.idio" "bad parameter type: '#t' a constant is not a input_handle"
+zlib-error-load "zlib-errors/gzip-compress-bad-level-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
+zlib-error-load "zlib-errors/gzip-compress-bad-level-value.idio" "gzip-compress level='99': should be 0 <= int <= 9"
+zlib-error-load "zlib-errors/gzip-compress-bad-windowBits-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
+zlib-error-load "zlib-errors/gzip-compress-bad-windowBits-positive-value.idio" "gzip-compress windowBits='99': should be 9 <= int <= 15"
+zlib-error-load "zlib-errors/gzip-compress-bad-windowBits-negative-value.idio" "gzip-compress windowBits='-99': should be 9 <= int <= 15"
+zlib-error-load "zlib-errors/gzip-compress-bad-strategy-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
+
+zlib-error-load "zlib-errors/inflate-bad-handle-type.idio" "bad parameter type: '#t' a constant is not a input_handle"
+zlib-error-load "zlib-errors/inflate-bad-windowBits-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
+zlib-error-load "zlib-errors/inflate-bad-windowBits-positive-value.idio" "inflate windowBits='99': should be [16+]9 <= int <= [16+]15"
+zlib-error-load "zlib-errors/inflate-bad-windowBits-negative-value.idio" "inflate windowBits='-99': should be -15 <= int <= -9"
+
+zlib-error-load "zlib-errors/zlib-decompress-bad-handle-type.idio" "bad parameter type: '#t' a constant is not a input_handle"
+zlib-error-load "zlib-errors/zlib-decompress-bad-windowBits-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
+zlib-error-load "zlib-errors/zlib-decompress-bad-windowBits-positive-value.idio" "zlib-decompress windowBits='99': should be 9 <= int <= 15"
+zlib-error-load "zlib-errors/zlib-decompress-bad-windowBits-negative-value.idio" "zlib-decompress windowBits='-99': should be 9 <= int <= 15"
+
+zlib-error-load "zlib-errors/gzip-decompress-bad-handle-type.idio" "bad parameter type: '#t' a constant is not a input_handle"
+zlib-error-load "zlib-errors/gzip-decompress-bad-windowBits-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
+zlib-error-load "zlib-errors/gzip-decompress-bad-windowBits-positive-value.idio" "gzip-decompress windowBits='99': should be 9 <= int <= 15"
+zlib-error-load "zlib-errors/gzip-decompress-bad-windowBits-negative-value.idio" "gzip-decompress windowBits='-99': should be 9 <= int <= 15"
+
+;; all done?
+Tests? (zlib-error-0 + 33)

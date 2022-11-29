@@ -328,8 +328,8 @@ fi
 ######################################################################
 
 # Everything has libcurl.so but we need to check we have the headers
-# too!  We want to know here so that we can choose to include the
-# extension or not.
+# too!  We want to know here, where we generate Makefile.system, so
+# that we can choose to include the extension or not.
 #
 # There's a further complication in that we rely on
 # curl_easy_option_by_name() which is only in v7.73.0 and later.
@@ -343,6 +343,18 @@ if type -p curl-config >/dev/null 2>&1 ; then
     LIBCURL_LIBS=$(curl-config --libs)
 fi
 idio_have libcurl_dev ${LIBCURL_CFLAGS} ${LIBCURL_LIBS}
+
+######################################################################
+
+# Everything has zlib but we need to check we have the headers too!
+# We want to know here, where we generate Makefile.system, so that we
+# can choose to include the extension or not.
+
+# zlib1g-dev
+
+ZLIB_CFLAGS=
+ZLIB_LIBS=-lz
+idio_have zlib_dev ${ZLIB_CFLAGS} ${ZLIB_LIBS}
 
 ######################################################################
 #
@@ -419,6 +431,7 @@ idio)
 FORTIFY_CFLAGS			:= -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=${IDIO_CC_FORTIFY_SOURCE}
 
 IDIO_LIBCURL_DEV		:= ${IDIO_HAVE_LIBCURL_DEV}
+IDIO_ZLIB_DEV			:= ${IDIO_HAVE_ZLIB_DEV}
 EOF
     ;;
 esac

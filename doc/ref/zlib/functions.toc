@@ -1,0 +1,12 @@
+(rst "functions-intro" 0)
+
+(document zlib gzip-compress)
+(document zlib gzip-decompress)
+
+(document zlib zlib-compress)
+(document zlib zlib-decompress)
+
+(document zlib deflate)
+(document zlib inflate)
+
+(document zlib zlib-version)

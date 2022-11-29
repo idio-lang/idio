@@ -16,7 +16,7 @@
  */
 
 /*
- * curl-module.c
+ * libcurl-module.c
  *
  */
 

@@ -16,19 +16,20 @@
  */
 
 /*
- * libcurl-module.h
+ * zlib-module.h
  *
  */
 
-#ifndef LIBCURL_MODULE_H
-#define LIBCURL_MODULE_H
+#ifndef ZLIB_MODULE_H
+#define ZLIB_MODULE_H
 
-extern IDIO idio_curl_module;
+extern IDIO idio_zlib_module;
 
-extern IDIO idio_condition_rt_libcurl_error_type;
+extern IDIO idio_condition_rt_zlib_error_type;
 
-void idio_libcurl_CURL_finalizer (IDIO C_p);
+void idio_zlib_deflate_finalizer (IDIO C_p);
+void idio_zlib_inflate_finalizer (IDIO C_p);
 
-void idio_init_libcurl ();
+void idio_init_zlib ();
 
 #endif
