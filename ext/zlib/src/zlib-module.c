@@ -125,6 +125,16 @@ void idio_zlib_error_printf (int ret, IDIO detail, IDIO c_location, char *format
     case Z_VERSION_ERROR:
 	idio_display_C ("zlib version mismatch", msh);
 	break;
+    default:
+	{
+	    char em[BUFSIZ];
+	    snprintf (em, BUFSIZ, "zlib ret == %d", ret);
+	    idio_display_C (em, msh);
+	}
+    }
+
+    if (idio_S_nil != detail) {
+	idio_display (detail, dsh);
     }
 
     IDIO c = idio_struct_instance (idio_condition_rt_zlib_error_type,
@@ -173,7 +183,7 @@ IDIO idio_zlib_deflate (IDIO handle, int level, int method, int windowBits, int 
 	/*
 	 * Test Case: ??
 	 */
-	idio_zlib_error_printf (ret, idio_S_nil, IDIO_C_FUNC_LOCATION (), "deflateInit()");
+	idio_zlib_error_printf (ret, handle, IDIO_C_FUNC_LOCATION (), "deflateInit()");
 
 	return idio_S_notreached;
     }
@@ -188,11 +198,10 @@ IDIO idio_zlib_deflate (IDIO handle, int level, int method, int windowBits, int 
 	unsigned char *inp = in;
 
 	size_t avail_in = 0;
-	while (avail_in < IDIO_ZLIB_CHUNK &&
-	       ! idio_eofp_handle (handle)) {
+	while (avail_in < IDIO_ZLIB_CHUNK) {
 	    idio_unicode_t c = idio_getc_handle (handle);
 
-	    if (EOF == c) {
+	    if (idio_eofp_handle (handle)) {
 		break;
 	    }
 
@@ -222,7 +231,7 @@ IDIO idio_zlib_deflate (IDIO handle, int level, int method, int windowBits, int 
 		/*
 		 * Test Case: ??
 		 */
-		idio_zlib_error_printf (ret, idio_S_nil, IDIO_C_FUNC_LOCATION (), "deflate()");
+		idio_zlib_error_printf (ret, handle, IDIO_C_FUNC_LOCATION (), "deflate()");
 
 		return idio_S_notreached;
 	    }
@@ -240,7 +249,7 @@ IDIO idio_zlib_deflate (IDIO handle, int level, int method, int windowBits, int 
 	    /*
 	     * Test Case: ??
 	     */
-	    idio_zlib_error_printf (0, idio_S_nil, IDIO_C_FUNC_LOCATION (), "deflate(): 0 != strm.avail_in");
+	    idio_zlib_error_printf (0, handle, IDIO_C_FUNC_LOCATION (), "deflate(): 0 != strm.avail_in %zu", zs->avail_in);
 
 	    return idio_S_notreached;
 	}
@@ -251,7 +260,7 @@ IDIO idio_zlib_deflate (IDIO handle, int level, int method, int windowBits, int 
 	/*
 	 * Test Case: ??
 	 */
-	idio_zlib_error_printf (ret, idio_S_nil, IDIO_C_FUNC_LOCATION (), "deflate(): Z_STREAM_END != ret");
+	idio_zlib_error_printf (ret, handle, IDIO_C_FUNC_LOCATION (), "deflate(): Z_STREAM_END != ret");
 
 	return idio_S_notreached;
     }
@@ -657,7 +666,7 @@ IDIO idio_zlib_inflate (IDIO handle, int windowBits)
 	/*
 	 * Test case: ??
 	 */
-	idio_zlib_error_printf (ret, idio_S_nil, IDIO_C_FUNC_LOCATION (), "inflateInit()");
+	idio_zlib_error_printf (ret, handle, IDIO_C_FUNC_LOCATION (), "inflateInit()");
 
 	return idio_S_notreached;
     }
@@ -671,11 +680,10 @@ IDIO idio_zlib_inflate (IDIO handle, int windowBits)
 	unsigned char *inp = in;
 
 	size_t avail_in = 0;
-	while (avail_in < IDIO_ZLIB_CHUNK &&
-	       ! idio_eofp_handle (handle)) {
+	while (avail_in < IDIO_ZLIB_CHUNK) {
 	    int c = idio_getb_handle (handle);
 
-	    if (EOF == c) {
+	    if (idio_eofp_handle (handle)) {
 		break;
 	    }
 
@@ -701,7 +709,7 @@ IDIO idio_zlib_inflate (IDIO handle, int windowBits)
 		/*
 		 * Test case: ??
 		 */
-		idio_zlib_error_printf (ret, idio_S_nil, IDIO_C_FUNC_LOCATION (), "inflate()");
+		idio_zlib_error_printf (ret, handle, IDIO_C_FUNC_LOCATION (), "inflate()");
 
 		return idio_S_notreached;
 	    }
@@ -713,9 +721,14 @@ IDIO idio_zlib_inflate (IDIO handle, int windowBits)
 	    case Z_DATA_ERROR:
 	    case Z_MEM_ERROR:
 		/*
-		 * Test case: ??
+		 * Test case: zlib-errors/inflate-windowBits-smaller.idio
+		 *
+		 * ;; windowBits for inflate should be at least as big
+		 * ;; as windowBits for deflate
+		 *
+		 * inflate (open-input-string (deflate ish :windowBits 15)) :windowBits 9
 		 */
-		idio_zlib_error_printf (ret, idio_S_nil, IDIO_C_FUNC_LOCATION (), "inflate(): Z_STREAM_END != ret");
+		idio_zlib_error_printf (ret, handle, IDIO_C_FUNC_LOCATION (), "inflate(): Z_STREAM_END != ret");
 
 		return idio_S_notreached;
 	    }
@@ -930,9 +943,9 @@ Return gzip decompression of the bytes in `handle`.	\n\
 	}
 
 	args = IDIO_PAIR_T (args);
-    } else {
-	C_windowBits += 16;
     }
+
+    C_windowBits += 16;
 
     return idio_zlib_inflate (handle, C_windowBits);
 }

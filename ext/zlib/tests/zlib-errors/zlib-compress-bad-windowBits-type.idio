@@ -1,2 +1,2 @@
 
-zlib-compress (current-input-handle) Z_DEFAULT_COMPRESSION #t
+zlib-compress (current-input-handle) :windowBits #t

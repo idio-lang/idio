@@ -85,5 +85,52 @@ close-handle ifh
 
 rm gz-file
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; code/range coverage
+
+rewind-handle ish
+inflate (open-input-string (deflate ish))
+rewind-handle ish
+inflate (open-input-string (deflate ish :level Z_NO_COMPRESSION))
+rewind-handle ish
+inflate (open-input-string (deflate ish :level 9))
+rewind-handle ish
+inflate (open-input-string (deflate ish :windowBits 9))
+rewind-handle ish
+inflate (open-input-string (deflate ish :windowBits 9)) :windowBits 9
+rewind-handle ish
+inflate (open-input-string (deflate ish :windowBits 15))
+rewind-handle ish
+inflate (open-input-string (deflate ish :windowBits 15)) :windowBits 15
+rewind-handle ish
+inflate (open-input-string (deflate ish :strategy Z_FILTERED))
+rewind-handle ish
+inflate (open-input-string (deflate ish :strategy Z_HUFFMAN_ONLY))
+rewind-handle ish
+inflate (open-input-string (deflate ish :strategy Z_RLE))
+rewind-handle ish
+inflate (open-input-string (deflate ish :strategy Z_FIXED))
+rewind-handle ish
+inflate (open-input-string (deflate ish :strategy Z_DEFAULT_STRATEGY))
+
+rewind-handle ish
+zlib-decompress (open-input-string (zlib-compress ish :windowBits 9))
+rewind-handle ish
+zlib-decompress (open-input-string (zlib-compress ish :windowBits 9)) :windowBits 9
+rewind-handle ish
+zlib-decompress (open-input-string (zlib-compress ish :windowBits 15))
+rewind-handle ish
+zlib-decompress (open-input-string (zlib-compress ish :windowBits 15)) :windowBits 15
+
+rewind-handle ish
+gzip-decompress (open-input-string (gzip-compress ish :windowBits 9))
+rewind-handle ish
+gzip-decompress (open-input-string (gzip-compress ish :windowBits 9)) :windowBits 9
+rewind-handle ish
+gzip-decompress (open-input-string (gzip-compress ish :windowBits 15))
+rewind-handle ish
+gzip-decompress (open-input-string (gzip-compress ish :windowBits 15)) :windowBits 15
+
 ;; all done?
 Tests? (zlib0 + 2)

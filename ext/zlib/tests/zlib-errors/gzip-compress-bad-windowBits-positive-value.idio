@@ -1,2 +1,2 @@
 
-gzip-compress (current-input-handle) Z_DEFAULT_COMPRESSION 99
+gzip-compress (current-input-handle) :windowBits 99

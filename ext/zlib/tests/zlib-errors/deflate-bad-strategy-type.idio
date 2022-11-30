@@ -1,2 +1,2 @@
 
-deflate (current-input-handle) Z_DEFAULT_COMPRESSION 15 #t
+deflate (current-input-handle) :strategy #t

@@ -1,2 +1,2 @@
 
-zlib-decompress (current-input-handle) -99
+zlib-decompress (current-input-handle) :windowBits -99

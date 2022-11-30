@@ -1,2 +1,2 @@
 
-zlib-compress (current-input-handle) #t
+zlib-compress (current-input-handle) :level #t

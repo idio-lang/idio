@@ -1,2 +1,2 @@
 
-inflate (current-input-handle) #t
+inflate (current-input-handle) :windowBits #t

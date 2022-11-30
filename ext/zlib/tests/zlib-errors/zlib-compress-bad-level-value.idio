@@ -1,2 +1,2 @@
 
-zlib-compress (current-input-handle) 99
+zlib-compress (current-input-handle) :level 99

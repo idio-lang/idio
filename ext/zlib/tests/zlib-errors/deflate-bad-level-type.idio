@@ -1,2 +1,2 @@
 
-deflate (current-input-handle) #t
+deflate (current-input-handle) :level #t

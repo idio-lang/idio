@@ -95,6 +95,12 @@ zlib-error-load "zlib-errors/gzip-compress-bad-windowBits-positive-value.idio" "
 zlib-error-load "zlib-errors/gzip-compress-bad-windowBits-negative-value.idio" "gzip-compress windowBits='-99': should be 9 <= int <= 15"
 zlib-error-load "zlib-errors/gzip-compress-bad-strategy-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
 
+zlib-error-load "zlib-errors/inflate-windowBits-smaller.idio" "inflate(): Z_STREAM_END != ret: invalid or incomplete deflate data"
+zlib-error-load "zlib-errors/zlib-decompress-windowBits-smaller.idio" "inflate(): Z_STREAM_END != ret: invalid or incomplete deflate data"
+
+;; gzip-* don't seem to quibble about windowBits
+;zlib-error-load "zlib-errors/gzip-decompress-windowBits-smaller.idio" "inflate(): Z_STREAM_END != ret: invalid or incomplete deflate data"
+
 zlib-error-load "zlib-errors/inflate-bad-handle-type.idio" "bad parameter type: '#t' a constant is not a input_handle"
 zlib-error-load "zlib-errors/inflate-bad-windowBits-type.idio" "bad parameter type: '#t' a constant is not a C/int|fixnum"
 zlib-error-load "zlib-errors/inflate-bad-windowBits-positive-value.idio" "inflate windowBits='99': should be [16+]9 <= int <= [16+]15"
@@ -111,4 +117,4 @@ zlib-error-load "zlib-errors/gzip-decompress-bad-windowBits-positive-value.idio"
 zlib-error-load "zlib-errors/gzip-decompress-bad-windowBits-negative-value.idio" "gzip-decompress windowBits='-99': should be 9 <= int <= 15"
 
 ;; all done?
-Tests? (zlib-error-0 + 33)
+Tests? (zlib-error-0 + 35)

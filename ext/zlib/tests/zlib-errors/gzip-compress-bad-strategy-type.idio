@@ -1,2 +1,2 @@
 
-gzip-compress (current-input-handle) Z_DEFAULT_COMPRESSION 15 #t
+gzip-compress (current-input-handle) :strategy #t

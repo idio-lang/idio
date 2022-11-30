@@ -1,2 +1,2 @@
 
-gzip-compress (current-input-handle) 99
+gzip-compress (current-input-handle) :level 99

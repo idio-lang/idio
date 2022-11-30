@@ -30,4 +30,146 @@ define (condition-report-zlib-error c iem cr-printf) {
 
 condition-report-extend ^rt-zlib-error condition-report-zlib-error
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; provide :keyword versions of the primitives
+
+deflate = {
+  orig-deflate := deflate
+
+  function*/name deflate (handle
+			  (:level      level      Z_DEFAULT_COMPRESSION)
+			  (:windowBits windowBits 15)
+			  (:strategy   strategy   Z_DEFAULT_STRATEGY)) "
+
+Return zlib compression of the UTF-8 encoded data stream in `handle`.
+
+:param handle: handle
+:type handle: input handle
+:keyword :level: compression level, defaults to ``Z_DEFAULT_COMPRESSION``
+:type level: C/int|fixnum, optional
+:keyword :windowBits: base two logarithm of the window size, defaults to 15
+:type windowBits: C/int|fixnum, optional
+:keyword :strategy: strategy, defaults to ``Z_DEFAULT_STRATEGY``
+:type strategy: C/int|fixnum, optional
+:return: compressed data
+:rtype: octet string
+
+" {
+    orig-deflate handle level windowBits strategy
+  }
+}
+
+zlib-compress = {
+  orig-zlib-compress := zlib-compress
+
+  function*/name zlib-compress (handle
+				(:level      level      Z_DEFAULT_COMPRESSION)
+				(:windowBits windowBits 15)
+				(:strategy   strategy   Z_DEFAULT_STRATEGY)) "
+
+Return zlib compression of the UTF-8 encoded data stream in `handle`.
+
+:param handle: handle
+:type handle: input handle
+:keyword :level: compression level, defaults to ``Z_DEFAULT_COMPRESSION``
+:type level: C/int|fixnum, optional
+:keyword :windowBits: base two logarithm of the window size, defaults to 15
+:type windowBits: C/int|fixnum, optional
+:keyword :strategy: strategy, defaults to ``Z_DEFAULT_STRATEGY``
+:type strategy: C/int|fixnum, optional
+:return: compressed data
+:rtype: octet string
+
+" {
+    orig-zlib-compress handle level windowBits strategy
+  }
+}
+
+gzip-compress = {
+  orig-gzip-compress := gzip-compress
+
+  function*/name gzip-compress (handle
+				(:level      level      Z_DEFAULT_COMPRESSION)
+				(:windowBits windowBits 15)
+				(:strategy   strategy   Z_DEFAULT_STRATEGY)) "
+
+Return gzip compression of the UTF-8 encoded data stream in `handle`.
+
+:param handle: handle
+:type handle: input handle
+:keyword :level: compression level, defaults to ``Z_DEFAULT_COMPRESSION``
+:type level: C/int|fixnum, optional
+:keyword :windowBits: base two logarithm of the window size, defaults to 15
+:type windowBits: C/int|fixnum, optional
+:keyword :strategy: strategy, defaults to ``Z_DEFAULT_STRATEGY``
+:type strategy: C/int|fixnum, optional
+:return: compressed data
+:rtype: octet string
+
+" {
+    orig-gzip-compress handle level windowBits strategy
+  }
+}
+
+inflate = {
+  orig-inflate := inflate
+
+  function*/name inflate (handle
+			  (:windowBits windowBits 15)) "
+
+Return zlib decompression of the bytes in `handle`.
+
+:param handle: handle
+:type handle: input handle
+:keyword :windowBits: base two logarithm of the window size, defaults to 15
+:type windowBits: C/int|fixnum, optional
+:return: compressed data
+:rtype: octet string
+
+" {
+    orig-inflate handle windowBits
+  }
+}
+
+zlib-decompress = {
+  orig-zlib-decompress := zlib-decompress
+
+  function*/name zlib-decompress (handle
+				  (:windowBits windowBits 15)) "
+
+Return zlib decompression of the bytes in `handle`.
+
+:param handle: handle
+:type handle: input handle
+:keyword :windowBits: base two logarithm of the window size, defaults to 15
+:type windowBits: C/int|fixnum, optional
+:return: compressed data
+:rtype: octet string
+
+" {
+    orig-zlib-decompress handle windowBits
+  }
+}
+
+gzip-decompress = {
+  orig-gzip-decompress := gzip-decompress
+
+  function*/name gzip-decompress (handle
+				  (:windowBits windowBits 15)) "
+
+Return gzip decompression of the bytes in `handle`.
+
+:param handle: handle
+:type handle: input handle
+:keyword :windowBits: base two logarithm of the window size, defaults to 15
+:type windowBits: C/int|fixnum, optional
+:return: compressed data
+:rtype: octet string
+
+" {
+    orig-gzip-decompress handle windowBits
+  }
+}
+
 provide zlib

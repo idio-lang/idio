@@ -1,2 +1,2 @@
 
-deflate (current-input-handle) 99
+deflate (current-input-handle) :level 99
