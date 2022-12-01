@@ -608,14 +608,16 @@ need to call ``curl-easy-cleanup`` directly.			\n\
     return idio_S_unspec;
 }
 
-void idio_libcurl_CURL_finalizer (IDIO C_p)
+void idio_libcurl_CURL_finalizer (IDIO curl)
 {
-    IDIO_ASSERT (C_p);
-    IDIO_TYPE_ASSERT (C_pointer, C_p);
+    IDIO_ASSERT (curl);
+    IDIO_TYPE_ASSERT (C_pointer, curl);
 
-    CURL *curl = IDIO_C_TYPE_POINTER_P (C_p);
+    CURL *C_curl = IDIO_C_TYPE_POINTER_P (curl);
 
-    curl_easy_cleanup (curl);
+    curl_easy_cleanup (C_curl);
+
+    idio_invalidate_C_pointer (curl);
 }
 
 void idio_libcurl_add_primitives ()
