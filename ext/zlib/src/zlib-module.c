@@ -290,6 +290,7 @@ data stream in `handle`.			\n\
 :type strategy: C/int|fixnum, optional	\n\
 :return: compressed data	\n\
 :rtype: octet string		\n\
+:raises ^rt-zlib-error:		\n\
 ")
 {
     IDIO_ASSERT (handle);
@@ -419,6 +420,7 @@ data stream in `handle`.			\n\
 :type strategy: C/int|fixnum, optional	\n\
 :return: compressed data	\n\
 :rtype: octet string		\n\
+:raises ^rt-zlib-error:		\n\
 ")
 {
     IDIO_ASSERT (handle);
@@ -538,6 +540,7 @@ data stream in `handle`.			\n\
 :type strategy: C/int|fixnum, optional	\n\
 :return: compressed data	\n\
 :rtype: octet string		\n\
+:raises ^rt-zlib-error:		\n\
 ")
 {
     IDIO_ASSERT (handle);
@@ -764,6 +767,7 @@ Return zlib decompression of the bytes in `handle`.	\n\
 :type windowBits: C/int|fixnum, optional	\n\
 :return: decompressed data	\n\
 :rtype: octet string		\n\
+:raises ^rt-zlib-error:		\n\
 ")
 {
     IDIO_ASSERT (handle);
@@ -835,6 +839,7 @@ Return zlib decompression of the bytes in `handle`.	\n\
 :type windowBits: C/int|fixnum, optional	\n\
 :return: decompressed data	\n\
 :rtype: octet string		\n\
+:raises ^rt-zlib-error:		\n\
 ")
 {
     IDIO_ASSERT (handle);
@@ -896,6 +901,7 @@ Return gzip decompression of the bytes in `handle`.	\n\
 :type windowBits: C/int|fixnum, optional	\n\
 :return: decompressed data	\n\
 :rtype: octet string		\n\
+:raises ^rt-zlib-error:		\n\
 ")
 {
     IDIO_ASSERT (handle);

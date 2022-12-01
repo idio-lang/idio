@@ -54,6 +54,7 @@ Return zlib compression of the UTF-8 encoded data stream in `handle`.
 :type strategy: C/int|fixnum, optional
 :return: compressed data
 :rtype: octet string
+:raises ^rt-zlib-error:
 
 " {
     orig-deflate handle level windowBits strategy
@@ -80,6 +81,7 @@ Return zlib compression of the UTF-8 encoded data stream in `handle`.
 :type strategy: C/int|fixnum, optional
 :return: compressed data
 :rtype: octet string
+:raises ^rt-zlib-error:
 
 " {
     orig-zlib-compress handle level windowBits strategy
@@ -106,6 +108,7 @@ Return gzip compression of the UTF-8 encoded data stream in `handle`.
 :type strategy: C/int|fixnum, optional
 :return: compressed data
 :rtype: octet string
+:raises ^rt-zlib-error:
 
 " {
     orig-gzip-compress handle level windowBits strategy
@@ -126,6 +129,7 @@ Return zlib decompression of the bytes in `handle`.
 :type windowBits: C/int|fixnum, optional
 :return: compressed data
 :rtype: octet string
+:raises ^rt-zlib-error:
 
 " {
     orig-inflate handle windowBits
@@ -146,6 +150,7 @@ Return zlib decompression of the bytes in `handle`.
 :type windowBits: C/int|fixnum, optional
 :return: compressed data
 :rtype: octet string
+:raises ^rt-zlib-error:
 
 " {
     orig-zlib-decompress handle windowBits
@@ -166,6 +171,7 @@ Return gzip decompression of the bytes in `handle`.
 :type windowBits: C/int|fixnum, optional
 :return: compressed data
 :rtype: octet string
+:raises ^rt-zlib-error:
 
 " {
     orig-gzip-decompress handle windowBits
