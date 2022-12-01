@@ -184,6 +184,7 @@ void idio_free_C_pointer (IDIO co);
 int idio_isa_C_type (IDIO o);
 int idio_isa_C_number (IDIO o);
 int idio_isa_C_integral (IDIO o);
+int idio_isa_C_signed (IDIO o);
 int idio_isa_C_unsigned (IDIO o);
 
 char *idio_C_type_format_string (int type);

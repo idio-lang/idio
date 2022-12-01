@@ -979,6 +979,41 @@ test if `o` is any C integral numeric type	\n\
     return r;
 }
 
+int idio_isa_C_signed (IDIO o)
+{
+    switch (idio_type (o)) {
+    case IDIO_TYPE_C_SCHAR:
+    case IDIO_TYPE_C_SHORT:
+    case IDIO_TYPE_C_INT:
+    case IDIO_TYPE_C_LONG:
+    case IDIO_TYPE_C_LONGLONG:
+    case IDIO_TYPE_C_FLOAT:
+    case IDIO_TYPE_C_DOUBLE:
+    case IDIO_TYPE_C_LONGDOUBLE:
+	return 1;
+    default:
+	return 0;
+    }
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("signed?", C_signedp, (IDIO o), "o", "\
+test if `o` is any C signed numeric type	\n\
+						\n\
+:param o: object to test			\n\
+:return: ``#t`` if `o` is any C signed numeric type, ``#f`` otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_C_signed (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 int idio_isa_C_unsigned (IDIO o)
 {
     switch (idio_type (o)) {
@@ -3184,6 +3219,7 @@ void idio_c_type_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_typep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_numberp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_integralp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_signedp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_unsignedp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_floatingp);
 
