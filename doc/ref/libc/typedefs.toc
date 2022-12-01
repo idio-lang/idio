@@ -30,6 +30,9 @@
 (document libc ino_t)
 (document libc ino_t?)
 
+(document libc int64_t)
+(document libc int64_t?)
+
 (document libc intmax_t)
 (document libc intmax_t?)
 

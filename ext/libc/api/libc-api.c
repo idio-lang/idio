@@ -1082,4 +1082,6 @@ int main (int argc, char **argv)
     uintmax_t uintmax = UINTMAX_MAX;
 
     intptr_t intptr = INTPTR_MAX;
+
+    int64_t int64 = INT64_MAX;
 }
