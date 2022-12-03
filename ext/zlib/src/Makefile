@@ -20,9 +20,6 @@ else
 CDEBUG		:=
 endif
 
-ZLIB_CFLAGS	:=
-ZLIB_LIBS	:= -lz
-
 CFLAGS		:= -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -fPIC -I$(PWD) -I$(TOPDIR)/src $(CFLAGS) $(CDEBUG) $(COVFLAGS) $(LIBFFI_INC) $(ZLIB_CFLAGS)
 LDFLAGS		:= -L$(PWD) $(LDFLAGS) $(COVFLAGS)
 LIBS		:= $(LIBS) $(ZLIB_LIBS)

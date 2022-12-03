@@ -20,12 +20,9 @@ else
 CDEBUG		:=
 endif
 
-CURL_CFLAGS	:= $(shell curl-config --cflags 2>/dev/null)
-CURL_LIBS	:= $(shell curl-config --libs 2>/dev/null)
-
-CFLAGS		:= -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -fPIC -I$(PWD) -I$(TOPDIR)/src $(CFLAGS) $(CDEBUG) $(COVFLAGS) $(LIBFFI_INC) $(CURL_CFLAGS)
+CFLAGS		:= -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -fPIC -I$(PWD) -I$(TOPDIR)/src $(CFLAGS) $(CDEBUG) $(COVFLAGS) $(LIBFFI_INC) $(LIBCURL_CFLAGS)
 LDFLAGS		:= -L$(PWD) $(LDFLAGS) $(COVFLAGS)
-LIBS		:= $(LIBS) $(CURL_LIBS)
+LIBS		:= $(LIBS) $(LIBCURL_LIBS)
 
 ifeq ($(OS),Darwin)
 LD_DLFLAGS	:= -dynamiclib -undefined dynamic_lookup

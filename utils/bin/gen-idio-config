@@ -55,12 +55,15 @@ idio_have ()
     if ! ${CC} -o ${tmpdir}/a.out ${PROG_LIB}/config-tests/have-${feature}.c >/dev/null 2>&1 ; then
 	eval ${FEATURE}=0
     fi
+
+    printf "%-20s %s\n" ${feature} ${!FEATURE}
 }
 
 # The tests for IDIO_NO_* are generic (barring the test code itself)
 idio_no ()
 {
     feature=$1
+    shift
 
     # Old Bash's don't have ${feature^^}
     FEATURE=IDIO_NO_$(echo ${feature} | tr '[a-z]' '[A-Z]')
@@ -68,10 +71,17 @@ idio_no ()
     names+=(${FEATURE})
 
     # older Bash's don't support declare -g so resort to eval
-    eval ${FEATURE}=0
+    eval ${FEATURE}=
 
-    if ! ${CC} -o ${tmpdir}/a.out ${PROG_LIB}/config-tests/have-${feature}.c >/dev/null 2>&1 ; then
+    if ! ${CC} -o ${tmpdir}/a.out ${PROG_LIB}/config-tests/have-${feature}.c ${1+"$@"} >/dev/null 2>&1 ; then
 	eval ${FEATURE}=1
+    fi
+
+    printf "%-20s " ${feature}
+    if [[ ${!FEATURE} ]] ; then
+	echo no
+    else
+	echo yes
     fi
 }
 
@@ -115,10 +125,14 @@ done
 shift $(( OPTIND - 1 ))
 
 ######################################################################
+
+uname_a=( $(uname -mrps) )
+
+######################################################################
 #
 # pseudo-autoconf
 
-case "$(uname -s)" in
+case "${uname_a[0]}" in
 Darwin)
     tmpdir=$(mktemp -d /tmp/${0##*/}.XXXXXX)
     ;;
@@ -259,7 +273,7 @@ idio_no futimesat
 
 # XXX WSL1: ENOSYS: Function not implemented
 
-case "$(uname -r)" in
+case "${uname_a[1]}" in
 *-Microsoft)
     if ! ${tmpdir}/a.out ${tmpdir}/a.out >/dev/null 2>&1 ; then
 	eval IDIO_NO_FUTIMESAT=1
