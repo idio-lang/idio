@@ -268,7 +268,7 @@ tags : TAGS
 
 TAGS : $(SRCDIR)/*.[ch] $(LIBDIR)/bootstrap/*.idio $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
 	@echo TAGS: $?
-	@etags --regex=@$(SRCDIR)/idio.primitive.tags $(SRCDIR)/*.[ch] --language=none --regex=@$(SRCDIR)/idio.tags  $(LIBDIR)/bootstrap/*.idio $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
+	@etags --regex=@$(SRCDIR)/idio.primitive.tags $(SRCDIR)/*.[ch] $(EXTDIR)/*/src/*.[ch] --language=none --regex=@$(SRCDIR)/idio.tags  $(LIBDIR)/bootstrap/*.idio $(LIBDIR)/*.idio $(TESTSDIR)/*.idio $(EXTDIR)/*/src/*.idio
 
 valgrind: local-install
 	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(LI_BINDIR)/idio # 2>&1 | less +/^==
