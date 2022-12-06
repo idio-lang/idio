@@ -1334,13 +1334,15 @@ int idio_sqlite3_exec_callback(void *ptr, int cols, char **C_texts, char **C_nam
     IDIO texts = idio_S_nil;
     IDIO names = idio_S_nil;
 
-    for (int i = 0; i < cols; i++) {
-	if (NULL == C_texts[i]) {
-	    texts = idio_pair (idio_S_nil, texts);
-	} else {
-	    texts = idio_pair (idio_string_C (C_texts[i]), texts);
+    if (cols) {
+	for (int i = cols - 1; i >= 0; i--) {
+	    if (NULL == C_texts[i]) {
+		texts = idio_pair (idio_S_nil, texts);
+	    } else {
+		texts = idio_pair (idio_string_C (C_texts[i]), texts);
+	    }
+	    names = idio_pair (idio_string_C (C_names[i]), names);
 	}
-	names = idio_pair (idio_string_C (C_names[i]), names);
     }
 
     idio_vm_invoke_C (IDIO_LIST3 (func, texts, names));
