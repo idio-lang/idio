@@ -1,0 +1,168 @@
+;;
+;; Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-sqlite3-error.idio
+;;
+
+module tests/sqlite3-error
+
+import sqlite3
+
+sqlite3-error-0 := Tests
+sqlite3-error-skipped := 0
+
+#*
+
+We have a bunch of test cases which should provoke an
+^rt-sqlite3-error or some generic Idio parameter and system errors.
+So we can write a load function which will wrapper the actual load
+with a trap for (^rt-sqlite3-error ^rt-parameter-error ...)  and
+compare the message strings.
+
+*#
+
+sqlite3-error-load := {
+  n := 0
+
+  function/name sqlite3-error-load (filename msg) {
+    if (not (string? filename)) (error/type ^rt-parameter-type-error 'load "not a string" filename)
+
+    n = n + 1
+
+    exp-tests := 1
+
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^rt-sqlite3-error
+	  ^rt-bignum-conversion-error
+	  ^rt-libc-format-error
+	  ^rt-parameter-error
+	  ^system-error) (function (c) {
+			    ;eprintf "sqlite3-error #%s: %s %s\n" n msg (idio-error-location c)
+			    test (idio-error-message c) msg
+
+			    if (not (string=? (idio-error-message c) msg)) {
+			      condition-report (append-string "sqlite3-error-load: " filename) c (current-error-handle)
+			    }
+
+			    trap-return 'sqlite3-error
+	  }) {
+	    t0 := Tests
+	    (symbol-value 'load 'Idio) filename
+	    if (not (equal? Tests (t0 + exp-tests))) {
+	      eprintf "sqlite3-error #%s: %s did not generate \"%s\"\n" n filename msg
+	      Errors = Errors + 1
+	      Tests = t0 + exp-tests
+	    }
+	  }
+  }
+}
+
+;; create a handy db and stmt for use in tests
+db := sqlite3-open ":memory:"
+sqlite3-exec db "
+drop table if exists foods;
+create table foods (id integer, name text);
+"
+stmt := sqlite3-prepare db "select id, name from foods where id = ?"
+
+;; XXX for many of these we need to handle the wrapper using a
+;; struct-instance versus the primitive using a C/pointer
+
+sqlite3-error-load "sqlite3-errors/sqlite3-open-bad-name-type.idio" "bad parameter type: '#t' a constant is not a string"
+sqlite3-error-load "sqlite3-errors/sqlite3-open-bad-name-format.idio" "name: contains an ASCII NUL"
+sqlite3-error-load "sqlite3-errors/sqlite3-open-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+
+(cond-expand
+ (IDIO_NO_SQLITE3_OPEN_V2 {
+   sqlite3-error-skipped = sqlite3-error-skipped + 1
+ })
+ (else {
+   sqlite3-error-load "sqlite3-errors/sqlite3-open-non-existent.idio" "%sqlite3-open: unable to open database file"
+ }))
+
+sqlite3-error-load "sqlite3-errors/sqlite3-close-bad-db-type.idio" "bad parameter type: '#t' a constant is not a sqlite3-db"
+sqlite3-error-load "sqlite3-errors/pct-sqlite3-close-bad-db-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/pct-sqlite3-close-invalid-db-type.idio" "%sqlite3-close db='#<C/* C/pointer>' a C/pointer is not a sqlite3/db"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-errmsg-bad-db-type.idio" "bad parameter type: '#t' a constant is not a sqlite3-db"
+sqlite3-error-load "sqlite3-errors/pct-sqlite3-errmsg-bad-db-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/pct-sqlite3-errmsg-invalid-db-type.idio" "%sqlite3-errmsg db='#<C/* C/pointer>' a C/pointer is not a sqlite3/db"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-prepare-bad-db-type.idio" "bad parameter type: '#t' a constant is not a sqlite3-db"
+sqlite3-error-load "sqlite3-errors/pct-sqlite3-prepare-bad-db-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/pct-sqlite3-prepare-invalid-db-type.idio" "%sqlite3-prepare db='#<C/* C/pointer>' a C/pointer is not a sqlite3/db"
+sqlite3-error-load "sqlite3-errors/sqlite3-prepare-bad-sql-type.idio" "bad parameter type: '#t' a constant is not a string"
+sqlite3-error-load "sqlite3-errors/sqlite3-prepare-bad-sql-format.idio" "sql: contains an ASCII NUL"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-finalize-bad-stmt-type.idio" "bad parameter type: '#t' a constant is not a sqlite3/stmt"
+sqlite3-error-load "sqlite3-errors/pct-sqlite3-finalize-bad-stmt-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/pct-sqlite3-finalize-invalid-stmt-type.idio" "%sqlite3-finalize stmt='#<C/* C/pointer>' a C/pointer is not a sqlite3/stmt"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-blob-bad-v-type.idio" "bad parameter type: '#t' a constant is not a octet-string|pathname"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-blob-bad-stmt-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-blob-invalid-stmt-type.idio" "%sqlite3-bind-blob stmt='#<C/* C/pointer>' a C/pointer is not a sqlite3/stmt"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-double-bad-v-type.idio" "bad parameter type: '#t' a constant is not a C/double|bignum"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-double-bad-stmt-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-double-invalid-stmt-type.idio" "%sqlite3-bind-double stmt='#<C/* C/pointer>' a C/pointer is not a sqlite3/stmt"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-int-v-float.idio" "%sqlite3-bind-int v='1.1e+0' a bignum is not a an integer bignum"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-int-bad-v-type.idio" "bad parameter type: '#t' a constant is not a C/int|libc/int64_t|fixnum|integer bignum"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-int-bad-stmt-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-int-invalid-stmt-type.idio" "%sqlite3-bind-int stmt='#<C/* C/pointer>' a C/pointer is not a sqlite3/stmt"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-null-bad-v-type.idio" "bad parameter type: '#t' a constant is not a null"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-null-bad-stmt-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-null-invalid-stmt-type.idio" "%sqlite3-bind-null stmt='#<C/* C/pointer>' a C/pointer is not a sqlite3/stmt"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-text-bad-v-type.idio" "bad parameter type: '#t' a constant is not a string"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-text-bad-stmt-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-text-invalid-stmt-type.idio" "%sqlite3-bind-text stmt='#<C/* C/pointer>' a C/pointer is not a sqlite3/stmt"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-bad-stmt-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-invalid-stmt-type.idio" "%sqlite3-bind stmt='#<C/* C/pointer>' a C/pointer is not a sqlite3/stmt"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-invalid-tuple.idio" "%sqlite3-bind tuple='(#t)' a pair is not a idx val tuple"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-bad-idx-format.idio" "idx: contains an ASCII NUL"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-bad-idx-type.idio" "bad parameter type: 'foo' a symbol is not a fixnum|string"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-invalid-val-type.idio" "%sqlite3-bind val='#t' a constant is not a handled val type"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-parameter-index-bad-stmt-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-parameter-index-invalid-stmt-type.idio" "%sqlite3-bind-parameter-index stmt='#<C/* C/pointer>' a C/pointer is not a sqlite3/stmt"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-parameter-index-bad-key-type.idio" "bad parameter type: '#t' a constant is not a string"
+sqlite3-error-load "sqlite3-errors/sqlite3-bind-parameter-index-bad-key-format.idio" "key: contains an ASCII NUL"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-step-bad-stmt-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/sqlite3-step-invalid-stmt-type.idio" "%sqlite3-step stmt='#<C/* C/pointer>' a C/pointer is not a sqlite3/stmt"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-column-bad-stmt-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/sqlite3-column-invalid-stmt-type.idio" "%sqlite3-column stmt='#<C/* C/pointer>' a C/pointer is not a sqlite3/stmt"
+sqlite3-error-load "sqlite3-errors/sqlite3-column-bad-idx-type.idio" "bad parameter type: '#t' a constant is not a fixnum"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-reset-bad-stmt-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/sqlite3-reset-invalid-stmt-type.idio" "%sqlite3-reset stmt='#<C/* C/pointer>' a C/pointer is not a sqlite3/stmt"
+
+sqlite3-error-load "sqlite3-errors/sqlite3-exec-bad-db-type.idio" "bad parameter type: '#t' a constant is not a sqlite3-db"
+sqlite3-error-load "sqlite3-errors/pct-sqlite3-exec-bad-db-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+sqlite3-error-load "sqlite3-errors/pct-sqlite3-exec-invalid-db-type.idio" "%sqlite3-exec db='#<C/* C/pointer>' a C/pointer is not a sqlite3/db"
+sqlite3-error-load "sqlite3-errors/sqlite3-exec-bad-sql-type.idio" "bad parameter type: '#t' a constant is not a string"
+sqlite3-error-load "sqlite3-errors/sqlite3-exec-bad-sql-format.idio" "sql: contains an ASCII NUL"
+sqlite3-error-load "sqlite3-errors/sqlite3-exec-bad-callback-type.idio" "bad parameter type: '#t' a constant is not a function"
+
+;; all done?
+Skipped = Skipped + sqlite3-error-skipped
+Tests? (sqlite3-error-0 + 57 - sqlite3-error-skipped)

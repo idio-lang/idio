@@ -1,0 +1,12 @@
+(rst "structures-intro" 0)
+
+(document sqlite3 sqlite3-db)
+(nodocument sqlite3 sqlite3-db?)
+(nodocument sqlite3 make-sqlite3-db)
+
+(nodocument sqlite3 sqlite3-db-name)
+(nodocument sqlite3 set-sqlite3-db-name!)
+(nodocument sqlite3 sqlite3-db-%db)
+(nodocument sqlite3 set-sqlite3-db-%db!)
+(nodocument sqlite3 sqlite3-db-stmts)
+(nodocument sqlite3 set-sqlite3-db-stmts!)

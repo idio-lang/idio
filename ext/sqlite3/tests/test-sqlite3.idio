@@ -1,0 +1,239 @@
+;;
+;; Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-sqlite3.idio
+;;
+
+module tests/sqlite3
+
+import sqlite3
+
+sqlite3 := Tests
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+db0 := sqlite3-open ":memory:"
+
+stmt := sqlite3-prepare db0 "SELECT SQLITE_VERSION()"
+
+sqlite3-step stmt
+
+sqlite3-close db0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+db1-file := (libc/make-tmp-file)
+
+db1 = sqlite3-open db1-file
+
+sqlite3-exec db1 "
+create table blobs   (id integer primary key, type text, value blob);
+create table doubles (id integer primary key, type text, value double);
+create table ints    (id integer primary key, type text, value int);
+create table texts   (id integer primary key, type text, value text);
+"
+
+;;;;;;;;;;;;;;;;;;;;
+;;
+;; blobs
+
+stmt = sqlite3-prepare db1 "insert into blobs values (NULL, ?, ?)"
+
+ostr := %B"?a null\x0string"
+sqlite3-bind stmt 1 "?octet-string" 2 ostr
+sqlite3-step stmt
+sqlite3-reset stmt
+
+stmt = sqlite3-prepare db1 "insert into blobs values (NULL, :type, :value)"
+
+pn := %P"path\xffname"
+sqlite3-bind stmt ":type" "pathname" ":value" pn
+sqlite3-step stmt
+sqlite3-reset stmt
+
+blob1 := "x'0500'"
+sqlite3-bind stmt ":type" "sqlite blob" ":value" (string->octet-string blob1)
+sqlite3-step stmt
+sqlite3-reset stmt
+
+blob2 := "x'0050'"
+sqlite3-bind-text stmt 1 "sqlite blob"
+sqlite3-bind-blob stmt 2 (string->octet-string blob2)
+sqlite3-step stmt
+sqlite3-reset stmt
+
+for id in '(1 2 3 4) {
+  ;; after the first time round this loop, the call to sqlite3-prepare
+  ;; will recover the previously saved stmt (and sqlite3-reset it)
+  ;;
+  ;; it would be more sensible to put the sqlite3-prepare before the
+  ;; loop but we are testing the reuse
+  stmt = sqlite3-prepare db1 "select * from blobs where id = :id"
+
+  sqlite3-bind stmt ":id" id
+  row := sqlite3-step stmt
+  if row {
+    (case id
+     ((1) {
+       test row.2 ostr
+     })
+     ((2) {
+       ;; blob is an octet-string
+       test row.2 (string->octet-string pn)
+     })
+     ((3) {
+       ;; blob is an octet-string
+       test row.2 (string->octet-string blob1)
+     })
+     ((4) {
+       ;; blob is an octet-string
+       test row.2 (string->octet-string blob2)
+     }))
+  }
+  sqlite3-reset stmt
+}
+
+;;;;;;;;;;;;;;;;;;;;
+;;
+;; doubles
+;;
+;; XXX choose the values carefully as Idio->C and then C->Idio
+;; introduce some IEEE-754 rounding issues
+
+stmt = sqlite3-prepare db1 "insert into doubles values (NULL, :type, :value)"
+
+bn1 := 1.5
+sqlite3-bind stmt ":type" (type->string bn1) ":value" bn1
+sqlite3-step stmt
+sqlite3-reset stmt
+
+bn2 := 3.5
+Cn := C/number-> bn2 'double
+sqlite3-bind stmt ":type" (type->string Cn) ":value" Cn
+sqlite3-step stmt
+sqlite3-reset stmt
+
+stmt = sqlite3-prepare db1 "select * from doubles where id = :id"
+for id in '(1 2) {
+
+  sqlite3-bind stmt ":id" id
+  row := sqlite3-step stmt
+  if row {
+    (case id
+     ((1) {
+       test row.2 bn1
+     })
+     ((2) {
+       test row.2 bn2
+     }))
+  }
+  sqlite3-reset stmt
+}
+
+;;;;;;;;;;;;;;;;;;;;
+;;
+;; ints
+
+stmt = sqlite3-prepare db1 "insert into ints values (NULL, :type, :value)"
+
+fn1 := 1
+sqlite3-bind stmt ":type" (type->string fn1) ":value" fn1
+sqlite3-step stmt
+sqlite3-reset stmt
+
+bn := FIXNUM-MAX + 1
+sqlite3-bind stmt ":type" (type->string bn) ":value" bn
+sqlite3-step stmt
+sqlite3-reset stmt
+
+fn2 := 3
+Cn1 := C/number-> fn2 'int
+sqlite3-bind stmt ":type" (type->string Cn1) ":value" Cn1
+sqlite3-step stmt
+sqlite3-reset stmt
+
+fn3 := 4
+Cn2 := C/number-> fn3 libc/int64_t
+sqlite3-bind stmt ":type" (type->string Cn2) ":value" Cn2
+sqlite3-step stmt
+sqlite3-reset stmt
+
+stmt = sqlite3-prepare db1 "select * from ints where id = :id"
+for id in '(1 2 3 4) {
+
+  sqlite3-bind stmt ":id" id
+  row := sqlite3-step stmt
+  if row {
+    (case id
+     ((1) {
+       test row.2 fn1
+     })
+     ((2) {
+       test row.2 bn
+     })
+     ((3) {
+       test row.2 fn2
+     })
+     ((4) {
+       test row.2 fn3
+     }))
+  }
+  sqlite3-reset stmt
+}
+
+;;;;;;;;;;;;;;;;;;;;
+;;
+;; texts
+
+stmt = sqlite3-prepare db1 "insert into texts values (NULL, :type, :value)"
+
+s1 := "text message"
+sqlite3-bind stmt ":type" (type->string s1) ":value" s1
+sqlite3-step stmt
+sqlite3-reset stmt
+
+;; XXX not strictly a text but we need some code coverage
+sqlite3-bind stmt ":type" "null"
+sqlite3-bind-null stmt 2 #n
+sqlite3-step stmt
+sqlite3-reset stmt
+
+stmt = sqlite3-prepare db1 "select * from texts where id = :id"
+for id in '(1 2) {
+
+  sqlite3-bind stmt ":id" id
+  row := sqlite3-step stmt
+  if row {
+    (case id
+     ((1) {
+       test row.2 s1
+     })
+     ((2) {
+       test row.2 #n
+     }))
+  }
+  sqlite3-reset stmt
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+sqlite3-close db1
+rm db1-file
+
+;; all done?
+Tests? (sqlite3 + 12)

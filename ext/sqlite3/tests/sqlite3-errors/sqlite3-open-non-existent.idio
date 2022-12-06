@@ -1,0 +1,4 @@
+
+tmp := (libc/make-tmp-file)
+rm tmp
+sqlite3-open tmp SQLITE_OPEN_READONLY

@@ -652,8 +652,8 @@ IDIO idio_C_pointer (void * v)
  * lost the CSI information) or a segfault from us, rather than the
  * third-party.
  *
- * This still leaves the Idio C/pointer hanging about which will be
- * garbage collected in due course.
+ * This still leaves the Idio C/pointer value hanging about which will
+ * be garbage collected in due course.
  */
 void idio_invalidate_C_pointer (IDIO po)
 {
@@ -664,7 +664,11 @@ void idio_invalidate_C_pointer (IDIO po)
     po->vtable = idio_vtable (IDIO_TYPE_C_POINTER);
 
     IDIO_C_TYPE_POINTER_PTYPE (po) = idio_S_nil;
-    IDIO_C_TYPE_POINTER_P (po) = NULL;
+    /*
+     * Hmm, it transpires *we* are keeping (sqlite3) objects in hash
+     * tables for which the hashing function wants the pointer value.
+     */
+    /* IDIO_C_TYPE_POINTER_P (po) = NULL; */
     IDIO_C_TYPE_POINTER_FREEP (po) = 0;
 }
 

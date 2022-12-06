@@ -1,0 +1,4 @@
+
+module tests/sqlite3-error
+
+%sqlite3-bind-int stmt 1 1.1

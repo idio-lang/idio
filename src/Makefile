@@ -11,6 +11,9 @@ endif
 ifneq ($(IDIO_ZLIB_DEV),)
 	(cd $(EXTDIR)/zlib/src; $(MAKE) $@)
 endif
+ifneq ($(IDIO_SQLITE3_DEV),)
+	(cd $(EXTDIR)/sqlite3/src; $(MAKE) $@)
+endif
 
 ifneq ($(MAKECMDGOALS),clean)
 # XXX put these on the same line otherwise the generator and then the
@@ -83,6 +86,9 @@ endif
 ifneq ($(IDIO_ZLIB_DEV),)
 	(cd $(EXTDIR)/zlib/src; $(MAKE) $@)
 endif
+ifneq ($(IDIO_SQLITE3_DEV),)
+	(cd $(EXTDIR)/sqlite3/src; $(MAKE) $@)
+endif
 
 test : local-install
 	$(LI_BINDIR)/idio test
@@ -151,6 +157,9 @@ ifneq ($(IDIO_LIBCURL_DEV),)
 endif
 ifneq ($(IDIO_ZLIB_DEV),)
 	(cd $(EXTDIR)/zlib/src; $(MAKE) $@)
+endif
+ifneq ($(IDIO_SQLITE3_DEV),)
+	(cd $(EXTDIR)/sqlite3/src; $(MAKE) $@)
 endif
 
 pre-compile: local-install

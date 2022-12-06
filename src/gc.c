@@ -2510,10 +2510,12 @@ static void idio_gc_run_all_finalizers ()
     while (idio_S_nil != keys) {
 	IDIO k = IDIO_PAIR_H (keys);
 
-	/* apply the finalizer */
-	IDIO C_p = idio_hash_ref (idio_gc_finalizer_hash, k);
-	void (*func) (IDIO o) = IDIO_C_TYPE_POINTER_P (C_p);
-	(*func) (k);
+	if (IDIO_GC_FLAG_FINALIZER == k->finalizer) {
+	    /* apply the finalizer */
+	    IDIO C_p = idio_hash_ref (idio_gc_finalizer_hash, k);
+	    void (*func) (IDIO o) = IDIO_C_TYPE_POINTER_P (C_p);
+	    (*func) (k);
+	}
 
 	keys = IDIO_PAIR_T (keys);
     }

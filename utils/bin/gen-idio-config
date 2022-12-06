@@ -32,11 +32,61 @@ handle_EXIT ()
 
 trap handle_EXIT EXIT
 
-set -ue
-
 note ()
 {
     :
+}
+
+# before set -e !!
+PKG_CONFIG=$(type -p pkg-config 2>&1)
+
+set -ue
+
+# The pkg-config tests are generic (apart from libcurl...)
+idio_pkg_config ()
+{
+    feature=$1
+    shift
+
+    def_cflags=
+    def_libs=
+    if [[ $# -gt 0 ]] ; then
+	def_libs=$1
+    fi
+    if [[ $# -gt 1 ]] ; then
+	def_cflags=$2
+    fi
+
+    # Old Bash's don't have ${feature^^}
+    FEATURE=$(echo ${feature} | tr '[a-z]' '[A-Z]')
+
+    # older Bash's don't support declare -g so resort to eval
+    eval ${FEATURE}_CFLAGS=
+    eval ${FEATURE}_LIBS=
+
+    if [[ ${PKG_CONFIG} ]] ; then
+	if pkg-config ${feature} ; then
+	    eval ${FEATURE}_CFLAGS=\"$(pkg-config --cflags ${feature})\"
+	    eval ${FEATURE}_LIBS=\"$(pkg-config --libs ${feature})\"
+	fi
+    fi
+
+    var=${FEATURE}_LIBS
+    if [[ ! ${!var} ]] ; then
+	case "${feature}" in
+	libcurl)
+	    if type -p curl-config >/dev/null 2>&1 ; then
+		eval ${FEATURE}_CFLAGS=\"$(curl-config --cflags)\"
+		eval ${FEATURE}_LIBS=\"$(curl-config --libs)\"
+	    fi
+	    ;;
+	esac
+    fi
+
+    if [[ ! ${!var} ]] ; then
+	eval ${FEATURE}_CFLAGS=\"${def_cflags}\"
+	eval ${FEATURE}_LIBS=\"${def_libs}\"
+    fi
 }
 
 # The tests for IDIO_HAVE_* are generic (barring the test code itself)
@@ -296,6 +346,26 @@ idio_no readlinkat
 idio_no renameat
 idio_no symlinkat
 idio_no unlinkat
+
+######################################################################
+
+# sqlite3_open_v2() in 3.5.0
+# sqlite3_close_v2() in 3.7.14
+# sqlite3_bind_blob64() in 3.8.7
+# sqlite3_bind_text64() in 3.8.7
+
+idio_pkg_config sqlite3 -lsqlite3
+case "${uname_a[0]}" in
+FreeBSD)
+    SQLITE3_CFLAGS="${SQLITE3_CFLAGS} -I/usr/local/include"
+    SQLITE3_LIBS="${SQLITE3_LIBS} -L/usr/local/lib"
+    ;;
+esac
+
+idio_no sqlite3_open_v2 ${SQLITE3_CFLAGS} ${SQLITE3_LIBS}
+idio_no sqlite3_close_v2 ${SQLITE3_CFLAGS} ${SQLITE3_LIBS}
+idio_no sqlite3_bind_blob64 ${SQLITE3_CFLAGS} ${SQLITE3_LIBS}
+idio_no sqlite3_bind_text64 ${SQLITE3_CFLAGS} ${SQLITE3_LIBS}
 
 ######################################################################
 

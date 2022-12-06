@@ -19,7 +19,7 @@
 (tree IOS)
 (tree libcurl)
 (tree zlib)
-
+(tree sqlite3)
 
 (tree templates)
 (tree operators)

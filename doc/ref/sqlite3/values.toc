@@ -1,0 +1,10 @@
+(rst "values-intro" 0)
+
+(nodocument sqlite3 version)
+
+(document sqlite3 SQLITE_OK)
+
+(document sqlite3 SQLITE_OPEN_READONLY)
+(document sqlite3 SQLITE_OPEN_READWRITE)
+(document sqlite3 SQLITE_OPEN_CREATE)
+(document sqlite3 SQLITE_OPEN_URI)

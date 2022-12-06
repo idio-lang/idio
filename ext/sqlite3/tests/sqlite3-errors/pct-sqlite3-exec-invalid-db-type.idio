@@ -1,0 +1,2 @@
+
+%sqlite3-exec libc/NULL #t

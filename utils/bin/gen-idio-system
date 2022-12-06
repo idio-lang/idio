@@ -407,6 +407,24 @@ idio)
 
     idio_have zlib_dev ${ZLIB_CFLAGS} ${ZLIB_LIBS}
 
+    ######################################################################
+
+    # Everything has sqlite3 but we need to check we have the headers too!
+    # We want to know here, where we generate Makefile.system, so that we
+    # can choose to include the extension or not.
+
+    # sqlite-devel
+    # libsqlite3-dev
+
+    idio_pkg_config sqlite3 -lsqlite3
+    case "${uname_a[0]}" in
+    FreeBSD)
+	SQLITE3_CFLAGS="${SQLITE3_CFLAGS} -I/usr/local/include"
+	SQLITE3_LIBS="${SQLITE3_LIBS} -L/usr/local/lib"
+	;;
+    esac
+
+    idio_have sqlite3_dev ${SQLITE3_CFLAGS} ${SQLITE3_LIBS}
     ;;
 esac
 
@@ -491,6 +509,10 @@ LIBCURL_LIBS			:= ${LIBCURL_LIBS}
 IDIO_ZLIB_DEV			:= ${IDIO_HAVE_ZLIB_DEV}
 ZLIB_CFLAGS			:= ${ZLIB_CFLAGS}
 ZLIB_LIBS			:= ${ZLIB_LIBS}
+
+IDIO_SQLITE3_DEV		:= ${IDIO_HAVE_SQLITE3_DEV}
+SQLITE3_CFLAGS			:= ${SQLITE3_CFLAGS}
+SQLITE3_LIBS			:= ${SQLITE3_LIBS}
 
 EOF
     ;;

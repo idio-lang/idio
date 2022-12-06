@@ -104,8 +104,12 @@ define (fail expr result expected) {
   set! Errors (1 + Errors)
   printf "[%s/%d] Error #%d\n" (getpid) PID Errors
   display* "test #" Tests " failed: " expr
-  display* "got result:  " result
-  display* "expected:    " expected
+  display "got result:  "
+  write result
+  (newline)
+  display "expected:    "
+  write expected
+  (newline)
 }
 
 define (test3 expr result expected) {
@@ -450,7 +454,7 @@ if (ARGC gt 0) {
 	   skip := #f
 	   tf := append-string r.1 "/" r.3
 	   (regex-case (collect-output grep ^Tests tf | tail -1)
-		       ("Tests\\? \\(.+ \\+ ([[:digit:]]+)\\)" {
+		       ("Tests\\? \\(.+ \\+ ([[:digit:]]+)" {
 			 skip = read-number r.1
 		       })
 		       (else {
@@ -459,7 +463,7 @@ if (ARGC gt 0) {
 		       }))
 	   if skip {
 	     Skipped = Skipped + skip
-	     printf "extension-tests: %s not available: skipped %3d tests in %s\n" r.2 skip r.3
+	     printf "extension-tests: %-10s not available: skipped %3d tests in %s\n" r.2 skip r.3
 	   } {
 	     eprintf "extension-tests: %s not available: skipped unknown number of tests in %s\n" r.2 r.3
 	   }
@@ -484,7 +488,7 @@ if (ARGC gt 0) {
   ;; that?  Erm, they've not been counted and are dynamic in number so
   ;; test we've seen at least as many as the largest number we've
   ;; seen.  Wait, some tests are OS-specific.  Drat!
-  Tests? (8525 - Skipped)
+  Tests? (8594 - Skipped)
 }
 
 if (e? testfile) (delete-file testfile)

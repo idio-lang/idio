@@ -1,0 +1,475 @@
+#*
+
+Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+sqlite3.idio
+
+*#
+
+module sqlite3
+(export
+ sqlite3-open
+ sqlite3-close
+ sqlite3-errmsg
+ sqlite3-prepare
+ sqlite3-finalize
+ sqlite3-bind-blob
+ sqlite3-bind-double
+ sqlite3-bind-int
+ sqlite3-bind-null
+ sqlite3-bind-text
+ sqlite3-bind
+ sqlite3-bind-parameter-index
+ sqlite3-step
+ sqlite3-column
+ sqlite3-reset
+ sqlite3-exec
+)
+
+(define-condition-type-accessors-only ^rt-sqlite3-error
+				      ^runtime-error
+				      rt-sqlite3-error?)
+
+define (condition-report-sqlite3-error c iem cr-printf) {
+  iem c
+}
+
+condition-report-extend ^rt-sqlite3-error condition-report-sqlite3-error
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; sqlite3-db associates stmts with a db:
+;;
+;; stmts is a hash table of sql to stmt
+export-struct-accessors-only sqlite3-db name %db stmts
+
+;; sqlite3-module.c defines %sqlite3-stmt-map which maps a stmt to a
+;; db
+
+define (stmt->db stmt) {
+  hash-ref %sqlite3-stmt-map stmt
+}
+
+define-template (validate-si si st who) {
+  #T{
+    if (not (and (struct-instance? $si)
+		 (struct-type? $st)
+		 (struct-instance-isa? $si $st))) {
+      error/type ^rt-parameter-type-error '$who (sprintf "%s" '$st) $si
+    }
+  }
+}
+
+define-template (validate-p p name who) {
+  #T{
+    if (not (and (C/pointer? $p)
+		 (equal?(C/pointer-name $p) $name))) {
+      error/type ^rt-parameter-type-error '$who (sprintf "%s" $name) $p
+    }
+  }
+}
+
+define-template (db-errmsg db who & args) {
+  #T{
+    apply error/type ^rt-sqlite3-error '$who (sqlite3-errmsg $db) $db.name $@args
+  }
+}
+
+define-template (db-check rc db who & args) {
+  #T{
+    if (C/== SQLITE_OK $rc) $rc {
+      db-errmsg $db $who $@args
+    }
+  }
+}
+
+define-template (stmt-errmsg stmt who & args) {
+  #T{
+    apply error/type ^rt-sqlite3-error '$who (sqlite3-errmsg (stmt->db $stmt)) $@args
+  }
+}
+
+define-template (stmt-check rc stmt who & args) {
+  #T{
+    if (C/== SQLITE_OK $rc) $rc {
+      stmt-errmsg $stmt $who $@args
+    }
+  }
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; The sqlite3-X functions are wrappers to the %sqlite3-X functions
+;; but maintain the sqlite3-db and %sqlite3-stmt-map
+;; structures/tables
+
+define (sqlite3-open name & args) "
+
+Return the database connection for `name`
+
+:param name: database name
+:type name: string
+:param flags: database open flags
+:type flags: C/int
+:return: database connection
+:rtype: :ref:`sqlite3-db <sqlite3/sqlite3-db>`
+:raises ^rt-libc-format-error: if `name` contains an ASCII NUL
+:raises ^rt-sqlite3-error:
+
+.. note::
+
+   On versions of :lname:`sqlite3` prior to v3.5.0, ``sqlite3_open()``
+   will be called and `flags` is ignored.
+
+" {
+  db := apply %sqlite3-open name args
+
+  make-sqlite3-db name db #{}
+}
+
+define (sqlite3-close db) "
+
+Close the database connection to `db`
+
+:param db: database connection
+:type db: :ref:`sqlite3-db <sqlite3/sqlite3-db>`
+:return: sqlite3 return code
+:rtype: C/int
+:raises ^rt-sqlite3-error:
+
+All of the associated `stmts` will be finalized first.
+
+.. note::
+
+   On versions of :lname:`sqlite3` prior to v3.7.14,
+   ``sqlite3_close()`` will be called which may report errors such as
+   ``SQLITE_BUSY``.
+
+" {
+  validate-si db sqlite3-db sqlite3-close
+
+  hash-walk db.stmts (function (sql stmt) {
+    sqlite3-finalize stmt
+  })
+  db.stmts = #{}
+
+  rc := %sqlite3-close db.%db
+  db-check rc db sqlite3-close
+}
+
+define (sqlite3-errmsg db) "
+
+Return a description of the current error in `db`
+
+:param db: database connection
+:type db: :ref:`sqlite3-db <sqlite3/sqlite3-db>`
+:return: error message
+:rtype: string
+:raises ^rt-sqlite3-error:
+
+" {
+  validate-si db sqlite3-db sqlite3-errmsg
+
+  %sqlite3-errmsg db.%db
+}
+
+define (sqlite3-prepare db sql) "
+
+Compile `sql` for `db`
+
+:param db: database connection
+:type db: :ref:`sqlite3-db <sqlite3/sqlite3-db>`
+:param sql: SQL statement text
+:type sql: string
+:return: database stmt
+:rtype: C/pointer to a :ref:`sqlite3/stmt <sqlite3/sqlite3/stmt>`
+:raises ^rt-libc-format-error: if `sql` contains an ASCII NUL
+:raises ^rt-sqlite3-error:
+
+" {
+  validate-si db sqlite3-db sqlite3-prepare
+
+  stmts := sqlite3-db-stmts db
+  stmt := hash-ref stmts sql #f
+  if stmt {
+    sqlite3-reset stmt
+  } {
+    stmt = %sqlite3-prepare db.%db sql
+
+    hash-set! stmts sql stmt
+    %sqlite3-stmt-map.stmt = db
+  }
+
+  stmt
+}
+
+define (sqlite3-finalize stmt) "
+
+Finalize `stmt`
+
+:param stmt: prepared statement
+:type stmt: :ref:`sqlite3/stmt <sqlite3/sqlite3/stmt>`
+:return: sqlite3 return code
+:rtype: C/int
+:raises ^rt-sqlite3-error:
+
+" {
+  validate-p stmt sqlite3/stmt sqlite3-finalize
+
+  db := stmt->db stmt
+  hash-walk db.stmts (function (sql %stmt) {
+    if (eq? stmt %stmt) {
+      hash-delete! db.stmts sql
+    }
+  })
+
+  hash-delete! %sqlite3-stmt-map stmt
+
+  rc := %sqlite3-finalize stmt
+  stmt-check rc stmt sqlite-finalize
+}
+
+define (sqlite3-bind-blob stmt i v) "
+
+Replace parameter `i` with blob `v` in `stmt`
+
+:param stmt: SQL statement
+:type stmt: C/pointer to :ref:`sqlite3/stmt <sqlite3/sqlite3/stmt>`
+:param i: parameter index
+:type i: fixnum
+:param v: parameter value
+:type v: octet-string
+:return: sqlite3 return code
+:rtype: C/int
+:raises ^rt-sqlite3-error:
+
+.. note::
+
+   On versions of :lname:`sqlite3` prior to v3.8.7
+   ``sqlite3_bind_blob()`` will be called which will limit the valid
+   size of `v` to a C/int.
+
+" {
+  rc := %sqlite3-bind-blob stmt i v
+  stmt-check rc stmt sqlite3-bind-blob
+}
+
+define (sqlite3-bind-double stmt i v) "
+
+Replace parameter `i` with blob `v` in `stmt`
+
+:param stmt: SQL statement
+:type stmt: C/pointer to :ref:`sqlite3/stmt <sqlite3/sqlite3/stmt>`
+:param i: parameter index
+:type i: fixnum
+:param v: parameter value
+:type v: C/double or bignum
+:return: sqlite3 return code
+:rtype: C/int
+:raises ^rt-sqlite3-error:
+
+" {
+  rc := %sqlite3-bind-double stmt i v
+  stmt-check rc stmt sqlite3-bind-double
+}
+
+define (sqlite3-bind-int stmt i v) "
+
+Replace parameter `i` with blob `v` in `stmt`
+
+:param stmt: SQL statement
+:type stmt: C/pointer to :ref:`sqlite3/stmt <sqlite3/sqlite3/stmt>`
+:param i: parameter index
+:type i: fixnum
+:param v: parameter value
+:type v: C/int|libc/int64_t|fixnum|integer bignum
+:return: sqlite3 return code
+:rtype: C/int
+:raises ^rt-sqlite3-error:
+
+" {
+  rc := %sqlite3-bind-int stmt i v
+  stmt-check rc stmt sqlite3-bind-int
+}
+
+define (sqlite3-bind-null stmt i v) "
+
+Replace parameter `i` with blob `v` in `stmt`
+
+:param stmt: SQL statement
+:type stmt: C/pointer to :ref:`sqlite3/stmt <sqlite3/sqlite3/stmt>`
+:param i: parameter index
+:type i: fixnum
+:param v: parameter value
+:type v: ``#n``
+:return: sqlite3 return code
+:rtype: C/int
+:raises ^rt-sqlite3-error:
+
+" {
+  rc := %sqlite3-bind-null stmt i v
+  stmt-check rc stmt sqlite3-bind-null
+}
+
+define (sqlite3-bind-text stmt i v) "
+
+Replace parameter `i` with blob `v` in `stmt`
+
+:param stmt: SQL statement
+:type stmt: C/pointer to :ref:`sqlite3/stmt <sqlite3/sqlite3/stmt>`
+:param i: parameter index
+:type i: fixnum
+:param v: parameter value
+:type v: string
+:return: sqlite3 return code
+:rtype: C/int
+:raises ^rt-sqlite3-error:
+
+.. note::
+
+   On versions of :lname:`sqlite3` prior to v3.8.7
+   ``sqlite3_bind_text()`` will be called which will limit the valid
+   size of `v` to a C/int.
+
+" {
+  rc := %sqlite3-bind-text stmt i v
+  stmt-check rc stmt sqlite3-bind-text
+}
+
+define (sqlite3-bind stmt & args) "
+
+Replace parameters in `stmt`
+
+:param stmt: SQL statement
+:type stmt: C/pointer to :ref:`sqlite3/stmt <sqlite3/sqlite3/stmt>`
+:return: sqlite3 return code
+:rtype: C/int
+:raises ^rt-sqlite3-error:
+
+Arguments should be supplied in `idx` `val` tuples.
+
+`idx` can be an integer or a (named parameter) string.
+
+The sqlite3 *type* will be inferred from `val`'s :lname:`Idio` type.
+
+.. tip::
+
+   parameters are indexed from 1
+
+.. seealso::
+
+   :ref:`sqlite3-bind-blob <sqlite3/sqlite3-bind-blob>`
+   :ref:`sqlite3-bind-double <sqlite3/sqlite3-bind-double>`
+   :ref:`sqlite3-bind-int <sqlite3/sqlite3-bind-int>`
+   :ref:`sqlite3-bind-null <sqlite3/sqlite3-bind-null>`
+   :ref:`sqlite3-bind-text <sqlite3/sqlite3-bind-text>`
+
+" {
+  rc := apply %sqlite3-bind stmt args
+  stmt-check rc stmt sqlite3-bind
+}
+
+define (sqlite3-bind-parameter-index stmt key) "
+
+Return the index of parameter `key` in `stmt`
+
+:param stmt: SQL statement
+:type stmt: C/pointer to :ref:`sqlite3/stmt <sqlite3/sqlite3/stmt>`
+:param key: parameter name
+:type key: string
+:return: parameter index
+:rtype: fixnum
+:raises ^rt-sqlite3-error:
+
+" {
+  idx := %sqlite3-bind-parameter-index stmt key
+  if (0 eq idx) (stmt-errmsg stmt sqlite3-bind-parameter-index key) idx
+}
+
+define (sqlite3-step stmt) "
+
+Return the next row for `stmt`
+
+:param stmt: SQL statement
+:type stmt: C/pointer to :ref:`sqlite3/stmt <sqlite3/sqlite3/stmt>`
+:return: list of columns
+:rtype: list or ``#f``
+:raises ^rt-sqlite3-error:
+
+" {
+  %sqlite3-step stmt
+}
+
+define (sqlite3-column stmt idx) "
+
+Return column `idx` for the current row of `stmt`
+
+:param stmt: SQL statement
+:type stmt: C/pointer to :ref:`sqlite3/stmt <sqlite3/sqlite3/stmt>`
+:param idx: column index
+:type idx: fixnum
+:return: column
+:rtype: based on column type
+:raises ^rt-sqlite3-error:
+
+.. tip::
+
+   columns are indexed from 0
+
+" {
+  col := %sqlite3-column stmt idx
+  if col col (stmt-errmsg stmt sqlite3-column idx)
+}
+
+define (sqlite3-reset stmt) "
+
+Reset `stmt`
+
+:param stmt: SQL statement
+:type stmt: C/pointer to :ref:`sqlite3/stmt <sqlite3/sqlite3/stmt>`
+:return: sqlite3 return code
+:rtype: C/int
+:raises ^rt-sqlite3-error:
+
+" {
+  rc := %sqlite3-reset stmt
+  stmt-check rc stmt sqlite3-reset
+}
+
+define (sqlite3-exec db sql & args) "
+
+Execute `sql` against `db`
+
+:param db: SQL statement
+:type db: C/pointer to :ref:`sqlite3/db <sqlite3/sqlite3/db>`
+:param sql: SQL statement text
+:type sql: string
+:param callback: callback function, defaults to none
+:type callback: function, optional
+:return: sqlite3 return code
+:rtype: C/int
+:raises ^rt-sqlite3-error:
+
+For each row in the results, `callback` will be invoked with two
+arguments: a list of column values as strings; a list of column names.
+
+" {
+  validate-si db sqlite3-db sqlite3-exec
+
+  rc := apply %sqlite3-exec db.%db sql args
+  db-check rc db sqlite3-exec sql args
+}
+
+provide sqlite3
