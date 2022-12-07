@@ -602,6 +602,7 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	idio_gc_gcc_mark (gc, IDIO_MODULE_EXPORTS (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_MODULE_IMPORTS (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_MODULE_SYMBOLS (o), colour);
+	idio_gc_gcc_mark (gc, IDIO_MODULE_IDENTITY (o), colour);
 	break;
     case IDIO_TYPE_FRAME:
 	IDIO_C_ASSERT (gc->grey != IDIO_FRAME_GREY (o));

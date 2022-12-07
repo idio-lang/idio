@@ -239,6 +239,8 @@ IDIO idio_module (IDIO name)
 
     idio_hash_put (idio_modules_hash, name, mo);
 
+    IDIO_MODULE_IDENTITY (mo) = idio_S_nil;
+
     return mo;
 }
 
@@ -322,6 +324,148 @@ Find the module called `name`					\n\
     }
 
     return r;
+}
+
+IDIO idio_module_alias (IDIO name, IDIO identity)
+{
+    IDIO_ASSERT (name);
+
+    IDIO_TYPE_ASSERT (symbol, name);
+
+    IDIO m = idio_module_find_module (name);
+
+    if (idio_S_unspec != m) {
+	/*
+	 * Test Case: module-errors/module-alias-name-duplication.idio
+	 *
+	 * module-alias 'Idio
+	 */
+	idio_module_duplicate_name_error (name, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    m = idio_module (name);
+
+    IDIO_MODULE_EXPORTS (m) = IDIO_MODULE_EXPORTS (identity);
+    IDIO_MODULE_IMPORTS (m) = IDIO_MODULE_IMPORTS (identity);
+    IDIO_MODULE_SYMBOLS (m) = IDIO_MODULE_SYMBOLS (identity);
+    IDIO_MODULE_IDENTITY (m) = identity;
+
+    return m;
+}
+
+IDIO_DEFINE_PRIMITIVE1V_DS ("module-alias", module_alias, (IDIO name, IDIO args), "name [identity]", "\
+Create `name` as an alias for `identity` or the current module	\n\
+if `identity` is not supplied.			\n\
+						\n\
+:param name: module alias' name			\n\
+:type name: symbol				\n\
+:param identity: target module			\n\
+:type identity: module or symbol		\n\
+:return: ``#<unspec>``				\n\
+						\n\
+.. warning::					\n\
+						\n\
+   If the `identity` module's symbols, exports or imports	\n\
+   are unset when ``module-alias`` is called then changes	\n\
+   will not be seen.				\n\
+						\n\
+   If you are aliasing yourself, use ``module-alias`` after	\n\
+   the :ref:`provide <provide>` expression.			\n\
+						\n\
+.. seealso:: :ref:`module-identity <module-identity>`	\n\
+")
+{
+    IDIO_ASSERT (name);
+
+    /*
+     * Test Case: module-errors/module-alias-bad-name-type.idio
+     *
+     * module-alias #t
+     */
+    IDIO_USER_TYPE_ASSERT (symbol, name);
+
+    IDIO identity = idio_thread_current_module ();
+    if (idio_isa_pair (args)) {
+	IDIO m_or_n = IDIO_PAIR_H (args);
+
+	if (idio_isa_module (m_or_n)) {
+	    identity = m_or_n;
+	} else if (idio_isa_symbol (m_or_n)) {
+	    identity = idio_hash_ref (idio_modules_hash, m_or_n);
+
+	    if (idio_S_unspec == identity) {
+		/*
+		 * Test Case: module-errors/module-alias-identity-unbound.idio
+		 *
+		 * module-alias 'foo (gensym)
+		 */
+		idio_module_unbound_error (m_or_n, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	} else {
+	    /*
+	     * Test Case: module-errors/module-alias-bad-identity-type.idio
+	     *
+	     * module-alias (gensym) #t
+	     */
+	    idio_error_param_type ("module|symbol", m_or_n, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
+    return idio_module_alias (name, identity);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("module-identity", module_identity, (IDIO m_or_n), "mod", "\
+Return the identity of module `mod`		\n\
+						\n\
+:param mod: module				\n\
+:type mod: module or symbol			\n\
+:return: module's identity			\n\
+:rtype: module or ``#n``			\n\
+						\n\
+If `mod` is an alias of another module then the identity	\n\
+of `mod` is the module it is aliasing -- which could be		\n\
+another alias.					\n\
+						\n\
+.. seealso:: :ref:`module-alias <module-alias>`	\n\
+")
+{
+    IDIO_ASSERT (m_or_n);
+
+    IDIO mod = idio_S_nil;
+
+    if (idio_isa_module (m_or_n)) {
+	mod = m_or_n;
+    } else if (idio_isa_symbol (m_or_n)) {
+	mod = idio_hash_ref (idio_modules_hash, m_or_n);
+
+	if (idio_S_unspec == mod) {
+	    /*
+	     * Test Case: module-errors/module-identity-mod-unbound.idio
+	     *
+	     * module-identity (gensym)
+	     */
+	    idio_module_unbound_error (m_or_n, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    } else {
+	/*
+	 * Test Case: module-errors/module-identity-bad-mod-type.idio
+	 *
+	 * module-identity #t
+	 */
+	idio_error_param_type ("module|symbol", m_or_n, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return IDIO_MODULE_IDENTITY (mod);
 }
 
 IDIO idio_module_find_or_create_module (IDIO name)
@@ -1864,6 +2008,9 @@ print the internal details of `module`		\n\
     idio_debug ("  exports: %s\n", IDIO_MODULE_EXPORTS (mo));
     idio_debug ("  imports: %s\n", IDIO_MODULE_IMPORTS (mo));
     idio_debug ("  symbols: %s\n", IDIO_MODULE_SYMBOLS (mo));
+    if (idio_S_nil != IDIO_MODULE_IDENTITY (mo)) {
+	idio_debug ("  identity: %s\n", IDIO_MODULE_NAME (IDIO_MODULE_IDENTITY (mo)));
+    }
 
     return idio_S_unspec;
 }
@@ -1945,6 +2092,12 @@ char *idio_module_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDI
 	    char *ss = idio_as_string (IDIO_MODULE_SYMBOLS (v), &s_size, depth - 1, seen, 0);
 	    IDIO_STRCAT_FREE (r, sizep, ss, s_size);
 	}
+	if (idio_S_nil != IDIO_MODULE_IDENTITY (v)) {
+	    IDIO_STRCAT (r, sizep, " identity=");
+	    size_t s_size = 0;
+	    char *ss = idio_as_string (IDIO_MODULE_NAME (IDIO_MODULE_IDENTITY (v)), &s_size, depth - 1, seen, 0);
+	    IDIO_STRCAT_FREE (r, sizep, ss, s_size);
+	}
     }
     IDIO_STRCAT (r, sizep, ">");
 
@@ -1981,6 +2134,8 @@ void idio_module_add_primitives ()
     IDIO_ADD_PRIMITIVE (set_module_exports);
     IDIO_ADD_PRIMITIVE (modulep);
     IDIO_ADD_PRIMITIVE (find_module);
+    IDIO_ADD_PRIMITIVE (module_alias);
+    IDIO_ADD_PRIMITIVE (module_identity);
     IDIO_ADD_PRIMITIVE (find_or_create_module);
     IDIO_ADD_PRIMITIVE (module_name);
     IDIO_ADD_PRIMITIVE (module_imports);
