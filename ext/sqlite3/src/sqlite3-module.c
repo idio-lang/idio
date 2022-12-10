@@ -260,12 +260,9 @@ Return the sqlite3 database connection for `name`	\n\
     /*
      * default flags for sqlite3_open()
      */
-#if defined (IDIO_NO_SQLITE3_OPEN_V2)
-    /* it won't be used in a call */
-    int C_flags = 0;
-#else
+#if ! defined (IDIO_NO_SQLITE3_OPEN_V2)
     int C_flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
-#endif
+
     if (idio_isa_pair (args)) {
 	IDIO flags = IDIO_PAIR_H (args);
 	/*
@@ -277,6 +274,7 @@ Return the sqlite3 database connection for `name`	\n\
 
 	C_flags = IDIO_C_TYPE_int (flags);
     }
+#endif
 
     sqlite3 *C_db;
 
