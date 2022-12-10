@@ -14,10 +14,6 @@
 #error libcurl is older than 7.73.0
 #endif
 
-#if defined (__NetBSD__)
-#error NetBSD segfaults during shutdown in OPENSSL_cleanup () from /usr/lib/libcrypto.so.14
-#endif
-
 int main (int argc, char **argv)
 {
     printf ("%s\n", curl_version ());

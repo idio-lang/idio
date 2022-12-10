@@ -32,6 +32,11 @@ LD_DLFLAGS	:= -dynamiclib -undefined dynamic_lookup
 # be handled in the C89 code base.
 CFLAGS		:= $(CFLAGS) -Wno-implicit-function-declaration
 
+else ifeq ($(OS),NetBSD)
+# Without -z nodelete NetBSD will segfault during shutdown in
+# OPENSSL_cleanup() from /usr/lib/libcrypto.so.14
+LD_DLFLAGS	:= -shared -z nodelete
+
 else
 LD_DLFLAGS	:= -shared
 endif
