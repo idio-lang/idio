@@ -85,13 +85,13 @@ stmt := sqlite3-prepare db "select id, name from foods where id = ?"
 
 sqlite3-error-load "sqlite3-errors/sqlite3-open-bad-name-type.idio" "bad parameter type: '#t' a constant is not a string"
 sqlite3-error-load "sqlite3-errors/sqlite3-open-bad-name-format.idio" "name: contains an ASCII NUL"
-sqlite3-error-load "sqlite3-errors/sqlite3-open-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 
 (cond-expand
  (IDIO_NO_SQLITE3_OPEN_V2 {
-   sqlite3-error-skipped = sqlite3-error-skipped + 1
+   sqlite3-error-skipped = sqlite3-error-skipped + 2
  })
  (else {
+   sqlite3-error-load "sqlite3-errors/sqlite3-open-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
    sqlite3-error-load "sqlite3-errors/sqlite3-open-non-existent.idio" "%sqlite3-open: unable to open database file"
  }))
 
