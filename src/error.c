@@ -686,6 +686,9 @@ This does not return!				\n\
      * Some of the required conversions are inefficient.
      */
     if (idio_eqp (ct, idio_condition_rt_parameter_type_error_type)) {
+	/*
+	 * error/type ^rt-parameter-type-error 'func msg [arg]
+	 */
 	if (idio_isa_pair (args)) {
 	    args = IDIO_PAIR_H (args);
 	}
@@ -702,6 +705,9 @@ This does not return!				\n\
 
 	return idio_S_notreached;
     } else if (idio_eqp (ct, idio_condition_rt_parameter_value_error_type)) {
+	/*
+	 * error/type ^rt-parameter-value-error 'func "param-str" val [msg]
+	 */
 	IDIO func = loc;
 	IDIO param = msg;
 	IDIO val = idio_S_nil;
@@ -729,8 +735,11 @@ This does not return!				\n\
 	idio_display (param, msh);
 	idio_display_C ("='", msh);
 	idio_display (val, msh);
-	idio_display_C ("': ", msh);
-	idio_display (msg, msh);
+
+	if (idio_S_nil != msg) {
+	    idio_display_C ("': ", msh);
+	    idio_display (msg, msh);
+	}
 
 	idio_error_raise_noncont (idio_condition_rt_parameter_value_error_type,
 				  IDIO_LIST3 (idio_get_output_string (msh),
