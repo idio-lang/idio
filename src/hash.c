@@ -357,6 +357,7 @@ test if `o` is an hash				\n\
 						\n\
 :param o: object to test			\n\
 :return: ``#t`` if `o` is an hash, ``#f`` otherwise	\n\
+:rtype: boolean					\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -1171,7 +1172,7 @@ set the index of `key` in hash table `ht` to `v`	\n\
 :param key: non-``#n`` value				\n\
 :type key: any non-``#n``				\n\
 :param v: value						\n\
-:type v: a value					\n\
+:type v: any						\n\
 :return: ``#<unspec>``					\n\
 ")
 {
@@ -1278,6 +1279,7 @@ assert whether index of `key` in hash table `ht` exists	\n\
 :param key: non-``#n`` value				\n\
 :type key: any non-``#n``				\n\
 :return: ``#t`` or ``#f``				\n\
+:rtype: boolean						\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1370,6 +1372,7 @@ return the value indexed by `key` in hash table `ht`	\n\
 :param default: a default value if `key` not found	\n\
 :type default: a thunk or a simple value, optional	\n\
 :return: value						\n\
+:rtype: any						\n\
 :raises ^rt-hash-key-not-found-error: if `key` not found	\n\
 	and no `default` supplied			\n\
 ")
@@ -1554,7 +1557,8 @@ no order can be presumed				\n\
 							\n\
 :param ht: hash table					\n\
 :type ht: hash table					\n\
-:return: ``#<unspec>``					\n\
+:return: list of keys					\n\
+:rtype: list						\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1610,7 +1614,8 @@ no order can be presumed				\n\
 							\n\
 :param ht: hash table					\n\
 :type ht: hash table					\n\
-:return: ``#<unspec>``					\n\
+:return: list of values					\n\
+:rtype: list						\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1724,6 +1729,7 @@ create a hash table					\n\
 :param size: defaults to 32				\n\
 :type size: fixnum, optional				\n\
 :return: hash table					\n\
+:rtype: hash table					\n\
 							\n\
 If either of `hash-func` or `equiv-func` is ``#n``	\n\
 use the default.					\n\
@@ -1794,6 +1800,7 @@ convert association list `al` into a hash table		\n\
 :param args: arguments for ``make-hash``		\n\
 :type args: list, optional				\n\
 :return: hash table					\n\
+:rtype: hash table					\n\
 							\n\
 ``alist->hash`` will use :ref:`equal? <equal?>` as its	\n\
 equivalence function and the default hashing function	\n\
@@ -1826,6 +1833,7 @@ return the `equiv-func` of `h`				\n\
 :param h: hash table					\n\
 :type h: hash table					\n\
 :return: equivalence function				\n\
+:rtype: function or symbol (``eq?``, ``eqv?`` or ``equal?``)	\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1860,6 +1868,7 @@ return the `hash-func` of `h`				\n\
 :param h: hash table					\n\
 :type h: hash table					\n\
 :return: hashing function				\n\
+:rtype: function or ``#n`` if using the default		\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -1890,6 +1899,7 @@ return the key count of `h`				\n\
 :param h: hash table					\n\
 :type h: hash table					\n\
 :return: key count					\n\
+:rtype: integer						\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -2045,8 +2055,9 @@ The final value of `val` is returned				\n\
 :param func: func to be called with each key, value, val tuple	\n\
 :type func: 3-ary function					\n\
 :param val: initial value for `val`				\n\
-:type func: value						\n\
+:type val: any							\n\
 :return: final value of `val`					\n\
+:rtype: any							\n\
 ")
 {
     IDIO_ASSERT (ht);
@@ -2157,6 +2168,7 @@ duplicate keys in `ht2` will overwrite keys in `ht1`		\n\
 :param ht2: hash table						\n\
 :type ht2: hash table						\n\
 :return: `ht1`							\n\
+:rtype: hash table						\n\
 ")
 {
     IDIO_ASSERT (ht1);
