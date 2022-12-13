@@ -1163,7 +1163,7 @@ Destructively append `lists`			\n\
     IDIO_ASSERT (lists);
 
     /*
-     * lists is varargs so is, by defintion, a list
+     * lists is varargs so is, by definition, a list
      */
 
     return idio_list_nappend (lists);
