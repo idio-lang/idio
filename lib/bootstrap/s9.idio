@@ -40,47 +40,6 @@
 
 ;; List procedures
 
-define (list? x) "
-is `x` a list?
-
-:param x: value to test
-:return: boolean
-" {
-  l? :+ function (x y) {
-    (cond
-     ((eq? x y) #f)
-     ((null? x) #t)
-     ((pair? x) (or (null? (pt x))
-		    (and (pair? (pt x))
-			 (l? (ptt x) (pt y)))))
-     (else #f))
-  }
-
-  (or (null? x)
-      (and (pair? x)
-	   (l? (pt x) x)))
-}
-
-fold-left := {
-  ph-of := ph-of
-  pt-of := pt-of
-  any-null? := any-null?
-
-  function/name fold-left (f b & a*) {
-    fold :+ function (a* r) {
-      if (any-null? a*) r {
-	fold (pt-of a*) (apply f r (ph-of a*))
-      }
-    }
-
-    if (null? a*) {
-      error/type ^rt-parameter-error 'fold-left "too few arguments"
-    } {
-      fold a* b
-    }
-  }
-}
-
 fold-right := {
   ph-of := ph-of
   pt-of := pt-of
@@ -111,7 +70,7 @@ append the lists of `a`
 
 :param a: list of lists
 :return: combined list
-:retype: list
+:rtype: list
   " {
     append2 :+ function (a b) {
       if (null? a) b {
@@ -126,20 +85,6 @@ append the lists of `a`
 
     fold-left append-wrapper '#n a
   }
-}
-
-define (list-tail x n) "
-return the list after the first `n` elements of `x`
-
-:param x: list to examine
-:type x: list
-:param n: number of elements to skip
-:type n: integer
-" {
-  (cond
-   ((zero? n) x)
-   ((null? x) (error/type ^rt-parameter-value-error 'list-tail "index out of range" n))
-   (else (list-tail (pt x) (- n 1))))
 }
 
 define (list-ref x n) "

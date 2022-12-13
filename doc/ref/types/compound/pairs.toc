@@ -19,6 +19,7 @@
 
 (document Idio list-ref)
 (document Idio list-tail)
+(document Idio last-pair)
 (document Idio nth)
 (document Idio set-nth!)
 
@@ -58,6 +59,7 @@
 (document Idio length)
 
 (document Idio append)
+(document Idio append!)
 
 (document Idio memq)
 (document Idio memv)

@@ -119,9 +119,14 @@ pair-error-load "pair-errors/length-bad-type.idio" "bad parameter type: '#t' a c
 
 pair-error-load "pair-errors/append-bad-type.idio" "bad parameter type: '#t' a constant is not a list"
 
+pair-error-load "pair-errors/last-pair-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
+
 pair-error-load "pair-errors/ph-of-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
 
 pair-error-load "pair-errors/pt-of-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
+
+pair-error-load "pair-errors/list-tail-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
+pair-error-load "pair-errors/list-tail-bad-pos-type.idio" "bad parameter type: '#t' a constant is not a fixnum"
 
 pair-error-load "pair-errors/any-nullp-bad-list-type.idio" "bad parameter type: '#t' a constant is not a list"
 
@@ -148,5 +153,8 @@ pair-error-load "pair-errors/set-nth-bad-index-type.idio" "bad parameter type: '
 pair-error-load "pair-errors/set-nth-neg-index-too-large.idio" "set-nth! n='-4': negative index too large"
 pair-error-load "pair-errors/set-nth-index-too-large.idio" "set-nth! n='3': index too large"
 
+pair-error-load "pair-errors/fold-left-bad-func-type.idio" "bad parameter type: '#t' a constant is not a function"
+pair-error-load "pair-errors/fold-left-bad-l-type.idio" "bad parameter type: '#t' a constant is not a list"
+
 ;; all done?
-Tests? (pair-error0 + 54)
+Tests? (pair-error0 + 59)
