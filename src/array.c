@@ -1096,6 +1096,7 @@ set all the elements of `a` to `fill`		\n\
 :param a: the array to fill			\n\
 :type a: array					\n\
 :param fill: value to use for fill		\n\
+:type fill: any					\n\
 :return: ``#<unspec>``				\n\
 ")
 {
@@ -1313,6 +1314,7 @@ set the `index` of `a` to `v`			\n\
 :param index: index				\n\
 :type index: integer				\n\
 :param v: value 				\n\
+:type v: any	 				\n\
 :return: ``#<unspec>``				\n\
 :raises: ^rt-array-bounds-error			\n\
 ")
@@ -1337,6 +1339,7 @@ append `v` to `a`				\n\
 :param a: the array				\n\
 :type a: array					\n\
 :param v: value 				\n\
+:type v: any	 				\n\
 :return: ``#<unspec>``				\n\
 :raises: ^rt-array-bounds-error			\n\
 						\n\
@@ -1364,6 +1367,7 @@ pop the last value off `a`			\n\
 :param a: the array				\n\
 :type a: array					\n\
 :return: value					\n\
+:rtype: any	 				\n\
 :raises: ^rt-array-bounds-error			\n\
 						\n\
 Treats `a` as a stack and pops a value off the end\n\
@@ -1389,6 +1393,7 @@ unshifts `v` onto `a`				\n\
 :param a: the array				\n\
 :type a: array					\n\
 :param v: value 				\n\
+:rtype: any	 				\n\
 :return: ``#<unspec>``				\n\
 						\n\
 Treats `a` as a stack and unshifts (prepends) `v` to the start\n\
@@ -1415,6 +1420,7 @@ shifts the first value off `a`			\n\
 :param a: the array				\n\
 :type a: array					\n\
 :return: value					\n\
+:rtype: any	 				\n\
 						\n\
 Treats `a` as a stack and shifts a value off the start\n\
 ")
@@ -1439,6 +1445,7 @@ convert `a` to a list				\n\
 :param a: the array				\n\
 :type a: array					\n\
 :return: list					\n\
+:rtype: list	 				\n\
 ")
 {
     IDIO_ASSERT (a);
@@ -1501,13 +1508,14 @@ call `func` for each element in array `a` with arguments:	\n\
 								\n\
 The final value of `val` is returned.				\n\
 								\n\
-:param a: array table						\n\
-:type a: array table						\n\
-:param func: func to be called with each index, value, val tuple\n\
+:param a: array							\n\
+:type a: array							\n\
+:param func: func to be called with each index, value, val tuple	\n\
 :type func: 3-ary function					\n\
 :param val: initial value for `val`				\n\
-:type func: value						\n\
+:type val: any							\n\
 :return: final value of `val`					\n\
+:rtype: any			 				\n\
 ")
 {
     IDIO_ASSERT (a);
