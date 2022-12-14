@@ -34,6 +34,7 @@ author any bootstrap code you might need to go back to basics.
 ;display "This is bootstrap.idio\n"
 
 include "bootstrap/s9-syntax.idio"
+include "bootstrap/mbe.idio"
 include "bootstrap/call-cc.idio"
 include "bootstrap/standard-operators.idio"
 

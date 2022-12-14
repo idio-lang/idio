@@ -1,0 +1,696 @@
+#*
+
+Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+mbe.idio
+
+This is a port of mbe.scm with the same primary modification as per
+lib/mbe.stk in STklos where define-syntax is a little leaner (see the
+bottom of this file).
+
+The definitive source for mbe.scm itself is imperfectly clear, it's
+often referenced as part of the Portable Scheme Library (SLIB) but
+there's a lot of link rot.
+https://fossies.org/linux/privat/slib-3b7.tar.gz/slib-3b7/mbe.scm?m=t
+seems plausible and what this file is based on.
+
+*#
+
+;;;; "mbe.scm" "Macro by Example" (Eugene Kohlbecker, R4RS)
+;;; From: Dorai Sitaram, dorai@cs.rice.edu, 1991, 1999
+;
+;Permission to copy this software, to modify it, to redistribute it,
+;to distribute modified versions, and to use it for any purpose is
+;granted, subject to the following restrictions and understandings.
+;
+;1.  Any copy made of this software must include this copyright notice
+;in full.
+;
+;2.  I have made no warranty or representation that the operation of
+;this software will be error-free, and I am under no obligation to
+;provide any services, by way of maintenance, update, or otherwise.
+;
+;3.  In conjunction with products arising from the use of this
+;material, there shall be no use of my name in any advertising,
+;promotional, or sales literature without prior written consent in
+;each case.
+
+;;; revised Dec. 6, 1993 to R4RS syntax (if not semantics).
+;;; revised Mar. 2 1994 for SLIB (agj @ alum.mit.edu).
+;;; corrections, Apr. 24, 1997.
+;;; corr., Jan. 30, 1999. (mflatt@cs.rice.edu, dorai@cs.rice.edu)
+
+;;; A vanilla implementation of hygienic macro-by-example as described
+;;; by Eugene Kohlbecker and in R4RS Appendix.  This file requires
+;;; defmacro.
+
+;(require 'common-list-functions)	;nconc, some, every
+;(require 'rev4-optional-procedures)	;list-tail
+;(require 'defmacroexpand)		;defmacro:expand*
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Some of the utilities as mentioned against the above requires
+
+;; (as per object.idio) these are simpler versions of any?/every? for
+;; some/every
+define (some p? l) {
+  (and (pair? l)
+       {
+	 loop :+ function (h t) {
+	   if (pair? t) {
+	     (or (p? h)
+		 (loop (ph t) (pt t)))
+	   } (p? h)
+	 }
+
+	 loop (ph l) (pt l)
+  })
+}
+
+define (every p? l) {
+  (or (null? l)
+      {
+	loop :+ function (h t) {
+	  if (null? t) (p? h) {
+	    (and (p? h)
+		 (loop (ph t) (pt t)))
+	  }
+	}
+
+	loop (ph l) (pt l)
+  })
+}
+
+#*
+
+STklos also defines split which returns a list having removed the nth
+element.  The original code used butlast.
+
+without-nth feels like a better name.
+
+*#
+
+define (without-nth l n) {
+  wo :+ function (b a i) {
+    (cond
+     ((le i 0)
+      (pair (reverse b) a))
+     ((null? a)
+      (error/type ^rt-parameter-value-error 'without-nth "list l" l "is too short"))
+     (else
+      (wo (pair (ph a) b) (pt a) (- i 1))))
+  }
+
+  wo #n l n
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; mbe.scm functions
+
+define (hyg:rassq k al) {
+  define (loop al) {
+    if (null? al) #f {
+      c := ph al
+      if (eq? (pt c) k) c {
+	loop (pt al)
+      }
+    }
+  }
+
+  loop al
+}
+
+define (hyg:tag e kk al) {
+  (cond
+   ((pair? e) {
+     a-te-al := hyg:tag (ph e) kk al
+     d-te-al := hyg:tag (pt e) kk (pt a-te-al)
+     (pair (pair (ph a-te-al) (ph d-te-al))
+	   (pt d-te-al))
+   })
+   ((symbol? e)
+    (cond
+     ((eq? e '...) (pair '... al))
+     ((memq e kk) (pair e al))
+     ((hyg:rassq e al) => (function (c) (pair (ph c) al)))
+     (else {
+       te := (gensym e)
+       pair te (pair (pair te e) al)
+     })))
+   (else (pair e al)))
+}
+
+;;untagging
+
+define (hyg:untag e al tmps) {
+  if (pair? e) {
+    a := hyg:untag (ph e) al tmps
+    if (list? e) {
+      (case a
+       ((quote)
+	(hyg:untag-no-tags e al))
+       ((quasiquote)
+	(list a (hyg:untag-quasiquote (pht e) al tmps)))
+       ((if begin)
+	;; extra parens as the result is multiline
+	#T{
+	  ($a $@(map (function (e1) {
+	    hyg:untag e1 al tmps
+	  }) (pt e)))
+       })
+       ((set! define)
+	;; extra parens as the result is multiline
+	#T{
+	  ($a $(hyg:untag-vanilla (pht e) al tmps)
+	      $@(map (function (e1) {
+		hyg:untag e1 al tmps
+	      }) (ptt e)))
+       })
+       ((function)
+	(hyg:untag-function (pht e) (ptt e) al tmps))
+       ((letrec)
+	(hyg:untag-letrec (pht e) (ptt e) al tmps))
+       ((let) {
+	 e2 := pht e
+	 if (symbol? e2) {
+	   hyg:untag-named-let e2 (phtt e) (pttt e) al tmps
+	 } {
+	   hyg:untag-let e2 (ptt e) al tmps
+	 }
+       })
+       ((let*)
+	(hyg:untag-let* (pht e) (ptt e) al tmps))
+       ((do)
+	(hyg:untag-do (pht e) (phtt e) (pttt e) al tmps))
+       ((case)
+	#T{
+	  (case $(hyg:untag-vanilla (pht e) al tmps)
+	   $@(map (function (c)
+	    ;; NB extra parens around the case clause due to the
+	    ;; (peculiar) way #T{} decides if this is a
+	    ;; multi-expression begin clause
+	    #T{
+	     ($(hyg:untag-vanilla (ph c) al tmps)
+	      $@(hyg:untag-list (pt c) al tmps))
+	   }) (ptt e)))
+       })
+       ((cond)
+	#T{
+	  (cond $@(map (function (c) {
+	    hyg:untag-list c al tmps
+	  }) (pt e)))
+       })
+       (else
+	(pair a (hyg:untag-list (pt e) al tmps))))
+    } {
+      (pair a (hyg:untag-list* (pt e) al tmps))
+    }
+  } {
+    hyg:untag-vanilla e al tmps
+  }
+}
+
+define (hyg:untag-list ee al tmps) {
+  map (function (e) {
+    hyg:untag e al tmps
+  }) ee
+}
+
+define (hyg:untag-list* ee al tmps) {
+  loop :+ function (ee) {
+    if (pair? ee) {
+     (pair (hyg:untag (ph ee) al tmps)
+	   (loop (pt ee)))
+    } {
+      hyg:untag ee al tmps
+    }
+  }
+
+  loop ee
+}
+
+define (hyg:untag-no-tags e al) {
+  (cond
+   ((pair? e)
+    (pair (hyg:untag-no-tags (ph e) al)
+	  (hyg:untag-no-tags (pt e) al)))
+   ((not (symbol? e)) e)
+   ((assq e al) => pt)
+   (else e))
+}
+
+define (hyg:untag-quasiquote form al tmps) {
+  qq :+ function (x level) {
+    (cond
+     ((pair? x) {
+       first := qq (ph x) level
+       (cond
+	((and (eq? first 'unquote)
+	      (list? x)) {
+	  rest := pt x
+	  if (or (not (pair? rest))
+		 (not (null? (pt rest)))) {
+	    error/type ^rt-syntax-error 'hyg:untag-quasiquote "'unquote takes exactly one expression" rest
+	  } {
+	    if (zero? level) {
+	      list 'unquote (hyg:untag (ph rest) al tmps)
+	    } {
+	      pair first (qq rest (sub1 level))
+	    }
+	  }
+	})
+	((and (eq? first 'quasiquote)
+	      (list? x))
+	 (pair 'quasiquote (qq (pt x) (add1 level))))
+	((and (eq? first 'unquote-splicing)
+	      (list? x))
+	 (error/type ^rt-syntax-error 'hyg:untag-quasiquote "'unquote-splicing invalid context within quasiquote"))
+	((pair? first) {
+	  ph-first := qq (ph first) level
+	  if (and (eq? ph-first 'unquote-splicing)
+		  (list? first)) {
+	    rest := pt first
+	    if (or (not (pair? rest))
+		   (not (null? (pt rest)))) {
+	      error/type ^rt-syntax-error 'hyg:untag-quasiquote "'unquote-splicing takes exactly one expression"
+	    } {
+	      list (list 'unquote-splicing
+			 (if (zero? level)
+			  (hyg:untag (pht rest) al tmps)
+			  (qq (pht rest) (sub1 level)))
+			 (qq (pt x) level))
+	    }
+	  } {
+	    (pair
+	     (pair ph-first
+		   (qq (pt first) level))
+	     (qq (pt x) level))
+	  }
+	})
+	(else
+	 (pair first (qq (pt x) level))))
+     })
+     (else
+      (hyg:untag-no-tags x al)))
+  }
+
+  qq form 0
+}
+
+define (hyg:untag-function bvv body al tmps) {
+  tmps2 := append! (hyg:flatten bvv) tmps
+  #T{
+    (function $bvv
+     $@(hyg:untag-list body al tmps2))
+  }
+}
+
+define (hyg:untag-letrec varvals body al tmps) {
+  tmps := append! (map ph varvals) tmps
+  #T{
+    (letrec
+     $(map (function (varval) {
+       #T{ ($(ph varval)
+	    $(hyg:untag (pht varval) al tmps)) }
+     }) varvals)
+     $@(hyg:untag-list body al tmps))
+  }
+}
+
+define (hyg:untag-let varvals body al tmps) {
+  tmps2 := append! (map ph varvals) tmps
+  #T{
+    (let
+      $(map (function (varval) {
+	#T{ ($(ph varval)
+	     $(hyg:untag (pht varval) al tmps)) }
+      }) varvals)
+     $@(hyg:untag-list body al tmps2))
+  }
+}
+
+define (hyg:untag-named-let lname varvals body al tmps) {
+  tmps2 := pair lname (append! (map ph varvals) tmps)
+  #T{
+    (let $lname
+	 $(map (function (varval) {
+	  #T{ ($(ph varval)
+	       $(hyg:untag (pht varval) al tmps)) }
+	 }) varvals)
+	 $@(hyg:untag-list body al tmps2))
+  }
+}
+
+define (hyg:untag-let* varvals body al tmps) {
+  tmps2 := append! (nreverse (map ph varvals)) tmps
+  #T{
+    (let*
+     $(
+	loop :+ function (varvals i) {
+	  if (null? varvals) #n {
+	    varval := ph varvals
+	    (pair #T{ ($(ph varval)
+		       $(hyg:untag (pht varval)
+				   al (list-tail tmps2 i))) }
+		  (loop (pt varvals) (- i 1)))
+	  }
+	}
+
+	loop varvals (length varvals)
+     )
+     $@(hyg:untag-list body al tmps2))
+  }
+}
+
+define (hyg:untag-do varinistps exit-test body al tmps) {
+  tmps2 := append! (map ph varinistps) tmps
+  #T{
+    (do
+     $(map (function (varinistp) {
+       var := ph varinistp
+       #T{
+	 ($var $@(hyg:untag-list (pt varinistp) al
+						(pair var tmps)))
+       }
+       }) varinistps)
+     $(hyg:untag-list exit-test al tmps2)
+     $@(hyg:untag-list body al tmps2))
+    }
+}
+
+define (hyg:untag-vanilla e al tmps) {
+  (cond
+   ((pair? e)
+    (pair (hyg:untag-vanilla (ph e) al tmps)
+	  (hyg:untag-vanilla (pt e) al tmps)))
+   ((not (symbol? e)) e)
+   ((memq e tmps) e)
+   ((assq e al) => pt)
+	(else e))
+}
+
+define (hyg:flatten e) {
+  loop :+ function (e r) {
+    (cond
+     ((pair? e) (loop (ph e)
+		      (loop (pt e) r)))
+     ((null? e) r)
+     (else (pair e r)))
+  }
+
+  loop e #n
+}
+
+;;;; End of hygiene filter.
+
+
+;;; finds the leftmost index of list l where something equal to x
+;;; occurs
+define (mbe:position x l) {
+  loop :+ function (l i) {
+    (cond
+     ((not (pair? l)) #f)
+     ((equal? (ph l) x) i)
+     (else
+      (loop (pt l) (+ i 1))))
+  }
+
+  loop l 0
+}
+
+;;; (mbe:append-map f l) == (apply append (map f l))
+
+define (mbe:append-map f l) {
+  loop :+ function (l) {
+    if (null? l) #n {
+      append (f (ph l)) (loop (pt l))
+    }
+  }
+
+  loop l
+}
+
+;;; tests if expression e matches pattern p where k is the list of
+;;; keywords
+define (mbe:matches-pattern? p e k) {
+  (cond
+   ((mbe:ellipsis? p)
+    (and (or (null? e)
+	     (pair? e)) {
+      p-head := ph p
+      p-tail := ptt p
+      e-head=e-tail := mbe:split-at-ellipsis e p-tail
+      (and e-head=e-tail {
+	e-head := ph e-head=e-tail
+	e-tail := pt e-head=e-tail
+	(and (every
+	      (function (x) (mbe:matches-pattern? p-head x k))
+	      e-head)
+	 (mbe:matches-pattern? p-tail e-tail k))
+      })
+    }))
+   ((pair? p)
+    (and (pair? e)
+	 (mbe:matches-pattern? (ph p) (ph e) k)
+	 (mbe:matches-pattern? (pt p) (pt e) k)))
+   ((symbol? p)
+    (if (memq p k) (eq? p e) #t))
+   (else
+    (equal? p e)))
+}
+
+;;; gets the bindings of pattern variables of pattern p for
+;;; expression e;
+;;; k is the list of keywords
+define (mbe:get-bindings p e k) {
+  (cond
+   ((mbe:ellipsis? p) {
+     p-head := ph p
+     p-tail := ptt p
+     e-head=e-tail := mbe:split-at-ellipsis e p-tail
+     e-head := ph e-head=e-tail
+     e-tail := pt e-head=e-tail
+     (pair
+      (pair (mbe:get-ellipsis-nestings p-head k)
+	    (map (function (x)
+	     (mbe:get-bindings p-head x k))
+	     e-head))
+      (mbe:get-bindings p-tail e-tail k))
+   })
+   ((pair? p)
+    (append (mbe:get-bindings (ph p) (ph e) k)
+	    (mbe:get-bindings (pt p) (pt e) k)))
+   ((symbol? p)
+    (if (memq p k) #n (list (pair p e))))
+   (else #n))
+}
+
+;;; expands pattern p using environment r;
+;;; k is the list of keywords
+define (mbe:expand-pattern p r k) {
+  (cond
+   ((mbe:ellipsis? p) {
+     append {
+       p-head := ph p
+       nestings := mbe:get-ellipsis-nestings p-head k
+       rr := mbe:ellipsis-sub-envs nestings r
+       map (function (r1)
+	(mbe:expand-pattern p-head (append r1 r) k)
+       ) rr
+     } (mbe:expand-pattern (ptt p) r k)
+   })
+   ((pair? p)
+    (pair (mbe:expand-pattern (ph p) r k)
+	  (mbe:expand-pattern (pt p) r k)))
+   ((symbol? p)
+    (if (memq p k) p {
+      x := assq p r
+      if x (pt x) p
+    }))
+   (else p))
+}
+
+;;; returns a list that nests a pattern variable as deeply as it
+;;; is ellipsed
+define (mbe:get-ellipsis-nestings p k) {
+    (let sub ((p p))
+      (cond ((mbe:ellipsis? p) (pair (sub (ph p)) (sub (ptt p))))
+	    ((pair? p) (append (sub (ph p)) (sub (pt p))))
+	    ((symbol? p) (if (memq p k) #n (list p)))
+       (else #n)))
+}
+
+;;; finds the subenvironments in r corresponding to the ellipsed
+;;; variables in nestings
+
+define (mbe:ellipsis-sub-envs nestings r) {
+  sub-envs-list := {
+    loop :+ function (r sub-envs-list) {
+      if (null? r) {
+	reverse! sub-envs-list
+      } {
+	c  := ph r
+	(loop (pt r)
+	      (if (mbe:contained-in? nestings (ph c))
+	       (pair (pt c) sub-envs-list)
+	       sub-envs-list))
+	}
+    }
+
+    loop r #n
+  }
+
+  (case (length sub-envs-list)
+   ((0) #f)
+   ((1) (ph sub-envs-list))
+   (else {
+     loop := function (sub-envs-list final-sub-envs) {
+       if (some null? sub-envs-list) {
+	 (reverse! final-sub-envs)
+       } {
+	 (loop (map pt sub-envs-list)
+	       (pair (mbe:append-map ph sub-envs-list)
+		     final-sub-envs))
+       }
+     }
+
+     loop sub-envs-list #n
+   }))
+}
+
+;;; checks if nestings v and y have an intersection
+define (mbe:contained-in? v y) {
+  if (or (symbol? v)
+	 (symbol? y)) {
+    (eq? v y)
+  } {
+    (some (function (v_i)
+     (some (function (y_j)
+      (mbe:contained-in? v_i y_j))
+      y))
+     v)
+  }
+}
+
+;;; split expression e so that its second half matches with
+;;; pattern p-tail
+define (mbe:split-at-ellipsis e p-tail) {
+  if (null? p-tail) (pair e #n) {
+    i := mbe:position (ph p-tail) e
+    if i {
+      without-nth e i
+    } {
+      error/type ^rt-parameter-value-error 'mbe:split-at-ellipsis "expr" e "not found"
+    }
+  }
+}
+
+;;; tests if x is an ellipsing pattern$ i.e.$ of the form
+;;; (blah ... . blah2)
+define (mbe:ellipsis? x) {
+  (and (pair? x) (pair? (pt x)) (eq? (pht x) '...))
+}
+
+#*
+
+;; The original define-syntax which creates a cond, testing each rule
+
+(defmacro define-syntax (macro-name syn-rules)
+  (if (or (not (pair? syn-rules))
+	  (not (eq? (car syn-rules) 'syntax-rules)))
+      (slib:error 'define-syntax 'not-an-r4rs-high-level-macro
+		  macro-name syn-rules)
+      (let ((keywords (cons macro-name (cadr syn-rules)))
+	    (clauses (cddr syn-rules)))
+	`(defmacro ,macro-name macro-arg
+	   (let ((macro-arg (cons ',macro-name macro-arg))
+		 (keywords ',keywords))
+	     (cond ,@(map
+		      (lambda (clause)
+			(let ((in-pattern (car clause))
+			      (out-pattern (cadr clause)))
+			  `((mbe:matches-pattern? ',in-pattern macro-arg
+						  keywords)
+			    (let ((tagged-out-pattern+alist
+				   (hyg:tag
+				    ',out-pattern
+				    (nconc (hyg:flatten ',in-pattern)
+					   keywords) '())))
+			      (hyg:untag
+			       (mbe:expand-pattern
+				(car tagged-out-pattern+alist)
+				(mbe:get-bindings ',in-pattern macro-arg
+						  keywords)
+				keywords)
+			       (cdr tagged-out-pattern+alist)
+			       '())))))
+		      clauses)
+		   (else (slib:error ',macro-name 'no-matching-clause
+				     ',clauses))))))))
+
+*#
+
+#*
+
+STklos creates a function which will parse the clauses resulting in
+smaller code and then has define-syntax call that.
+
+*#
+
+define (%find-syntax-clause macro-name macro-args keywords clauses) {
+  macro-form := pair macro-name macro-args
+  loop :+ function (l) {
+    if (null? l) {
+      error/type ^rt-syntax-error 'find-clause macro-name "no matching clause" macro-form
+    } {
+      in-pattern := phh l
+      out-pattern := phth l
+      if (mbe:matches-pattern? in-pattern macro-form keywords) {
+	tmp := (hyg:tag out-pattern
+			(append! (hyg:flatten in-pattern) keywords)
+			#n)
+	(hyg:untag (mbe:expand-pattern (ph tmp)
+				       (mbe:get-bindings in-pattern
+							 macro-form
+							 keywords)
+				       keywords)
+	 (pt tmp)
+	 #n)
+      } {
+	loop (pt l)
+      }
+    }
+  }
+
+  loop clauses
+}
+
+define-template (define-syntax macro-name syn-rules) {
+  if (or (not (pair? syn-rules))
+	 (not (eq? (ph syn-rules) 'syntax-rules))) {
+    error/type ^rt-syntax-error 'define-syntax "not syntax-rules" macro-name syn-rules
+  } {
+    keywords := pair macro-name (pht syn-rules)
+    clauses := ptt syn-rules
+
+    #T{
+      define-template ($macro-name & args) {
+	(%find-syntax-clause '$macro-name args '$keywords '$clauses)
+      }
+    }
+  }
+}

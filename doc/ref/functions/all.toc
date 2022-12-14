@@ -87,3 +87,39 @@
 (nodocument Idio indent-text)
 (nodocument Idio insert-file)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; Macro by Example
+
+(nodocument Idio some)
+(nodocument Idio every)
+(nodocument Idio without-nth)
+
+(nodocument Idio hyg:rassq)
+(nodocument Idio hyg:tag)
+(nodocument Idio hyg:untag)
+(nodocument Idio hyg:untag-list)
+(nodocument Idio hyg:untag-list*)
+(nodocument Idio hyg:untag-no-tags)
+(nodocument Idio hyg:untag-quasiquote)
+(nodocument Idio hyg:untag-function)
+(nodocument Idio hyg:untag-letrec)
+(nodocument Idio hyg:untag-let)
+(nodocument Idio hyg:untag-named-let)
+(nodocument Idio hyg:untag-let*)
+(nodocument Idio hyg:untag-do)
+(nodocument Idio hyg:untag-vanilla)
+(nodocument Idio hyg:flatten)
+
+(nodocument Idio mbe:position)
+(nodocument Idio mbe:append-map)
+(nodocument Idio mbe:matches-pattern?)
+(nodocument Idio mbe:get-bindings)
+(nodocument Idio mbe:expand-pattern)
+(nodocument Idio mbe:get-ellipsis-nestings)
+(nodocument Idio mbe:ellipsis-sub-envs)
+(nodocument Idio mbe:contained-in?)
+(nodocument Idio mbe:split-at-ellipsis)
+(nodocument Idio mbe:ellipsis?)
+
+(nodocument Idio %find-syntax-clause)
