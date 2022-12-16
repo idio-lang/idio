@@ -1177,14 +1177,18 @@ IDIO idio_list_ph_of (IDIO l)
     IDIO r = idio_S_nil;
 
     while (idio_S_nil != l) {
-	IDIO e = IDIO_PAIR_H (l);
-	if (idio_isa_pair (e)) {
-	    r = idio_pair (IDIO_PAIR_H (e), r);
+	if (idio_isa_pair (l)) {
+	    IDIO e = IDIO_PAIR_H (l);
+	    if (idio_isa_pair (e)) {
+		r = idio_pair (IDIO_PAIR_H (e), r);
+	    } else {
+		r = idio_pair (idio_S_nil, r);
+	    }
+	    l = IDIO_PAIR_T (l);
 	} else {
-	    r = idio_pair (idio_S_nil, r);
+	    r = idio_pair (l, r);
+	    break;
 	}
-	l = IDIO_PAIR_T (l);
-	IDIO_TYPE_ASSERT (list, l);
     }
 
     return idio_list_nreverse (r);
@@ -1219,14 +1223,18 @@ IDIO idio_list_pt_of (IDIO l)
     IDIO r = idio_S_nil;
 
     while (idio_S_nil != l) {
-	IDIO e = IDIO_PAIR_H (l);
-	if (idio_isa_pair (e)) {
-	    r = idio_pair (IDIO_PAIR_T (e), r);
+	if (idio_isa_pair (l)) {
+	    IDIO e = IDIO_PAIR_H (l);
+	    if (idio_isa_pair (e)) {
+		r = idio_pair (IDIO_PAIR_T (e), r);
+	    } else {
+		r = idio_pair (idio_S_nil, r);
+	    }
+	    l = IDIO_PAIR_T (l);
 	} else {
-	    r = idio_pair (idio_S_nil, r);
+	    r = idio_pair (l, r);
+	    break;
 	}
-	l = IDIO_PAIR_T (l);
-	IDIO_TYPE_ASSERT (list, l);
     }
 
     return idio_list_nreverse (r);
