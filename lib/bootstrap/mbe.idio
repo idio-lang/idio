@@ -399,8 +399,48 @@ define (hyg:untag-vanilla e al tmps) {
 	  (hyg:untag-vanilla (pt e) al tmps)))
    ((not (symbol? e)) e)
    ((memq e tmps) e)
-   ((assq e al) => pt)
-	(else e))
+   ((assq e al) => (function (p) {
+     ;; This is the same kludge as in STklos.  The code cannot know if
+     ;; a newly introduced symbol in the out-pattern is going to be
+     ;; used as a variable.  There are specific clauses for handling
+     ;; known variable-introducing expressions (let, let*, function
+     ;; etc.) in hyg:untag but we're out on a limb in general.  We
+     ;; can't blindly replace everything as we'd be replacing our own
+     ;; function calls etc., the very reason for having a syntax
+     ;; transformer in the first place.
+
+     ;; Here, then, the use of, say, $sym, would suggest that we
+     ;; should use the gensym'd $sym/nn instead.
+     ;;
+     ;; The example is from SRFI-11 which says:
+     ;;
+     ;; ((let-values "mktmp" (?a1 & ?b) ?e0 (?arg ...) ?bindings (?tmp ...) ?body)
+     ;;  (let-values "mktmp" ?b ?e0 (?arg ... x) ?bindings (?tmp ... (?a1 x)) ?body))
+     ;;
+     ;; where x is going to be used as a variable (in a later
+     ;; transformation using call-with-values).  If we don't replace x
+     ;; with a unique name then we'll have a function created with the
+     ;; accumulated variable names such as (function (x x) ...) which
+     ;; doesn't work well.
+     ;;
+     ;; We can replace that with:
+     ;;
+     ;; ((let-values "mktmp" (?a1 & ?b) ?e0 (?arg ...) ?bindings (?tmp ...) ?body)
+     ;;  (let-values "mktmp" ?b ?e0 (?arg ... $x) ?bindings (?tmp ... (?a1 $x)) ?body))
+     ;;
+     ;; which gives a feel that the nominal text rewrite is going to
+     ;; have some substitution thrown into the mix.
+     sym-str := symbol->string (pt p)
+     if (and (gt (string-length sym-str) 1)
+	     (string=? (substring sym-str 0 1) "$")) {
+       ;; it just so happens that we used a handy unique name in a
+       ;; previous transformation
+       ph p
+     } {
+       pt p
+     }
+   }))
+   (else e))
 }
 
 define (hyg:flatten e) {
