@@ -108,6 +108,33 @@ define (for-each f & a*) {
   (void)
 }
 
+;; map* and for-each* are from STklos (and others) where they are
+;; often used in parameter processing which can often be improper
+;; lists.
+define (map* f & l*) {
+  (cond
+   ((null? (ph l*))
+    #n)
+   ((pair? (ph l*)) {
+     (pair (apply      f (map ph l*))
+	   (apply map* f (map pt l*)))
+   })
+   (else
+    (apply f l*)))
+}
+
+define (for-each* f & l*) {
+  (cond
+   ((null? (ph l*))
+    #n)
+   ((pair? (ph l*)) {
+     apply           f (map ph l*)
+     apply for-each* f (map pt l*)
+   })
+   (else
+    (apply f l*)))
+}
+
 define-template (case key & clauses) {
   gen-clauses :+ function (k c*) {
     (cond
