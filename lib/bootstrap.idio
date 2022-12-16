@@ -53,6 +53,11 @@ include "bootstrap/module.idio"
 include "bootstrap/s9.idio"
 
 ; SRFI-8 receive is in common.idio as with-values-from
+
+;; SRFI-11 defined let-values and let*-values but they have been
+;; superceded by simpler templates in R7RS small
+load "rnrs.idio"
+
 ; SRFI-17 Generalized set! is in closure.idio
 load "SRFI-89.idio"			; Optional positional and named parameters
 load "SRFI-95.idio"			; sort, merge
