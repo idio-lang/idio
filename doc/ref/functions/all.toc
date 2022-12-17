@@ -16,14 +16,15 @@
 
 (nodocument Idio any-null?)
 (document Idio map)
+(document Idio map* maps)
 (document Idio for-each)
+(document Idio for-each* for-eachs)
 (document Idio for)
 (document Idio fold-left)
 (document Idio fold-right)
 
 (document Idio unwind-protect)
 (document Idio dynamic-wind)
-(nodocument Idio with-values-from)
 (document Idio apply)
 (document Idio exit)
 (nodocument Idio %set-exit-status)
