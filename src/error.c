@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -748,6 +748,9 @@ This does not return!				\n\
 
 	return idio_S_notreached;
     } else if (idio_eqp (ct, idio_condition_rt_parameter_error_type)) {
+	/*
+	 * error/type ^rt-parameter-error 'func msg ["param-str"]
+	 */
 	IDIO func = loc;
 	IDIO param = idio_S_nil;
 
@@ -767,8 +770,10 @@ This does not return!				\n\
 
 	idio_display (func, msh);
 	idio_display_C (" ", msh);
-	idio_display (param, msh);
-	idio_display_C (" ", msh);
+	if (idio_S_nil != param) {
+	    idio_display (param, msh);
+	    idio_display_C (" ", msh);
+	}
 	idio_display (msg, msh);
 
 	idio_error_raise_noncont (idio_condition_rt_parameter_error_type,
@@ -778,6 +783,9 @@ This does not return!				\n\
 
 	return idio_S_notreached;
     } else if (idio_eqp (ct, idio_condition_rt_variable_error_type)) {
+	/*
+	 * error/type ^rt-variable-error 'func msg ["param-str"]
+	 */
 	IDIO func = loc;
 	IDIO param = idio_S_nil;
 
@@ -797,8 +805,10 @@ This does not return!				\n\
 
 	idio_display (func, msh);
 	idio_display_C (" ", msh);
-	idio_display (param, msh);
-	idio_display_C (" ", msh);
+	if (idio_S_nil != param) {
+	    idio_display (param, msh);
+	    idio_display_C (" ", msh);
+	}
 	idio_display (msg, msh);
 
 	idio_error_raise_noncont (idio_condition_rt_variable_error_type,
