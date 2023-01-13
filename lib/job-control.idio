@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -1968,7 +1968,7 @@ wrapper functions with-input-from, with-output-to and with-error-to
 are identical barring some "directional" function calls.  We'll have a
 generic function instead.
 
-{type} is the symolic name of the handle being modified: 'input,
+{type} is the symbolic name of the handle being modified: 'input,
 'output, 'error
 
 {s/d} (source/destination) can be:
