@@ -1,0 +1,2309 @@
+#*
+
+Copyright (c) 2023 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+SRFI-1.idio
+
+A port of SRFI-1 List Library.
+
+*#
+
+module SRFI-1
+export (
+	 xpair tree-copy make-list list-tabulate pair* list-copy
+	 proper-list? circular-list? dotted-list? not-pair? null-list? list=
+	 circular-list length+
+	 iota
+	 first second third fourth fifth sixth seventh eighth ninth tenth
+	 ph+pt
+	 take       drop
+	 take-right drop-right
+	 take!      drop-right!
+	 split-at   split-at!
+	 last last-pair
+	 zip unzip1 unzip2 unzip3 unzip4 unzip5
+	 count
+	 append! append-reverse append-reverse! concatenate concatenate!
+	 unfold       fold       pair-fold       reduce
+	 unfold-right fold-right pair-fold-right reduce-right
+	 append-map append-map! map! pair-for-each filter-map map-in-order
+	 filter  partition  remove
+	 filter! partition! remove!
+	 find find-tail any every list-index
+	 take-while drop-while take-while!
+	 span break/1 span! break/1!
+	 delete delete!
+	 alist-pair alist-copy
+	 delete-duplicates delete-duplicates!
+	 alist-delete alist-delete!
+	 ;reverse!
+	 lset<= lset= lset-adjoin
+	 lset-union  lset-intersection  lset-difference  lset-xor  lset-diff+intersection
+	 lset-union! lset-intersection! lset-difference! lset-xor! lset-diff+intersection!
+)
+
+;;; SRFI-1 list-processing library			-*- Scheme -*-
+;;; Reference implementation
+;;;
+;;; Copyright (c) 1998, 1999 by Olin Shivers. You may do as you please with
+;;; this code as long as you do not remove this copyright notice or
+;;; hold me liable for its use. Please send bug reports to shivers@ai.mit.edu.
+;;;     -Olin
+
+;;; This is a library of list- and pair-processing functions. I wrote it after
+;;; carefully considering the functions provided by the libraries found in
+;;; R4RS/R5RS Scheme, MIT Scheme, Gambit, RScheme, MzScheme, slib, Common
+;;; Lisp, Bigloo, guile, T, APL and the SML standard basis. It is a pretty
+;;; rich toolkit, providing a superset of the functionality found in any of
+;;; the various Schemes I considered.
+
+;;; This implementation is intended as a portable reference implementation
+;;; for SRFI-1. See the porting notes below for more information.
+
+;;; Exported:
+;;; xpair tree-copy make-list list-tabulate pair* list-copy
+;;; proper-list? circular-list? dotted-list? not-pair? null-list? list=
+;;; circular-list length+
+;;; iota
+;;; first second third fourth fifth sixth seventh eighth ninth tenth
+;;; ph+pt
+;;; take       drop
+;;; take-right drop-right
+;;; take!      drop-right!
+;;; split-at   split-at!
+;;; last last-pair
+;;; zip unzip1 unzip2 unzip3 unzip4 unzip5
+;;; count
+;;; append! append-reverse append-reverse! concatenate concatenate!
+;;; unfold       fold       pair-fold       reduce
+;;; unfold-right fold-right pair-fold-right reduce-right
+;;; append-map append-map! map! pair-for-each filter-map map-in-order
+;;; filter  partition  remove
+;;; filter! partition! remove!
+;;; find find-tail any every list-index
+;;; take-while drop-while take-while!
+;;; span break span! break!
+;;; delete delete!
+;;; alist-pair alist-copy
+;;; delete-duplicates delete-duplicates!
+;;; alist-delete alist-delete!
+;;; reverse!
+;;; lset<= lset= lset-adjoin
+;;; lset-union  lset-intersection  lset-difference  lset-xor  lset-diff+intersection
+;;; lset-union! lset-intersection! lset-difference! lset-xor! lset-diff+intersection!
+;;;
+;;; In principle, the following R4RS list- and pair-processing procedures
+;;; are also part of this package's exports, although they are not defined
+;;; in this file:
+;;;   Primitives: pair pair? null? ph pt set-ph! set-pt!
+;;;   Non-primitives: list length append reverse cadr ... cddddr list-ref
+;;;                   memq memv assq assv
+;;;   (The non-primitives are defined in this file, but commented out.)
+;;;
+;;; These R4RS procedures have extended definitions in SRFI-1 and are defined
+;;; in this file:
+;;;   map for-each member assoc
+;;;
+;;; The remaining two R4RS list-processing procedures are not included:
+;;;   list-tail (use drop)
+;;;   list? (use proper-list?)
+
+
+;;; A note on recursion and iteration/reversal:
+;;; Many iterative list-processing algorithms naturally compute the elements
+;;; of the answer list in the wrong order (left-to-right or head-to-tail) from
+;;; the order needed to pair them into the proper answer (right-to-left, or
+;;; tail-then-head). One style or idiom of programming these algorithms, then,
+;;; loops, pairing up the elements in reverse order, then destructively
+;;; reverses the list at the end of the loop. I do not do this. The natural
+;;; and efficient way to code these algorithms is recursively. This trades off
+;;; intermediate temporary list structure for intermediate temporary stack
+;;; structure. In a stack-based system, this improves cache locality and
+;;; lightens the load on the GC system. Don't stand on your head to iterate!
+;;; Recurse, where natural. Multiple-value returns make this even more
+;;; convenient, when the recursion/iteration has multiple state values.
+
+;;; Porting:
+;;; This is carefully tuned code; do not modify casually.
+;;;   - It is careful to share storage when possible;
+;;;   - Side-effecting code tries not to perform redundant writes.
+;;;
+;;; That said, a port of this library to a specific Scheme system might wish
+;;; to tune this code to exploit particulars of the implementation.
+;;; The single most important compiler-specific optimisation you could make
+;;; to this library would be to add rewrite rules or transforms to:
+;;; - transform applications of n-ary procedures (e.g. LIST=, PAIR*, APPEND,
+;;;   LSET-UNION) into multiple applications of a primitive two-argument
+;;;   variant.
+;;; - transform applications of the mapping functions (MAP, FOR-EACH, FOLD,
+;;;   ANY, EVERY) into open-coded loops. The killer here is that these
+;;;   functions are n-ary. Handling the general case is quite inefficient,
+;;;   requiring many intermediate data structures to be allocated and
+;;;   discarded.
+;;; - transform applications of procedures that take optional arguments
+;;;   into calls to variants that do not take optional arguments. This
+;;;   eliminates unnecessary pairing and parsing of the rest parameter.
+;;;
+;;; These transforms would provide BIG speedups. In particular, the n-ary
+;;; mapping functions are particularly slow and pair-intensive, and are good
+;;; candidates for tuning. I have coded fast paths for the single-list cases,
+;;; but what you really want to do is exploit the fact that the compiler
+;;; usually knows how many arguments are being passed to a particular
+;;; application of these functions -- they are usually explicitly called, not
+;;; passed around as higher-order values. If you can arrange to have your
+;;; compiler produce custom code or custom linkages based on the number of
+;;; arguments in the call, you can speed these functions up a *lot*. But this
+;;; kind of compiler technology no longer exists in the Scheme world as far as
+;;; I can see.
+;;;
+;;; Note that this code is, of course, dependent upon standard bindings for
+;;; the R5RS procedures -- i.e., it assumes that the variable PH is bound
+;;; to the procedure that takes the ph of a list. If your Scheme
+;;; implementation allows user code to alter the bindings of these procedures
+;;; in a manner that would be visible to these definitions, then there might
+;;; be trouble. You could consider horrible kludgery along the lines of
+;;;    (define fact
+;;;      (let ((= =) (- -) (* *))
+;;;        (letrec ((real-fact (function (n)
+;;;                              (if (= n 0) 1 (* n (real-fact (- n 1)))))))
+;;;          real-fact)))
+;;; Or you could consider shifting to a reasonable Scheme system that, say,
+;;; has a module system protecting code from this kind of lossage.
+;;;
+;;; This code does a fair amount of run-time argument checking. If your
+;;; Scheme system has a sophisticated compiler that can eliminate redundant
+;;; error checks, this is no problem. However, if not, these checks incur
+;;; some performance overhead -- and, in a safe Scheme implementation, they
+;;; are in some sense redundant: if we don't check to see that the PROC
+;;; parameter is a procedure, we'll find out anyway three lines later when
+;;; we try to call the value. It's pretty easy to rip all this argument
+;;; checking code out if it's inappropriate for your implementation -- just
+;;; nuke every call to CHECK-ARG.
+;;;
+;;; On the other hand, if you *do* have a sophisticated compiler that will
+;;; actually perform soft-typing and eliminate redundant checks (Rice's systems
+;;; being the only possible candidate of which I'm aware), leaving these checks
+;;; in can *help*, since their presence can be elided in redundant cases,
+;;; and in cases where they are needed, performing the checks early, at
+;;; procedure entry, can "lift" a check out of a loop.
+;;;
+;;; Finally, I have only checked the properties that can portably be checked
+;;; with R5RS Scheme -- and this is not complete. You may wish to alter
+;;; the CHECK-ARG parameter checks to perform extra, implementation-specific
+;;; checks, such as procedure arity for higher-order values.
+;;;
+;;; The code has only these non-R4RS dependencies:
+;;;   A few calls to an ERROR procedure;
+;;;   Uses of the R5RS multiple-value procedure VALUES and the m-v binding
+;;;     RECEIVE macro (which isn't R5RS, but is a trivial macro).
+;;;   Many calls to a parameter-checking procedure check-arg:
+;;;    (define (check-arg pred val caller)
+;;;      (let lp ((val val))
+;;;        (if (pred val) val (lp (error "Bad argument" val pred caller)))))
+;;;   A few uses of the LET-OPTIONAL and :OPTIONAL macros for parsing
+;;;     optional arguments.
+;;;
+;;; Most of these procedures use the NULL-LIST? test to trigger the
+;;; base case in the inner loop or recursion. The NULL-LIST? function
+;;; is defined to be a careful one -- it raises an error if passed a
+;;; non-nil, non-pair value. The spec allows an implementation to use
+;;; a less-careful implementation that simply defines NULL-LIST? to
+;;; be NOT-PAIR?. This would speed up the inner loops of these procedures
+;;; at the expense of having them silently accept dotted lists.
+
+;;; A note on dotted lists:
+;;; I, personally, take the view that the only consistent view of lists
+;;; in Scheme is the view that *everything* is a list -- values such as
+;;; 3 or "foo" or 'bar are simply empty dotted lists. This is due to the
+;;; fact that Scheme actually has no true list type. It has a pair type,
+;;; and there is an *interpretation* of the trees built using this type
+;;; as lists.
+;;;
+;;; I lobbied to have these list-processing procedures hew to this
+;;; view, and accept any value as a list argument. I was overwhelmingly
+;;; overruled during the SRFI discussion phase. So I am inserting this
+;;; text in the reference lib and the SRFI spec as a sort of "minority
+;;; opinion" dissent.
+;;;
+;;; Many of the procedures in this library can be trivially redefined
+;;; to handle dotted lists, just by changing the NULL-LIST? base-case
+;;; check to NOT-PAIR?, meaning that any non-pair value is taken to be
+;;; an empty list. For most of these procedures, that's all that is
+;;; required.
+;;;
+;;; However, we have to do a little more work for some procedures that
+;;; *produce* lists from other lists.  Were we to extend these procedures to
+;;; accept dotted lists, we would have to define how they terminate the lists
+;;; produced as results when passed a dotted list. I designed a coherent set
+;;; of termination rules for these cases; this was posted to the SRFI-1
+;;; discussion list. I additionally wrote an earlier version of this library
+;;; that implemented that spec. It has been discarded during later phases of
+;;; the definition and implementation of this library.
+;;;
+;;; The argument *against* defining these procedures to work on dotted
+;;; lists is that dotted lists are the rare, odd case, and that by
+;;; arranging for the procedures to handle them, we lose error checking
+;;; in the cases where a dotted list is passed by accident -- e.g., when
+;;; the programmer swaps a two arguments to a list-processing function,
+;;; one being a scalar and one being a list. For example,
+;;;     (member '(1 3 5 7 9) 7)
+;;; This would quietly return #f if we extended MEMBER to accept dotted
+;;; lists.
+;;;
+;;; The SRFI discussion record contains more discussion on this topic.
+
+;; Idio: Olin Shivers created :optional (and let-optional etc.) for
+;; which we'll use regular optional as the evaluator doesn't like to
+;; assign to a non-symbol
+define-template (optional rest-arg default-exp) {
+  tmp := gensym 'tmp
+
+  #T{
+    {
+      $tmp := $rest-arg
+      if (null? $tmp) $default-exp (ph $tmp)
+    }
+  }
+}
+
+;; Idio: use a template to keep the source location intact for the
+;; error
+define-template (check-arg pred val caller) {
+  #T{
+    if ($pred $val) $val (error/type ^rt-parameter-value-error $caller "val" $val "bad argument")
+  }
+}
+
+;;; Constructors
+;;;;;;;;;;;;;;;;
+
+;;; Occasionally useful as a value to be passed to a fold or other
+;;; higher-order procedure.
+define (xpair d a) (pair a d)
+
+;;;; Recursively copy every pair.
+;(define (tree-copy x)
+;  (let recur ((x x))
+;    (if (not (pair? x)) x
+;	(pair (recur (ph x)) (recur (pt x))))))
+
+;;; Make a list of length LEN.
+
+define (make-list len & maybe-elt) {
+  check-arg (function (n) (and (integer? n) (n ge 0))) len 'make-list
+
+  elt := (cond
+	  ((null? maybe-elt) #f) ; Default value
+	  ((null? (pt maybe-elt)) (ph maybe-elt))
+	  (else (error/type ^rt-parameter-error
+			    'make-list "too many arguments"
+			    (pair len maybe-elt))))
+  (do ((i len (- i 1))
+       (ans #n (pair elt ans)))
+   ((le i 0) ans))
+}
+
+
+;(define (list & ans) ans)	; R4RS
+
+
+;;; Make a list of length LEN. Elt i is (PROC i) for 0 <= i < LEN.
+
+define (list-tabulate len proc) {
+  check-arg (function (n) (and (integer? n) (n ge 0))) len 'list-tabulate
+  check-arg function? proc 'list-tabulate
+
+  (do ((i (- len 1) (- i 1))
+       (ans #n (pair (proc i) ans)))
+   ((lt i 0) ans))
+}
+
+;;; (pair* a1 a2 ... an) = (pair a1 (pair a2 (pair ... an)))
+;;; (pair* a1) = a1	(pair* a1 a2 ...) = (pair a1 (pair* a2 ...))
+;;;
+;;; (pair first (unfold not-pair? ph pt rest values))
+
+define (pair* first & rest) {
+  define (recur x rest) {
+    if (pair? rest) {
+      pair x (recur (ph rest) (pt rest))
+    } x
+  }
+
+  recur first rest
+}
+
+;;; (unfold not-pair? ph pt lis values)
+
+define (list-copy lis) {
+  define (recur lis) {
+    if (pair? lis) {
+      pair (ph lis) (recur (pt lis))
+    } lis
+  }
+
+  recur lis
+}
+
+;;; IOTA count [start step]	(start start+step ... start+(count-1)*step)
+
+;; Idio: The original let-optionals in the body can be replaced by
+;; case-function and a helper function.
+iota := {
+  define (iota/3 count start step) {
+    check-arg integer? count 'iota
+    if (lt count 0) (error/type ^rt-parameter-value-error 'iota "count" count "Negative step count")
+
+    check-arg number? start 'iota
+    check-arg number? step 'iota
+
+    define (loop n r) {
+      if (n eq count) {
+	reverse r
+      } {
+	loop (1 + n) (pair (start + (n * step)) r)
+      }
+    }
+
+    loop 0 #n
+  }
+
+  (case-function
+   ((count)            (iota/3 count 0 1))
+   ((count start)      (iota/3 count start 1))
+   ((count start step) (iota/3 count start step)))
+}
+
+;;; I thought these were lovely, but the public at large did not share my
+;;; enthusiasm...
+;;; :IOTA to		(0 ... to-1)
+;;; :IOTA from to	(from ... to-1)
+;;; :IOTA from to step  (from from+step ...)
+
+;;; IOTA: to		(1 ... to)
+;;; IOTA: from to	(from+1 ... to)
+;;; IOTA: from to step	(from+step from+2step ...)
+
+;(define (%parse-iota-args arg1 rest-args proc)
+;  (let ((check (function (n) (check-arg integer? n 'proc))))
+;    (check arg1)
+;    (if (pair? rest-args)
+;	(let ((arg2 (check (ph rest-args)))
+;	      (rest (pt rest-args)))
+;	  (if (pair? rest)
+;	      (let ((arg3 (check (ph rest)))
+;		    (rest (pt rest)))
+;		(if (pair? rest) (error "Too many parameters" proc arg1 rest-args)
+;		    (values arg1 arg2 arg3)))
+;	      (values arg1 arg2 1)))
+;	(values 0 arg1 1))))
+;
+;(define (iota: arg1 & rest-args)
+;  (with-values-from (from to step) (%parse-iota-args arg1 rest-args iota:)
+;    (let* ((numsteps (floor (/ (- to from) step)))
+;	   (last-val (+ from (* step numsteps))))
+;      (if (lt numsteps 0) (error "Negative step count" iota: from to step))
+;      (do ((steps-left numsteps (- steps-left 1))
+;	   (val last-val (- val step))
+;	   (ans #n (pair val ans)))
+;	  ((le steps-left 0) ans)))))
+;
+;
+;(define (:iota arg1 & rest-args)
+;  (with-values-from (from to step) (%parse-iota-args arg1 rest-args :iota)
+;    (let* ((numsteps (ceiling (/ (- to from) step)))
+;	   (last-val (+ from (* step (- numsteps 1)))))
+;      (if (lt numsteps 0) (error "Negative step count" :iota from to step))
+;      (do ((steps-left numsteps (- steps-left 1))
+;	   (val last-val (- val step))
+;	   (ans #n (pair val ans)))
+;	  ((le steps-left 0) ans)))))
+
+
+
+define (circular-list val1 & vals) {
+  ans := pair val1 vals
+  set-pt! (last-pair ans) ans
+  ans
+}
+
+;;; <proper-list> ::= ()			; Empty proper list
+;;;		  |   (pair <x> <proper-list>)	; Proper-list pair
+;;; Note that this definition rules out circular lists -- and this
+;;; function is required to detect this case and return false.
+
+define (proper-list? x) {
+  define (lp x lag) {
+    if (pair? x) {
+      x := pt x
+      if (pair? x) {
+	x   := pt x
+	lag := pt lag
+
+	(and (not (eq? x lag))
+	     (lp x lag))
+      } {
+	null? x
+      }
+    } {
+      null? x
+    }
+  }
+
+  lp x x
+}
+
+
+;;; A dotted list is a finite list (possibly of length 0) terminated
+;;; by a non-nil value. Any non-cons, non-nil value (e.g., "foo" or 5)
+;;; is a dotted list of length 0.
+;;;
+;;; <dotted-list> ::= <non-nil,non-pair>	; Empty dotted list
+;;;               |   (pair <x> <dotted-list>)	; Proper-list pair
+
+define (dotted-list? x) {
+  define (lp x lag) {
+    if (pair? x) {
+      x := pt x
+      if (pair? x) {
+	x   := pt x
+	lag := pt lag
+	(and (not (eq? x lag))
+	     (lp x lag))
+	} {
+	not (null? x)
+      }
+    } {
+      not (null? x)
+    }
+  }
+
+  lp x x
+}
+
+define (circular-list? x) {
+  define (lp x lag) {
+    (and (pair? x) {
+      x := pt x
+      (and (pair? x) {
+	x   := pt x
+	lag := pt lag
+	(or (eq? x lag)
+	    (lp x lag))
+      })
+    })
+  }
+
+  lp x x
+}
+
+define (not-pair? x) (not (pair? x))	; Inline me.
+
+;;; This is a legal definition which is fast and sloppy:
+;;;     (define null-list? not-pair?)
+;;; but we'll provide a more careful one:
+define (null-list? l) {
+  (cond
+   ((pair? l) #f)
+   ((null? l) #t)
+   (else (error/type ^rt-parameter-value-error 'null-list? "l" l "argument out of domain")))
+}
+
+
+;; Idio: A parameter of = is picked up as an operator and \= looks
+;; clumsy so we'll use f= (both here and below)
+define (list= f= & lists) {
+  (or (null? lists) {			; special case
+    define (lp1 list-a others) {
+      (or (null? others) {
+	list-b := ph others
+	others := pt others
+
+	if (eq? list-a list-b) {
+	  ;; EQ? => LIST=
+	  lp1 list-b others
+	} {
+	  define (lp2 pair-a pair-b) {
+	    if (null-list? pair-a) {
+	      (and (null-list? pair-b)
+		   (lp1 list-b others))
+	    } {
+	      (and (not (null-list? pair-b))
+		   (f= (ph pair-a) (ph pair-b))
+		   (lp2 (pt pair-a) (pt pair-b)))
+	    }
+	  }
+
+	  lp2 list-a list-b
+	}
+      })
+    }
+
+    lp1 (ph lists) (pt lists)
+  })
+}
+
+
+;;; R4RS, so commented out.
+;(define (length x)			; LENGTH may diverge or
+;  (let lp ((x x) (len 0))		; raise an error if X is
+;    (if (pair? x)			; a circular list. This version
+;        (lp (pt x) (+ len 1))		; diverges.
+;        len)))
+
+define (length+ x) {			; Returns #f if X is circular.
+  define (lp x lag len) {
+    if (pair? x) {
+      x   := pt x
+      len := len + 1
+
+      if (pair? x) {
+	x   := pt x
+	lag := pt lag
+	len := len + 1
+
+	(and (not (eq? x lag))
+	     (lp x lag len))
+      } len
+    } len
+  }
+
+  lp x x 0
+}
+
+define (zip list1 & more-lists) (apply map list list1 more-lists)
+
+
+;;; Selectors
+;;;;;;;;;;;;;
+
+;;; R4RS non-primitives:
+;(define (caar   x) (ph (ph x)))
+;(define (cadr   x) (ph (pt x)))
+;(define (cdar   x) (pt (ph x)))
+;(define (cddr   x) (pt (pt x)))
+;
+;(define (caaar  x) (caar (ph x)))
+;(define (caadr  x) (caar (pt x)))
+;(define (cadar  x) (cadr (ph x)))
+;(define (caddr  x) (cadr (pt x)))
+;(define (cdaar  x) (cdar (ph x)))
+;(define (cdadr  x) (cdar (pt x)))
+;(define (cddar  x) (cddr (ph x)))
+;(define (cdddr  x) (cddr (pt x)))
+;
+;(define (caaaar x) (caaar (ph x)))
+;(define (caaadr x) (caaar (pt x)))
+;(define (caadar x) (caadr (ph x)))
+;(define (caaddr x) (caadr (pt x)))
+;(define (cadaar x) (cadar (ph x)))
+;(define (cadadr x) (cadar (pt x)))
+;(define (caddar x) (caddr (ph x)))
+;(define (cadddr x) (caddr (pt x)))
+;(define (cdaaar x) (cdaar (ph x)))
+;(define (cdaadr x) (cdaar (pt x)))
+;(define (cdadar x) (cdadr (ph x)))
+;(define (cdaddr x) (cdadr (pt x)))
+;(define (cddaar x) (cddar (ph x)))
+;(define (cddadr x) (cddar (pt x)))
+;(define (cdddar x) (cdddr (ph x)))
+;(define (cddddr x) (cdddr (pt x)))
+
+
+define first  ph
+define second pht
+define third  phtt
+define (fourth  x) (nth x 3)
+define (fifth   x) (nth x 4)
+define (sixth   x) (nth x 5)
+define (seventh x) (nth x 6)
+define (eighth  x) (nth x 7)
+define (ninth   x) (nth x 8)
+define (tenth   x) (nth x 9)
+
+define (ph+pt pair) (values (ph pair) (pt pair))
+
+;;; take & drop
+
+define (take lis k) {
+  check-arg integer? k 'take
+
+  define (recur lis k) {
+    if (zero? k) #n {
+      (pair (ph lis)
+	    (recur (pt lis) (k - 1)))
+    }
+  }
+
+  recur lis k
+}
+
+define (drop lis k) {
+  check-arg integer? k 'drop
+
+  define (iter lis k) {
+    if (zero? k) lis (iter (pt lis) (k - 1))
+  }
+
+  iter lis k
+}
+
+define (take! lis k) {
+  check-arg integer? k 'take!
+
+  if (zero? k) #n {
+    set-pt! (drop lis (- k 1)) #n
+    lis
+  }
+}
+
+;;; TAKE-RIGHT and DROP-RIGHT work by getting two pointers into the list,
+;;; off by K, then chasing down the list until the lead pointer falls off
+;;; the end.
+
+define (take-right lis k) {
+  check-arg integer? k 'take-right
+
+  define (lp lag lead) {
+    if (pair? lead) {
+      lp (pt lag) (pt lead)
+    } lag
+  }
+
+  lp lis (drop lis k)
+}
+
+define (drop-right lis k) {
+  check-arg integer? k 'drop-right
+
+  define (recur lag lead) {
+    if (pair? lead) {
+      pair (ph lag) (recur (pt lag) (pt lead))
+    } #n
+  }
+
+  recur lis (drop lis k)
+}
+
+;;; In this function, LEAD is actually K+1 ahead of LAG. This lets
+;;; us stop LAG one step early, in time to smash its pt to ().
+define (drop-right! lis k) {
+  check-arg integer? k 'drop-right!
+
+  lead := drop lis k
+  if (pair? lead) {
+    ; Standard case
+    define (lp lag lead) {
+      if (pair? lead) {
+	lp (pt lag) (pt lead)
+      } {
+	set-pt! lag #n
+	lis
+      }
+    }
+
+    lp lis (pt lead)
+  } #n ; Special case dropping everything -- no cons to side-effect.
+}
+
+;(define (list-ref lis i) (ph (drop lis i)))	; R4RS
+
+;;; These use the APL convention, whereby negative indices mean
+;;; "from the right." I liked them, but they didn't win over the
+;;; SRFI reviewers.
+;;; K >= 0: Take and drop  K elts from the front of the list.
+;;; K <= 0: Take and drop -K elts from the end   of the list.
+
+;(define (take lis k)
+;  (check-arg integer? k 'take)
+;  (if (negative? k)
+;      (list-tail lis (+ k (length lis)))
+;      (let recur ((lis lis) (k k))
+;	(if (zero? k) #n
+;	    (pair (ph lis)
+;		  (recur (pt lis) (- k 1)))))))
+;
+;(define (drop lis k)
+;  (check-arg integer? k 'drop)
+;  (if (negative? k)
+;      (let recur ((lis lis) (nelts (+ k (length lis))))
+;	(if (zero? nelts) #n
+;	    (pair (ph lis)
+;		  (recur (pt lis) (- nelts 1)))))
+;      (list-tail lis k)))
+;
+;
+;(define (take! lis k)
+;  (check-arg integer? k 'take!)
+;  (cond ((zero? k) #n)
+;	((positive? k)
+;	 (set-pt! (list-tail lis (- k 1)) #n)
+;	 lis)
+;	(else (list-tail lis (+ k (length lis))))))
+;
+;(define (drop! lis k)
+;  (check-arg integer? k drop!)
+;  (if (negative? k)
+;      (let ((nelts (+ k (length lis))))
+;	(if (zero? nelts) #n
+;	    (begin (set-pt! (list-tail lis (- nelts 1)) #n)
+;		   lis)))
+;      (list-tail lis k)))
+
+define (split-at x k) {
+  check-arg integer? k 'split-at
+
+  define (recur lis k) {
+    if (zero? k) {
+      values #n lis
+    } {
+      (with-values-from (prefix suffix)
+			(recur (pt lis) (k - 1))
+			(values (pair (ph lis) prefix)
+				suffix))
+    }
+  }
+
+  recur x k
+}
+
+define (split-at! x k) {
+  check-arg integer? k 'split-at!
+
+  if (zero? k) {
+    values #n x
+  } {
+    prev := drop x (k - 1)
+    suffix := pt prev
+
+    set-pt! prev #n
+    values x suffix
+  }
+}
+
+
+define (last lis) (ph (last-pair lis))
+
+define (last-pair lis) {
+  check-arg pair? lis 'last-pair
+
+  define (lp lis) {
+    tail := pt lis
+    if (pair? tail) (lp tail) lis
+  }
+
+  lp lis
+}
+
+
+;;; Unzippers -- 1 through 5
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+define (unzip1 lis) (map ph lis)
+
+define (unzip2 lis) {
+  define (recur lis) {
+    ; Use NOT-PAIR? to handle dotted lists.
+    if (null-list? lis) {
+      values lis lis
+    } {
+      elt := ph lis
+      (with-values-from (a b)
+			(recur (pt lis))
+			(values (pair (ph  elt) a)
+				(pair (pht elt) b)))
+    }
+  }
+
+  recur lis
+}
+
+define (unzip3 lis) {
+  define (recur lis) {
+    if (null-list? lis) {
+      values lis lis lis
+    } {
+      elt := ph lis
+      (with-values-from (a b c)
+			(recur (pt lis))
+			(values (pair (ph   elt) a)
+				(pair (pht  elt) b)
+				(pair (phtt elt) c)))
+    }
+  }
+
+  recur lis
+}
+
+define (unzip4 lis) {
+  define (recur lis) {
+    if (null-list? lis) {
+      values lis lis lis lis
+    } {
+      elt := ph lis
+      (with-values-from (a b c d)
+			(recur (pt lis))
+			(values (pair (ph    elt) a)
+				(pair (pht   elt) b)
+				(pair (phtt  elt) c)
+				(pair (phttt elt) d)))
+    }
+  }
+
+  recur lis
+}
+
+define (unzip5 lis) {
+  define (recur lis) {
+    if (null-list? lis) {
+      values lis lis lis lis lis
+    } {
+      elt := ph lis
+      (with-values-from (a b c d e)
+			(recur (pt lis))
+			(values (pair (ph    elt) a)
+				(pair (pht   elt) b)
+				(pair (phtt  elt) c)
+				(pair (phttt elt) d)
+				(pair (nth elt 4) e)))
+      }
+  }
+
+  recur lis
+}
+
+
+;;; append! append-reverse append-reverse! concatenate concatenate!
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+define (append! & lists) {
+  ;; First, scan through lists looking for a non-empty one.
+  define (lp lists prev) {
+    if (not (pair? lists)) prev {
+      first := ph lists
+      rest  := pt lists
+      if (not (pair? first)) {
+	lp rest first
+      } {
+	;; Now, do the splicing.
+	define (lp2 tail-pair rest) {
+	  if (pair? rest) {
+	    next := ph rest
+	    rest := pt rest
+
+	    set-pt! tail-pair next
+	    (lp2
+	     (if (pair? next)
+	      (last-pair next)
+	      tail-pair)
+	     rest)
+	  } first
+	}
+
+	lp2 (last-pair first) rest
+      }
+    }
+  }
+
+  lp lists #n
+}
+
+;;; APPEND is R4RS.
+;(define (append & lists)
+;  (if (pair? lists)
+;      (let recur ((list1 (ph lists)) (lists (pt lists)))
+;        (if (pair? lists)
+;            (let ((tail (recur (ph lists) (pt lists))))
+;              (fold-right cons tail list1)) ; Append LIST1 & TAIL.
+;            list1))
+;      #n))
+;; Idio: we'll take this as it'll be SRFI-1 fold-right -ready
+define (append & lists) {
+  if (pair? lists) {
+    define (recur list1 lists) {
+      if (pair? lists) {
+	tail := recur (ph lists) (pt lists)
+	fold-right pair tail list1	; Append LIST1 & TAIL.
+      } list1
+    }
+
+    recur (ph lists) (pt lists)
+  } #n
+}
+
+;(define (append-reverse rev-head tail) (fold cons tail rev-head))
+
+;(define (append-reverse! rev-head tail)
+;  (pair-fold (function (pair tail) (set-pt! pair tail) pair)
+;             tail
+;             rev-head))
+
+;;; Hand-inline the FOLD and PAIR-FOLD ops for speed.
+
+define (append-reverse rev-head tail) {
+  define (lp rev-head tail) {
+    if (null-list? rev-head) tail {
+      lp (pt rev-head) (pair (ph rev-head) tail)
+    }
+  }
+
+  lp rev-head tail
+}
+
+define (append-reverse! rev-head tail) {
+  define (lp rev-head tail) {
+    if (null-list? rev-head) tail {
+      next-rev := pt rev-head
+      set-pt! rev-head tail
+      lp next-rev rev-head
+    }
+  }
+
+  lp rev-head tail
+}
+
+
+define (concatenate  lists) (reduce-right append  #n lists)
+define (concatenate! lists) (reduce-right append! #n lists)
+
+;;; Fold/map internal utilities
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; These little internal utilities are used by the general
+;;; fold & mapper funs for the n-ary cases & It'd be nice if they got inlined.
+;;; One the other hand, the n-ary cases are painfully inefficient as it is.
+;;; An aggressive implementation should simply re-write these functions
+;;; for raw efficiency; I have written them for as much clarity, portability,
+;;; and simplicity as can be achieved.
+;;;
+;;; I use the dreaded call/cc to do local aborts. A good compiler could
+;;; handle this with extreme efficiency. An implementation that provides
+;;; a one-shot, non-persistent continuation grabber could help the compiler
+;;; out by using that in place of the call/cc's in these routines.
+;;;
+;;; These functions have funky definitions that are precisely tuned to
+;;; the needs of the fold/map procs -- for example, to minimize the number
+;;; of times the argument lists need to be examined.
+
+;;; Return (map pt lists).
+;;; However, if any element of LISTS is empty, just abort and return #n.
+define (%pts lists) {
+  call/cc (function (abort) {
+    define (recur lists) {
+      if (pair? lists) {
+	lis := ph lists
+	if (null-list? lis) {
+	  abort #n
+	} {
+	  pair (pt lis) (recur (pt lists))
+	}
+      } #n
+    }
+
+    recur lists
+  })
+}
+
+define (%phs+ lists last-elt) {	; (append! (map ph lists) (list last-elt))
+  define (recur lists) {
+    if (pair? lists) (pair (phh lists) (recur (pt lists))) (list last-elt)
+  }
+
+  recur lists
+}
+
+;;; LISTS is a (not very long) non-empty list of lists.
+;;; Return two lists: the phs & the pts of the lists.
+;;; However, if any of the lists is empty, just abort and return [() ()].
+
+define (%phs+pts lists) {
+  call/cc (function (abort) {
+    define (recur lists) {
+      if (pair? lists) {
+	(with-values-from (list other-lists)
+			  (ph+pt lists)
+			  (if (null-list? list)
+			   (abort #n #n) ; LIST is empty -- bail out
+			   (with-values-from (a d)
+					     (ph+pt list)
+					     (with-values-from (phs pts)
+							       (recur other-lists)
+							       (values (pair a phs)
+								       (pair d pts))))))
+      } {
+	values #n #n
+      }
+    }
+
+    recur lists
+  })
+}
+
+;;; Like %PHS+PTS, but we pass in a final elt tacked onto the end of the
+;;; phs list. What a hack.
+define (%phs+pts+ lists phs-final) {
+  call/cc (function (abort) {
+    define (recur lists) {
+      if (pair? lists) {
+	(with-values-from (list other-lists)
+			  (ph+pt lists)
+			  (if (null-list? list)
+			   (abort #n #n) ; LIST is empty -- bail out
+			   (with-values-from (a d)
+					     (ph+pt list)
+					     (with-values-from (phs pts)
+							       (recur other-lists)
+							       (values (pair a phs)
+								       (pair d pts))))))
+      } {
+	values (list phs-final) #n
+      }
+    }
+
+    recur lists
+  })
+}
+
+;;; Like %PHS+PTS, but blow up if any list is empty.
+define (%phs+pts/no-test lists) {
+  define (recur lists) {
+    if (pair? lists) {
+      (with-values-from (list other-lists)
+			(ph+pt lists)
+			(with-values-from (a d)
+					  (ph+pt list)
+					  (with-values-from (phs pts)
+							    (recur other-lists)
+							    (values (pair a phs)
+								    (pair d pts)))))
+      } {
+      values #n #n
+    }
+  }
+
+  recur lists
+}
+
+
+;;; count
+;;;;;;;;;
+define (count pred list1 & lists) {
+  check-arg function? pred 'count
+
+  if (pair? lists) {
+    ;; N-ary case
+    define (lp list1 lists i) {
+      if (null-list? list1) i {
+	(with-values-from (as ds)
+			  (%phs+pts lists)
+			  (if (null? as)
+			   i
+			   (lp (pt list1)
+			       ds
+			       (if (apply pred (ph list1) as)
+				(i + 1)
+				i))))
+      }
+    }
+
+    lp list1 lists 0
+  } {
+    ;; Fast path
+    define (lp lis i) {
+      if (null-list? lis) i {
+	lp (pt lis) (if (pred (ph lis)) (i + 1) i)
+      }
+    }
+
+    lp list1 0
+  }
+}
+
+
+;;; fold/unfold
+;;;;;;;;;;;;;;;
+
+define (unfold-right p f g seed & maybe-tail) {
+  check-arg function? p 'unfold-right
+  check-arg function? f 'unfold-right
+  check-arg function? g 'unfold-right
+
+  define (lp seed ans) {
+    if (p seed) ans {
+      lp (g seed) (pair (f seed) ans)
+    }
+  }
+
+  lp seed (optional maybe-tail #n)
+}
+
+
+define (unfold p f g seed & maybe-tail-gen) {
+  check-arg function? p 'unfold
+  check-arg function? f 'unfold
+  check-arg function? g 'unfold
+
+  if (pair? maybe-tail-gen) {
+    tail-gen := ph maybe-tail-gen
+    if (pair? (pt maybe-tail-gen)) {
+      error/type ^rt-parameter-value-error 'unfold "maybe-tail-gen" maybe-tail-gen "too many arguments"
+    } {
+      define (recur seed) {
+	if (p seed) {
+	  tail-gen seed
+	} {
+	  pair (f seed) (recur (g seed))
+	}
+      }
+
+      recur seed
+    }
+  } {
+    define (recur seed) {
+      if (p seed) #n {
+	pair (f seed) (recur (g seed))
+      }
+    }
+
+    recur seed
+  }
+}
+
+
+define (fold kons knil lis1 & lists) {
+  check-arg function? kons 'fold
+
+  if (pair? lists) {
+    ; N-ary case
+    define (lp lists ans) {
+      (with-values-from (phs+ans pts)
+			(%phs+pts+ lists ans)
+			(if (null? phs+ans)
+			 ans ; Done.
+			 (lp pts (apply kons phs+ans))))
+    }
+
+    lp (pair lis1 lists) knil
+  } {
+    ; Fast path
+    define (lp lis ans) {
+      if (null-list? lis) ans {
+	lp (pt lis) (kons (ph lis) ans)
+      }
+    }
+
+    lp lis1 knil
+  }
+}
+
+
+define (fold-right kons knil lis1 & lists) {
+  check-arg function? kons 'fold-right
+
+  if (pair? lists) {
+    ; N-ary case
+    define (recur lists) {
+      pts := %pts lists
+      if (null? pts) knil {
+	apply kons (%phs+ lists (recur pts))
+      }
+    }
+
+    recur (pair lis1 lists)
+  } {
+    ; Fast path
+    define (recur lis) {
+      if (null-list? lis) knil {
+	head := ph lis
+	kons head (recur (pt lis))
+      }
+    }
+
+    recur lis1
+  }
+}
+
+
+define (pair-fold-right f zero lis1 & lists) {
+  check-arg function? f 'pair-fold-right
+
+  if (pair? lists) {
+    ; N-ary case
+    define (recur lists) {
+      pts := %pts lists
+      if (null? pts) zero {
+	apply f (append! lists (list (recur pts)))
+      }
+    }
+
+    recur (pair lis1 lists)
+  } {
+    ; Fast path
+    define (recur lis) {
+      if (null-list? lis) zero (f lis (recur (pt lis)))
+    }
+
+    recur lis1
+  }
+}
+
+define (pair-fold f zero lis1 & lists) {
+  check-arg function? f 'pair-fold
+
+  if (pair? lists) {
+    ; N-ary case
+    define (lp lists ans) {
+      tails := %pts lists
+      if (null? tails) ans {
+	lp tails (apply f (append! lists (list ans)))
+      }
+    }
+
+    lp (pair lis1 lists) zero
+  } {
+    define (lp lis ans) {
+      if (null-list? lis) ans {
+	; Grab the pt now, in case F SET-PT!s LIS.
+	tail := pt lis
+	lp tail (f lis ans)
+      }
+    }
+
+    lp lis1 zero
+  }
+}
+
+
+;;; REDUCE and REDUCE-RIGHT only use RIDENTITY in the empty-list case.
+;;; These cannot meaningfully be n-ary.
+
+define (reduce f ridentity lis) {
+  check-arg function? f 'reduce
+
+  if (null-list? lis) ridentity {
+    fold f (ph lis) (pt lis)
+  }
+}
+
+define (reduce-right f ridentity lis) {
+  check-arg function? f 'reduce-right
+
+  if (null-list? lis) ridentity {
+    define (recur head lis) {
+      if (pair? lis) {
+	f head (recur (ph lis) (pt lis))
+      } head
+    }
+
+    recur (ph lis) (pt lis)
+  }
+}
+
+
+
+;;; Mappers: append-map append-map! pair-for-each map! filter-map map-in-order
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+define (append-map f lis1 & lists) {
+  really-append-map append-map  append  f lis1 lists
+}
+define (append-map! f lis1 & lists) {
+  really-append-map append-map! append! f lis1 lists
+}
+
+define (really-append-map who appender f lis1 lists) {
+  check-arg function? f 'who
+
+  if (pair? lists) {
+    (with-values-from (phs pts)
+		      (%phs+pts (pair lis1 lists))
+		      (if (null? phs) #n {
+			define (recur phs pts) {
+			  vals := apply f phs
+			  (with-values-from (phs2 pts2)
+					    (%phs+pts pts)
+					    (if (null? phs2) vals {
+					      appender vals (recur phs2 pts2)
+					    }))
+			}
+
+			recur phs pts
+		      }))
+  } {
+    ;; Fast path
+    if (null-list? lis1) #n {
+      define (recur elt rest) {
+	vals := f elt
+	if (null-list? rest) vals {
+	  appender vals (recur (ph rest) (pt rest))
+	}
+      }
+
+      recur (ph lis1) (pt lis1)
+    }
+  }
+}
+
+
+define (pair-for-each proc lis1 & lists) {
+  check-arg function? proc 'pair-for-each
+
+  if (pair? lists) {
+    define (lp lists) {
+      tails := %pts lists
+      if (pair? tails) {
+	apply proc lists
+	lp tails
+      }
+    }
+
+    lp (pair lis1 lists)
+  } {
+    ;; Fast path.
+    define (lp lis) {
+      if (not (null-list? lis)) {
+	; Grab the pt now, in case PROC SET-PT!s LIS.
+	tail := pt lis
+	proc lis
+	lp tail
+      }
+    }
+
+    lp lis1
+  }
+}
+
+;;; We stop when LIS1 runs out, not when any list runs out.
+define (map! f lis1 & lists) {
+  check-arg function? f 'map!
+
+  if (pair? lists) {
+    define (lp lis1 lists) {
+      if (not (null-list? lis1)) {
+	(with-values-from (heads tails)
+			  (%phs+pts/no-test lists)
+			  (set-ph! lis1 (apply f (ph lis1) heads))
+			  (lp (pt lis1) tails))
+      }
+    }
+
+    lp lis1 lists
+  } {
+    ;; Fast path.
+    pair-for-each (function (pair) (set-ph! pair (f (ph pair)))) lis1
+  }
+
+  lis1
+}
+
+
+;;; Map F across L, and save up all the non-false results.
+define (filter-map f lis1 & lists) {
+  check-arg function? f 'filter-map
+
+  if (pair? lists) {
+    define (recur lists) {
+      (with-values-from (phs pts)
+			(%phs+pts lists)
+			(if (pair? phs)
+			 (cond
+			  ((apply f phs) => (function (x) (pair x (recur pts))))
+			  (else (recur pts))) ; Tail call in this arm.
+			 #n))
+    }
+
+    recur (pair lis1 lists)
+  } {
+    ;; Fast path.
+    define (recur lis) {
+      if (null-list? lis) lis {
+	tail := recur (pt lis)
+	(cond
+	 ((f (ph lis)) => (function (x) (pair x tail)))
+	 (else tail))
+      }
+    }
+
+    recur lis1
+  }
+}
+
+
+;;; Map F across lists, guaranteeing to go left-to-right.
+;;; NOTE: Some implementations of R5RS MAP are compliant with this spec;
+;;; in which case this procedure may simply be defined as a synonym for MAP.
+
+define (map-in-order f lis1 & lists) {
+  check-arg function? f 'map-in-order
+
+  if (pair? lists) {
+    define (recur lists) {
+      (with-values-from (phs pts)
+			(%phs+pts lists)
+			(if (pair? phs) {
+			  ; Do head first, then tail.
+			  x := apply f phs
+			  pair x (recur pts)
+			} #n))
+    }
+
+    recur (pair lis1 lists)
+  } {
+    ;; Fast path.
+    define (recur lis) {
+      if (null-list? lis) lis {
+	tail := pt lis
+	; Do head first,
+	x := f (ph lis)
+	; then tail.
+	pair x (recur tail)
+      }
+    }
+
+    recur lis1
+  }
+}
+
+
+;;; We extend MAP to handle arguments of unequal length.
+
+;; Idio: Oh no we won't!  The Idio map works with arrays and strings.
+
+;define map map-in-order
+
+
+;;; filter, remove, partition
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; FILTER, REMOVE, PARTITION and their destructive counterparts do not
+;;; disorder the elements of their argument.
+
+;; This FILTER shares the longest tail of L that has no deleted elements.
+;; If Scheme had multi-continuation calls, they could be made more efficient.
+
+define (filter pred lis) {			; Sleazing with EQ? makes this
+  check-arg function? pred 'filter		; one faster.
+
+  define (recur lis) {
+    if (null-list? lis) lis {			; Use NOT-PAIR? to handle dotted lists.
+      head := ph lis
+      tail := pt lis
+      if (pred head) {
+	new-tail := recur tail			; Replicate the RECUR call so
+	if (eq? tail new-tail) lis {
+	  pair head new-tail
+	}
+      } {
+	recur tail				; this one can be a tail call.
+      }
+    }
+  }
+
+  recur lis
+}
+
+
+;;; Another version that shares longest tail.
+;(define (filter pred lis)
+;  (with-values-from (ans no-del?)
+;      ;; (recur l) returns L with (pred x) values filtered.
+;      ;; It also returns a flag NO-DEL? if the returned value
+;      ;; is EQ? to L, i.e. if it didn't have to delete anything.
+;      (let recur ((l l))
+;	(if (null-list? l) (values l #t)
+;	    (let ((x  (ph l))
+;		  (tl (pt l)))
+;	      (if (pred x)
+;		  (with-values-from (ans no-del?) (recur tl)
+;		    (if no-del?
+;			(values l #t)
+;			(values (pair x ans) #f)))
+;		  (with-values-from (ans no-del?) (recur tl) ; Delete X.
+;		    (values ans #f))))))
+;    ans))
+
+
+
+;(define (filter! pred lis)			; Things are much simpler
+;  (let recur ((lis lis))			; if you are willing to
+;    (if (pair? lis)				; push N stack frames & do N
+;        (cond ((pred (ph lis))		; SET-PT! writes, where N is
+;               (set-pt! lis (recur (pt lis))); the length of the answer.
+;               lis)
+;              (else (recur (pt lis))))
+;        lis)))
+
+
+;;; This implementation of FILTER!
+;;; - doesn't cons, and uses no stack;
+;;; - is careful not to do redundant SET-PT! writes, as writes to memory are
+;;;   usually expensive on modern machines, and can be extremely expensive on
+;;;   modern Schemes (e.g., ones that have generational GC's).
+;;; It just zips down contiguous runs of in and out elts in LIS doing the
+;;; minimal number of SET-PT!s to splice the tail of one run of ins to the
+;;; beginning of the next.
+
+define (filter! pred lis) {
+  check-arg function? pred 'filter!
+
+  define (lp ans) {
+    (cond
+     ((null-list? ans)       ans)			; Scan looking for
+     ((not (pred (ph ans))) (lp (pt ans)))		; first cons of result.
+
+     ;; ANS is the eventual answer.
+     ;; SCAN-IN: (PT PREV) = LIS and (PH PREV) satisfies PRED.
+     ;;          Scan over a contiguous segment of the list that
+     ;;          satisfies PRED.
+     ;; SCAN-OUT: (PH PREV) satisfies PRED. Scan over a contiguous
+     ;;           segment of the list that *doesn't* satisfy PRED.
+     ;;           When the segment ends, patch in a link from PREV
+     ;;           to the start of the next good segment, and jump to
+     ;;           SCAN-IN.
+     (else {
+       define (scan-in prev lis) {
+	 if (pair? lis) {
+	   if (pred (ph lis)) {
+	     scan-in lis (pt lis)
+	     } {
+	     scan-out prev (pt lis)
+	   }
+	 }
+       }
+
+       define (scan-out prev lis) {
+	 define (lp lis) {
+	   if (pair? lis) {
+	     if (pred (ph lis)) {
+	       set-pt! prev lis
+	       scan-in lis (pt lis)
+	     } {
+	       lp (pt lis)
+	     }
+	   } {
+	     set-pt! prev lis
+	   }
+	 }
+
+	 lp lis
+       }
+
+       scan-in ans (pt ans)
+       ans
+     }))
+  }
+
+  lp lis
+}
+
+
+
+;;; Answers share common tail with LIS where possible;
+;;; the technique is slightly subtle.
+
+define (partition pred lis) {
+  check-arg function? pred 'partition
+
+  define (recur lis) {
+    if (null-list? lis) (values lis lis) {	; Use NOT-PAIR? to handle dotted lists.
+      elt := ph lis
+      tail := pt lis
+      (with-values-from (in out)
+			(recur tail)
+			(if (pred elt)
+			 (values (if (pair? out) (pair elt in) lis) out)
+			 (values in (if (pair? in) (pair elt out) lis))))
+    }
+  }
+
+  recur lis
+}
+
+
+
+;(define (partition! pred lis)			; Things are much simpler
+;  (let recur ((lis lis))			; if you are willing to
+;    (if (null-list? lis) (values lis lis)	; push N stack frames & do N
+;        (let ((elt (ph lis)))			; SET-PT! writes, where N is
+;          (with-values-from (in out) (recur (pt lis))	; the length of LIS.
+;            (cond ((pred elt)
+;                   (set-pt! lis in)
+;                   (values lis out))
+;                  (else (set-pt! lis out)
+;                        (values in lis))))))))
+
+
+;;; This implementation of PARTITION!
+;;; - doesn't cons, and uses no stack;
+;;; - is careful not to do redundant SET-PT! writes, as writes to memory are
+;;;   usually expensive on modern machines, and can be extremely expensive on
+;;;   modern Schemes (e.g., ones that have generational GC's).
+;;; It just zips down contiguous runs of in and out elts in LIS doing the
+;;; minimal number of SET-PT!s to splice these runs together into the result
+;;; lists.
+
+define (partition! pred lis) {
+  check-arg function? pred 'partition!
+
+  if (null-list? lis) (values lis lis) {
+
+    ;; This pair of loops zips down contiguous in & out runs of the
+    ;; list, splicing the runs together. The invariants are
+    ;;   SCAN-IN:  (pt in-prev)  = LIS.
+    ;;   SCAN-OUT: (pt out-prev) = LIS.
+    define (scan-in in-prev out-prev lis) {
+      define (lp in-prev lis) {
+	if (pair? lis) {
+	  if (pred (ph lis)) {
+	    lp lis (pt lis)
+	  } {
+	    set-pt! out-prev lis
+	    scan-out in-prev lis (pt lis)
+	  }
+	} {
+	  set-pt! out-prev lis
+	}
+      }
+
+      lp in-prev lis
+    }
+
+    define (scan-out in-prev out-prev lis) {
+      define (lp out-prev lis) {
+	if (pair? lis) {
+	  if (pred (ph lis)) {
+	    set-pt! in-prev lis
+	    scan-in lis out-prev (pt lis)
+	  } {
+	    lp lis (pt lis)
+	  }
+	} {
+	  set-pt! in-prev lis
+	}
+      }
+
+      lp out-prev lis
+    }
+
+    ;; Crank up the scan&splice loops.
+    if (pred (ph lis)) {
+      ;; LIS begins in-list. Search for out-list's first pair.
+      define (lp prev-l l) {
+	(cond
+	 ((not (pair? l)) (values lis l))
+	 ((pred (ph l))   (lp l (pt l)))
+	 (else {
+	   scan-out prev-l l (pt l)
+	   values lis l
+	 }))
+      }
+
+      lp lis (pt lis)	; Done.
+    } {
+      ;; LIS begins out-list. Search for in-list's first pair.
+      define (lp prev-l l) {
+	(cond
+	 ((not (pair? l)) (values l lis))
+	 ((pred (ph l)) {
+	   scan-in l prev-l (pt l)
+	   values l lis
+	 })
+	 (else (lp l (pt l))))
+      }
+
+      lp lis (pt lis)
+    }
+  }
+}
+
+
+;;; Inline us, please.
+define (remove  pred l) (filter  (function (x) (not (pred x))) l)
+define (remove! pred l) (filter! (function (x) (not (pred x))) l)
+
+
+
+;;; Here's the taxonomy for the DELETE/ASSOC/MEMBER functions.
+;;; (I don't actually think these are the world's most important
+;;; functions -- the procedural FILTER/REMOVE/FIND/FIND-TAIL variants
+;;; are far more general.)
+;;;
+;;; Function			Action
+;;; ---------------------------------------------------------------------------
+;;; remove pred lis		Delete by general predicate
+;;; delete x lis [=]		Delete by element comparison
+;;;
+;;; find pred lis		Search by general predicate
+;;; find-tail pred lis		Search by general predicate
+;;; member x lis [=]		Search by element comparison
+;;;
+;;; assoc key lis [=]		Search alist by key comparison
+;;; alist-delete key alist [=]	Alist-delete by key comparison
+
+define (delete x lis & maybe-=) {
+  f= := optional maybe-= equal?
+  filter (function (y) (not (f= x y))) lis
+}
+
+define (delete! x lis & maybe-=) {
+  f= := optional maybe-= equal?
+  filter! (function (y) (not (f= x y))) lis
+}
+
+;;; Extended from R4RS to take an optional comparison argument.
+define (member x lis & maybe-=) {
+  f= := optional maybe-= equal?
+  find-tail (function (y) (f= x y)) lis
+}
+
+;;; R4RS, hence we don't bother to define.
+;;; The MEMBER and then FIND-TAIL call should definitely
+;;; be inlined for MEMQ & MEMV.
+;(define (memq    x lis) (member x lis eq?))
+;(define (memv    x lis) (member x lis eqv?))
+
+
+;;; right-duplicate deletion
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; delete-duplicates delete-duplicates!
+;;;
+;;; Beware -- these are N^2 algorithms. To efficiently remove duplicates
+;;; in long lists, sort the list to bring duplicates together, then use a
+;;; linear-time algorithm to kill the dups. Or use an algorithm based on
+;;; element-marking. The former gives you O(n lg n), the latter is linear.
+
+define (delete-duplicates lis & maybe-=) {
+  elt= := optional maybe-= equal?
+  check-arg function? elt= 'delete-duplicates
+
+  define (recur lis) {
+    if (null-list? lis) lis {
+      x        := ph lis
+      tail     := pt lis
+      new-tail := recur (delete x tail elt=)
+      if (eq? tail new-tail) lis (pair x new-tail)
+    }
+  }
+
+  recur lis
+}
+
+define (delete-duplicates! lis & maybe-=) {
+  elt= := optional maybe-= equal?
+  check-arg function? elt= 'delete-duplicates!
+
+  define (recur lis) {
+    if (null-list? lis) lis {
+      x        := ph lis
+      tail     := pt lis
+      new-tail := recur (delete! x tail elt=)
+
+      if (eq? tail new-tail) lis (pair x new-tail)
+    }
+  }
+
+  recur lis
+}
+
+
+;;; alist stuff
+;;;;;;;;;;;;;;;
+
+;;; Extended from R4RS to take an optional comparison argument.
+define (assoc x lis & maybe-=) {
+  f= := optional maybe-= equal?
+  find (function (entry) (f= x (ph entry))) lis
+}
+
+define (alist-pair key datum alist) (pair (pair key datum) alist)
+
+define (alist-copy alist) {
+  (map (function (elt) (pair (ph elt) (pt elt)))
+       alist)
+}
+
+define (alist-delete key alist & maybe-=) {
+  f= := optional maybe-= equal?
+  filter (function (elt) (not (f= key (ph elt)))) alist
+}
+
+define (alist-delete! key alist & maybe-=) {
+  f= := optional maybe-= equal?
+  filter! (function (elt) (not (f= key (ph elt)))) alist
+}
+
+
+;;; find find-tail take-while drop-while span break any every list-index
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+define (find pred list) {
+  (cond
+   ((find-tail pred list) => ph)
+   (else #f))
+}
+
+define (find-tail pred list) {
+  check-arg function? pred 'find-tail
+
+  define (lp list) {
+    (and (not (null-list? list))
+	 (if (pred (ph list))
+	  list
+	  (lp (pt list))))
+  }
+
+  lp list
+}
+
+define (take-while pred lis) {
+  check-arg function? pred 'take-while
+
+  define (recur lis) {
+    if (null-list? lis) #n {
+      x := ph lis
+      if (pred x) {
+	pair x (recur (pt lis))
+      } #n
+    }
+  }
+
+  recur lis
+}
+
+define (drop-while pred lis) {
+  check-arg function? pred 'drop-while
+
+  define (lp lis) {
+    if (null-list? lis) #n {
+      if (pred (ph lis)) {
+	lp (pt lis)
+      } lis
+    }
+  }
+
+  lp lis
+}
+
+define (take-while! pred lis) {
+  check-arg function? pred 'take-while!
+
+  if (or (null-list? lis)
+	 (not (pred (ph lis)))) #n {
+    define (lp prev rest) {
+      if (pair? rest) {
+	x := ph rest
+	if (pred x) {
+	  lp rest (pt rest)
+	  } {
+	  set-pt! prev #n
+	}
+      }
+    }
+
+    lp lis (pt lis)
+    lis
+  }
+}
+
+define (span pred lis) {
+  check-arg function? pred 'span
+
+  define (recur lis) {
+    if (null-list? lis) {
+      values #n #n
+    } {
+      x := ph lis
+      if (pred x) {
+	(with-values-from (prefix suffix)
+			  (recur (pt lis))
+			  (values (pair x prefix) suffix))
+	} {
+	values #n lis
+      }
+    }
+  }
+
+  recur lis
+}
+
+define (span! pred lis) {
+  (check-arg function? pred 'span!)
+  (if (or (null-list? lis) (not (pred (ph lis)))) (values #n lis)
+      (let ((suffix (let lp ((prev lis) (rest (pt lis)))
+		      (if (null-list? rest) rest
+			  (let ((x (ph rest)))
+			    (if (pred x) (lp rest (pt rest))
+				(begin (set-pt! prev #n)
+				       rest)))))))
+       (values lis suffix)))
+}
+
+
+;; Idio: break clashes with the loop prompt in
+;; bootstrap/delim-control.idio and so both break and break! have been
+;; renamed in the export statement above.
+(define (break/1  pred lis) (span  (function (x) (not (pred x))) lis))
+(define (break/1! pred lis) (span! (function (x) (not (pred x))) lis))
+
+define (any pred lis1 & lists) {
+  check-arg function? pred 'any
+
+  if (pair? lists) {
+    ;; N-ary case
+    (with-values-from (heads tails)
+		      (%phs+pts (pair lis1 lists))
+		      (and (pair? heads) {
+			define (lp heads tails) {
+			  (with-values-from (next-heads next-tails)
+					    (%phs+pts tails)
+					    (if (pair? next-heads)
+					     (or (apply pred heads)
+						 (lp next-heads next-tails))
+					     (apply pred heads))) ; Last PRED app is tail call.
+			}
+
+			lp heads tails
+		      }))
+  } {
+    ;; Fast path
+    (and (not (null-list? lis1)) {
+      define (lp head tail) {
+	if (null-list? tail) {
+	  pred head			; Last PRED app is tail call.
+	} {
+	  (or (pred head)
+	      (lp (ph tail) (pt tail)))
+	}
+      }
+
+      lp (ph lis1) (pt lis1)
+    })
+  }
+}
+
+
+;(define (every pred list)              ; Simple definition.
+;  (let lp ((list list))                ; Doesn't return the last PRED value.
+;    (or (not (pair? list))
+;        (and (pred (ph list))
+;             (lp (pt list))))))
+
+define (every pred lis1 & lists) {
+  check-arg function? pred 'every
+
+  if (pair? lists) {
+    ;; N-ary case
+    (with-values-from (heads tails)
+		      (%phs+pts (pair lis1 lists))
+		      (or (not (pair? heads)) {
+			define (lp heads tails) {
+			  (with-values-from (next-heads next-tails)
+					    (%phs+pts tails)
+					    (if (pair? next-heads)
+					     (and (apply pred heads)
+						  (lp next-heads next-tails))
+					     (apply pred heads))) ; Last PRED app is tail call.
+			}
+
+			lp heads tails
+		      }))
+  } {
+    ;; Fast path
+    (or (null-list? lis1) {
+      define (lp head tail) {
+	if (null-list? tail) {
+	  pred head			; Last PRED app is tail call.
+	} {
+	  (and (pred head)
+	       (lp (ph tail) (pt tail)))
+	}
+      }
+
+      lp (ph lis1) (pt lis1)
+    })
+  }
+}
+
+define (list-index pred lis1 & lists) {
+  check-arg function? pred 'list-index
+
+  if (pair? lists) {
+    ;; N-ary case
+    define (lp lists n) {
+      (with-values-from (heads tails)
+			(%phs+pts lists)
+			(and (pair? heads)
+			     (if (apply pred heads)
+			      n
+			      (lp tails (n + 1)))))
+    }
+
+    lp (pair lis1 lists) 0
+  } {
+    ;; Fast path
+    define (lp lis n) {
+      (and (not (null-list? lis))
+	   (if (pred (ph lis))
+	    n
+	    (lp (pt lis) (n + 1))))
+    }
+
+    lp lis1 0
+  }
+}
+
+;;; Reverse
+;;;;;;;;;;;
+
+;R4RS, so not defined here.
+;(define (reverse lis) (fold cons #n lis))
+
+;(define (reverse! lis)
+;  (pair-fold (function (pair tail) (set-pt! pair tail) pair) #n lis))
+
+;; Idio: we have a primitive
+;; (define (reverse! lis)
+;;   (let lp ((lis lis) (ans #n))
+;;     (if (null-list? lis) ans
+;;         (let ((tail (pt lis)))
+;;           (set-pt! lis ans)
+;;           (lp tail lis)))))
+
+;;; Lists-as-sets
+;;;;;;;;;;;;;;;;;
+
+;;; This is carefully tuned code; do not modify casually.
+;;; - It is careful to share storage when possible;
+;;; - Side-effecting code tries not to perform redundant writes.
+;;; - It tries to avoid linear-time scans in special cases where constant-time
+;;;   computations can be performed.
+;;; - It relies on similar properties from the other list-lib procs it calls.
+;;;   For example, it uses the fact that the implementations of MEMBER and
+;;;   FILTER in this source code share longest common tails between args
+;;;   and results to get structure sharing in the lset procedures.
+
+define (%lset2<= f= lis1 lis2) (every (function (x) (member x lis2 f=)) lis1)
+
+define (lset<= f= & lists) {
+  check-arg function? f= 'lset<=
+
+  (or (not (pair? lists)) {		; 0-ary case
+    define (lp s1 rest) {
+      (or (not (pair? rest)) {
+	s2   := ph rest
+	rest := pt rest
+	(and (or (eq? s2 s1)		; Fast path
+		 (%lset2<= f= s1 s2))	; Real test
+	 (lp s2 rest))
+      })
+    }
+
+    lp (ph lists) (pt lists)
+  })
+}
+
+define (lset= f= & lists) {
+  define (flip proc) (function (x y) (proc y x))
+  check-arg function? f= 'lset=
+
+  (or (not (pair? lists)) {		; 0-ary case
+    define (lp s1 rest) {
+      (or (not (pair? rest)) {
+	s2   := ph rest
+	rest := pt rest
+	(and (or (eq? s1 s2)		  ; Fast path
+		 (and (%lset2<= f= s1 s2) ; Real test
+		      (%lset2<= (flip f=) s2 s1)))
+	 (lp s2 rest))
+      })
+    }
+
+    lp (ph lists) (pt lists)
+  })
+}
+
+define (lset-adjoin f= lis & elts) {
+  check-arg function? f= 'lset-adjoin
+
+  (fold (function (elt ans) (if (member elt ans f=) ans (pair elt ans)))
+	lis elts)
+}
+
+
+define (lset-union f= & lists) {
+  check-arg function? f= 'lset-union
+
+  (reduce (function (lis ans)		; Compute ANS + LIS.
+   (cond
+    ((null? lis) ans)			; Don't copy any lists
+    ((null? ans) lis)			; if we don't have to.
+    ((eq? lis ans) ans)
+    (else
+     (fold (function (elt ans) (if (any (function (x) (f= x elt)) ans)
+      ans
+      (pair elt ans)))
+      ans lis))))
+   #n lists)
+}
+
+define (lset-union! f= & lists) {
+  check-arg function? f= 'lset-union!
+
+  (reduce (function (lis ans)		; Splice new elts of LIS onto the front of ANS.
+   (cond
+    ((null? lis) ans)			; Don't copy any lists
+    ((null? ans) lis)			; if we don't have to.
+    ((eq? lis ans) ans)
+    (else
+     (pair-fold (function (pair ans) {
+       elt := ph pair
+       (if (any (function (x) (f= x elt)) ans)
+	ans {
+	 set-pt! pair ans
+	 pair
+       })
+     })
+      ans lis))))
+   #n lists)
+}
+
+
+define (lset-intersection f= lis1 & lists) {
+  check-arg function? f= 'lset-intersection
+
+  lists := delete lis1 lists eq?	; Throw out any LIS1 vals.
+  (cond
+   ((any null-list? lists) #n)		; Short cut
+   ((null? lists)          lis1)	; Short cut
+   (else (filter (function (x)
+    (every (function (lis) (member x lis f=)) lists))
+	  lis1)))
+}
+
+define (lset-intersection! f= lis1 & lists) {
+  check-arg function? f= 'lset-intersection!
+
+  lists := delete lis1 lists eq?	; Throw out any LIS1 vals.
+  (cond
+   ((any null-list? lists) #n)		; Short cut
+   ((null? lists)          lis1)	; Short cut
+   (else (filter! (function (x)
+    (every (function (lis) (member x lis f=)) lists))
+	  lis1)))
+}
+
+
+define (lset-difference f= lis1 & lists) {
+  check-arg function? f= 'lset-difference
+
+  lists := filter pair? lists		; Throw out empty lists.
+  (cond
+   ((null? lists)     lis1)		; Short cut
+   ((memq lis1 lists) #n)		; Short cut
+   (else (filter (function (x)
+    (every (function (lis) (not (member x lis f=)))
+	   lists))
+	  lis1)))
+}
+
+define (lset-difference! f= lis1 & lists) {
+  check-arg function? f= 'lset-difference!
+
+  lists := filter pair? lists		; Throw out empty lists.
+  (cond
+   ((null? lists)     lis1)		; Short cut
+   ((memq lis1 lists) #n)		; Short cut
+   (else (filter! (function (x)
+    (every (function (lis) (not (member x lis f=)))
+	   lists))
+	  lis1)))
+}
+
+
+define (lset-xor f= & lists) {
+  check-arg function? f= 'lset-xor
+  (reduce (function (b a)			; Compute A xor B:
+   ;; Note that this code relies on the constant-time
+   ;; short-cuts provided by LSET-DIFF+INTERSECTION,
+   ;; LSET-DIFFERENCE & APPEND to provide constant-time short
+   ;; cuts for the cases A = (), B = (), and A eq? B. It takes
+   ;; a careful case analysis to see it, but it's carefully
+   ;; built in.
+
+   ;; Compute a-b and a^b, then compute b-(a^b) and
+   ;; cons it onto the front of a-b.
+   (with-values-from (a-b a-int-b)
+		     (lset-diff+intersection f= a b)
+		     (cond
+		      ((null? a-b)     (lset-difference f= b a))
+		      ((null? a-int-b) (append b a))
+		      (else (fold (function (xb ans)
+		       (if (member xb a-int-b f=) ans (pair xb ans)))
+			     a-b
+			     b)))))
+   #n lists)
+}
+
+
+define (lset-xor! f= & lists) {
+  check-arg function? f= 'lset-xor!
+
+  (reduce (function (b a)			; Compute A xor B:
+   ;; Note that this code relies on the constant-time
+   ;; short-cuts provided by LSET-DIFF+INTERSECTION,
+   ;; LSET-DIFFERENCE & APPEND to provide constant-time short
+   ;; cuts for the cases A = (), B = (), and A eq? B. It takes
+   ;; a careful case analysis to see it, but it's carefully
+   ;; built in.
+
+   ;; Compute a-b and a^b, then compute b-(a^b) and
+   ;; cons it onto the front of a-b.
+   (with-values-from (a-b a-int-b)
+		     (lset-diff+intersection! f= a b)
+		     (cond
+		      ((null? a-b)     (lset-difference! f= b a))
+		      ((null? a-int-b) (append! b a))
+		      (else (pair-fold (function (b-pair ans)
+		       (if (member (ph b-pair) a-int-b f=) ans
+			(begin (set-pt! b-pair ans) b-pair)))
+			     a-b
+			     b)))))
+   #n lists)
+}
+
+
+define (lset-diff+intersection f= lis1 & lists) {
+  check-arg function? f= 'lset-diff+intersection
+
+  (cond
+   ((every null-list? lists) (values lis1 #n)) ; Short cut
+   ((memq lis1 lists)        (values #n lis1)) ; Short cut
+   (else (partition (function (elt)
+    (not (any (function (lis) (member elt lis f=))
+	      lists)))
+	  lis1)))
+}
+
+define (lset-diff+intersection! f= lis1 & lists) {
+  check-arg function? f= 'lset-diff+intersection!
+
+  (cond
+   ((every null-list? lists) (values lis1 #n)) ; Short cut
+   ((memq lis1 lists)        (values #n lis1)) ; Short cut
+   (else (partition! (function (elt)
+    (not (any (function (lis) (member elt lis f=))
+	      lists)))
+	  lis1)))
+}
+
+provide SRFI-1

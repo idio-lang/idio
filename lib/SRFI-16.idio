@@ -1,0 +1,89 @@
+#*
+
+Copyright (c) 2023 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+SRFI-16.idio
+
+A port of SRFI-16 Syntax for procedures of variable arity
+
+Copyright (C) Lars T Hansen (1999). All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*#
+
+;; This code is in the public domain.
+
+(define-syntax case-function
+  (syntax-rules ()
+    ((case-function)
+     (function args
+       (error/type ^rt-parameter-error 'case-function "without any clauses")))
+    ((case-function
+      (?a1 ?e1 ...)
+      ?clause1 ...)
+     (function args
+       (let ((l (length args)))
+         (case-function "CLAUSE" args l
+           (?a1 ?e1 ...)
+           ?clause1 ...))))
+    ((case-function "CLAUSE" ?args ?l
+      ((?a1 ...) ?e1 ...)
+      ?clause1 ...)
+     (if (eq ?l (length '(?a1 ...)))
+         (apply (function (?a1 ...) ?e1 ...) ?args)
+         (case-function "CLAUSE" ?args ?l
+           ?clause1 ...)))
+    ((case-function "CLAUSE" ?args ?l
+      ((?a1 . ?ar) ?e1 ...)
+      ?clause1 ...)
+     (case-function "IMPROPER" ?args ?l 1 (?a1 . ?ar) (?ar ?e1 ...)
+       ?clause1 ...))
+    ((case-function "CLAUSE" ?args ?l
+      (?a1 ?e1 ...)
+      ?clause1 ...)
+     (let ((?a1 ?args))
+       ?e1 ...))
+    ((case-function "CLAUSE" ?args ?l)
+     (error/type ^rt-parameter-error 'case-function "Wrong number of arguments"))
+    ((case-function "IMPROPER" ?args ?l ?k ?al ((?a1 . ?ar) ?e1 ...)
+      ?clause1 ...)
+     (case-function "IMPROPER" ?args ?l (+ ?k 1) ?al (?ar ?e1 ...)
+      ?clause1 ...))
+    ((case-function "IMPROPER" ?args ?l ?k ?al (?ar ?e1 ...)
+      ?clause1 ...)
+     (if (ge ?l ?k)
+         (apply (function ?al ?e1 ...) ?args)
+         (case-function "CLAUSE" ?args ?l
+           ?clause1 ...)))))
+
+provide SRFI-16

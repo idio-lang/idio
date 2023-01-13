@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -428,6 +428,7 @@ if (ARGC gt 0) {
 
   test-load "test-trap.idio"
 
+  test-load "test-SRFI-1.idio"
   test-load "test-rnrs.idio"
   test-load "test-SRFI-89.idio"
   test-load "test-SRFI-115.idio"
@@ -489,7 +490,7 @@ if (ARGC gt 0) {
   ;; that?  Erm, they've not been counted and are dynamic in number so
   ;; test we've seen at least as many as the largest number we've
   ;; seen.  Wait, some tests are OS-specific.  Drat!
-  Tests? (8618 - Skipped)
+  Tests? (8850 - Skipped)
 }
 
 if (e? testfile) (delete-file testfile)

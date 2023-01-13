@@ -1,0 +1,509 @@
+;;
+;; Copyright (c) 2023 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-SRFI-1.idio
+;;
+
+; These are primarily the examples from
+; https://srfi.schemers.org/srfi-1/srfi-1.html
+
+module test/SRFI-1
+import SRFI-1
+
+SRFI-1-0 := Tests
+
+;; Many of the SRFI-1 functions use the function values for which we
+;; need to extract the (expected?) values and test them.
+define-template (test/values params prod verify) {
+  #T{
+    (with-values-from $params
+		      $prod
+		      $verify)
+  }
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Constructors
+
+test (xpair '(b c) 'a)		'(a b c)
+
+test (pair* 1 2 3 4)		'(1 2 3 & 4)
+test (pair* 1)			1
+
+test (make-list 4 'c)		'(c c c c)
+
+test (list-tabulate 4 values)	'(0 1 2 3)
+
+test (list-copy '(a b c))	'(a b c)
+
+;; (circular-list 'z 'q) => (z q z q z q ...)
+cl := circular-list 'z 'q
+
+;; XXX don't use nth to test as it calls a naive length function
+test (ph cl)			'z
+test (pht cl)			'q
+test (phtt cl)			'z
+test (phttt cl)			'q
+
+test (iota 5)			'(0 1 2 3 4)
+test (iota 5 0 -0.1)		'(0 -0.1 -0.2 -0.3 -0.4)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Predicates
+
+;; have a proper list and a dotted list for testing
+pl := '(1 2 3 4)
+dl := '(1 2 3 & 4)
+
+test (proper-list? pl)		#t
+test (proper-list? dl)		#f
+test (proper-list? cl)		#f
+
+test (dotted-list? pl)		#f
+test (dotted-list? dl)		#t
+test (dotted-list? cl)		#f
+
+test (circular-list? pl)	#f
+test (circular-list? dl)	#f
+test (circular-list? cl)	#t
+
+;; XXX not dotted lists
+test (null-list? #n)		#t
+test (null-list? pl)		#f
+test (null-list? cl)		#f
+
+;; XXX not circular lists
+test (not-pair? #n)		#t
+test (not-pair? pl)		#f
+test (not-pair? dl)		#f
+
+;; some same and not same lists
+pls := '(1 2 3 4)
+plns := '(1 2 3 5)
+
+test (list= eq?)		#t
+test (list= eq? pl)		#t
+test (list= eq? pl pls)		#t
+test (list= eq? pl plns)	#f
+test (list= eq? pl pls plns)	#f
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Selectors
+
+test (list-ref '(a b c d) 2)	'c
+
+pl = '(1 2 3 4 5 6 7 8 9 10)
+test (first pl)			1
+test (second pl)		2
+test (third pl)			3
+test (fourth pl)		4
+test (fifth pl)			5
+test (sixth pl)			6
+test (seventh pl)		7
+test (eighth pl)		8
+test (ninth pl)			9
+test (tenth pl)			10
+
+test/values (h t) (ph+pt (pair 1 2)) {
+  test h 1
+  test t 2
+}
+test/values (h t) (ph+pt (list 1 2 3)) {
+  test h 1
+  test t '(2 3)
+}
+
+test (take '(a b c d e)  2)	'(a b)
+test (drop '(a b c d e)  2)	'(c d e)
+
+test (take '(1 2 3 & d) 2)	'(1 2)
+test (drop '(1 2 3 & d) 2)	'(3 & d)
+test (take '(1 2 3 & d) 3)	'(1 2 3)
+test (drop '(1 2 3 & d) 3)	'd
+
+test (take cl 4)		'(z q z q)
+;; XXX drop would be a bad idea on cl...
+
+test (take-right '(a b c d e) 2)	'(d e)
+test (drop-right '(a b c d e) 2)	'(a b c)
+
+test (take-right '(1 2 3 & d) 2)	'(2 3 & d)
+test (drop-right '(1 2 3 & d) 2)	'(1)
+test (take-right '(1 2 3 & d) 0)	'd
+test (drop-right '(1 2 3 & d) 0)	'(1 2 3)
+
+;; take! will return one or the other for a circular list
+test (take! (circular-list 1 3 5) 8)	'(1 3)
+;test (take! (circular-list 1 3 5) 8)	'(1 3 5 1 3 5 1 3)
+
+test/values (front back) (split-at '(a b c d e f g h) 3) {
+  test front '(a b c)
+  test back  '(d e f g h)
+}
+
+test (last '(a b c))			'c
+test (last-pair '(a b c))		'(c)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Miscellaneous: length, append, concatenate, reverse, zip & count
+
+test (length  pl)			10
+test (length+ pl)			10
+test (length+ cl)			#f
+
+test (append '(x) '(y))       	'(x y)
+test (append '(a) '(b c d))   	'(a b c d)
+test (append '(a (b)) '((c))) 	'(a (b) (c))
+
+test (append '(a b) '(c & d)) 	'(a b c & d)
+test (append '() 'a)          	'a
+test (append '(x y))          	'(x y)
+test (append)                 	'()
+
+;; NB no explicit tests for append! are listed but the behaviour
+;; should be visibly the same (and we want to verify the code actually
+;; works)
+test (append! '(x) '(y))       	'(x y)
+test (append! '(a) '(b c d))   	'(a b c d)
+test (append! '(a (b)) '((c))) 	'(a (b) (c))
+
+test (append! '(a b) '(c & d)) 	'(a b c & d)
+test (append! '() 'a)          	'a
+test (append! '(x y))          	'(x y)
+test (append!)                 	'()
+
+;; NB no examples given for concatenate/concatenate! but they are
+;; derivations of append/append! so we'll repeat the above tests with
+;; the args as a list-of-lists
+test (concatenate '((x) (y)))       	'(x y)
+test (concatenate '((a) (b c d)))   	'(a b c d)
+test (concatenate '((a (b)) ((c)))) 	'(a (b) (c))
+
+test (concatenate '((a b) (c & d))) 	'(a b c & d)
+test (concatenate '(() a))          	'a
+test (concatenate '((x y)))          	'(x y)
+test (concatenate #n)                 	'()
+
+test (concatenate! '((x) (y)))       	'(x y)
+test (concatenate! '((a) (b c d)))   	'(a b c d)
+test (concatenate! '((a (b)) ((c)))) 	'(a (b) (c))
+
+test (concatenate! '((a b) (c & d))) 	'(a b c & d)
+test (concatenate! '(() a))          	'a
+test (concatenate! '((x y)))          	'(x y)
+test (concatenate! #n)                 	'()
+
+test (reverse '(a b c))			'(c b a)
+test (reverse '(a (b c) d (e (f))))	'((e (f)) d (b c) a)
+
+test (reverse! '(a b c))		'(c b a)
+test (reverse! '(a (b c) d (e (f))))	'((e (f)) d (b c) a)
+
+test (append-reverse '(a b c) '(x y z))			'(c b a x y z)
+test (append-reverse '(a (b c) d (e (f))) '(x y z))	'((e (f)) d (b c) a x y z)
+
+test (append-reverse! '(a b c) '(x y z))		'(c b a x y z)
+test (append-reverse! '(a (b c) d (e (f))) '(x y z))	'((e (f)) d (b c) a x y z)
+
+test (zip '(one two three)
+     '(1 2 3)
+     '(odd even odd even odd even odd even))	'((one 1 odd) (two 2 even) (three 3 odd))
+
+test (zip '(1 2 3))				'((1) (2) (3))
+
+test (zip '(3 1 4 1) (circular-list #f #t))	'((3 #f) (1 #t) (4 #f) (1 #t))
+
+;; XXX unzip1 does not use values -- which feels wrong in context
+test (unzip1 '((1 one) (2 two) (3 three)))	'(1 2 3)
+
+test/values (l1 l2) (unzip2 '((1 one) (2 two) (3 three))) {
+  test l1 '(1 2 3)
+  test l2 '(one two three)
+}
+
+test/values (l1 l2 l3) (unzip3 '((1 one "one") (2 two "two") (3 three "three"))) {
+  test l1 '(1 2 3)
+  test l2 '(one two three)
+  test l3 '("one" "two" "three")
+}
+
+test/values (l1 l2 l3 l4) (unzip4 '((1 one "one" 1.0) (2 two "two" 2.0) (3 three "three" 3.0))) {
+  test l1 '(1 2 3)
+  test l2 '(one two three)
+  test l3 '("one" "two" "three")
+  test l4 '(1.0 2.0 3.0)
+}
+
+test/values (l1 l2 l3 l4 l5) (unzip5 '((1 one "one" 1.0 #\1) (2 two "two" 2.0 #\2) (3 three "three" 3.0 #\3))) {
+  test l1 '(1 2 3)
+  test l2 '(one two three)
+  test l3 '("one" "two" "three")
+  test l4 '(1.0 2.0 3.0)
+  test l5 '(#\1 #\2 #\3)
+}
+
+test (count even? '(3 1 4 1 5 9 2 5 6))			'3
+test (count \lt '(1 2 4 8) '(2 4 6 8 10 12 14 16))	'3
+test (count \lt '(3 1 4 1) (circular-list 1 10))	'2
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Fold, unfold & map
+
+test (fold \+ 0 '(1 2 3))		6
+test (fold pair '() '(1 2 3))		'(3 2 1)
+test (fold pair '(x y) '(a b))		'(b a x y)
+
+test (fold (function (x count) (if (symbol? x) (count + 1) count))
+	   0
+	   '(a 1 b 2))			2
+test (fold (function (s max-len) (max max-len (string-length s)))
+	   0
+	   '("one" "two" "three"))	5
+test (fold pair* '() '(a b c) '(1 2 3 4 5))	'(c 3 b 2 a 1)
+
+test (fold-right pair '() '(a b c))		'(a b c)
+test (fold-right (function (x l) (if (even? x) (pair x l) l)) '() '(1 2 3 4))	'(2 4)
+test (fold-right pair* '() '(a b c) '(1 2 3 4 5))	'(a 1 b 2 c 3)
+
+test (pair-fold (function (pair tail) (set-pt! pair tail) pair) '() '(a b c))	'(c b a)
+
+test (pair-fold-right pair '() '(a b c))	'((a b c) (b c) (c))
+
+test (reduce max 0 '(3 1 4 1 5 9 2 5 6))	9
+
+test (reduce-right append '() '((a) (b c)))	'(a b c)
+
+test (unfold (function (x) (x gt 10))
+	     (function (x) (x * x))
+	     (function (x) (x + 1))
+	     1)					'(1 4 9 16 25 36 49 64 81 100)
+
+test (unfold null-list? ph pt '(a b c))		'(a b c)
+
+;; Read current input port into a list of values.
+test (with-input-from (open-input-string "1 two #\\3 4.0 \"five\"")
+		      (function #n
+		       (unfold eof? values (function (x) (read)) (read))))	'((1 two #\3 4.0 "five"))
+
+;; Copy a possibly non-proper list:
+test (unfold not-pair? ph pt dl
+			     values)				'(1 2 3 & 4)
+
+;; Append HEAD onto TAIL:
+test (unfold null-list? ph pt '(a b)
+			      (function (x) '(c d)))		'(a b c d)
+
+test (unfold-right zero?
+              (function (x) (x * x))
+              (function (x) (x - 1))
+              10)				'(1 4 9 16 25 36 49 64 81 100)
+
+test (unfold-right null-list? ph pt '(a b c))	'(c b a)
+
+;; Read current input port into a list of values.
+test (with-input-from (open-input-string "1 two #\\3 4.0 \"five\"")
+		      (function #n
+		       (unfold-right eof? values (function (x) (read)) (read))))	'((1 two #\3 4.0 "five"))
+
+;; (append-reverse rev-head tail)
+test (unfold-right null-list? ph pt '(a b) '(c d))	'(b a c d)
+
+;; XXX no SRFI-1 map or, by implication, for-each.  The Idio versions
+;; handle arrays and strings.
+
+test (append-map  (function (x) (list x (- x))) '(1 3 8))	'(1 -1 3 -3 8 -8)
+test (append-map! (function (x) (list x (- x))) '(1 3 8))	'(1 -1 3 -3 8 -8)
+
+;; subsequent lists must be at least as long as the first list
+test (map! (function (x y z) (list x y z)) '(1 2) '(a b c) '("one" "two" "three"))	'((1 a "one") (2 b "two"))
+
+test (map-in-order (function (x y z) (list x y z)) cl '(a b) dl)	'((z a 1) (q b 2))
+
+;; the pair-for-each example displays results (which isn't so easy to
+;; test) and, in general, pair-for-each is a bit awkward because the
+;; value is returned is (void) from the missing alternate clause of an
+;; if.
+r := #n
+pair-for-each (function (p) {
+  r = pair p r
+}) '(a b c)
+test r			'((c) (b c) (a b c))
+
+test (filter-map (function (x) (and (number? x) (* x x))) '(a 1 b 3 c 7))	'(1 9 49)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Filtering & partitioning
+
+test (filter  even? '(0 7 8 8 43 -4))		'(0 8 8 -4)
+test (filter! even? '(0 7 8 8 43 -4))		'(0 8 8 -4)
+
+test/values (l1 l2) (partition  symbol? '(one 2 3 four five 6)) {
+  test l1 '(one four five)
+  test l2 '(2 3 6)
+}
+
+test/values (l1 l2) (partition! symbol? '(one 2 3 four five 6)) {
+  test l1 '(one four five)
+  test l2 '(2 3 6)
+}
+
+test (remove  even? '(0 7 8 8 43 -4))		'(7 43)
+test (remove! even? '(0 7 8 8 43 -4))		'(7 43)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Searching
+
+test (find even? '(3 1 4 1 5 9))		4
+
+test (find-tail even? '(3 1 37 -8 -5 0 0))	'(-8 -5 0 0)
+test (find-tail even? '(3 1 37 -5))		#f
+
+test (take-while  even? '(2 18 3 10 22 9))	'(2 18)
+test (take-while! even? '(2 18 3 10 22 9))	'(2 18)
+
+test (drop-while even? '(2 18 3 10 22 9))	'(3 10 22 9)
+
+test/values (l1 l2) (span  even? '(2 18 3 10 22 9)) {
+  test l1 '(2 18)
+  test l2 '(3 10 22 9)
+}
+test/values (l1 l2) (span! even? '(2 18 3 10 22 9)) {
+  test l1 '(2 18)
+  test l2 '(3 10 22 9)
+}
+
+;; XXX SRFI-1 break clashes with the loop prompt
+test/values (l1 l2) (break/1  even? '(3 1 4 1 5 9)) {
+  test l1 '(3 1)
+  test l2 '(4 1 5 9)
+}
+test/values (l1 l2) (break/1! even? '(3 1 4 1 5 9)) {
+  test l1 '(3 1)
+  test l2 '(4 1 5 9)
+}
+
+test (any integer? '(a 3 b 2.7))		#t
+test (any integer? '(a 3.1 b 2.7))		#f
+test (any \lt '(3 1 4 1 5) '(2 7 1 8 2))	#t
+
+test (every integer? '(a 3 b 2.7))		#f
+test (every integer? '(1 2 3 4))		#t
+test (every \lt '(3 1 4 1 5) '(2 7 1 8 2))	#f
+test (every \lt '(3 1 4 1 5) '(9 9 9 9 9))	#t
+
+test (list-index even? '(3 1 4 1 5 9))				2
+test (list-index \lt '(3 1 4 1 5 9 2 5 6) '(2 7 1 8 2))		1
+test (list-index \eq '(3 1 4 1 5 9 2 5 6) '(2 7 1 8 2))		#f
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Deletion
+
+test (delete 5 '(1 5 2 5 3 5))			'(1 2 3)
+test (delete 5 '(1 2 3 4 5 6 7 8 9 0) \lt)	'(1 2 3 4 5 0)
+
+test (delete! 5 '(1 5 2 5 3 5))			'(1 2 3)
+test (delete! 5 '(1 2 3 4 5 6 7 8 9 0) \lt)	'(1 2 3 4 5 0)
+
+test (delete-duplicates '(a b a c a b c z))	'(a b c z)
+
+;; Clean up an alist:
+test (delete-duplicates '((a & 3) (b & 7) (a & 9) (c & 1))
+			(function (x y) (eq? (ph x) (ph y))))	' ((a & 3) (b & 7) (c & 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Association lists
+
+test (alist-pair 'd 4 '((a & 1) (b & 2) (c & 3)))	' ((d & 4) (a & 1) (b & 2) (c & 3))
+
+test (alist-copy '((a & 1) (b & 2) (c & 3)))		' ((a & 1) (b & 2) (c & 3))
+
+;; duplicate key 'a
+test (alist-delete  'a '((a & 1) (b & 2) (a & 3) (d & 4)))	' ((b & 2) (d & 4))
+test (alist-delete! 'a '((a & 1) (b & 2) (a & 3) (d & 4)))	' ((b & 2) (d & 4))
+
+test (alist-delete  5 '((1 & a) (5 & e) (3 & c) (7 & g)) \lt)	' ((1 & a) (5 & e) (3 & c))
+test (alist-delete! 5 '((1 & a) (5 & e) (3 & c) (7 & g)) \lt)	' ((1 & a) (5 & e) (3 & c))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Set operations on lists
+
+test (lset<= eq? '(a) '(a b a) '(a b c c))		#t
+test (lset<= eq?)					#t
+test (lset<= eq? '(a))					#t
+
+test (lset= eq? '(b e a) '(a e b) '(e e b a))		#t
+test (lset= eq?)					#t
+test (lset= eq? '(a))					#t
+
+test (lset-adjoin eq? '(a b c d c e) 'a 'e 'i 'o 'u)	'(u o i a b c d c e)
+
+test (lset-union  eq? '(a b c d e) '(a e i o u))		'(u o i a b c d e)
+test (lset-union  eq? '(a a c) '(x a x))			'(x a a c)
+test (lset-union  eq?)					#n
+test (lset-union  eq? '(a b c))				'(a b c)
+
+test (lset-union! eq? '(a b c d e) '(a e i o u))		'(u o i a b c d e)
+test (lset-union! eq? '(a a c) '(x a x))			'(x a a c)
+test (lset-union! eq?)					#n
+test (lset-union! eq? '(a b c))				'(a b c)
+
+test (lset-intersection  eq? '(a b c d e) '(a e i o u))	'(a e)
+test (lset-intersection  eq? '(a x y a) '(x a x z))	'(a x a)
+test (lset-intersection  eq? '(a b c))			'(a b c)
+
+test (lset-intersection! eq? '(a b c d e) '(a e i o u))	'(a e)
+test (lset-intersection! eq? '(a x y a) '(x a x z))	'(a x a)
+test (lset-intersection! eq? '(a b c))			'(a b c)
+
+test (lset-difference  eq? '(a b c d e) '(a e i o u))	'(b c d)
+test (lset-difference  eq? '(a b c))			'(a b c)
+
+test (lset-difference! eq? '(a b c d e) '(a e i o u))	'(b c d)
+test (lset-difference! eq? '(a b c))			'(a b c)
+
+test (lset-xor  eq? '(a b c d e) '(a e i o u))		'(u o i b c d) ; '(d c b i o u)
+test (lset-xor  eq?)					#n
+test (lset-xor  eq? '(a b c d e))			'(a b c d e)
+
+test (lset-xor! eq? '(a b c d e) '(a e i o u))		'(u o i b c d) ; '(d c b i o u)
+test (lset-xor! eq?)					#n
+test (lset-xor! eq? '(a b c d e))			'(a b c d e)
+
+test/values (l1 l2) (lset-diff+intersection  eq? '(a b c d e) '(a e i o u)) {
+  test l1 '(b c d)
+  test l2 '(a e)
+}
+
+test/values (l1 l2) (lset-diff+intersection! eq? '(a b c d e) '(a e i o u)) {
+  test l1 '(b c d)
+  test l2 '(a e)
+}
+
+
+;; all done?
+Tests? (SRFI-1-0 + 232)
