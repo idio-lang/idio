@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -7964,10 +7964,12 @@ IDIO idio_vm_call_tree (IDIO args)
 	    /* preserve_all_state includes a preserve_state */
 	    pas_sp = idio_vm_find_stack_marker (stack, idio_SM_preserve_state, pas_sp, 0);
 	    IDIO fr = idio_array_ref_index (stack, pas_sp - 2);
-	    xi = IDIO_FRAME_XI (fr);
+	    if (idio_S_nil != fr) {
+		xi = IDIO_FRAME_XI (fr);
 
-	    /* skip this preserve_state */
-	    pas_sp--;
+		/* skip this preserve_state */
+		pas_sp--;
+	    }
 	}
     }
 
