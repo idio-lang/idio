@@ -715,6 +715,7 @@ typedef struct idio_module_s {
     struct idio_s *exports;	/* symbols */
     struct idio_s *imports;	/* modules */
     struct idio_s *symbols;	/* hash table of name to symbol info tuple */
+    struct idio_s *identity;
 } idio_module_t;
 
 #define IDIO_MODULE_GREY(F)	((F)->u.module->grey)
@@ -722,6 +723,7 @@ typedef struct idio_module_s {
 #define IDIO_MODULE_EXPORTS(F)	((F)->u.module->exports)
 #define IDIO_MODULE_IMPORTS(F)	((F)->u.module->imports)
 #define IDIO_MODULE_SYMBOLS(F)	((F)->u.module->symbols)
+#define IDIO_MODULE_IDENTITY(F)	((F)->u.module->identity)
 
 #define IDIO_FRAME_FLAG_NONE	 0
 #define IDIO_FRAME_FLAG_ETRACE   (1<<0)

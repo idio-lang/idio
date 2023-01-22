@@ -27,6 +27,7 @@
 #include <sys/resource.h>
 
 #include <assert.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -1129,6 +1130,46 @@ return an octet string of the UTF-8 encoding of `s`\n\
     IDIO_GC_FREE (s_C, size);
 
     return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("octet-string->string", octet_string2string, (IDIO s), "s", "\
+return a string from the UTF-8 decoding of `s`\n\
+					\n\
+:param s: string			\n\
+:type s: octet string			\n\
+:return: string				\n\
+:rtype: string				\n\
+					\n\
+.. warning::				\n\
+					\n\
+   This is highly likely to generate #U+FFFD	\n\
+   REPLACEMENT CHARACTER in the resultant string.	\n\
+")
+{
+    IDIO_ASSERT (s);
+
+    /*
+     * Test Case: string-errors/octet-string2string-bad-type.idio
+     *
+     * octet-string->string #t
+     */
+    IDIO_USER_TYPE_ASSERT (octet_string, s);
+
+    size_t size = 0;
+    char *s_C = NULL;
+
+    switch (idio_type (s)) {
+    case IDIO_TYPE_STRING:
+	size = IDIO_STRING_LEN (s);
+	s_C = IDIO_STRING_S (s);
+	break;
+    case IDIO_TYPE_SUBSTRING:
+	size = IDIO_SUBSTRING_LEN (s);
+	s_C = IDIO_SUBSTRING_S (s);
+	break;
+    }
+
+    return idio_string_C_len (s_C, size);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("string->pathname", string2pathname, (IDIO s), "s", "\
@@ -3636,6 +3677,7 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (octet_string_p);
     IDIO_ADD_PRIMITIVE (make_string);
     IDIO_ADD_PRIMITIVE (string2octet_string);
+    IDIO_ADD_PRIMITIVE (octet_string2string);
     IDIO_ADD_PRIMITIVE (string2pathname);
     IDIO_ADD_PRIMITIVE (string2list);
     IDIO_ADD_PRIMITIVE (list2string);

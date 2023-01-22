@@ -1,0 +1,2 @@
+
+sqlite3-exec db "hello\x0world"

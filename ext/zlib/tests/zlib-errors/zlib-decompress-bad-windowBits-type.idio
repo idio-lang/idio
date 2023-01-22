@@ -1,0 +1,2 @@
+
+zlib-decompress (current-input-handle) :windowBits #t

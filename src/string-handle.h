@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -39,6 +39,7 @@ off_t idio_seek_string_handle (IDIO sh, off_t offset, int whence);
 void idio_print_string_handle (IDIO sh, IDIO o);
 
 int idio_isa_string_handle (IDIO o);
+IDIO idio_get_output_octet_string (IDIO sh);
 IDIO idio_get_output_string (IDIO sh);
 
 void idio_init_string_handle ();

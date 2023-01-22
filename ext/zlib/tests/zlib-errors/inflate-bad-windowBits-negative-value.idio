@@ -1,0 +1,2 @@
+
+inflate (current-input-handle) :windowBits -99

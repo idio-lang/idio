@@ -69,6 +69,14 @@ module-error-load := {
 module-error-load "module-errors/find-module-bad-name-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 module-error-load "module-errors/find-module-unbound.idio" "module name unbound"
 
+module-error-load "module-errors/module-alias-bad-name-type.idio" "bad parameter type: '#t' a constant is not a symbol"
+module-error-load "module-errors/module-alias-name-duplication.idio" "module already exists"
+module-error-load "module-errors/module-alias-identity-unbound.idio" "module name unbound"
+module-error-load "module-errors/module-alias-bad-identity-type.idio" "bad parameter type: '#t' a constant is not a module|symbol"
+
+module-error-load "module-errors/module-identity-mod-unbound.idio" "module name unbound"
+module-error-load "module-errors/module-identity-bad-mod-type.idio" "bad parameter type: '#t' a constant is not a module|symbol"
+
 module-error-load "module-errors/find-or-create-module-bad-name-type.idio" "bad parameter type: '#t' a constant is not a symbol"
 
 module-error-load "module-errors/set-current-module-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module"
@@ -114,4 +122,4 @@ module-error-load "module-errors/set-symbol-value-bad-symbol-type.idio" "bad par
 module-error-load "module-errors/set-symbol-value-bad-module-type.idio" "bad parameter type: '#t' a constant is not a module"
 
 ;; all done?
-Tests? (module-error0 + 29)
+Tests? (module-error0 + 35)

@@ -97,6 +97,10 @@ define-template (help x) {
 
        module := find-module '$x #f
        if module {
+	 alias := module-identity $x
+	 if (not (null? alias)) {
+	   display* "identity:" alias "\n"
+	 }
 	 display* "module:" '$x "\n"
 	 display* "imports" (module-imports module)
 	 exports := sort-symbol (module-exports module)

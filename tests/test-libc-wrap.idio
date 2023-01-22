@@ -166,7 +166,7 @@ struct-termios-ref termios 'c_cflag
 struct-termios-ref termios 'c_lflag
 struct-termios-ref termios 'c_cc
 (cond-expand
- (IDIO_HAVE_TERMIOS_SPEEDS {
+ ((not IDIO_NO_TERMIOS_SPEEDS) {
    struct-termios-ref termios 'c_ispeed
    struct-termios-ref termios 'c_ospeed
  }))
@@ -177,7 +177,7 @@ struct-termios-set! termios 'c_cflag (C/integer-> 0 libc/tcflag_t)
 struct-termios-set! termios 'c_lflag (C/integer-> 0 libc/tcflag_t)
 struct-termios-set! termios 'c_cc    (struct-termios-ref termios 'c_cc)
 (cond-expand
- (IDIO_HAVE_TERMIOS_SPEEDS {
+ ((not IDIO_NO_TERMIOS_SPEEDS) {
    struct-termios-set! termios 'c_ispeed (C/integer-> 0 libc/speed_t)
    struct-termios-set! termios 'c_ospeed (C/integer-> 0 libc/speed_t)
  }))
@@ -259,7 +259,7 @@ sprintf "%s" utsname
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-access "." (C/integer-> #o400)
+access "." R_OK
 
 chdir "."
 
@@ -273,6 +273,12 @@ tmp := (make-tmp-file)
 chown tmp EUID EGID
 tmp-fh := open-input-file tmp
 fchown (file-handle-fd tmp-fh) EUID EGID
+(cond-expand
+ ((not IDIO_NO_FCHOWNAT) {
+   dirfd := open (dirname-pathname testfile) O_RDONLY
+   fchownat dirfd testfile sb.st_uid sb.st_gid
+   close dirfd
+ }))
 close-handle tmp-fh
 rm tmp
 
@@ -289,15 +295,12 @@ nfd := fcntl C/0i F_DUPFD (C/integer-> 99)
 close nfd
 
 (cond-expand
- (libc/F_DUPFD_CLOEXEC {
+ ((not IDIO_NO_F_DUPFD_CLOEXEC) {
    nfd := fcntl C/0i F_DUPFD_CLOEXEC (C/integer-> 99)
    close nfd
 
    nfd := fcntl C/0i F_DUPFD_CLOEXEC (C/integer-> 99)
    close nfd
- })
- (else {
-   printf "no F_DUPFD_CLOEXEC on this system, skipping code coverage\n"
  }))
 
 ;; get the file descriptor flags -- CLOEXEC?
@@ -307,22 +310,44 @@ dh := open-file "." "r"
 fchdir (file-handle-fd dh)
 close-handle dh
 
+(cond-expand
+ ((not IDIO_NO_FACCESSAT) {
+   faccessat AT_FDCWD "." R_OK
+ }))
+
 fcntl C/0i F_SETFD fd-flags
+
+dirfd := open (dirname-pathname testfile) O_RDONLY
 
 ofh := open-output-file testfile
 puts "hello world\n" ofh
 fchmod (fd-handle-fd ofh) sb.st_mode
+(cond-expand
+ ((not IDIO_NO_FCHMODAT) {
+   fchmodat dirfd testfile sb.st_mode
+ }))
 fstat (fd-handle-fd ofh)
+(cond-expand
+ ((not IDIO_NO_FSTATAT) {
+   fstatat dirfd testfile
+ }))
 fstatvfs (fd-handle-fd ofh)
 fsync (fd-handle-fd ofh)
 ftruncate (fd-handle-fd ofh) (C/integer-> 3 libc/off_t)
 (cond-expand
- (IDIO_HAVE_FUTIMES {
+ ((not IDIO_NO_FUTIMES) {
    tv := (gettimeofday)
    futimes (fd-handle-fd ofh) tv tv
  }))
+(cond-expand
+ ((not IDIO_NO_FUTIMESAT) {
+   tv := (gettimeofday)
+   futimesat dirfd (basename-pathname testfile) tv tv
+ }))
 lockf (fd-handle-fd ofh) F_TEST (C/integer-> 3 libc/off_t)
 close-handle ofh
+
+close dirfd
 
 (getegid)
 (geteuid)
@@ -356,8 +381,35 @@ tmp := (make-tmp-file)
 tmp2 := append-string tmp ".2"
 link tmp tmp2
 unlink tmp2
+(cond-expand
+ ((not IDIO_NO_LINKAT) {
+   olddirfd := open (dirname-pathname tmp) O_RDONLY
+   td := (make-tmp-dir)
+   newdirfd := open (dirname-pathname td) O_RDONLY
+
+   linkat olddirfd tmp newdirfd tmp2
+
+   close newdirfd
+   rmdir td
+   close olddirfd
+
+   unlink tmp2
+ }))
 rename tmp tmp2
 unlink tmp2
+(cond-expand
+ ((not IDIO_NO_RENAMEAT) {
+   tmp := (make-tmp-file)
+   tmp2 := append-string tmp ".2"
+
+   dirfd := open (dirname-pathname tmp) O_RDONLY
+
+   renameat dirfd tmp dirfd tmp2
+
+   close dirfd
+
+   unlink tmp2
+ }))
 
 ;; test mkdir(2) for which we need a directory we can mkdir safely --
 ;; how about a random one we just deleted?
@@ -365,10 +417,31 @@ tmpdir := (make-tmp-dir)
 rmdir tmpdir
 mkdir tmpdir (C/integer-> #o555 libc/mode_t)
 rmdir tmpdir
+(cond-expand
+ ((not IDIO_NO_MKDIRAT) {
+   dirfd := open (dirname-pathname tmpdir) O_RDONLY
+
+   mkdirat dirfd (basename-pathname tmpdir) (C/integer-> #o555 libc/mode_t)
+
+   close dirfd
+   rmdir tmpdir
+ }))
 
 ;; mkfifo -- quick, reuse that tmpname!
 mkfifo tmpdir (C/integer-> #o600 libc/mode_t)
 rm tmpdir
+
+;; tmp is still from make-tmp-file, above, hopefully...
+(cond-expand
+ ((not IDIO_NO_OPENAT) {
+   td := dirname-pathname tmp
+   dirfd := open td O_RDONLY
+
+   fd := openat dirfd "foo" O_CREAT
+   close fd
+
+   unlink (append-string td "/foo")
+ }))
 
 ;; (nanosleep req) has a number of formats for {req}
 ;;
@@ -389,8 +462,8 @@ hprintf ofh "hello\n"
 close-handle ofh
 
 ifh := open-input-file testfile
-test (read (fd-handle-fd ifh) (C/integer-> 2 libc/size_t)) "he"
-test (pread (fd-handle-fd ifh) (C/integer-> 0 libc/off_t) (C/integer-> 2 libc/size_t)) "he"
+test (read (fd-handle-fd ifh) (C/integer-> 2 libc/size_t)) (string->octet-string "he")
+test (pread (fd-handle-fd ifh) (C/integer-> 0 libc/off_t) (C/integer-> 2 libc/size_t)) (string->octet-string "he")
 close-handle ifh
 
 setegid EGID
@@ -409,7 +482,7 @@ setpriority PRIO_PROCESS (C/integer-> PID id_t) C/0i
 
 setregid GID EGID
 (cond-expand
- (IDIO_HAVE_SET_SAVED_IDS {
+ ((not IDIO_NO_SET_SAVED_IDS) {
    setresgid GID EGID EGID
    setresuid UID EUID EUID
  }))
@@ -522,8 +595,28 @@ truncate testfile (C/integer-> 0 libc/off_t)
 umask (umask (C/integer-> 0 libc/mode_t))
 
 linkfile := "__link__"
+if (e? linkfile) {
+  delete-file linkfile
+}
 symlink testfile linkfile
+(cond-expand
+ ((not IDIO_NO_SYMLINKAT) {
+   link2 := append-string linkfile ".2"
+   dirfd := open (dirname-pathname linkfile) O_RDONLY
+   symlinkat testfile dirfd (basename-pathname link2)
+   close dirfd
+   unlink link2
+ }))
 test (readlink linkfile) (string->pathname testfile)
+(cond-expand
+ (IDIO_NO_READLINKAT {
+   test #t #t
+ })
+ (else {
+   dirfd := open (dirname-pathname linkfile) O_RDONLY
+   test (readlinkat dirfd (basename-pathname linkfile)) (string->pathname testfile)
+   close dirfd
+ }))
 
 ; block special devices?
 test (b? "/dev/tty") #f
@@ -634,6 +727,14 @@ T? (stdin-fileno)
 
 rm -f linkfile
 
+(cond-expand
+ ((not IDIO_NO_UNLINKAT) {
+   touch testfile
+   dirfd := open (dirname-pathname testfile) O_RDONLY
+   unlinkat dirfd (basename-pathname testfile)
+   close dirfd
+ }))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; passwd
 
@@ -687,4 +788,4 @@ test STDERR (current-error-handle)
 module tests/libc-wrap
 
 ;; all done?
-Tests? (libc-wrap0 + 128)
+Tests? (libc-wrap0 + 129)

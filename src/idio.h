@@ -293,6 +293,9 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_DEFINE_PRIMITIVE4(iname,cname,params)			\
     IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,4,0,"","")
 
+#define IDIO_DEFINE_PRIMITIVE4V_DS(iname,cname,params,sigstr,docstr)	\
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,4,1,sigstr,docstr)
+
 #define IDIO_DEFINE_PRIMITIVE5_DS(iname,cname,params,sigstr,docstr)	\
     IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,5,0,sigstr,docstr)
 

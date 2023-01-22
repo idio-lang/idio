@@ -41,6 +41,8 @@ test (pair? libc/INT_MAX)		#f ; C_INT
 test (pair? libc/UINT_MAX)		#f ; C_UINT
 test (pair? <class>)			#f ; instance
 
+;; test-s9.idio covers list?
+
 ;; code coverage
 test (copy-value '(1 2 3) 'shallow) '(1 2 3)
 test (member 3 '(1 2 3 4)) '(3 4)
@@ -52,6 +54,18 @@ test (assv 5 '((1 2) (3 4))) #f
 test (assoc 3 '((1 2) #n (3 4))) #f
 test (assoc 3 '((1 2) (3 4))) '(3 4)
 test (assoc 5 '((1 2) (3 4))) #f
+
+test (last-pair #n)		#n
+test (last-pair '(1))		'(1)
+test (last-pair '(1 2))		'(2)
+test (last-pair '(1 2 3))	'(3)
+
+test (append! #t '(1))		'(1)
+test (append! '(1) #t)		'(1 & #t)
+test (append! '(1) '(2))	'(1 2)
+test (append! '(1 2) '(3 4))	'(1 2 3 4)
+
+;; test-s9.idio covers list-tail
 
 nth-list := '(1 2 3)
 test (nth nth-list 0)    1
@@ -94,4 +108,4 @@ nth-list.-1 = 30
 test nth-list.-1 30
 
 ;; all done?
-Tests? (pair0 + 51)
+Tests? (pair0 + 59)

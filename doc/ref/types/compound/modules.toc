@@ -10,6 +10,9 @@
 (document Idio module-exports)
 (document Idio module-imports)
 
+(document Idio module-alias)
+(document Idio module-identity)
+
 (nodocument Idio %set-module-exports!)
 (nodocument Idio %set-module-imports!)
 

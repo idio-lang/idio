@@ -1,0 +1,174 @@
+#*
+
+Copyright (c) 2022, 2023 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+rnrs.idio
+
+Some RNRS functions.
+
+*#
+
+;; R6RS 11.4.6 Binding constructs
+
+;; In addition, the binding constructs let-values and let*-values
+;; generalize let and let* to allow multiple variables to be bound to
+;; the results of expressions that evaluate to multiple values. They
+;; are analogous to let and let* in the way they establish regions: in
+;; a let-values expression, the initial values are computed before any
+;; of the variables become bound; in a let*-values expression, the
+;; bindings are performed sequentially.
+
+#*
+
+Both CHICKEN Scheme and STklos rework the define-syntax versions in
+SRFI-11 with simpler templates.  STklos works in a more immediately
+obvious fashion so we'll follow it.
+
+The essence of let-values is to create a gensym'd variable for each
+named variable and use those gensym'd variables in call-with-values.
+The body is then wrapped in a let where the original named variables
+are assigned the values of the gensym'd variables.
+
+One thing we need to be careful with is that the named variables could
+be improper lists, hence map*, etc. which handle those cases.
+
+*#
+define-template (let-values bindings & body) {
+  ;; tmps is an assoc list of (v (gensym v)) which will neatly expand
+  ;; out into the bindings for the body let
+  tmps := #n
+
+  define (expand-bindings bindings) {
+    binding := ph bindings
+    #T{
+      (call-with-values
+       (function #n $(pht binding))
+       (function $(map* (function (var) (pht (assoc var tmps))) (ph binding))
+	$(if ((length bindings) eq 1) {
+	  #T{
+	    (let $tmps $@body)
+	  }
+	} {
+	  expand-bindings (pt bindings)
+	})))
+    }
+  }
+
+  define (parse-binding binding) {
+    unless (and (list? binding)
+		((length binding) eq 2)
+		(or (pair? (ph binding))
+		    (symbol? (ph binding)))) {
+      error/type ^rt-parameter-value-error 'let-values/parse-binding "binding" binding "invalid form"
+    }
+
+    for-each* (function (var) {
+      if (assoc var tmps) {
+	error/type ^rt-parameter-value-error 'let-values/parse-binding "binding" var "duplicate binding"
+      } {
+	tmps = pair (list var (gensym var)) tmps
+      }
+    }) (ph binding)
+  }
+
+  for-each parse-binding bindings
+
+  if (null? tmps) {
+    #T{
+      (let #n $@body)
+    }
+  } {
+    expand-bindings bindings
+  }
+}
+
+;; let*-values is now a looped call to let-values
+define-template (let*-values bindings & body) {
+  if ((length bindings) gt 1) {
+    #T{
+      (let-values ($(ph bindings))
+		  (let*-values $(pt bindings) $@body))
+    }
+  } {
+    #T{
+      (let-values $bindings $@body)
+    }
+  }
+}
+
+;; R7RS 5.3.3 Multiple-value definitions
+
+;; The construct define-values introduces new definitions like define,
+;; but can create multiple definitions from a single expression
+;; returning multiple values. It is allowed wherever define is
+;; allowed.
+
+#*
+
+define-values can work similarly to let-values, above, noting the
+initial := for each variable then an = in the body of the consumer.
+We don't need to maintain a mapping from variable to temporary (across
+multiple bindings), just a matching list (for the one set of
+bindings).
+
+*#
+define-template (define-values vars expr) {
+  define (flat l) {
+    (cond
+     ((null? l)
+      l)
+     ((pair? l)
+      (pair (ph l)
+	    (flat (pt l))))
+     (else
+      (list l)))
+  }
+
+  if (null? vars) {
+    ;; NB void is the *name* of the consumer function to be invoked in
+    ;; due course
+    #T{
+      (call-with-values
+       (function #n $expr)
+       void)
+    }
+  } {
+    tmps := map* (function (v) (gensym v)) vars
+    fv := flat vars
+    ft := flat tmps
+
+    #T{
+      $@(map (function (v) {
+	#T{
+	  $v := #f
+	}
+      }) fv)
+      (call-with-values
+       (function #n $expr)
+       (function $tmps $@(map (function (v t) {
+	 #T{
+	   $v = $t
+	 }
+       }) fv ft)))
+
+      ;; As STklos identifies, return something more useful for the
+      ;; REPL than the last action which was the last individual
+      ;; assignment.  Here, a list of the values returned from expr.
+      list $@fv
+    }
+  }
+}
+
+provide rnrs

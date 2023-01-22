@@ -1,0 +1,3 @@
+
+touch testfile
+readlinkat AT_FDCWD testfile

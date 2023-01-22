@@ -1,0 +1,3 @@
+(rst "conditions-intro" 0)
+
+(document Idio ^rt-sqlite3-error)

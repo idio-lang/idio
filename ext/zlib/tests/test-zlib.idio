@@ -1,0 +1,136 @@
+;;
+;; Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-zlib.idio
+;;
+
+module tests/zlib
+
+import zlib
+
+zlib0 := Tests
+
+;; We want to test with gzip-aware commands which is complicated on
+;; some systems because there is a name clash with more venerable
+;; commands.
+zcat-cmd := #f
+(cond-expand
+ ((or "uname/sysname/SunOS"
+      "uname/sysname/Darwin"
+      "uname/sysname/OpenBSD") {
+   zcat-cmd = gzcat
+ })
+ (else {
+   zcat-cmd = zcat
+ }))
+
+tmp-file := (libc/make-tmp-file)
+
+;; Use a non-ASCII code point
+str := "Ħello World"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; writing
+
+;; write the gzip compressed string out to tmp-file
+ish := open-input-string str
+ofh := open-output-file tmp-file
+puts (gzip-compress ish) ofh
+close-handle ofh
+
+;; zcat with external command
+test (collect-output zcat-cmd tmp-file) str
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; reading
+
+;; write the gzip compressed string out to tmp-file
+ofh := open-output-file tmp-file
+puts str ofh
+close-handle ofh
+
+;; gzip with external command -- OpenBSD doesn't like our small test
+;; file...
+(cond-expand
+ ("uname/sysname/OpenBSD" {
+   gzip -f tmp-file
+ })
+ (else {
+   gzip tmp-file
+ }))
+
+gz-file := append-string tmp-file ".gz"
+ifh := open-input-file gz-file
+
+;; careful, gzip-decompress returns an octet-string
+test (gzip-decompress ifh) (string->octet-string str)
+close-handle ifh
+
+rm gz-file
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; code/range coverage
+
+rewind-handle ish
+inflate (open-input-string (deflate ish))
+rewind-handle ish
+inflate (open-input-string (deflate ish :level Z_NO_COMPRESSION))
+rewind-handle ish
+inflate (open-input-string (deflate ish :level 9))
+rewind-handle ish
+inflate (open-input-string (deflate ish :windowBits 9))
+rewind-handle ish
+inflate (open-input-string (deflate ish :windowBits 9)) :windowBits 9
+rewind-handle ish
+inflate (open-input-string (deflate ish :windowBits 15))
+rewind-handle ish
+inflate (open-input-string (deflate ish :windowBits 15)) :windowBits 15
+rewind-handle ish
+inflate (open-input-string (deflate ish :strategy Z_FILTERED))
+rewind-handle ish
+inflate (open-input-string (deflate ish :strategy Z_HUFFMAN_ONLY))
+rewind-handle ish
+inflate (open-input-string (deflate ish :strategy Z_RLE))
+rewind-handle ish
+inflate (open-input-string (deflate ish :strategy Z_FIXED))
+rewind-handle ish
+inflate (open-input-string (deflate ish :strategy Z_DEFAULT_STRATEGY))
+
+rewind-handle ish
+zlib-decompress (open-input-string (zlib-compress ish :windowBits 9))
+rewind-handle ish
+zlib-decompress (open-input-string (zlib-compress ish :windowBits 9)) :windowBits 9
+rewind-handle ish
+zlib-decompress (open-input-string (zlib-compress ish :windowBits 15))
+rewind-handle ish
+zlib-decompress (open-input-string (zlib-compress ish :windowBits 15)) :windowBits 15
+
+rewind-handle ish
+gzip-decompress (open-input-string (gzip-compress ish :windowBits 9))
+rewind-handle ish
+gzip-decompress (open-input-string (gzip-compress ish :windowBits 9)) :windowBits 9
+rewind-handle ish
+gzip-decompress (open-input-string (gzip-compress ish :windowBits 15))
+rewind-handle ish
+gzip-decompress (open-input-string (gzip-compress ish :windowBits 15)) :windowBits 15
+
+;; all done?
+Tests? (zlib0 + 2)

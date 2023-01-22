@@ -272,6 +272,17 @@ int main (int argc, char **argv)
 	*/
     }
 
+#if ! defined (IDIO_NO_FACCESSAT)
+    /* faccessat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	int mode = 0;
+	int flags = AT_EACCESS;
+	faccessat (dirfd, pathname, mode, flags);
+    }
+#endif
+
     /* fchdir(2) */
     {
 	int fd = STDIN_FILENO;
@@ -285,6 +296,17 @@ int main (int argc, char **argv)
 	int fchmod_r = fchmod (fd, mode);
     }
 
+#if ! defined (IDIO_NO_FCHMODAT)
+    /* fchmodat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	int mode = S_IRUSR;
+	int flags = 0;
+	fchmodat (dirfd, pathname, mode, flags);
+    }
+#endif
+
     /* fchown(2) */
     {
 	int fd = STDIN_FILENO;
@@ -292,6 +314,18 @@ int main (int argc, char **argv)
 	gid_t group = 0;
 	int fchown_r = fchown (fd, owner, group);
     }
+
+#if ! defined (IDIO_NO_FCHOWNAT)
+    /* fchownat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	uid_t owner = 0;
+	gid_t group = 0;
+	int flags = 0;
+	fchownat (dirfd, pathname, owner, group, flags);
+    }
+#endif
 
     /* fcntl(2) */
     {
@@ -313,6 +347,17 @@ int main (int argc, char **argv)
 	 * struct stat is expanded in stat(2)
 	 */
     }
+
+#if ! defined (IDIO_NO_FSTATAT)
+    /* fstatat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	struct stat statbuf;
+	int flags = 0;
+	fstatat (dirfd, pathname, &statbuf, flags);
+    }
+#endif
 
     /* fstatvfs(3) */
     {
@@ -337,12 +382,22 @@ int main (int argc, char **argv)
 	int ftruncate_r = ftruncate (fd, length);
     }
 
-#ifdef IDIO_HAVE_FUTIMES
+#if ! defined (IDIO_NO_FUTIMES)
     /* futimes(2) */
     {
 	int fd = STDIN_FILENO;
 	struct timeval times[2] = { {0, 0}, {0, 0} };
 	int futimes_r = futimes (fd, times);
+    }
+#endif
+
+#if ! defined (IDIO_NO_FUTIMESAT)
+    /* futimesat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	struct timeval times[2] = { {0, 0}, {0, 0} };
+	int futimesat_r = futimesat (dirfd, pathname, times);
     }
 #endif
 
@@ -499,6 +554,18 @@ int main (int argc, char **argv)
 	int link_r = link (oldpath, newpath);
     }
 
+#if ! defined (IDIO_NO_LINKAT)
+    /* linkat(2) */
+    {
+	int olddirfd = 0;
+	char *oldpath = ".";
+	int newdirfd = 0;
+	char *newpath = ".";
+	int flags = 0;
+	linkat (olddirfd, oldpath, newdirfd, newpath, flags);
+    }
+#endif
+
     /* localtime(3) */
     {
 	time_t t = time (NULL);
@@ -530,6 +597,16 @@ int main (int argc, char **argv)
 	mode_t mode = S_IRWXU;
 	int mkdir_r = mkdir (pathname, mode);
     }
+
+#if ! defined (IDIO_NO_MKDIRAT)
+    /* mkdirat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	mode_t mode = 0;
+	mkdirat (dirfd, pathname, mode);
+    }
+#endif
 
     /* mkdtemp(3) */
     {
@@ -568,6 +645,17 @@ int main (int argc, char **argv)
     {
 	int open_r = open ("/dev/tty", O_RDONLY);
     }
+
+#if ! defined (IDIO_NO_OPENAT)
+    /* openat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	int flags = 0;
+	mode_t mode = 0;
+	openat (dirfd, pathname, flags, mode);
+    }
+#endif
 
     /* pipe(2) */
     {
@@ -625,12 +713,33 @@ int main (int argc, char **argv)
 	ssize_t readlink_r = readlink (pathname, buf, bufsiz);
     }
 
+#if ! defined (IDIO_NO_READLINKAT)
+    /* readlinkat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	char buf[PATH_MAX];
+	readlinkat (dirfd, pathname, buf, PATH_MAX);
+    }
+#endif
+
     /* rename(2) */
     {
 	char *oldpath = "old";
 	char *newpath = "new";
 	int rename_r = rename (oldpath, newpath);
     }
+
+#if ! defined (IDIO_NO_RENAMEAT)
+    /* renameat(2) */
+    {
+	int olddirfd = 0;
+	char *oldpath = ".";
+	int newdirfd = 0;
+	char *newpath = ".";
+	renameat (olddirfd, oldpath, newdirfd, newpath);
+    }
+#endif
 
     /* rmdir(2) */
     {
@@ -684,7 +793,7 @@ int main (int argc, char **argv)
 	int setregid_r = setregid (rgid, egid);
     }
 
-#ifdef IDIO_HAVE_SET_SAVED_IDS
+#if ! defined (IDIO_NO_SET_SAVED_IDS)
     /* setresgid(2) */
     {
 	gid_t rgid = 0;
@@ -821,6 +930,16 @@ int main (int argc, char **argv)
 	int symlink_r = symlink (target, linkpath);
     }
 
+#if ! defined (IDIO_NO_SYMLINKAT)
+    /* symlinkat(2) */
+    {
+	char *target = ".";
+	int newdirfd = 0;
+	char *linkpath = ".";
+	symlinkat (target, newdirfd, linkpath);
+    }
+#endif
+
     /* sync(2) */
     {
 	sync ();
@@ -848,7 +967,7 @@ int main (int argc, char **argv)
 	 * speed_t which we use with idio_libc_speed_t in
 	 * src/libc-api.c.
 	 */
-#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
+#if ! defined (IDIO_NO_TERMIOS_SPEEDS)
 	speed_t ospeed = (speed_t) t.c_ospeed;
 #endif
     }
@@ -915,6 +1034,16 @@ int main (int argc, char **argv)
 	int unlink_r = unlink (pathname);
     }
 
+#if ! defined (IDIO_NO_UNLINKAT)
+    /* unlinkat(2) */
+    {
+	int dirfd = 0;
+	char *pathname = ".";
+	int flags = 0;
+	unlinkat (dirfd, pathname, flags);
+    }
+#endif
+
     /* unlockpt(3) */
     {
 	int unlockpt_r = unlockpt (0);
@@ -953,4 +1082,6 @@ int main (int argc, char **argv)
     uintmax_t uintmax = UINTMAX_MAX;
 
     intptr_t intptr = INTPTR_MAX;
+
+    int64_t int64 = INT64_MAX;
 }

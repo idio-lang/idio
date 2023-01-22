@@ -108,254 +108,59 @@ define (for-each f & a*) {
   (void)
 }
 
-;;----- Syntax-rules-transformer -----
-
-; This expander rewrites DEFINE-SYNTAX to DEFINE-MACRO, e.g.:
-;
-; (define-syntax iff
-;   (syntax-rules (then else)
-;     ((_ p then c)        (or p c))
-;     ((_ p then c else a) (if p c a))))
-; ==>
-; (define-template (iff & g283)
-;   ((function (syntax-expand syntax-match g283)
-;      (cond ((syntax-match g283 '(_ p then c) '(then else) '())
-;              => (function (env)
-;                   (syntax-expand '(_ p then c) '(or p c) env)))
-;            ((syntax-match g283 '(_ p then c else a) '(then else) '())
-;              => (function (env)
-;                   (syntax-expand '(_ p then c else a) '(if p c a) env)))
-;            (else
-;              (error "invalid syntax" g283))))
-;    #<PROCEDURE syntax-expand>
-;    #<PROCEDURE syntax-match>
-;    (pair 'iff g283)))
-
-; Match FORM against PATTERN.
-; KEYWORDS contains the keywords of SYNTAX-RULES.
-; When the given form matches the pattern, bind
-; each variable of PATTERN to the corresponding
-; part of the FORM, extend ENV by these bondings
-; and return it.
-; In case of a mismatch, return #F.
-;
-; NOTE: The ellipsis is an ordinary variable, but
-; it binds to an environment rather than a form.
-;
-define (syntax-match form pattern keywords env) {
-  match :+ function (form pattern keywords env) {
-    (cond
-     ((pair? pattern) {
-       (cond
-	((and (pair? (pt pattern))
-	      (eq? '... (pht pattern))) {
-	  e* := (map
-		 (function (x)
-		  (match x (ph pattern) keywords '#n))
-		 form)
-	  pair (pair '... e*) env
-	})
-	((pair? form) {
-	  e := match (ph form) (ph pattern) keywords env
-	  (and e
-	       (match (pt form) (pt pattern) keywords e))
-	})
-	(else #f))
-     })
-     ((memq pattern keywords) {
-       if (eq? pattern form) env #f
-     })
-     ((symbol? pattern) {
-       pair (pair pattern form) env
-     })
-     (else {
-       if (equal? pattern form) env #f
-     }))
-  }
-
-  e := match form pattern keywords env
-  if e (reverse! e) e
+;; map* and for-each* are from STklos (and others) where they are
+;; often used in parameter processing which can often be improper
+;; lists.
+define (map* f & l*) {
+  (cond
+   ((null? (ph l*))
+    #n)
+   ((pair? (ph l*)) {
+     (pair (apply      f (map ph l*))
+	   (apply map* f (map pt l*)))
+   })
+   (else
+    (apply f l*)))
 }
 
-; Give a unique name to each variable that is bound in FORM.
-; BOUND is a list of initially bound variables. This function
-; also renames variables of LET, LET*, and LETREC, e.g.:
-;
-; (ALPHA-CONV '(LET ((X Y)) X) '()) => (LET ((G0 Y)) G0)
-;
-define (alpha-conv form bound) {
-  subst :+ function (x env) {
-    (cond
-     ((assq x env) => pt)
-     (else x))
-  }
-  map-improper :+ function (f a r) {
-    (cond
-     ((null? a) (reverse! r))
-     ((not (pair? a)) (append (reverse! r) (f a)))
-     (else (map-improper f (pt a) (pair (f (ph a)) r))))
-  }
-  remove-bound :+ function (env bound) {
-    (cond
-     ((null? env) '#n)
-     ((memq (phh env) bound) (remove-bound (pt env) bound))
-     (else (pair (ph env) (remove-bound (pt env) bound))))
-  }
-  conv :+ function (form env) {
-    (cond
-     ((symbol? form) (subst form env))
-     ((not (pair? form)) form)
-     ((and (eq? 'quote (ph form))
-	   (pair? (pt form))
-	   (null? (ptt form))) form)
-     ((and (eq? 'function (ph form))
-	   (pair? (pt form))
-	   (pair? (ptt form))) {
-       e := (map-improper
-	     (function (x) (pair x (gensym)))
-	     (pht form)
-	     #n)
-
-       #T{ (function $@(conv (pt form)
-			     (append (remove-bound e bound)
-				     env))) }
-     })
-     ((and (or (eq? (ph form) 'let)
-	       (eq? (ph form) 'letrec)
-	       (eq? (ph form) 'let*))
-       (pair? (pt form))
-       (pair? (pht form))
-       (pair? (phht form))
-       (pair? (ptt form))) {
-       e := (map-improper
-	     (function (x)
-	      (pair x (gensym)))
-	     (map (function (x)
-	      (if (pair? x) (ph x) #f))
-	      (pht form))
-	     #n)
-
-       #T{ ($(ph form) $@(conv (pt form)
-			       (append (remove-bound e bound)
-				       env))) }
-     })
-     (else (map-improper (function (x) (conv x env))
-			 form
-			 #n)))
-  }
-
-  conv form '#n
+define (for-each* f & l*) {
+  (cond
+   ((null? (ph l*))
+    #n)
+   ((pair? (ph l*)) {
+     apply           f (map ph l*)
+     apply for-each* f (map pt l*)
+   })
+   (else
+    (apply f l*)))
 }
 
-; Substitute variables of FORM by values of ENV.
-;
-define (syntax-expand bound tmpl env) {
-  alpha-conv := alpha-conv
-  expand :+ function (tmpl env) {
+define-template (case key & clauses) {
+  gen-clauses :+ function (k c*) {
     (cond
-     ((not (pair? tmpl)) {
-       (cond
-	((assq tmpl env) => pt)
-	(else tmpl))
-     })
-     ((and (pair? tmpl)
-	   (pair? (pt tmpl))
-	   (eq? (pht tmpl) '...)) {
-       eenv := assq '... env
-
-       if (not eenv) {
-	 error/type ^rt-parameter-value-error 'syntax-rules "template without matching ... in pattern" tmpl env
+     ((null? c*) '#n)
+     ((or (not (pair? c*))
+	  (not (pair? (ph c*)))
+	  (not (pair? (pth c*)))) (error/type ^rt-syntax-error 'case "invalid syntax" c*))
+     ((null? (pt c*)) {
+       if (eq? 'else (phh c*)) {
+	 #T{ ((else $@(pth c*))) }
        } {
-	 set-ph! eenv '(#f)
-	 (map (function (x)
-	  (expand (ph tmpl) x))
-	  (pt eenv))
+	 #T{ (((memv $k '$(phh c*)) $@(pth c*))) }
        }
      })
      (else {
-       (pair (expand (ph tmpl) env)
-	     (expand (pt tmpl) env))
+       #T{ (((memv $k '$(phh c*)) $@(pth c*)) $@(gen-clauses k (pt c*))) }
      }))
+
   }
 
-  e := expand tmpl env
-  alpha-conv e bound
-}
-
-; Check the syntax of DEFINE-SYNTAX and rewrite it
-; to an application of DEFINE-MACRO.
-;
-define-template define-syntax {
-  flatten :+ function (x r) {
-    (cond
-     ((null? x) r)
-     ((pair? x) (flatten (ph x)
-			 (flatten (pt x) r)))
-     (else (pair x r)))
-  }
-  list-of? :+ function (p a) {
-    (or (null? a)
-	(and (p (ph a))
-	     (list-of? p (pt a))))
-  }
-  keywords-ok? :+ function (x) {
-    list-of? symbol? x
-  }
-  rules-ok? :+ function (x) {
-    (list-of?
-     (function (x)
-      (and (pair? x)
-	   (pair? (ph x))
-	   (pair? (pt x))
-	   (null? (ptt x))))
-     x)
-  }
-  pattern := phh
-  template := phth
-  rewrite-rules :+ function (app keywords rules-in rules-out) {
-    if (null? rules-in) {
-      reverse! rules-out
-    } {
-      r := pair #T{
-	((syntax-match $app
-		       '$(pattern rules-in)
-		       '$keywords
-		       '#n)
-	  => (function (env)
-	   (syntax-expand '$(flatten (pattern rules-in) '#n)
-			  '$(template rules-in)
-			  env)))
-      } rules-out
-
-      rewrite-rules app keywords (pt rules-in) r
+  k := (gensym)
+  #T{
+    {
+      $k := $key
+      (cond $@(gen-clauses k clauses))
     }
-  }
-
-  function/name define-syntax (name rules) {
-    (cond
-     ((not (symbol? name))			(error/type ^rt-parameter-type-error 'define-syntax "expected symbol" name))
-     ((or (not (pair? rules))
-	  (not (eq? 'syntax-rules (ph rules)))) (error/type ^rt-parameter-type-error name "expected syntax-rules, got" rules))
-     ((or (not (pair? (pt rules)))
-	  (not (pair? (ptt rules))))		(error/type ^rt-parameter-error name "syntax-rules: too few arguments" rules))
-     ((not (keywords-ok? (pht rules)))		(error/type ^rt-parameter-value-error name "syntax-rules: malformed keyword list" (pht rules)))
-     ((not (rules-ok? (ptt rules)))		(error/type ^rt-syntax-error name "syntax-rules: invalid clause in rules" (ptt rules)))
-     (else {
-       app := (gensym 'args)
-       default := #T{ ((else (error/type ^rt-syntax-error '$name "invalid syntax" $app))) }
-
-       #T{
-	 define-template $(pair name app) {
-	   $app := pair '$name $app
-
-	   cond $@(append (rewrite-rules app
-					 (pht rules)
-					 (ptt rules)
-					 '#n)
-		   default)
-	 }
-       }
-     }))
   }
 }
 

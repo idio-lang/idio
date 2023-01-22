@@ -70,7 +70,7 @@ IDIO_POLLHUP_OCCLUDES_POLLIN as above).
 
 You can edit src/idio-config.h and add/edit
 
-#undef IDIO_CAN_POLL_DEVICE
+#define IDIO_NO_POLL_DEVICE	1
 
 to use select(2) and see this behaviour yourself.
 
@@ -1410,11 +1410,11 @@ define-template (exp-case & clauses) {
     })
 
     (cond-expand
-     (IDIO_CAN_POLL_DEVICE {
-       (exp-case-poll)
+     (IDIO_NO_POLL_DEVICE {
+       (exp-case-select)
      })
      (else {
-       (exp-case-select)
+       (exp-case-poll)
      }))
   }
 }
@@ -1722,12 +1722,12 @@ expected to be tested against simultaneously.
     mfd := struct-spawn-mfd sid
     if mfd {
       (cond-expand
-       (IDIO_CAN_POLL_DEVICE {
-	 poller := libc/make-poller (list mfd libc/POLLIN)
-	 libc/poller-poll poller (timeout * 1000)
+       (IDIO_NO_POLL_DEVICE {
+	 libc/select (list mfd) #n #n (timeout * 1000000)
        })
        (else {
-	 libc/select (list mfd) #n #n (timeout * 1000000)
+	 poller := libc/make-poller (list mfd libc/POLLIN)
+	 libc/poller-poll poller (timeout * 1000)
        }))
     }
   }

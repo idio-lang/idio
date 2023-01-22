@@ -271,6 +271,18 @@ libc-wrap-error-load "libc-wrap-errors/dup2-bad-fd.idio" strerror-EBADF EBADF "d
 
 libc-wrap-error-load "libc-wrap-errors/exit-bad-type.idio" "bad parameter type: '#t' a constant is not a fixnum|C/int"
 
+(cond-expand
+ (IDIO_NO_FACCESSAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 5
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/faccessat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/faccessat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/faccessat-bad-pathname-format.idio" "faccessat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/faccessat-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/faccessat-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/fchdir-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fchdir-not-a-directory.idio" "Not a directory" ENOTDIR "fchdir"
 
@@ -278,21 +290,48 @@ libc-wrap-error-load "libc-wrap-errors/fchmod-bad-fd-type.idio" "bad parameter t
 libc-wrap-error-load "libc-wrap-errors/fchmod-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
 libc-wrap-error-load "libc-wrap-errors/fchmod-non-existent.idio" strerror-EBADF EBADF "fchmod"
 
+(cond-expand
+ (IDIO_NO_FCHMODAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 8
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/fchmodat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/fchmodat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/fchmodat-bad-pathname-format.idio" "fchmodat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/fchmodat-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
+   libc-wrap-error-load "libc-wrap-errors/fchmodat-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/fchmodat-non-existent.idio" "No such file or directory" ENOENT "fchmodat"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/fchown-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fchown-bad-owner-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
 libc-wrap-error-load "libc-wrap-errors/fchown-bad-group-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
 libc-wrap-error-load "libc-wrap-errors/fchown-non-existent.idio" strerror-EBADF EBADF "fchown"
 
+(cond-expand
+ (IDIO_NO_FCHOWNAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 9
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/fchownat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/fchownat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/fchownat-bad-pathname-format.idio" "fchownat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/fchownat-bad-owner-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
+   libc-wrap-error-load "libc-wrap-errors/fchownat-bad-group-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
+   libc-wrap-error-load "libc-wrap-errors/fchownat-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/fchownat-non-existent.idio" "No such file or directory" ENOENT "fchownat"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/fcntl-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fcntl-bad-cmd-type.idio" "bad parameter type: '1' a fixnum is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 (cond-expand
- (libc/F_DUPFD_CLOEXEC {
-   libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD_CLOEXEC-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+ (IDIO_NO_F_DUPFD_CLOEXEC {
+   ;printf "no F_DUPFD_CLOEXEC on this system, skipping\n"
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 1
  })
  (else {
-   printf "no F_DUPFD_CLOEXEC on this system, skipping\n"
-   test #t #t
+   libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD_CLOEXEC-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
  }))
 libc-wrap-error-load "libc-wrap-errors/fcntl-F_SETFD-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fcntl-F_SETFL-bad-arg-type.idio" "bad parameter type: '#t' a constant is not a C/int"
@@ -302,6 +341,18 @@ libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-fd.idio" strerror-EBADF
 
 libc-wrap-error-load "libc-wrap-errors/fstat-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fstat-bad-fd.idio" strerror-EBADF EBADF "fstat"
+
+(cond-expand
+ (IDIO_NO_FSTATAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 7
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/fstatat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/fstatat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/fstatat-bad-pathname-format.idio" "fstatat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/fstatat-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/fstatat-non-existent.idio" "No such file or directory" ENOENT "fstatat"
+ }))
 
 libc-wrap-error-load "libc-wrap-errors/fstatvfs-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fstatvfs-bad-fd.idio" strerror-EBADF EBADF "fstatvfs"
@@ -314,16 +365,31 @@ libc-wrap-error-load "libc-wrap-errors/ftruncate-bad-length-type.idio" "bad para
 libc-wrap-error-load "libc-wrap-errors/ftruncate-none-existent.idio" strerror-EBADF EBADF "ftruncate"
 
 (cond-expand
- (IDIO_HAVE_FUTIMES {
+ (IDIO_NO_FUTIMES {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 8
+ })
+ (else {
    libc-wrap-error-load "libc-wrap-errors/futimes-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
    libc-wrap-error-load "libc-wrap-errors/futimes-bad-atime-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
    libc-wrap-error-load "libc-wrap-errors/futimes-atime-invalid-pointer-type.idio" "futimes atime='#<C/* C/pointer>' a C/pointer is not a libc/struct-timeval"
    libc-wrap-error-load "libc-wrap-errors/futimes-bad-mtime-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
    libc-wrap-error-load "libc-wrap-errors/futimes-mtime-invalid-pointer-type.idio" "futimes mtime='#<C/* C/pointer>' a C/pointer is not a libc/struct-timeval"
    libc-wrap-error-load "libc-wrap-errors/futimes-bad-fd.idio" strerror-EBADF EBADF "futimes"
+ }))
+
+(cond-expand
+ (IDIO_NO_FUTIMESAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 10
  })
  (else {
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 8
+   libc-wrap-error-load "libc-wrap-errors/futimesat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-bad-pathname-format.idio" "futimesat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-bad-atime-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-atime-invalid-pointer-type.idio" "futimesat atime='#<C/* C/pointer>' a C/pointer is not a libc/struct-timeval"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-bad-mtime-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-mtime-invalid-pointer-type.idio" "futimesat mtime='#<C/* C/pointer>' a C/pointer is not a libc/struct-timeval"
+   libc-wrap-error-load "libc-wrap-errors/futimesat-bad-fd.idio" strerror-EBADF EBADF "futimesat"
  }))
 
 (cond-expand
@@ -417,6 +483,21 @@ libc-wrap-error-load "libc-wrap-errors/link-bad-newpath-type.idio" "bad paramete
 libc-wrap-error-load "libc-wrap-errors/link-bad-newpath-format.idio" "link: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/link-same-pathname.idio" "File exists" EEXIST "link"
 
+(cond-expand
+ (IDIO_NO_LINKAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 10
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-olddirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-oldpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-oldpath-format.idio" "linkat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-newdirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-newpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-newpath-format.idio" "linkat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/linkat-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/linkat-same-pathname.idio" "File exists" EEXIST "linkat"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/localtime-bad-t-type.idio" "bad parameter type: '#t' a constant is not a libc/time_t"
 
 libc-wrap-error-load "libc-wrap-errors/lockf-bad-fd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
@@ -432,6 +513,18 @@ libc-wrap-error-load "libc-wrap-errors/mkdir-bad-pathname-type.idio" "bad parame
 libc-wrap-error-load "libc-wrap-errors/mkdir-bad-pathname-format.idio" "mkdir: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/mkdir-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
 libc-wrap-error-load "libc-wrap-errors/mkdir-pathname-exists.idio" "File exists" EEXIST "mkdir"
+
+(cond-expand
+ (IDIO_NO_MKDIRAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 7
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/mkdirat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/mkdirat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/mkdirat-bad-pathname-format.idio" "mkdirat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/mkdirat-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
+   libc-wrap-error-load "libc-wrap-errors/mkdirat-pathname-exists.idio" "File exists" EEXIST "mkdirat"
+ }))
 
 libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-template-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-template-format.idio" "mkdtemp: contains an ASCII NUL"
@@ -495,6 +588,19 @@ libc-wrap-error-load "libc-wrap-errors/open-bad-pathname-format.idio" "open: con
 libc-wrap-error-load "libc-wrap-errors/open-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/open-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
 
+(cond-expand
+ (IDIO_NO_OPENAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 8
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/openat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/openat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/openat-bad-pathname-format.idio" "openat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/openat-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/openat-bad-mode-type.idio" "bad parameter type: '#t' a constant is not a libc/mode_t"
+   libc-wrap-error-load "libc-wrap-errors/openat-bad-dirfd.idio" "Not a directory" ENOTDIR "openat"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/pipe-reader-bad-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/pipe-writer-bad-type.idio" "bad parameter type: '#t' a constant is not a C/pointer"
 
@@ -518,11 +624,36 @@ libc-wrap-error-load "libc-wrap-errors/readlink-bad-pathname-type.idio" "bad par
 libc-wrap-error-load "libc-wrap-errors/readlink-bad-pathname-format.idio" "readlink: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/readlink-not-a-symlink.idio" "Invalid argument" EINVAL "readlink"
 
+(cond-expand
+ (IDIO_NO_READLINKAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 6
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/readlinkat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/readlinkat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/readlinkat-bad-pathname-format.idio" "readlinkat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/readlinkat-not-a-symlink.idio" "Invalid argument" EINVAL "readlinkat"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/rename-bad-oldpath-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/rename-bad-oldpath-format.idio" "rename: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/rename-bad-newpath-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/rename-bad-newpath-format.idio" "rename: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/rename-non-existent.idio" "No such file or directory" ENOENT "rename"
+
+(cond-expand
+ (IDIO_NO_RENAMEAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 9
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/renameat-bad-olddirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/renameat-bad-oldpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/renameat-bad-oldpath-format.idio" "renameat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/renameat-bad-newdirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/renameat-bad-newpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/renameat-bad-newpath-format.idio" "renameat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/renameat-non-existent.idio" "No such file or directory" ENOENT "renameat"
+ }))
 
 libc-wrap-error-load "libc-wrap-errors/rmdir-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/rmdir-bad-pathname-format.idio" "rmdir: contains an ASCII NUL"
@@ -558,7 +689,10 @@ libc-wrap-error-load "libc-wrap-errors/setregid-bad-egid-type.idio" "bad paramet
 ; libc-wrap-errors/setregid-negative-gid.idio is with GID
 
 (cond-expand
- (IDIO_HAVE_SET_SAVED_IDS {
+ (IDIO_NO_SET_SAVED_IDS {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 6
+ })
+ (else {
    libc-wrap-error-load "libc-wrap-errors/setresgid-bad-rgid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
    libc-wrap-error-load "libc-wrap-errors/setresgid-bad-egid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
    libc-wrap-error-load "libc-wrap-errors/setresgid-bad-sgid-type.idio" "bad parameter type: '#t' a constant is not a libc/gid_t"
@@ -568,9 +702,6 @@ libc-wrap-error-load "libc-wrap-errors/setregid-bad-egid-type.idio" "bad paramet
    libc-wrap-error-load "libc-wrap-errors/setresuid-bad-euid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
    libc-wrap-error-load "libc-wrap-errors/setresuid-bad-suid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
    ; libc-wrap-errors/setresuid-negative-uid.idio is with UID
- })
- (else {
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 6
  }))
 
 libc-wrap-error-load "libc-wrap-errors/setreuid-bad-ruid-type.idio" "bad parameter type: '#t' a constant is not a libc/uid_t"
@@ -658,6 +789,19 @@ libc-wrap-error-load "libc-wrap-errors/symlink-bad-linkpath-type.idio" "bad para
 libc-wrap-error-load "libc-wrap-errors/symlink-bad-linkpath-format.idio" "symlink: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/symlink-same-pathname.idio" "File exists" EEXIST "symlink"
 
+(cond-expand
+ (IDIO_NO_SYMLINKAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 8
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/symlinkat-bad-target-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/symlinkat-bad-target-format.idio" "symlinkat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/symlinkat-bad-newdirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/symlinkat-bad-linkpath-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/symlinkat-bad-linkpath-format.idio" "symlinkat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/symlinkat-same-pathname.idio" "File exists" EEXIST "symlinkat"
+ }))
+
 libc-wrap-error-load "libc-wrap-errors/tcgetattr-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/tcgetattr-bad-fd.idio" strerror-EBADF EBADF "tcgetattr"
 
@@ -697,6 +841,18 @@ libc-wrap-error-load "libc-wrap-errors/ttyname-bad-fd-type.idio" "bad parameter 
 libc-wrap-error-load "libc-wrap-errors/unlink-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
 libc-wrap-error-load "libc-wrap-errors/unlink-bad-pathname-format.idio" "unlink: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/unlink-non-existent.idio" "No such file or directory" ENOENT "unlink"
+
+(cond-expand
+ (IDIO_NO_UNLINKAT {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 7
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/unlinkat-bad-dirfd-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/unlinkat-bad-pathname-type.idio" "bad parameter type: '#t' a constant is not a string"
+   libc-wrap-error-load "libc-wrap-errors/unlinkat-bad-pathname-format.idio" "unlinkat: contains an ASCII NUL"
+   libc-wrap-error-load "libc-wrap-errors/unlinkat-bad-flags-type.idio" "bad parameter type: '#t' a constant is not a C/int"
+   libc-wrap-error-load "libc-wrap-errors/unlinkat-non-existent.idio" "No such file or directory" ENOENT "unlinkat"
+ }))
 
 libc-wrap-error-load "libc-wrap-errors/unlockpt-bad-type.idio" "bad parameter type: '#t' a constant is not a C/int"
 
@@ -915,11 +1071,11 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
  }))
 
 (cond-expand
- (IDIO_HAVE_SET_SAVED_IDS {
-   libc-wrap-error-load "libc-wrap-errors/setresgid-negative-gid.idio" "Operation not permitted" EPERM "setresgid"
+ (IDIO_NO_SET_SAVED_IDS {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  (else {
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   libc-wrap-error-load "libc-wrap-errors/setresgid-negative-gid.idio" "Operation not permitted" EPERM "setresgid"
  }))
 
 if running-as-root {
@@ -981,11 +1137,11 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
  }))
 
 (cond-expand
- (IDIO_HAVE_SET_SAVED_IDS {
-   libc-wrap-error-load "libc-wrap-errors/setresuid-negative-uid.idio" "Operation not permitted" EPERM "setresuid"
+ (IDIO_NO_SET_SAVED_IDS {
+   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
  })
  (else {
-   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
+   libc-wrap-error-load "libc-wrap-errors/setresuid-negative-uid.idio" "Operation not permitted" EPERM "setresuid"
  }))
 
 if running-as-root {
@@ -1059,4 +1215,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII
 
 ;; all done?
 Skipped = Skipped + libc-wrap-error-skipped
-Tests? (libc-wrap-error0 + 546 - libc-wrap-error-skipped)
+Tests? (libc-wrap-error0 + 640 - libc-wrap-error-skipped)

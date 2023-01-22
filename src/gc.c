@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -601,6 +602,7 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	idio_gc_gcc_mark (gc, IDIO_MODULE_EXPORTS (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_MODULE_IMPORTS (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_MODULE_SYMBOLS (o), colour);
+	idio_gc_gcc_mark (gc, IDIO_MODULE_IDENTITY (o), colour);
 	break;
     case IDIO_TYPE_FRAME:
 	IDIO_C_ASSERT (gc->grey != IDIO_FRAME_GREY (o));
@@ -2509,10 +2511,12 @@ static void idio_gc_run_all_finalizers ()
     while (idio_S_nil != keys) {
 	IDIO k = IDIO_PAIR_H (keys);
 
-	/* apply the finalizer */
-	IDIO C_p = idio_hash_ref (idio_gc_finalizer_hash, k);
-	void (*func) (IDIO o) = IDIO_C_TYPE_POINTER_P (C_p);
-	(*func) (k);
+	if (IDIO_GC_FLAG_FINALIZER == k->finalizer) {
+	    /* apply the finalizer */
+	    IDIO C_p = idio_hash_ref (idio_gc_finalizer_hash, k);
+	    void (*func) (IDIO o) = IDIO_C_TYPE_POINTER_P (C_p);
+	    (*func) (k);
+	}
 
 	keys = IDIO_PAIR_T (keys);
     }

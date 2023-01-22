@@ -1,0 +1,14 @@
+(rst "values-intro" 0)
+
+(nodocument zlib version)
+
+(document zlib Z_NO_COMPRESSION)
+(document zlib Z_BEST_SPEED)
+(document zlib Z_BEST_COMPRESSION)
+(document zlib Z_DEFAULT_COMPRESSION)
+
+(document zlib Z_FILTERED)
+(document zlib Z_HUFFMAN_ONLY)
+(document zlib Z_RLE)
+(document zlib Z_FIXED)
+(document zlib Z_DEFAULT_STRATEGY)

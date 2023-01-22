@@ -177,7 +177,7 @@ exp-send "hello world" :human #t :cr #t
 
 spawn-args := #n
 (cond-expand
- ((not IDIO_CAN_POLL_DEVICE) {
+ (IDIO_NO_POLL_DEVICE {
    ;; Hmm.  On the only example I have, Mac OS X 10.5.8 (and running
    ;; in debug mode to slow it down) exhibits some
    ;; IDIO_POLLHUP_OCCLUDES_POLLIN-like behaviour.  auto-exit -o 10
@@ -428,7 +428,19 @@ spawn echo "FOO"
 (exp-wait)
 
 (cond-expand
- (IDIO_CAN_POLL_DEVICE {
+ (IDIO_NO_POLL_DEVICE {
+   ;; The problem lies in that the only native IDIO_NO_POLL_DEVICE
+   ;; test system currently available is Mac OS X 10.5.8 which,
+   ;; running in debug mode, will, because of the exp-spawn-sync just
+   ;; get EOF for all six spawned echo commands.
+   ;;
+   ;; That there is a (trailing) exp-case-after with an :eof clause
+   ;; means it will match :eof six times but against the wrong
+   ;; clauses, ie. not the ones explicitly listed above.
+
+   expect-skipped = expect-skipped + 12
+ })
+ (else {
    ;; a list of two spawn-ids -- we'll plod through one step at a time
    spawn-id = #n
 
@@ -559,18 +571,6 @@ spawn echo "FOO"
    }
 
    (exp-wait)
- })
- (else {
-   ;; The problem lies in that the only native "(not
-   ;; IDIO_CAN_POLL_DEVICE)" test system currently available is Mac OS
-   ;; X 10.5.8 which, running in debug mode, will, because of the
-   ;; exp-spawn-sync just get EOF for all six spawned echo commands.
-   ;;
-   ;; That there is a (trailing) exp-case-after with an :eof clause
-   ;; means it will match :eof six times but against the wrong
-   ;; clauses, ie. not the ones explicitly listed above.
-
-   expect-skipped = expect-skipped + 12
  }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

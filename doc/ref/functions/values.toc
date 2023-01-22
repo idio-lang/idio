@@ -1,0 +1,20 @@
+(rst "values" 0)
+
+;; let etc. are not specifically documented as we want to encourage an
+;; Idiosyncratic style
+(nodocument Idio let)
+(nodocument Idio let*)
+(nodocument Idio letrec)
+
+(document Idio values)
+(document Idio call-with-values)
+(document Idio let-values)
+(document Idio let*-values lets-values)
+(document Idio define-values)
+
+;; with-values-from is sort of superceded by let-values and/or
+;; define-values
+(nodocument Idio with-values-from)
+
+;; setter is an implementation detail
+(nodocument Idio setter)

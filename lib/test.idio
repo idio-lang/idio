@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -104,8 +104,12 @@ define (fail expr result expected) {
   set! Errors (1 + Errors)
   printf "[%s/%d] Error #%d\n" (getpid) PID Errors
   display* "test #" Tests " failed: " expr
-  display* "got result:  " result
-  display* "expected:    " expected
+  display "got result:  "
+  write result
+  (newline)
+  display "expected:    "
+  write expected
+  (newline)
 }
 
 define (test3 expr result expected) {
@@ -151,6 +155,18 @@ define (test-report & args) {
     apply eprintf args
   }
 }
+
+;; Not all extensions are built so we want to check by seeing if the
+;; extension directory is in lib.
+libdir := #f
+(regex-case IDIO_CMD_PATH
+	    ("^(.*)/bin/idio" {
+	      libdir = append-string r.1 "/lib/idio/" IDIO_MM_VERSION
+	    })
+	    (else {
+	      eprintf "Failed to discover libdir from %s\n" IDIO_CMD_PATH
+	      exit 1
+	    }))
 
 ;; Where is the tests directory, say, relative to us?  We must be
 ;; somewhere in the hierarchy.  Probably, GitLab CI shell puts us in
@@ -311,10 +327,15 @@ if (ARGC gt 0) {
 
 	(regex-case
 	 (ph etfns)
-	 ("(.*/tests)/([^/]+)$" {
-	   printf "extension-tests: %s\n" r.1
-	   path-prepend 'IDIOLIB r.1
-	   test-load r.2
+	 ("(.*/([^/]+)/tests)/([^/]+)$" {
+	   ld := append-string libdir "/" r.2
+	   if (d? ld) {
+	     printf "extension-tests: %s\n" r.2
+	     path-prepend 'IDIOLIB r.1
+	     test-load r.3
+	   } {
+	     printf "extension-tests: %s not available: skipped %s\n" r.2 r.3
+	   }
 	 })
 	 (else {
 	   eprintf "extension-tests: unexpected test-file: \"%s\"\n" etf
@@ -407,6 +428,8 @@ if (ARGC gt 0) {
 
   test-load "test-trap.idio"
 
+  test-load "test-SRFI-1.idio"
+  test-load "test-rnrs.idio"
   test-load "test-SRFI-89.idio"
   test-load "test-SRFI-115.idio"
 
@@ -423,10 +446,30 @@ if (ARGC gt 0) {
       td := #f
       (regex-case
        etf
-       ("(.*/tests)/([^/]+)$" {
-	 printf "extension-tests: %s\n" r.1
-	 path-prepend 'IDIOLIB r.1
-	 test-load r.2
+       ("(.*/([^/]+)/tests)/([^/]+)$" {
+	 ld := append-string libdir "/" r.2
+	 if (d? ld) {
+	   printf "extension-tests: %s\n" r.2
+	   path-prepend 'IDIOLIB r.1
+	   test-load r.3
+	 } {
+	   skip := #f
+	   tf := append-string r.1 "/" r.3
+	   (regex-case (collect-output grep ^Tests tf | tail -1)
+		       ("Tests\\? \\(.+ \\+ ([[:digit:]]+)" {
+			 skip = read-number r.1
+		       })
+		       (else {
+			 eprintf "failed to match test count in \"%s\"\n" r
+			 exit 1
+		       }))
+	   if skip {
+	     Skipped = Skipped + skip
+	     printf "extension-tests: %-10s not available: skipped %3d tests in %s\n" r.2 skip r.3
+	   } {
+	     eprintf "extension-tests: %s not available: skipped unknown number of tests in %s\n" r.2 r.3
+	   }
+	 }
        })
        (else {
 	 eprintf "extension-tests: unexpected test-file: \"%s\"\n" etf
@@ -447,7 +490,7 @@ if (ARGC gt 0) {
   ;; that?  Erm, they've not been counted and are dynamic in number so
   ;; test we've seen at least as many as the largest number we've
   ;; seen.  Wait, some tests are OS-specific.  Drat!
-  Tests? (8353 - Skipped)
+  Tests? (8850 - Skipped)
 }
 
 if (e? testfile) (delete-file testfile)

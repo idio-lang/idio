@@ -31,9 +31,9 @@ It is very much a work in progress.
 To get started, please read [Getting
 Idio](https://idio-lang.org/get.html).
 
-For further information you can read the [Idio User
-Guide](https://idio-lang.org/docs/guide/) and the [Idio Language
-Reference](https://idio-lang.org/docs/ref/).
+For further information you can read [Idio By
+Example](https://idio-lang.org/docs/idio-by-example) and the [Idio
+Language Reference](https://idio-lang.org/docs/ref/).
 
 For those interested in the Design and Implementation of *Idio*,
 please read [DIPS](https://idio-lang.org/docs/DIPS/) which is a

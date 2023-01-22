@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -28,6 +28,7 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -3171,17 +3172,31 @@ IDIO idio_apply (IDIO fn, IDIO args)
      * nargs == 3
      *
      * size => (nargs - 1) + len (args[nargs-1])
+     * size == 5
+     *
+     * Hmm:
+     *
+     * (apply append '(#n))
+     *
+     * fn == append
+     * args == ((#n))
+     *
+     * nargs == 1
+     *
+     * size => (nargs - 1) + len (args[nargs-1])
+     * size == 0
      */
 
     IDIO larg = args;
-    while (idio_S_nil != larg &&
-	   idio_S_nil != IDIO_PAIR_T (larg)) {
-	larg = IDIO_PAIR_T (larg);
-    }
     if (idio_S_nil != larg) {
+	while (idio_S_nil != IDIO_PAIR_T (larg)) {
+	    larg = IDIO_PAIR_T (larg);
+	}
 	larg = IDIO_PAIR_H (larg);
-	if (idio_S_nil == larg ||
-	    idio_isa_pair (larg)) {
+
+	if (idio_S_nil == larg) {
+	    size = (nargs - 1);
+	} else if (idio_isa_list (larg)) {
 	    size = (nargs - 1) + idio_list_length (larg);
 	} else {
 	    nargs += 1;
@@ -3198,9 +3213,13 @@ IDIO idio_apply (IDIO fn, IDIO args)
 	    args = IDIO_PAIR_T (args);
 	}
 	args = larg;
-	for (; idio_S_nil != args; fri++) {
-	    IDIO_FRAME_ARGS (fr, fri) = IDIO_PAIR_H (args);
-	    args = IDIO_PAIR_T (args);
+	if (idio_S_nil == larg) {
+	    IDIO_FRAME_ARGS (fr, fri) = larg;
+	} else {
+	    for (; idio_S_nil != args; fri++) {
+		IDIO_FRAME_ARGS (fr, fri) = IDIO_PAIR_H (args);
+		args = IDIO_PAIR_T (args);
+	    }
 	}
     }
 
@@ -7945,10 +7964,12 @@ IDIO idio_vm_call_tree (IDIO args)
 	    /* preserve_all_state includes a preserve_state */
 	    pas_sp = idio_vm_find_stack_marker (stack, idio_SM_preserve_state, pas_sp, 0);
 	    IDIO fr = idio_array_ref_index (stack, pas_sp - 2);
-	    xi = IDIO_FRAME_XI (fr);
+	    if (idio_S_nil != fr) {
+		xi = IDIO_FRAME_XI (fr);
 
-	    /* skip this preserve_state */
-	    pas_sp--;
+		/* skip this preserve_state */
+		pas_sp--;
+	    }
 	}
     }
 

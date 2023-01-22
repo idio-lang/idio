@@ -696,6 +696,15 @@ void idio_print_string_handle (IDIO sh, IDIO o)
     IDIO_GC_FREE (os, size);
 }
 
+IDIO idio_get_output_octet_string (IDIO sh)
+{
+    IDIO_ASSERT (sh);
+
+    IDIO_TYPE_ASSERT (string_handle, sh);
+
+    return idio_octet_string_C_len (IDIO_STRING_HANDLE_BUF (sh), IDIO_STRING_HANDLE_END (sh) - IDIO_STRING_HANDLE_BUF (sh));
+}
+
 IDIO idio_get_output_string (IDIO sh)
 {
     IDIO_ASSERT (sh);

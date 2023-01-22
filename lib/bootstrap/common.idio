@@ -90,6 +90,8 @@ define-syntax with-values-from (syntax-rules ()
   ((with-values-from formals expression body ...)
    (call-with-values (function () expression) (function formals body ...))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 define (display* & x*) "
 display ``#\\{space}`` -separated `x*` to the current output handle
 

@@ -1,0 +1,2 @@
+
+sqlite3-bind stmt 'foo #t

@@ -27,6 +27,7 @@
 #include <sys/resource.h>
 
 #include <assert.h>
+#include <limits.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -41,6 +42,7 @@
 
 #include "array.h"
 #include "bignum.h"
+#include "closure.h"
 #include "condition.h"
 #include "error.h"
 #include "evaluate.h"
@@ -118,12 +120,75 @@ return `args` as a list				\n\
     return args;
 }
 
+/*
+ * idio_isa_list() is a bit naive.  See idio_listp(), below, for
+ * something more comprehensive.
+ */
 int idio_isa_list (IDIO p)
 {
     IDIO_ASSERT (p);
 
-    return (idio_isa_pair (p) ||
-	    idio_S_nil == p);
+    return (idio_S_nil == p ||
+	    idio_isa_pair (p));
+}
+
+IDIO idio_listp (IDIO x)
+{
+    IDIO_ASSERT (x);
+
+    if (idio_S_nil == x) {
+	return idio_S_true;
+    }
+
+    if (! idio_isa_pair (x)) {
+	return idio_S_false;
+    }
+
+    IDIO y = x;
+    x = IDIO_PAIR_T (x);
+
+    while (1) {
+	if (idio_eqp (x, y)) {
+	    return idio_S_false;
+	}
+
+	if (idio_S_nil == x) {
+	    return idio_S_true;
+	}
+
+	if (idio_isa_pair (x)) {
+	    IDIO tx = IDIO_PAIR_T (x);
+	    if (idio_S_nil == tx) {
+		return idio_S_true;
+	    } else if (! idio_isa_pair (tx)) {
+		return idio_S_false;
+	    } else {
+		x = IDIO_PAIR_T (tx);
+		y = IDIO_PAIR_T (y);
+		/* loop */
+	    }
+	} else {
+	    return idio_S_false;
+	}
+    }
+
+    /*
+     * Not strictly needed.  Probably.
+     */
+    return idio_S_false;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("list?", listp, (IDIO v), "v", "\
+Is `v` a list?					\n\
+						\n\
+:param v: value to test				\n\
+:return: any					\n\
+:rtype: boolean					\n\
+")
+{
+    IDIO_ASSERT (v);
+
+    return idio_listp (v);
 }
 
 void idio_free_pair (IDIO p)
@@ -973,6 +1038,7 @@ list `a` is copied, list `b` is untouched	\n\
 :param a: list to be appended to		\n\
 :type a: list					\n\
 :param b: list to be appended			\n\
+:type b: list					\n\
 :return: combined list				\n\
 :rtype: list					\n\
 ")
@@ -1000,6 +1066,109 @@ list `a` is copied, list `b` is untouched	\n\
     return idio_list_append2 (a, b);
 }
 
+IDIO idio_last_pair (IDIO list)
+{
+    IDIO_ASSERT (list);
+
+    if (idio_S_nil == list) {
+	return idio_S_nil;
+    }
+
+    IDIO_TYPE_ASSERT (pair, list);
+
+    while (1) {
+	IDIO tail = IDIO_PAIR_T (list);
+
+	if (! idio_isa_pair (tail)) {
+	    break;
+	}
+
+	list = tail;
+    }
+
+    return list;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("last-pair", last_pair, (IDIO list), "list", "\
+Return the last pair of `list`			\n\
+						\n\
+:param list: list to be examined		\n\
+:type list: list				\n\
+:return: last pair of `list`			\n\
+:rtype: pair					\n\
+")
+{
+    IDIO_ASSERT (list);
+
+    /*
+     * Test Case: pair-errors/last-pair-bad-list-type.idio
+     *
+     * last-pair #t
+     */
+    IDIO_USER_TYPE_ASSERT (list, list);
+
+    return idio_last_pair (list);
+}
+
+/*
+ * This is an iterative version of the recursive algorithm in SRFI-1
+ */
+IDIO idio_list_nappend (IDIO lists)
+{
+    IDIO_ASSERT (lists);
+
+    IDIO prev = idio_S_nil;
+
+    while (idio_isa_pair (lists)) {
+	IDIO first = IDIO_PAIR_H (lists);
+	IDIO rest = IDIO_PAIR_T (lists);
+
+	if (! idio_isa_pair (first)) {
+	    lists = rest;
+	    prev = first;
+
+	    /* loop in lp (outer loop) */
+	} else {
+	    IDIO tail_cons = idio_last_pair (first);
+
+	    while (1) {
+		if (idio_isa_pair (rest)) {
+		    IDIO next = IDIO_PAIR_H (rest);
+		    rest = IDIO_PAIR_T (rest);
+
+		    IDIO_PAIR_T (tail_cons) = next;
+
+		    if (idio_isa_pair (next)) {
+			tail_cons = idio_last_pair (next);
+		    }
+		} else {
+		    return first;
+		}
+	    }
+	}
+    }
+
+    return prev;
+}
+
+IDIO_DEFINE_PRIMITIVE0V_DS ("append!", nappend, (IDIO lists), "lists", "\
+Destructively append `lists`			\n\
+						\n\
+:param lists: lists to be appended		\n\
+:type lists: lists				\n\
+:return: combined lists				\n\
+:rtype: list					\n\
+")
+{
+    IDIO_ASSERT (lists);
+
+    /*
+     * lists is varargs so is, by definition, a list
+     */
+
+    return idio_list_nappend (lists);
+}
+
 IDIO idio_list_ph_of (IDIO l)
 {
     IDIO_ASSERT (l);
@@ -1008,29 +1177,30 @@ IDIO idio_list_ph_of (IDIO l)
     IDIO r = idio_S_nil;
 
     while (idio_S_nil != l) {
-	IDIO e = IDIO_PAIR_H (l);
-	if (idio_isa_pair (e)) {
-	    r = idio_pair (IDIO_PAIR_H (e), r);
+	if (idio_isa_pair (l)) {
+	    IDIO e = IDIO_PAIR_H (l);
+	    if (idio_isa_pair (e)) {
+		r = idio_pair (IDIO_PAIR_H (e), r);
+	    } else {
+		r = idio_pair (idio_S_nil, r);
+	    }
+	    l = IDIO_PAIR_T (l);
 	} else {
-	    r = idio_pair (idio_S_nil, r);
+	    r = idio_pair (l, r);
+	    break;
 	}
-	l = IDIO_PAIR_T (l);
-	IDIO_TYPE_ASSERT (list, l);
     }
 
     return idio_list_nreverse (r);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("ph-of", ph_of, (IDIO l), "l", "\
-return the remainder of the list `l` from the	\n\
-first incidence of an element :ref:`eq? <eq?>`	\n\
-`k` or ``#f`` if `k` is not in `l`		\n\
-						\n\
-:param k: object to search for			\n\
-:type k: any					\n\
-:param l: list to search in			\n\
-:type l: list					\n\
-:return: a list starting from `k`, ``#f`` if `k` is not in `l`\n\
+equivalent to :samp:`map ph {l}`	\n\
+					\n\
+:param l: list to map			\n\
+:type l: list				\n\
+:return: a list of the heads of `l`	\n\
+:rtype: list				\n\
 ")
 {
     IDIO_ASSERT (l);
@@ -1053,29 +1223,30 @@ IDIO idio_list_pt_of (IDIO l)
     IDIO r = idio_S_nil;
 
     while (idio_S_nil != l) {
-	IDIO e = IDIO_PAIR_H (l);
-	if (idio_isa_pair (e)) {
-	    r = idio_pair (IDIO_PAIR_T (e), r);
+	if (idio_isa_pair (l)) {
+	    IDIO e = IDIO_PAIR_H (l);
+	    if (idio_isa_pair (e)) {
+		r = idio_pair (IDIO_PAIR_T (e), r);
+	    } else {
+		r = idio_pair (idio_S_nil, r);
+	    }
+	    l = IDIO_PAIR_T (l);
 	} else {
-	    r = idio_pair (idio_S_nil, r);
+	    r = idio_pair (l, r);
+	    break;
 	}
-	l = IDIO_PAIR_T (l);
-	IDIO_TYPE_ASSERT (list, l);
     }
 
     return idio_list_nreverse (r);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("pt-of", pt_of, (IDIO l), "l", "\
-return the remainder of the list `l` from the	\n\
-first incidence of an element :ref:`eq? <eq?>`	\n\
-`k` or ``#f`` if `k` is not in `l`		\n\
-						\n\
-:param k: object to search for			\n\
-:type k: any					\n\
-:param l: list to search in			\n\
-:type l: list					\n\
-:return: a list starting from `k`, ``#f`` if `k` is not in `l`\n\
+equivalent to :samp:`map pt {l}`	\n\
+					\n\
+:param l: list to map			\n\
+:type l: list				\n\
+:return: a list of the tails of `l`	\n\
+:rtype: list				\n\
 ")
 {
     IDIO_ASSERT (l);
@@ -1090,16 +1261,91 @@ first incidence of an element :ref:`eq? <eq?>`	\n\
     return idio_list_pt_of (l);
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("any-null?", any_nullp, (IDIO l), "l", "\
-return the remainder of the list `l` from the	\n\
-first incidence of an element :ref:`eq? <eq?>`	\n\
-`k` or ``#f`` if `k` is not in `l`		\n\
+IDIO idio_list_tail_prim (IDIO list, idio_ai_t pos)
+{
+    IDIO_ASSERT (list);
+
+    IDIO_TYPE_ASSERT (list, list);
+
+    for (; pos > 0; pos--) {
+	IDIO tail = IDIO_PAIR_T (list);
+
+	/*
+	 * Edge case of n-1 elements in a list and we want the nth
+	 * which would be #n
+	 */
+	if (1 == pos &&
+	    idio_S_nil == tail) {
+	    return idio_S_nil;
+	}
+
+	if (! idio_isa_pair (tail)) {
+	    /*
+	     * Test Case: pair-errors/list-tail-invalid-list-type.idio
+	     *
+	     * list-tail '(1 & 2) 2
+	     */
+	    idio_error_param_type ("pair", tail, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+
+	list = tail;
+    }
+
+    return list;
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("list-tail", list_tail, (IDIO list, IDIO pos), "list pos", "\
+Return the list after `pos` pairs of `list`	\n\
 						\n\
-:param k: object to search for			\n\
-:type k: any					\n\
-:param l: list to search in			\n\
-:type l: list					\n\
-:return: a list starting from `k`, ``#f`` if `k` is not in `l`\n\
+:param list: list to be examined		\n\
+:type list: list				\n\
+:param pos: pos					\n\
+:type pos: fixnum				\n\
+:return: list after `pos` pairs of `list`	\n\
+:rtype: list					\n\
+")
+{
+    IDIO_ASSERT (list);
+    IDIO_ASSERT (pos);
+
+    /*
+     * Test Case: pair-errors/list-tail-bad-list-type.idio
+     *
+     * list-tail #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (list, list);
+
+    /*
+     * Test Case: pair-errors/list-tail-bad-pos-type.idio
+     *
+     * list-tail #n #t
+     */
+    IDIO_USER_TYPE_ASSERT (fixnum, pos);
+
+    idio_ai_t C_pos = IDIO_FIXNUM_VAL (pos);
+    if (C_pos < 0) {
+	/*
+	 * Test Case: pair-errors/list-tail-pos-negative.idio
+	 *
+	 * list-tail #n -1
+	 */
+	idio_error_param_value_msg ("list-tail", "list", list, "should be non-negative", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_list_tail_prim (list, C_pos);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("any-null?", any_nullp, (IDIO l), "l", "\
+Are any elements of `l` ``#n``?		\n\
+					\n\
+:param l: list to search in		\n\
+:type l: list				\n\
+:return: boolean			\n\
+:rtype: boolean				\n\
 ")
 {
     IDIO_ASSERT (l);
@@ -1617,6 +1863,48 @@ end of the list with ``-1`` being the last element.	\n\
     return idio_list_set_nth (l, C_n, val);
 }
 
+IDIO_DEFINE_PRIMITIVE3_DS ("fold-left", fold_left, (IDIO func, IDIO val, IDIO l), "func val l", "\
+call `func` for each element in list `l` with arguments:	\n\
+`element` and `val`						\n\
+								\n\
+`val` is updated to the value returned by `func`.		\n\
+								\n\
+The final value of `val` is returned.				\n\
+								\n\
+:param func: func to be called with each val, element tuple	\n\
+:type func: 2-ary function					\n\
+:param val: initial value for `val`				\n\
+:type val: value						\n\
+:param l: list							\n\
+:type l: list							\n\
+:return: final value of `val`					\n\
+")
+{
+    IDIO_ASSERT (func);
+    IDIO_ASSERT (val);
+    IDIO_ASSERT (l);
+
+    /*
+     * Test Case: pair-errors/fold-left-bad-func-type.idio
+     *
+     * fold-left #t #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (function, func);
+    /*
+     * Test Case: pair-errors/fold-left-bad-l-type.idio
+     *
+     * fold-left append #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (list, l);
+
+    while (idio_S_nil != l) {
+	val = idio_vm_invoke_C (IDIO_LIST3 (func, val, IDIO_PAIR_H (l)));
+	l = IDIO_PAIR_T (l);
+    }
+
+    return val;
+}
+
 char *idio_pair_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth)
 {
     IDIO_ASSERT (v);
@@ -1870,9 +2158,13 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (list_nreverse);
     IDIO_ADD_PRIMITIVE (list_length);
     IDIO_ADD_PRIMITIVE (list);
+    IDIO_ADD_PRIMITIVE (listp);
     IDIO_ADD_PRIMITIVE (append);
+    IDIO_ADD_PRIMITIVE (last_pair);
+    IDIO_ADD_PRIMITIVE (nappend);
     IDIO_ADD_PRIMITIVE (ph_of);
     IDIO_ADD_PRIMITIVE (pt_of);
+    IDIO_ADD_PRIMITIVE (list_tail);
     IDIO_ADD_PRIMITIVE (any_nullp);
     IDIO_ADD_PRIMITIVE (memq);
     IDIO_ADD_PRIMITIVE (memv);
@@ -1894,6 +2186,8 @@ void idio_pair_add_primitives ()
 			    idio_S_set_value_index,
 			    idio_vtable_create_method_value (idio_util_method_set_value_index,
 							     idio_vm_default_values_ref (IDIO_FIXNUM_VAL (set))));
+
+    IDIO_ADD_PRIMITIVE (fold_left);
 }
 
 void idio_init_pair ()

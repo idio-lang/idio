@@ -69,6 +69,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#t
+test (C/signed? v)	#f
 test (C/unsigned? v)	#f
 
 v := C/integer-> 0 'schar
@@ -90,6 +91,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#t
+test (C/signed? v)	#t
 test (C/unsigned? v)	#f
 
 v := C/integer-> 0 'uchar
@@ -111,6 +113,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#t
+test (C/signed? v)	#f
 test (C/unsigned? v)	#t
 
 v := C/integer-> 0 'short
@@ -132,6 +135,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#t
+test (C/signed? v)	#t
 test (C/unsigned? v)	#f
 
 v := C/integer-> 0 'ushort
@@ -153,6 +157,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#t
+test (C/signed? v)	#f
 test (C/unsigned? v)	#t
 
 v := C/integer-> 0 'int
@@ -174,6 +179,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#t
+test (C/signed? v)	#t
 test (C/unsigned? v)	#f
 
 v := C/integer-> 0 'uint
@@ -195,6 +201,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#t
+test (C/signed? v)	#f
 test (C/unsigned? v)	#t
 
 v := C/integer-> 0 'long
@@ -216,6 +223,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#t
+test (C/signed? v)	#t
 test (C/unsigned? v)	#f
 
 v := C/integer-> 0 'ulong
@@ -237,6 +245,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#t
+test (C/signed? v)	#f
 test (C/unsigned? v)	#t
 
 v := C/integer-> 0 'longlong
@@ -258,6 +267,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#t
+test (C/signed? v)	#t
 test (C/unsigned? v)	#f
 
 v := C/integer-> 0 'ulonglong
@@ -279,6 +289,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#t
+test (C/signed? v)	#f
 test (C/unsigned? v)	#t
 
 v := C/number-> 0 'float
@@ -300,6 +311,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#f
+test (C/signed? v)	#t
 test (C/unsigned? v)	#f
 
 v := C/number-> 0 'double
@@ -321,6 +333,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#f
+test (C/signed? v)	#t
 test (C/unsigned? v)	#f
 
 v := C/number-> 0 'longdouble
@@ -342,6 +355,7 @@ test (C/pointer? v)	#f
 test (C/type? v)	#t
 test (C/number? v)	#t
 test (C/integral? v)	#f
+test (C/signed? v)	#t
 test (C/unsigned? v)	#f
 
 v := libc/NULL
@@ -363,6 +377,7 @@ test (C/pointer? v)	#t
 test (C/type? v)	#t
 test (C/number? v)	#f
 test (C/integral? v)	#f
+test (C/signed? v)	#f
 test (C/unsigned? v)	#f
 
 v1  := gensym 'v0
@@ -659,4 +674,4 @@ test (not (memq 'st_uid (C/pointer-members sb))) #f
 
 ;; all done?
 Skipped = Skipped + c-type-skipped
-Tests? (c-type0 + 969 - c-type-skipped)
+Tests? (c-type0 + 984 - c-type-skipped)

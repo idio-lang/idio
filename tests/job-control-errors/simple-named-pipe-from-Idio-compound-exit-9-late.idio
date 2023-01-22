@@ -3,6 +3,12 @@ str := sprintf "hello from %d" PID
 
 ipn := named-pipe-from {
   (cond-expand
+   ((and "os-release/ID/debian"
+	 "os-release/VERSION_ID/10"
+	 sizeof/pointer/32) {
+     ;; Debian 10 64-bit seems happy enough.
+     libc/nanosleep '(0 5e8)
+   })
    ((and "os-release/ID/CentOS"
 	 "os-release/VERSION_ID/6"
 	 sizeof/pointer/32) {

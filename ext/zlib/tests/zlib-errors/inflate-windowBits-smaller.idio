@@ -1,0 +1,6 @@
+
+;; windowBits for inflate should be at least as big as windowBits for
+;; deflate
+
+ish := open-input-string "hello"
+inflate (open-input-string (deflate ish :windowBits 15)) :windowBits 9

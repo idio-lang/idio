@@ -1296,7 +1296,7 @@ IDIO_SYMBOL_DECL (c_cflag);
 IDIO_SYMBOL_DECL (c_lflag);
 IDIO_SYMBOL_DECL (c_line);
 IDIO_SYMBOL_DECL (c_cc);
-#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
+#if ! defined (IDIO_NO_TERMIOS_SPEEDS)
 IDIO_SYMBOL_DECL (c_ispeed);
 IDIO_SYMBOL_DECL (c_ospeed);
 #endif
@@ -1362,7 +1362,7 @@ in C, :samp:`{termios}->{member}`	\n\
         memcpy ((void *) rp, (void *) &termiosp->c_cc, alen);
         return idio_C_pointer_free_me (rp);
     }
-#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
+#if ! defined (IDIO_NO_TERMIOS_SPEEDS)
     else if (idio_S_c_ispeed == member) {
         return idio_libc_speed_t (termiosp->c_ispeed);
     } else if (idio_S_c_ospeed == member) {
@@ -1487,7 +1487,7 @@ The C/ types for `val` are `libc/tcflag_t`, `libc/speed_t` and `C/pointer` for `
         memcpy ((void *) &termiosp->c_cc, (void *) valp, alen);
         return idio_S_unspec;
     }
-#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
+#if ! defined (IDIO_NO_TERMIOS_SPEEDS)
     else if (idio_S_c_ispeed == member) {
        /*
 	* Test Case: libc-errors/struct-termios-set-c_ispeed-bad-value-type.idio
@@ -1566,7 +1566,7 @@ IDIO idio_libc_struct_termios_as_string (struct termios *termiosp)
 
     idio_display_C ("<<1cc_t[]>>", CSI_sh);
 
-#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
+#if ! defined (IDIO_NO_TERMIOS_SPEEDS)
     idio_display_C (" c_ispeed:", CSI_sh);
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_speed_t);
@@ -2850,19 +2850,22 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-utsname-as-string", libc_struct_utsname_as_st
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("access", libc_access, (IDIO pathname, IDIO mode), "pathname mode", "\
-in C, :samp:`access ({pathname}, {mode})`			\n\
-a wrapper to libc :manpage:`access(2)`				\n\
-								\n\
-:param pathname: file name					\n\
-:type pathname: string						\n\
-:param mode: accessibility check(s)				\n\
-:type mode: C/int						\n\
-:return: ``#t`` or ``#f``					\n\
-:rtype: boolean							\n\
+in C, :samp:`access ({pathname}, {mode})`	\n\
+a wrapper to libc :manpage:`access(2)`	\n\
+					\n\
+:param pathname: file name		\n\
+:type pathname: string			\n\
+:param mode: accessibility check(s)	\n\
+:type mode: C/int			\n\
+:return: ``#t`` or ``#f``		\n\
+:rtype: boolean				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
-								\n\
+					\n\
 Any non-zero value from :manpage:`access(2)` returns ``#f``,	\n\
-no ^system-error is raised.					\n\
+no ^system-error is raised.		\n\
+					\n\
+.. warning::				\n\
+	Use of this function is discouraged.	\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -2984,15 +2987,15 @@ a wrapper to libc :manpage:`asctime(3)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("chdir", libc_chdir, (IDIO path), "path", "\
-in C, :samp:`chdir ({path})`					\n\
-a wrapper to libc :manpage:`chdir(2)`				\n\
-								\n\
-:param path: directory name					\n\
-:type path: string						\n\
-:return: 0							\n\
-:rtype: C/int							\n\
+in C, :samp:`chdir ({path})`		\n\
+a wrapper to libc :manpage:`chdir(2)`	\n\
+					\n\
+:param path: directory name		\n\
+:type path: string			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
 :raises ^rt-libc-format-error: if `path` contains an ASCII NUL	\n\
-:raises ^system-error:						\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (path);
@@ -3037,7 +3040,7 @@ a wrapper to libc :manpage:`chdir(2)`				\n\
 
 IDIO_DEFINE_PRIMITIVE2_DS ("chmod", libc_chmod, (IDIO pathname, IDIO mode), "pathname mode", "\
 in C: :samp:`chmod ({pathname}, {mode})`	\n\
-a wrapper to libc :manpage:`chmod(2)`		\n\
+a wrapper to libc :manpage:`chmod(2)`	\n\
 					\n\
 :param pathname: pathname		\n\
 :type pathname: string			\n\
@@ -3228,14 +3231,14 @@ a wrapper to libc :manpage:`chroot(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("close", libc_close, (IDIO fd), "fd", "\
-in C, :samp:`close ({fd})`					\n\
-a wrapper to libc :manpage:`close(2)`				\n\
-								\n\
-:param fd: file descriptor					\n\
-:type fd: C/int							\n\
-:return: 0							\n\
-:rtype: C/int							\n\
-:raises ^system-error:						\n\
+in C, :samp:`close ({fd})`		\n\
+a wrapper to libc :manpage:`close(2)`	\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -3357,14 +3360,14 @@ a wrapper to libc :manpage:`ctime(3)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("dup", libc_dup, (IDIO oldfd), "oldfd", "\
-in C, :samp:`dup ({oldfd})`					\n\
-a wrapper to libc :manpage:`dup(2)`				\n\
-								\n\
-:param oldfd: file descriptor					\n\
-:type oldfd: C/int						\n\
-:return: new fd							\n\
-:rtype: C/int							\n\
-:raises ^system-error:						\n\
+in C, :samp:`dup ({oldfd})`		\n\
+a wrapper to libc :manpage:`dup(2)`	\n\
+					\n\
+:param oldfd: file descriptor		\n\
+:type oldfd: C/int			\n\
+:return: new fd				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (oldfd);
@@ -3392,16 +3395,16 @@ a wrapper to libc :manpage:`dup(2)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("dup2", libc_dup2, (IDIO oldfd, IDIO newfd), "oldfd newfd", "\
-in C, :samp:`dup2 ({oldfd}, {newfd})`				\n\
-a wrapper to libc :manpage:`dup2(2)`				\n\
-								\n\
-:param oldfd: file descriptor					\n\
-:type oldfd: C/int						\n\
-:param newfd: file descriptor					\n\
-:type newfd: fixnum or C/int					\n\
-:return: new fd							\n\
-:rtype: C/int							\n\
-:raises ^system-error:						\n\
+in C, :samp:`dup2 ({oldfd}, {newfd})`	\n\
+a wrapper to libc :manpage:`dup2(2)`	\n\
+					\n\
+:param oldfd: file descriptor		\n\
+:type oldfd: C/int			\n\
+:param newfd: file descriptor		\n\
+:type newfd: fixnum or C/int		\n\
+:return: new fd				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (oldfd);
@@ -3449,6 +3452,121 @@ a wrapper to libc :manpage:`dup2(2)`				\n\
 
     return idio_C_int (dup2_r);
 }
+
+#if ! defined (IDIO_NO_FACCESSAT)
+IDIO_DEFINE_PRIMITIVE3V_DS ("faccessat", libc_faccessat, (IDIO dirfd, IDIO pathname, IDIO mode, IDIO args), "dirfd pathname mode [flag ...]", "\
+in C: :samp:`faccessat ({dirfd}, {pathname}, {mode}, {flags})`		\n\
+a wrapper to libc :manpage:`faccessat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param mode: accessibility check(s)	\n\
+:type mode: C/int			\n\
+:param flags: see below, default none	\n\
+:type flags: C/int, optional		\n\
+:return: ``#t`` or ``#f``		\n\
+:rtype: boolean				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+								\n\
+Any non-zero value from :manpage:`faccessat(2)` returns ``#f``,	\n\
+no ^system-error is raised.					\n\
+								\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+								\n\
+The following values are defined for `flags`, they can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments:	\n\
+``AT_EACCESS``							\n\
+``AT_SYMLINK_NOFOLLOW``						\n\
+								\n\
+.. warning::							\n\
+	Use of this function is discouraged.			\n\
+								\n\
+.. note::							\n\
+								\n\
+   ``faccessat`` is not available on all systems.		\n\
+   Use the ``IDIO_NO_FACCESSAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (mode);
+    IDIO_ASSERT (args);
+
+    /*
+     * Test Case: libc-errors/faccessat-bad-dirfd-type.idio
+     *
+     * faccessat #t #t #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+    /*
+     * Test Case: libc-errors/faccessat-bad-pathname-type.idio
+     *
+     * faccessat C/0i #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/faccessat-bad-pathname-format.idio
+     *
+     * faccessat C/0i "hello\x0world" #t
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "faccessat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+    /*
+     * Test Case: libc-errors/faccessat-bad-mode-type.idio
+     *
+     * faccessat C/0i "." #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, mode);
+    int C_mode = IDIO_C_TYPE_int (mode);
+
+    int C_flags = 0;
+
+    while (idio_S_nil != args) {
+	IDIO flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/faccessat-bad-flags-type.idio
+	 *
+	 * faccessat C/0i "." C/0i #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags |= IDIO_C_TYPE_int (flags);
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    IDIO faccessat_r = idio_S_false;
+
+    /*
+     * faccess(2) errors are a bit vague:
+     *
+     *   On error (at least one bit in mode asked for a permission
+     *   that is denied, or mode is F_OK and the file does not exist,
+     *   or some other error occurred), -1 is returned, and errno is
+     *   set appropriately.
+     *
+     * So, we'll just fail and let the user figure it out...
+     */
+
+    if (0 == faccessat (C_dirfd, C_pathname, C_mode, C_flags)) {
+	faccessat_r = idio_S_true;
+    }
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
+
+    return faccessat_r;
+}
+#endif
 
 IDIO_DEFINE_PRIMITIVE1_DS ("fchdir", libc_fchdir, (IDIO fd), "fd", "\
 in C: :samp:`fchdir ({fd})`		\n\
@@ -3540,6 +3658,114 @@ a wrapper to libc :manpage:`fchmod(2)`	\n\
     return idio_C_int (fchmod_r);
 }
 
+#if ! defined (IDIO_NO_FCHMODAT)
+IDIO_DEFINE_PRIMITIVE3V_DS ("fchmodat", libc_fchmodat, (IDIO dirfd, IDIO pathname, IDIO mode, IDIO args), "dirfd pathname mode [flag ...]", "\
+in C: :samp:`fchmodat ({dirfd}, {pathname}, {mode}, {flags})`	\n\
+a wrapper to libc :manpage:`fchmodat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param mode: mode flags			\n\
+:type mode: libc/mode_t			\n\
+:param flags: see below, default none	\n\
+:type flags: C/int			\n\
+:return: 0				\n\
+:rtype: C/int	\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+								\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+								\n\
+The following values are defined for `flags`, they can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments:	\n\
+``AT_SYMLINK_NOFOLLOW``						\n\
+								\n\
+.. note::							\n\
+								\n\
+   ``fchmodat`` is not available on all systems.		\n\
+   Use the ``IDIO_NO_FCHMODAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (mode);
+    IDIO_ASSERT (args);
+
+   /*
+    * Test Case: libc-errors/fchmodat-bad-dirfd-type.idio
+    *
+    * fchmodat #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/fchmodat-bad-pathname-type.idio
+    *
+    * fchmodat C/0i #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/fchmodat-bad-pathname-format.idio
+     *
+     * fchmodat C/0i "hello\x0world" #t
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "fchmodat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/fchmodat-bad-mode-type.idio
+    *
+    * fchmodat C/0i "." #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    mode_t C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    int C_flags = 0;
+
+    while (idio_S_nil != args) {
+	IDIO flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/fchmodat-bad-flags-type.idio
+	 *
+	 * fchmodat C/0i "." S_IRUSR #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags |= IDIO_C_TYPE_int (flags);
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    int fchmodat_r = fchmodat (C_dirfd, C_pathname, C_mode, C_flags);
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
+
+    if (-1 == fchmodat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/fchmodat-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * delete-file (pht fd+name)
+	 * dirfd := open (dirname-pathname (pht fd+name)) O_RDONLY
+	 * fchmodat dirfd (pht fd+name) S_IRUSR
+	 */
+        idio_error_system_errno ("fchmodat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (fchmodat_r);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE3_DS ("fchown", libc_fchown, (IDIO fd, IDIO owner, IDIO group), "fd owner group", "\
 in C: :samp:`fchown ({fd}, {owner}, {group})`	\n\
 a wrapper to libc :manpage:`fchown(2)`	\n\
@@ -3602,25 +3828,145 @@ a wrapper to libc :manpage:`fchown(2)`	\n\
     return idio_C_int (fchown_r);
 }
 
+#if ! defined (IDIO_NO_FCHOWNAT)
+IDIO_DEFINE_PRIMITIVE4V_DS ("fchownat", libc_fchownat, (IDIO dirfd, IDIO pathname, IDIO owner, IDIO group, IDIO args), "dirfd pathname owner group [flag ...]", "\
+in C: :samp:`fchownat ({dirfd}, {pathname}, {owner}, {group}, {flags})`		\n\
+a wrapper to libc :manpage:`fchownat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param owner: user ID			\n\
+:type owner: libc/uid_t			\n\
+:param group: group ID			\n\
+:type group: libc/gid_t			\n\
+:param flags: see below, default none	\n\
+:type flags: C/int, optional		\n\
+:return: 0				\n\
+:rtype: C/int	\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+								\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+								\n\
+The following values are defined for `flags`, they can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments:	\n\
+``AT_SYMLINK_NOFOLLOW``						\n\
+								\n\
+.. note::							\n\
+								\n\
+   ``fchownat`` is not available on all systems.		\n\
+   Use the ``IDIO_NO_FCHOWNAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (owner);
+    IDIO_ASSERT (group);
+    IDIO_ASSERT (args);
+
+   /*
+    * Test Case: libc-errors/fchownat-bad-dirfd-type.idio
+    *
+    * fchownat #t #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/fchownat-bad-pathname-type.idio
+    *
+    * fchownat C/0i #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/fchownat-bad-pathname-format.idio
+     *
+     * fchownat C/0i "hello\x0world" #t #t
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "fchownat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/fchownat-bad-owner-type.idio
+    *
+    * fchownat C/0i "." #t #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (uid_t, owner);
+    uid_t C_owner = IDIO_C_TYPE_libc_uid_t (owner);
+
+   /*
+    * Test Case: libc-errors/fchownat-bad-group-type.idio
+    *
+    * fchownat C/0i "." UID #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (gid_t, group);
+    gid_t C_group = IDIO_C_TYPE_libc_gid_t (group);
+
+    int C_flags = 0;
+
+    while (idio_S_nil != args) {
+	IDIO flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/fchownat-bad-flags-type.idio
+	 *
+	 * fchownat C/0i "." UID GID #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags |= IDIO_C_TYPE_int (flags);
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    int fchownat_r = fchownat (C_dirfd, C_pathname, C_owner, C_group, C_flags);
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
+
+    if (-1 == fchownat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/fchownat-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * dirfd := open (dirname-pathname (pht fd+name)) O_RDONLY
+	 * fchownat dirfd (pht fd+name) UID GID
+	 */
+        idio_error_system_errno ("fchownat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (fchownat_r);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE2V_DS ("fcntl", libc_fcntl, (IDIO fd, IDIO cmd, IDIO args), "fd cmd [args]", "\
-in C, :samp:`fcntl ({fd}, {cmd}[, {args}])`			\n\
-a wrapper to libc :manpage:`fcntl(2)`				\n\
-								\n\
-:param fd: file descriptor					\n\
-:type fd: C/int							\n\
-:param cmd: fcntl command					\n\
-:type cmd: C/int						\n\
-:param args: fcntl command args					\n\
-:type args: list						\n\
-:return: appropriate value					\n\
-:rtype: C/int							\n\
-:raises ^system-error:						\n\
-								\n\
-Supported commands include:					\n\
-``libc/F_DUPFD``						\n\
-``libc/F_DUPFD_CLOEXEC`` (if supported)				\n\
-``libc/F_GETFL``						\n\
-``libc/F_SETFL``						\n\
+in C, :samp:`fcntl ({fd}, {cmd}[, {args}])`	\n\
+a wrapper to libc :manpage:`fcntl(2)`	\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:param cmd: fcntl command		\n\
+:type cmd: C/int			\n\
+:param args: fcntl command args		\n\
+:type args: list			\n\
+:return: appropriate value		\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+					\n\
+Supported commands include:		\n\
+``libc/F_DUPFD``			\n\
+``libc/F_DUPFD_CLOEXEC`` (if available)	\n\
+``libc/F_GETFL``			\n\
+``libc/F_SETFL``			\n\
 "
 )
 {
@@ -3728,12 +4074,12 @@ Supported commands include:					\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("fork", libc_fork, (void), "", "\
-in C, :samp:`fork ()`						\n\
-a wrapper to libc :manpage:`fork(2)`				\n\
-								\n\
-:return: 0 or Process ID of child				\n\
-:rtype: libc/pid_t						\n\
-:raises ^system-error:						\n\
+in C, :samp:`fork ()`			\n\
+a wrapper to libc :manpage:`fork(2)`	\n\
+					\n\
+:return: 0 or Process ID of child	\n\
+:rtype: libc/pid_t			\n\
+:raises ^system-error:			\n\
 ")
 {
     pid_t C_pid = fork ();
@@ -3762,14 +4108,14 @@ a wrapper to libc :manpage:`fork(2)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("fstat", libc_fstat, (IDIO fd), "fd", "\
-in C, :samp:`fstat ({fd})`			\n\
-a wrapper to libc :manpage:`fstat(2)`		\n\
-						\n\
-:param fd: file descriptor			\n\
-:type fd: C/int					\n\
+in C, :samp:`fstat ({fd})`		\n\
+a wrapper to libc :manpage:`fstat(2)`	\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
 :return: :ref:`struct-stat <libc/struct-stat>`	\n\
-:rtype: C/pointer				\n\
-:raises ^system-error:				\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -3805,6 +4151,107 @@ a wrapper to libc :manpage:`fstat(2)`		\n\
     return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
 }
 
+#if ! defined (IDIO_NO_FSTATAT)
+IDIO_DEFINE_PRIMITIVE2V_DS ("fstatat", libc_fstatat, (IDIO dirfd, IDIO pathname, IDIO args), "dirfd pathname [flag ...]", "\
+in C: :samp:`fstatat ({dirfd}, {pathname}, statbuf, {flags})`		\n\
+a wrapper to libc :manpage:`fstatat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param flags: see below, default none	\n\
+:type flags: C/int, optional		\n\
+:return: :ref:`struct-stat <libc/struct-stat>`	\n\
+:rtype: C/pointer			\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+								\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+								\n\
+The following values are defined for `flags`, they can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments:	\n\
+``AT_SYMLINK_NOFOLLOW``						\n\
+								\n\
+.. note::							\n\
+								\n\
+   ``fstatat`` is not available on all systems.		\n\
+   Use the ``IDIO_NO_FSTATAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (args);
+
+   /*
+    * Test Case: libc-errors/fstatat-bad-dirfd-type.idio
+    *
+    * fstatat #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/fstatat-bad-pathname-type.idio
+    *
+    * fstatat C/0i #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/fstatat-bad-pathname-format.idio
+     *
+     * fstatat C/0i "hello\x0world"
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "fstatat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+    int C_flags = 0;
+
+    while (idio_S_nil != args) {
+	IDIO flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/fstatat-bad-flags-type.idio
+	 *
+	 * fstatat C/0i "." #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags |= IDIO_C_TYPE_int (flags);
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    struct stat* statp = idio_alloc (sizeof (struct stat));
+
+    int fstatat_r = fstatat (C_dirfd, C_pathname, statp, C_flags);
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
+
+    if (-1 == fstatat_r) {
+	idio_free (statp);
+
+	/*
+	 * Test Case: libc-wrap-errors/fstatat-bad-fd.idio
+	 *
+	 * fstatat (C/integer-> 99) "."
+	 *
+	 * Obviously, this is a risky test.  perhaps we should get a
+	 * new fd then close it and reuse that fd?
+	 */
+        idio_error_system_errno ("fstatat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE1_DS ("fstatvfs", libc_fstatvfs, (IDIO fd), "fd", "\
 in C: :samp:`fstatvfs ({fd})`		\n\
 a wrapper to libc :manpage:`fstatvfs(3)`	\n\
@@ -3831,6 +4278,8 @@ a wrapper to libc :manpage:`fstatvfs(3)`	\n\
     int fstatvfs_r = fstatvfs (C_fd, statvfsp);
 
     if (-1 == fstatvfs_r) {
+	idio_free (statvfsp);
+
 	/*
 	 * Test Case: libc-wrap-errors/fstavfs-bad-fd.idio
 	 *
@@ -3938,7 +4387,7 @@ a wrapper to libc :manpage:`ftruncate(2)`	\n\
     return idio_C_int (ftruncate_r);
 }
 
-#ifdef IDIO_HAVE_FUTIMES
+#if ! defined (IDIO_NO_FUTIMES)
 IDIO_DEFINE_PRIMITIVE3_DS ("futimes", libc_futimes, (IDIO fd, IDIO atime, IDIO mtime), "fd atime mtime", "\
 in C: :samp:`futimes ({fd}, ({atime}, {mtime}))`	\n\
 a wrapper to libc :manpage:`futimes(3)`	\n\
@@ -3953,7 +4402,14 @@ a wrapper to libc :manpage:`futimes(3)`	\n\
 :rtype: C/int				\n\
 :raises ^system-error:			\n\
 					\n\
-``futimes`` is not available on some systems.	\n\
+.. note::				\n\
+					\n\
+   ``futimes`` is not available on all systems.	\n\
+   Use the ``IDIO_NO_FUTIMES`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+					\n\
+.. seealso::				\n\
+					\n\
+   :ref:`futimesat <libc/futimesat>`	\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -3978,7 +4434,7 @@ a wrapper to libc :manpage:`futimes(3)`	\n\
 	/*
 	 * Test Case: libc-errors/futimes-atime-invalid-pointer-type.idio
 	 *
-	 * struct-timeval-ref libc/NULL #t
+	 * futimes C/0i "." libc/NULL #t
 	 */
 	idio_error_param_value_exp ("futimes", "atime", atime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
 
@@ -3995,7 +4451,7 @@ a wrapper to libc :manpage:`futimes(3)`	\n\
 	/*
 	 * Test Case: libc-errors/futimes-mtime-invalid-pointer-type.idio
 	 *
-	 * struct-timeval-ref timeval libc/NULL
+	 * futimes C/0i "." timeval libc/NULL
 	 */
 	idio_error_param_value_exp ("futimes", "mtime", mtime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
 
@@ -4026,14 +4482,129 @@ a wrapper to libc :manpage:`futimes(3)`	\n\
 }
 #endif
 
+#if ! defined (IDIO_NO_FUTIMESAT)
+IDIO_DEFINE_PRIMITIVE4_DS ("futimesat", libc_futimesat, (IDIO dirfd, IDIO pathname, IDIO atime, IDIO mtime), "dirfd pathname atime mtime", "\
+in C: :samp:`futimesat ({dirfd}, {pathname}, ({atime}, {mtime}))`	\n\
+a wrapper to libc :manpage:`futimesat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param atime: :ref:`struct-timeval <libc/struct-timeval>`	\n\
+:type atime: C/pointer			\n\
+:param mtime: :ref:`struct-timeval <libc/struct-timeval>`	\n\
+:type mtime: C/pointer			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+					\n\
+.. note::				\n\
+					\n\
+   ``futimesat`` is not available on all systems.	\n\
+   Use the ``IDIO_NO_FUTIMESAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+					\n\
+.. seealso::				\n\
+					\n\
+   :ref:`futimes <libc/futimes>`	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (atime);
+    IDIO_ASSERT (mtime);
+
+   /*
+    * Test Case: libc-errors/futimesat-bad-dirfd-type.idio
+    *
+    * futimesat #t #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/futimesat-bad-pathname-type.idio
+    *
+    * futimesat C/0i #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/futimesat-bad-pathname-format.idio
+     *
+     * futimesat C/0i "hello\x0world" #t #t
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "futimesat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/futimesat-bad-atime-type.idio
+    *
+    * futimesat C/0i "." #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (pointer, atime);
+    if (idio_CSI_libc_struct_timeval != IDIO_C_TYPE_POINTER_PTYPE (atime)) {
+	/*
+	 * Test Case: libc-errors/futimesat-atime-invalid-pointer-type.idio
+	 *
+	 * futimesat C/0i "." libc/NULL #t
+	 */
+	idio_error_param_value_exp ("futimesat", "atime", atime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+   /*
+    * Test Case: libc-errors/futimesat-bad-mtime-type.idio
+    *
+    * futimesat C/0i "." timeval #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (pointer, mtime);
+    if (idio_CSI_libc_struct_timeval != IDIO_C_TYPE_POINTER_PTYPE (mtime)) {
+	/*
+	 * Test Case: libc-errors/futimesat-mtime-invalid-pointer-type.idio
+	 *
+	 * futimesat C/0i "." timeval libc/NULL
+	 */
+	idio_error_param_value_exp ("futimesat", "mtime", mtime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    struct timeval times[2];
+    memcpy (&times[0], IDIO_C_TYPE_POINTER_P (atime), sizeof (struct timeval));
+    memcpy (&times[1], IDIO_C_TYPE_POINTER_P (mtime), sizeof (struct timeval));
+
+    int futimesat_r = futimesat (C_dirfd, C_pathname, times);
+
+    if (-1 == futimesat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/futimesat-bad-fd.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * dirfd := open (dirname-pathname (pht fd+name)) O_RDONLY
+	 * futimesat dirfd (basename-pathname (pht fd+name)) timeval timeval
+	 */
+        idio_error_system_errno ("futimesat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (futimesat_r);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE0_DS ("getcwd", libc_getcwd, (void), "", "\
-in C, :samp:`getcwd (buf, size)`				\n\
-a wrapper to libc :manpage:`getcwd(3)`				\n\
-								\n\
-:return: current working directory				\n\
-:rtype: pathname						\n\
-:raises ^system-error:						\n\
-								\n\
+in C, :samp:`getcwd (buf, size)`	\n\
+a wrapper to libc :manpage:`getcwd(3)`	\n\
+					\n\
+:return: current working directory	\n\
+:rtype: pathname			\n\
+:raises ^system-error:			\n\
+					\n\
 .. note:: The returned value is limited to ``libc/PATH_MAX`` bytes	\n\
 ")
 {
@@ -4111,7 +4682,7 @@ a wrapper to libc :manpage:`getcwd(3)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getegid", libc_getegid, (), "", "\
-in C: :samp:`getegid ()`		\n\
+in C: :samp:`getegid ()`	\n\
 a wrapper to libc :manpage:`getegid(2)`	\n\
 				\n\
 :return: effective group ID	\n\
@@ -4153,10 +4724,10 @@ a wrapper to libc :manpage:`getgid(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("getgrgid", libc_getgrgid, (IDIO gid), "gid", "\
-in C: :samp:`getgrgid ({gid})`			\n\
+in C: :samp:`getgrgid ({gid})`		\n\
 a wrapper to libc :manpage:`getgrgid(3)`	\n\
 					\n\
-:param gid: 				\n\
+:param gid: group ID			\n\
 :type gid: unsigned fixnum or libc/gid_t	\n\
 :return: :ref:`struct-group <libc/struct-group>` or ``#f``	\n\
 :rtype: C/pointer			\n\
@@ -4277,7 +4848,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("getgrnam", libc_getgrnam, (IDIO name), "name", "\
 in C: :samp:`getgrnam ({name})`		\n\
 a wrapper to libc :manpage:`getgrnam(3)`	\n\
 					\n\
-:param name: 				\n\
+:param name: group name			\n\
 :type name: string			\n\
 :return: :ref:`struct-group <libc/struct-group>` or ``#f``	\n\
 :rtype: C/pointer			\n\
@@ -4403,7 +4974,7 @@ a wrapper to libc :manpage:`getgrnam(3)`	\n\
 /*
  * Mac OS 10.5.8
  */
-#ifndef L_cuserid
+#if ! defined (L_cuserid)
 #include <sys/param.h>
 #define L_cuserid MAXLOGNAME
 #endif
@@ -4455,7 +5026,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("getpgid", libc_getpgid, (IDIO pid), "pid", "\
 in C, :samp:`getpgid ({pid})`		\n\
 a wrapper to libc :manpage:`getpgid(2)`	\n\
 					\n\
-:param pid: 				\n\
+:param pid: progress ID			\n\
 :type pid: libc/pid_t			\n\
 :return: Process Group ID		\n\
 :rtype: libc/pid_t			\n\
@@ -4489,12 +5060,12 @@ a wrapper to libc :manpage:`getpgid(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getpgrp", libc_getpgrp, (void), "", "\
-in C, :samp:`getpgrp ()`					\n\
-a wrapper to libc :manpage:`getpgrp(2)`				\n\
-								\n\
-:return: Process Group ID					\n\
-:rtype: libc/pid_t						\n\
-:raises ^system-error:						\n\
+in C, :samp:`getpgrp ()`		\n\
+a wrapper to libc :manpage:`getpgrp(2)`	\n\
+					\n\
+:return: Process Group ID		\n\
+:rtype: libc/pid_t			\n\
+:raises ^system-error:			\n\
 ")
 {
     pid_t pid = getpgrp ();
@@ -4515,12 +5086,12 @@ a wrapper to libc :manpage:`getpgrp(2)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getpid", libc_getpid, (void), "", "\
-in C, :samp:`getpid ()`						\n\
-a wrapper to libc :manpage:`getpid(2)`				\n\
-								\n\
-:return: Process ID						\n\
-:rtype: libc/pid_t						\n\
-:raises ^system-error:						\n\
+in C, :samp:`getpid ()`			\n\
+a wrapper to libc :manpage:`getpid(2)`	\n\
+					\n\
+:return: Process ID			\n\
+:rtype: libc/pid_t			\n\
+:raises ^system-error:			\n\
 ")
 {
     /*
@@ -4530,12 +5101,12 @@ a wrapper to libc :manpage:`getpid(2)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getppid", libc_getppid, (void), "", "\
-in C, :samp:`getppid ()`					\n\
-a wrapper to libc :manpage:`getppid(2)`				\n\
-								\n\
-:return: Parent Process ID					\n\
-:rtype: libc/pid_t						\n\
-:raises ^system-error:						\n\
+in C, :samp:`getppid ()`		\n\
+a wrapper to libc :manpage:`getppid(2)`	\n\
+					\n\
+:return: Parent Process ID		\n\
+:rtype: libc/pid_t			\n\
+:raises ^system-error:			\n\
 ")
 {
     /*
@@ -4610,7 +5181,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("getpwnam", libc_getpwnam, (IDIO name), "name", "\
 in C: :samp:`getpwnam ({name})`		\n\
 a wrapper to libc :manpage:`getpwnam(3)`	\n\
 					\n\
-:param name: 				\n\
+:param name: user name			\n\
 :type name: string			\n\
 :return: :ref:`struct-passwd <libc/struct-passwd>` or ``#f``	\n\
 :rtype: C/pointer			\n\
@@ -4736,10 +5307,10 @@ a wrapper to libc :manpage:`getpwnam(3)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("getpwuid", libc_getpwuid, (IDIO uid), "uid", "\
-in C: :samp:`getpwuid ({uid})`			\n\
+in C: :samp:`getpwuid ({uid})`		\n\
 a wrapper to libc :manpage:`getpwuid(3)`	\n\
 					\n\
-:param uid: 				\n\
+:param uid: user ID			\n\
 :type uid: unsigned fixnum or libc/uid_t	\n\
 :return: :ref:`struct-passwd <libc/struct-passwd>` or ``#f``	\n\
 :rtype: C/pointer			\n\
@@ -4854,17 +5425,17 @@ a wrapper to libc :manpage:`getpwuid(3)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("getrlimit", libc_getrlimit, (IDIO resource), "resource", "\
-in C, :samp:`getrlimit ({resource})`				\n\
-a wrapper to libc :manpage:`getrlimit(2)`			\n\
-								\n\
-:param resource: resource, see below				\n\
-:type resource: C/int						\n\
-:return: :ref:`struct-rlimit <libc/struct-rlimit>`		\n\
-:rtype: C/pointer						\n\
-:raises ^system-error:						\n\
-								\n\
-The resource names follow C conventions such as			\n\
-``libc/RLIMIT_AS`` and ``libc/RLIMIT_NOFILE``.			\n\
+in C, :samp:`getrlimit ({resource})`	\n\
+a wrapper to libc :manpage:`getrlimit(2)`	\n\
+					\n\
+:param resource: resource, see below	\n\
+:type resource: C/int			\n\
+:return: :ref:`struct-rlimit <libc/struct-rlimit>`	\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
+					\n\
+The resource names follow C conventions such as	\n\
+``libc/RLIMIT_AS`` and ``libc/RLIMIT_NOFILE``.	\n\
 ")
 {
     IDIO_ASSERT (resource);
@@ -4886,7 +5457,7 @@ The resource names follow C conventions such as			\n\
 	idio_free (rlimp);
 
 	/*
-	 * Test Case:  libc-wrap-errors/getrlimit-bad-rlim.idio
+	 * Test Case: libc-wrap-errors/getrlimit-bad-rlim.idio
 	 *
 	 * getrlimit (C/integer-> -1)
 	 */
@@ -4899,17 +5470,17 @@ The resource names follow C conventions such as			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("getrusage", libc_getrusage, (IDIO who), "who", "\
-in C, :samp:`getrusage ({who}, rusage)`				\n\
-a wrapper to libc :manpage:`getrusage(2)`			\n\
-								\n\
-:param who: who, see below					\n\
-:type who: C/int						\n\
-:return: :ref:`struct-rusage <libc/struct-rusage>`		\n\
-:rtype: C/pointer						\n\
-:raises ^system-error:						\n\
-								\n\
-The parameter `who` refers to ``libc/RUSAGE_SELF`` or		\n\
-``libc/RUSAGE_CHILDREN``					\n\
+in C, :samp:`getrusage ({who}, rusage)`	\n\
+a wrapper to libc :manpage:`getrusage(2)`	\n\
+					\n\
+:param who: who, see below		\n\
+:type who: C/int			\n\
+:return: :ref:`struct-rusage <libc/struct-rusage>`	\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
+					\n\
+The parameter `who` refers to ``libc/RUSAGE_SELF`` or	\n\
+``libc/RUSAGE_CHILDREN``		\n\
 ")
 {
     IDIO_ASSERT (who);
@@ -4928,7 +5499,7 @@ The parameter `who` refers to ``libc/RUSAGE_SELF`` or		\n\
 	idio_free (rusagep);
 
 	/*
-	 * Test Case:  libc-wrap-errors/getrusage-bad-who.idio
+	 * Test Case: libc-wrap-errors/getrusage-bad-who.idio
 	 *
 	 * On Linux:
 	 *
@@ -4958,14 +5529,14 @@ The parameter `who` refers to ``libc/RUSAGE_SELF`` or		\n\
  * session leader (hint: rlwrap).
  */
 IDIO_DEFINE_PRIMITIVE1_DS ("getsid", libc_getsid, (IDIO pid), "pid", "\
-in C, :samp:`getsid ({pid})`					\n\
-a wrapper to libc :manpage:`getsid(2)`				\n\
-								\n\
-:param pid: Process ID						\n\
-:type pid: libc/pid_t						\n\
-:return: Session ID						\n\
-:rtype: libc/pid_t						\n\
-:raises ^system-error:						\n\
+in C, :samp:`getsid ({pid})`		\n\
+a wrapper to libc :manpage:`getsid(2)`	\n\
+					\n\
+:param pid: Process ID			\n\
+:type pid: libc/pid_t			\n\
+:return: Session ID			\n\
+:rtype: libc/pid_t			\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (pid);
@@ -5002,14 +5573,14 @@ a wrapper to libc :manpage:`getsid(2)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("gettimeofday", libc_gettimeofday, (void), "", "\
-in C, :samp:`gettimeofday ()`					\n\
-a wrapper to libc :manpage:`gettimeofday(2)`			\n\
-								\n\
-:return: :ref:`struct-timeval <libc/struct-timeval>`		\n\
-:rtype: C/pointer						\n\
-:raises ^system-error:						\n\
-								\n\
-.. note:: The struct timezone parameter is not used.		\n\
+in C, :samp:`gettimeofday ()`		\n\
+a wrapper to libc :manpage:`gettimeofday(2)`	\n\
+					\n\
+:return: :ref:`struct-timeval <libc/struct-timeval>`	\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
+					\n\
+.. note:: The struct timezone parameter is not used.	\n\
 ")
 {
     struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
@@ -5147,21 +5718,21 @@ a wrapper to libc :manpage:`grantpt(3)`		\n\
  * system.
  */
 IDIO_DEFINE_PRIMITIVE2V_DS ("ioctl", libc_ioctl, (IDIO fd, IDIO cmd, IDIO args), "fd cmd [args]", "\
-in C, :samp:`ioctl ({fd}, {cmd}[, {args}])`			\n\
-a wrapper to libc :manpage:`ioctl(2)`				\n\
-								\n\
-:param fd: file descriptor					\n\
-:type fd: C/int							\n\
-:param cmd: ioctl command					\n\
-:type cmd: C/int						\n\
-:param args: ioctl command args					\n\
-:type args: list						\n\
-:return: appropriate value					\n\
-:rtype: C/int							\n\
-:raises ^system-error:						\n\
-								\n\
-Supported commands include:					\n\
-``libc/I_PUSH``							\n\
+in C, :samp:`ioctl ({fd}, {cmd}[, {args}])`	\n\
+a wrapper to libc :manpage:`ioctl(2)`	\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:param cmd: ioctl command		\n\
+:type cmd: C/int			\n\
+:param args: ioctl command args		\n\
+:type args: list			\n\
+:return: appropriate value		\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+					\n\
+Supported commands include:		\n\
+``libc/I_PUSH``				\n\
 "
 )
 {
@@ -5220,20 +5791,20 @@ Supported commands include:					\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("isatty", libc_isatty, (IDIO fd), "fd", "\
-in C, :samp:`isatty ({fd})`					\n\
-a wrapper to libc :manpage:`isatty(3)`				\n\
-								\n\
-:param fd: file descriptor					\n\
-:type fd: C/int							\n\
-:return: ``#t`` or ``#f``					\n\
-:rtype: boolean							\n\
-:raises ^system-error:						\n\
-								\n\
+in C, :samp:`isatty ({fd})`		\n\
+a wrapper to libc :manpage:`isatty(3)`	\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:return: ``#t`` or ``#f``		\n\
+:rtype: boolean				\n\
+:raises ^system-error:			\n\
+					\n\
 A strictly conforming ``isatty`` would raise a ^system-error	\n\
 for ``ENOTTY`` however this wrapper returns ``#f`` in that case	\n\
 but raises ^system-error for any other :manpage:`isatty(3)` error.	\n\
-								\n\
-.. warning::							\n\
+					\n\
+.. warning::				\n\
 	Not all operating systems set ``errno`` when :manpage:`isatty(3)`	\n\
 	returns 0, ``isatty`` also returns ``#f`` in that case.	\n\
 ")
@@ -5287,16 +5858,16 @@ but raises ^system-error for any other :manpage:`isatty(3)` error.	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("kill", libc_kill, (IDIO pid, IDIO sig), "pid sig", "\
-in C, :samp:`kill ({pid}, {sig})`				\n\
-a wrapper to libc :manpage:`kill(2)`				\n\
-								\n\
-:param pid: Process ID						\n\
-:type pid: libc/pid_t						\n\
-:param fd: signal number					\n\
-:type fd: C/int							\n\
-:return: 0							\n\
-:rtype: C/int							\n\
-:raises ^system-error:						\n\
+in C, :samp:`kill ({pid}, {sig})`	\n\
+a wrapper to libc :manpage:`kill(2)`	\n\
+					\n\
+:param pid: Process ID			\n\
+:type pid: libc/pid_t			\n\
+:param fd: signal number		\n\
+:type fd: C/int				\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (pid);
@@ -5339,7 +5910,7 @@ a wrapper to libc :manpage:`kill(2)`				\n\
  */
 IDIO_DEFINE_PRIMITIVE2_DS ("killpg", libc_killpg, (IDIO pgrp, IDIO sig), "pgrp sig", "\
 in C, :samp:`killpg ({pgrp}, {sig})`	\n\
-a wrapper to libc killpg(3)		\n\
+a wrapper to libc :manpage:`killpg(3)`	\n\
 					\n\
 :param pgrp: Process Group ID		\n\
 :type pgrp: libc/pid_t			\n\
@@ -5453,15 +6024,144 @@ a wrapper to libc :manpage:`link(2)`		\n\
     return idio_C_int (link_r);
 }
 
-IDIO_DEFINE_PRIMITIVE0V_DS ("localtime", libc_localtime, (IDIO args), "[t]", "\
-in C, :samp:`localtime ({t})`			\n\
-a wrapper to libc :manpage:`localtime(3)`	\n\
-						\n\
-:param t: time in seconds since epoch, defaults to the result of :manpage:`time(2)`	\n\
-:type t: libc/time_t, optional			\n\
-:return: :ref:`struct-tm <libc/struct-tm>`	\n\
-:rtype: C/pointer				\n\
+#if ! defined (IDIO_NO_LINKAT)
+IDIO_DEFINE_PRIMITIVE4V_DS ("linkat", libc_linkat, (IDIO olddirfd, IDIO oldpath, IDIO newdirfd, IDIO newpath, IDIO args), "olddirfd oldpath newdirfd newpath [flag ...]", "\
+in C: :samp:`linkat ({olddirfd}, {oldpath}, {newdirfd}, {newpath}, {flags})`		\n\
+a wrapper to libc :manpage:`linkat(2)`	\n\
+					\n\
+:param olddirfd: file descriptor for a directory	\n\
+:type olddirfd: C/int			\n\
+:param oldpath: existing file name	\n\
+:type oldpath: string			\n\
+:param newdirfd: file descriptor for a directory	\n\
+:type newdirfd: C/int			\n\
+:param newpath: new file name		\n\
+:type newpath: string			\n\
+:param flags: see below, default none	\n\
+:type flags: C/int, optional		\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 :raises ^system-error:				\n\
+								\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+								\n\
+The following values are defined for `flags`, they can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments:	\n\
+``AT_SYMLINK_FOLLOW``						\n\
+								\n\
+.. note::							\n\
+								\n\
+   ``linkat`` is not available on all systems.		\n\
+   Use the ``IDIO_NO_LINKAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+")
+{
+    IDIO_ASSERT (olddirfd);
+    IDIO_ASSERT (oldpath);
+    IDIO_ASSERT (newdirfd);
+    IDIO_ASSERT (newpath);
+    IDIO_ASSERT (args);
+
+   /*
+    * Test Case: libc-errors/linkat-bad-olddirfd-type.idio
+    *
+    * linkat #t #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, olddirfd);
+    int C_olddirfd = IDIO_C_TYPE_int (olddirfd);
+
+   /*
+    * Test Case: libc-errors/linkat-bad-oldpath-type.idio
+    *
+    * linkat C/0i #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, oldpath);
+
+    size_t free_C_oldpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/linkat-bad-oldpath-format.idio
+     *
+     * linkat C/0i "hello\x0world" #t #t
+     */
+    char *C_oldpath = idio_libc_string_C (oldpath, "linkat", &free_C_oldpath, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/linkat-bad-newdirfd-type.idio
+    *
+    * linkat C/0i "." #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, newdirfd);
+    int C_newdirfd = IDIO_C_TYPE_int (newdirfd);
+
+   /*
+    * Test Case: libc-errors/linkat-bad-newpath-type.idio
+    *
+    * linkat C/0i "." C/0i #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, newpath);
+
+    size_t free_C_newpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/linkat-bad-newpath-format.idio
+     *
+     * linkat C/0i "." C/0i "hello\x0world"
+     */
+    char *C_newpath = idio_libc_string_C (newpath, "linkat", &free_C_newpath, IDIO_C_FUNC_LOCATION ());
+
+    int C_flags = 0;
+
+    while (idio_S_nil != args) {
+	IDIO flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/linkat-bad-flags-type.idio
+	 *
+	 * linkat C/0i "." C/0i "." #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags |= IDIO_C_TYPE_int (flags);
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    int linkat_r = linkat (C_olddirfd, C_oldpath, C_newdirfd, C_newpath, C_flags);
+
+    if (free_C_oldpath) {
+	IDIO_GC_FREE (C_oldpath, free_C_oldpath);
+    }
+
+    if (free_C_newpath) {
+	IDIO_GC_FREE (C_newpath, free_C_newpath);
+    }
+
+    if (-1 == linkat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/linkat-same-pathname.idio
+	 *
+	 * touch "foo"
+	 * linkat AT_FDCWD "foo" AT_FDCWD "foo"
+	 */
+        idio_error_system_errno ("linkat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (linkat_r);
+}
+#endif
+
+IDIO_DEFINE_PRIMITIVE0V_DS ("localtime", libc_localtime, (IDIO args), "[t]", "\
+in C, :samp:`localtime ({t})`		\n\
+a wrapper to libc :manpage:`localtime(3)`	\n\
+					\n\
+:param t: time in seconds since epoch, defaults to the result of :manpage:`time(2)`	\n\
+:type t: libc/time_t, optional		\n\
+:return: :ref:`struct-tm <libc/struct-tm>`	\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -5568,15 +6268,15 @@ a wrapper to libc :manpage:`lockf(3)`		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("lstat", libc_lstat, (IDIO pathname), "pathname", "\
-in C, :samp:`lstat ({pathname})`		\n\
-a wrapper to libc :manpage:`lstat(2)`		\n\
-						\n\
-:param pathname: filename to stat		\n\
-:type pathname: string				\n\
+in C, :samp:`lstat ({pathname})`	\n\
+a wrapper to libc :manpage:`lstat(2)`	\n\
+					\n\
+:param pathname: filename to stat	\n\
+:type pathname: string			\n\
 :return: :ref:`struct-stat <libc/struct-stat>`	\n\
-:rtype: C/pointer				\n\
+:rtype: C/pointer			\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
-:raises ^system-error:				\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -5622,17 +6322,17 @@ a wrapper to libc :manpage:`lstat(2)`		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("mkdir", libc_mkdir, (IDIO pathname, IDIO mode), "pathname mode", "\
-in C, :samp:`mkdir ({pathname}, {mode})`			\n\
-a wrapper to libc :manpage:`mkdir(2)`				\n\
-								\n\
-:param pathname: directory name					\n\
-:type pathname: string						\n\
-:param mode: mode flags						\n\
-:type mode: libc/mode_t						\n\
-:return: 0							\n\
-:rtype: C/int							\n\
+in C, :samp:`mkdir ({pathname}, {mode})`	\n\
+a wrapper to libc :manpage:`mkdir(2)`	\n\
+					\n\
+:param pathname: directory name		\n\
+:type pathname: string			\n\
+:param mode: mode flags			\n\
+:type mode: libc/mode_t			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
-:raises ^system-error:						\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -5686,16 +6386,98 @@ a wrapper to libc :manpage:`mkdir(2)`				\n\
     return idio_C_int (mkdir_r);
 }
 
+#if ! defined (IDIO_NO_MKDIRAT)
+IDIO_DEFINE_PRIMITIVE3_DS ("mkdirat", libc_mkdirat, (IDIO dirfd, IDIO pathname, IDIO mode), "dirfd pathname mode", "\
+in C: :samp:`mkdirat ({dirfd}, {pathname}, {mode})`	\n\
+a wrapper to libc :manpage:`mkdirat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param mode: mode flags			\n\
+:type mode: libc/mode_t			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+					\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (mode);
+
+   /*
+    * Test Case: libc-errors/mkdirat-bad-dirfd-type.idio
+    *
+    * mkdirat #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/mkdirat-bad-pathname-type.idio
+    *
+    * mkdirat C/0i #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/mkdirat-bad-pathname-format.idio
+     *
+     * mkdirat C/0i "hello\x0world" #t
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "mkdirat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/mkdirat-bad-mode-type.idio
+    *
+    * mkdirat C/0i "." #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    mode_t C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    int mkdirat_r = mkdirat (C_dirfd, C_pathname, C_mode);
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
+
+    if (-1 == mkdirat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/mkdirat-pathname-exists.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * dirfd := open (dirname-pathname (pht fd+name)) O_RDONLY
+	 * mkdirat dirfd (basename-pathname (pht fd+name)) (C/integer-> #o555 libc/mode_t)
+	 *
+	 * XXX You'll want an unwind-protect to actually delete the
+	 * file!
+	 */
+        idio_error_system_errno ("mkdirat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (mkdirat_r);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE1_DS ("mkdtemp", libc_mkdtemp, (IDIO template), "template", "\
-in C, :samp:`mkdtemp ({template})`				\n\
-a wrapper to libc :manpage:`mkdtemp(3)`				\n\
-								\n\
-:param template: directory template				\n\
-:type template: string						\n\
-:return: modified template					\n\
-:rtype: pathname						\n\
+in C, :samp:`mkdtemp ({template})`	\n\
+a wrapper to libc :manpage:`mkdtemp(3)`	\n\
+					\n\
+:param template: directory template	\n\
+:type template: string			\n\
+:return: modified template		\n\
+:rtype: pathname			\n\
 :raises ^rt-libc-format-error: if `template` contains an ASCII NUL	\n\
-:raises ^system-error:						\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (template);
@@ -5808,15 +6590,15 @@ a wrapper to libc :manpage:`mkfifo(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("mkstemp", libc_mkstemp, (IDIO template), "template", "\
-in C, :samp:`mkstemp ({template})`				\n\
-a wrapper to libc :manpage:`mkstemp(3)`				\n\
-								\n\
-:param template: filename template				\n\
-:type template: string						\n\
-:return: (fd filename)						\n\
-:rtype: list (C/int, pathname)					\n\
+in C, :samp:`mkstemp ({template})`	\n\
+a wrapper to libc :manpage:`mkstemp(3)`	\n\
+					\n\
+:param template: filename template	\n\
+:type template: string			\n\
+:return: (fd filename)			\n\
+:rtype: list (C/int, pathname)		\n\
 :raises ^rt-libc-format-error: if `template` contains an ASCII NUL	\n\
-:raises ^system-error:						\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (template);
@@ -5883,9 +6665,9 @@ IDIO_DEFINE_PRIMITIVE1_DS ("mktime", libc_mktime, (IDIO tm), "tm", "\
 in C, :samp:`mktime ({tm})`		\n\
 a wrapper to libc :manpage:`mktime(3)`	\n\
 					\n\
-:param tm: 				\n\
+:param tm: time structure		\n\
 :type tm: :ref:`struct-tm <libc/struct-tm>`	\n\
-:return:				\n\
+:return: calendar time			\n\
 :rtype: libc/time_t			\n\
 :raises ^system-error:			\n\
 ")
@@ -5926,20 +6708,20 @@ a wrapper to libc :manpage:`mktime(3)`	\n\
  * halfway...
  */
 IDIO_DEFINE_PRIMITIVE1_DS ("nanosleep", libc_nanosleep, (IDIO req), "req", "\
-in C, :samp:`nanosleep ({req}, rem)`            \n\
-a wrapper to libc :manpage:`nanosleep(2)`       \n\
-                                                \n\
-:param req: see below				\n\
+in C, :samp:`nanosleep ({req}, rem)`	\n\
+a wrapper to libc :manpage:`nanosleep(2)`	\n\
+					\n\
+:param req: see below			\n\
 :type req: :ref:`struct-timespec <libc/struct-timespec>` or a list	\n\
-:return:  (`completed?` *rem*)			\n\
-:rtype: list                                    \n\
-:raises ^system-error:				\n\
-                                                \n\
+:return: (`completed?` *rem*)		\n\
+:rtype: list				\n\
+:raises ^system-error:			\n\
+					\n\
 *rem* is a :ref:`struct-timespec <libc/struct-timespec>`	\n\
-                                                \n\
-``EINTR`` will return :samp:`(#f {rem})`        \n\
-otherwise return :samp:`(#t {rem})`             \n\
-                                                \n\
+					\n\
+``EINTR`` will return :samp:`(#f {rem})`	\n\
+otherwise return :samp:`(#t {rem})`	\n\
+					\n\
 `req` can be a list of :samp:`({sec} [{nsec}])` \n\
 where `sec` can be a :ref:`libc/time_t <libc/time_t>` | fixnum | bignum	\n\
 and `nsec` can be a ``C/long`` | fixnum | bignum	\n\
@@ -6196,22 +6978,149 @@ a wrapper to libc :manpage:`open(2)`	\n\
     }
 
     return idio_C_int (open_r);
-
 }
 
+#if ! defined (IDIO_NO_OPENAT)
+IDIO_DEFINE_PRIMITIVE3V_DS ("openat", libc_openat, (IDIO dirfd, IDIO pathname, IDIO flags, IDIO args), "dirfd pathname flags [mode]", "\
+in C: :samp:`openat ({dirfd}, {pathname}, {flags}, {mode})`	\n\
+a wrapper to libc :manpage:`openat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param flags: access/creation flags	\n\
+:type flags: C/int			\n\
+:param mode: mode flags, defaults to 0	\n\
+:type mode: libc/mode_t, optional	\n\
+:return: file descriptor		\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (flags);
+    IDIO_ASSERT (args);
+
+   /*
+    * Test Case: libc-errors/openat-bad-dirfd-type.idio
+    *
+    * openat #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/openat-bad-pathname-type.idio
+    *
+    * openat C/0i #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/openat-bad-pathname-format.idio
+     *
+     * openat C/0i "hello\x0world"
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "openat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/openat-bad-flags-type.idio
+    *
+    * openat C/0i "." #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, flags);
+    int C_flags = IDIO_C_TYPE_int (flags);
+
+    IDIO mode = idio_S_nil;
+    mode_t C_mode = 0;
+    if (idio_isa_pair (args)) {
+	mode = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/openat-bad-mode-type.idio
+	 *
+	 * openat C/0i "." C/0i #t
+	 */
+	IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+
+	C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+    }
+
+    int openat_r;
+
+    int tries;
+    for (tries = 2; tries > 0 ; tries--) {
+	openat_r = openat (C_dirfd, C_pathname, C_flags, C_mode);
+
+	if (-1 == openat_r) {
+	    switch (errno) {
+	    case EMFILE:	/* process max */
+	    case ENFILE:	/* system max */
+		idio_gc_collect_all ("libc/openat");
+		break;
+	    default:
+		/*
+		 * Test Case: libc-errors/openat-bad-dirfd.idio
+		 *
+		 * ;; fd 0 is *probably* not a directory fd
+		 * openat C/0i "." C/0i
+		 */
+
+		if (free_C_pathname) {
+		    IDIO_GC_FREE (C_pathname, free_C_pathname);
+		}
+
+		IDIO a = IDIO_LIST2 (pathname, flags);
+		if (idio_S_nil != mode) {
+		    a = IDIO_LIST3 (pathname, flags, mode);
+		}
+
+		idio_error_system_errno ("openat", a, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	} else {
+	    break;
+	}
+    }
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
+
+    if (-1 == openat_r) {
+	IDIO a = IDIO_LIST2 (pathname, flags);
+	if (idio_S_nil != mode) {
+	    a = IDIO_LIST3 (pathname, flags, mode);
+	}
+
+        idio_error_system_errno ("openat (final)", a, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (openat_r);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE0_DS ("pipe", libc_pipe, (void), "", "\
-in C, :samp:`pipe (pipefd)`				       \n\
-a wrapper to libc :manpage:`pipe(2)`			       \n\
-							       \n\
-:return: pointer to pipe array				       \n\
-:rtype: C/pointer					       \n\
-:raises ^system-error:					       \n\
-							       \n\
-*pipefd* is a `C/pointer` to a C ``int[2]``.		       \n\
-							       \n\
-.. seealso:: :ref:`pipe-reader <libc/pipe-reader>` and	       \n\
-	:ref:`pipe-writer <libc/pipe-writer>` for accessors to \n\
-	*pipefd*.					       \n\
+in C, :samp:`pipe (pipefd)`		\n\
+a wrapper to libc :manpage:`pipe(2)`	\n\
+					\n\
+:return: pointer to pipe array		\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
+					\n\
+*pipefd* is a `C/pointer` to a C ``int[2]``.	\n\
+					\n\
+.. seealso:: :ref:`pipe-reader <libc/pipe-reader>` and	\n\
+	:ref:`pipe-writer <libc/pipe-writer>` for accessors to	\n\
+	*pipefd*.			\n\
 ")
 {
     int *pipefd = idio_alloc (2 * sizeof (int));
@@ -6243,6 +7152,8 @@ a wrapper to libc :manpage:`pipe(2)`			       \n\
     }
 
     if (-1 == pipe_r) {
+	idio_free (pipefd);
+
 	/*
 	 * Test Case: cf. file-handle-errors/EMFILE.idio
 	 *
@@ -6260,16 +7171,16 @@ a wrapper to libc :manpage:`pipe(2)`			       \n\
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("posix_openpt", libc_posix_openpt, (IDIO args), "[flags]", "\
-in C, :samp:`posix_openpt ({flags})`			\n\
-a wrapper to libc :manpage:`posix_openpt(3)`		\n\
-							\n\
+in C, :samp:`posix_openpt ({flags})`	\n\
+a wrapper to libc :manpage:`posix_openpt(3)`	\n\
+					\n\
 :param flags: flags to posix_openpt, defaults to ``O_RDWR [| O_NOCTTY]``	\n\
-:type flags: C/int, optional				\n\
-:return: file descriptor for master			\n\
-:rtype: C/int						\n\
-:raises ^system-error:					\n\
-							\n\
-``O_NOCTTY`` is not available on some systems.		\n\
+:type flags: C/int, optional		\n\
+:return: file descriptor for master	\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+					\n\
+.. note:: ``O_NOCTTY`` is not available on all systems.	\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -6317,13 +7228,17 @@ a wrapper to libc :manpage:`pread(2)`	\n\
 :type offset: libc/off_t		\n\
 :param count: number of bytes to read, defaults to ``libc/BUFSIZ``	\n\
 :type count: fixnum or libc/size_t, optional	\n\
-:return: string of bytes read or see below			\n\
-:rtype: string or see below					\n\
-:raises ^system-error:						\n\
-								\n\
-If :manpage:`read(2)` returned 0 then this code returns ``#<eof>``.	\n\
-								\n\
-If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
+:return: string of bytes read or see below	\n\
+:rtype: octet string or see below		\n\
+:raises ^system-error:				\n\
+						\n\
+If :manpage:`pread(2)` returned 0 then this code returns ``#<eof>``.	\n\
+						\n\
+If :manpage:`pread(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
+					\n\
+.. seealso::				\n\
+					\n\
+   :ref:`octet-string->string <octet-string->string>`	\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -6395,7 +7310,7 @@ If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
 
 	return idio_S_notreached;
     } else if (pread_r) {
-	r = idio_string_C_len (buf, pread_r);
+	r = idio_octet_string_C_len (buf, pread_r);
     } else {
 	r = idio_S_eof;
     }
@@ -6406,14 +7321,14 @@ If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("ptsname", libc_ptsname, (IDIO fd), "fd", "\
-in C, :samp:`ptsname ({fd})`			\n\
-a wrapper to libc :manpage:`ptsname(3)`		\n\
-						\n\
-:param fd: fd to ptsname			\n\
-:type fd: C/int					\n\
-:return: ptsname				\n\
-:rtype: pathname				\n\
-:raises ^system-error:				\n\
+in C, :samp:`ptsname ({fd})`		\n\
+a wrapper to libc :manpage:`ptsname(3)`	\n\
+					\n\
+:param fd: fd to ptsname		\n\
+:type fd: C/int				\n\
+:return: ptsname			\n\
+:rtype: pathname			\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -6533,20 +7448,24 @@ a wrapper to libc :manpage:`pwrite(2)`	\n\
  * We allow a fixnum (2 bits short of an intptr_t) or a libc/size_t.
  */
 IDIO_DEFINE_PRIMITIVE1V_DS ("read", libc_read, (IDIO fd, IDIO args), "fd [count]", "\
-in C, :samp:`read ({fd}, buf, {count})`				\n\
-a wrapper to libc :manpage:`read(2)`				\n\
-								\n\
-:param fd: file descriptor					\n\
-:type fd: C/int							\n\
+in C, :samp:`read ({fd}, buf, {count})`	\n\
+a wrapper to libc :manpage:`read(2)`	\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
 :param count: number of bytes to read, defaults to ``libc/BUFSIZ``	\n\
-:type count: fixnum or libc/size_t, optional			\n\
-:return: string of bytes read or see below			\n\
-:rtype: string or see below					\n\
-:raises ^system-error:						\n\
-								\n\
+:type count: fixnum or libc/size_t, optional	\n\
+:return: string of bytes read or see below	\n\
+:rtype: octet string or see below	\n\
+:raises ^system-error:			\n\
+					\n\
 If :manpage:`read(2)` returned 0 then this code returns ``#<eof>``.	\n\
-								\n\
+					\n\
 If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
+					\n\
+.. seealso::				\n\
+					\n\
+   :ref:`octet-string->string <octet-string->string>`	\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -6609,7 +7528,7 @@ If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
 
 	return idio_S_notreached;
     } else if (n) {
-	r = idio_string_C_len (buf, n);
+	r = idio_octet_string_C_len (buf, n);
     } else {
 	r = idio_S_eof;
     }
@@ -6626,7 +7545,7 @@ a wrapper to libc :manpage:`readlink(2)`	\n\
 :param pathname: pathname		\n\
 :type pathname: string			\n\
 :return: contents of symlink		\n\
-:rtype: pathname				\n\
+:rtype: pathname			\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
 :raises ^system-error:			\n\
 ")
@@ -6666,8 +7585,68 @@ a wrapper to libc :manpage:`readlink(2)`	\n\
     return idio_pathname_C_len (buf, readlink_r);
 }
 
+#if ! defined (IDIO_NO_READLINKAT)
+IDIO_DEFINE_PRIMITIVE2_DS ("readlinkat", libc_readlinkat, (IDIO dirfd, IDIO pathname), "dirfd pathname", "\
+in C: :samp:`readlinkat ({dirfd}, {pathname}, buf, bufsiz)`	\n\
+a wrapper to libc :manpage:`readlinkat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:return: contents of symlink		\n\
+:rtype: pathname			\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+
+   /*
+    * Test Case: libc-errors/readlinkat-bad-dirfd-type.idio
+    *
+    * readlinkat #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/readlinkat-bad-pathname-type.idio
+    *
+    * readlinkat C/0i #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+    /*
+     * Test Case: libc-wrap-errors/readlinkat-bad-pathname-format.idio
+     *
+     * readlinkat C/0i "hello\x0world"
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "readlinkat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+    char buf[PATH_MAX];
+    ssize_t readlinkat_r = readlinkat (C_dirfd, C_pathname, buf, PATH_MAX);
+
+    if (-1 == readlinkat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/readlink-not-a-symlink.idio
+	 *
+	 * touch testfile
+	 * readlinkat AT_FDCWD testfile
+	 */
+        idio_error_system_errno ("readlinkat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_pathname_C_len (buf, readlinkat_r);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE2_DS ("rename", libc_rename, (IDIO oldpath, IDIO newpath), "oldpath newpath", "\
-in C: :samp:`rename ({oldpath}, {newpath})`		\n\
+in C: :samp:`rename ({oldpath}, {newpath})`	\n\
 a wrapper to libc :manpage:`rename(2)`	\n\
 					\n\
 :param oldpath: existing file name	\n\
@@ -6744,16 +7723,119 @@ a wrapper to libc :manpage:`rename(2)`	\n\
     return idio_C_int (rename_r);
 }
 
+#if ! defined (IDIO_NO_RENAMEAT)
+IDIO_DEFINE_PRIMITIVE4_DS ("renameat", libc_renameat, (IDIO olddirfd, IDIO oldpath, IDIO newdirfd, IDIO newpath), "olddirfd oldpath newdirfd newpath", "\
+in C: :samp:`renameat ({olddirfd}, {oldpath}, {newdirfd}, {newpath})`	\n\
+a wrapper to libc :manpage:`renameat(2)`	\n\
+					\n\
+:param olddirfd: file descriptor for a directory	\n\
+:type olddirfd: C/int			\n\
+:param oldpath: pathname		\n\
+:type oldpath: string			\n\
+:param newdirfd: file descriptor for a directory	\n\
+:type newdirfd: C/int			\n\
+:param newpath: pathname		\n\
+:type newpath: string			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `oldpath` or `newpath` contain an ASCII NUL	\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (olddirfd);
+    IDIO_ASSERT (oldpath);
+    IDIO_ASSERT (newdirfd);
+    IDIO_ASSERT (newpath);
+
+   /*
+    * Test Case: libc-errors/renameat-bad-olddirfd-type.idio
+    *
+    * renameat #t #t #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, olddirfd);
+    int C_olddirfd = IDIO_C_TYPE_int (olddirfd);
+
+   /*
+    * Test Case: libc-errors/renameat-bad-oldpath-type.idio
+    *
+    * renameat C/0i #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, oldpath);
+
+    size_t free_C_oldpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/renameat-bad-oldpath-format.idio
+     *
+     * renameat C/0i "hello\x0world" #t #t
+     */
+    char *C_oldpath = idio_libc_string_C (oldpath, "renameat", &free_C_oldpath, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/renameat-bad-newdirfd-type.idio
+    *
+    * renameat C/0i "." #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, newdirfd);
+    int C_newdirfd = IDIO_C_TYPE_int (newdirfd);
+
+   /*
+    * Test Case: libc-errors/renameat-bad-newpath-type.idio
+    *
+    * renameat C/0i "." C/0i #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, newpath);
+
+    size_t free_C_newpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/renameat-bad-newpath-format.idio
+     *
+     * renameat C/0i "." C/0i "hello\x0world"
+     */
+    char *C_newpath = idio_libc_string_C (newpath, "renameat", &free_C_newpath, IDIO_C_FUNC_LOCATION ());
+
+    int renameat_r = renameat (C_olddirfd, C_oldpath, C_newdirfd, C_newpath);
+
+    if (free_C_oldpath) {
+	IDIO_GC_FREE (C_oldpath, free_C_oldpath);
+    }
+
+    if (free_C_newpath) {
+	IDIO_GC_FREE (C_newpath, free_C_newpath);
+    }
+
+    if (-1 == renameat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/renameat-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * tmp := pht fd+name
+	 * unlink tmp
+	 * dirfd := open (dirname-pathname tmp) O_RDONLY
+	 * tmp2 := append-string tmp ".2"
+	 * renameat dirfd tmp dirfd tmp2
+	 */
+        idio_error_system_errno ("renameat", IDIO_LIST2 (oldpath, newpath), IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (renameat_r);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE1_DS ("rmdir", libc_rmdir, (IDIO pathname), "pathname", "\
-in C, :samp:`rmdir ({pathname})`				\n\
-a wrapper to libc :manpage:`rmdir(2)`				\n\
-								\n\
-:param pathname: directory to remove				\n\
-:type pathname: string						\n\
-:return: 0							\n\
-:rtype: C/int							\n\
+in C, :samp:`rmdir ({pathname})`	\n\
+a wrapper to libc :manpage:`rmdir(2)`	\n\
+					\n\
+:param pathname: directory to remove	\n\
+:type pathname: string			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
-:raises ^system-error:						\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -6907,16 +7989,16 @@ a wrapper to libc :manpage:`setgid(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("setpgid", libc_setpgid, (IDIO pid, IDIO pgid), "pid pgid", "\
-in C, :samp:`setpgid ({pid}, {pgid})`				\n\
-a wrapper to libc :manpage:`setpgid(2)`				\n\
-								\n\
-:param pid: process ID						\n\
-:type pid: libc/pid_t						\n\
-:param pgid: Process Group ID					\n\
-:type pgid: libc/pid_t						\n\
-:return: 0							\n\
-:rtype: C/int							\n\
-:raises ^system-error:						\n\
+in C, :samp:`setpgid ({pid}, {pgid})`	\n\
+a wrapper to libc :manpage:`setpgid(2)`	\n\
+					\n\
+:param pid: process ID			\n\
+:type pid: libc/pid_t			\n\
+:param pgid: Process Group ID		\n\
+:type pgid: libc/pid_t			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (pid);
@@ -7075,7 +8157,7 @@ a wrapper to libc :manpage:`setregid(2)`	\n\
     return idio_C_int (setregid_r);
 }
 
-#ifdef IDIO_HAVE_SET_SAVED_IDS
+#if ! defined (IDIO_NO_SET_SAVED_IDS)
 IDIO_DEFINE_PRIMITIVE3_DS ("setresgid", libc_setresgid, (IDIO rgid, IDIO egid, IDIO sgid), "rgid egid sgid", "\
 in C: :samp:`setresgid ({rgid}, {egid}, {sgid})`	\n\
 a wrapper to libc :manpage:`setresgid(2)`	\n\
@@ -7090,7 +8172,10 @@ a wrapper to libc :manpage:`setresgid(2)`	\n\
 :rtype: C/int				\n\
 :raises ^system-error:			\n\
 					\n\
-``setresgid`` is not available on some systems.		\n\
+.. note::				\n\
+					\n\
+   ``setresgid`` is not available on all systems.	\n\
+   Use the ``IDIO_NO_SET_SAVED_IDS`` feature in :ref:`cond-expand <cond-expand>`.	\n\
 ")
 {
     IDIO_ASSERT (rgid);
@@ -7123,7 +8208,6 @@ a wrapper to libc :manpage:`setresgid(2)`	\n\
 
     int setresgid_r = setresgid (C_rgid, C_egid, C_sgid);
 
-    /* check for errors */
     if (-1 == setresgid_r) {
 	/*
 	 * Test Case: libc-wrap-errors/setresgid-negative-gid.idio
@@ -7153,7 +8237,10 @@ a wrapper to libc :manpage:`setresuid(2)`	\n\
 :rtype: C/int				\n\
 :raises ^system-error:			\n\
 					\n\
-``setresuid`` is not available on some systems.		\n\
+.. note::				\n\
+					\n\
+   ``setresuid`` is not available on all systems.	\n\
+   Use the ``IDIO_NO_SET_SAVED_IDS`` feature in :ref:`cond-expand <cond-expand>`.	\n\
 ")
 {
     IDIO_ASSERT (ruid);
@@ -7186,7 +8273,6 @@ a wrapper to libc :manpage:`setresuid(2)`	\n\
 
     int setresuid_r = setresuid (C_ruid, C_euid, C_suid);
 
-    /* check for errors */
     if (-1 == setresuid_r) {
 	/*
 	 * Test Case: libc-wrap-errors/setresuid-negative-gid.idio
@@ -7237,7 +8323,6 @@ a wrapper to libc :manpage:`setreuid(2)`	\n\
 
     int setreuid_r = setreuid (C_ruid, C_euid);
 
-    /* check for errors */
     if (-1 == setreuid_r) {
 	/*
 	 * Test Case: libc-wrap-errors/setreuid-negative-gid.idio
@@ -7254,20 +8339,20 @@ a wrapper to libc :manpage:`setreuid(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("setrlimit", libc_setrlimit, (IDIO resource, IDIO rlim), "resource rlim", "\
-in C, :samp:`setrlimit ({resource}, {rlim})`			\n\
-a wrapper to libc :manpage:`setrlimit(2)`			\n\
-								\n\
-:param resource: resource, see below				\n\
-:type resource: C/int						\n\
-:param rlim: :ref:`struct-rlimit <libc/struct-rlimit>`		\n\
-:type rlim: C/pointer						\n\
-:return: 0							\n\
-:rtype: C/int							\n\
-:raises ^system-error:						\n\
-								\n\
+in C, :samp:`setrlimit ({resource}, {rlim})`	\n\
+a wrapper to libc :manpage:`setrlimit(2)`	\n\
+					\n\
+:param resource: resource, see below	\n\
+:type resource: C/int			\n\
+:param rlim: :ref:`struct-rlimit <libc/struct-rlimit>`	\n\
+:type rlim: C/pointer			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+					\n\
 The resource names follow C conventions such as ``RLIMIT_AS``	\n\
-and ``RLIMIT_NOFILE``.						\n\
-								\n\
+and ``RLIMIT_NOFILE``.			\n\
+					\n\
 .. seealso:: :ref:`getrlimit <libc/getrlimit>` to obtain a `struct-rlimit`.	\n\
 ")
 {
@@ -7307,7 +8392,7 @@ and ``RLIMIT_NOFILE``.						\n\
 
     if (-1 == setrlimit_r) {
 	/*
-	 * Test Case:  libc-wrap-errors/setrlimit-bad-rlim.idio
+	 * Test Case: libc-wrap-errors/setrlimit-bad-rlim.idio
 	 *
 	 * setrlimit (C/integer-> -1) (getrlimit RLIMIT_CPU)
 	 */
@@ -7320,12 +8405,12 @@ and ``RLIMIT_NOFILE``.						\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("setsid", libc_setsid, (void), "", "\
-in C, :samp:`setsid ()`						\n\
-a wrapper to libc :manpage:`setsid(2)`				\n\
-								\n\
-:return: Process Group ID of progress group			\n\
-:rtype: libc/pid_t						\n\
-:raises ^system-error:						\n\
+in C, :samp:`setsid ()`			\n\
+a wrapper to libc :manpage:`setsid(2)`	\n\
+					\n\
+:return: Process Group ID of progress group	\n\
+:rtype: libc/pid_t			\n\
+:raises ^system-error:			\n\
 ")
 {
     pid_t C_pid = setsid ();
@@ -7382,20 +8467,20 @@ a wrapper to libc :manpage:`setuid(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("signal", libc_signal, (IDIO sig, IDIO handler), "sig handler", "\
-in C, :samp:`signal ({sig}, {handler})`				\n\
-a wrapper to libc :manpage:`signal(2)`				\n\
-								\n\
-:param sig: signal						\n\
-:type sig: C/int						\n\
-:param handler: signal disposition				\n\
-:type handler: C/pointer					\n\
-:return: previous disposition					\n\
-:rtype: C/pointer						\n\
-:raises ^system-error:						\n\
-								\n\
-The following dispositions are defined:				\n\
-``libc/SIG_IGN``						\n\
-``libc/SIG_DFL``						\n\
+in C, :samp:`signal ({sig}, {handler})`	\n\
+a wrapper to libc :manpage:`signal(2)`	\n\
+					\n\
+:param sig: signal			\n\
+:type sig: C/int			\n\
+:param handler: signal disposition	\n\
+:type handler: C/pointer		\n\
+:return: previous disposition		\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
+					\n\
+The following dispositions are defined:	\n\
+``libc/SIG_IGN``			\n\
+``libc/SIG_DFL``			\n\
 ")
 {
     IDIO_ASSERT (sig);
@@ -7434,13 +8519,13 @@ The following dispositions are defined:				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("sleep", libc_sleep, (IDIO seconds), "seconds", "\
-in C, :samp:`sleep ({seconds})`					\n\
-a wrapper to libc :manpage:`sleep(3)`				\n\
-								\n\
-:param seconds: seconds to sleep				\n\
-:type seconds: unsigned fixnum or C/uint			\n\
-:return: 0 or the number of seconds left if interrupted		\n\
-:rtype: C/uint							\n\
+in C, :samp:`sleep ({seconds})`		\n\
+a wrapper to libc :manpage:`sleep(3)`	\n\
+					\n\
+:param seconds: seconds to sleep	\n\
+:type seconds: unsigned fixnum or C/uint	\n\
+:return: 0 or the number of seconds left if interrupted	\n\
+:rtype: C/uint				\n\
 ")
 {
     IDIO_ASSERT (seconds);
@@ -7466,15 +8551,15 @@ a wrapper to libc :manpage:`sleep(3)`				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("stat", libc_stat, (IDIO pathname), "pathname", "\
-in C, :samp:`stat ({pathname})`			\n\
-a wrapper to libc :manpage:`stat(2)`		\n\
-						\n\
-:param pathname: filename to stat		\n\
-:type pathname: string				\n\
+in C, :samp:`stat ({pathname})`		\n\
+a wrapper to libc :manpage:`stat(2)`	\n\
+					\n\
+:param pathname: filename to stat	\n\
+:type pathname: string			\n\
 :return: :ref:`struct-stat <libc/struct-stat>`	\n\
-:rtype: C/pointer				\n\
+:rtype: C/pointer			\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
-:raises ^system-error:				\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -7572,14 +8657,14 @@ a wrapper to libc :manpage:`statvfs(3)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("strerror", libc_strerror, (IDIO errnum), "errnum", "\
-in C, :samp:`strerror ({errnum})`				\n\
-a wrapper to libc :manpage:`strerror(3)`			\n\
-								\n\
-:param errnum: error code to describe				\n\
-:type errnum: C/int						\n\
-:return: string describing `errnum`				\n\
-:rtype: string							\n\
-:raises ^system-error:						\n\
+in C, :samp:`strerror ({errnum})`	\n\
+a wrapper to libc :manpage:`strerror(3)`	\n\
+					\n\
+:param errnum: error code to describe	\n\
+:type errnum: C/int			\n\
+:return: string describing `errnum`	\n\
+:rtype: string				\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (errnum);
@@ -7620,11 +8705,11 @@ IDIO_DEFINE_PRIMITIVE2_DS ("strftime", libc_strftime, (IDIO format, IDIO tm), "f
 in C, :samp:`strftime ({format}, {tm})`	\n\
 a wrapper to libc :manpage:`strftime(3)`\n\
 					\n\
-:param format: 				\n\
+:param format: format string		\n\
 :type format: string			\n\
-:param tm: 				\n\
+:param tm: time structure		\n\
 :type tm: :ref:`struct-tm <libc/struct-tm>`	\n\
-:return:				\n\
+:return: formatted time			\n\
 :rtype: string				\n\
 :raises ^rt-libc-format-error: if `format` contains an ASCII NUL	\n\
 					   \n\
@@ -7708,7 +8793,7 @@ a wrapper to libc :manpage:`strptime(3)`\n\
 :type s: string				\n\
 :param format: format string		\n\
 :type format: string			\n\
-:return:				\n\
+:return: time structure			\n\
 :rtype: C :ref:`struct-tm <libc/struct-tm>`	\n\
 :raises ^rt-libc-format-error: if `s` or `format` contain an ASCII NUL	\n\
 ")
@@ -7781,16 +8866,16 @@ a wrapper to libc :manpage:`strptime(3)`\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("strsignal", libc_strsignal, (IDIO sig), "sig", "\
-in C, :samp:`strsignal ({sig})`					\n\
-a wrapper to libc :manpage:`strsignal(3)`			\n\
-								\n\
-:param sig: signal number to describe				\n\
-:type sig: C/int						\n\
-:return: string describing `sig`				\n\
-:rtype: string							\n\
-								\n\
+in C, :samp:`strsignal ({sig})`		\n\
+a wrapper to libc :manpage:`strsignal(3)`	\n\
+					\n\
+:param sig: signal number to describe	\n\
+:type sig: C/int			\n\
+:return: string describing `sig`	\n\
+:rtype: string				\n\
+					\n\
 On some systems (SunOS) ``#n`` may be returned for an invalid	\n\
-signal number.							\n\
+signal number.				\n\
 ")
 {
     IDIO_ASSERT (sig);
@@ -7821,12 +8906,13 @@ IDIO_DEFINE_PRIMITIVE2_DS ("symlink", libc_symlink, (IDIO target, IDIO linkpath)
 in C: :samp:`symlink ({target}, {linkpath})`		\n\
 a wrapper to libc :manpage:`symlink(2)`	\n\
 					\n\
-:param target: 				\n\
-:type target: C/pointer			\n\
-:param linkpath: 			\n\
-:type linkpath: C/pointer		\n\
-:return:				\n\
+:param target: existing file name	\n\
+:type target: string			\n\
+:param linkpath: new file name		\n\
+:type linkpath: string			\n\
+:return: 0				\n\
 :rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `target` or `linkpath` contain an ASCII NUL	\n\
 :raises ^system-error:			\n\
 ")
 {
@@ -7889,6 +8975,92 @@ a wrapper to libc :manpage:`symlink(2)`	\n\
     return idio_C_int (symlink_r);
 }
 
+#if ! defined (IDIO_NO_SYMLINKAT)
+IDIO_DEFINE_PRIMITIVE3_DS ("symlinkat", libc_symlinkat, (IDIO target, IDIO newdirfd, IDIO linkpath), "target newdirfd linkpath", "\
+in C: :samp:`symlinkat ({target}, {newdirfd}, {linkpath})`	\n\
+a wrapper to libc :manpage:`symlinkat(2)`	\n\
+					\n\
+:param target: existing file name	\n\
+:type target: string			\n\
+:param newdirfd: file descriptor for a directory	\n\
+:type newdirfd: C/int			\n\
+:param linkpath: new file name		\n\
+:type linkpath: string			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `target` or `linkpath` contain an ASCII NUL	\n\
+:raises ^system-error:			\n\
+")
+{
+    IDIO_ASSERT (target);
+    IDIO_ASSERT (newdirfd);
+    IDIO_ASSERT (linkpath);
+
+   /*
+    * Test Case: libc-errors/symlinkat-bad-target-type.idio
+    *
+    * symlinkat #t #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, target);
+
+    size_t free_C_target = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/symlinkat-bad-target-format.idio
+     *
+     * symlinkat "hello\x0world" #t #t
+     */
+    char *C_target = idio_libc_string_C (target, "symlinkat", &free_C_target, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/symlinkat-bad-newdirfd-type.idio
+    *
+    * symlinkat "." #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, newdirfd);
+    int C_newdirfd = IDIO_C_TYPE_int (newdirfd);
+
+   /*
+    * Test Case: libc-errors/symlinkat-bad-linkpath-type.idio
+    *
+    * symlinkat "." C/0i #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, linkpath);
+
+    size_t free_C_linkpath = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/symlinkat-bad-linkpath-format.idio
+     *
+     * symlinkat "." C/0i "hello\x0world"
+     */
+    char *C_linkpath = idio_libc_string_C (linkpath, "symlinkat", &free_C_linkpath, IDIO_C_FUNC_LOCATION ());
+
+    int symlinkat_r = symlinkat (C_target, C_newdirfd, C_linkpath);
+
+    if (free_C_target) {
+	IDIO_GC_FREE (C_target, free_C_target);
+    }
+
+    if (free_C_linkpath) {
+	IDIO_GC_FREE (C_linkpath, free_C_linkpath);
+    }
+
+    if (-1 == symlinkat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/symlinkat-same-pathname.idio
+	 *
+	 * symlinkat "foo" AT_FDCWD "foo"
+	 */
+        idio_error_system_errno ("symlinkat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (symlinkat_r);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE0_DS ("sync", libc_sync, (), "", "\
 in C: :samp:`sync ()`			\n\
 a wrapper to libc :manpage:`sync(2)`	\n\
@@ -7902,14 +9074,14 @@ a wrapper to libc :manpage:`sync(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("tcgetattr", libc_tcgetattr, (IDIO fd), "fd", "\
-in C, :samp:`tcgetattr ({fd}, termiosp)`			\n\
-a wrapper to libc :manpage:`tcgetattr(3)`			\n\
-								\n\
-:param fd: file descriptor					\n\
-:type fd: C/int							\n\
-:return: :ref:`struct-termios <libc/struct-termios>`		\n\
-:rtype: C/pointer						\n\
-:raises ^system-error:						\n\
+in C, :samp:`tcgetattr ({fd}, termiosp)`	\n\
+a wrapper to libc :manpage:`tcgetattr(3)`	\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:return: :ref:`struct-termios <libc/struct-termios>`	\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -7943,14 +9115,14 @@ a wrapper to libc :manpage:`tcgetattr(3)`			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("tcgetpgrp", libc_tcgetpgrp, (IDIO fd), "fd", "\
-in C, :samp:`tcgetpgrp ({fd})`					\n\
-a wrapper to libc :manpage:`tcgetpgrp(3)`			\n\
-								\n\
-:param fd: file descriptor					\n\
-:type fd: C/int							\n\
-:return: Process ID						\n\
-:rtype: libc/pid_t						\n\
-:raises ^system-error:						\n\
+in C, :samp:`tcgetpgrp ({fd})`		\n\
+a wrapper to libc :manpage:`tcgetpgrp(3)`	\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:return: Process ID			\n\
+:rtype: libc/pid_t			\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -7980,23 +9152,23 @@ a wrapper to libc :manpage:`tcgetpgrp(3)`			\n\
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("tcsetattr", libc_tcsetattr, (IDIO fd, IDIO options, IDIO termios), "fd options termios", "\
-in C, :samp:`tcsetattr ({fd}, {options}, {termios})`		\n\
-a wrapper to libc :manpage:`tcsetattr(3)`			\n\
-								\n\
-:param fd: file descriptor					\n\
-:type fd: C/int							\n\
-:param options: see below					\n\
-:type options: C/int						\n\
+in C, :samp:`tcsetattr ({fd}, {options}, {termios})`	\n\
+a wrapper to libc :manpage:`tcsetattr(3)`	\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:param options: see below		\n\
+:type options: C/int			\n\
 :param termios: :ref:`struct-termios <libc/struct-termios>`	\n\
-:type termios: C/pointer					\n\
-:return: 0							\n\
-:rtype: C/int							\n\
-:raises ^system-error:						\n\
-								\n\
-The following options are defined:				\n\
-``libc/TCSADRAIN``						\n\
-``libc/TCSAFLUSH``						\n\
-								\n\
+:type termios: C/pointer		\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
+					\n\
+The following options are defined:	\n\
+``libc/TCSADRAIN``			\n\
+``libc/TCSAFLUSH``			\n\
+					\n\
 .. seealso:: :ref:`tcgetattr <libc/tcgetattr>` for obtaining a :ref:`struct-termios <libc/struct-termios>`.	\n\
 ")
 {
@@ -8047,16 +9219,16 @@ The following options are defined:				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("tcsetpgrp", libc_tcsetpgrp, (IDIO fd, IDIO pgrp), "fd pgrp", "\
-in C, :samp:`tcsetpgrp ({fd}, {pgrp})`				\n\
-a wrapper to libc :manpage:`tcsetpgrp(3)`			\n\
-								\n\
-:param fd: file descriptor					\n\
-:type fd: C/int							\n\
-:param pgrp: Process Group ID					\n\
-:type pgrp: libc/pid_t						\n\
-:return: 0							\n\
-:rtype: C/int							\n\
-:raises ^system-error:						\n\
+in C, :samp:`tcsetpgrp ({fd}, {pgrp})`	\n\
+a wrapper to libc :manpage:`tcsetpgrp(3)`	\n\
+					\n\
+:param fd: file descriptor		\n\
+:type fd: C/int				\n\
+:param pgrp: Process Group ID		\n\
+:type pgrp: libc/pid_t			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -8113,18 +9285,18 @@ a wrapper to libc :manpage:`time(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("times", libc_times, (void), "", "\
-in C, :samp:`times ()`						\n\
-a wrapper to libc :manpage:`times(3)`				\n\
-								\n\
+in C, :samp:`times ()`			\n\
+a wrapper to libc :manpage:`times(3)`	\n\
+					\n\
 :return: (clock_t, :ref:`struct-tms <libc/struct-tms>`)		\n\
-:rtype: list							\n\
-:raises ^system-error:						\n\
-								\n\
+:rtype: list				\n\
+:raises ^system-error:			\n\
+					\n\
 :manpage:`times(3)` is complicated because we need to return	\n\
 the ``struct tms`` that the user would have passed in as a	\n\
 pointer and the ``clock_t``, elapsed real time, that		\n\
 :manpage:`times(3)` returns.					\n\
-								\n\
+					\n\
 All fields are in clock ticks for which ``sysconf(_SC_CLK_TCK)``	\n\
 is available for reference as ``libc/CLK_TCK``.			\n\
 ")
@@ -8309,13 +9481,13 @@ a wrapper to libc :manpage:`umask(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("uname", libc_uname, (void), "", "\
-in C, :samp:`uname (utsname)`					\n\
-a wrapper to libc :manpage:`uname(3)`				\n\
-								\n\
-:return: :ref:`struct-utsname <libc/struct-utsname>`		\n\
-:rtype: C/pointer						\n\
-:raises ^system-error:						\n\
-								\n\
+in C, :samp:`uname (utsname)`		\n\
+a wrapper to libc :manpage:`uname(3)`	\n\
+					\n\
+:return: :ref:`struct-utsname <libc/struct-utsname>`	\n\
+:rtype: C/pointer			\n\
+:raises ^system-error:			\n\
+					\n\
 Not strictly useful at the moment.  You might want to use	\n\
 :ref:`libc/idio-uname <libc/idio-uname>` instead.		\n\
 ")
@@ -8339,15 +9511,15 @@ Not strictly useful at the moment.  You might want to use	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("unlink", libc_unlink, (IDIO pathname), "pathname", "\
-in C, :samp:`unlink ({pathname})`		\n\
-a wrapper to libc :manpage:`unlink(2)`		\n\
-						\n\
-:param pathname: filename to unlink		\n\
-:type pathname: string				\n\
-:return: 0					\n\
-:rtype: C/int					\n\
+in C, :samp:`unlink ({pathname})`	\n\
+a wrapper to libc :manpage:`unlink(2)`	\n\
+					\n\
+:param pathname: filename to unlink	\n\
+:type pathname: string			\n\
+:return: 0				\n\
+:rtype: C/int				\n\
 :raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
-:raises ^system-error:				\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -8390,15 +9562,112 @@ a wrapper to libc :manpage:`unlink(2)`		\n\
     return idio_C_int (unlink_r);
 }
 
+#if ! defined (IDIO_NO_UNLINKAT)
+IDIO_DEFINE_PRIMITIVE2V_DS ("unlinkat", libc_unlinkat, (IDIO dirfd, IDIO pathname, IDIO args), "dirfd pathname [flag ...]", "\
+in C: :samp:`unlinkat ({dirfd}, {pathname}, {flags})`		\n\
+a wrapper to libc :manpage:`unlinkat(2)`	\n\
+					\n\
+:param dirfd: file descriptor for a directory	\n\
+:type dirfd: C/int			\n\
+:param pathname: pathname		\n\
+:type pathname: string			\n\
+:param flags: see below, default none	\n\
+:type flags: C/int, optional		\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^rt-libc-format-error: if `pathname` contains an ASCII NUL	\n\
+:raises ^system-error:			\n\
+								\n\
+The following value can be used for `dirfd`: ``AT_FDCWD``	\n\
+								\n\
+The following values are defined for `flags`, they can be	\n\
+``C/|``-bitwise OR'd together or passed as extra arguments:	\n\
+``AT_REMOVEDIR``						\n\
+								\n\
+.. note::							\n\
+								\n\
+   ``unlinkat`` is not available on all systems.		\n\
+   Use the ``IDIO_NO_UNLINKAT`` feature in :ref:`cond-expand <cond-expand>`.	\n\
+")
+{
+    IDIO_ASSERT (dirfd);
+    IDIO_ASSERT (pathname);
+    IDIO_ASSERT (args);
+
+   /*
+    * Test Case: libc-errors/unlinkat-bad-dirfd-type.idio
+    *
+    * unlinkat #t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, dirfd);
+    int C_dirfd = IDIO_C_TYPE_int (dirfd);
+
+   /*
+    * Test Case: libc-errors/unlinkat-bad-pathname-type.idio
+    *
+    * unlinkat C/0i #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t free_C_pathname = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/unlinkat-bad-pathname-format.idio
+     *
+     * unlinkat C/0i "hello\x0world"
+     */
+    char *C_pathname = idio_libc_string_C (pathname, "unlinkat", &free_C_pathname, IDIO_C_FUNC_LOCATION ());
+
+    int C_flags = 0;
+
+    while (idio_S_nil != args) {
+	IDIO flags = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/unlinkat-bad-flags-type.idio
+	 *
+	 * unlinkat C/0i "." #t
+	 */
+	IDIO_USER_C_TYPE_ASSERT (int, flags);
+
+	C_flags |= IDIO_C_TYPE_int (flags);
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    int unlinkat_r = unlinkat (C_dirfd, C_pathname, C_flags);
+
+    if (free_C_pathname) {
+	IDIO_GC_FREE (C_pathname, free_C_pathname);
+    }
+
+    if (-1 == unlinkat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/unlinkat-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * unlinkat (pht fd+name)
+	 */
+        idio_error_system_errno ("unlinkat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (unlinkat_r);
+}
+#endif
+
 IDIO_DEFINE_PRIMITIVE1_DS ("unlockpt", libc_unlockpt, (IDIO fd), "fd", "\
-in C, :samp:`unlockpt ({fd})`			\n\
+in C, :samp:`unlockpt ({fd})`		\n\
 a wrapper to libc :manpage:`unlockpt(3)`	\n\
-						\n\
-:param fd: fd to unlockpt			\n\
-:type fd: C/int					\n\
-:return: 0					\n\
-:rtype: C/int					\n\
-:raises ^system-error:				\n\
+					\n\
+:param fd: fd to unlockpt		\n\
+:type fd: C/int				\n\
+:return: 0				\n\
+:rtype: C/int				\n\
+:raises ^system-error:			\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -8469,7 +9738,7 @@ a wrapper to libc :manpage:`utimes(2)`	\n\
 	/*
 	 * Test Case: libc-errors/utimes-atime-invalid-pointer-type.idio
 	 *
-	 * struct-timeval-ref libc/NULL #t
+	 * utimes "." libc/NULL #t
 	 */
 	idio_error_param_value_exp ("utimes", "atime", atime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
 
@@ -8486,7 +9755,7 @@ a wrapper to libc :manpage:`utimes(2)`	\n\
 	/*
 	 * Test Case: libc-errors/utimes-mtime-invalid-pointer-type.idio
 	 *
-	 * struct-timeval-ref timeval libc/NULL
+	 * utimes "." timeval libc/NULL
 	 */
 	idio_error_param_value_exp ("utimes", "mtime", mtime, "libc/struct-timeval", IDIO_C_FUNC_LOCATION ());
 
@@ -8521,21 +9790,21 @@ a wrapper to libc :manpage:`utimes(2)`	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("wait", libc_wait, (), "", "\
-in C, :samp:`wait (status)`			     \n\
-a wrapper to libc :manpage:`wait(2)`		     \n\
-						     \n\
-:return: list of (pid, *status*)		     \n\
+in C, :samp:`wait (status)`		\n\
+a wrapper to libc :manpage:`wait(2)`	\n\
+					\n\
+:return: list of (pid, *status*)	\n\
 :rtype: list  of (libc/pid_t, C/pointer or ``#n``)   \n\
-:raises ^system-error:				     \n\
-						     \n\
-*status* is a `C/pointer` to a C ``int``.	     \n\
-						     \n\
-.. seealso:: :ref:`WIFEXITED <libc/WIFEXITED>`,	     \n\
-	:ref:`WEXITSTATUS <libc/WEXITSTATUS>`,	     \n\
-	:ref:`WIFSIGNALED <libc/WIFSIGNALED>`,	     \n\
-	:ref:`WTERMSIG <libc/WTERMSIG>`,	     \n\
-	:ref:`WIFSTOPPED <libc/WIFSTOPPED>`	     \n\
-	for functions to manipulate *status*.	     \n\
+:raises ^system-error:			\n\
+					\n\
+*status* is a `C/pointer` to a C ``int``.	\n\
+					\n\
+.. seealso:: :ref:`WIFEXITED <libc/WIFEXITED>`,	\n\
+	:ref:`WEXITSTATUS <libc/WEXITSTATUS>`,	\n\
+	:ref:`WIFSIGNALED <libc/WIFSIGNALED>`,	\n\
+	:ref:`WTERMSIG <libc/WTERMSIG>`,	\n\
+	:ref:`WIFSTOPPED <libc/WIFSTOPPED>`	\n\
+	for functions to manipulate *status*.	\n\
 ")
 {
     int *statusp = idio_alloc (sizeof (int));
@@ -8561,32 +9830,32 @@ a wrapper to libc :manpage:`wait(2)`		     \n\
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("waitpid", libc_waitpid, (IDIO pid, IDIO args), "pid [options]", "\
 in C, :samp:`waitpid ({pid}, status[, {options}])`   \n\
-a wrapper to libc :manpage:`waitpid(2)`		     \n\
-						     \n\
-:param pid: Process ID				     \n\
-:type pid: libc/pid_t				     \n\
-:param options: see below			     \n\
-:type options: C/int, optional			     \n\
-:return: list of (pid, *status*)		     \n\
-:rtype: list  of (libc/pid_t, C/pointer or ``#n``)   \n\
-:raises ^system-error:				     \n\
-						     \n\
-``libc/WAIT_ANY`` is defined as -1 for use as `pid`. \n\
-						     \n\
-The following options are defined:		     \n\
-``libc/WNOHANG``				     \n\
-``libc/WUNTRACED``				     \n\
-						     \n\
-Options will be IORed together			     \n\
-						     \n\
-*status* is a `C/pointer` to a C ``int``.	     \n\
-						     \n\
-.. seealso:: :ref:`WIFEXITED <libc/WIFEXITED>`,	     \n\
-	:ref:`WEXITSTATUS <libc/WEXITSTATUS>`,	     \n\
-	:ref:`WIFSIGNALED <libc/WIFSIGNALED>`,	     \n\
-	:ref:`WTERMSIG <libc/WTERMSIG>`,	     \n\
-	:ref:`WIFSTOPPED <libc/WIFSTOPPED>`	     \n\
-	for functions to manipulate *status*.	     \n\
+a wrapper to libc :manpage:`waitpid(2)`	\n\
+					\n\
+:param pid: Process ID			\n\
+:type pid: libc/pid_t			\n\
+:param options: see below		\n\
+:type options: C/int, optional		\n\
+:return: list of (pid, *status*)	\n\
+:rtype: list  of (libc/pid_t, C/pointer or ``#n``)	\n\
+:raises ^system-error:			\n\
+					\n\
+``libc/WAIT_ANY`` is defined as -1 for use as `pid`.	\n\
+					\n\
+The following options are defined:	\n\
+``libc/WNOHANG``			\n\
+``libc/WUNTRACED``			\n\
+					\n\
+Options will be IORed together		\n\
+					\n\
+*status* is a `C/pointer` to a C ``int``.	\n\
+					\n\
+.. seealso:: :ref:`WIFEXITED <libc/WIFEXITED>`,	\n\
+	:ref:`WEXITSTATUS <libc/WEXITSTATUS>`,	\n\
+	:ref:`WIFSIGNALED <libc/WIFSIGNALED>`,	\n\
+	:ref:`WTERMSIG <libc/WTERMSIG>`,	\n\
+	:ref:`WIFSTOPPED <libc/WIFSTOPPED>`	\n\
+	for functions to manipulate *status*.	\n\
 ")
 {
     IDIO_ASSERT (pid);
@@ -8606,7 +9875,7 @@ Options will be IORed together			     \n\
      * waitpid (C/integer-> 0 libc/pid_t) #t
      */
     int C_options = 0;
-    if (idio_isa_pair (args)) {
+    while (idio_S_nil != args) {
 	IDIO option = IDIO_PAIR_H (args);
 
 	IDIO_USER_C_TYPE_ASSERT (int, option);
@@ -8841,7 +10110,7 @@ void idio_libc_api_add_primitives ()
     IDIO_FIELD_DEF ("c_lflag", c_lflag);
     IDIO_FIELD_DEF ("c_line", c_line);
     IDIO_FIELD_DEF ("c_cc", c_cc);
-#if defined (IDIO_HAVE_TERMIOS_SPEEDS)
+#if ! defined (IDIO_NO_TERMIOS_SPEEDS)
     IDIO_FIELD_DEF ("c_ispeed", c_ispeed);
     IDIO_FIELD_DEF ("c_ospeed", c_ospeed);
 #endif
@@ -8920,18 +10189,43 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ctime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup2);
+
+#if ! defined (IDIO_NO_FACCESSAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_faccessat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchmod);
+
+#if ! defined (IDIO_NO_FCHMODAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchmodat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchown);
+
+#if ! defined (IDIO_NO_FCHOWNAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fchownat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fcntl);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fork);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstat);
+
+#if ! defined (IDIO_NO_FSTATAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstatat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstatvfs);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fsync);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ftruncate);
 
-#ifdef IDIO_HAVE_FUTIMES
+#if ! defined (IDIO_NO_FUTIMES)
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_futimes);
+#endif
+
+
+#if ! defined (IDIO_NO_FUTIMESAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_futimesat);
 #endif
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getcwd);
@@ -8960,16 +10254,31 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_kill);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_killpg);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_link);
+
+#if ! defined (IDIO_NO_LINKAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_linkat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_localtime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lockf);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lstat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdir);
+
+#if ! defined (IDIO_NO_MKDIRAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdirat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdtemp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkfifo);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkstemp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mktime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_nanosleep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_open);
+
+#if ! defined (IDIO_NO_OPENAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_openat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_posix_openpt);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pread);
@@ -8977,7 +10286,17 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pwrite);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_read);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_readlink);
+
+#if ! defined (IDIO_NO_READLINKAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_readlinkat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rename);
+
+#if ! defined (IDIO_NO_RENAMEAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_renameat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setegid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_seteuid);
@@ -8986,7 +10305,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpriority);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setregid);
 
-#ifdef IDIO_HAVE_SET_SAVED_IDS
+#if ! defined (IDIO_NO_SET_SAVED_IDS)
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setresgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setresuid);
 #endif
@@ -9004,6 +10323,11 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strptime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strsignal);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_symlink);
+
+#if ! defined (IDIO_NO_SYMLINKAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_symlinkat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_sync);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcgetattr);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcgetpgrp);
@@ -9016,6 +10340,11 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_umask);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_uname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlink);
+
+#if ! defined (IDIO_NO_UNLINKAT)
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlinkat);
+#endif
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlockpt);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_utimes);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_wait);
@@ -9063,6 +10392,19 @@ void idio_init_libc_api ()
     idio_module_export_symbol_value (IDIO_SYMBOL ("RUSAGE_THREAD"), idio_C_int (RUSAGE_THREAD), idio_libc_module);
 #endif  /* __rusage_who */
 
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_ISUID"), idio_libc_mode_t (S_ISUID), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_ISGID"), idio_libc_mode_t (S_ISGID), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_ISVTX"), idio_libc_mode_t (S_ISVTX), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IRUSR"), idio_libc_mode_t (S_IRUSR), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IWUSR"), idio_libc_mode_t (S_IWUSR), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IXUSR"), idio_libc_mode_t (S_IXUSR), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IRGRP"), idio_libc_mode_t (S_IRGRP), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IWGRP"), idio_libc_mode_t (S_IWGRP), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IXGRP"), idio_libc_mode_t (S_IXGRP), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IROTH"), idio_libc_mode_t (S_IROTH), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IWOTH"), idio_libc_mode_t (S_IWOTH), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("S_IXOTH"), idio_libc_mode_t (S_IXOTH), idio_libc_module);
+
     idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_PROCESS"), idio_C_int (PRIO_PROCESS), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_PGRP"), idio_C_int (PRIO_PGRP), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("PRIO_USER"), idio_C_int (PRIO_USER), idio_libc_module);
@@ -9071,4 +10413,12 @@ void idio_init_libc_api ()
     idio_module_export_symbol_value (IDIO_SYMBOL ("F_TLOCK"), idio_C_int (F_TLOCK), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("F_ULOCK"), idio_C_int (F_ULOCK), idio_libc_module);
     idio_module_export_symbol_value (IDIO_SYMBOL ("F_TEST"), idio_C_int (F_TEST), idio_libc_module);
+
+#if ! defined (IDIO_NO_FACCESSAT)
+    idio_module_export_symbol_value (IDIO_SYMBOL ("AT_FDCWD"), idio_C_int (AT_FDCWD), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("AT_EACCESS"), idio_C_int (AT_EACCESS), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("AT_SYMLINK_NOFOLLOW"), idio_C_int (AT_SYMLINK_NOFOLLOW), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("AT_SYMLINK_FOLLOW"), idio_C_int (AT_SYMLINK_FOLLOW), idio_libc_module);
+    idio_module_export_symbol_value (IDIO_SYMBOL ("AT_REMOVEDIR"), idio_C_int (AT_REMOVEDIR), idio_libc_module);
+#endif
 }

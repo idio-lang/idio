@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -686,6 +686,9 @@ This does not return!				\n\
      * Some of the required conversions are inefficient.
      */
     if (idio_eqp (ct, idio_condition_rt_parameter_type_error_type)) {
+	/*
+	 * error/type ^rt-parameter-type-error 'func msg [arg]
+	 */
 	if (idio_isa_pair (args)) {
 	    args = IDIO_PAIR_H (args);
 	}
@@ -702,6 +705,9 @@ This does not return!				\n\
 
 	return idio_S_notreached;
     } else if (idio_eqp (ct, idio_condition_rt_parameter_value_error_type)) {
+	/*
+	 * error/type ^rt-parameter-value-error 'func "param-str" val [msg]
+	 */
 	IDIO func = loc;
 	IDIO param = msg;
 	IDIO val = idio_S_nil;
@@ -729,8 +735,11 @@ This does not return!				\n\
 	idio_display (param, msh);
 	idio_display_C ("='", msh);
 	idio_display (val, msh);
-	idio_display_C ("': ", msh);
-	idio_display (msg, msh);
+
+	if (idio_S_nil != msg) {
+	    idio_display_C ("': ", msh);
+	    idio_display (msg, msh);
+	}
 
 	idio_error_raise_noncont (idio_condition_rt_parameter_value_error_type,
 				  IDIO_LIST3 (idio_get_output_string (msh),
@@ -739,6 +748,9 @@ This does not return!				\n\
 
 	return idio_S_notreached;
     } else if (idio_eqp (ct, idio_condition_rt_parameter_error_type)) {
+	/*
+	 * error/type ^rt-parameter-error 'func msg ["param-str"]
+	 */
 	IDIO func = loc;
 	IDIO param = idio_S_nil;
 
@@ -758,8 +770,10 @@ This does not return!				\n\
 
 	idio_display (func, msh);
 	idio_display_C (" ", msh);
-	idio_display (param, msh);
-	idio_display_C (" ", msh);
+	if (idio_S_nil != param) {
+	    idio_display (param, msh);
+	    idio_display_C (" ", msh);
+	}
 	idio_display (msg, msh);
 
 	idio_error_raise_noncont (idio_condition_rt_parameter_error_type,
@@ -769,6 +783,9 @@ This does not return!				\n\
 
 	return idio_S_notreached;
     } else if (idio_eqp (ct, idio_condition_rt_variable_error_type)) {
+	/*
+	 * error/type ^rt-variable-error 'func msg ["param-str"]
+	 */
 	IDIO func = loc;
 	IDIO param = idio_S_nil;
 
@@ -788,8 +805,10 @@ This does not return!				\n\
 
 	idio_display (func, msh);
 	idio_display_C (" ", msh);
-	idio_display (param, msh);
-	idio_display_C (" ", msh);
+	if (idio_S_nil != param) {
+	    idio_display (param, msh);
+	    idio_display_C (" ", msh);
+	}
 	idio_display (msg, msh);
 
 	idio_error_raise_noncont (idio_condition_rt_variable_error_type,

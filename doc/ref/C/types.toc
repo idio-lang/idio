@@ -20,6 +20,7 @@
 (document C type?)
 (document C number?)
 (document C integral?)
+(document C signed?)
 (document C unsigned?)
 (document C floating?)
 

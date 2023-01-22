@@ -26,17 +26,6 @@
 ;
 ; VM
 
-; s9.idio
-(nodocument Idio %ext-let)
-
-(nodocument Idio let)
-(nodocument Idio let*)
-(nodocument Idio letrec)
-
-(nodocument Idio values)
-
-(nodocument Idio setter)
-
 (nodocument Idio debugger)
 
 (nodocument Idio trap-return-tag)
@@ -49,8 +38,6 @@
 (nodocument Idio for-loop-continue-tag)
 (nodocument Idio function-return-hole)
 (nodocument Idio function-return-tag)
-
-(nodocument Idio call-with-values)
 
 (nodocument Idio %%vm-apply-continuation)
 (nodocument Idio %%vm-continuations)
