@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2023 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -76,8 +76,8 @@ expander-trap-st-function-arity-error "expander-errors/let-1-arg.idio" "(let bin
 expander-trap-evaluation-error "expander-errors/let-invalid-bindings.idio" "parameter type: bindings: pair"
 expander-trap-evaluation-error "expander-errors/let-invalid-binding.idio" "parameter type: binding: pair/symbol"
 
-expander-trap-st-function-arity-error "expander-errors/let*-1-arg.idio" "(let* bindings body)"
-expander-trap-evaluation-error "expander-errors/let*-invalid-bindings.idio" "parameter type: bindings: pair"
+expander-trap-st-function-arity-error "expander-errors/lets-1-arg.idio" "(let* bindings body)"
+expander-trap-evaluation-error "expander-errors/lets-invalid-bindings.idio" "parameter type: bindings: pair"
 
 expander-trap-st-function-arity-error "expander-errors/letrec-1-arg.idio" "(letrec bindings body)"
 expander-trap-evaluation-error "expander-errors/letrec-invalid-bindings.idio" "parameter type: bindings: pair"
