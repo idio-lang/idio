@@ -14,5 +14,5 @@
 (rst "mop-generic-invocation" 0)
 (document object compute-apply-generic)
 (document object compute-methods)
-(document object compute-method-more-specific?)
+(document object compute-method-more-specific? compute-method-more-specificq)
 (document object compute-apply-methods)
