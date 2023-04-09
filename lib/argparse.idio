@@ -128,7 +128,7 @@ define (argparse:parse args options-list & optionals) {
 		((list? args) args)		   ; an actual list!
 		((array? args) (array->list args)) ; ARGV
 		(else {
-		  error/type ^rt-parameter-value-error argparse:parse "args" args "bad args type"
+		  error/type ^rt-parameter-value-error 'argparse:parse "args" args (sprintf "bad 'args type: %s" (type->string args))
 		}))
   help-option := find-help-option options-list
   (with-values-from (options operands)
