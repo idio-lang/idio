@@ -1,0 +1,623 @@
+;;
+;; Copyright (c) 2023 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-argparse.idio
+;;
+module tests/argparse
+import argparse
+
+argparse0 := Tests
+
+opt-name := #f
+
+(define opts
+ (list
+
+  ;; In the option-processor bodies, name is the unicode code point or
+  ;; the string name
+
+
+
+  ;; single short name, no argument
+  (argparse:make-option (a)
+			:none
+			"option a" {
+			  opt-name = name
+  })
+  ;; single long name, no argument
+  (argparse:make-option (apple)
+			:none
+			"option apple" {
+			  opt-name = name
+  })
+  ;; short and long names, no argument
+  (argparse:make-option (b banana)
+			:none
+			"option b is for banana" {
+			  opt-name = name
+  })
+  ;; long and short names, no argument
+  (argparse:make-option (cookie c)
+			:none
+			"option c is for cookie" {
+			  opt-name = name
+  })
+  ;; short and multiple long names, no argument
+  (argparse:make-option (d doughnut donut)
+			:none
+			"option d is for doughnut" {
+			  opt-name = name
+  })
+
+  ;; short name with optional argument, default is #f, no argument
+  ;; name for help
+  (argparse:make-option (e)
+			:optional
+			"option e [default: #f]" {
+			  opt-name = name
+  })
+  ;; short name with optional argument, with argument name for help
+  (argparse:make-option (f)
+			(:optional "FLAGS")
+			"option flags [default: 6]" {
+			  arg = (or (and arg
+					 (read-number arg))
+				 6)
+			  opt-name = name
+  })
+
+  ;; short name with required argument, no argument name for help
+  (argparse:make-option (g)
+			:required
+			"option g" {
+			  opt-name = name
+  })
+  ;; option with required argument, with argument name for help
+  (argparse:make-option (i)
+			(:required "INPUT")
+			"option i" {
+			  opt-name = name
+  })
+
+  ;; long argument name (affects usage output), also no argument body
+  (argparse:make-option (l really-long-opt-name)
+			(required: "NAME")
+			"very long option NAME to show wrapping")))
+
+;; no arguments at all
+test-ARGV := #[]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name #f
+test options  #n
+test operands #n
+
+;; just operands
+test-ARGV := #[ "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name #f
+test options  #n
+test operands '("oper1" "oper2")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; single short name, no operands
+test-ARGV := #[ "-a" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name		#\a
+test (assoc 'a options)	'(a & #t)
+test operands		#n
+
+;; single short name, with operands
+test-ARGV := #[ "-a" "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name		#\a
+test (assoc 'a options)	'(a & #t)
+test operands		'("oper1" "oper2")
+
+;; single short name, intermixed with operands
+test-ARGV := #[ "oper1" "-a" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name		#\a
+test (assoc 'a options)	'(a & #t)
+test operands		'("oper1" "oper2")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; single long name, no operands
+test-ARGV := #[ "--apple" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"apple"
+test (assoc 'apple options)	'(apple & #t)
+test operands			#n
+
+;; single long name, with operands
+test-ARGV := #[ "--apple" "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"apple"
+test (assoc 'apple options)	'(apple & #t)
+test operands			'("oper1" "oper2")
+
+;; single long name, intermixed with operands
+test-ARGV := #[ "oper1" "--apple" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"apple"
+test (assoc 'apple options)	'(apple & #t)
+test operands			'("oper1" "oper2")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; short and long names, no operands
+test-ARGV := #[ "-b" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\b
+test (assoc 'b options)		'(b & #t)
+test (assoc 'banana options)	'(banana & #t)
+test operands			#n
+
+opt-name = #f
+
+test-ARGV := #[ "--banana" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"banana"
+test (assoc 'b options)		'(b & #t)
+test (assoc 'banana options)	'(banana & #t)
+test operands			#n
+
+opt-name = #f
+
+;; short and long names, with operands
+test-ARGV := #[ "-b" "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\b
+test (assoc 'b options)		'(b & #t)
+test (assoc 'banana options)	'(banana & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+test-ARGV := #[ "--banana" "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"banana"
+test (assoc 'b options)		'(b & #t)
+test (assoc 'banana options)	'(banana & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+;; short and long names, intermixed with operands
+test-ARGV := #[ "oper1" "-b" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\b
+test (assoc 'b options)		'(b & #t)
+test (assoc 'banana options)	'(banana & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+test-ARGV := #[ "oper1" "--banana" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"banana"
+test (assoc 'b options)		'(b & #t)
+test (assoc 'banana options)	'(banana & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+;; short and long names, last one overrides
+test-ARGV := #[ "-b" "--banana" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"banana"
+test (assoc 'b options)		'(b & #t)
+test (assoc 'banana options)	'(banana & #t)
+test operands			#n
+
+opt-name = #f
+
+test-ARGV := #[ "--banana" "-b" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\b
+test (assoc 'b options)		'(b & #t)
+test (assoc 'banana options)	'(banana & #t)
+test operands			#n
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; long and short names, no operands
+test-ARGV := #[ "-c" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\c
+test (assoc 'c options)		'(c & #t)
+test (assoc 'cookie options)	'(cookie & #t)
+test operands			#n
+
+opt-name = #f
+
+test-ARGV := #[ "--cookie" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"cookie"
+test (assoc 'c options)		'(c & #t)
+test (assoc 'cookie options)	'(cookie & #t)
+test operands			#n
+
+opt-name = #f
+
+;; long and short names, with operands
+test-ARGV := #[ "-c" "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\c
+test (assoc 'c options)		'(c & #t)
+test (assoc 'cookie options)	'(cookie & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+test-ARGV := #[ "--cookie" "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"cookie"
+test (assoc 'c options)		'(c & #t)
+test (assoc 'cookie options)	'(cookie & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+;; long and short names, intermixed with operands
+test-ARGV := #[ "oper1" "-c" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\c
+test (assoc 'c options)		'(c & #t)
+test (assoc 'cookie options)	'(cookie & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+test-ARGV := #[ "oper1" "--cookie" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"cookie"
+test (assoc 'c options)		'(c & #t)
+test (assoc 'cookie options)	'(cookie & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+;; long and short names, last one overrides
+test-ARGV := #[ "-c" "--cookie" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"cookie"
+test (assoc 'c options)		'(c & #t)
+test (assoc 'cookie options)	'(cookie & #t)
+test operands			#n
+
+opt-name = #f
+
+test-ARGV := #[ "--cookie" "-c" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\c
+test (assoc 'c options)		'(c & #t)
+test (assoc 'cookie options)	'(cookie & #t)
+test operands			#n
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; short and multiple long names, no operands
+test-ARGV := #[ "-d" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\d
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			#n
+
+opt-name = #f
+
+test-ARGV := #[ "--doughnut" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"doughnut"
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			#n
+
+opt-name = #f
+
+test-ARGV := #[ "--donut" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"donut"
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			#n
+
+opt-name = #f
+
+;; short and multiple long names, with operands
+test-ARGV := #[ "-d" "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\d
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+test-ARGV := #[ "--doughnut" "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"doughnut"
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+test-ARGV := #[ "--donut" "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"donut"
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+;; short and multiple long names, intermixed with operands
+test-ARGV := #[ "oper1" "-d" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\d
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+test-ARGV := #[ "oper1" "--doughnut" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"doughnut"
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+test-ARGV := #[ "oper1" "--donut" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"donut"
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			'("oper1" "oper2")
+
+opt-name = #f
+
+;; short and multiple long names, last one overrides
+test-ARGV := #[ "-d" "--doughnut" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"doughnut"
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			#n
+
+opt-name = #f
+
+test-ARGV := #[ "-d" "--donut" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"donut"
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			#n
+
+opt-name = #f
+
+test-ARGV := #[ "--doughnut" "--donut" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"donut"
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			#n
+
+opt-name = #f
+
+test-ARGV := #[ "--doughnut" "-d" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\d
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			#n
+
+opt-name = #f
+
+test-ARGV := #[ "-d" "--donut" "--doughnut" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			"doughnut"
+test (assoc 'd options)		'(d & #t)
+test (assoc 'doughnut options)	'(doughnut & #t)
+test (assoc 'donut options)	'(donut & #t)
+test operands			#n
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; short name with optional argument, no argument
+test-ARGV := #[ "-e" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\e
+test (assoc 'e options)		'(e & #f)
+test operands			#n
+
+;; short name with optional argument, with argument
+test-ARGV := #[ "-e" "arg1" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\e
+test (assoc 'e options)		'(e & "arg1")
+test operands			#n
+
+;; short name with optional argument, with argument and operands
+test-ARGV := #[ "-e" "arg2" "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\e
+test (assoc 'e options)		'(e & "arg2")
+test operands			'("oper1" "oper2")
+
+;; short name with optional argument, with argument and intermixed
+;; with operands
+test-ARGV := #[ "oper1" "-e" "arg3" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\e
+test (assoc 'e options)		'(e & "arg3")
+test operands			'("oper1" "oper2")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; short name with optional argument, no argument
+test-ARGV := #[ "-f" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\f
+test (assoc 'f options)		'(f & 6)
+test operands			#n
+
+;; short name with optional argument, with operands
+test-ARGV := #[ "-f" "7" "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\f
+test (assoc 'f options)		'(f & 7)
+test operands			'("oper1" "oper2")
+
+;; short name with optional argument, intermixed with operands
+test-ARGV := #[ "oper1" "-f" "8" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\f
+test (assoc 'f options)		'(f & 8)
+test operands			'("oper1" "oper2")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; short name with required argument
+test-ARGV := #[ "-g" "arg1" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\g
+test (assoc 'g options)		'(g & "arg1")
+test operands			#n
+
+;; short name with required argument and operands
+test-ARGV := #[ "-g" "arg2" "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\g
+test (assoc 'g options)		'(g & "arg2")
+test operands			'("oper1" "oper2")
+
+;; short name with required argument intermixed with operands
+test-ARGV := #[ "oper1" "-g" "arg3" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\g
+test (assoc 'g options)		'(g & "arg3")
+test operands			'("oper1" "oper2")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; short name with required argument
+test-ARGV := #[ "-i" "arg1" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\i
+test (assoc 'i options)		'(i & "arg1")
+test operands			#n
+
+;; short name with required argument, with operands
+test-ARGV := #[ "-i" "arg2" "oper1" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\i
+test (assoc 'i options)		'(i & "arg2")
+test operands			'("oper1" "oper2")
+
+;; short name with required argument, intermixed with operands
+test-ARGV := #[ "oper1" "-i" "arg3" "oper2" ]
+define-values (options operands) (argparse:parse test-ARGV opts)
+
+test opt-name			#\i
+test (assoc 'i options)		'(i & "arg3")
+test operands			'("oper1" "oper2")
+
+test (argparse:usage opts)		" -a                       option a
+     --apple              option apple
+ -b, --banana             option b is for banana
+     --cookie, -c         option c is for cookie
+ -d, --doughnut, --donut  option d is for doughnut
+ -e [ARG]                 option e [default: #f]
+ -f [FLAGS]               option flags [default: 6]
+ -g ARG                   option g
+ -i INPUT                 option i
+ -l, --really-long-opt-name
+                          very long option NAME to show wrapping
+"
+
+;; all done?
+Tests? (argparse0 + 198)

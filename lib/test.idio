@@ -486,11 +486,13 @@ if (ARGC gt 0) {
 
   test-load "test-job-control.idio"
 
+  test-load "test-argparse.idio"
+
   ;; test that we've seen as many tests as we should have.  How many is
   ;; that?  Erm, they've not been counted and are dynamic in number so
   ;; test we've seen at least as many as the largest number we've
   ;; seen.  Wait, some tests are OS-specific.  Drat!
-  Tests? (8850 - Skipped)
+  Tests? (9048 - Skipped)
 }
 
 if (e? testfile) (delete-file testfile)
