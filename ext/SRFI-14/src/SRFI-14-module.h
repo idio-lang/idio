@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2022-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -25,6 +25,6 @@
 
 extern IDIO idio_SRFI_14_module;
 
-void idio_init_SRFI_14 ();
+void idio_init_SRFI_14 (void *handle);
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -756,7 +756,7 @@ IDIO idio_read_unicode (IDIO handle, IDIO lo)
  * idio_getc_handle() will come here as well as idio_read_character(),
  * below
  *
- * We can raise a conditon for EOF but not for badly formed UTF-8
+ * We can raise a condition for EOF but not for badly formed UTF-8
  * sequences.  Return the replacement character for those.
  */
 idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
@@ -788,8 +788,7 @@ idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
     idio_unicode_t codepoint;
     idio_unicode_t state = IDIO_UTF8_ACCEPT;
 
-    int i;
-    for (i = 0; ; i++) {
+    for (;;) {
 	int ucv = idio_getb_handle (handle);
 
 	/*

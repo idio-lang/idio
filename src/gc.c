@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1671,7 +1671,9 @@ size_t idio_gc_sweep (idio_gc_t *gc)
     }
 
     size_t nobj = 0;
+#ifdef IDIO_GC_DEBUG
     size_t freed = 0;
+#endif
 
     IDIO co = gc->used;
     IDIO po = NULL;
@@ -1706,7 +1708,9 @@ size_t idio_gc_sweep (idio_gc_t *gc)
 	    co->next = gc->free;
 	    gc->free = co;
 	    gc->stats.nfree++;
+#ifdef IDIO_GC_DEBUG
 	    freed++;
+#endif
 	} else {
 	    po = co;
 	}

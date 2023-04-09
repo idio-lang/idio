@@ -1005,15 +1005,12 @@ static void idio_vm_restore_state (IDIO thr)
 
     /* idio_vm_debug (thr, "ivrs", -5); */
 
-    idio_sp_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
-
     IDIO marker = IDIO_THREAD_STACK_POP ();
     if (idio_SM_preserve_state != marker) {
 	idio_debug ("iv_restore_state: marker: expected idio_SM_preserve_state not %s\n", marker);
 	IDIO_THREAD_STACK_PUSH (marker);
 	idio_vm_panic (thr, "iv_restore_state: unexpected stack marker");
     }
-    ss--;
 
     IDIO_THREAD_ENV (thr) = IDIO_THREAD_STACK_POP ();
     if (idio_S_nil != IDIO_THREAD_ENV (thr)) {
@@ -1026,13 +1023,11 @@ static void idio_vm_restore_state (IDIO thr)
 	}
 	IDIO_TYPE_ASSERT (module, IDIO_THREAD_ENV (thr));
     }
-    ss--;
 
     IDIO_THREAD_FRAME (thr) = IDIO_THREAD_STACK_POP ();
     if (idio_S_nil != IDIO_THREAD_FRAME (thr)) {
 	IDIO_TYPE_ASSERT (frame, IDIO_THREAD_FRAME (thr));
     }
-    ss--;
 }
 
 static void idio_vm_restore_all_state (IDIO thr)
@@ -1553,14 +1548,18 @@ static void idio_vm_invoke (IDIO thr, IDIO func, idio_vm_invoke_enum tailp)
 	    case 0:
 		{
 		    IDIO args = idio_frame_args_as_list_from (val, 0);
-		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (args);
+		    IDIO (*C_f) (IDIO args);
+		    C_f = (IDIO (*) (IDIO args)) (IDIO_PRIMITIVE_F (func));
+		    IDIO_THREAD_VAL (thr) = C_f (args);
 		}
 		break;
 	    case 1:
 		{
 		    IDIO arg1 = IDIO_FRAME_ARGS (val, 0);
 		    IDIO args = idio_frame_args_as_list_from (val, 1);
-		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, args);
+		    IDIO (*C_f) (IDIO arg1, IDIO args);
+		    C_f = (IDIO (*) (IDIO arg1, IDIO args)) (IDIO_PRIMITIVE_F (func));
+		    IDIO_THREAD_VAL (thr) = C_f (arg1, args);
 		}
 		break;
 	    case 2:
@@ -1568,7 +1567,9 @@ static void idio_vm_invoke (IDIO thr, IDIO func, idio_vm_invoke_enum tailp)
 		    IDIO arg1 = IDIO_FRAME_ARGS (val, 0);
 		    IDIO arg2 = IDIO_FRAME_ARGS (val, 1);
 		    IDIO args = idio_frame_args_as_list_from (val, 2);
-		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, args);
+		    IDIO (*C_f) (IDIO arg1, IDIO arg2, IDIO args);
+		    C_f = (IDIO (*) (IDIO arg1, IDIO arg2, IDIO args)) (IDIO_PRIMITIVE_F (func));
+		    IDIO_THREAD_VAL (thr) = C_f (arg1, arg2, args);
 		}
 		break;
 	    case 3:
@@ -1577,7 +1578,9 @@ static void idio_vm_invoke (IDIO thr, IDIO func, idio_vm_invoke_enum tailp)
 		    IDIO arg2 = IDIO_FRAME_ARGS (val, 1);
 		    IDIO arg3 = IDIO_FRAME_ARGS (val, 2);
 		    IDIO args = idio_frame_args_as_list_from (val, 3);
-		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, arg3, args);
+		    IDIO (*C_f) (IDIO arg1, IDIO arg2, IDIO arg3, IDIO args);
+		    C_f = (IDIO (*) (IDIO arg1, IDIO arg2, IDIO arg3, IDIO args)) (IDIO_PRIMITIVE_F (func));
+		    IDIO_THREAD_VAL (thr) = C_f (arg1, arg2, arg3, args);
 		}
 		break;
 	    case 4:
@@ -1587,7 +1590,9 @@ static void idio_vm_invoke (IDIO thr, IDIO func, idio_vm_invoke_enum tailp)
 		    IDIO arg3 = IDIO_FRAME_ARGS (val, 2);
 		    IDIO arg4 = IDIO_FRAME_ARGS (val, 3);
 		    IDIO args = idio_frame_args_as_list_from (val, 4);
-		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, arg3, arg4, args);
+		    IDIO (*C_f) (IDIO arg1, IDIO arg2, IDIO arg3, IDIO arg4, IDIO args);
+		    C_f = (IDIO (*) (IDIO arg1, IDIO arg2, IDIO arg3, IDIO arg4, IDIO args)) (IDIO_PRIMITIVE_F (func));
+		    IDIO_THREAD_VAL (thr) = C_f (arg1, arg2, arg3, arg4, args);
 		}
 		break;
 	    case 5:
@@ -1603,7 +1608,9 @@ static void idio_vm_invoke (IDIO thr, IDIO func, idio_vm_invoke_enum tailp)
 		    IDIO arg4 = IDIO_FRAME_ARGS (val, 3);
 		    IDIO arg5 = IDIO_FRAME_ARGS (val, 4);
 		    IDIO args = idio_frame_args_as_list_from (val, 5);
-		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, arg3, arg4, arg5, args);
+		    IDIO (*C_f) (IDIO arg1, IDIO arg2, IDIO arg3, IDIO arg4, IDIO arg5, IDIO args);
+		    C_f = (IDIO (*) (IDIO arg1, IDIO arg2, IDIO arg3, IDIO arg4, IDIO arg5, IDIO args)) (IDIO_PRIMITIVE_F (func));
+		    IDIO_THREAD_VAL (thr) = C_f (arg1, arg2, arg3, arg4, arg5, args);
 		}
 		break;
 	    default:
@@ -5807,7 +5814,9 @@ int idio_vm_run1 (IDIO thr)
 	    struct rusage prim_ru0;
 	    idio_vm_func_start (pd, &prim_t0, &prim_ru0);
 #endif
-	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (pd) (IDIO_THREAD_VAL (thr));
+	    IDIO (*C_f) (IDIO arg1);
+	    C_f = (IDIO (*) (IDIO arg1)) IDIO_PRIMITIVE_F (pd);
+	    IDIO_THREAD_VAL (thr) = C_f (IDIO_THREAD_VAL (thr));
 #ifdef IDIO_VM_PROF
 	    struct timespec prim_te;
 	    struct rusage prim_rue;
@@ -5837,7 +5846,9 @@ int idio_vm_run1 (IDIO thr)
 	    struct rusage prim_ru0;
 	    idio_vm_func_start (pd, &prim_t0, &prim_ru0);
 #endif
-	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (pd) (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
+	    IDIO (*C_f) (IDIO arg1, IDIO arg2);
+	    C_f = (IDIO (*) (IDIO arg1, IDIO arg2)) IDIO_PRIMITIVE_F (pd);
+	    IDIO_THREAD_VAL (thr) = C_f (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
 #ifdef IDIO_VM_PROF
 	    struct timespec prim_te;
 	    struct rusage prim_rue;

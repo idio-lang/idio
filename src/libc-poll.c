@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -433,13 +433,11 @@ IDIO idio_libc_poll_poll (idio_libc_poller_t *poller, intmax_t timeout)
     poller->in_use = 0;
 
     IDIO r = idio_S_nil;
-    int n = 0;
     nfds_t i;
     for (i = 0; i < poller->nfds; i++) {
 	if (poller->fds[i].revents) {
 	    struct pollfd *pfd = &(poller->fds[i]);
 
-	    n++;
 	    IDIO k = idio_C_int (pfd->fd);
 	    IDIO v = idio_hash_ref (poller->fd_map, k);
 	    if (idio_S_unspec == v) {
