@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2022-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -24,6 +24,7 @@
 #define OBJECT_H
 
 extern IDIO idio_object_module;
+extern IDIO idio_class_struct_type;
 
 /*
  * Indexes into structures for direct references
@@ -68,6 +69,8 @@ int idio_isa_instance (IDIO o);
 static int idio_isa_class (IDIO o);
 int idio_isa_generic (IDIO o);
 IDIO idio_object_class_of (IDIO o);
+IDIO idio_object_slot_ref (IDIO obj, IDIO slot_name);
+IDIO idio_object_slot_set (IDIO obj, IDIO slot, IDIO val);
 
 char *idio_instance_report_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 char *idio_instance_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
