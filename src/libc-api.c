@@ -10013,7 +10013,7 @@ void idio_libc_api_add_primitives ()
 	IDIO printer_func = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (printer)); \
 	idio_vtable_add_method (IDIO_C_TYPE_POINTER_P (I_vt),		\
 				idio_S_2string,				\
-				idio_vtable_create_method_value (idio_util_method_run, \
+				idio_vtable_create_method_value (idio_util_method_run1, \
 								 IDIO_LIST2 (printer_func, idio_S_nil))); \
     }
 

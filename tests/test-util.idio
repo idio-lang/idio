@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2023 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -561,10 +561,30 @@ format "%s" st1
 format "%s" si1
 
 add-as-string st1 (function (v s) {
-		     "printing"
+  "printing"
 })
 
 test (format "%s" si1) "printing"
+
+;; test a bespoke indexer -- here we'll tally up requests for
+;; previously unknown fields of a struct
+
+st3 := make-struct-type 'st3 #n '(ht)
+add-value-index st3 (function (v i) {
+  val := 1
+  ht  := struct-instance-ref v 'ht
+  if (hash-exists? ht i) {
+    val = (hash-ref ht i) + 1
+  }
+  hash-set! ht i val
+  val
+})
+
+si3 := make-struct-instance st3 #{}
+test si3.'apple		1
+test si3.'apple		2
+test si3.'banana	1
+test si3.'apple		3
 
 ; continuations
 k1 := #f
@@ -573,10 +593,10 @@ k2 := #f
 ; call/cc has been improved in call-cc.idio -- if we want an actual
 ; continuation object we need to go deeper.  Not recommended.
 %%call/uc (function (k) {
-	     k1 = k
+  k1 = k
 })
 %%call/uc (function (k) {
-	     k2 = k
+  k2 = k
 })
 
 test (equal? k1 k1) #t
@@ -1266,7 +1286,7 @@ test (%format 'keyed "%4.3f" h)		" 010"
 test (%format 'keyed "%10.2b" h)	"    123.45"
 
 ;; all done?
-Tests? (util0 + 663)
+Tests? (util0 + 667)
 
 ;Local Variables:
 ;mode: Idio

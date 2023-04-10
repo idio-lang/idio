@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -244,6 +244,37 @@ This is currently only used for:
 
 " {
   %%add-as-string o f
+}
+
+#*
+
+add-value-index is a nominally generic mechanism to associate a
+user-defined indexer with a value.
+
+In practice it is only used for:
+
+* struct instances where the struct type is associated with a indexer
+  and when we come to index a struct instance we check to see if a
+  indexer exists for its type.
+
+The indexer will be invoked with the value to be indexed and the
+index.
+
+*#
+
+define (add-value-index o f) "
+Associate a indexer function `f` with `o`.
+
+`f` will be invoked with the value to be indexed and the index.
+
+This is currently only used for:
+
+- struct instances where a struct type was associated with a indexer.
+  When we come to index a struct instance we check to see if a indexer
+  exists for its type.
+
+" {
+  %%add-value-index o f
 }
 
 #*

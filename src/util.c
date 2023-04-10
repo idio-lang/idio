@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1969,6 +1969,7 @@ add `f` as a printer for instances of `o`	\n\
 :param o: object (type) to be printed		\n\
 :param f: printer				\n\
 :type f: function				\n\
+:return: ``#<unspec>``				\n\
 						\n\
 `f` will be invoked with the value and ``#n``	\n\
 						\n\
@@ -1976,7 +1977,6 @@ valid object/object types are:			\n\
 struct type					\n\
 struct instance					\n\
 C/pointer (with CSI)				\n\
-:return: ``#<unspec>``				\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -1999,7 +1999,7 @@ C/pointer (with CSI)				\n\
 
     idio_vtable_add_method (idio_value_vtable (o),
 			    m_name,
-			    idio_vtable_create_method_value (idio_util_method_run,
+			    idio_vtable_create_method_value (idio_util_method_run1,
 							     IDIO_LIST2 (f, idio_S_nil)));
 
     return idio_S_unspec;
@@ -2073,6 +2073,36 @@ otherwise index the object `o` by `i`		\n\
     }
 
     return IDIO_VTABLE_METHOD_FUNC (m) (m, o, i);
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("%%add-value-index", add_value_index, (IDIO o, IDIO f), "o f", "\
+add `f` as a value-indexer for instances of `o`	\n\
+						\n\
+:param o: object (type) to be indexed		\n\
+:param f: indexer				\n\
+:type f: function				\n\
+:return: ``#<unspec>``				\n\
+						\n\
+`f` will be invoked with the value, the index	\n\
+and ``#n``					\n\
+						\n\
+valid object/object types are:			\n\
+struct type					\n\
+struct instance					\n\
+C/pointer (with CSI)				\n\
+")
+{
+    IDIO_ASSERT (o);
+    IDIO_ASSERT (f);
+
+    IDIO_USER_TYPE_ASSERT (function, f);
+
+    idio_vtable_add_method (idio_value_vtable (o),
+			    idio_S_value_index,
+			    idio_vtable_create_method_value (idio_util_method_run2,
+							     IDIO_LIST1 (f)));
+
+    return idio_S_unspec;
 }
 
 IDIO idio_util_method_set_value_index (idio_vtable_method_t *m, IDIO v, ...)
@@ -3095,7 +3125,7 @@ IDIO idio_util_method_run0 (idio_vtable_method_t *m, IDIO v, ...)
     return r;
 }
 
-IDIO idio_util_method_run (idio_vtable_method_t *m, IDIO v, ...)
+IDIO idio_util_method_run1 (idio_vtable_method_t *m, IDIO v, ...)
 {
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (v);
@@ -3130,6 +3160,46 @@ IDIO idio_util_method_run (idio_vtable_method_t *m, IDIO v, ...)
     return r;
 }
 
+IDIO idio_util_method_run2 (idio_vtable_method_t *m, IDIO v, ...)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (v);
+
+    va_list ap;
+    va_start (ap, v);
+    IDIO index = va_arg (ap, IDIO);
+    va_end (ap);
+
+    IDIO data = (IDIO) IDIO_VTABLE_METHOD_DATA (m);
+
+    if (idio_isa_pair (data) == 0) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_param_value_msg_only ("method-run", "method->data", "should be a tuple of (function arg ...)", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO func = IDIO_PAIR_H (data);
+    IDIO args = IDIO_PAIR_T (data);
+
+    if (idio_isa_function (func) == 0) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_param_value_msg_only ("method-run", "method->data", "should be a tuple of (function arg ...)", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO cmd = idio_list_append2 (IDIO_LIST3 (func, v, index), args);
+
+    IDIO r = idio_vm_invoke_C (cmd);
+
+    return r;
+}
+
 void idio_util_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (type_string);
@@ -3148,6 +3218,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (eqvp);
     IDIO_ADD_PRIMITIVE (equalp);
     IDIO_ADD_PRIMITIVE (add_as_string);
+    IDIO_ADD_PRIMITIVE (add_value_index);
     IDIO_ADD_PRIMITIVE (string);
     IDIO_ADD_PRIMITIVE (2string);
     IDIO_ADD_PRIMITIVE (display_string);

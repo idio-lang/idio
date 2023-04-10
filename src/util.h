@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -105,7 +105,8 @@ int idio_snprintf (char *str, size_t size, char const *format, ...);
 
 char *idio_constant_idio_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 IDIO idio_util_method_run0 (idio_vtable_method_t *m, IDIO v, ...);
-IDIO idio_util_method_run (idio_vtable_method_t *m, IDIO v, ...);
+IDIO idio_util_method_run1 (idio_vtable_method_t *m, IDIO v, ...);
+IDIO idio_util_method_run2 (idio_vtable_method_t *m, IDIO v, ...);
 
 void idio_init_util ();
 
