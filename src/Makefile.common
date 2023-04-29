@@ -4,7 +4,9 @@ REV		:= $(shell uname -r)
 ARCH		:= $(shell uname -m)
 SHELL		:= bash
 
+# sudo make system-install may not define PWD
 PWD		?= $(shell pwd)
+
 TOPDIR		?= $(abspath $(PWD)/..)
 
 SRCDIR		?= $(TOPDIR)/src

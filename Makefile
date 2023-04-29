@@ -1,5 +1,8 @@
 export
 
+# sudo make system-install may not define PWD
+PWD		?= $(shell pwd)
+
 TOPDIR		:= $(abspath $(PWD))
 BINDIR		= $(TOPDIR)/bin
 LIBDIR		= $(TOPDIR)/lib
