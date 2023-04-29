@@ -4,6 +4,9 @@ REV		:= $(shell uname -r)
 ARCH		:= $(shell uname -m)
 SHELL		:= bash
 
+ifndef PWD
+PWD		?= $(shell pwd)
+endif
 ifndef TOPDIR
 TOPDIR		?= $(abspath $(PWD)/..)
 endif
