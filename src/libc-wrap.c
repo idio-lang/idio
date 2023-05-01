@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -23,6 +23,7 @@
 #define _GNU_SOURCE
 
 #include <sys/types.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/time.h>
@@ -104,6 +105,8 @@ IDIO idio_S_F_GETFD;
 IDIO idio_S_F_SETFD;
 
 IDIO idio_str_np_prefix;
+
+struct winsize *idio_winsizep;
 
 void idio_libc_format_error (char const *msg, IDIO name, IDIO c_location)
 {
@@ -3503,6 +3506,33 @@ does `pathname` pass :samp:`access ({pathname}, X_OK)`?	\n\
     return idio_libc_wrap_access_predicate (pathname, "x?", X_OK);
 }
 
+void idio_libc_get_winsize ()
+{
+    int ioctl_r = ioctl (STDIN_FILENO, TIOCGWINSZ, idio_winsizep);
+    if (-1 == ioctl_r) {
+	switch (errno) {
+	case ENOTTY:		/* Linux */
+	case EOPNOTSUPP:	/* NetBSD */
+	case ENODEV:		/* macOS, OpenBSD */
+	case ENXIO:		/* SunOS */
+	    break;
+	default:
+	    /*
+	     * Test Case: ??
+	     *
+	     * In practice, noting the variety of errno cases above,
+	     * if this is "early doors" (see idio_init_libc_wrap()),
+	     * the VM will panic because no trap handler has been
+	     * installed.
+	     */
+	    idio_error_system_errno ("ioctl (TIOCGWINSZ)", idio_C_int (STDIN_FILENO), IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return;
+	}
+    }
+}
+
 void idio_libc_wrap_add_primitives ()
 {
     idio_libc_api_add_primitives ();
@@ -3630,6 +3660,7 @@ void idio_final_libc_wrap ()
         idio_free (idio_libc_rlimit_names[i]);
     }
     idio_free (idio_libc_rlimit_names);
+    idio_free (idio_winsizep);
 }
 
 void idio_init_libc_wrap ()
@@ -3944,6 +3975,10 @@ void idio_init_libc_wrap ()
 
     idio_str_np_prefix = IDIO_STRING ("idio-np-");
     idio_gc_protect_auto (idio_str_np_prefix);
+
+    idio_winsizep = idio_alloc (sizeof (struct winsize));
+    idio_add_signal_handler (SIGWINCH, idio_libc_get_winsize);
+    idio_libc_get_winsize ();
 }
 
 /* Local Variables: */

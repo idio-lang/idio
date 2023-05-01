@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include "idio-config.h"
@@ -68,6 +69,10 @@
 
 IDIO idio_expect_module;
 IDIO idio_expect_exp_human_sym;
+static IDIO idio_expect_tty_tcattrs;
+static IDIO idio_expect_raw_tcattrs;
+static int idio_expect_tty_fd;
+static int idio_expect_tty_isatty;
 
 /*
  * exp-send-human exists because maths in Idio is slow...
@@ -417,6 +422,63 @@ void idio_init_expect (void *handle)
 				     idio_string_C_len (EXPECT_SYSTEM_VERSION, sizeof (EXPECT_SYSTEM_VERSION) - 1),
 				     idio_expect_module);
 
+    /*
+     * This looks remarkably similar to the code in job-control.c
+     * (cut'n'paste) but job-control can mess about with its value
+     * whereas we want to retain our own copy with which to initialise
+     * new terminals.
+     */
+    idio_expect_tty_fd = STDIN_FILENO;
+    idio_expect_tty_isatty = isatty (idio_expect_tty_fd);
+
+    struct termios *tcattrsp = idio_alloc (sizeof (struct termios));
+    idio_expect_tty_tcattrs = idio_C_pointer_free_me (tcattrsp);
+
+    /*
+     * The info pages only set shell_attrs when the shell is
+     * interactive.
+     */
+    if (idio_expect_tty_isatty) {
+	if (tcgetattr (idio_expect_tty_fd, tcattrsp) < 0) {
+	    idio_error_system_errno ("tcgetattr", idio_C_int (idio_expect_tty_fd), IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return;
+	}
+    }
+
+    idio_module_set_symbol_value (IDIO_SYMBOL ("%exp-tty-tcattrs"),
+				  idio_expect_tty_tcattrs,
+				  idio_expect_module);
+    IDIO_FLAGS (idio_expect_tty_tcattrs) |= IDIO_FLAG_CONST;
+
+    /*
+     * Just what defines raw, cooked and/or sane?  macOS and *BSD
+     * suggest that raw should be "so that no input or output
+     * processing is performed" and sane/cooked should be "reasonable
+     * values for interactive terminal use."  Linux and SunOS are more
+     * prescriptive with explicit values for each of the three.
+     *
+     * expect(1) (in exp_tty_raw() in exp_tty.c) has raw setting
+     * c_iflag and c_oflag to 0, c_lflag to ECHO, c_cc{VMIN] to 1 and
+     * c_cc[VTIME] to 0.  cooked is, it appears, whatever the starting
+     * state is.
+     *
+     * We'll follow expect(1).
+     */
+    tcattrsp = idio_alloc (sizeof (struct termios));
+    idio_expect_raw_tcattrs = idio_C_pointer_free_me (tcattrsp);
+
+    tcattrsp->c_iflag = 0;
+    tcattrsp->c_oflag = 0;
+    tcattrsp->c_lflag = ECHO;	/* expect uses &= */
+    tcattrsp->c_cc[VMIN] = 1;
+    tcattrsp->c_cc[VTIME] = 0;
+
+    idio_module_set_symbol_value (IDIO_SYMBOL ("%exp-raw-tcattrs"),
+				  idio_expect_raw_tcattrs,
+				  idio_expect_module);
+    IDIO_FLAGS (idio_expect_raw_tcattrs) |= IDIO_FLAG_CONST;
 }
 /* Local Variables: */
 /* coding: utf-8-unix */

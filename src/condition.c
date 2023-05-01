@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -60,6 +60,7 @@
 #include "hash.h"
 #include "idio-string.h"
 #include "job-control.h"
+#include "libc-wrap.h"
 #include "module.h"
 #include "pair.h"
 #include "struct.h"
@@ -866,6 +867,10 @@ does not return per se						\n\
 	case SIGCHLD:
 	    /* fprintf (stderr, "default-c-h: SIGCHLD -> idio_job_control_SIGCHLD_signal_handler\n"); */
 	    return idio_job_control_SIGCHLD_signal_handler ();
+	case SIGWINCH:
+	    fprintf (stderr, "default-c-h: SIGWINCH\n");
+	    idio_libc_get_winsize ();
+	    return idio_S_void;
 	default:
 	    /*
 	     * Code coverage:
@@ -1040,6 +1045,10 @@ does not return per se						\n\
 		    fprintf (stderr, "restart-c-h: SIGHUP -> idio_command_SIGHUP_signal_handler\n");
 		    idio_job_control_SIGHUP_signal_handler ();
 		    return idio_S_unspec;
+		case SIGWINCH:
+		    fprintf (stderr, "restart-c-h: SIGWINCH\n");
+		    idio_libc_get_winsize ();
+		    return idio_S_void;
 		default:
 		    break;
 		}

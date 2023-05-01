@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021, 2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -24,6 +24,7 @@
 
 #include <sys/types.h>
 
+#include <errno.h>
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -725,6 +726,10 @@ json5_value_t *json5_parse_fd (int fd)
 	ssize_t read_r = read (fd, buf, buf_rem);
 
 	if (-1 == read_r) {
+	    if (EINTR == errno) {
+		continue;
+	    }
+
 	    perror ("read");
 	    return NULL;
 	}

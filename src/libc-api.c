@@ -7501,36 +7501,43 @@ If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
 
     char *buf = idio_alloc (C_count);
 
-    ssize_t n = read (C_fd, buf, C_count);
-
     IDIO r;
 
-    if (-1 == n) {
-	idio_free (buf);
+    for (;;) {
+	ssize_t n = read (C_fd, buf, C_count);
 
-	/*
-	 * Test Case: ??
-	 */
-	if (EAGAIN == errno) {
+	if (-1 == n) {
+	    idio_free (buf);
+
 	    /*
 	     * Test Case: ??
-	     *
-	     * The Open Group:
-	     *
-	     *   If some process has the pipe open for writing and
-	     *   O_NONBLOCK is set, read() will return -1 and set
-	     *   errno to [EAGAIN].
 	     */
-	    return idio_S_false;
-	}
-	args = idio_pair (fd, args);
-	idio_error_system_errno ("read", args, IDIO_C_FUNC_LOCATION ());
+	    if (EAGAIN == errno) {
+		/*
+		 * Test Case: ??
+		 *
+		 * The Open Group:
+		 *
+		 *   If some process has the pipe open for writing and
+		 *   O_NONBLOCK is set, read() will return -1 and set
+		 *   errno to [EAGAIN].
+		 */
+		return idio_S_false;
+	    } else if (EINTR == errno) {
+		continue;
+	    }
 
-	return idio_S_notreached;
-    } else if (n) {
-	r = idio_octet_string_C_len (buf, n);
-    } else {
-	r = idio_S_eof;
+	    args = idio_pair (fd, args);
+	    idio_error_system_errno ("read", args, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else if (n) {
+	    r = idio_octet_string_C_len (buf, n);
+	    break;
+	} else {
+	    r = idio_S_eof;
+	    break;
+	}
     }
 
     idio_free (buf);

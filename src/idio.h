@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -429,7 +429,7 @@ extern IDIO idio_default_eenv;
 
 void idio_module_table_register (void (*ap_func) (void), void (*f_func) (void), void *handle);
 void idio_module_table_deregister (void (*ap_func) (void), void (*f_func) (void));
-
+void idio_add_signal_handler (int sig, void (*handler) (int));
 
 void idio_final ();
 

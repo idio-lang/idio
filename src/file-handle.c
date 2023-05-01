@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2029,22 +2029,30 @@ void idio_file_handle_read_more (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
-    ssize_t nread = read (IDIO_FILE_HANDLE_FD (fh), IDIO_FILE_HANDLE_BUF (fh), IDIO_FILE_HANDLE_BUFSIZ (fh));
-    if (-1 == nread) {
-	/*
-	 * Test Case: ??
-	 *
-	 * How to get a (previously good) file descriptor to fail for
-	 * read(2)?
-	 */
-	idio_error_system_errno ("read", fh, IDIO_C_FUNC_LOCATION ());
+    for (;;) {
+	ssize_t nread = read (IDIO_FILE_HANDLE_FD (fh), IDIO_FILE_HANDLE_BUF (fh), IDIO_FILE_HANDLE_BUFSIZ (fh));
+	if (-1 == nread) {
+	    if (EINTR == errno) {
+		continue;
+	    }
 
-	/* notreached */
-    } else if (0 == nread) {
-	IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_EOF;
-    } else {
-	IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
-	IDIO_FILE_HANDLE_END (fh) = IDIO_FILE_HANDLE_BUF (fh) + nread;
+	    /*
+	     * Test Case: ??
+	     *
+	     * How to get a (previously good) file descriptor to fail for
+	     * read(2)?
+	     */
+	    idio_error_system_errno ("read", fh, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	} else if (0 == nread) {
+	    IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_EOF;
+	    break;
+	} else {
+	    IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
+	    IDIO_FILE_HANDLE_END (fh) = IDIO_FILE_HANDLE_BUF (fh) + nread;
+	    break;
+	}
     }
 }
 
