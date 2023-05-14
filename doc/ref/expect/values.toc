@@ -8,6 +8,8 @@
 (document expect exp-slow)
 (document expect exp-human)
 
+(nodocument expect %exp-raw-tcattrs)
+
 (nodocument expect exp-case-failed-to-match)
 
 (nodocument expect version)
