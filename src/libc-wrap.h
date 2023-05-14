@@ -35,6 +35,7 @@
 
 extern IDIO idio_libc_module;
 extern IDIO idio_libc_struct_stat;
+extern struct winsize *idio_winsizep;
 
 extern IDIO idio_S_F_GETFL;
 extern IDIO idio_S_F_SETFL;
