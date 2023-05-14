@@ -538,17 +538,28 @@ set the terminal's window size		\n\
 
 	int ioctl_r = ioctl (C_mfd, TIOCSWINSZ, &ws);
 	if (-1 == ioctl_r) {
+#if defined (__sun) && defined (__SVR4)
+	    /*
+	     * SunOS seems to get riled with short-lived processes,
+	     * notably the several "echo abc" in the test suite,
+	     * resulting in an EINVAL, here.
+	     */
+	    if (EINVAL != errno) {
+		/*
+		 * Test Case: ??
+		 */
+		idio_error_system_errno ("ioctl (TIOCSWINSZ)", args, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+#else
 	    /*
 	     * Test Case: ??
-	     *
-	     * In practice, noting the variety of errno cases above,
-	     * if this is "early doors" (see idio_init_libc_wrap()),
-	     * the VM will panic because no trap handler has been
-	     * installed.
 	     */
 	    idio_error_system_errno ("ioctl (TIOCSWINSZ)", args, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
+#endif
 	}
     }
 
