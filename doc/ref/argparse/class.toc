@@ -1,0 +1,3 @@
+(rst "class-intro" 0)
+
+(document argparse ArgumentParser)

@@ -1,0 +1,16 @@
+(rst "functions-intro" 0)
+
+(document argparse add-option)
+(document argparse parse-args)
+(document argparse usage)
+
+(nodocument argparse argparse:accept-unrecognized-options)
+(nodocument argparse argparse:ignore-unrecognized-options)
+(nodocument argparse argparse:help-options)
+(nodocument argparse argparse:indent)
+(nodocument argparse argparse:make-option)
+(nodocument argparse argparse:parse)
+(nodocument argparse argparse:separator)
+(nodocument argparse argparse:usage)
+(nodocument argparse argparse:width)
+(nodocument argparse make-argparse:option)

@@ -40,10 +40,16 @@ export (
          argparse:indent
 
          argparse:make-option
+
+	 ArgumentParser
+	 add-option
+	 parse-args
+	 usage
 )
 
 import SRFI-37				; args-fold
 import SRFI-1
+import object
 
 define-struct argparse:option option name docstr
 
@@ -359,6 +365,255 @@ define-template (argparse:make-option names arg-data docstr & body) {
      $arg-name
      $docstr)
   }
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; ArgumentParser class
+
+define-class ArgumentParser #n (opts :initform (function args #n)) (synopsis) options operands
+
+;; add-option is much like argparse:make-option, above, except:
+;; * it's not a template so can't embed a $@body argument
+;; * it defines default --help/-h/-? options
+;; * it bails if required arguments are not supplied.
+define-method (add-option (ap ArgumentParser) names arg-data docstr) "
+add an option to `ap`
+
+:param ap: ArgumentParser instance
+:type ap: :ref:`ArgumentParser <argparse/ArgumentParser>`
+:param names: option name(s)
+:type names: list of symbols
+:param arg-data: argument data
+:type arg-data: see below
+:param docstr: documentation string
+:type docstr: string
+:return: ``#<unspec>``
+
+`arg-data` can be:
+
+* either one of:
+
+  * ``:none`` meaning the option takes no argument
+  * ``:optional`` meaning the option may take an argument, defaulting to ``#t``
+  * ``:required`` meaning the option must take an argument
+
+  where the nominal argument name is ``\'ARG\"`` for use in the usage string
+
+* or a list of ``:optional`` or ``:required`` and the nominal argument
+  name as a string
+
+:Example:
+
+.. code-block:: idio
+
+   ap := make-instance ArgumentParser :synopsis (sprintf \"%s [options] [FRUIT ...]\" ARGV0)
+
+   add-option ap '(a apple) :none \"add an apple\"
+   add-option ap '(o output) (:required \"FILE\") \"direct output to FILE\"
+
+
+" {
+  ; first time setup
+  if (not (hash? ap.options)) {
+    ap.options = #{}
+
+    ;; default --help/-h/-? options
+    ap.opts = append ap.opts (list
+			      (make-argparse:option
+			       (SRFI-37/option '("help" #\h #\?)
+					       #f ; :required
+					       #f ; :optional
+					       (function (opt name arg options operands) {
+						 usage ap
+						 exit 0
+					       }))
+			       ;;(values (cons (cons name arg) options) operands)))
+			       :none
+			       "display this message and exit"))
+  }
+
+  ; set all options to #f
+  map (function (name) {
+    ap.options.name = #f
+  }) names
+
+  srfi37-names := (map (function (name) {
+    str := symbol->string name
+    if ((string-length str) eq 1) {
+      string-ref str 0
+    } str
+  }) names)
+
+  arg-name := (if (pair? arg-data) (pht arg-data) "ARG")
+  arg-type := (if (pair? arg-data) (ph arg-data) arg-data)
+
+  opt := (make-argparse:option
+	  (SRFI-37/option srfi37-names
+			  (eq? arg-type :required)
+			  (eq? arg-type :optional)
+			  (function (opt name arg options operands) {
+			    if (and (not arg)
+				    (eq? arg-type :required)) {
+			      eprintf "%s: option %s requires an argument\n" ARGV0 name
+			      with-output-to (current-error-handle) (function #n (usage ap))
+			      exit 1
+			    } {
+			      arg := (if (or (eq? arg-type :required)
+					     (eq? arg-type :optional))
+			       arg
+			       #t) ;; convert #f to #t when #:none
+
+			      (values
+			       (append (map (function (n) (pair n arg)) names)
+				       options)
+			       operands)
+			    }
+			  }))
+	  ;;(values (cons (cons name arg) options) operands)))
+	  arg-name
+	  docstr)
+
+  ap.opts = append ap.opts (list opt)
+}
+
+;; Fail unrecognized options: print usage and exit non-zero
+define (argparse:fail-unrecognized-options option name x options operands) {
+  eprintf "%s: unrecognized option: %s\n" ARGV0 name
+  with-output-to (current-error-handle) (function #n (usage ap))
+  exit 1
+}
+
+define-method (parse-args (ap ArgumentParser) argv) "
+parse the argument in `argv` using the options associated with `ap`
+
+:param ap: ArgumentParser instance
+:type ap: :ref:`ArgumentParser <argparse/ArgumentParser>`
+:param argv: argument strings
+:type argv: array of strings (
+:return: ``#<unspec>``
+
+Subsequently, `ap.options` will be a hash table with a key for each
+name defined in the options associated with `ap` and `ap.operands`
+will be a list of the remaining arguments.
+
+" {
+  ;; ensure we've set all ap.options keys to #f
+  hash-walk ap.'options (function (k v) {
+    hash-set! ap.'options k #f
+  })
+  define-values (options operands) {
+    ;;
+    argparse:parse argv ap.opts :unrecognized-proc argparse:fail-unrecognized-options
+  }
+  map (function (option) {
+    key := ph option
+    if (not (null? key)) {
+      hash-set! ap.'options key (pt option)
+    } {
+      printf "key is #n: %s\n" option
+    }
+  }) options
+  ap.'operands = operands
+}
+
+define-method (usage (ap ArgumentParser)) "
+print the usage for the options associated with `ap`
+
+:param ap: ArgumentParser instance
+:type ap: :ref:`ArgumentParser <argparse/ArgumentParser>`
+:return: ``#<unspec>``
+
+:Example:
+
+For the options added above in a script called ``x.idio``:
+
+.. code-block:: idio
+
+   usage ap
+
+#. when passed the argument ``-h``
+
+   .. code-block:: text
+
+      usage: x [options] [FRUIT ...]
+
+      Options:
+           --help, -h, -?       display this message and exit
+       -a, --apple              option a
+       -o, --output=FILE        direct output to FILE
+
+#. when passed the arguments ``-a -o foo``
+
+   .. code-block:: text
+
+      usage: x [options] [FRUIT ...]
+
+      Options:
+           --help, -h, -?       display this message and exit
+       -a, --apple              option a [#t]
+       -o, --output=FILE        direct output to FILE [foo]
+
+" {
+  if ap.synopsis {
+    printf "usage: %s\n" ap.synopsis
+  } {
+    printf "usage: %s [options] [args]\n" ARGV0
+  }
+
+  ;; these two functions are dupes of functions above but have ap in
+  ;; scope
+
+  ;; O is an argparse:option
+  define (usage-line o) {
+    option-string := commify o
+    kvpad := 2 ; minimum padding between option and docstring, included in argparse:width
+    (append-string
+     (spaces argparse:indent)
+     (if ((kvpad + (string-length option-string)) gt argparse:width) {
+       (append-string
+	option-string
+	"\n"
+	(spaces (argparse:width + argparse:indent))
+	(argparse:option-docstr o)
+	"\n")
+     } {
+       name := ph (option-names (argparse:option-option o))
+       sym := string->symbol (if (unicode? name) (display-string name) name)
+       curr := hash-ref ap.options sym #f
+
+       ;; in lieu of a string-pad-right
+       fmt := sprintf "%%-%d.s" argparse:width
+       (append-string
+	(sprintf fmt option-string)
+	(argparse:option-docstr o)
+	(or (and curr (sprintf " [%s]" curr))
+	    "")
+	"\n")
+     }))
+  }
+
+  ;;; procedure: (argparse:usage OPTION-LIST)
+  ;; Generate a formatted list of options from OPTION-LIST, and return a
+  ;; string suitable for embedding into help text.  The single string
+  ;; consists of multiple lines, with a newline at the end of each line.
+  ;; Thus, a typical use would be (print (argparse:usage opts)).
+  define (argparse:usage opts) {
+    apply append-string (map usage-line opts)
+  }
+
+  printf "\nOptions:\n%s" (argparse:usage ap.opts)
+}
+
+define (ArgumentParser-value-index ap index) {
+  eprintf "AP-v-i\n"
+  (case
+   index
+   ((opts) ap.opts)
+   ((operands) ap.operands)
+   (else {
+     ap.options.index
+   }))
 }
 
 provide argparse

@@ -2,7 +2,7 @@
 
 #*
 
-Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2021-2023 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -310,6 +310,48 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 
 	      hash-set! mod-ht sym #t
 	    })
+	    ((object/class? val) {
+	      sigstr := "*args*"
+
+	      ;; try ".../{fixnum}-{mod}-{sym}-sig.rst"
+	      sfn := append-string dirname "/" fbn "-" (symbol->string mod) "-" (symbol->string sym-fn) "-sig.rst"
+	      if (r? sfn) {
+		sigstr = strip-string (cat-file sfn) "\n"
+	      }
+
+	      hprintf out-fh ".. _`%s`:\n\n" mod-str
+
+	      hprintf out-fh ".. idio:class:: %s %s\n\n" mod-str sigstr
+	      hprintf out-fh "\n"
+
+	      hprintf out-fh "   :supers: %s\n" (class-direct-supers val)
+
+	      loop :+ function (s*) {
+		if (null? s*) #n {
+		  si := ph s*
+		  hprintf out-fh "   :slot: `%s`" (ph si)
+		  ia := memq :initarg si
+		  if ia {
+		    hprintf out-fh " (:samp:`%s {val}`)" (pht ia)
+		  }
+		  if := memq :initform si
+		  if if {
+		    hprintf out-fh " (uses an *initform*)"
+		  }
+		  hprintf out-fh "\n"
+		  loop (pt s*)
+		}
+	      }
+	      loop (class-direct-slots val)
+
+	      leader := "   "
+
+	      insert-file out-fh 1 dfn
+
+	      hprintf out-fh "\n"
+
+	      hash-set! mod-ht sym #t
+	    })
 	    ((object/generic? val) {
 	      sigstr := "*args*"
 
@@ -321,7 +363,7 @@ define (generate-toc-file toc-fh rel-dir fn dirname fbn outdir) {
 
 	      hprintf out-fh ".. _`%s`:\n\n" mod-str
 
-	      hprintf out-fh ".. idio:function:: %s %s\n\n" mod-str sigstr
+	      hprintf out-fh ".. idio:generic:: %s %s\n\n" mod-str sigstr
 	      hprintf out-fh "\n"
 
 	      leader := "   "
@@ -790,6 +832,18 @@ for-each (function (mod) {
        })
        ((computed? sym) {
 	 type = "computed"
+       })
+       ((object/generic? val) {
+	 type = "generic"
+       })
+       ((object/method? val) {
+	 type = "method"
+       })
+       ((object/class? val) {
+	 type = "class"
+       })
+       ((object/instance? val) {
+	 type = "instance"
        })
        (else {
 	 type = type->string val

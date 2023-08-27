@@ -131,7 +131,8 @@ args-fold := function (args
 			 seeds))) {
 	    scan-args args seeds
 	 }))
-       ((and (option-required-arg? option)
+       ((and (or (option-required-arg? option)
+		 (option-optional-arg? option))
 	     (pair? args))
 	 (let-values
 	  ((seeds (apply (option-processor option)
@@ -140,6 +141,15 @@ args-fold := function (args
 			 (ph args)
 			 seeds))) {
 	    scan-args (pt args) seeds
+	 }))
+       ((option-optional-arg? option)
+	 (let-values
+	  ((seeds (apply (option-processor option)
+			 option
+			 name
+			 #t
+			 seeds))) {
+	    scan-args args seeds
 	 }))
        (else
 	(let-values
@@ -208,26 +218,43 @@ args-fold := function (args
 			       #f
 			       unrecognized-option-proc))
 
-	 if (and (option-required-arg? option)
-		 (pair? args)) {
-	   (let-values
-	    ((seeds (apply (option-processor option)
-			   option
-			   name
-			   (ph args)
-			   seeds))) {
-	      scan-args (pt args) seeds
-	   })
-	 } {
-	   (let-values
-	    ((seeds (apply (option-processor option)
-			   option
-			   name
-			   #f
-			   seeds))) {
-	      scan-args args seeds
-	   })
-	 }
+	 (cond
+	  ((and (pair? args)
+		(or (option-required-arg? option)
+		    ;; Squirrelly corner case: if an arg is optional
+		    ;; then the following arg shouldn't look like an
+		    ;; option.  (There are limits!)
+		    (and (option-optional-arg? option)
+			 (not (unicode=? #\- (string-ref (ph args) 0)))))) {
+	    (let-values
+	     ((seeds (apply (option-processor option)
+			    option
+			    name
+			    (ph args)
+			    seeds))) {
+	       scan-args (pt args) seeds
+	    })
+	  })
+	  ((option-optional-arg? option) {
+	    (let-values
+	     ((seeds (apply (option-processor option)
+			    option
+			    name
+			    #t
+			    seeds))) {
+	       scan-args args seeds
+	    })
+	  })
+	  (else {
+	    (let-values
+	     ((seeds (apply (option-processor option)
+			    option
+			    name
+			    #f
+			    seeds))) {
+	       scan-args args seeds
+	    })
+	  }))
        })
        ("^-(.)$" {
 	 ;; Found single short option -- we need the code point
@@ -258,7 +285,7 @@ args-fold := function (args
 	    ((seeds (apply (option-processor option)
 			   option
 			   name
-			   #f
+			   #t
 			   seeds))) {
 	      scan-args args seeds
 	   })

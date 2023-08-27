@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Ian Fitchet <idf@idio-lang.org>
+# Copyright (c) 2021, 2023 Ian Fitchet <idf@idio-lang.org>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License.  You
@@ -275,6 +275,14 @@ class IdioStructDirective(IdioDirective):
     NAME = 'struct'
     LABEL = 'Idio struct'
 
+class IdioClassDirective(IdioDirective):
+    NAME = 'class'
+    LABEL = 'Idio class'
+
+class IdioGenericDirective(IdioDirective):
+    NAME = 'generic'
+    LABEL = 'Idio generic function'
+
 class IdioXRefRole(XRefRole):
     """Handle references to Idio objects."""
 
@@ -371,8 +379,10 @@ class IdioDomain(Domain):
         'template':  ObjType ('template', 'template', 'obj'),
         'value':     ObjType ('value', 'value', 'obj'),
         'condition': ObjType ('condition', 'condition', 'obj'),
-        'struct': ObjType ('struct', 'struct', 'obj'),
-                    }
+        'struct':    ObjType ('struct', 'struct', 'obj'),
+        'class':     ObjType ('class', 'class', 'obj'),
+        'generic':   ObjType ('generic', 'generic', 'obj'),
+    }
 
     # object_types and directives should match
     directives = {
@@ -384,6 +394,8 @@ class IdioDomain(Domain):
         'value':         IdioValueDirective,
         'condition':     IdioConditionDirective,        
         'struct':        IdioStructDirective,        
+        'class':         IdioClassDirective,
+        'generic':       IdioGenericDirective,
     }
 
     # a text role per item in object_types
@@ -395,6 +407,8 @@ class IdioDomain(Domain):
         'value':     IdioXRefRole,
         'condition': IdioXRefRole,        
         'struct':    IdioXRefRole,        
+        'class':     IdioXRefRole,
+        'generic':   IdioXRefRole,
     }
 
     # initial value of self.data

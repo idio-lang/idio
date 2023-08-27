@@ -20,6 +20,7 @@
 (tree libcurl)
 (tree zlib)
 (tree sqlite3)
+(tree argparse)
 
 (tree templates)
 (tree operators)
