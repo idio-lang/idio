@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# Copyright (c) 2021-2022 Ian Fitchet <idf@idio-lang.org>
+# Copyright (c) 2021-2023 Ian Fitchet <idf@idio-lang.org>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License.  You
@@ -98,27 +98,79 @@ fstat_file=/tmp/${0##*/}.$$.fstat
 
 fstat -p ${opt_p} > ${fstat_file}
 
-# fstat generic output:
+# fstat generic output: it's a wild ride
 
 # OpenBSD
 
 # USER     CMD          PID   FD MOUNT        INUM  MODE         R/W    SZ|DV
-# idf      bash       27903 text /usr/local   129838  -rwxr-xr-x     r  1409326
+# idf      sshd       57119 text /usr       129712  -r-xr-xr-x     r   961184
+# idf      sshd       57119   wd /               2  drwxr-xr-x     r      512
+# idf      sshd       57119    0 /           62298  crw-rw-rw-    rw     null
+# idf      sshd       57119    1 /           62298  crw-rw-rw-    rw     null
+# idf      sshd       57119    2 /           62298  crw-rw-rw-    rw     null
+# idf      sshd       57119    3* unix stream 0x0
+# idf      sshd       57119    4* internet stream tcp 0x0 here:22 <-- there:54441
+# idf      sshd       57119    5 pipe 0x0 state:
+# idf      sshd       57119    6* unix stream 0x0
+# idf      sshd       57119    7 pipe 0x0 state:
+# idf      sshd       57119    8* internet stream tcp 0x0 127.0.0.1:6010
+# idf      sshd       57119    9* internet6 stream tcp 0x0 [::1]:6010
+# idf      sshd       57119   10* unix stream 0x0 /tmp/ssh-EgDr0AwZEq/agent.57119
+# idf      sshd       57119   11 /           61631  crw-rw-rw-   rwe    ptyp0
+# idf      sshd       57119   13 /           61631  crw-rw-rw-   rwe    ptyp0
+# idf      sshd       57119   14 /           61631  crw-rw-rw-    rw    ptyp0
 
-# FreeBSD / NetBSD
+# idf      fstat      12759    0 pipe 0x0 state: E
+
+# FreeBSD
 
 # USER     CMD          PID   FD MOUNT       INUM MODE         SZ|DV R/W
 # idf      bash        8748   wd  /         1422903 drwxrwxr-x     512 r
 
+# idf      idio.0.3   68882   90* pipe ffffa000665c35d0 <-> ffffa000665c3730      0 rw
+# idf      idio.0.3   68882  107* local stream ffffa00028d57a00 <-> ffffa00028d57900
+
 # Wait!  The last two columns are toggled?
 
+# idf      sshd       36742    3* local stream ffffa00031f80100 <-> ffffa0001f4d3e00
+# idf      sshd       36742    4* internet stream tcp ffff0000e33260e0
+# idf      sshd       36742    5* internet6 stream tcp ffff0000e32ddca8
+# idf      sshd       36742    6* local stream ffffa0001f4d3a00
+# idf      sshd       36742    7* internet stream tcp ffff0000e32de0e0
+# idf      sshd       36742    8* local stream ffffa0001f4d3b00
+# idf      sshd       36742    9* pseudo-terminal master      pts/1 rw
+# idf      sshd       36742   11* pseudo-terminal master      pts/1 rw
+# idf      sshd       36742   12* pseudo-terminal master      pts/1 rw
+
+# NetBSD
+
+# USER     CMD          PID   FD MOUNT       INUM MODE         SZ|DV R/W
+# idf      sshd         663   wd  /               2 drwxr-xr-x     512 r
+# idf      sshd         663    0  /           22924 crw-rw-rw-    null rw
+# idf      sshd         663    1  /           22924 crw-rw-rw-    null rw
+# idf      sshd         663    2  /           22924 crw-rw-rw-    null rw
+# idf      sshd         663    3* unix stream  0xffff93c1ce701d58 <-> 0xffff93c1ce701738
+# idf      sshd         663    4* internet stream tcp here:54541 <-> there:ssh
+# idf      sshd         663    5* pipe 0xffff93c1d32449b8 <- 0xffff93c1d3285ae8 rn
+# idf      sshd         663    6* unix stream ffff93c1ce701dc8
+# idf      sshd         663    7* pipe 0xffff93c1d3285ae8 -> 0xffff93c1d32449b8 wn
+# idf      sshd         663    8* unix dgram  <-> /var/run/log [using]
+# idf      sshd         663    9* internet6 stream tcp localhost:6010
+# idf      sshd         663   10* internet stream tcp localhost:6010
+# idf      sshd         663   11* unix stream  <-> /tmp/ssh-43E6JsxoKv/agent.663 [creat]
+# idf      sshd         663   12  /dev/pts        4 crw-rw-rw-   ptc,0  rw
+# idf      sshd         663   14  /dev/pts        4 crw-rw-rw-   ptc,0  rw
+# idf      sshd         663   15  /dev/pts        4 crw-rw-rw-   ptc,0  rw
+
 if [[ ! ${opt_F} ]] ; then
-    printf "%-9s %-9s %5s %4s %-10s %6s  %-12s %3s  %s\n" USER CMD PID FD MOUNT INUM MODE "R/W" "SZ|DV"
+    printf "%-9s %-9s %5s %4s  %-50s %7s  %-12s %3s  %s\n" USER CMD PID FD MOUNT INUM MODE "R/W" "SZ|DV"
 fi
 
 (
     read headers
 
+    # make the assumption that the colums are R/W then SZ_DV and
+    # remember to toggle later
     toggle=
     case "${headers}" in
     *W)
@@ -128,7 +180,95 @@ fi
 
     printed_pid=
 
-    while read user cmd pid fd mount inum mode rw sz ; do
+    while read -a fields ; do
+	nfields=${#fields[*]}
+	fi=0
+	user=${fields[fi++]}
+	cmd=${fields[fi++]}
+	pid=${fields[fi++]}
+	fd=${fields[fi++]}
+	mount=${fields[fi++]}
+
+	inum=
+	mode=
+	rw=
+	sz_dv=
+
+	# much now depends on "mount" as it can be a pipe,
+	# local/internet stream ... which affect some later values.
+	case "${mount}" in
+	pipe)
+	    # cat /dev/null | fstat -p $BASHPID | cat -
+	    case "${OS}" in
+	    FreeBSD)
+		# idf      fstat       1547    0* pipe fffff80003e26000 <-> fffff80003e26160      0 rw
+		fi=$(( fi - 1 ))
+		mount=${fields[*]:fi:4}
+		rw=${fields[fi+4]}
+		sz_dv=${fields[fi+5]}
+		;;
+	    NetBSD)
+		# idf      fstat       2580    1* pipe 0xffff93c1d3285ae8 -> 0xffff93c1d32449b8 w
+		fi=$(( fi - 1 ))
+		mount=${fields[*]:fi:4}
+		# deliberately wrong - will be toggled below
+		sz_dv=${fields[fi+4]}
+		;;
+	    OpenBSD)
+		# idf      fstat      28224    0 pipe 0x0 state: E
+		fi=$(( fi - 1 ))
+		mount=${fields[*]:fi}
+		;;
+	    esac
+	    ;;
+	local|unix)
+	    # idf      idio.0.3   68882  107* local stream ffffa00028d57a00 <-> ffffa00028d57900
+	    fi=$(( fi - 1 ))
+	    mount=${fields[*]:fi:5}
+	    ;;
+	internet|internet6)
+	    # idf      sshd       30961    4* internet stream tcp 0x0 here:22 <-- there:54661
+	    # idf      sshd         663    4* internet stream tcp here:54541 <-> there:ssh
+	    # idf      sshd        1307    4* internet stream tcp fffffe0093bd5ca8
+	    fi=$(( fi - 1 ))
+	    mount=${fields[*]:fi}
+	    ;;
+	pseudo-terminal)
+	    # idf      sshd        1307    9* pseudo-terminal master      pts/0 rw
+	    fi=$(( fi - 1 ))
+	    mount=${fields[*]:fi:3}
+	    # deliberately wrong - will be toggled below
+	    sz_dv=${fields[fi+3]}
+	    ;;
+	*)
+	    # idf      idio.0.3   68882    6 /dev        105 crw--w----   pts/0 rw
+	    inum=${fields[fi++]}
+	    mode=${fields[fi++]}
+	    rw=${fields[fi++]}
+	    sz_dv=${fields[fi++]}
+	esac
+
+	# XXX do this before the NetBSD pipe bit as it uses ${rw}
+	if [[ ${toggle} ]] ; then
+	    t=${rw}
+	    rw=${sz_dv}
+	    sz_dv=${t}
+	fi
+
+	if [[ ! ${rw} ]] ; then
+	    case "${mount}" in
+	    *" <- "*|*" <-- "*)
+		rw=r
+		;;
+	    *" -> "*|*" --> "*)
+		rw=w
+		;;
+	    *" <-> "*)
+		rw=rw
+		;;
+	    esac
+	fi
+
 	if [[ ${opt_F} ]] ; then
 	    if [[ ! ${printed_pid} ]] ; then
 		echo p${pid}
@@ -136,25 +276,9 @@ fi
 	    fi
 	fi
 
-	# XXX do this before the NetBSD pipe bit as it uses ${rw}
-	if [[ ${toggle} ]] ; then
-	    t=${rw}
-	    rw=${sz}
-	    sz=${t}
-	fi
-
-	# NetBSD puts a * after the FD for a pipe and for an output
-	# pipe the -> clashes with matching -* for ${mode} further on
-
-	# idf      bash       26426    1* pipe 0xc40573cc -> 0xc85bc604 w
-
 	case "${fd}" in
 	[0-9]*\*)
 	    fd=${fd%\*}
-
-	    # NetBSD isn't giving us a mode (other than <- or ->) so
-	    # we'll re-use rw
-	    mode=${rw}
 	    ;;
 	esac
 
@@ -180,8 +304,8 @@ fi
 	# In the meanwhile...
 	name=UNKNOWN
 
-	# sz is SZ|DV for device
-	case "${sz}" in
+	# sz_dv is SZ|DV for device
+	case "${sz_dv}" in
 	[0-9]*)
 	    # It will be followed by an asterisk ('*') if the inode is
 	    # unlinked from disk.
@@ -205,7 +329,7 @@ fi
 	    name=/dev/null
 	    ;;
 	*)
-	    name=${sz}
+	    name=${sz_dv}
 	    ;;
 	esac
 
@@ -219,9 +343,12 @@ fi
 	c*)
 	    ftype=CHR
 	    ;;
+	p*)
+	    ftype=PIPE
+	    ;;
 	*)
 	    case "${mount}" in
-	    pipe)
+	    pipe*)
 		ftype=PIPE
 		name=pipe
 		;;
@@ -261,7 +388,7 @@ fi
 	fi
 
 	if [[ ${p} ]] ; then
-	    printf "%-9s %-9s %5s %4s %-10s %6s  %-12s %3s  %s\n" ${user} ${cmd} ${pid} ${fd} ${mount} ${inum} ${mode} ${rw} ${sz}
+	    printf "%-9s %-9s %5s %4s  %-50s %7s  %-12s %-3s  %s\n" ${user} ${cmd} ${pid} ${fd} "${mount}" "${inum:--}" "${mode:--}" "${rw:--}" "${sz_dv:--}"
 	fi
     done
 ) < ${fstat_file}
