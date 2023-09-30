@@ -23,9 +23,12 @@ str := sprintf "hello from %d" PID
    libc/close (libc/pipe-reader lock)
 
    (wait)
- }))
 
-job-control-write-line-to opn str
+   job-control-write-line-to opn str
+ })
+ (else {
+   job-control-write-line-to opn (make-string (PIPE_SIZE + 1))
+ }))
 
 if (e? testfile) {
   ifh := open-input-file testfile
