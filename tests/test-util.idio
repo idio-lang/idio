@@ -221,7 +221,33 @@ test (C/->number cfloat1a) 123.456008911132812
 cdouble1a  := C/number-> 123.456 'double
 cdouble1b  := C/number-> 123.456 'double
 cdouble2   := C/number-> 234.567 'double
-test (C/->number cdouble1a) 123.456000000000031
+(cond-expand
+ ((and (or "uname/machine/i686"
+	   "uname/machine/i86pc")
+       sizeof/pointer/32) {
+   ;; Weird.  Internally we use sprintf(buf, "%le", ...), here, to
+   ;; generate the Idio version of the C double.
+   ;;
+   ;; However, if you compile on x86 using -O (anything, where a make
+   ;; lean is -O3) then on some 32-bit machines the result is
+   ;; 123.456000000000003 rather than 123.456000000000031.
+   ;;
+   ;; This affects CentOS and SunOS but not Debian or Mac OS.  You can
+   ;; verify with a trivial C program.
+   ;;
+   ;; It'd be better if this test is generic rather than be testing
+   ;; for CentOS or SunOS, hence the uname/machine clauses above.
+   r := C/->number cdouble1a
+   if (r ne 123.456000000000031) {
+     eprintf "NOTICE: optimised 32-bit floating point weirdness\n"
+     test r 123.456000000000003
+   } {
+     test r 123.456000000000031
+   }
+ })
+ (else {
+   test (C/->number cdouble1a) 123.456000000000031
+ }))
 
 clongdouble1a  := C/number-> 123.456 'longdouble
 clongdouble1b  := C/number-> 123.456 'longdouble
