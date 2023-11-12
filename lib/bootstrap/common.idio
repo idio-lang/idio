@@ -92,22 +92,32 @@ define-syntax with-values-from (syntax-rules ()
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-define (display* & x*) "
-display ``#\\{space}`` -separated `x*` to the current output handle
+define (hdisplay* h & x*) "
+display ``#\\{space}`` -separated `x*` to the handle `h`
 
+:param h: output handle
 :param x*: values to print
 :return: ``#<unspec>``
 " {
   p :+ function (x* first) {
 	 if (not (null? x*)) {
 	   if (not first) (write-char #\{space})
-	   display (ph x*)
+	   display (ph x*) h
 	   p (pt x*) #f
 	 }
   }
 
   p x* #t
-  (newline)
+  newline h
+}
+
+define (display* & x*) "
+display ``#\\{space}`` -separated `x*` to the current output handle
+
+:param x*: values to print
+:return: ``#<unspec>``
+" {
+  apply hdisplay* (current-output-handle) x*
 }
 
 define (ewrite x) "
@@ -134,16 +144,7 @@ display ``#\\{space}`` -separated `x*` to the current error handle
 :param x*: values to print
 :return: ``#<unspec>``
 " {
-  p :+ function (x* first) {
-	 if (not (null? x*)) {
-	   if (not first) (write-char #\{space} (current-error-handle))
-	   edisplay (ph x*)
-	   p (pt x*) #f
-	 }
-  }
-
-  p x* #t
-  newline (current-error-handle)
+  apply hdisplay* (current-error-handle) x*
 }
 
 define (concatenate-string ls) "
