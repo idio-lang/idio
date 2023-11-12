@@ -869,16 +869,13 @@ void idio_error_system (char const *func, char const *msg, IDIO args, int err, I
     }
     idio_display_C (strerror (err), msh);
 
-    if (idio_S_nil != args) {
-	idio_display (args, dsh);
-    }
-
     idio_error_raise_cont (idio_condition_system_error_type,
-			   IDIO_LIST5 (idio_get_output_string (msh),
+			   IDIO_LIST6 (idio_get_output_string (msh),
 				       idio_get_output_string (lsh),
 				       idio_get_output_string (dsh),
 				       idio_C_int (err),
-				       idio_string_C (func)));
+				       idio_string_C (func),
+				       args));
 
     /* notreached */
 }

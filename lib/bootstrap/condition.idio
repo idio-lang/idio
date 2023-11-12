@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -187,7 +187,8 @@ define-template (condition type & field-bindings) {
 				      ^idio-error
 				      system-error?
 				      (errno system-error-errno)
-				      (function system-error-function))
+				      (function system-error-function)
+				      (args system-error-args))
 
 (define-condition-type-accessors-only ^static-error
 				      ^idio-error
@@ -591,7 +592,21 @@ multiple lines.
      ((system-error? c) {
        cr-printf "%s:" (idio-error-location c)
        cr-printf "%s:" (struct-type-name (struct-instance-type c))
-       cr-printf "%s (%s): %s (errno=%s %s)" (system-error-function c) (idio-error-detail c) (libc/errno-name (system-error-errno c)) (system-error-errno c) (idio-error-message c)
+       ;; cnstruct a function call
+       func := system-error-function c
+       args := system-error-args c
+       fc := #f
+       (cond
+	((null? args) {
+	  fc = sprintf "(%s)" func
+	})
+	((list? args) {
+	  fc = sprintf "(%s %@)" func args
+	})
+	(else {
+	  fc = sprintf "(%s %s)" func args
+	}))
+       cr-printf "%s => %s (errno=%s %s): %s" fc (libc/errno-name (system-error-errno c)) (system-error-errno c) (idio-error-message c) (idio-error-detail c)
      })
 
      ;; ^static-error

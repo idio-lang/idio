@@ -1276,7 +1276,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_string_error_type, "^string-error", idio_condition_idio_error_type);
 
     /* Idio */
-    IDIO_DEFINE_CONDITION2 (idio_condition_system_error_type, "^system-error", idio_condition_idio_error_type, "errno", "function");
+    IDIO_DEFINE_CONDITION3 (idio_condition_system_error_type, "^system-error", idio_condition_idio_error_type, "errno", "function", "args");
 
     IDIO_DEFINE_CONDITION0 (idio_condition_static_error_type, "^static-error", idio_condition_idio_error_type);
     IDIO_DEFINE_CONDITION1 (idio_condition_st_variable_error_type, "^st-variable-error", idio_condition_static_error_type, "name");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -48,6 +48,7 @@
 /* ^system-error = ^idio_error plus */
 #define IDIO_SI_SYSTEM_ERROR_TYPE_ERRNO		3
 #define IDIO_SI_SYSTEM_ERROR_TYPE_FUNCTION	4
+#define IDIO_SI_SYSTEM_ERROR_TYPE_ARGS		5
 
 /* ^rt-variable-error = ^idio_error plus */
 #define IDIO_SI_RT_VARIABLE_ERROR_TYPE_NAME	3
