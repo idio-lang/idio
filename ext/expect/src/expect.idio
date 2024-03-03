@@ -1,6 +1,6 @@
 #*
 
-Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2021-2023 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -436,6 +436,10 @@ Spawn a process defined by `argv`
   } {
     spawn-id = sid
   }
+
+  exp-set-winsize spawn-id
+
+  spawn-id
 }
 
 #*

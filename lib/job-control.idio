@@ -1509,6 +1509,7 @@ define-template (pipeline kind cmds) {
   job                   := gensym 'job
   proc-id               := gensym 'proc-id
   cmd-pipe              := gensym 'cmd-pipe
+  cmd-pipes             := gensym 'cmd-pipes
   pgrp-pipe             := gensym 'pgrp-pipe
   proc                  := gensym 'proc
   pid                   := gensym 'pid
@@ -1617,6 +1618,7 @@ define-template (pipeline kind cmds) {
 
       $proc-id   := 1
       $cmd-pipe  := #f
+      $cmd-pipes := #n
       $pgrp-pipe := (libc/pipe)
 
       $@(map (function (cmd) {
@@ -1636,6 +1638,7 @@ define-template (pipeline kind cmds) {
 
 	    if ($proc-id lt $nprocs) {
 	      $cmd-pipe = (libc/pipe)
+	      $cmd-pipes = pair $cmd-pipe $cmd-pipes
 	      $cmd-w-fdn = (libc/pipe-writer $cmd-pipe)
 	    } {
 	      $cmd-w-fdn = $pipeline-w-fdn
@@ -1782,6 +1785,8 @@ define-template (pipeline kind cmds) {
 	    }
 	    $proc-id = $proc-id + 1
 	  }
+
+	  $cmd-pipes = #n
 	}
       })
 	 cmds)

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2023 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -681,84 +681,84 @@ name for when the child or parent process is favoured.
 define (job-control-write-line-to opn msg) {
   trap (^system-error
 	^i/o-no-such-file-error) (function (c) {
-				    ;; exit 5 if the test failed in
-				    ;; the way we expect because
-				    ;; tidy-process-substitution-job
-				    ;; closed the FD or removed the
-				    ;; FIFO
-				    (cond
-				     ((system-error? c) {
-				       e := (system-error-errno c)
-				       (cond
-					((C/== e libc/EBADF) {
-					  libc/exit 5
-					})
-					(else {
-					  condition-report "jcwlt" c
+	  ;; exit 5 if the test failed in
+	  ;; the way we expect because
+	  ;; tidy-process-substitution-job
+	  ;; closed the FD or removed the
+	  ;; FIFO
+	  (cond
+	   ((system-error? c) {
+	     e := (system-error-errno c)
+	     (cond
+	      ((C/== e libc/EBADF) {
+		libc/exit 5
+	      })
+	      (else {
+		condition-report "jcwlt" c
 
-					  libc/exit 7
-					}))
-				     })
-				     ((i/o-no-such-file-error? c) {
-				       libc/exit 5
-				     }))
-				    condition-report "jcwlt" c
+		libc/exit 7
+	      }))
+	   })
+	   ((i/o-no-such-file-error? c) {
+	     libc/exit 5
+	   }))
+	  condition-report "jcwlt" c
 
-				    libc/exit 8
+	  libc/exit 8
 	}) {
-    oph := open-output-file opn
+	  oph := open-output-file opn
 
-    ;; FIFOs can result in oph being #f
-    if oph {
-      hprintf oph msg
-      close-handle oph
-    }
+	  ;; FIFOs can result in oph being #f
+	  if oph {
+	    hprintf oph msg
+	    close-handle oph
+	  }
   }
 }
 
 define (job-control-read-line-from ipn) {
   trap (^system-error
 	^i/o-no-such-file-error) (function (c) {
-				    ;; exit 5 or 6 if the test failed
-				    ;; in the way we expect because
-				    ;; tidy-process-substitution-job
-				    ;; closed the FD or removed the
-				    ;; FIFO
-				    (cond
-				     ((system-error? c) {
-				       ;condition-report "job-control-read-line-from" c
-				       e := (system-error-errno c)
-				       (cond
-					((C/== e libc/EBADF) {
-					  libc/exit 5
-					})
-					((C/== e libc/EAGAIN) {
-					  libc/exit 6
-					})
-					(else {
-					  condition-report "jcrlf" c
+	  ;; exit 5 or 6 if the test failed
+	  ;; in the way we expect because
+	  ;; tidy-process-substitution-job
+	  ;; closed the FD or removed the
+	  ;; FIFO
+	  (cond
+	   ((system-error? c) {
+	     ;condition-report "job-control-read-line-from" c
+	     e := (system-error-errno c)
+	     (cond
+	      ((C/== e libc/EBADF) {
+		libc/exit 5
+	      })
+	      ((C/== e libc/EAGAIN) {
+		libc/exit 6
+	      })
+	      (else {
+		condition-report "jcrlf" c
 
-					  libc/exit 7
-					}))
-				     })
-				     ((i/o-no-such-file-error? c) {
-				       libc/exit 5
-				     }))
-				    condition-report "jcrlf" c
+		libc/exit 7
+	      }))
+	   })
+	   ((i/o-no-such-file-error? c) {
+	     libc/exit 5
+	   }))
+	  condition-report "jcrlf" c
 
-				    libc/exit 8
+	  libc/exit 8
 	}) {
-    iph := open-input-file ipn
+	  iph := open-input-file ipn
 
-    ;; FIFOs can result in iph being #f
-    msg := #f
-    if iph {
-      ;; read-line is not EAGAIN-aware which we require for FIFOs so
-      ;; we pick up EAGAIN in the trap
-      msg = read-line iph
-      close-handle iph
-    }
-    msg
+	  ;; FIFOs can result in iph being #f
+	  msg := #f
+	  if iph {
+	    ;; read-line is not EAGAIN-aware which we require for FIFOs so
+	    ;; we pick up EAGAIN in the trap
+	    msg = read-line iph
+	    close-handle iph
+	  }
+	  msg
   }
 }
 
@@ -794,6 +794,40 @@ job-control-async-load "job-control-errors/pipeline-pipe-into-external-compound-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; named-pipe-into
+
+;; FIFOs are a bit more tricky to get a consistent result from.  There
+;; is a race condition after the two processes opening the FIFO (us
+;; for write and the async subprocess for read) where the async
+;; subprocess will call exit 9 and we try to write.
+;;
+;; If exit 9 occurs first we'll get a SIGPIPE.  If we write first the
+;; data will go into a pipe buffer and we'll continue on and get exit
+;; 4.
+;;
+;; The trick is to write enough to fill the pipe's buffer and block
+;; and therefore be delivered a SIGPIPE when the async subprocess
+;; exits.
+;;
+;; The answer is NOT pathconf(_PC_PIPE_BUF) which is merely the
+;; largest atomic write into the buffer.  In FreeBSD the answer is
+;; 65537 bytes, suspiciously one more than BIG_PIPE_SIZE in
+;; sys/pipe.h.
+;;
+;; You can test this with something like:
+;;
+;; $ dd if=/dev/zero bs=1 | (sleep 1; pkill -INT -U $UID dd)
+;; 65537+0 records in
+;; 65536+0 records out
+;; 65536 bytes transferred in 1.069741 secs (61263 bytes/sec)
+;;
+;; Although, obviously, this is OS-dependent.
+
+PIPE_SIZE := #f
+(cond-expand
+ ("uname/sysname/FreeBSD" {
+   PIPE_SIZE = 65536
+ }))
+
 job-control-async-load "job-control-errors/simple-named-pipe-into-Idio-compound-exit-0.idio" exit-0
 
 (cond-expand

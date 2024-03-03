@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2023 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -105,5 +105,10 @@ expect-error-load "expect-errors/exp-send-human-exp-human-min-gt-out.idio" "exp-
 expect-error-load "expect-errors/exp-send-human-exp-human-max-lt-in.idio" "exp-send-human exp-human='(10 20 3 5 5)': max-ms < in-ms|out-ms"
 expect-error-load "expect-errors/exp-send-human-exp-human-max-lt-out.idio" "exp-send-human exp-human='(10 20 3 5 15)': max-ms < in-ms|out-ms"
 
+expect-error-load "expect-errors/exp-set-winsize-bad-spawn-id-type.idio" "bad parameter type: '#t' a constant is not a struct_instance|list"
+expect-error-load "expect-errors/exp-set-winsize-bad-spawn-id-list-type.idio" "bad parameter type: '#t' a constant is not a struct_instance"
+expect-error-load "expect-errors/exp-set-winsize-bad-lines-type.idio" "bad parameter type: '#t' a constant is not a fixnum|C/int"
+expect-error-load "expect-errors/exp-set-winsize-bad-columns-type.idio" "bad parameter type: '#t' a constant is not a fixnum|C/int"
+
 ;; all done?
-Tests? (expect-error-0 + 23)
+Tests? (expect-error-0 + 27)

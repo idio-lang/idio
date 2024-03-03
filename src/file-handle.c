@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2029,22 +2029,30 @@ void idio_file_handle_read_more (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
-    ssize_t nread = read (IDIO_FILE_HANDLE_FD (fh), IDIO_FILE_HANDLE_BUF (fh), IDIO_FILE_HANDLE_BUFSIZ (fh));
-    if (-1 == nread) {
-	/*
-	 * Test Case: ??
-	 *
-	 * How to get a (previously good) file descriptor to fail for
-	 * read(2)?
-	 */
-	idio_error_system_errno ("read", fh, IDIO_C_FUNC_LOCATION ());
+    for (;;) {
+	ssize_t nread = read (IDIO_FILE_HANDLE_FD (fh), IDIO_FILE_HANDLE_BUF (fh), IDIO_FILE_HANDLE_BUFSIZ (fh));
+	if (-1 == nread) {
+	    if (EINTR == errno) {
+		continue;
+	    }
 
-	/* notreached */
-    } else if (0 == nread) {
-	IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_EOF;
-    } else {
-	IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
-	IDIO_FILE_HANDLE_END (fh) = IDIO_FILE_HANDLE_BUF (fh) + nread;
+	    /*
+	     * Test Case: ??
+	     *
+	     * How to get a (previously good) file descriptor to fail for
+	     * read(2)?
+	     */
+	    idio_error_system_errno ("read", fh, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	} else if (0 == nread) {
+	    IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_EOF;
+	    break;
+	} else {
+	    IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
+	    IDIO_FILE_HANDLE_END (fh) = IDIO_FILE_HANDLE_BUF (fh) + nread;
+	    break;
+	}
     }
 }
 
@@ -3827,7 +3835,7 @@ int idio_load_idio_cache (char *pathname, size_t pathname_len, IDIO eenv)
     /* no dot no deal */
     if (NULL == pathname_dot) {
 #ifdef IDIO_DEBUG
-	fprintf (stderr, "no dot in %s\n", pathname);
+	fprintf (stderr, "NOTICE: no dot in %s\n", pathname);
 #endif
 	return 0;
     }
@@ -3836,14 +3844,14 @@ int idio_load_idio_cache (char *pathname, size_t pathname_len, IDIO eenv)
     size_t dot_len = pathname_len - (pathname_dot - pathname);
     if (dot_len != iie_len) {
 #ifdef IDIO_DEBUG
-	fprintf (stderr, "len (%s) != len (%s) in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname);
+	fprintf (stderr, "NOTICE: len (%s) != len (%s) in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname);
 #endif
 	return 0;
     }
 
     if (strncmp (pathname_dot, IDIO_IDIO_EXT, iie_len)) {
 #ifdef IDIO_DEBUG
-	fprintf (stderr, "ext %s != %s in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname);
+	fprintf (stderr, "NOTICE: ext %s != %s in %s\n", IDIO_IDIO_EXT, pathname_dot, pathname);
 #endif
 	return 0;
     }
@@ -3879,13 +3887,40 @@ int idio_load_idio_cache (char *pathname, size_t pathname_len, IDIO eenv)
     end[0] = '\0';
 
     if (access (cfn, R_OK)) {
-#ifdef IDIO_DEBUG
-	/* fprintf (stderr, "access (%s) != R_OK\n", cfn); */
-#endif
+	/*
+	 * NB we don't want any debug notice in general as it will
+	 * fire for non-existent cache files
+	 */
 	return 0;
     }
 
     IDIO I_cfn = idio_string_C_len (cfn, end - cfn);
+
+    /*
+     * Check that the pre-compiled file is newer than the source.
+     */
+    struct stat pn_sb;
+    if (stat (pathname, &pn_sb) == -1) {
+	idio_error_system_errno ("stat", IDIO_LIST1 (idio_string_C_len (pathname, pathname_len)), IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return 0;
+    } else {
+	struct stat cfn_sb;
+	if (stat (cfn, &cfn_sb) == -1) {
+	    idio_error_system_errno ("stat", IDIO_LIST1 (I_cfn), IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return 0;
+	} else {
+	    if (pn_sb.st_mtime > cfn_sb.st_mtime) {
+#ifdef IDIO_DEBUG
+		fprintf (stderr, "NOTICE: %s is older than %s\n", cfn, pathname);
+#endif
+		return 0;
+	    }
+	}
+    }
 
     int r = idio_compile_file_reader (eenv, I_cfn, cfn, end - cfn);
 

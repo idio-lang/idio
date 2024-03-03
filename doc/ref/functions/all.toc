@@ -31,6 +31,8 @@
 (document Idio identity)
 
 (document Idio value-index)
+(document Idio add-value-index)
+(nodocument Idio %%add-value-index)
 (document Idio set-value-index! set-value-index)
 
 (document Idio copy-value)

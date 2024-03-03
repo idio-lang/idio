@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -92,22 +92,32 @@ define-syntax with-values-from (syntax-rules ()
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-define (display* & x*) "
-display ``#\\{space}`` -separated `x*` to the current output handle
+define (hdisplay* h & x*) "
+display ``#\\{space}`` -separated `x*` to the handle `h`
 
+:param h: output handle
 :param x*: values to print
 :return: ``#<unspec>``
 " {
   p :+ function (x* first) {
 	 if (not (null? x*)) {
 	   if (not first) (write-char #\{space})
-	   display (ph x*)
+	   display (ph x*) h
 	   p (pt x*) #f
 	 }
   }
 
   p x* #t
-  (newline)
+  newline h
+}
+
+define (display* & x*) "
+display ``#\\{space}`` -separated `x*` to the current output handle
+
+:param x*: values to print
+:return: ``#<unspec>``
+" {
+  apply hdisplay* (current-output-handle) x*
 }
 
 define (ewrite x) "
@@ -134,16 +144,7 @@ display ``#\\{space}`` -separated `x*` to the current error handle
 :param x*: values to print
 :return: ``#<unspec>``
 " {
-  p :+ function (x* first) {
-	 if (not (null? x*)) {
-	   if (not first) (write-char #\{space} (current-error-handle))
-	   edisplay (ph x*)
-	   p (pt x*) #f
-	 }
-  }
-
-  p x* #t
-  newline (current-error-handle)
+  apply hdisplay* (current-error-handle) x*
 }
 
 define (concatenate-string ls) "
@@ -244,6 +245,37 @@ This is currently only used for:
 
 " {
   %%add-as-string o f
+}
+
+#*
+
+add-value-index is a nominally generic mechanism to associate a
+user-defined indexer with a value.
+
+In practice it is only used for:
+
+* struct instances where the struct type is associated with a indexer
+  and when we come to index a struct instance we check to see if a
+  indexer exists for its type.
+
+The indexer will be invoked with the value to be indexed and the
+index.
+
+*#
+
+define (add-value-index o f) "
+Associate a indexer function `f` with `o`.
+
+`f` will be invoked with the value to be indexed and the index.
+
+This is currently only used for:
+
+- struct instances where a struct type was associated with a indexer.
+  When we come to index a struct instance we check to see if a indexer
+  exists for its type.
+
+" {
+  %%add-value-index o f
 }
 
 #*

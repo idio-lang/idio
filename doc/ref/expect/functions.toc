@@ -13,6 +13,7 @@
 (document expect exp-send-human)
 (document expect exp-wait)
 (document expect exp-spawn-sync)
+(document expect exp-set-winsize)
 
 (nodocument expect exp-log)
 (nodocument expect exp-case-eof?)

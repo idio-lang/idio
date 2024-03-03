@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -245,7 +245,7 @@ IDIO idio_vm_run_C (IDIO thr, idio_xi_t xi, idio_pc_t pc);
 void idio_vm_restore_continuation (IDIO k, IDIO val);
 void idio_vm_restore_exit (IDIO k, IDIO val);
 
-void idio_vm_start_tracing ();
+void idio_vm_start_tracing (int level);
 void idio_vm_stop_tracing ();
 
 IDIO idio_vm_symbols_ref (idio_xi_t xi, idio_as_t si);

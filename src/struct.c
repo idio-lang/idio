@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -48,6 +48,7 @@
 #include "hash.h"
 #include "idio-string.h"
 #include "module.h"
+#include "object.h"
 #include "pair.h"
 #include "string-handle.h"
 #include "struct.h"
@@ -687,22 +688,26 @@ IDIO idio_struct_instance_ref (IDIO si, IDIO field)
     IDIO_TYPE_ASSERT (symbol, field);
 
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (si);
-    ssize_t i = idio_struct_type_find_eqp (sit, field, 0);
+    if (idio_struct_type_isa (sit, idio_class_struct_type)) {
+	return idio_object_slot_ref (si, field);
+    } else {
+	ssize_t i = idio_struct_type_find_eqp (sit, field, 0);
 
-    if (-1 == i) {
-	/*
-	 * Test Case: struct-errors/struct-instance-ref-non-existent.idio
-	 *
-	 * define-struct foo x y
-	 * f := make-struct-instance foo 1 2
-	 * struct-instance-ref f 'z
-	 */
-	idio_struct_instance_field_not_found_error (field, IDIO_C_FUNC_LOCATION ());
+	if (-1 == i) {
+	    /*
+	     * Test Case: struct-errors/struct-instance-ref-non-existent.idio
+	     *
+	     * define-struct foo x y
+	     * f := make-struct-instance foo 1 2
+	     * struct-instance-ref f 'z
+	     */
+	    idio_struct_instance_field_not_found_error (field, IDIO_C_FUNC_LOCATION ());
 
-	return idio_S_notreached;
+	    return idio_S_notreached;
+	}
+
+	return IDIO_STRUCT_INSTANCE_FIELDS (si, i);
     }
-
-    return IDIO_STRUCT_INSTANCE_FIELDS (si, i);
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("struct-instance-ref", struct_instance_ref, (IDIO si, IDIO field), "si field", "\
@@ -863,22 +868,26 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
     IDIO_TYPE_ASSERT (symbol, field);
 
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (si);
-    ssize_t i = idio_struct_type_find_eqp (sit, field, 0);
+    if (idio_struct_type_isa (sit, idio_class_struct_type)) {
+	idio_object_slot_set (si, field, v);
+    } else {
+	ssize_t i = idio_struct_type_find_eqp (sit, field, 0);
 
-    if (-1 == i) {
-	/*
-	 * Test Case: struct-errors/struct-instance-set-non-existent.idio
-	 *
-	 * define-struct foo x y
-	 * f := make-struct-instance foo 1 2
-	 * struct-instance-set! f 'z #t
-	 */
-	idio_struct_instance_field_not_found_error (field, IDIO_C_FUNC_LOCATION ());
+	if (-1 == i) {
+	    /*
+	     * Test Case: struct-errors/struct-instance-set-non-existent.idio
+	     *
+	     * define-struct foo x y
+	     * f := make-struct-instance foo 1 2
+	     * struct-instance-set! f 'z #t
+	     */
+	    idio_struct_instance_field_not_found_error (field, IDIO_C_FUNC_LOCATION ());
 
-	return idio_S_notreached;
+	    return idio_S_notreached;
+	}
+
+	IDIO_STRUCT_INSTANCE_FIELDS (si, i) = v;
     }
-
-    IDIO_STRUCT_INSTANCE_FIELDS (si, i) = v;
 
     return idio_S_unspec;
 }

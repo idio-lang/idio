@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2021-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -25,6 +25,6 @@
 
 extern IDIO idio_expect_module;
 
-void idio_init_expect ();
+void idio_init_expect (void *handle);
 
 #endif

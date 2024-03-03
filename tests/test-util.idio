@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2023 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -221,7 +221,33 @@ test (C/->number cfloat1a) 123.456008911132812
 cdouble1a  := C/number-> 123.456 'double
 cdouble1b  := C/number-> 123.456 'double
 cdouble2   := C/number-> 234.567 'double
-test (C/->number cdouble1a) 123.456000000000031
+(cond-expand
+ ((and (or "uname/machine/i686"
+	   "uname/machine/i86pc")
+       sizeof/pointer/32) {
+   ;; Weird.  Internally we use sprintf(buf, "%le", ...), here, to
+   ;; generate the Idio version of the C double.
+   ;;
+   ;; However, if you compile on x86 using -O (anything, where a make
+   ;; lean is -O3) then on some 32-bit machines the result is
+   ;; 123.456000000000003 rather than 123.456000000000031.
+   ;;
+   ;; This affects CentOS and SunOS but not Debian or Mac OS.  You can
+   ;; verify with a trivial C program.
+   ;;
+   ;; It'd be better if this test is generic rather than be testing
+   ;; for CentOS or SunOS, hence the uname/machine clauses above.
+   r := C/->number cdouble1a
+   if (r ne 123.456000000000031) {
+     eprintf "NOTICE: optimised 32-bit floating point weirdness\n"
+     test r 123.456000000000003
+   } {
+     test r 123.456000000000031
+   }
+ })
+ (else {
+   test (C/->number cdouble1a) 123.456000000000031
+ }))
 
 clongdouble1a  := C/number-> 123.456 'longdouble
 clongdouble1b  := C/number-> 123.456 'longdouble
@@ -561,10 +587,30 @@ format "%s" st1
 format "%s" si1
 
 add-as-string st1 (function (v s) {
-		     "printing"
+  "printing"
 })
 
 test (format "%s" si1) "printing"
+
+;; test a bespoke indexer -- here we'll tally up requests for
+;; previously unknown fields of a struct
+
+st3 := make-struct-type 'st3 #n '(ht)
+add-value-index st3 (function (v i) {
+  val := 1
+  ht  := struct-instance-ref v 'ht
+  if (hash-exists? ht i) {
+    val = (hash-ref ht i) + 1
+  }
+  hash-set! ht i val
+  val
+})
+
+si3 := make-struct-instance st3 #{}
+test si3.'apple		1
+test si3.'apple		2
+test si3.'banana	1
+test si3.'apple		3
 
 ; continuations
 k1 := #f
@@ -573,10 +619,10 @@ k2 := #f
 ; call/cc has been improved in call-cc.idio -- if we want an actual
 ; continuation object we need to go deeper.  Not recommended.
 %%call/uc (function (k) {
-	     k1 = k
+  k1 = k
 })
 %%call/uc (function (k) {
-	     k2 = k
+  k2 = k
 })
 
 test (equal? k1 k1) #t
@@ -1266,7 +1312,7 @@ test (%format 'keyed "%4.3f" h)		" 010"
 test (%format 'keyed "%10.2b" h)	"    123.45"
 
 ;; all done?
-Tests? (util0 + 663)
+Tests? (util0 + 667)
 
 ;Local Variables:
 ;mode: Idio

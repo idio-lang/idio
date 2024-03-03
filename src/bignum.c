@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1344,7 +1344,9 @@ IDIO idio_bignum_subtract (IDIO a, IDIO b)
     size_t bi = 0;
     size_t ri = 0;
 
+#ifdef IDIO_DEBUG
     int borrow_bug = 0;
+#endif
     while (ai < al ||
 	   bi < bl ||
 	   borrow) {
@@ -1366,8 +1368,10 @@ IDIO idio_bignum_subtract (IDIO a, IDIO b)
 	if (ir < 0) {
 	    ir += IDIO_BIGNUM_INT_SEG_LIMIT;
 	    borrow = 1;
+#ifdef IDIO_DEBUG
 	    borrow_bug++;
 	    IDIO_C_ASSERT (borrow_bug < (10 + IDIO_BIGNUM_SIG_SEGMENTS));
+#endif
 	}
 
 	idio_bsa_set (ra, ir, ri);

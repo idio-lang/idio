@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2022, 2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -28,6 +28,7 @@
 #include <sys/resource.h>
 
 #include <assert.h>
+#include <errno.h>
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -257,6 +258,10 @@ char *idio_rfc6234_shasum_fd_C (char const *func, int fd, IDIO alg, int *rblp)
 	ssize_t read_r = read (fd, buf, BUFSIZ);
 
 	if (-1 == read_r) {
+	    if (EINTR == errno) {
+		continue;
+	    }
+
 	    idio_error_system_errno (func, alg, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */

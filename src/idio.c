@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -468,8 +468,55 @@ void idio_terminal_signal_handler (int sig)
     kill (getpid (), sig);
 }
 
+void idio_add_signal_handler (int sig, void (*handler) (int))
+{
+    struct sigaction nsa;
+    struct sigaction osa;
+
+    nsa.sa_handler = handler;
+    nsa.sa_flags = 0;
+    sigemptyset (&nsa.sa_mask);
+
+    idio_sigaddset (&nsa.sa_mask, sig);
+
+    if (sigaction (sig, &nsa, &osa) == -1) {
+	/*
+	 * Test Case: ??
+	 */
+	char em[BUFSIZ];
+	idio_snprintf (em, BUFSIZ, "sigaction %s", idio_libc_signal_name (sig));
+
+	idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
+    }
+
+    /*
+     * For non-interactive shells, check if we were ignoring the
+     * signal and undo our terminal_signal handling!
+     */
+    if (0 == idio_job_control_interactive &&
+	SIG_IGN == osa.sa_handler) {
+	if (sigaction (sig, &osa, &nsa) == -1) {
+	    /*
+	     * Test Case: ??
+	     */
+	    char em[BUFSIZ];
+	    idio_snprintf (em, BUFSIZ, "sigaction %s", idio_libc_signal_name (sig));
+
+	    idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return;
+	}
+    }
+}
+
 void idio_add_terminal_signal (int sig)
 {
+    idio_add_signal_handler (sig, idio_terminal_signal_handler);
+    return;
     struct sigaction nsa;
     struct sigaction osa;
 

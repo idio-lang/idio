@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2022-2023 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -758,5 +758,13 @@ o8-1 := make-instance O8
 test (slot-ref o7-1 's1)	30
 test (slot-ref o8-1 's1)	10
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; value-index
+
+test o7-1.'s1		30
+o7-1.'s1 = 40
+test o7-1.'s1		40
+
 ;; all done?
-Tests? (object0 + 306)
+Tests? (object0 + 308)

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2023 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -25,71 +25,94 @@ export (
 )
 
 debug := #n
+dih := (current-input-handle)
+doh := (current-output-handle)
+deh := (current-error-handle)
 
 {
   debug-k := #n
   continuations := #n
 
+  define (dread-line) {
+    read-line dih
+  }
+
+  define (dprintf & args) {
+    apply hprintf deh args
+  }
+
+  define (dputs s) {
+    puts s deh
+  }
+
+  define (ddisplay* & args) {
+    apply hdisplay* deh args
+  }
+
+  define (dnewline) {
+    newline deh
+  }
+
   debug-c := function (n v) {
     if (n le ((array-length continuations) - 1)) {
-      printf "invoking continuation %d: %s\n" n (pht continuations.n)
+      dprintf "invoking continuation %d: %s\n" n (pht continuations.n)
       %%vm-apply-continuation n v
     } {
-      printf "%d: invalid choice\n" n
+      dprintf "%d: invalid choice\n" n
     }
   }
 
   debug-v := function (val) {
     debug-k val
 
-    edisplay* "debug-v: not seen here with" val
+    ddisplay* "debug-v: not seen here with" val
   }
 
   debug = function/name debug args {
-    display* "This is the Idio debugger\n"
-    display* "debugger input is from" (current-input-handle)
+    ddisplay* "This is the Idio debugger\n"
+    ddisplay* "debugger input is from" dih
 
     if (not (null? args)) {
-      display* debug-k \= ph args
+      ddisplay* debug-k \= ph args
     }
 
     continuations = (%%vm-continuations)
     ;idio-debug "continuations = %s\n" continuations
 
     debug-loop :+ function () {
-      puts "\n---\n"
+      dputs "\n---\n"
       al := array-length continuations
       if (al gt 0) {
-	printf "Choose between the following continuations:\n"
+	dprintf "Choose between the following continuations:\n"
 	dloop :+ function (n) {
 	  if (n ge 0) {
-	    printf "  %d%s: %s\n" n (if (eq? (ph continuations.n) debug-k) "*" " ") (pht continuations.n)
+	    dprintf "  %d%s: %s\n" n (if (eq? (ph continuations.n) debug-k) "*" " ") (pht continuations.n)
 	    dloop (n - 1)
 	  }
 	}
 
 	dloop (al - 1)
-	printf "c <num> [<val>]	Invoke continuation <num>\n"
+	dprintf "c <num> [<val>]	Invoke continuation <num>\n"
       }
 
-      printf "v <val>		return a value to the continuation of the failed expression\n"
-      printf "a		abort the current expression\n"
-      printf "q		quit Idio\n"
-      (newline)
-      printf "ct		show the tree of call frames (to the most recent ABORT)\n"
-      printf "ft		show the tree of VM frames\n"
-      printf "ds		decode the current stack\n"
-      printf "its		show the thread state (idio-thread-state)\n"
-      printf "dt		dump VM tables (cf. --vm-tables)\n"
-      printf "debug> "
+      dprintf "v <val>		return a value to the continuation of the failed expression\n"
+      dprintf "a		abort the current expression\n"
+      dprintf "q		quit Idio\n"
+      (dnewline)
+      dprintf "ct		show the tree of call frames (to the most recent ABORT)\n"
+      dprintf "ft		show the tree of VM frames\n"
+      dprintf "ds		decode the current stack\n"
+      dprintf "its		show the thread state (idio-thread-state)\n"
+      dprintf "dt		dump VM tables (cf. --vm-tables)\n"
+      dprintf "debug> "
 
-      line := (read-line)
+      line := (dread-line)
       lsh := open-input-string line
       cmd := read-expr lsh
 
       (cond
        ((and (eqv? "" line)
-	     (eof-handle? (current-input-handle))) {
+	     (eof-handle? dih)) {
 	 debug-k 'debugger-eof
        })
        ((eq? 'c cmd) {
@@ -121,9 +144,9 @@ debug := #n
        })
        ((eqv? 'dt cmd) {
 	 (%vm-tables)
-	 (newline)
+	 (dnewline)
        })
-       (else (printf "unrecognised line %s\n" line)))
+       (else (dprintf "unrecognised line %s\n" line)))
 
       (debug-loop)
     }

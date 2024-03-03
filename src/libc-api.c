@@ -7501,36 +7501,43 @@ If :manpage:`read(2)` indicated ``EAGAIN`` then this code returns #f.	\n\
 
     char *buf = idio_alloc (C_count);
 
-    ssize_t n = read (C_fd, buf, C_count);
-
     IDIO r;
 
-    if (-1 == n) {
-	idio_free (buf);
+    for (;;) {
+	ssize_t n = read (C_fd, buf, C_count);
 
-	/*
-	 * Test Case: ??
-	 */
-	if (EAGAIN == errno) {
+	if (-1 == n) {
+	    idio_free (buf);
+
 	    /*
 	     * Test Case: ??
-	     *
-	     * The Open Group:
-	     *
-	     *   If some process has the pipe open for writing and
-	     *   O_NONBLOCK is set, read() will return -1 and set
-	     *   errno to [EAGAIN].
 	     */
-	    return idio_S_false;
-	}
-	args = idio_pair (fd, args);
-	idio_error_system_errno ("read", args, IDIO_C_FUNC_LOCATION ());
+	    if (EAGAIN == errno) {
+		/*
+		 * Test Case: ??
+		 *
+		 * The Open Group:
+		 *
+		 *   If some process has the pipe open for writing and
+		 *   O_NONBLOCK is set, read() will return -1 and set
+		 *   errno to [EAGAIN].
+		 */
+		return idio_S_false;
+	    } else if (EINTR == errno) {
+		continue;
+	    }
 
-	return idio_S_notreached;
-    } else if (n) {
-	r = idio_octet_string_C_len (buf, n);
-    } else {
-	r = idio_S_eof;
+	    args = idio_pair (fd, args);
+	    idio_error_system_errno ("read", args, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else if (n) {
+	    r = idio_octet_string_C_len (buf, n);
+	    break;
+	} else {
+	    r = idio_S_eof;
+	    break;
+	}
     }
 
     idio_free (buf);
@@ -10013,7 +10020,7 @@ void idio_libc_api_add_primitives ()
 	IDIO printer_func = idio_vm_default_values_ref (IDIO_FIXNUM_VAL (printer)); \
 	idio_vtable_add_method (IDIO_C_TYPE_POINTER_P (I_vt),		\
 				idio_S_2string,				\
-				idio_vtable_create_method_value (idio_util_method_run, \
+				idio_vtable_create_method_value (idio_util_method_run1, \
 								 IDIO_LIST2 (printer_func, idio_S_nil))); \
     }
 
