@@ -170,7 +170,7 @@ static int idio_env_set_default_C (IDIO name, char const *val)
     IDIO_C_ASSERT (val);
     IDIO_TYPE_ASSERT (symbol, name);
 
-    return idio_env_set_default (name, idio_string_C (val));
+    return idio_env_set_default (name, idio_octet_string_C (val));
 }
 
 static void idio_env_add_environ ()
@@ -196,7 +196,7 @@ static void idio_env_add_environ ()
 		 strncmp (name, "SHELL", 5) == 0)) {
 		val = idio_pathname_C (e + 1);
 	    } else {
-		val = idio_string_C (e + 1);
+		val = idio_octet_string_C (e + 1);
 	    }
 
 	    IDIO_GC_FREE (name, name_len);
