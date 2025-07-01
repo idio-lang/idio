@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -122,6 +122,14 @@ raise `x` to the power of `y`
 .. seealso:: :ref:`exp <exp>`
 " {
   square :+ function (x) (x * x)
+
+  #*
+
+  expt2 is Exponentiation by Squaring, see
+  https://en.wikipedia.org/wiki/Exponentiation_by_squaring#Recursive_version
+
+  *#
+
   expt2 :+ function (x y) {
     (cond
      ((zero? y) 1)
@@ -467,6 +475,14 @@ Return the factorial of `x`
 :return: factorial of `x`
 :rtype: number
 " {
+  #*
+
+  fact2 is taking a divide-and-conquer approach to calculating the
+  factorial which https://en.wikipedia.org/wiki/Factorial#Computation
+  suggests will take O(n log^3 n)
+
+  *#
+
   define (fact2 x y) {
     if (x lt 2) y {
       q := quotient x 2
@@ -478,23 +494,30 @@ Return the factorial of `x`
 }
 
 ; p-series in S9fES, used by cos, sin
-sine-series := {
+m-series := {
   factorial := factorial
 
-  function/name sine-series (x y r add last) {
+  #*
+
+  m-series is a generic form of the sin/cos Maclaurin series from
+  https://en.wikipedia.org/wiki/Taylor_series#Trigonometric_functions
+
+  *#
+
+  function/name m-series (x y r add last) {
     if ((abs (r - last)) le *epsilon*) r {
-      (sine-series x
-		   (2 + y)
-		   ((if add \+ \-) r ((expt x y) / (factorial y)))
-		   (not add)
-		   r)
+      (m-series x
+		(2 + y)
+		((if add \+ \-) r ((expt x y) / (factorial y)))
+		(not add)
+		r)
     }
   }
 }
 
 cos := {
   ->circle    := ->circle
-  sine-series := sine-series
+  m-series    := m-series
   pi          := pi
   pi/2        := pi/2
   3pi/2       := 3pi/2
@@ -515,16 +538,16 @@ return the cosine of `x`
      ((pi/2 eq  x)        0.0)
      ((pi eq    x)       -1.0)
      ((3pi/2 eq x)        0.0)
-     ((le 0     x pi/2)  (sine-series    x         2 1.0 #f 0))
-     ((le pi/2  x pi)    (- (sine-series (pi - x)  2 1.0 #f 0)))
-     ((le pi    x 3pi/2) (- (sine-series (x - pi)  2 1.0 #f 0)))
-     (else               (sine-series    (2pi - x) 2 1.0 #f 0)))
+     ((le 0     x pi/2)  (m-series    x         2 1.0 #f 0))
+     ((le pi/2  x pi)    (- (m-series (pi - x)  2 1.0 #f 0)))
+     ((le pi    x 3pi/2) (- (m-series (x - pi)  2 1.0 #f 0)))
+     (else               (m-series    (2pi - x) 2 1.0 #f 0)))
   }
 }
 
 sin := {
   ->circle    := ->circle
-  sine-series := sine-series
+  m-series    := m-series
   pi          := pi
   pi/2        := pi/2
   3pi/2       := 3pi/2
@@ -553,9 +576,9 @@ return the sine of `x`
 	     (else              (2pi - x)))
 
        if (x gt pi) {
-	 - (sine-series z 3 z #f 0)
+	 - (m-series z 3 z #f 0)
        } {
-	 sine-series z 3 z #f 0
+	 m-series z 3 z #f 0
        }
      }))
   }
@@ -666,6 +689,12 @@ return the square root of `square`
 :return: square root of `square`
 :rtype: number
 " {
+  #*
+
+  sqrt2 is Heron's Method, see https://en.wikipedia.org/wiki/Square_root_algorithms#Derivation
+
+  *#
+
   sqrt2 :+ function (x last) {
     if ((abs (last - x)) le *epsilon*) x {
       sqrt2 ((x + (square / x)) / 2) x
