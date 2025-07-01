@@ -707,14 +707,16 @@ for-each (function (lib-n) {
 			   })
 			 (
 			   ;;     <3e>   DW_AT_name        : (indirect string, offset: 0x187): unsigned int
-			   "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: \\(indirect string, offset: 0x[[:xdigit:]]+\\): ([^\t]+)" {
+			   ;; Fedora s390x
+			   ;;     <771>  DW_AT_name        : (indirect string, offset: 0): __glibc_reserved
+			   "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: \\(indirect string, offset: [x[:xdigit:]]+\\): ([^\t]+)" {
 			     hash-set! DIE (string->symbol r.1) r.2
 			     objdump-loop depth DIE
 			   })
 			 (
 			   ;; OpenBSD-6
 			   ;;     DW_AT_name        : (indirect string, offset: 0x187): unsigned int
-			   "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: \\(indirect string, offset: 0x[[:xdigit:]]+\\): ([^\t]+)" {
+			   "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: \\(indirect string, offset: [x[:xdigit:]]+\\): ([^\t]+)" {
 			     hash-set! DIE (string->symbol r.1) r.2
 			     objdump-loop depth DIE
 			   })

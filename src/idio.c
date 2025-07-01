@@ -968,13 +968,13 @@ int main (int argc, char **argv, char **envp)
      * Remember, sargv started out pointing at argv so if there were
      * no arguments sargv[0] is argv[0].
      */
-    IDIO filename = idio_string_C (sargv[0]);
+    IDIO filename = idio_pathname_C (sargv[0]);
     idio_module_set_symbol_value (IDIO_SYMBOL ("ARGV0"), filename, idio_Idio_module);
 
     IDIO args = idio_array (sargc);
     if (sargc) {
 	for (i = 1; i < sargc; i++) {
-	    idio_array_insert_index (args, idio_string_C (sargv[i]), i - 1);
+	    idio_array_insert_index (args, idio_octet_string_C (sargv[i]), i - 1);
 	}
     }
 
