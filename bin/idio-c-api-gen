@@ -2,7 +2,7 @@
 
 #*
 
-Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2021-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -603,13 +603,23 @@ for-each (function (lib-n) {
 	 dwarfdump-loop -1 dummy-DIE
        })
        (else {
+	 objdump := objdump
 	 objdump-flags := "-Wil"
 	 cwd := PWD
 	 (unwind-protect {
 	   libc/chdir lib-dn
 	   (cond-expand
-	    ((or "uname/sysname/FreeBSD"
-		 "uname/sysname/OpenBSD"
+	    ("uname/sysname/FreeBSD" {
+	      gmake -C api-dn api-o-fn
+	      objdump-flags = "-W"
+	      objdump-exe := %P"/usr/local/bin/objdump"
+	      if (x? objdump-exe) {
+		;; FreeBSD 14.x has an LLVM /usr/bin/objdump which
+		;; doesn't like -W
+		objdump = objdump-exe
+	      }
+	    })
+	    ((or "uname/sysname/OpenBSD"
 		 "uname/sysname/NetBSD") {
 	      gmake -C api-dn api-o-fn
 	      objdump-flags = "-W"
