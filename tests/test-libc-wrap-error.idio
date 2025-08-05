@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -920,6 +920,7 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
 (cond-expand
  ("uname/sysname/NetBSD" {
    ;; NetBSD ignores a negative GID
+   eprintf "NOTICE: EUID == 0 (NetBSD) : skipping set EGID with negative/invalid GID failure tests\n"
    libc-wrap-error-skipped = libc-wrap-error-skipped + 6
  })
 
@@ -930,6 +931,7 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
    (pattern-case
     IDIO_SYSTEM_ARCH
     ("*-musl" {
+      eprintf "NOTICE: EUID == 0 (musl) : skipping set EGID with negative/invalid GID failure tests\n"
       libc-wrap-error-skipped = libc-wrap-error-skipped + 6
     })
     (else {
@@ -941,7 +943,7 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
       "uname/sysname/OpenBSD"
       "uname/sysname/Darwin") {
    if running-as-root {
-     eprintf "NOTICE: EUID == 0: skipping set EGID invalid GID failure test\n"
+     eprintf "NOTICE: EUID == 0: skipping set EGID with negative/invalid GID failure test\n"
      libc-wrap-error-skipped = libc-wrap-error-skipped + 6
    } {
      libc-wrap-error-load "libc-wrap-errors/setegid-negative-egid.idio" "Operation not permitted" EPERM "setegid"
@@ -955,7 +957,7 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
 )
 
 if running-as-root {
-  eprintf "NOTICE: EUID == 0: skipping set EGID unused GID failure test\n"
+  eprintf "NOTICE: EUID == 0: skipping set EGID with unused GID failure test\n"
   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
 } {
   (cond-expand
@@ -978,6 +980,7 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
 (cond-expand
  ("uname/sysname/NetBSD" {
    ;; NetBSD ignores a negative UID
+   eprintf "NOTICE: EUID == 0 (NetBSD) : skipping set EUID with negative/invalid UID failure tests\n"
    libc-wrap-error-skipped = libc-wrap-error-skipped + 6
  })
 
@@ -988,6 +991,7 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
    (pattern-case
     IDIO_SYSTEM_ARCH
     ("*-musl" {
+      eprintf "NOTICE: EUID == 0 (musl) : skipping set EUID with negative/invalid UID failure tests\n"
       libc-wrap-error-skipped = libc-wrap-error-skipped + 6
     })
     (else {
@@ -999,7 +1003,7 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
       "uname/sysname/OpenBSD"
       "uname/sysname/Darwin") {
    if running-as-root {
-     eprintf "NOTICE: EUID == 0: skipping set EUID invalid UID failure test\n"
+     eprintf "NOTICE: EUID == 0: skipping set EUID negative/invalid UID failure test\n"
      libc-wrap-error-skipped = libc-wrap-error-skipped + 6
    } {
      libc-wrap-error-load "libc-wrap-errors/seteuid-negative-euid.idio" "Operation not permitted" EPERM "seteuid"
@@ -1013,7 +1017,7 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
 )
 
 if running-as-root {
-  eprintf "NOTICE: EUID == 0: skipping set EUID unused UID failure test\n"
+  eprintf "NOTICE: EUID == 0: skipping set EUID with unused UID failure test\n"
   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
 } {
   (cond-expand
@@ -1041,6 +1045,7 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
  })
  ("uname/sysname/NetBSD" {
    ;; NetBSD ignores a negative GID
+   eprintf "NOTICE: EUID == 0 (NetBSD) : skipping set GID with negative/invalid GID failure tests\n"
    libc-wrap-error-skipped = libc-wrap-error-skipped + 6
  })
  ((or "uname/sysname/FreeBSD"
@@ -1049,7 +1054,7 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
       (and "os-release/ID/CentOS"
 	   "os-release/VERSION_ID/6")) {
    if running-as-root {
-     eprintf "NOTICE: EUID == 0: skipping set GID invalid GID failure test\n"
+     eprintf "NOTICE: EUID == 0: skipping set GID negative/invalid GID failure test\n"
      libc-wrap-error-skipped = libc-wrap-error-skipped + 6
    } {
      libc-wrap-error-load "libc-wrap-errors/setgid-negative-gid.idio" "Operation not permitted" EPERM "setgid"
@@ -1079,7 +1084,7 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
  }))
 
 if running-as-root {
-  eprintf "NOTICE: EUID == 0: skipping set GID unused GID failure test\n"
+  eprintf "NOTICE: EUID == 0: skipping set GID with unused GID failure test\n"
   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
 } {
   (cond-expand
@@ -1107,6 +1112,7 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
  })
  ("uname/sysname/NetBSD" {
    ;; NetBSD ignores a negative UID
+   eprintf "NOTICE: EUID == 0 (NetBSD) : skipping set UID with negative/invalid UID failure tests\n"
    libc-wrap-error-skipped = libc-wrap-error-skipped + 6
  })
  ((or "uname/sysname/FreeBSD"
@@ -1115,7 +1121,7 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
       (and "os-release/ID/CentOS"
 	   "os-release/VERSION_ID/6")) {
    if running-as-root {
-     eprintf "NOTICE: EUID == 0: skipping set UID invalid UID failure test\n"
+     eprintf "NOTICE: EUID == 0: skipping set UID with negative/invalid UID failure test\n"
      libc-wrap-error-skipped = libc-wrap-error-skipped + 6
    } {
      libc-wrap-error-load "libc-wrap-errors/setuid-negative-uid.idio" "Operation not permitted" EPERM "setuid"
@@ -1145,7 +1151,7 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
  }))
 
 if running-as-root {
-  eprintf "NOTICE: EUID == 0: skipping set UID unused UID failure test\n"
+  eprintf "NOTICE: EUID == 0: skipping set UID with unused UID failure test\n"
   libc-wrap-error-skipped = libc-wrap-error-skipped + 3
 } {
   (cond-expand
