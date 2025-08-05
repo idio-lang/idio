@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -387,6 +387,41 @@ IDIO idio_fixnum_primitive_add (IDIO args)
     return idio_fixnum (ir);
 }
 
+IDIO idio_fixnum_primitive_binary_add (IDIO n1, IDIO n2)
+{
+    IDIO_ASSERT (n1);
+    IDIO_ASSERT (n2);
+    IDIO_TYPE_ASSERT (fixnum, n1);
+    IDIO_TYPE_ASSERT (fixnum, n2);
+
+    intptr_t C_n1 = IDIO_FIXNUM_VAL (n1);
+    intptr_t C_n2 = IDIO_FIXNUM_VAL (n2);
+
+    intptr_t C_r = C_n1 + C_n2;
+
+    if (C_r > IDIO_FIXNUM_MAX ||
+	C_r < IDIO_FIXNUM_MIN) {
+      /*
+       * Code coverage:
+       *
+       * To get here, of course, we need to have tripped over
+       * IDIO_FIXNUM_MAX
+       *
+       * binary-+ FIXNUM-MAX 1
+       */
+      /*
+       * Shift everything to bignums and pass the calculation on
+       * to the bignum code
+       */
+      IDIO r = idio_bignum_primitive_binary_add (idio_bignum_integer_intmax_t (C_n1),
+						 idio_bignum_integer_intmax_t (C_n2));
+
+      return idio_bignum_to_fixnum (r);
+    }
+
+    return idio_fixnum (C_r);
+}
+
 IDIO idio_fixnum_primitive_subtract (IDIO args)
 {
     IDIO_ASSERT (args);
@@ -467,6 +502,33 @@ IDIO idio_fixnum_primitive_subtract (IDIO args)
     } else {
 	return idio_fixnum (ir);
     }
+}
+
+IDIO idio_fixnum_primitive_binary_subtract (IDIO n1, IDIO n2)
+{
+    IDIO_ASSERT (n1);
+    IDIO_ASSERT (n2);
+    IDIO_TYPE_ASSERT (fixnum, n1);
+    IDIO_TYPE_ASSERT (fixnum, n2);
+
+    intptr_t C_n1 = IDIO_FIXNUM_VAL (n1);
+    intptr_t C_n2 = IDIO_FIXNUM_VAL (n2);
+
+    intptr_t C_r = C_n1 - C_n2;
+
+    if (C_r > IDIO_FIXNUM_MAX ||
+	C_r < IDIO_FIXNUM_MIN) {
+      /*
+       * Shift everything to bignums and pass the calculation on
+       * to the bignum code
+       */
+      IDIO r = idio_bignum_primitive_binary_subtract (idio_bignum_integer_intmax_t (C_n1),
+						      idio_bignum_integer_intmax_t (C_n2));
+
+      return idio_bignum_to_fixnum (r);
+    }
+
+    return idio_fixnum (C_r);
 }
 
 #ifdef __LP64__
@@ -621,6 +683,110 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
     }
 
     return idio_fixnum (ir);
+}
+
+IDIO idio_fixnum_primitive_binary_multiply (IDIO n1, IDIO n2)
+{
+    IDIO_ASSERT (n1);
+    IDIO_ASSERT (n2);
+    IDIO_TYPE_ASSERT (fixnum, n1);
+    IDIO_TYPE_ASSERT (fixnum, n2);
+
+    intptr_t C_n1 = IDIO_FIXNUM_VAL (n1);
+
+    intptr_t C_n2 = IDIO_FIXNUM_VAL (n2);
+
+    /*
+     * What is our predicted negativity?
+     */
+    int neg = (C_n1 < 0) != (C_n2 < 0);
+    intptr_t im;
+
+    /*
+     * Prechecks for potential multiplication overflow.
+     *
+     * NB According to the C specification, if integer
+     * multiplication overflowed the resultant value is
+     * *undefined*, ie. you cannot say C_n1 = C_n1 * C_n2 and then use
+     * C_n1 for any kind of test.  You have to check before you
+     * multiply.
+     *
+     * Or you could add in some non-portable ASM to dig out the
+     * overflow flow from the CPU...
+     *
+     * if the MSB of C_n1 is m1 and the MSB of C_n2 is m2 then the MSB
+     * of C_n1*C_n2 will be at most m1+m2.
+     *
+     * If both m1 and m2 are less than half a wordsize then we cannot
+     * overflow(*).
+     *
+     *
+     * MSB (3*3) == MSB (9) == MSB (8+1) == 3
+     * is <=
+     * MSB (3) + MSB (3) == MSB (2+1) + MSB (2+1) == 2 + 2 == 4
+     *
+     * MSB (3*9) == MSB (27) == MSB (16+8+2+1) == 5
+     * is <=
+     * MSB(3) + MSB (9) == MSB (2+1) + MSB (8+1) == 2 + 4 == 6
+     *
+     *
+     * (*) Except our result is signed so we, uh, can overflow.
+     * We can spot that if the expected sign changes (hopefully).
+     */
+    if (C_n1 & IDIO_FIXNUM_HALFWORD_MASK ||
+	C_n2 & IDIO_FIXNUM_HALFWORD_MASK) {
+      /*
+       * We *could* overflow as one of m1/m2 is large -- time to
+       * do some legwork
+       */
+      int bits = 0;
+      intptr_t itmp = C_n1;
+      if (itmp < 0) {
+	itmp = -itmp;
+      }
+      while (itmp >>= 1) {
+	bits++;
+      }
+      itmp = C_n2;
+      if (itmp < 0) {
+	itmp = -itmp;
+      }
+      while (itmp >>= 1) {
+	bits++;
+      }
+
+      if (bits >= (((int) sizeof (intptr_t) * 8) - 2)) {
+	/*
+	 * Definitely overflowed!  Probably.
+	 */
+	IDIO r =  idio_bignum_primitive_binary_multiply (idio_bignum_integer_intmax_t (C_n1),
+							 idio_bignum_integer_intmax_t (C_n2));
+
+	return idio_bignum_to_fixnum (r);
+      } else {
+	im = C_n1 * C_n2;
+      }
+    } else {
+      im = C_n1 * C_n2;
+    }
+
+    if (im > IDIO_FIXNUM_MAX ||
+	im < IDIO_FIXNUM_MIN ||
+	(neg &&
+	 im > 0) ||
+	(0 == neg &&
+	 im < 0)) {
+      /*
+       * Shift everything to bignums and pass the calculation on
+       * to the bignum code
+       */
+      IDIO r =  idio_bignum_primitive_binary_multiply (idio_bignum_integer_intmax_t (C_n1),
+						       idio_bignum_integer_intmax_t (C_n2));
+
+      return idio_bignum_to_fixnum (r);
+    }
+
+    return idio_fixnum (im);
 }
 
 IDIO idio_fixnum_primitive_floor (IDIO a)
@@ -831,7 +997,9 @@ return the quotient `a / b`			\n\
 }
 
 /*
- * First up define some fixnum comparators
+ * First up define some fixnum comparators.  These are not primitives
+ * per se but are called from the ARITHMETIC_CMP_PRIMITIVEs defined
+ * below.
  */
 #define IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(cname,cmp)			\
     IDIO idio_fixnum_primitive_ ## cname (IDIO args)			\
@@ -865,11 +1033,37 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(ge, >=)
 IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 
 /*
+ * ...and some binary variants which are called from the
+ * ARITHMETIC_BINARY_CMP_PRIMITIVEs defined below
+ */
+#define IDIO_DEFINE_FIXNUM_BINARY_CMP_PRIMITIVE_(cname,cmp)		\
+    IDIO idio_fixnum_primitive_binary_ ## cname (IDIO n1, IDIO n2)	\
+    {									\
+	IDIO_ASSERT (n1);						\
+	IDIO_ASSERT (n2);						\
+	IDIO_TYPE_ASSERT (fixnum, n1);					\
+	IDIO_TYPE_ASSERT (fixnum, n2);					\
+									\
+	if (IDIO_FIXNUM_VAL (n1) cmp IDIO_FIXNUM_VAL (n2)) {		\
+	    return idio_S_true;						\
+	}								\
+									\
+	return idio_S_false;						\
+    }
+
+IDIO_DEFINE_FIXNUM_BINARY_CMP_PRIMITIVE_(lt, <)
+IDIO_DEFINE_FIXNUM_BINARY_CMP_PRIMITIVE_(le, <=)
+IDIO_DEFINE_FIXNUM_BINARY_CMP_PRIMITIVE_(eq, ==)
+IDIO_DEFINE_FIXNUM_BINARY_CMP_PRIMITIVE_(ne, !=)
+IDIO_DEFINE_FIXNUM_BINARY_CMP_PRIMITIVE_(ge, >=)
+IDIO_DEFINE_FIXNUM_BINARY_CMP_PRIMITIVE_(gt, >)
+
+/*
  * Second, define some generic primitives that look out for bignum and
  * C type arguments
  */
 #define IDIO_DEFINE_ARITHMETIC_PRIMITIVE0V(name,cname)			\
-    IDIO_DEFINE_PRIMITIVE0V_DS (name, cname, (IDIO args), "[n ...]", "")	\
+    IDIO_DEFINE_PRIMITIVE0V_DS (name, cname, (IDIO args), "[n ...]", "") \
     {									\
 	IDIO_ASSERT (args);						\
 									\
@@ -885,6 +1079,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		break;							\
 	    } else {							\
 		if (! idio_isa_fixnum (h)) {				\
+		    /* Test Case: fixnum-errors/prefix-add-bad-type.idio */ \
 		    idio_error_param_type ("number", h, idio_string_C ("arithmetic " name)); \
 		    return idio_S_notreached;				\
 		}							\
@@ -931,6 +1126,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    ibn = idio_isa_bignum (n1);					\
 									\
 	    if (0 == ibn) {						\
+		/* Test Case: fixnum-errors/prefix-subtract-bad-type-1.idio */ \
 		idio_error_param_type ("number", n1, idio_string_C ("arithmetic " name)); \
 		return idio_S_notreached;				\
 	    }								\
@@ -947,6 +1143,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		    break;						\
 		} else {						\
 		    if (! idio_isa_fixnum (h)) {			\
+			/* Test Case: fixnum-errors/prefix-subtract-bad-type-2.idio */ \
 			idio_error_param_type ("number", h, idio_string_C ("arithmetic " name)); \
 			return idio_S_notreached;			\
 		    }							\
@@ -1007,6 +1204,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    } else if (idio_isa_bignum (h)) {				\
 		bn_args = idio_pair (h, bn_args);			\
 	    } else {							\
+		/* Test Case: fixnum-errors/prefix-divide-bad-type.idio */ \
 		idio_error_param_type ("number", h, idio_string_C ("arithmetic bignum " name)); \
 		return idio_S_notreached;				\
 	    }								\
@@ -1034,6 +1232,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    ibn = idio_isa_bignum (n1);					\
 									\
 	    if (0 == ibn) {						\
+		/* Test Case: fixnum-errors/prefix-eq-bad-type-1.idio */ \
 		idio_error_param_type ("number", n1, idio_string_C ("arithmetic cmp " name)); \
 		return idio_S_notreached;				\
 	    }								\
@@ -1050,6 +1249,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		    break;						\
 		} else {						\
 		    if (! idio_isa_fixnum (h)) {			\
+			/* Test Case: fixnum-errors/prefix-eq-bad-type-2.idio */ \
 			idio_error_param_type ("number", h, idio_string_C ("arithmetic cmp " name)); \
 			return idio_S_notreached;			\
 		    }							\
@@ -1128,6 +1328,7 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 	    return num;							\
 	} else {							\
 	    if (! idio_isa_fixnum (n)) {				\
+		/* Test Case: fixnum-errors/abs-bad-type.idio */	\
 		idio_error_param_type ("number", n, idio_string_C ("unary op " name)); \
 		return idio_S_notreached;				\
 	    }								\
@@ -1145,13 +1346,12 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 	    return idio_C_primitive_ ## cname (n1, n2);			\
 	}								\
 									\
-	IDIO args = IDIO_LIST2 (n1, n2);				\
-									\
 	int ibn = 0;							\
 	if (idio_isa_bignum (n1)) {					\
 	    ibn |= 1;							\
 	} else {							\
 	    if (! idio_isa_fixnum (n1)) {				\
+		/* Test Case: fixnum-errors/infix-add-bad-type-1.idio */ \
 		idio_error_param_type ("number", n1, idio_string_C ("binary op " name)); \
 		return idio_S_notreached;				\
 	    }								\
@@ -1161,6 +1361,7 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 	    ibn |= 2;							\
 	} else {							\
 	    if (! idio_isa_fixnum (n2)) {				\
+		/* Test Case: fixnum-errors/infix-add-bad-type-2.idio */ \
 		idio_error_param_type ("number", n2, idio_string_C ("binary op " name)); \
 		return idio_S_notreached;				\
 	    }								\
@@ -1168,20 +1369,20 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 									\
 	if (ibn) {							\
 	    if (0 == (ibn & 1)) {					\
-		IDIO_PAIR_H (args) = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n1)); \
+		n1 = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n1)); \
 	    }								\
 	    if (0 == (ibn & 2)) {					\
-		IDIO_PAIR_HT (args) = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n2)); \
+		n2 = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n2)); \
 	    }								\
 									\
-	    IDIO num = idio_bignum_primitive_ ## icname (args);		\
+	    IDIO num = idio_bignum_primitive_binary_ ## icname (n1, n2); \
 									\
 	    /* convert to a fixnum if possible */			\
 	    num = idio_bignum_to_fixnum (num);				\
 									\
 	    return num;							\
 	} else {							\
-	    return idio_fixnum_primitive_ ## icname (args);		\
+	    return idio_fixnum_primitive_binary_ ## icname (n1, n2);	\
         }								\
     }
 
@@ -1199,6 +1400,7 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 	    ibn |= 1;							\
 	} else {							\
 	    if (! idio_isa_fixnum (n1)) {				\
+		/* Test Case: fixnum-errors/infix-divide-bad-type-1.idio */ \
 		idio_error_param_type ("number", n1, idio_string_C ("binary op " name)); \
 		return idio_S_notreached;				\
 	    }								\
@@ -1208,21 +1410,20 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 	    ibn |= 2;							\
 	} else {							\
 	    if (! idio_isa_fixnum (n2)) {				\
+		/* Test Case: fixnum-errors/infix-divide-bad-type-2.idio */ \
 		idio_error_param_type ("number", n2, idio_string_C ("binary op " name)); \
 		return idio_S_notreached;				\
 	    }								\
 	}								\
 									\
-	IDIO bn_args = IDIO_LIST2 (n1, n2);				\
-									\
 	if (0 == (ibn & 1)) {						\
-	    IDIO_PAIR_H (bn_args) = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n1)); \
+	    n1 = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n1));	\
 	}								\
 	if (0 == (ibn & 2)) {						\
-	    IDIO_PAIR_HT (bn_args) = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n2)); \
+	    n2 = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n2));	\
 	}								\
 									\
-	IDIO num = idio_bignum_primitive_ ## icname (bn_args);		\
+	IDIO num = idio_bignum_primitive_binary_ ## icname (n1, n2);	\
 									\
 	/* convert to a fixnum if possible */				\
 	num = idio_bignum_to_fixnum (num);				\
@@ -1241,6 +1442,7 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 	    ibn |= 1;							\
 	} else {							\
 	    if (! idio_isa_fixnum (n1)) {				\
+		/* Test Case: fixnum-errors/infix-eq-bad-type-1.idio */ \
 		idio_error_param_type ("number", n1, idio_string_C ("binary op " name)); \
 		return idio_S_notreached;				\
 	    }								\
@@ -1250,24 +1452,23 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 	    ibn |= 2;							\
 	} else {							\
 	    if (! idio_isa_fixnum (n2)) {				\
+		/* Test Case: fixnum-errors/infix-eq-bad-type-2.idio */ \
 		idio_error_param_type ("number", n2, idio_string_C ("binary op " name)); \
 		return idio_S_notreached;				\
 	    }								\
 	}								\
 									\
 	if (ibn) {							\
-	    IDIO bn_args = IDIO_LIST2 (n1, n2);				\
-									\
 	    if (0 == (ibn & 1)) {					\
-		IDIO_PAIR_H (bn_args) = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n1)); \
+		n1 = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n1)); \
 	    }								\
 	    if (0 == (ibn & 2)) {					\
-		IDIO_PAIR_HT (bn_args) = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n2)); \
+		n2 = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n2)); \
 	    }								\
 									\
-	    return idio_bignum_primitive_ ## icname (bn_args);		\
+	    return idio_bignum_primitive_binary_ ## icname (n1, n2);	\
 	} else {							\
-	    return idio_fixnum_primitive_ ## icname (IDIO_LIST2 (n1, n2)); \
+	    return idio_fixnum_primitive_binary_ ## icname (n1, n2);	\
         }								\
     }
 

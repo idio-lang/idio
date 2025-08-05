@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -336,18 +336,28 @@ IDIO idio_bignum_C (char const *nums, size_t nums_len);
 
 IDIO idio_bignum_primitive_abs (IDIO a);
 IDIO idio_bignum_primitive_add (IDIO args);
+IDIO idio_bignum_primitive_binary_add (IDIO n1, IDIO n2);
 IDIO idio_bignum_primitive_subtract (IDIO args);
+IDIO idio_bignum_primitive_binary_subtract (IDIO n1, IDIO n2);
 IDIO idio_bignum_primitive_multiply (IDIO args);
+IDIO idio_bignum_primitive_binary_multiply (IDIO n1, IDIO n2);
 IDIO idio_bignum_primitive_divide (IDIO args);
+IDIO idio_bignum_primitive_binary_divide (IDIO n1, IDIO n2);
 IDIO idio_bignum_primitive_floor (IDIO bn);
 IDIO idio_bignum_primitive_quotient (IDIO a, IDIO b);
 IDIO idio_bignum_primitive_remainder (IDIO a, IDIO b);
 IDIO idio_bignum_primitive_lt (IDIO args);
+IDIO idio_bignum_primitive_binary_lt (IDIO n1, IDIO n2);
 IDIO idio_bignum_primitive_le (IDIO args);
+IDIO idio_bignum_primitive_binary_le (IDIO n1, IDIO n2);
 IDIO idio_bignum_primitive_eq (IDIO args);
+IDIO idio_bignum_primitive_binary_eq (IDIO n1, IDIO n2);
 IDIO idio_bignum_primitive_ne (IDIO args);
+IDIO idio_bignum_primitive_binary_ne (IDIO n1, IDIO n2);
 IDIO idio_bignum_primitive_gt (IDIO args);
+IDIO idio_bignum_primitive_binary_gt (IDIO n1, IDIO n2);
 IDIO idio_bignum_primitive_ge (IDIO args);
+IDIO idio_bignum_primitive_binary_ge (IDIO n1, IDIO n2);
 
 char *idio_bignum_as_C_string (IDIO v, size_t *sizep, idio_unicode_t format, IDIO seen, int depth);
 

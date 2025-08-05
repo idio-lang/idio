@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -3625,6 +3625,18 @@ IDIO idio_bignum_primitive_add (IDIO args)
     return r;
 }
 
+IDIO idio_bignum_primitive_binary_add (IDIO n1, IDIO n2)
+{
+    IDIO_ASSERT (n1);
+    IDIO_ASSERT (n2);
+    IDIO_TYPE_ASSERT (bignum, n1);
+    IDIO_TYPE_ASSERT (bignum, n2);
+
+    IDIO r = idio_bignum_real_add (n1, n2);
+
+    return r;
+}
+
 IDIO idio_bignum_primitive_subtract (IDIO args)
 {
     IDIO_ASSERT (args);
@@ -3681,6 +3693,18 @@ IDIO idio_bignum_primitive_subtract (IDIO args)
     return r;
 }
 
+IDIO idio_bignum_primitive_binary_subtract (IDIO n1, IDIO n2)
+{
+    IDIO_ASSERT (n1);
+    IDIO_ASSERT (n2);
+    IDIO_TYPE_ASSERT (bignum, n1);
+    IDIO_TYPE_ASSERT (bignum, n2);
+
+    IDIO r = idio_bignum_real_subtract (n1, n2);
+
+    return r;
+}
+
 IDIO idio_bignum_primitive_multiply (IDIO args)
 {
     IDIO_ASSERT (args);
@@ -3706,6 +3730,18 @@ IDIO idio_bignum_primitive_multiply (IDIO args)
 
         args = IDIO_PAIR_T (args);
     }
+
+    return r;
+}
+
+IDIO idio_bignum_primitive_binary_multiply (IDIO n1, IDIO n2)
+{
+    IDIO_ASSERT (n1);
+    IDIO_ASSERT (n2);
+    IDIO_TYPE_ASSERT (bignum, n1);
+    IDIO_TYPE_ASSERT (bignum, n2);
+
+    IDIO r = idio_bignum_real_multiply (n1, n2);
 
     return r;
 }
@@ -3772,6 +3808,27 @@ IDIO idio_bignum_primitive_divide (IDIO args)
     }
 
     return r;
+}
+
+IDIO idio_bignum_primitive_binary_divide (IDIO n1, IDIO n2)
+{
+    IDIO_ASSERT (n1);
+    IDIO_ASSERT (n2);
+    IDIO_TYPE_ASSERT (bignum, n1);
+    IDIO_TYPE_ASSERT (bignum, n2);
+
+    if (idio_bignum_zero_p (n2)) {
+      /*
+       * Test Case: bignum-errors/binary-divide-float-zero.idio
+       *
+       * binary-/ 1.0 0.0
+       */
+      idio_bignum_error_divide_by_zero (IDIO_LIST2 (n1, n2), IDIO_C_FUNC_LOCATION ());
+
+      return idio_S_notreached;
+    }
+
+    return idio_bignum_real_divide (n1, n2);
 }
 
 IDIO idio_bignum_primitive_floor (IDIO bn)
@@ -3944,6 +4001,20 @@ IDIO idio_bignum_primitive_lt (IDIO args)
     return idio_S_true;
 }
 
+IDIO idio_bignum_primitive_binary_lt (IDIO n1, IDIO n2)
+{
+    IDIO_ASSERT (n1);
+    IDIO_ASSERT (n2);
+    IDIO_TYPE_ASSERT (bignum, n1);
+    IDIO_TYPE_ASSERT (bignum, n2);
+
+    if (idio_bignum_real_lt_p (n1, n2)) {
+	return idio_S_true;
+    }
+
+    return idio_S_false;
+}
+
 IDIO idio_bignum_primitive_le (IDIO args)
 {
     IDIO_ASSERT (args);
@@ -3973,6 +4044,21 @@ IDIO idio_bignum_primitive_le (IDIO args)
 
 	r = h;
         args = idio_list_tail (args);
+    }
+
+    return idio_S_true;
+}
+
+IDIO idio_bignum_primitive_binary_le (IDIO n1, IDIO n2)
+{
+    IDIO_ASSERT (n1);
+    IDIO_ASSERT (n2);
+    IDIO_TYPE_ASSERT (bignum, n1);
+    IDIO_TYPE_ASSERT (bignum, n2);
+
+    /* n1 <= n2 => ! n2 < n1 */
+    if (idio_bignum_real_lt_p (n2, n1)) {
+	return idio_S_false;
     }
 
     return idio_S_true;
@@ -4011,6 +4097,20 @@ IDIO idio_bignum_primitive_eq (IDIO args)
     return idio_S_true;
 }
 
+IDIO idio_bignum_primitive_binary_eq (IDIO n1, IDIO n2)
+{
+    IDIO_ASSERT (n1);
+    IDIO_ASSERT (n2);
+    IDIO_TYPE_ASSERT (bignum, n1);
+    IDIO_TYPE_ASSERT (bignum, n2);
+
+    if (idio_bignum_real_equal_p (n1, n2)) {
+	return idio_S_true;
+    }
+
+    return idio_S_false;
+}
+
 IDIO idio_bignum_primitive_ne (IDIO args)
 {
     IDIO_ASSERT (args);
@@ -4039,6 +4139,20 @@ IDIO idio_bignum_primitive_ne (IDIO args)
 
 	r = h;
         args = idio_list_tail (args);
+    }
+
+    return idio_S_true;
+}
+
+IDIO idio_bignum_primitive_binary_ne (IDIO n1, IDIO n2)
+{
+    IDIO_ASSERT (n1);
+    IDIO_ASSERT (n2);
+    IDIO_TYPE_ASSERT (bignum, n1);
+    IDIO_TYPE_ASSERT (bignum, n2);
+
+    if (idio_bignum_real_equal_p (n1, n2)) {
+	return idio_S_false;
     }
 
     return idio_S_true;
@@ -4078,6 +4192,21 @@ IDIO idio_bignum_primitive_ge (IDIO args)
     return idio_S_true;
 }
 
+IDIO idio_bignum_primitive_binary_ge (IDIO n1, IDIO n2)
+{
+    IDIO_ASSERT (n1);
+    IDIO_ASSERT (n2);
+    IDIO_TYPE_ASSERT (bignum, n1);
+    IDIO_TYPE_ASSERT (bignum, n2);
+
+    /* n1 >= n2 => ! n1 < n2 */
+    if (idio_bignum_real_lt_p (n1, n2)) {
+	return idio_S_false;
+    }
+
+    return idio_S_true;
+}
+
 IDIO idio_bignum_primitive_gt (IDIO args)
 {
     IDIO_ASSERT (args);
@@ -4110,6 +4239,21 @@ IDIO idio_bignum_primitive_gt (IDIO args)
     }
 
     return idio_S_true;
+}
+
+IDIO idio_bignum_primitive_binary_gt (IDIO n1, IDIO n2)
+{
+    IDIO_ASSERT (n1);
+    IDIO_ASSERT (n2);
+    IDIO_TYPE_ASSERT (bignum, n1);
+    IDIO_TYPE_ASSERT (bignum, n2);
+
+    /* n1 > n2 => n2 < n1 */
+    if (idio_bignum_real_lt_p (n2, n1)) {
+	return idio_S_true;
+    }
+
+    return idio_S_false;
 }
 
 int idio_realp (IDIO n)

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -187,28 +187,46 @@ test (*  1 -1)    -1
 test (* FIXNUM-MAX 2 2) (FIXNUM-MAX * 4)
 
 ;; comparisons
-define-template (cmp-test op & results) {
+define-template (fixnum-cmp-test op & results) {
+  next-result := #f
+  {
+    i := 0
+
+    next-result = function () {
+      r := nth results i
+      i = i + 1
+      r
+    }
+  }
+
   #T{
-    test ($op 1 1)   $(nth results 0)
-    test ($op 1 0)   $(nth results 1)
-    test ($op 1 -1)  $(nth results 2)
+    test ($op  1  1) $(next-result)
+    test ($op  1  0) $(next-result)
+    test ($op  1 -1) $(next-result)
 
-    test ($op 0 1)   $(nth results 3)
-    test ($op 0 0)   $(nth results 4)
-    test ($op 0 -1)  $(nth results 5)
+    test ($op  0  1) $(next-result)
+    test ($op  0  0) $(next-result)
+    test ($op  0 -1) $(next-result)
 
-    test ($op -1 1)  $(nth results 6)
-    test ($op -1 0)  $(nth results 7)
-    test ($op -1 -1) $(nth results 8)
+    test ($op -1  1) $(next-result)
+    test ($op -1  0) $(next-result)
+    test ($op -1 -1) $(next-result)
   }
 }
 
-cmp-test \lt #f #f #f #t #f #f #t #t #f
-cmp-test \le #t #f #f #t #t #f #t #t #t
-cmp-test \eq #t #f #f #f #t #f #f #f #t
-cmp-test \ne #f #t #t #t #f #t #t #t #f
-cmp-test \ge #t #t #t #f #t #t #f #f #t
-cmp-test \gt #f #t #t #f #f #t #f #f #f
+fixnum-cmp-test \lt #f #f #f #t #f #f #t #t #f
+fixnum-cmp-test \le #t #f #f #t #t #f #t #t #t
+fixnum-cmp-test \eq #t #f #f #f #t #f #f #f #t
+fixnum-cmp-test \ne #f #t #t #t #f #t #t #t #f
+fixnum-cmp-test \ge #t #t #t #f #t #t #f #f #t
+fixnum-cmp-test \gt #f #t #t #f #f #t #f #f #f
+
+fixnum-cmp-test binary-lt #f #f #f #t #f #f #t #t #f
+fixnum-cmp-test binary-le #t #f #f #t #t #f #t #t #t
+fixnum-cmp-test binary-eq #t #f #f #f #t #f #f #f #t
+fixnum-cmp-test binary-ne #f #t #t #t #f #t #t #t #f
+fixnum-cmp-test binary-ge #t #t #t #f #t #t #f #f #t
+fixnum-cmp-test binary-gt #f #t #t #f #f #t #f #f #f
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; mathematical functions
@@ -275,4 +293,4 @@ test (quotient  2.0 1)   2
 test (quotient  2.0 1.0) 2
 
 ;; all done?
-Tests? (fixnum0 + 208)
+Tests? (fixnum0 + 262)

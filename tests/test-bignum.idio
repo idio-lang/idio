@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2021-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -397,515 +397,1147 @@ test (remainder -123.0 -123)  0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; comparisions
 
-; "1.0" first
-test (1.0  lt  2.0) #t
-test (1.0  lt -2.0) #f
-test (-1.0 lt  2.0) #t
-test (-1.0 lt -2.0) #f
-; "1.0" second
-test (2.0  lt  1.0) #f
-test (2.0  lt -1.0) #f
-test (-2.0 lt  1.0) #t
-test (-2.0 lt -1.0) #t
-; vs self
-test (1.0  lt  1.0) #f
-test (-1.0 lt -1.0) #f
-; vs zero
-test (1.0  lt  0.0) #f
-test (0.0  lt  1.0) #t
-; "0.1" first
-test (0.1  lt  1.0) #t
-test (0.1  lt -1.0) #f
-test (-0.1 lt  1.0) #t
-test (-0.1 lt -1.0) #f
-; "0.1" second
-test (1.0  lt  0.1) #f
-test (1.0  lt -0.1) #f
-test (-1.0 lt  0.1) #t
-test (-1.0 lt -0.1) #t
-; vs self
-test (0.1  lt  0.1) #f
-test (-0.1 lt -0.1) #f
-; vs zero
-test (0.1  lt  0.0) #f
-test (0.0  lt  0.1) #t
-; "1e0" first
-test (1e0  lt  2.0) #t
-test (1e0  lt -2.0) #f
-test (-1e0 lt  2.0) #t
-test (-1e0 lt -2.0) #f
-; "1e0" second
-test (2.0  lt  1e0) #f
-test (2.0  lt -1e0) #f
-test (-2.0 lt  1e0) #t
-test (-2.0 lt -1e0) #t
-; vs self
-test (1e0  lt  1e0) #f
-test (-1e0 lt -1e0) #f
-; vs zero
-test (1e0  lt  0.0) #f
-test (0.0  lt  1e0) #t
-; "1e+1" first
-test (1e+1  lt  2.0) #f
-test (1e+1  lt -2.0) #f
-test (-1e+1 lt  2.0) #t
-test (-1e+1 lt -2.0) #t
-; "1e+1" second
-test (2.0  lt  1e+1) #t
-test (2.0  lt -1e+1) #f
-test (-2.0 lt  1e+1) #t
-test (-2.0 lt -1e+1) #f
-; vs self
-test (1e+1  lt  1e+1) #f
-test (+1e+1 lt +1e+1) #f
-; vs zero
-test (1e+1  lt   0.0) #f
-test (0.0   lt  1e+1) #t
-; "1e-1" first
-test (1e-1  lt  2.0) #t
-test (1e-1  lt -2.0) #f
-test (-1e-1 lt  2.0) #t
-test (-1e-1 lt -2.0) #f
-; "1e-1" second
-test (2.0  lt  1e-1) #f
-test (2.0  lt -1e-1) #f
-test (-2.0 lt  1e-1) #t
-test (-2.0 lt -1e-1) #t
-; vs self
-test (1e-1  lt  1e-1) #f
-test (-1e-1 lt -1e-1) #f
-; vs zero
-test (1e-1  lt   0.0) #f
-test (0.0   lt  1e-1) #t
+define-template (bignum-cmp-test op & results) {
+  next-result := #f
+  {
+    i := 0
+
+    next-result = function () {
+      r := nth results i
+      i = i + 1
+      r
+    }
+  }
+
+  #T{
+    ; "1.0" first
+    test ($op  1.0  2.0)	$(next-result)
+    test ($op  1.0 -2.0)	$(next-result)
+    test ($op -1.0  2.0)	$(next-result)
+    test ($op -1.0 -2.0)	$(next-result)
+
+    ; "1.0" second
+    test ($op  2.0  1.0)	$(next-result)
+    test ($op  2.0 -1.0)	$(next-result)
+    test ($op -2.0  1.0)	$(next-result)
+    test ($op -2.0 -1.0)	$(next-result)
+
+    ; 1.0 vs self
+    test ($op  1.0  1.0)	$(next-result)
+    test ($op -1.0 -1.0)	$(next-result)
+
+    ; 1.0 vs zero
+    test ($op  1.0  0.0)	$(next-result)
+    test ($op  0.0  1.0)	$(next-result)
+
+    ; "0.1" first
+    test ($op  0.1  1.0)	$(next-result)
+    test ($op  0.1 -1.0)	$(next-result)
+    test ($op -0.1  1.0)	$(next-result)
+    test ($op -0.1 -1.0)	$(next-result)
+
+    ; "0.1" second
+    test ($op  1.0  0.1)	$(next-result)
+    test ($op  1.0 -0.1)	$(next-result)
+    test ($op -1.0  0.1)	$(next-result)
+    test ($op -1.0 -0.1)	$(next-result)
+
+    ; 0.1 vs self
+    test ($op  0.1  0.1)	$(next-result)
+    test ($op -0.1 -0.1)	$(next-result)
+
+    ; 0.1 vs zero
+    test ($op  0.1  0.0)	$(next-result)
+    test ($op  0.0  0.1)	$(next-result)
+
+    ; "1e0" first
+    test ($op  1e0  2.0)	$(next-result)
+    test ($op  1e0 -2.0)	$(next-result)
+    test ($op -1e0  2.0)	$(next-result)
+    test ($op -1e0 -2.0)	$(next-result)
+
+    ; "1e0" second
+    test ($op  2.0  1e0)	$(next-result)
+    test ($op  2.0 -1e0)	$(next-result)
+    test ($op -2.0  1e0)	$(next-result)
+    test ($op -2.0 -1e0)	$(next-result)
+
+    ; 1e0 vs self
+    test ($op  1e0  1e0)	$(next-result)
+    test ($op -1e0 -1e0)	$(next-result)
+
+    ; 1e0 vs zero
+    test ($op  1e0  0.0)	$(next-result)
+    test ($op  0.0  1e0)	$(next-result)
+
+    ; "1e+1" first
+    test ($op  1e+1  2.0)	$(next-result)
+    test ($op  1e+1 -2.0)	$(next-result)
+    test ($op -1e+1  2.0)	$(next-result)
+    test ($op -1e+1 -2.0)	$(next-result)
+
+    ; "1e+1" second
+    test ($op  2.0  1e+1)	$(next-result)
+    test ($op  2.0 -1e+1)	$(next-result)
+    test ($op -2.0  1e+1)	$(next-result)
+    test ($op -2.0 -1e+1)	$(next-result)
+
+    ; 1e+1 vs self
+    test ($op  1e+1  1e+1)	$(next-result)
+    test ($op -1e+1 -1e+1)	$(next-result)
+
+    ; 1e+1 vs zero
+    test ($op  1e+1  0.0)	$(next-result)
+    test ($op  0.0  1e+1)	$(next-result)
+
+    ; "1e-1" first
+    test ($op  1e-1  2.0)	$(next-result)
+    test ($op  1e-1 -2.0)	$(next-result)
+    test ($op -1e-1  2.0)	$(next-result)
+    test ($op -1e-1 -2.0)	$(next-result)
+
+    ; "1e-1" second
+    test ($op  2.0  1e-1)	$(next-result)
+    test ($op  2.0 -1e-1)	$(next-result)
+    test ($op -2.0  1e-1)	$(next-result)
+    test ($op -2.0 -1e-1)	$(next-result)
+
+    ; 1e-1 vs self
+    test ($op  1e-1  1e-1)	$(next-result)
+    test ($op -1e-1 -1e-1)	$(next-result)
+
+    ; 1e-1 vs zero
+    test ($op  1e-1  0.0)	$(next-result)
+    test ($op  0.0  1e-1)	$(next-result)
+  }
+}
+
+(bignum-cmp-test \lt
+
+		 ; "1.0" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "1.0" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; 1.0 vs self
+		 #f
+		 #f
+		 ; 1.0 vs zero
+		 #f
+		 #t
+		 ; "0.1" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "0.1" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; 0.1 vs self
+		 #f
+		 #f
+		 ; 0.1 vs zero
+		 #f
+		 #t
+		 ; "1e0" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "1e0" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; 1e0 vs self
+		 #f
+		 #f
+		 ; 1e0 vs zero
+		 #f
+		 #t
+		 ; "1e+1" first
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; "1e+1" second
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; 1e+1 vs self
+		 #f
+		 #f
+		 ; 1e+1 vs zero
+		 #f
+		 #t
+		 ; "1e-1" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "1e-1" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; 1e-1 vs self
+		 #f
+		 #f
+		 ; 1e-1 vs zero
+		 #f
+		 #t)
+
 ; list form
 test (lt 1.0 2 3  4) #t
 test (lt 2 1.0 3  4) #f
 test (lt 1.0 2 3 -4) #f
 
-; "1.0" first
-test (1.0  le  2.0) #t
-test (1.0  le -2.0) #f
-test (-1.0 le  2.0) #t
-test (-1.0 le -2.0) #f
-; "1.0" second
-test (2.0  le  1.0) #f
-test (2.0  le -1.0) #f
-test (-2.0 le  1.0) #t
-test (-2.0 le -1.0) #t
-; vs self
-test (1.0  le  1.0) #t
-test (-1.0 le -1.0) #t
-; vs zero
-test (1.0  le  0.0) #f
-test (0.0  le  1.0) #t
-; "0.1" first
-test (0.1  le  1.0) #t
-test (0.1  le -1.0) #f
-test (-0.1 le  1.0) #t
-test (-0.1 le -1.0) #f
-; "0.1" second
-test (1.0  le  0.1) #f
-test (1.0  le -0.1) #f
-test (-1.0 le  0.1) #t
-test (-1.0 le -0.1) #t
-; vs self
-test (0.1  le  0.1) #t
-test (-0.1 le -0.1) #t
-; vs zero
-test (0.1  le  0.0) #f
-test (0.0  le  0.1) #t
-; "1e0" first
-test (1e0  le  2.0) #t
-test (1e0  le -2.0) #f
-test (-1e0 le  2.0) #t
-test (-1e0 le -2.0) #f
-; "1e0" second
-test (2.0  le  1e0) #f
-test (2.0  le -1e0) #f
-test (-2.0 le  1e0) #t
-test (-2.0 le -1e0) #t
-; vs self
-test (1e0  le  1e0) #t
-test (-1e0 le -1e0) #t
-; vs zero
-test (1e0  le  0.0) #f
-test (0.0  le  1e0) #t
-; "1e+1" first
-test (1e+1  le  2.0) #f
-test (1e+1  le -2.0) #f
-test (-1e+1 le  2.0) #t
-test (-1e+1 le -2.0) #t
-; "1e+1" second
-test (2.0  le  1e+1) #t
-test (2.0  le -1e+1) #f
-test (-2.0 le  1e+1) #t
-test (-2.0 le -1e+1) #f
-; vs self
-test (1e+1  le  1e+1) #t
-test (+1e+1 le +1e+1) #t
-; vs zero
-test (1e+1  le   0.0) #f
-test (0.0   le  1e+1) #t
-; "1e-1" first
-test (1e-1  le  2.0) #t
-test (1e-1  le -2.0) #f
-test (-1e-1 le  2.0) #t
-test (-1e-1 le -2.0) #f
-; "1e-1" second
-test (2.0  le  1e-1) #f
-test (2.0  le -1e-1) #f
-test (-2.0 le  1e-1) #t
-test (-2.0 le -1e-1) #t
-; vs self
-test (1e-1  le  1e-1) #t
-test (-1e-1 le -1e-1) #t
-; vs zero
-test (1e-1  le   0.0) #f
-test (0.0   le  1e-1) #t
+(bignum-cmp-test \le
+
+		 ; "1.0" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "1.0" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #t
+		 ; "0.1" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "0.1" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #t
+		 ; "1e0" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "1e0" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #t
+		 ; "1e+1" first
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; "1e+1" second
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #t
+		 ; "1e-1" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "1e-1" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #t)
+
 ; list form
 test (le 1.0 2 3  4) #t
 test (le 2 1.0 3  4) #f
 test (le 1.0 2 3 -4) #f
 
-; "1.0" first
-test (1.0  eq  2.0) #f
-test (1.0  eq -2.0) #f
-test (-1.0 eq  2.0) #f
-test (-1.0 eq -2.0) #f
-; "1.0" second
-test (2.0  eq  1.0) #f
-test (2.0  eq -1.0) #f
-test (-2.0 eq  1.0) #f
-test (-2.0 eq -1.0) #f
-; vs self
-test (1.0  eq  1.0) #t
-test (-1.0 eq -1.0) #t
-; vs zero
-test (1.0  eq  0.0) #f
-test (0.0  eq  1.0) #f
-; "0.1" first
-test (0.1  eq  1.0) #f
-test (0.1  eq -1.0) #f
-test (-0.1 eq  1.0) #f
-test (-0.1 eq -1.0) #f
-; "0.1" second
-test (1.0  eq  0.1) #f
-test (1.0  eq -0.1) #f
-test (-1.0 eq  0.1) #f
-test (-1.0 eq -0.1) #f
-; vs self
-test (0.1  eq  0.1) #t
-test (-0.1 eq -0.1) #t
-; vs zero
-test (0.1  eq  0.0) #f
-test (0.0  eq  0.1) #f
-; "1e0" first
-test (1e0  eq  2.0) #f
-test (1e0  eq -2.0) #f
-test (-1e0 eq  2.0) #f
-test (-1e0 eq -2.0) #f
-; "1e0" second
-test (2.0  eq  1e0) #f
-test (2.0  eq -1e0) #f
-test (-2.0 eq  1e0) #f
-test (-2.0 eq -1e0) #f
-; vs self
-test (1e0  eq  1e0) #t
-test (-1e0 eq -1e0) #t
-; vs zero
-test (1e0  eq  0.0) #f
-test (0.0  eq  1e0) #f
-; "1e+1" first
-test (1e+1  eq  2.0) #f
-test (1e+1  eq -2.0) #f
-test (-1e+1 eq  2.0) #f
-test (-1e+1 eq -2.0) #f
-; "1e+1" second
-test (2.0  eq  1e+1) #f
-test (2.0  eq -1e+1) #f
-test (-2.0 eq  1e+1) #f
-test (-2.0 eq -1e+1) #f
-; vs self
-test (1e+1  eq  1e+1) #t
-test (+1e+1 eq +1e+1) #t
-; vs zero
-test (1e+1  eq   0.0) #f
-test (0.0   eq  1e+1) #f
-; "1e-1" first
-test (1e-1  eq  2.0) #f
-test (1e-1  eq -2.0) #f
-test (-1e-1 eq  2.0) #f
-test (-1e-1 eq -2.0) #f
-; "1e-1" second
-test (2.0  eq  1e-1) #f
-test (2.0  eq -1e-1) #f
-test (-2.0 eq  1e-1) #f
-test (-2.0 eq -1e-1) #f
-; vs self
-test (1e-1  eq  1e-1) #t
-test (-1e-1 eq -1e-1) #t
-; vs zero
-test (1e-1  eq   0.0) #f
-test (0.0   eq  1e-1) #f
+(bignum-cmp-test \eq
+
+		 ; "1.0" first
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; "1.0" second
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #f
+		 ; "0.1" first
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; "0.1" second
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #f
+		 ; "1e0" first
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; "1e0" second
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #f
+		 ; "1e+1" first
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; "1e+1" second
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #f
+		 ; "1e-1" first
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; "1e-1" second
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #f)
+
 ; list form
 test (eq 1.0 2 3  4) #f
 test (eq 2 1.0 3  4) #f
 test (eq 1.0 2 3 -4) #f
 
-; "1.0" first
-test (1.0  ne  2.0) #t
-test (1.0  ne -2.0) #t
-test (-1.0 ne  2.0) #t
-test (-1.0 ne -2.0) #t
-; "1.0" second
-test (2.0  ne  1.0) #t
-test (2.0  ne -1.0) #t
-test (-2.0 ne  1.0) #t
-test (-2.0 ne -1.0) #t
-; vs self
-test (1.0  ne  1.0) #f
-test (-1.0 ne -1.0) #f
-; vs zero
-test (1.0  ne  0.0) #t
-test (0.0  ne  1.0) #t
-; "0.1" first
-test (0.1  ne  1.0) #t
-test (0.1  ne -1.0) #t
-test (-0.1 ne  1.0) #t
-test (-0.1 ne -1.0) #t
-; "0.1" second
-test (1.0  ne  0.1) #t
-test (1.0  ne -0.1) #t
-test (-1.0 ne  0.1) #t
-test (-1.0 ne -0.1) #t
-; vs self
-test (0.1  ne  0.1) #f
-test (-0.1 ne -0.1) #f
-; vs zero
-test (0.1  ne  0.0) #t
-test (0.0  ne  0.1) #t
-; "1e0" first
-test (1e0  ne  2.0) #t
-test (1e0  ne -2.0) #t
-test (-1e0 ne  2.0) #t
-test (-1e0 ne -2.0) #t
-; "1e0" second
-test (2.0  ne  1e0) #t
-test (2.0  ne -1e0) #t
-test (-2.0 ne  1e0) #t
-test (-2.0 ne -1e0) #t
-; vs self
-test (1e0  ne  1e0) #f
-test (-1e0 ne -1e0) #f
-; vs zero
-test (1e0  ne  0.0) #t
-test (0.0  ne  1e0) #t
-; "1e+1" first
-test (1e+1  ne  2.0) #t
-test (1e+1  ne -2.0) #t
-test (-1e+1 ne  2.0) #t
-test (-1e+1 ne -2.0) #t
-; "1e+1" second
-test (2.0  ne  1e+1) #t
-test (2.0  ne -1e+1) #t
-test (-2.0 ne  1e+1) #t
-test (-2.0 ne -1e+1) #t
-; vs self
-test (1e+1  ne  1e+1) #f
-test (+1e+1 ne +1e+1) #f
-; vs zero
-test (1e+1  ne   0.0) #t
-test (0.0   ne  1e+1) #t
-; "1e-1" first
-test (1e-1  ne  2.0) #t
-test (1e-1  ne -2.0) #t
-test (-1e-1 ne  2.0) #t
-test (-1e-1 ne -2.0) #t
-; "1e-1" second
-test (2.0  ne  1e-1) #t
-test (2.0  ne -1e-1) #t
-test (-2.0 ne  1e-1) #t
-test (-2.0 ne -1e-1) #t
-; vs self
-test (1e-1  ne  1e-1) #f
-test (-1e-1 ne -1e-1) #f
-; vs zero
-test (1e-1  ne   0.0) #t
-test (0.0   ne  1e-1) #t
+(bignum-cmp-test \ne
+
+		 ; "1.0" first
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; "1.0" second
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #t
+		 ; "0.1" first
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; "0.1" second
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #t
+		 ; "1e0" first
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; "1e0" second
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #t
+		 ; "1e+1" first
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; "1e+1" second
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #t
+		 ; "1e-1" first
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; "1e-1" second
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #t)
+
 ; list form
 test (ne 1.0 2 3  4) #t
 test (ne 2 1.0 3  4) #t
 test (ne 1.0 2 3 -4) #t
 
-; "1.0" first
-test (1.0  ge  2.0) #f
-test (1.0  ge -2.0) #t
-test (-1.0 ge  2.0) #f
-test (-1.0 ge -2.0) #t
-; "1.0" second
-test (2.0  ge  1.0) #t
-test (2.0  ge -1.0) #t
-test (-2.0 ge  1.0) #f
-test (-2.0 ge -1.0) #f
-; vs self
-test (1.0  ge  1.0) #t
-test (-1.0 ge -1.0) #t
-; vs zero
-test (1.0  ge  0.0) #t
-test (0.0  ge  1.0) #f
-; "0.1" first
-test (0.1  ge  1.0) #f
-test (0.1  ge -1.0) #t
-test (-0.1 ge  1.0) #f
-test (-0.1 ge -1.0) #t
-; "0.1" second
-test (1.0  ge  0.1) #t
-test (1.0  ge -0.1) #t
-test (-1.0 ge  0.1) #f
-test (-1.0 ge -0.1) #f
-; vs self
-test (0.1  ge  0.1) #t
-test (-0.1 ge -0.1) #t
-; vs zero
-test (0.1  ge  0.0) #t
-test (0.0  ge  0.1) #f
-; "1e0" first
-test (1e0  ge  2.0) #f
-test (1e0  ge -2.0) #t
-test (-1e0 ge  2.0) #f
-test (-1e0 ge -2.0) #t
-; "1e0" second
-test (2.0  ge  1e0) #t
-test (2.0  ge -1e0) #t
-test (-2.0 ge  1e0) #f
-test (-2.0 ge -1e0) #f
-; vs self
-test (1e0  ge  1e0) #t
-test (-1e0 ge -1e0) #t
-; vs zero
-test (1e0  ge  0.0) #t
-test (0.0  ge  1e0) #f
-; "1e+1" first
-test (1e+1  ge  2.0) #t
-test (1e+1  ge -2.0) #t
-test (-1e+1 ge  2.0) #f
-test (-1e+1 ge -2.0) #f
-; "1e+1" second
-test (2.0  ge  1e+1) #f
-test (2.0  ge -1e+1) #t
-test (-2.0 ge  1e+1) #f
-test (-2.0 ge -1e+1) #t
-; vs self
-test (1e+1  ge  1e+1) #t
-test (+1e+1 ge +1e+1) #t
-; vs zero
-test (1e+1  ge   0.0) #t
-test (0.0   ge  1e+1) #f
-; "1e-1" first
-test (1e-1  ge  2.0) #f
-test (1e-1  ge -2.0) #t
-test (-1e-1 ge  2.0) #f
-test (-1e-1 ge -2.0) #t
-; "1e-1" second
-test (2.0  ge  1e-1) #t
-test (2.0  ge -1e-1) #t
-test (-2.0 ge  1e-1) #f
-test (-2.0 ge -1e-1) #f
-; vs self
-test (1e-1  ge  1e-1) #t
-test (-1e-1 ge -1e-1) #t
-; vs zero
-test (1e-1  ge   0.0) #t
-test (0.0   ge  1e-1) #f
+(bignum-cmp-test \ge
+
+		 ; "1.0" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "1.0" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #t
+		 #f
+		 ; "0.1" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "0.1" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #t
+		 #f
+		 ; "1e0" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "1e0" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #t
+		 #f
+		 ; "1e+1" first
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; "1e+1" second
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #t
+		 #f
+		 ; "1e-1" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "1e-1" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #t
+		 #f)
+
 ; list form
 test (ge 1.0 2 3  4) #f
 test (ge 2 1.0 3  4) #f
 test (ge 1.0 2 3 -4) #f
 
-; "1.0" first
-test (1.0  gt  2.0) #f
-test (1.0  gt -2.0) #t
-test (-1.0 gt  2.0) #f
-test (-1.0 gt -2.0) #t
-; "1.0" second
-test (2.0  gt  1.0) #t
-test (2.0  gt -1.0) #t
-test (-2.0 gt  1.0) #f
-test (-2.0 gt -1.0) #f
-; vs self
-test (1.0  gt  1.0) #f
-test (-1.0 gt -1.0) #f
-; vs zero
-test (1.0  gt  0.0) #t
-test (0.0  gt  1.0) #f
-; "0.1" first
-test (0.1  gt  1.0) #f
-test (0.1  gt -1.0) #t
-test (-0.1 gt  1.0) #f
-test (-0.1 gt -1.0) #t
-; "0.1" second
-test (1.0  gt  0.1) #t
-test (1.0  gt -0.1) #t
-test (-1.0 gt  0.1) #f
-test (-1.0 gt -0.1) #f
-; vs self
-test (0.1  gt  0.1) #f
-test (-0.1 gt -0.1) #f
-; vs zero
-test (0.1  gt  0.0) #t
-test (0.0  gt  0.1) #f
-; "1e0" first
-test (1e0  gt  2.0) #f
-test (1e0  gt -2.0) #t
-test (-1e0 gt  2.0) #f
-test (-1e0 gt -2.0) #t
-; "1e0" second
-test (2.0  gt  1e0) #t
-test (2.0  gt -1e0) #t
-test (-2.0 gt  1e0) #f
-test (-2.0 gt -1e0) #f
-; vs self
-test (1e0  gt  1e0) #f
-test (-1e0 gt -1e0) #f
-; vs zero
-test (1e0  gt  0.0) #t
-test (0.0  gt  1e0) #f
-; "1e+1" first
-test (1e+1  gt  2.0) #t
-test (1e+1  gt -2.0) #t
-test (-1e+1 gt  2.0) #f
-test (-1e+1 gt -2.0) #f
-; "1e+1" second
-test (2.0  gt  1e+1) #f
-test (2.0  gt -1e+1) #t
-test (-2.0 gt  1e+1) #f
-test (-2.0 gt -1e+1) #t
-; vs self
-test (1e+1  gt  1e+1) #f
-test (+1e+1 gt +1e+1) #f
-; vs zero
-test (1e+1  gt   0.0) #t
-test (0.0   gt  1e+1) #f
-; "1e-1" first
-test (1e-1  gt  2.0) #f
-test (1e-1  gt -2.0) #t
-test (-1e-1 gt  2.0) #f
-test (-1e-1 gt -2.0) #t
-; "1e-1" second
-test (2.0  gt  1e-1) #t
-test (2.0  gt -1e-1) #t
-test (-2.0 gt  1e-1) #f
-test (-2.0 gt -1e-1) #f
-; vs self
-test (1e-1  gt  1e-1) #f
-test (-1e-1 gt -1e-1) #f
-; vs zero
-test (1e-1  gt   0.0) #t
-test (0.0   gt  1e-1) #f
+(bignum-cmp-test \gt
+
+		 ; "1.0" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "1.0" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #f
+		 ; "0.1" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "0.1" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #f
+		 ; "1e0" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "1e0" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #f
+		 ; "1e+1" first
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; "1e+1" second
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #f
+		 ; "1e-1" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "1e-1" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #f)
+
 ; list form
 test (gt 1.0 2 3  4) #f
 test (gt 2 1.0 3  4) #f
 test (gt 1.0 2 3 -4) #f
+
+;; same again for the binary variants
+(bignum-cmp-test binary-lt
+
+		 ; "1.0" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "1.0" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; 1.0 vs self
+		 #f
+		 #f
+		 ; 1.0 vs zero
+		 #f
+		 #t
+		 ; "0.1" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "0.1" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; 0.1 vs self
+		 #f
+		 #f
+		 ; 0.1 vs zero
+		 #f
+		 #t
+		 ; "1e0" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "1e0" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; 1e0 vs self
+		 #f
+		 #f
+		 ; 1e0 vs zero
+		 #f
+		 #t
+		 ; "1e+1" first
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; "1e+1" second
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; 1e+1 vs self
+		 #f
+		 #f
+		 ; 1e+1 vs zero
+		 #f
+		 #t
+		 ; "1e-1" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "1e-1" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; 1e-1 vs self
+		 #f
+		 #f
+		 ; 1e-1 vs zero
+		 #f
+		 #t)
+
+(bignum-cmp-test binary-le
+
+		 ; "1.0" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "1.0" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #t
+		 ; "0.1" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "0.1" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #t
+		 ; "1e0" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "1e0" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #t
+		 ; "1e+1" first
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; "1e+1" second
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #t
+		 ; "1e-1" first
+		 #t
+		 #f
+		 #t
+		 #f
+		 ; "1e-1" second
+		 #f
+		 #f
+		 #t
+		 #t
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #t)
+
+(bignum-cmp-test binary-eq
+
+		 ; "1.0" first
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; "1.0" second
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #f
+		 ; "0.1" first
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; "0.1" second
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #f
+		 ; "1e0" first
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; "1e0" second
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #f
+		 ; "1e+1" first
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; "1e+1" second
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #f
+		 ; "1e-1" first
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; "1e-1" second
+		 #f
+		 #f
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #f
+		 #f)
+
+(bignum-cmp-test binary-ne
+
+		 ; "1.0" first
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; "1.0" second
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #t
+		 ; "0.1" first
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; "0.1" second
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #t
+		 ; "1e0" first
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; "1e0" second
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #t
+		 ; "1e+1" first
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; "1e+1" second
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #t
+		 ; "1e-1" first
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; "1e-1" second
+		 #t
+		 #t
+		 #t
+		 #t
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #t)
+
+(bignum-cmp-test binary-ge
+
+		 ; "1.0" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "1.0" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #t
+		 #f
+		 ; "0.1" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "0.1" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #t
+		 #f
+		 ; "1e0" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "1e0" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #t
+		 #f
+		 ; "1e+1" first
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; "1e+1" second
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #t
+		 #f
+		 ; "1e-1" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "1e-1" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #t
+		 #t
+		 ; vs zero
+		 #t
+		 #f)
+
+(bignum-cmp-test binary-gt
+
+		 ; "1.0" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "1.0" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #f
+		 ; "0.1" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "0.1" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #f
+		 ; "1e0" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "1e0" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #f
+		 ; "1e+1" first
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; "1e+1" second
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #f
+		 ; "1e-1" first
+		 #f
+		 #t
+		 #f
+		 #t
+		 ; "1e-1" second
+		 #t
+		 #t
+		 #f
+		 #f
+		 ; vs self
+		 #f
+		 #f
+		 ; vs zero
+		 #t
+		 #f)
 
 ; a handly exact integer number
 ein := FIXNUM-MAX + 1
@@ -1192,4 +1824,4 @@ test +123456789012345678 123456789012345678
 test +0.0 0
 
 ;; all done?
-Tests? (bignum0 + 820)
+Tests? (bignum0 + 1180)
