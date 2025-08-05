@@ -220,6 +220,11 @@ if (not testdir) {
   IDIOLIB = trim-path IDIOLIB
 }
 
+;; Export a flag that we're testing -- actually used to speed up
+;; utils/bin/lsof.BSD which has a painfully slow find-an-inode command
+;; which we can circumvent for the narrow case of testing idio
+IDIO_UNDER_TEST :* "1"
+
 printf "[%s/%d] %3ds test.idio using IDIOLIB=%s\n" (getpid) PID SECONDS IDIOLIB
 
 OPATH := PATH

@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# Copyright (c) 2021-2023 Ian Fitchet <idf@idio-lang.org>
+# Copyright (c) 2021-2023, 2025 Ian Fitchet <idf@idio-lang.org>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License.  You
@@ -318,7 +318,13 @@ fi
 	    # I can't believe many would regard this call to find as
 	    # "efficient" but we might do this for the same inode
 	    # twice per invocation of lsof
-	    name=$(find ${mount} -xdev -inum ${inum} 2>/dev/null)
+	    tree=${mount}
+	    if [[ ${IDIO_UNDER_TEST:+X} = X ]] ; then
+		# For the narrow case of testing idio we don't need to
+		# search the entire mountpoint, / in most cases
+		tree=${PWD}
+	    fi
+	    name=$(find ${tree} -xdev -inum ${inum} 2>/dev/null)
 	    case "${name}" in
 	    '')
 		name=inode-${inum}
