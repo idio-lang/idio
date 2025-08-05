@@ -3460,7 +3460,7 @@ IDIO idio_bignum_real_C (char const *nums, size_t const nums_len)
     int exact = 1;
     int digit;
 
-    while (isdigit (*s) ||
+    while (isdigit ((int) *s) ||
 	   '#' == *s ||
 	   '.' == *s) {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -3305,12 +3305,12 @@ static IDIO idio_read_number_C (IDIO handle, char const *str)
 	if (IDIO_READ_BIGNUM_EXPONENT (s[i]) &&
 	    has_digit &&
 	    ! has_exp) {
-	    if (isdigit (s[i+1]) ||
+	    if (isdigit ((int) s[i+1]) ||
 		IDIO_CHAR_HASH == s[i+1]) {
 		has_exp = 1;
 	    } else if ((IDIO_CHAR_PLUS_SIGN == s[i+1] ||
 			IDIO_CHAR_HYPHEN_MINUS == s[i+1]) &&
-		       (isdigit (s[i+2]) ||
+		       (isdigit ((int) s[i+2]) ||
 			IDIO_CHAR_HASH == s[i+2])) {
 		has_exp = 1;
 
@@ -3333,7 +3333,7 @@ static IDIO idio_read_number_C (IDIO handle, char const *str)
 		    has_period ||
 		    has_sign)) {
 	    has_digit = 1;
-	} else if (isdigit (s[i])) {
+	} else if (isdigit ((int) s[i])) {
 	    has_digit = 1;
 	} else {
 	    return idio_S_nil;
@@ -3526,7 +3526,7 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, idio_unicode_t c, idio_unicode
 	 */
 	if (IDIO_CHAR_COLON == buf[0] &&
 	    i > 1 &&
-	    ! ispunct (buf[1])) {
+	    ! ispunct ((int) buf[1])) {
 	    r = idio_keywords_C_intern (buf + 1, i - 1);
 	} else {
 	    r = idio_symbols_C_intern (buf, i);

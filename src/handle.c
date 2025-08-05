@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1818,7 +1818,7 @@ num	specifies a maximum limit on the output		\n\
 		int width_len = 0;
 		while ((si + 1) < blen) {
 		    char *c = ss + 1;
-		    if (isdigit (*c)) {
+		    if (isdigit ((int) *c)) {
 			width_c[width_len++] = *c;
 			ss++;
 			si++;
@@ -1851,7 +1851,7 @@ num	specifies a maximum limit on the output		\n\
 			si++;
 			while ((si + 1) < blen) {
 			    char *c = ss + 1;
-			    if (isdigit (*c)) {
+			    if (isdigit ((int) *c)) {
 				prec_c[prec_len++] = *c;
 				ss++;
 				si++;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2953,7 +2953,7 @@ IDIO idio_load_dl_library (char const *filename, size_t const filename_len, char
     char *C_mod_id = idio_alloc (mod_len);
     for (size_t i = 0; i < mod_len; i++) {
 	char c = mod[i];
-	if (isalnum (c)) {
+	if (isalnum ((int) c)) {
 	    C_mod_id[i] = c;
 	} else {
 	    C_mod_id[i] = '_';
@@ -3575,7 +3575,7 @@ char *idio_find_libfile_C (char const *file, size_t const file_len, size_t *libl
 				     * newlines in .../latest?
 				     */
 				    while (mod_ver_len > 0 &&
-					   !(isalnum (mod_ver[mod_ver_len - 1]) ||
+					   !(isalnum ((int) mod_ver[mod_ver_len - 1]) ||
 					     '.' == mod_ver[mod_ver_len - 1])) {
 					mod_ver_len--;
 				    }
