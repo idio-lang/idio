@@ -2,7 +2,7 @@
 
 #*
 
-Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -52,6 +52,9 @@ While we are here, we can normalize the production of the tuple:
 
   * aarch64 and arm64.
 
+  Further complicating the issue is that NetBSD 10.* reports evbarm
+  for uname -m and aarch64 for uname -p
+
 * bits: 64 or 32
 
 * compiler: gcc 12; clang 14
@@ -85,6 +88,11 @@ bits          := (cond-expand
    exit 1
  }))
 compiler      := #f
+
+(case ISA
+ (("evbarm") {
+   ISA = collect-output uname -p
+ }))
 
 ;; The processing is largely a dupe of SRFI-0 but we want slightly
 ;; different things.
