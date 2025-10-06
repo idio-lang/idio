@@ -1,6 +1,6 @@
 #*
 
-Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2020-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -1130,7 +1130,7 @@ define (meaning-assignment src name e nametree flags eenv) {
 	;; What we need to do is patch up the toplevel with the
 	;; current primitive value we're overriding.
 	vi := si-vi si
-	set-symbol-value! name (vm-values-ref vi 0) (%eenv-module eenv)
+	set-symbol-value! name (vm-default-values-ref vi) (%eenv-module eenv)
 	assign = list I-SYM-SET src sym-idx m
       })
       (else {
@@ -2280,7 +2280,7 @@ Need to figure out run-in-thread too...
 *#
 
 define (meaning-primitive-application src fe ae* nametree flags arity si vi eenv) {
-  primdata := vm-values-ref vi 0
+  primdata := vm-default-values-ref vi
   pd-vi := si
 
   if (not (primitive? primdata)) {
@@ -2346,22 +2346,28 @@ define (meaning-application src fe ae* nametree flags eenv) {
       scope := si-scope si
 
       if (eq? 'predef scope) {
-	;; we used the running vi of the primitive whereas the code
-	;; generator should use si for pre-compilation
-	primdata := symbol-value fe (%eenv-module eenv)
+	vi := si-vi si
+	primdata := vm-default-values-ref vi
 
-	arity := primitive-arity primdata
-	n-args := length ae*
+	if (primitive? primdata) {
+	  arity := primitive-arity primdata
+	  n-args := length ae*
 
-	if (or (and (primitive-varargs? primdata)
-		    (n-args ge arity))
-	    (n-args eq arity)) {
-	  i-code = meaning-primitive-application src fe ae* nametree flags arity (si-si si) (si-vi si) eenv
+	  if (or (and (primitive-varargs? primdata)
+		      (n-args ge arity))
+	      (n-args eq arity)) {
+	    i-code = meaning-primitive-application src fe ae* nametree flags arity (si-si si) (si-vi si) eenv
+	  } {
+	    ;; Test Case: evaluation-errors/primitive-arity.idio
+
+	    ;; pair 1
+	    meaning-evaluation-error src "wrong arity for primitive" (list fe ae*)
+	  }
 	} {
-	  ;; Test Case: evaluation-errors/primitive-arity.idio
-
-	  ;; pair 1
-	  meaning-evaluation-error src "wrong arity for primitive" (list fe ae*)
+	  eprintf "BAD application: ! function\npd %s\n" primdata
+	  eprintf "si %s\n" si
+	  eprintf "e %s\n" fe
+	  meaning-evaluation-error src "not a function" (list fe ae*)
 	}
       }
     }
