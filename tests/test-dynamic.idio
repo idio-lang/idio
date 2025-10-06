@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020-2021 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020-2021, 2025 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -33,14 +33,6 @@ define (test-dvar-x1 exp) {
   test (dynamic dvar-x1) exp
 }
 
-define (test-dvar-x2 exp) {
-  ;; test a regular local
-  test exp lex-x
-
-  ;; test the dynamic variable
-  test (dynamic dvar-x2) exp
-}
-
 ;; a top-level lexical x
 lex-x := 10
 
@@ -59,6 +51,11 @@ dynamic-let (dvar-x1 lex-x) {
 dvar-x2 :~ 11
 test (dynamic? 'dvar-x2) #t
 
+define (test-dvar-x2 exp) {
+  ;; test the dynamic variable (in scope, this time)
+  test dvar-x2 exp
+}
+
 ;; test it here, inline
 test dvar-x2 11
 
@@ -66,5 +63,46 @@ dvar-x2 = lex-x
 ;; test it in a prepared function
 test-dvar-x2 lex-x
 
+{
+  ;; make sure the evaluator can discover our value by adding an
+  ;; intermediate lexical
+  local-x := lex-x * 2
+
+  ;; nothing should have changed
+  test-dvar-x2 lex-x
+
+  ;; modify it -- this changes the top-level instance
+  dvar-x2 = local-x
+  test-dvar-x2 local-x
+
+  ;; redefine it
+  local-x2 := local-x + 10
+  dvar-x2 :~ local-x2
+
+  test-dvar-x2 local-x2
+
+  {
+    ;; Another redefinition
+    local-x3 := local-x2 + 20
+    dvar-x2 :~ local-x3
+
+    test-dvar-x2 local-x3
+
+    ;; set it again
+    local-x4 := local-x2 * 2
+    dvar-x2 = local-x4
+
+    test-dvar-x2 local-x4
+  }
+
+  ;; After the above block, we should be back to local-x2
+  test-dvar-x2 local-x2
+}
+
+;; After the above block, we should be back to local-x, ie. lex-x * 2,
+;; because the top-level instance was modified in the block, before we
+;; created new dynamic instances
+test-dvar-x2 (lex-x * 2)
+
 ;; all done?
-Tests? (dynamic0 + 8)
+Tests? (dynamic0 + 14)
