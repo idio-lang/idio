@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -832,6 +832,19 @@ int main (int argc, char **argv, char **envp)
     volatile int in_idio_options = 1;
     enum options option = OPTION_NONE;
     volatile int i;
+
+    /*
+     * Declare ARGC/ARGV with dummy values otherwise "idio --load
+     * test" will have test.idio try to access the symbol ARGC which
+     * wasn't defined until after options had been processed.
+     *
+     * Of course, these are not useful values because "idio [options]
+     * [script [args]]" requires that options be processed before
+     * calculating both script and args.
+     */
+    idio_module_set_symbol_value (IDIO_SYMBOL ("ARGC"), idio_integer (0), idio_Idio_module);
+    idio_module_set_symbol_value (IDIO_SYMBOL ("ARGV"), idio_S_nil, idio_Idio_module);
+
     for (i = 1; i < argc; i++) {
 	if (in_idio_options) {
 	    if (OPTION_NONE != option) {
