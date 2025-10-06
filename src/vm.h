@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -269,10 +269,10 @@ void idio_vm_decode_stack (IDIO stack);
 void idio_vm_reset_thread (IDIO thr, int verbose);
 IDIO idio_vm_add_dynamic (IDIO xi, IDIO si, IDIO ci, IDIO vi, IDIO m, IDIO note);
 IDIO idio_vm_dynamic_ref (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO args);
-void idio_vm_dynamic_set (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO v);
+void idio_vm_dynamic_set (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO v, int insert);
 IDIO idio_vm_add_environ (IDIO xi, IDIO si, IDIO ci, IDIO vi, IDIO m, IDIO note);
 IDIO idio_vm_environ_ref (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO args);
-void idio_vm_environ_set (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO v);
+void idio_vm_environ_set (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO v, int insert);
 IDIO idio_vm_computed_ref (idio_xi_t xi, idio_as_t si, idio_as_t gvi);
 IDIO idio_vm_computed_set (idio_xi_t xi, idio_as_t si, idio_as_t gvi, IDIO v);
 void idio_vm_computed_define (idio_xi_t xi, idio_as_t si, idio_as_t gvi, IDIO v);

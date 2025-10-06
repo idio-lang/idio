@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -154,17 +154,19 @@ typedef enum {
     IDIO_A_PUSH_DYNAMIC,	/* 100 */
     IDIO_A_POP_DYNAMIC,
     IDIO_A_DYNAMIC_SYM_REF,
+    IDIO_A_DYNAMIC_SYM_SET,
     IDIO_A_DYNAMIC_FUNCTION_SYM_REF,
 
     IDIO_A_PUSH_ENVIRON,
     IDIO_A_POP_ENVIRON,
     IDIO_A_ENVIRON_SYM_REF,
+    IDIO_A_ENVIRON_SYM_SET,
 
     IDIO_A_NON_CONT_ERR,
-    IDIO_A_PUSH_TRAP,
+    IDIO_A_PUSH_TRAP,		/* 110 */
     IDIO_A_POP_TRAP,
 
-    IDIO_A_PUSH_ESCAPER,	/* 110 */
+    IDIO_A_PUSH_ESCAPER,
     IDIO_A_POP_ESCAPER,
     IDIO_A_ESCAPER_LABEL_REF,
 } idio_vm_a_enum;

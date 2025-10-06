@@ -1076,8 +1076,11 @@ define (meaning-assignment src name e nametree flags eenv) {
       ((toplevel) {
 	assign = list I-SYM-SET src sym-idx m
       })
-      ((dynamic environ) {
-	assign = list I-SYM-SET src sym-idx m
+      ((dynamic) {
+	assign = list I-DYNAMIC-SYM-SET src sym-idx m
+      })
+      ((environ) {
+	assign = list I-ENVIRON-SYM-SET src sym-idx m
       })
       ((computed) {
 	if (eval-flags-define flags) {

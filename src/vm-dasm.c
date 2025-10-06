@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -214,11 +214,13 @@ char const *idio_vm_bytecode2string (int code)
     case IDIO_A_PUSH_DYNAMIC:             r = "A-PUSH-DYNAMIC";             break;
     case IDIO_A_POP_DYNAMIC:              r = "A-POP-DYNAMIC";              break;
     case IDIO_A_DYNAMIC_SYM_REF:          r = "A-DYNAMIC-SYM-REF";          break;
+    case IDIO_A_DYNAMIC_SYM_SET:          r = "A-DYNAMIC-SYM-SET";          break;
     case IDIO_A_DYNAMIC_FUNCTION_SYM_REF: r = "A-DYNAMIC-FUNCTION-SYM-REF"; break;
 
     case IDIO_A_PUSH_ENVIRON:             r = "A-PUSH-ENVIRON";             break;
     case IDIO_A_POP_ENVIRON:              r = "A-POP-ENVIRON";              break;
     case IDIO_A_ENVIRON_SYM_REF:          r = "A-ENVIRON-SYM-REF";          break;
+    case IDIO_A_ENVIRON_SYM_SET:          r = "A-ENVIRON-SYM-SET";          break;
 
     case IDIO_A_NON_CONT_ERR:             r = "A-NON-CONT-ERR";             break;
     case IDIO_A_PUSH_TRAP:                r = "A-PUSH-TRAP";                break;
@@ -1081,6 +1083,23 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		idio_debug_FILE (fp, "%s", sym);
 	    }
 	    break;
+	case IDIO_A_DYNAMIC_SYM_SET:
+	    {
+		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
+
+		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
+
+		if (idio_isa_symbol (sym)) {
+		    IDIO_VM_DASM_OP ("DYNAMIC-SYM-SET");
+		    IDIO_VM_DASM (".%-4" PRIu64 " ", si);
+		    idio_debug_FILE (fp, "%s", sym);
+		} else {
+		    IDIO_VM_DASM_OP ("DYNAMIC-SYM-SET");
+		    IDIO_VM_DASM (".%-4" PRIu64 " !! %s ", si, idio_type2string (sym));
+		    idio_debug_FILE (fp, "%s !! ", sym);
+		}
+	    }
+	    break;
 	case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:
 	    {
 		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
@@ -1120,6 +1139,23 @@ void idio_vm_dasm (FILE *fp, idio_xi_t xi, idio_pc_t pc0, idio_pc_t pce)
 		    idio_debug_FILE (fp, "%s", sym);
 		} else {
 		    IDIO_VM_DASM_OP ("ENVIRON-SYM-REF");
+		    IDIO_VM_DASM (".%-4" PRIu64 " !! %s ", si, idio_type2string (sym));
+		    idio_debug_FILE (fp, "%s !! ", sym);
+		}
+	    }
+	    break;
+	case IDIO_A_ENVIRON_SYM_SET:
+	    {
+		uint64_t si = IDIO_VM_GET_REF (bc, pcp);
+
+		IDIO sym = idio_vm_dasm_symbols_ref (xi, si);
+
+		if (idio_isa_symbol (sym)) {
+		    IDIO_VM_DASM_OP ("ENVIRON-SYM-SET");
+		    IDIO_VM_DASM (".%-4" PRIu64 " ", si);
+		    idio_debug_FILE (fp, "%s", sym);
+		} else {
+		    IDIO_VM_DASM_OP ("ENVIRON-SYM-SET");
 		    IDIO_VM_DASM (".%-4" PRIu64 " !! %s ", si, idio_type2string (sym));
 		    idio_debug_FILE (fp, "%s !! ", sym);
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2052,6 +2052,36 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (si));
 	}
 	break;
+    case IDIO_I_CODE_DYNAMIC_SYM_SET:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 3) {
+		idio_codegen_error_param_args ("DYNAMIC-SYM-SET e si m1", mt, IDIO_C_FUNC_LOCATION_S ("DYNAMIC-SYM-SET"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO e   = IDIO_PAIR_H (mt);
+	    IDIO si = IDIO_PAIR_HT (mt);
+
+	    if (! idio_isa_fixnum (si)) {
+		idio_codegen_error_param_type ("fixnum", si, IDIO_C_FUNC_LOCATION_S ("DYNAMIC-SYM-SET"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO m1 = IDIO_PAIR_HTT (mt);
+
+	    idio_codegen_compile (thr, ia, eenv, m1, depth + 1);
+
+	    IDIO_CODEGEN_SRC_EXPR (ia, e, eenv);
+
+	    IDIO_IA_PUSH1 (IDIO_A_DYNAMIC_SYM_SET);
+	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (si));
+	}
+	break;
     case IDIO_I_CODE_DYNAMIC_FUNCTION_SYM_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
@@ -2134,6 +2164,36 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO eenv, IDIO m, int depth)
 	    }
 
 	    IDIO_IA_PUSH1 (IDIO_A_ENVIRON_SYM_REF);
+	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (si));
+	}
+	break;
+    case IDIO_I_CODE_ENVIRON_SYM_SET:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 3) {
+		idio_codegen_error_param_args ("ENVIRON-SYM-SET e si m1", mt, IDIO_C_FUNC_LOCATION_S ("ENVIRON-SYM-SET"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO e   = IDIO_PAIR_H (mt);
+	    IDIO si = IDIO_PAIR_HT (mt);
+
+	    if (! idio_isa_fixnum (si)) {
+		idio_codegen_error_param_type ("fixnum", si, IDIO_C_FUNC_LOCATION_S ("ENVIRON-SYM-SET"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO m1 = IDIO_PAIR_HTT (mt);
+
+	    idio_codegen_compile (thr, ia, eenv, m1, depth + 1);
+
+	    IDIO_CODEGEN_SRC_EXPR (ia, e, eenv);
+
+	    IDIO_IA_PUSH1 (IDIO_A_ENVIRON_SYM_SET);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (si));
 	}
 	break;
@@ -2856,7 +2916,7 @@ char *idio_constant_i_code_as_C_string (IDIO v, size_t *sizep, idio_unicode_t fo
 
     case IDIO_I_CODE_SYM_REF:                  t = "I-SYM-REF";                  break;
     case IDIO_I_CODE_FUNCTION_SYM_REF:         t = "I-FUNCTION-SYM-REF";         break;
-    case IDIO_I_CODE_CONSTANT_REF:             t = "I-CONSTANT";                 break;
+    case IDIO_I_CODE_CONSTANT_REF:             t = "I-CONSTANT-REF";             break;
     case IDIO_I_CODE_COMPUTED_SYM_REF:         t = "I-COMPUTED-SYM-REF";         break;
 
     case IDIO_I_CODE_SYM_DEF:                  t = "I-SYM-DEF";                  break;
@@ -2893,11 +2953,13 @@ char *idio_constant_i_code_as_C_string (IDIO v, size_t *sizep, idio_unicode_t fo
     case IDIO_I_CODE_REUSE_FRAME:              t = "I-REUSE-FRAME";              break;
 
     case IDIO_I_CODE_DYNAMIC_SYM_REF:          t = "I-DYNAMIC-SYM-REF";          break;
+    case IDIO_I_CODE_DYNAMIC_SYM_SET:          t = "I-DYNAMIC-SYM-SET";          break;
     case IDIO_I_CODE_DYNAMIC_FUNCTION_SYM_REF: t = "I-DYNAMIC-FUNCTION-SYM-REF"; break;
     case IDIO_I_CODE_PUSH_DYNAMIC:             t = "I-PUSH-DYNAMIC";             break;
     case IDIO_I_CODE_POP_DYNAMIC:              t = "I-POP-DYNAMIC";              break;
 
     case IDIO_I_CODE_ENVIRON_SYM_REF:          t = "I-ENVIRON-SYM-REF";          break;
+    case IDIO_I_CODE_ENVIRON_SYM_SET:          t = "I-ENVIRON-SYM-SET";          break;
     case IDIO_I_CODE_PUSH_ENVIRON:             t = "I-PUSH-ENVIRON";             break;
     case IDIO_I_CODE_POP_ENVIRON:              t = "I-POP-ENVIRON";              break;
 
@@ -3021,11 +3083,13 @@ static idio_codegen_symbol_t idio_codegen_symbols[] = {
     { "I-PUSH-DYNAMIC",             IDIO_I_PUSH_DYNAMIC },
     { "I-POP-DYNAMIC",              IDIO_I_POP_DYNAMIC },
     { "I-DYNAMIC-SYM-REF",          IDIO_I_DYNAMIC_SYM_REF },
+    { "I-DYNAMIC-SYM-SET",          IDIO_I_DYNAMIC_SYM_SET },
     { "I-DYNAMIC-FUNCTION-SYM-REF", IDIO_I_DYNAMIC_FUNCTION_SYM_REF },
 
     { "I-PUSH-ENVIRON",             IDIO_I_PUSH_ENVIRON },
     { "I-POP-ENVIRON",              IDIO_I_POP_ENVIRON },
     { "I-ENVIRON-SYM-REF",          IDIO_I_ENVIRON_SYM_REF },
+    { "I-ENVIRON-SYM-SET",          IDIO_I_ENVIRON_SYM_SET },
 
     { "I-PUSH-TRAP",                IDIO_I_PUSH_TRAP },
     { "I-POP-TRAP",                 IDIO_I_POP_TRAP },

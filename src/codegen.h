@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -74,11 +74,13 @@ typedef enum {
     IDIO_I_CODE_PUSH_DYNAMIC,
     IDIO_I_CODE_POP_DYNAMIC,
     IDIO_I_CODE_DYNAMIC_SYM_REF,
+    IDIO_I_CODE_DYNAMIC_SYM_SET,
     IDIO_I_CODE_DYNAMIC_FUNCTION_SYM_REF,
 
     IDIO_I_CODE_PUSH_ENVIRON,
     IDIO_I_CODE_POP_ENVIRON,
     IDIO_I_CODE_ENVIRON_SYM_REF,
+    IDIO_I_CODE_ENVIRON_SYM_SET,
 
     IDIO_I_CODE_PUSH_TRAP,
     IDIO_I_CODE_POP_TRAP,
@@ -154,11 +156,13 @@ typedef enum {
 #define IDIO_I_PUSH_DYNAMIC             ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_PUSH_DYNAMIC))
 #define IDIO_I_POP_DYNAMIC              ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_POP_DYNAMIC))
 #define IDIO_I_DYNAMIC_SYM_REF          ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_DYNAMIC_SYM_REF))
+#define IDIO_I_DYNAMIC_SYM_SET          ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_DYNAMIC_SYM_SET))
 #define IDIO_I_DYNAMIC_FUNCTION_SYM_REF ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_DYNAMIC_FUNCTION_SYM_REF))
 
 #define IDIO_I_PUSH_ENVIRON             ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_PUSH_ENVIRON))
 #define IDIO_I_POP_ENVIRON              ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_POP_ENVIRON))
 #define IDIO_I_ENVIRON_SYM_REF          ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_ENVIRON_SYM_REF))
+#define IDIO_I_ENVIRON_SYM_SET          ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_ENVIRON_SYM_SET))
 
 #define IDIO_I_PUSH_TRAP                ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_PUSH_TRAP))
 #define IDIO_I_POP_TRAP                 ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_POP_TRAP))

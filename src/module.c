@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1795,11 +1795,16 @@ IDIO idio_module_set_symbol_value_xi (idio_xi_t xi, IDIO symbol, IDIO value, IDI
 	/*
 	 * Code coverage
 	 *
-	 * Nobody has set one, I guess.  I'm not sweating it.
+	 * Things like IFS, suppress-exit-on-error!, etc..
 	 */
-	idio_vm_dynamic_set (idio_thread_current_thread (), ci, gvi, value);
+	idio_vm_dynamic_set (idio_thread_current_thread (), ci, gvi, value, 1);
     } else if (idio_S_environ == scope) {
-	idio_vm_environ_set (idio_thread_current_thread (), ci, gvi, value);
+	/*
+	 * Code coverage
+	 *
+	 * Regular environment variables, HOME, SHELL, PATH, etc..
+	 */
+	idio_vm_environ_set (idio_thread_current_thread (), ci, gvi, value, 1);
     } else if (idio_S_computed == scope) {
 	/*
 	 * Code coverage

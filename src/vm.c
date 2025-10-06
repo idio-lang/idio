@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -255,9 +255,11 @@ static IDIO idio_vm_INFIX_OPERATOR_string = idio_S_nil;
 static IDIO idio_vm_POSTFIX_OPERATOR_string = idio_S_nil;
 static IDIO idio_vm_PUSH_DYNAMIC_string = idio_S_nil;
 static IDIO idio_vm_DYNAMIC_SYM_REF_string = idio_S_nil;
+static IDIO idio_vm_DYNAMIC_SYM_SET_string = idio_S_nil;
 static IDIO idio_vm_DYNAMIC_FUNCTION_SYM_REF_string = idio_S_nil;
 static IDIO idio_vm_PUSH_ENVIRON_string = idio_S_nil;
 static IDIO idio_vm_ENVIRON_SYM_REF_string = idio_S_nil;
+static IDIO idio_vm_ENVIRON_SYM_SET_string = idio_S_nil;
 static IDIO idio_vm_anon_string = idio_S_nil;
 
 static struct timespec idio_vm_ts0;
@@ -2116,7 +2118,7 @@ IDIO idio_vm_dynamic_ref (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO args)
     return val;
 }
 
-void idio_vm_dynamic_set (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO v)
+void idio_vm_dynamic_set (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO v, int insert)
 {
     IDIO_ASSERT (thr);
     IDIO_ASSERT (v);
@@ -2140,12 +2142,24 @@ void idio_vm_dynamic_set (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO v)
 	    }
 	} else {
 	    /*
-	     * dynamic values, as they appear on the stack, can only
-	     * be in xi==0
+	     * top-level dynamic variables are in xi==0
+	     *
+	     * The insert flag is set in C code by the likes of
+	     * idio_vars_set_dynamic_default() and creates a new entry
+	     * in xi==0.
+	     *
+	     * DYNAMIC-SYM-SET will not set insert as you should only
+	     * be invoking that opcode where the evaluator recognises
+	     * that the symbol is bound to a dynamic variable.
 	     */
-	    IDIO vs0 = IDIO_XENV_VT (idio_xenvs[0]);
-	    idio_array_insert_index (vs0, v, gvi);
-	    break;
+	    if (insert) {
+		IDIO vs0 = IDIO_XENV_VT (idio_xenvs[0]);
+		idio_array_insert_index (vs0, v, gvi);
+		break;
+	    } else {
+		idio_vm_values_set (0, gvi, v);
+		break;
+	    }
 	}
     }
 }
@@ -2272,7 +2286,7 @@ IDIO idio_vm_environ_ref (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO args)
     return val;
 }
 
-void idio_vm_environ_set (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO v)
+void idio_vm_environ_set (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO v, int insert)
 {
     IDIO_ASSERT (v);
     IDIO_ASSERT (thr);
@@ -2295,12 +2309,24 @@ void idio_vm_environ_set (IDIO thr, idio_as_t si, idio_as_t gvi, IDIO v)
 	    }
 	} else {
 	    /*
-	     * environ values, as they appear on the stack, can only
-	     * be in xi==0
+	     * top-level environ variables are in xi==0
+	     *
+	     * The insert flag is set in C code by the likes of
+	     * idio_env_add_environ() and creates a new entry in
+	     * xi==0.
+	     *
+	     * ENVIRON-SYM-SET will not set insert as you should only
+	     * be invoking that opcode where the evaluator recognises
+	     * that the symbol is bound to a environ variable.
 	     */
-	    IDIO vs0 = IDIO_XENV_VT (idio_xenvs[0]);
-	    idio_array_insert_index (vs0, v, gvi);
-	    break;
+	    if (insert) {
+		IDIO vs0 = IDIO_XENV_VT (idio_xenvs[0]);
+		idio_array_insert_index (vs0, v, gvi);
+		break;
+	    } else {
+		idio_vm_values_set (0, gvi, v);
+		break;
+	    }
 	}
     }
 }
@@ -6046,6 +6072,20 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_THREAD_VAL (thr) = idio_vm_dynamic_ref (thr, si, gvi, idio_S_nil);
 	}
 	break;
+    case IDIO_A_DYNAMIC_SYM_SET:
+	{
+	    uint64_t si = IDIO_VM_FETCH_REF (thr, bc);
+
+	    idio_ai_t gvi = idio_vm_iref (thr,
+					  xi,
+					  si,
+					  "DYNAMIC-SYM-SET",
+					  idio_vm_DYNAMIC_SYM_SET_string,
+					  IDIO_VM_IREF_MDR_UNDEF_FATAL);
+
+	    idio_vm_dynamic_set (thr, si, gvi, IDIO_THREAD_VAL (thr), 0);
+	}
+	break;
     case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:
 	{
 	    uint64_t si = IDIO_VM_FETCH_REF (thr, bc);
@@ -6095,6 +6135,20 @@ int idio_vm_run1 (IDIO thr)
 					  IDIO_VM_IREF_MDR_UNDEF_FATAL);
 
 	    IDIO_THREAD_VAL (thr) = idio_vm_environ_ref (thr, si, gvi, idio_S_nil);
+	}
+	break;
+    case IDIO_A_ENVIRON_SYM_SET:
+	{
+	    uint64_t si = IDIO_VM_FETCH_REF (thr, bc);
+
+	    idio_ai_t gvi = idio_vm_iref (thr,
+					  xi,
+					  si,
+					  "ENVIRON-SYM-SET",
+					  idio_vm_ENVIRON_SYM_SET_string,
+					  IDIO_VM_IREF_MDR_UNDEF_FATAL);
+
+	    idio_vm_environ_set (thr, si, gvi, IDIO_THREAD_VAL (thr), 0);
 	}
 	break;
     case IDIO_A_NON_CONT_ERR:
@@ -8877,9 +8931,11 @@ void idio_init_vm_values ()
     IDIO_VM_STRING (POSTFIX_OPERATOR,         "POSTFIX-OPERATOR");
     IDIO_VM_STRING (PUSH_DYNAMIC,             "PUSH-DYNAMIC");
     IDIO_VM_STRING (DYNAMIC_SYM_REF,          "DYNAMIC-SYM-REF");
+    IDIO_VM_STRING (DYNAMIC_SYM_SET,          "DYNAMIC-SYM-SET");
     IDIO_VM_STRING (DYNAMIC_FUNCTION_SYM_REF, "DYNAMIC-FUNCTION-SYM-REF");
     IDIO_VM_STRING (PUSH_ENVIRON,             "PUSH-ENVIRON");
     IDIO_VM_STRING (ENVIRON_SYM_REF,          "ENVIRON-SYM-REF");
+    IDIO_VM_STRING (ENVIRON_SYM_SET,          "ENVIRON-SYM-SET");
 
     IDIO_VM_STRING (anon,                     "-anon-");
 

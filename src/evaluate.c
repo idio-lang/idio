@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2218,9 +2218,10 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	}
     } else if (idio_S_toplevel == scope) {
 	assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, sym_idx, m);
-    } else if (idio_S_dynamic == scope ||
-	       idio_S_environ == scope) {
-	assign = IDIO_LIST4 (IDIO_I_SYM_SET, src, sym_idx, m);
+    } else if (idio_S_dynamic == scope) {
+	assign = IDIO_LIST4 (IDIO_I_DYNAMIC_SYM_SET, src, sym_idx, m);
+    } else if (idio_S_environ == scope) {
+	assign = IDIO_LIST4 (IDIO_I_ENVIRON_SYM_SET, src, sym_idx, m);
     } else if (idio_S_computed == scope) {
 	if (IDIO_MEANING_IS_DEFINE (flags)) {
 	    return IDIO_LIST2 (IDIO_LIST4 (IDIO_I_SYM_DEF, name, scope, sym_idx),
