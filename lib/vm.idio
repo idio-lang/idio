@@ -20,5 +20,12 @@ vm.idio
 
 module vm
 
+export (
+	 vm-default-values-ref
+)
+
+define (vm-default-values-ref vi) {
+  vm-values-ref vi 0
+}
 
 provide vm
