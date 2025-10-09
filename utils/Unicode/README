@@ -1,7 +1,7 @@
 
 # Generally, the Unicode files can be download as:
 
-ucd=https://unicode.org/Public/15.0.0/ucd
+ucd=https://unicode.org/Public/17.0.0/ucd
 for x in DerivedCoreProperties.txt  PropList.txt  UnicodeData.txt ; do
     curl -sLo $x ${ucd}/$x
 done
