@@ -2,7 +2,7 @@
 
 #*
 
-Copyright (c) 2021-2022 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2021-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -284,24 +284,34 @@ So a grand total of 85536 bytes (70656 + 14880) to store everything
 *#
 
 module unicode/gen
-import SRFI-14
+import argparse SRFI-14
 
 ; The source for most of these files is
 ; https://www.unicode.org/Public/UCD/latest/ucd/ and
 ; https://www.unicode.org/Public/UCD/latest/ucd/auxiliary/GraphemeBreakProperty.txt
-UD := "UnicodeData.txt"
+UD  := "UnicodeData.txt"
 DCP := "DerivedCoreProperties.txt"
-PL := "PropList.txt"
+PL  := "PropList.txt"
 GBP := "GraphemeBreakProperty.txt"
 
 UD-file := #f
 
-if (ARGC eq 0) {
+ap := make-ArgumentParser :synopsis (sprintf "%s [options] [ARGS ...]" ARGV0)
+
+add-option ap '(unicode-data) '(:optional "FILE") "UnicodeData.txt file"
+add-option ap '(page-shift) '(:optional "NUM") "page-size is 2^{page-shift}: 5-9"
+
+parse-args ap ARGV
+
+Idio-base := #f
+UD-file := ap.options.unicode-data or {
   (regex-case
    ARGV0
-   ("(.+)/[^/]+" {
-     UD-file = sprintf "%s/Unicode/%s" r.1 UD
+   ("(.+)/bin/[^/]+" {
+     Idio-base = r.1
+     UD-file = sprintf "%s/utils/Unicode/%s" r.1 UD
      eprintf "%s: trying %s\n" ARGV0 UD-file
+     UD-file
    })
    (else {
      if (f? UD) {
@@ -311,17 +321,15 @@ if (ARGC eq 0) {
        exit 1
      }
    }))
-} {
-  UD-file = array-ref ARGV 0
 }
 
 if (not (f? UD-file)) {
-  eprintf "%s: no UnicodeData.txt\n" ARGV0
+  eprintf "%s: no UnicodeData.txt at %s (%s)\n" ARGV0 UD-file ap.options.unicode-data
   exit 1
 }
 
 DCP-file := #f
-PL-file := #f
+PL-file  := #f
 GBP-file := #f
 
 (regex-case
@@ -342,6 +350,11 @@ GBP-file := #f
      eprintf "%s: no GraphemeBreakProperty.txt: %s\n" ARGV0 GBP-file
      exit 1
    }
+ })
+ (else {
+ DCP-file = DCP
+ PL-file  = PL
+ GBP-file = GBP
  }))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -629,7 +642,7 @@ define (get-scp-index scp) {
 cp-table := make-array unicode-char-set-size
 
 ; page-size is going to be 128 but we want the n in 2^n for later
-page-shift := 7
+page-shift := ap.options.page-shift or 7
 page-size := expt 2 page-shift
 used-pages-table := make-array (unicode-char-set-size / page-size)
 
@@ -818,15 +831,20 @@ if (sp-map-index ge 256) {
 printf "%4d %6d %3d/%4d %6d (%6d * %d + %3d * 2 * %4d) in %ds\n" page-size page-count sp-map-index used-page-count (page-count * pi-bytes + sp-map-index * 2 * page-size)  page-count pi-bytes sp-map-index page-size SECONDS
 
 api-bn := "usi"
-s-h-fn := append-string api-bn ".h"
-s-c-fn := append-string api-bn ".c"
+api-pn := "."
+if Idio-base {
+  api-pn = sprintf "%s/src" Idio-base
+}
+printf "writing to %s/%s.[ch]\n" api-pn api-bn
+s-h-fn := sprintf "%s.h" api-bn
+s-c-fn := sprintf "%s.c" api-bn
 
 pi-c-type := sprintf "uint%d_t" (pi-bytes * 8)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; usi.h
 
-s-h-fh := open-output-file s-h-fn
+s-h-fh := open-output-file (sprintf "%s/%s" api-pn s-h-fn)
 
 s-h-define := collect-output echo s-h-fn | sed -e "s/[^[:alnum:]]/_/g" | tr "[[:lower:]]" "[[:upper:]]"
 
@@ -942,7 +960,7 @@ close-handle s-h-fh
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; usi.c
 
-s-c-fh := open-output-file s-c-fn
+s-c-fh := open-output-file (sprintf "%s/%s" api-pn s-c-fn)
 
 hprintf s-c-fh #S{
 /*
