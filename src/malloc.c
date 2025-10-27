@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2020-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -59,25 +59,10 @@
  * This is designed for use in a virtual memory environment.
  */
 
-#define _GNU_SOURCE
+#include "idio.h"
 
 #include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/time.h>
 
-#include <assert.h>
-#include <inttypes.h>
-#include <setjmp.h>
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <strings.h>
-#include <unistd.h>
-
-#include "gc.h"
-#include "idio.h"
 #include "malloc.h"
 
 /*

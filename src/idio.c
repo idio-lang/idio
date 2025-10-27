@@ -20,32 +20,10 @@
  *
  */
 
-#define _GNU_SOURCE
-
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-
-#include <assert.h>
-#include <dlfcn.h>
-#include <inttypes.h>
-#include <limits.h>
-#include <poll.h>
-#include <setjmp.h>
-#include <signal.h>
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include "idio-system.h"
-#include "idio-config.h"
-
-#include "gc.h"
 #include "idio.h"
+
+#include <dlfcn.h>
+#include <poll.h>
 
 #include "array.h"
 #include "bignum.h"

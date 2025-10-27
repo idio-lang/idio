@@ -25,26 +25,6 @@
  * Back to basics.
  */
 
-#define _GNU_SOURCE
-
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-
-#include <assert.h>
-#include <limits.h>
-#include <setjmp.h>
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include "idio-config.h"
-
-#include "gc.h"
 #include "idio.h"
 
 #include "bignum.h"

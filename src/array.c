@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet
+ * Copyright (c) 2015-2022, 2025 Ian Fitchet
  * <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
@@ -45,24 +45,6 @@
  * indexed element back to the default value.
  */
 
-#define _GNU_SOURCE
-
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-
-#include <assert.h>
-#include <limits.h>
-#include <setjmp.h>
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <unistd.h>
-
-#include "idio-config.h"
-
-#include "gc.h"
 #include "idio.h"
 
 #include "array.h"
@@ -73,7 +55,6 @@
 #include "evaluate.h"
 #include "fixnum.h"
 #include "handle.h"
-#include "idio.h"
 #include "idio-string.h"
 #include "pair.h"
 #include "string-handle.h"

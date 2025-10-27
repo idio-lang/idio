@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2023 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2023, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -19,6 +19,31 @@
  * idio.h
  *
  */
+
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <setjmp.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "idio-system.h"
+#include "idio-config.h"
+
+#include "gc.h"
 
 #ifndef IDIO_H
 #define IDIO_H
@@ -362,7 +387,7 @@ extern FILE *idio_vm_perf_FILE;
 /*
  * Some well-known constants.
  *
- * Update util.c:idio_as_string as well!
+ * Update util.c:idio_constant_idio_as_string as well!
  */
 #define IDIO_CONSTANT_NIL             0
 #define IDIO_CONSTANT_UNDEF           1
@@ -375,6 +400,8 @@ extern FILE *idio_vm_perf_FILE;
 
 /*
  * Stack markers
+ *
+ * Update util.c:idio_constant_idio_as_string as well!
  */
 #define IDIO_STACK_MARKER_PRESERVE_STATE		 20
 #define IDIO_STACK_MARKER_PRESERVE_ALL_STATE		 21

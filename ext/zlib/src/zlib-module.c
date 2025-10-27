@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -20,25 +20,9 @@
  *
  */
 
-#define _GNU_SOURCE
-
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-
-#include <assert.h>
-#include <limits.h>
-#include <setjmp.h>
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <strings.h>
+#include "idio.h"
 
 #include <zlib.h>
-
-#include "gc.h"
 
 #include "bignum.h"
 #include "c-type.h"
@@ -48,7 +32,6 @@
 #include "fixnum.h"
 #include "handle.h"
 #include "idio-string.h"
-#include "idio.h"
 #include "keyword.h"
 #include "libc-wrap.h"
 #include "zlib-module.h"
