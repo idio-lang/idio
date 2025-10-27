@@ -3002,6 +3002,7 @@ char *idio_constant_idio_as_C_string (IDIO v, size_t *sizep, idio_unicode_t form
     case IDIO_STACK_MARKER_PRESERVE_STATE:		t = "#<MARK preserve-state>";		break;
     case IDIO_STACK_MARKER_PRESERVE_ALL_STATE:		t = "#<MARK preserve-all-state>";	break;
     case IDIO_STACK_MARKER_TRAP:			t = "#<MARK trap>";			break;
+    case IDIO_STACK_MARKER_ESCAPER:			t = "#<MARK escaper>";			break;
     case IDIO_STACK_MARKER_PRESERVE_CONTINUATION:	t = "#<MARK preserve-continuation>";	break;
     case IDIO_STACK_MARKER_RETURN:			t = "#<MARK return>";			break;
     case IDIO_STACK_MARKER_DYNAMIC:			t = "#<MARK dynamic>";			break;

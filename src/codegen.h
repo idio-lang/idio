@@ -26,6 +26,7 @@
 /*
  * Some unique constants for the code generator
  *
+ * Update codegen.c:idio_constant_i_code_as_C_string as well!
  */
 typedef enum {
     IDIO_I_CODE_SHALLOW_ARGUMENT_REF,
@@ -67,6 +68,7 @@ typedef enum {
 
     IDIO_I_CODE_STORE_ARGUMENT,
     IDIO_I_CODE_LIST_ARGUMENT,
+
     IDIO_I_CODE_ALLOCATE_FRAME,
     IDIO_I_CODE_ALLOCATE_DOTTED_FRAME,
     IDIO_I_CODE_REUSE_FRAME,
@@ -149,6 +151,7 @@ typedef enum {
 
 #define IDIO_I_STORE_ARGUMENT           ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_STORE_ARGUMENT))
 #define IDIO_I_LIST_ARGUMENT            ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_LIST_ARGUMENT))
+
 #define IDIO_I_ALLOCATE_FRAME           ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_ALLOCATE_FRAME))
 #define IDIO_I_ALLOCATE_DOTTED_FRAME    ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_ALLOCATE_DOTTED_FRAME))
 #define IDIO_I_REUSE_FRAME              ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_REUSE_FRAME))

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2022 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015-2022, 2025 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -47,6 +47,8 @@ typedef enum {
  *
  * Of course, they shouldn't leak out of here but idio_as_string
  * prints the unhelpful C=1005 otherwise
+ *
+ * Update read.c:idio_constant_token_as_C_string as well!
  */
 #define IDIO_TOKEN_DOT            0
 #define IDIO_TOKEN_LPAREN         1

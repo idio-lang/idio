@@ -4674,6 +4674,7 @@ char *idio_constant_token_as_C_string (IDIO v, size_t *sizep, idio_unicode_t for
     case IDIO_TOKEN_RANGLE:                        t = "T/>";                         break;
     case IDIO_TOKEN_EOL:                           t = "T/EOL";                       break;
     case IDIO_TOKEN_PAIR_SEPARATOR:                t = "&";                           break;
+    case IDIO_TOKEN_SEMICOLON:			   t = ";";                           break;
 
     default:
 	/*

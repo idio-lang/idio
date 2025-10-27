@@ -2934,16 +2934,16 @@ char *idio_constant_i_code_as_C_string (IDIO v, size_t *sizep, idio_unicode_t fo
     case IDIO_I_CODE_ALLOCATE_DOTTED_FRAME:    t = "I-ALLOCATE-DOTTED-FRAME";    break;
     case IDIO_I_CODE_REUSE_FRAME:              t = "I-REUSE-FRAME";              break;
 
+    case IDIO_I_CODE_PUSH_DYNAMIC:             t = "I-PUSH-DYNAMIC";             break;
+    case IDIO_I_CODE_POP_DYNAMIC:              t = "I-POP-DYNAMIC";              break;
     case IDIO_I_CODE_DYNAMIC_SYM_REF:          t = "I-DYNAMIC-SYM-REF";          break;
     case IDIO_I_CODE_DYNAMIC_SYM_SET:          t = "I-DYNAMIC-SYM-SET";          break;
     case IDIO_I_CODE_DYNAMIC_FUNCTION_SYM_REF: t = "I-DYNAMIC-FUNCTION-SYM-REF"; break;
-    case IDIO_I_CODE_PUSH_DYNAMIC:             t = "I-PUSH-DYNAMIC";             break;
-    case IDIO_I_CODE_POP_DYNAMIC:              t = "I-POP-DYNAMIC";              break;
 
-    case IDIO_I_CODE_ENVIRON_SYM_REF:          t = "I-ENVIRON-SYM-REF";          break;
-    case IDIO_I_CODE_ENVIRON_SYM_SET:          t = "I-ENVIRON-SYM-SET";          break;
     case IDIO_I_CODE_PUSH_ENVIRON:             t = "I-PUSH-ENVIRON";             break;
     case IDIO_I_CODE_POP_ENVIRON:              t = "I-POP-ENVIRON";              break;
+    case IDIO_I_CODE_ENVIRON_SYM_REF:          t = "I-ENVIRON-SYM-REF";          break;
+    case IDIO_I_CODE_ENVIRON_SYM_SET:          t = "I-ENVIRON-SYM-SET";          break;
 
     case IDIO_I_CODE_PUSH_TRAP:                t = "I-PUSH-TRAP";                break;
     case IDIO_I_CODE_POP_TRAP:                 t = "I-POP-TRAP";                 break;
