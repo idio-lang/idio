@@ -61,13 +61,13 @@
 
 #define _GNU_SOURCE
 
-#include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/time.h>
 #include <sys/times.h>
+#include <sys/types.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
 
