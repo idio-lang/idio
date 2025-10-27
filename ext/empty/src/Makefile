@@ -1,5 +1,8 @@
 TOPDIR		:= $(abspath $(PWD)/../../..)
 
+MOD_NAME	:= empty
+SHLIB_NAME	:= lib$(MOD_NAME).so
+
 ifneq ($(MAKECMDGOALS),clean)
 include $(TOPDIR)/src/Makefile.system
 include Makefile.system
@@ -28,11 +31,11 @@ LD_DLFLAGS	:= -shared
 endif
 
 # local install
-MODULE_LI_LIBDIR	:= $(LI_LIBVERDIR)/empty
+MODULE_LI_LIBDIR	:= $(LI_LIBVERDIR)/$(MOD_NAME)
 MODULE_LI_LIBVERDIR	:= $(MODULE_LI_LIBDIR)/$(MODULE_SYSTEM_VERSION_MM)
 MODULE_LI_LIBARCHDIR	:= $(MODULE_LI_LIBVERDIR)/$(IDIO_SYSTEM_ARCH)
 
-all : libempty.so
+all : $(SHLIB_NAME)
 
 coverage :
 	$(MAKE) COVFLAGS="-fprofile-arcs -ftest-coverage"
@@ -54,11 +57,11 @@ debug-test :
 sanitize-test :
 	$(MAKE) test CDEBUG="-fsanitize=address -g" LDFLAGS="-L$(PWD) -lasan"
 
-local-install : $(MODULE_LI_LIBARCHDIR)/libempty.so | Makefile.system $(MODULE_LI_LIBVERDIR)
-	cp empty.idio $(MODULE_LI_LIBVERDIR)
-	echo empty@${MODULE_SYSTEM_VERSION_MM} > $(MODULE_LI_LIBDIR)/latest
+local-install : $(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME) | Makefile.system $(MODULE_LI_LIBVERDIR)
+	cp $(MOD_NAME).idio $(MODULE_LI_LIBVERDIR)
+	echo $(MOD_NAME)@${MODULE_SYSTEM_VERSION_MM} > $(MODULE_LI_LIBDIR)/latest
 
-$(MODULE_LI_LIBARCHDIR)/libempty.so : libempty.so | $(MODULE_LI_LIBARCHDIR)
+$(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME) : $(SHLIB_NAME) | $(MODULE_LI_LIBARCHDIR)
 	tar cf - $^* | (cd $(MODULE_LI_LIBARCHDIR) ; tar xf -)
 
 $(MODULE_LI_LIBARCHDIR) :
@@ -67,24 +70,24 @@ $(MODULE_LI_LIBARCHDIR) :
 clean-local-install :
 	rm -rf $(MODULE_LI_LIBDIR)
 
-libempty.so : libempty.so.${MODULE_SYSTEM_VERSION_M}
+$(SHLIB_NAME) : $(SHLIB_NAME).${MODULE_SYSTEM_VERSION_M}
 	ln -sf $^ $@
 
-libempty.so.${MODULE_SYSTEM_VERSION_M} : libempty.so.${MODULE_SYSTEM_VERSION_MM}
+$(SHLIB_NAME).${MODULE_SYSTEM_VERSION_M} : $(SHLIB_NAME).${MODULE_SYSTEM_VERSION_MM}
 	ln -sf $^ $@
 
-libempty.so.${MODULE_SYSTEM_VERSION_MM} : $(LIBOBJS) empty-module.o
-	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^
+$(SHLIB_NAME).${MODULE_SYSTEM_VERSION_MM} : $(MOD_NAME)-module.o
+	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^ $(LIBS)
 
 %.o : %.d
 
 # the include $(deps) means that, in effect, *.d are the first things
-# built and some of them require empty-system.h -- and %.d doesn't
+# built and some of them require $(MOD_NAME)-system.h -- and %.d doesn't
 # work
-empty-module.d : empty-system.h
+$(MOD_NAME)-module.d : $(MOD_NAME)-system.h
 
-empty-system.h Makefile.system : $(UTILSDIR)/bin/gen-idio-system
-	CC=${CC} $(UTILSDIR)/bin/gen-idio-system -M empty
+$(MOD_NAME)-system.h Makefile.system : $(UTILSDIR)/bin/gen-idio-system
+	CC=${CC} $(UTILSDIR)/bin/gen-idio-system -M $(MOD_NAME)
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(deps)

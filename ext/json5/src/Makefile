@@ -1,5 +1,8 @@
 TOPDIR		:= $(abspath $(PWD)/../../..)
 
+MOD_NAME	:= json5
+SHLIB_NAME	:= lib$(MOD_NAME).so
+
 ifneq ($(MAKECMDGOALS),clean)
 include $(TOPDIR)/src/Makefile.system
 include Makefile.system
@@ -34,11 +37,11 @@ USISRCS		:= usi.c usi-wrap.c
 USIOBJS		:= $(patsubst %.c,%.o,$(USISRCS))
 
 # local install
-MODULE_LI_LIBDIR	:= $(LI_LIBVERDIR)/json5
+MODULE_LI_LIBDIR	:= $(LI_LIBVERDIR)/$(MOD_NAME)
 MODULE_LI_LIBVERDIR	:= $(MODULE_LI_LIBDIR)/$(MODULE_SYSTEM_VERSION_MM)
 MODULE_LI_LIBARCHDIR	:= $(MODULE_LI_LIBVERDIR)/$(IDIO_SYSTEM_ARCH)
 
-all : libjson5.so
+all : $(SHLIB_NAME)
 
 coverage :
 	$(MAKE) COVFLAGS="-fprofile-arcs -ftest-coverage"
@@ -64,11 +67,11 @@ debug-test :
 sanitize-test :
 	$(MAKE) test CDEBUG="-fsanitize=address -g" LDFLAGS="-L$(PWD) -lasan"
 
-local-install : $(MODULE_LI_LIBARCHDIR)/libjson5.so | Makefile.system $(MODULE_LI_LIBVERDIR)
-	cp json5.idio $(MODULE_LI_LIBVERDIR)
-	echo json5@${MODULE_SYSTEM_VERSION_MM} > $(MODULE_LI_LIBDIR)/latest
+local-install : $(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME) | Makefile.system $(MODULE_LI_LIBVERDIR)
+	cp $(MOD_NAME).idio $(MODULE_LI_LIBVERDIR)
+	echo $(MOD_NAME)@${MODULE_SYSTEM_VERSION_MM} > $(MODULE_LI_LIBDIR)/latest
 
-$(MODULE_LI_LIBARCHDIR)/libjson5.so : libjson5.so | $(MODULE_LI_LIBARCHDIR)
+$(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME) : $(SHLIB_NAME) | $(MODULE_LI_LIBARCHDIR)
 	tar cf - $^* | (cd $(MODULE_LI_LIBARCHDIR) ; tar xf -)
 
 $(MODULE_LI_LIBARCHDIR) :
@@ -77,13 +80,13 @@ $(MODULE_LI_LIBARCHDIR) :
 clean-local-install :
 	rm -rf $(MODULE_LI_LIBDIR)
 
-libjson5.so : libjson5.so.${MODULE_SYSTEM_VERSION_M}
+$(SHLIB_NAME) : $(SHLIB_NAME).${MODULE_SYSTEM_VERSION_M}
 	ln -sf $^ $@
 
-libjson5.so.${MODULE_SYSTEM_VERSION_M} : libjson5.so.${MODULE_SYSTEM_VERSION_MM}
+$(SHLIB_NAME).${MODULE_SYSTEM_VERSION_M} : $(SHLIB_NAME).${MODULE_SYSTEM_VERSION_MM}
 	ln -sf $^ $@
 
-libjson5.so.${MODULE_SYSTEM_VERSION_MM} : $(LIBOBJS) json5-module.o json5-api.o
+$(SHLIB_NAME).${MODULE_SYSTEM_VERSION_MM} : $(LIBOBJS) $(MOD_NAME)-module.o $(MOD_NAME)-api.o
 	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^
 
 libjson5-bare.so : $(LIBOBJS) $(USIOBJS)
@@ -97,12 +100,12 @@ usi.c usi.h :
 	cp $(SRCDIR)/$@ .
 
 # the include $(deps) means that, in effect, *.d are the first things
-# built and some of them require json5-system.h -- and %.d doesn't
+# built and some of them require $(MOD_NAME)-system.h -- and %.d doesn't
 # work
-json5-module.d : json5-system.h
+$(MOD_NAME)-module.d : $(MOD_NAME)-system.h
 
-json5-system.h Makefile.system : $(UTILSDIR)/bin/gen-idio-system
-	CC=${CC} $(UTILSDIR)/bin/gen-idio-system -M json5
+$(MOD_NAME)-system.h Makefile.system : $(UTILSDIR)/bin/gen-idio-system
+	CC=${CC} $(UTILSDIR)/bin/gen-idio-system -M $(MOD_NAME)
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(deps)

@@ -26,12 +26,6 @@ LIBS		:= $(LIBS) $(ZLIB_LIBS)
 
 ifeq ($(OS),Darwin)
 LD_DLFLAGS	:= -dynamiclib -undefined dynamic_lookup
-
-# In 2022 Daniel Stenberg was putting out a call as to whether to
-# rework to C99.  In the meanwhile there are implicit declarations to
-# be handled in the C89 code base.
-CFLAGS		:= $(CFLAGS) -Wno-implicit-function-declaration
-
 else
 LD_DLFLAGS	:= -shared
 endif
