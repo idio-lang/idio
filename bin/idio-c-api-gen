@@ -858,8 +858,11 @@ for-each (function (lib-n) {
       }
 
       gen-dn := sprintf "%s/gen" lib-dn
-      rm -rf gen-dn
-      mkdir gen-dn
+      if (d? gen-dn) {
+	rm -rf gen-dn/*
+      } {
+	mkdir gen-dn
+      }
 
       i-module-name := lib-n
       c-module-name := C-identifier lib-n
