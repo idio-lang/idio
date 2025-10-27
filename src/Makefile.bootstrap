@@ -49,5 +49,4 @@ libc-api.h : $(BINDIR)/idio
 	PATH="$(BINDIR):$(PATH)" IDIOLIB=$(LIBDIR):$(LIBDIR)/build-bootstrap idio-c-api-gen libc
 	cp $(EXTDIR)/libc/gen/libc-api.h $(SRCDIR)
 	cp $(EXTDIR)/libc/gen/libc-api.idio $(LIBDIR)
-	rm -f $(deps)
 	rm -f $(BINDIR)/idio

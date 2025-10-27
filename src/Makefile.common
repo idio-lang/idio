@@ -181,5 +181,5 @@ endif
 endif
 
 %.d: %.c
-	$(CC) -MM -MP -MF $@ $(CFLAGS) -I$(SRCDIR) -I$(SRCDIR)/build-bootstrap $< -MT $*.o -MT $@
-
+	@echo $@: $?
+	@$(CC) -MM -MP -MF $@ $(CFLAGS) -I$(SRCDIR) $< -MT $*.o -MT $@

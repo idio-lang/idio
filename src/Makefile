@@ -1,5 +1,7 @@
 include Makefile.common
 
+EXTENSIONS := $(wildcard $(EXTDIR)/*)
+
 all : local-install
 	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
 	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
@@ -146,8 +148,10 @@ doc :
 	diff -w <(grep _[ch] $(SRCKDOUTDIR)/index.rst) <(grep _[ch] $(SRCDOCDIR)/index.rst | sed -e 's!.*/!!')
 	make -C $(SRCDOCDIR) html text
 
-local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)
-	cp -r $(LIBDIR)/*.idio $(LIBDIR)/bootstrap $(LI_LIBVERDIR)
+$(LI_LIBVERDIR)/%.idio : $(LIBDIR)/%.idio
+	cp $^ $@
+
+local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)/bootstrap $(patsubst $(LIBDIR)/%,$(LI_LIBVERDIR)/%,$(isources))
 	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
 	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
 	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
@@ -179,7 +183,7 @@ $(LI_BINDIR)/idio : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
 $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(objects) $(SRCDIR)/RFC6234/libsha.a | Makefile.system $(LI_BINDIR) libc-api.h idio-system.h idio-config.h
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-$(LI_BINDIR) $(LI_LIBVERDIR) :
+$(LI_BINDIR) $(LI_LIBVERDIR) $(LI_LIBVERDIR)/bootstrap :
 	mkdir -p $@
 
 clean-local-install :
@@ -254,7 +258,7 @@ clean-rfc6234:
 
 build-clean:
 	rm -f *.o *.d *.so map
-	rm -rf $(EXTDIR)/*/gen
+	rm -rf $(EXTDIR)/*/gen/*
 
 run-clean :
 	rm -f vgcore.* core.* core *.gcda *.gcno *.gcov gmon.out idio-asan.* idio-valgrind.* o e idio-vm-* idio-sps.* idio-gc-stats
@@ -293,26 +297,16 @@ IDIO_SYSTEM = $(LIBDIR)/idio-system.idio
 # the include $(deps) means that, in effect, *.d are the first things
 # built and some of them require idio-system.h -- and %.d doesn't work
 compile.d env.d file-handle.d idio.d libc-api.d vars.d : idio-system.h
-$(deps) : idio-config.h
+$(deps) : idio-config.h idio-system.h libc-api.h
 
 # $(IDIO_SYSTEM) : $(UTILSDIR)/bin/gen-idio-system src/vm-asm.h
 # 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(IDIO_SYSTEM)
 
-idio-system.h Makefile.system $(IDIO_SYSTEM) : $(UTILSDIR)/bin/gen-idio-system $(sources) $(filter-out $(IDIO_SYSTEM),$(isources)) $(SRCDIR)/version
+idio-system.h Makefile.system $(IDIO_SYSTEM) : $(UTILSDIR)/bin/gen-idio-system $(EXTENSIONS)
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(IDIO_SYSTEM)
 
 idio-config.h : $(UTILSDIR)/bin/gen-idio-config
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-config
-
-# Bootstrap
-#
-# This $(objects) dependent on libc-api.h serves two purposes: firstly
-# it forces the actual creation in the specific rule below (using some
-# probably wrong but at least consistently wrong values in
-# build-bootstrap/libc-api.h) and secondly, as we'll have just created
-# a new libc-api.h file, we'll force the recompilation of everything
-# again using the correct values.
-$(objects) : libc-api.h
 
 libc-api.h :
 	$(MAKE) -f Makefile.bootstrap $@
