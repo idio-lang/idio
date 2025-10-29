@@ -37,6 +37,25 @@ objects		:= $(patsubst %.c,%.o,$(sources))
 deps		:= $(patsubst %.c,%.d,$(sources))
 isources	:= $(wildcard $(LIBDIR)/*.idio) $(wildcard $(LIBDIR)/bootstrap/*.idio)
 
+ifdef MAKE_LEAN
+CDEBUG		:= -O3 -UIDIO_DEBUG -UIDIO_VM_PROF ${FORTIFY_CFLAGS}
+else ifdef MAKE_DEBUG
+CDEBUG		:= -DIDIO_DEBUG=3 -g -DIDIO_VM_PROF
+else
+CDEBUG		:=
+endif
+
+
+PROFLAGS	:=
+COVFLAGS	:=
+CFLAGS		:= -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -fPIC -DIDIO_MALLOC $(CFLAGS) $(PROFLAGS) $(COVFLAGS) $(SAN_CFLAGS) $(CDEBUG) $(LIBFFI_INC)
+LDFLAGS		:= $(PROFLAGS) $(COVFLAGS) $(SAN_LDFLAGS) $(LDFLAGS)
+LIBS		:= $(LIBS)
+
+ifneq ($(OS),Darwin)
+DLIBS		:= libos.so libposix-regex.so
+endif
+
 LD_SONAME_FLAGS	:=
 
 # Yes, I know there's an arithmetic shift left of a signed variable!
@@ -179,6 +198,9 @@ else
 LIBFFI_INC	:= -I$(LIBFFI_INCDIR)
 endif
 endif
+
+lib%.so : %.o
+	$(CC) -shared -o $@ $^
 
 %.d: %.c
 	@echo $@: $?

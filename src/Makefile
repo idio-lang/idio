@@ -1,6 +1,7 @@
 include Makefile.common
+-include Makefile.system
 
-EXTENSIONS := $(wildcard $(EXTDIR)/*)
+EXTENSION_DIRS := $(wildcard $(EXTDIR)/*)
 
 all : local-install
 	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
@@ -17,136 +18,14 @@ ifneq ($(IDIO_SQLITE3_DEV),)
 	(cd $(EXTDIR)/sqlite3/src; $(MAKE) $@)
 endif
 
-ifneq ($(MAKECMDGOALS),clean)
-# XXX put these on the same line otherwise the generator and then the
-# %.d are run twice
-include $(deps) Makefile.system
-endif
-
-# dummy version of Makefile.system doesn't exist yet
+# dummy version if Makefile.system doesn't exist yet
 IDIO_SYSTEM_VERSION_MM		?= a.b
 IDIO_SYSTEM_VERSION_M		?= a
-
-
-ifdef MAKE_LEAN
-CDEBUG		:= -O3 -UIDIO_DEBUG -UIDIO_VM_PROF ${FORTIFY_CFLAGS}
-else ifdef MAKE_DEBUG
-CDEBUG		:= -DIDIO_DEBUG=3 -g -DIDIO_VM_PROF
-else
-CDEBUG		:=
-endif
-
-
-PROFLAGS	:=
-COVFLAGS	:=
-CFLAGS		:= -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -fPIC -DIDIO_MALLOC $(CFLAGS) $(PROFLAGS) $(COVFLAGS) $(SAN_CFLAGS) $(CDEBUG) $(LIBFFI_INC)
-LDFLAGS		:= $(PROFLAGS) $(COVFLAGS) $(SAN_LDFLAGS) $(LDFLAGS)
-LIBS		:= $(LIBS)
-
-ifneq ($(OS),Darwin)
-DLIBS		:= libos.so libposix-regex.so
-endif
 
 # system install
 SI_BINDIR	?= $(IDIO_SYSTEM_BINDIR)
 SI_LIBDIR	?= $(IDIO_SYSTEM_LIBDIR)
 SI_LIBVERDIR	?= $(SI_LIBDIR)/${IDIO_SYSTEM_VERSION_MM}
-
-
-
-profiled :
-	$(MAKE) PROFLAGS=-pg
-
-coverage :
-	$(MAKE) COVFLAGS="-fprofile-arcs -ftest-coverage"
-
-# adding -DIDIO_DEBUG=3 to SAN_CFLAGS causes a memory leak in
-# __vasprintf_internal ...
-
-# AddressSanitizer integrates LeakSanitizer
-asan sanitize-address :
-	$(MAKE) SAN_CFLAGS="-fsanitize=address -g" SAN_LDFLAGS=-fsanitize=address
-
-# -fsanitize=undefined is a check group which includes most suboptions
-# (null, enum, ...), see
-# https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
-ubsan sanitize-undefined :
-	$(MAKE) SAN_CFLAGS="-fsanitize=undefined -g" SAN_LDFLAGS=-fsanitize=undefined
-
-lean :
-	$(MAKE) MAKE_LEAN=1
-
-debug :
-	$(MAKE) MAKE_DEBUG=1
-	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
-	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
-	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
-	(cd $(EXTDIR)/SRFI-14/src; $(MAKE) $@)
-ifneq ($(IDIO_LIBCURL_DEV),)
-	(cd $(EXTDIR)/libcurl/src; $(MAKE) $@)
-endif
-ifneq ($(IDIO_ZLIB_DEV),)
-	(cd $(EXTDIR)/zlib/src; $(MAKE) $@)
-endif
-ifneq ($(IDIO_SQLITE3_DEV),)
-	(cd $(EXTDIR)/sqlite3/src; $(MAKE) $@)
-endif
-
-test : local-install
-	$(LI_BINDIR)/idio test
-
-# ASAN only (really) works with libc malloc which then blows up with a
-# list as long as your arm about leaked memory.  I can't identify
-# where the libc malloc behaviour differs from IDIO_MALLOC.
-#
-# In the meanwhile, rely on valgrind and IDIO_MALLOC
-verify: ;
-	@echo -e "\n\n**** clean start\n\n"
-	$(MAKE) dist-clean > /dev/null
-	# this includes the bootstrap-build
-	$(MAKE) all > /dev/null
-	# post-dist-clean we have new source files...
-	$(MAKE) all > /dev/null
-	@echo -e "\n\n**** regular test\n\n"
-	$(LI_BINDIR)/idio test
-	$(MAKE) pre-compile
-	@echo -e "\n\n**** regular pre-compile test\n\n"
-	$(LI_BINDIR)/idio test
-	$(MAKE) build-clean clean-pre-compile > /dev/null
-	$(MAKE) lean > /dev/null
-	@echo -e "\n\n**** lean test\n\n"
-	$(LI_BINDIR)/idio test
-	$(MAKE) pre-compile
-	@echo -e "\n\n**** lean pre-compile test\n\n"
-	$(LI_BINDIR)/idio test
-	$(MAKE) build-clean clean-pre-compile > /dev/null
-	ASAN_OPTIONS=log_path=idio-asan $(MAKE) sanitize-address > /dev/null
-	# we can at least pick up on ASAN errors in the bootstrap
-	@echo -e "\n\n**** ASAN test\n\n"
-	$(LI_BINDIR)/idio zero-length
-	$(MAKE) pre-compile
-	# including loading cache files
-	@echo -e "\n\n**** ASAN pre-compile test\n\n"
-	$(LI_BINDIR)/idio zero-length
-	$(MAKE) build-clean clean-pre-compile > /dev/null
-	$(MAKE) debug > /dev/null
-	@echo -e "\n\n**** debug test\n\n"
-	$(LI_BINDIR)/idio test
-	$(MAKE) pre-compile
-	@echo -e "\n\n**** debug pre-compile test\n\n"
-	$(LI_BINDIR)/idio test
-	# run valgrind with the debug version as the output is more useful
-	$(MAKE) clean-pre-compile
-	@echo -e "\n\n**** valgrind test\n\n"
-	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(LI_BINDIR)/idio test
-	ls -l idio-valgrind.*
-
-doc :
-	rm -rf $(SRCKDOUTDIR)
-	(cd .. ; kernel-autodoc src $(SRCKDOUTDIR))
-	#cp $(SRCKDOUTDIR)/*_[ch].rst $(SRCDOCDIR)
-	diff -w <(grep _[ch] $(SRCKDOUTDIR)/index.rst) <(grep _[ch] $(SRCDOCDIR)/index.rst | sed -e 's!.*/!!')
-	make -C $(SRCDOCDIR) html text
 
 $(LI_LIBVERDIR)/%.idio : $(LIBDIR)/%.idio
 	cp $^ $@
@@ -233,12 +112,11 @@ endif
 $(SI_LIBVERDIR) :
 	mkdir -p $@
 
+include Makefile.rules
+
 clean-system-install :
 	rm -f $(SI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} $(SI_BINDIR)/idio
 	rm -rf $(SI_LIBVERDIR)
-
-lib%.so : %.o
-	$(CC) -shared -o $@ $^
 
 clean : clean-ext-src clean-ext-api clean-rfc6234 run-clean edit-clean clean-pre-compile build-clean
 	rm -f $(SRCDIR)/idio-system.h $(SRCDIR)/Makefile.system $(IDIO_SYSTEM)
@@ -302,7 +180,7 @@ $(deps) : idio-config.h idio-system.h libc-api.h
 # $(IDIO_SYSTEM) : $(UTILSDIR)/bin/gen-idio-system src/vm-asm.h
 # 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(IDIO_SYSTEM)
 
-idio-system.h Makefile.system $(IDIO_SYSTEM) : $(UTILSDIR)/bin/gen-idio-system $(EXTENSIONS)
+idio-system.h Makefile.system $(IDIO_SYSTEM) : $(UTILSDIR)/bin/gen-idio-system $(EXTENSION_DIRS)
 	CC=${CC} $(UTILSDIR)/bin/gen-idio-system $(IDIO_SYSTEM)
 
 idio-config.h : $(UTILSDIR)/bin/gen-idio-config
@@ -313,3 +191,9 @@ libc-api.h :
 
 rebuild-usi: $(LI_BINDIR)/idio
 	PATH=$$PATH:$(LI_BINDIR):$(BINDIR) gen-usi-c $(UTILSDIR)/Unicode/UnicodeData.txt
+
+ifneq ($(MAKECMDGOALS),clean)
+# XXX put these on the same line otherwise the generator and then the
+# %.d are run twice
+-include $(deps)
+endif

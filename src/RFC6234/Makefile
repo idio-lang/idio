@@ -1,9 +1,13 @@
 TOPDIR		:= $(abspath $(PWD)/..)
+TOPSRCDIR	:= $(TOPDIR)/src
 
-include $(TOPDIR)/src/Makefile.common
+include $(TOPSRCDIR)/Makefile.common
+
+# Code from an RFC from 2011 doesn't pass muster
+CFLAGS		:= $(filter-out -Wall -Werror,$(CFLAGS))
 
 test_src	:= shatest.c
-lib_srcs	:= $(filter-out $(test_src),$(wildcard *.c))
+lib_srcs	:= $(filter-out $(test_src),$(sources))
 lib_objs	:= $(patsubst %.c,%.o,$(lib_srcs))
 lib_deps	:= $(patsubst %.c,%.d,$(lib_srcs))
 
@@ -16,9 +20,3 @@ libsha.a : libsha.a($(lib_objs))
 
 clean :
 	rm -f shatest libsha.a *.o *.d
-
-%.o : %.c %.d
-
-%.d: %.c
-	$(CC) -MM -MP -MF $@ $(CFLAGS) -I$(SRCDIR) $< -MT $*.o -MT $@
-
