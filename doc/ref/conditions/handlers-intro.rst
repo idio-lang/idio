@@ -89,9 +89,12 @@ established by default, including:
   recent top level expression and runs its continuation.
 
 * a :ref:`^condition <^condition>` handler,
-  :ref:`restart-condition-handler <restart-condition-handler>`
+  :ref:`reset-condition-handler <reset-condition-handler>`
 
   This attempts to exit cleanly.
+
+In addition, every top-level expression is wrapped in an **ABORT**
+continuation allowing Idio to unwind that expression.
 
   .. attention::
 
@@ -116,8 +119,13 @@ Suppose we want to handle :ref:`^rt-divide-by-zero-error
      1 / 0
    }
 
-Hmm, nothing.  Well, technically, ``trap`` itself will have returned
-the symbol ``fool``.
+.. code-block:: console
+
+   fool
+
+Hmm, nothing.  Well, technically, the condition handler will have
+returned the symbol ``fool`` *in place of* the expression ``1 / 0``
+which itself is returned by the ``trap`` expression.
 
 Suppose the `body` was more complex and went on to use the returned
 value:
@@ -131,10 +139,26 @@ value:
      1 + t
    }
 
-This shows our handler as being incredibly naïve as now we get an
-:ref:`^rt-parameter-type-error <^rt-parameter-type-error>` in the next
-expression as the addition, ``+``, won't accept the symbol as a valid
-type.
+.. code-block:: console
+
+    default-condition-handler:[35842]:*stdin*:line 1:binary-+:^rt-parameter-type-error:bad parameter type: 'fool' a symbol is not a number
+    debug is #<unspec>: debugger invocation failed
+    restart-condition-handler:[35842]:*stdin*:line 1:binary-+:^rt-parameter-type-error:bad parameter type: 'fool' a symbol is not a number
+    restart-condition-handler: restoring ABORT continuation #2: "ABORT to toplevel (PC [28]@98)"
+    #<unspec>
+
+This shows our handler as being incredibly naïve in what it returns as
+a value as now we get an :ref:`^rt-parameter-type-error
+<^rt-parameter-type-error>` in the next expression as the addition,
+``+``, won't accept the symbol as a valid type.
+
+There's a bit more going on there as we bounce through
+:ref:`default-condition-handler <default-condition-handler>`, fail to
+run the debugger, then throw the condition to
+:ref:`restart-condition-handler <restart-condition-handler>` which
+(unhelpfully) repeats the same message and then invokes the **ABORT**
+continuation which returns ``#<unspec>`` to the REPL.  All at the
+point of the ``1 / 0`` expression.
 
 We can revert to the more common ``try``/``expect`` behaviour by
 returning from the ``trap`` itself with :ref:`trap-return
@@ -148,6 +172,10 @@ returning from the ``trap`` itself with :ref:`trap-return
      t := 1 / 0
      1 + t
    }
+
+.. code-block:: console
+
+   fool
 
 Here, we return the symbol ``fool`` from ``trap`` as soon as the
 divide-by-zero error occurs and without stumbling into the problem

@@ -399,7 +399,7 @@ add an option to `ap`
   * ``:optional`` meaning the option may take an argument, defaulting to ``#t``
   * ``:required`` meaning the option must take an argument
 
-  where the nominal argument name is ``\"ARG\"`` for use in the usage string, think ``--option-name "ARG"``
+  where the nominal argument name is ``\"ARG\"`` for use in the usage string, think ``--option-name \"ARG\"``
 
 * or a list of ``:optional`` or ``:required`` and the nominal argument
   name as a string
