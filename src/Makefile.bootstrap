@@ -6,7 +6,7 @@ else
 CDEBUG		:=
 endif
 
-CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -DIDIO_MALLOC -I$(SRCDIR) -I$(SRCDIR)/build-bootstrap $(CDEBUG) $(LIBFFI_INC)
+CFLAGS		:= -std=c99 -Wall -Wno-unused-function -Wno-shift-negative-value -fPIC -DIDIO_MALLOC -I$(SRCDIR) -I$(SRCDIR)/build-bootstrap $(CDEBUG) $(LIBFFI_INC)
 LDFLAGS		:= $(LDFLAGS)
 LIBS		:= $(LIBS)
 
