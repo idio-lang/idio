@@ -72,7 +72,7 @@ $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : \
 		$(LI_SHLIBDIR)/$(SHLIB_NAME) \
 		$(SRCDIR)/RFC6234/libsha.a \
 		| Makefile.system $(LI_BINDIR) libc-api.h idio-system.h idio-config.h
-	$(CC) $(LDFLAGS) -Wl,-rpath='$$ORIGIN/../lib' -o $@ $^ $(LIBS)
+	$(CC) $(LDFLAGS) -Wl,-rpath,'$$ORIGIN/../lib' -o $@ $^ $(LIBS)
 
 $(LI_SHLIBDIR)/$(SHLIB_NAME) : $(LI_SHLIBDIR)/$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_M}
 	ln -sf $^ $@
