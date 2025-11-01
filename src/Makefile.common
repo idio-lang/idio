@@ -19,6 +19,7 @@ UTILSDIR	?= $(TOPDIR)/utils
 # local install
 LI_TOPDIR	?= $(TOPDIR)/.local
 LI_BINDIR	?= $(LI_TOPDIR)/bin
+LI_SHLIBDIR	?= $(LI_TOPDIR)/lib
 LI_LIBDIR	?= $(LI_TOPDIR)/lib/idio
 LI_LIBVERDIR	?= $(LI_LIBDIR)/${IDIO_SYSTEM_VERSION_MM}
 
@@ -52,11 +53,18 @@ CFLAGS		:= -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-func
 LDFLAGS		:= $(PROFLAGS) $(COVFLAGS) $(SAN_LDFLAGS) $(LDFLAGS)
 LIBS		:= $(LIBS)
 
+ifeq ($(OS),Darwin)
+LD_DLFLAGS	:= -dynamiclib -undefined dynamic_lookup
+else
+LD_DLFLAGS	:= -shared
+endif
+
 ifneq ($(OS),Darwin)
 DLIBS		:= libos.so libposix-regex.so
 endif
 
-LD_SONAME_FLAGS	:=
+IDIO_LD_SONAME_FLAGS	:=
+MODULE_LD_SONAME_FLAGS	:=
 
 # Yes, I know there's an arithmetic shift left of a signed variable!
 # XXX older compilers (gcc-4?) don't support the option
@@ -83,8 +91,11 @@ else ifeq ($(OS),Linux)
 
 LIBFFI_INCDIR	= $(wildcard /usr/lib*/libffi-*/include)
 LDFLAGS		:= -rdynamic
-LD_SONAME_FLAGS	:= -Wl,-soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
 LIBS		:= -ldl
+
+IDIO_LD_SONAME_FLAGS	:= -Wl,-soname=libidio.so.${IDIO_SYSTEM_VERSION_M}
+MODULE_LD_SONAME_FLAGS	:= -Wl,-soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
+
 ifeq ($(ARCH),x86_64)
 CFLAGS		:= -m64 $(CFLAGS) # -fsanitize=undefined
 LDFLAGS		:= -m64 -Wl,-Map=map $(LDFLAGS)
@@ -136,9 +147,11 @@ endif
 CC		:= gcc
 LIBFFI_INCDIR	= $(wildcard /usr/lib/$(shell isainfo -k | grep -v i386)/libffi-*/include)
 LDFLAGS		:= -L/usr/local/lib -R/usr/local/lib
-LD_SONAME_FLAGS	:= -Wl,-soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
 LIBS		:= -ldl
 CFLAGS		:= -D_POSIX_PTHREAD_SEMANTICS -D__EXTENSIONS__ $(CFLAGS)
+
+IDIO_LD_SONAME_FLAGS	:= -Wl,-soname=libidio.so.${IDIO_SYSTEM_VERSION_M}
+MODULE_LD_SONAME_FLAGS	:= -Wl,-soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
 
 # Oracle Solaris 11.4
 ifneq (,$(wildcard /etc/os-release))
@@ -165,7 +178,9 @@ endif
 
 LIBFFI_INCDIR	:= /usr/local/include
 LDFLAGS		:= -Xlinker --export-dynamic -L/usr/local/lib
-LD_SONAME_FLAGS	:= -Wl,--soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
+
+IDIO_LD_SONAME_FLAGS	:= -Wl,--soname=libidio.so.${IDIO_SYSTEM_VERSION_M}
+MODULE_LD_SONAME_FLAGS	:= -Wl,--soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
 
 else ifeq ($(OS),OpenBSD)
 
@@ -173,7 +188,9 @@ CC		:= cc		# clang
 
 LIBFFI_INCDIR	:= /usr/local/include
 LDFLAGS		:= -Xlinker --export-dynamic -L/usr/local/lib
-LD_SONAME_FLAGS	:= -Wl,--soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
+
+IDIO_LD_SONAME_FLAGS	:= -Wl,--soname=libidio.so.${IDIO_SYSTEM_VERSION_M}
+MODULE_LD_SONAME_FLAGS	:= -Wl,--soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
 
 CFLAGS		:= -DIDIO_DEV_FD $(CFLAGS)
 
@@ -182,7 +199,9 @@ else ifeq ($(OS),NetBSD)
 CC		:= gcc
 
 LDFLAGS		:= -Xlinker --export-dynamic -L/usr/local/lib
-LD_SONAME_FLAGS	:= -Wl,--soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
+
+IDIO_LD_SONAME_FLAGS	:= -Wl,--soname=libidio.so.${IDIO_SYSTEM_VERSION_M}
+MODULE_LD_SONAME_FLAGS	:= -Wl,--soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
 
 CFLAGS		:= -DIDIO_DEV_FD $(CFLAGS)
 

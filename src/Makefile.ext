@@ -9,36 +9,30 @@ MODULE_LI_LIBDIR	:= $(LI_LIBVERDIR)/$(MOD_NAME)
 MODULE_LI_LIBVERDIR	:= $(MODULE_LI_LIBDIR)/$(MODULE_SYSTEM_VERSION_MM)
 MODULE_LI_LIBARCHDIR	:= $(MODULE_LI_LIBVERDIR)/$(IDIO_SYSTEM_ARCH)
 
-ifeq ($(OS),Darwin)
-LD_DLFLAGS	:= -dynamiclib -undefined dynamic_lookup
-else
-LD_DLFLAGS	:= -shared
-endif
-
-all : $(SHLIB_NAME)
+all : $(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME)
 
 clean :
 	rm -f *.o *.d *.so *.so.*
 	rm -f $(MOD_NAME)-system.h Makefile.system
 
-local-install : $(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME) | Makefile.system $(MODULE_LI_LIBVERDIR)
-	cp $(MOD_NAME).idio $(MODULE_LI_LIBVERDIR)
-	echo $(MOD_NAME)@${MODULE_SYSTEM_VERSION_MM} > $(MODULE_LI_LIBDIR)/latest
-
-$(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME) : $(SHLIB_NAME) | $(MODULE_LI_LIBARCHDIR)
-	tar cf - $^* | (cd $(MODULE_LI_LIBARCHDIR) ; tar xf -)
-
-$(MODULE_LI_LIBARCHDIR) :
-	mkdir -p $@
+local-install : $(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME) \
+		$(MODULE_LI_LIBVERDIR)/$(MOD_NAME).idio \
+		$(MODULE_LI_LIBDIR)/latest | Makefile.system $(MODULE_LI_LIBVERDIR)
 
 clean-local-install :
 	rm -rf $(MODULE_LI_LIBDIR)
 
-$(SHLIB_NAME) : $(SHLIB_NAME).${MODULE_SYSTEM_VERSION_M}
+$(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME) : $(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME).${MODULE_SYSTEM_VERSION_M}
 	ln -sf $^ $@
 
-$(SHLIB_NAME).${MODULE_SYSTEM_VERSION_M} : $(SHLIB_NAME).${MODULE_SYSTEM_VERSION_MM}
+$(MODULE_LI_LIBARCHDIR) :
+	mkdir -p $@
+
+$(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME).${MODULE_SYSTEM_VERSION_M} : $(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME).${MODULE_SYSTEM_VERSION_MM}
 	ln -sf $^ $@
+
+$(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME).${MODULE_SYSTEM_VERSION_MM} : $(SHLIB_NAME).${MODULE_SYSTEM_VERSION_MM} | $(MODULE_LI_LIBARCHDIR)
+	cp $^ $@
 
 $(SHLIB_NAME).${MODULE_SYSTEM_VERSION_MM} : $(LIBOBJS) $(MOD_NAME)-module.o
 ifeq ($(OS),NetBSD)
@@ -47,8 +41,14 @@ ifeq ($(OS),NetBSD)
 	# symbols in the real library)
 	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(COVFLAGS) -o $@ $^ $(LIBS)
 else
-	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^ $(LIBS)
+	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(MODULE_LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^ $(LIBS)
 endif
+
+$(MODULE_LI_LIBVERDIR)/$(MOD_NAME).idio : $(MOD_NAME).idio
+	cp $^ $@
+
+$(MODULE_LI_LIBDIR)/latest : Makefile.system
+	echo $(MOD_NAME)@${MODULE_SYSTEM_VERSION_MM} > $(MODULE_LI_LIBDIR)/latest
 
 $(MOD_NAME)-module.d : $(MOD_NAME)-system.h
 

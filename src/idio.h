@@ -453,11 +453,13 @@ extern pid_t idio_pid;
 extern int idio_exit_status;
 extern IDIO idio_k_exit;
 extern IDIO idio_default_eenv;
+extern IDIO idio_bootstrap_eenv;
 
 void idio_module_table_register (void (*ap_func) (void), void (*f_func) (void), void *handle);
 void idio_module_table_deregister (void (*ap_func) (void), void (*f_func) (void));
 void idio_add_signal_handler (int sig, void (*handler) (int));
 
+int idio_main (char *argv0);
 void idio_final ();
 
 #endif

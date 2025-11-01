@@ -1,21 +1,29 @@
-include Makefile.common
 -include Makefile.system
+include Makefile.common
 
-EXTENSION_DIRS := $(wildcard $(EXTDIR)/*)
+EXTENSION_DIRS	:= $(wildcard $(EXTDIR)/*)
+
+SHLIB_NAME	:= libidio.so
+
+LIBSRCS		:= $(filter-out idio.c,$(sources))
+LIBOBJS		:= $(patsubst %.c,%.o,$(LIBSRCS))
+
+EXESRCS		:= idio.c
+EXEOBJS		:= $(patsubst %.c,%.o,$(EXESRCS))
 
 all : local-install
-	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
-	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
-	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
-	(cd $(EXTDIR)/SRFI-14/src; $(MAKE) $@)
+	$(MAKE) -C $(EXTDIR)/json5/src $@
+	$(MAKE) -C $(EXTDIR)/expect/src $@
+	$(MAKE) -C $(EXTDIR)/empty/src $@
+	$(MAKE) -C $(EXTDIR)/SRFI-14/src $@
 ifneq ($(IDIO_LIBCURL_DEV),)
-	(cd $(EXTDIR)/libcurl/src; $(MAKE) $@)
+	$(MAKE) -C $(EXTDIR)/libcurl/src $@
 endif
 ifneq ($(IDIO_ZLIB_DEV),)
-	(cd $(EXTDIR)/zlib/src; $(MAKE) $@)
+	$(MAKE) -C $(EXTDIR)/zlib/src $@
 endif
 ifneq ($(IDIO_SQLITE3_DEV),)
-	(cd $(EXTDIR)/sqlite3/src; $(MAKE) $@)
+	$(MAKE) -C $(EXTDIR)/sqlite3/src $@
 endif
 
 # dummy version if Makefile.system doesn't exist yet
@@ -31,18 +39,18 @@ $(LI_LIBVERDIR)/%.idio : $(LIBDIR)/%.idio
 	cp $^ $@
 
 local-install : $(LI_BINDIR)/idio | $(LI_BINDIR) $(LI_LIBVERDIR)/bootstrap $(patsubst $(LIBDIR)/%,$(LI_LIBVERDIR)/%,$(isources))
-	(cd $(EXTDIR)/json5/src; $(MAKE) $@)
-	(cd $(EXTDIR)/expect/src; $(MAKE) $@)
-	(cd $(EXTDIR)/empty/src; $(MAKE) $@)
-	(cd $(EXTDIR)/SRFI-14/src; $(MAKE) $@)
+	$(MAKE) -C $(EXTDIR)/json5/src $@
+	$(MAKE) -C $(EXTDIR)/expect/src $@
+	$(MAKE) -C $(EXTDIR)/empty/src $@
+	$(MAKE) -C $(EXTDIR)/SRFI-14/src $@
 ifneq ($(IDIO_LIBCURL_DEV),)
-	(cd $(EXTDIR)/libcurl/src; $(MAKE) $@)
+	$(MAKE) -C $(EXTDIR)/libcurl/src $@
 endif
 ifneq ($(IDIO_ZLIB_DEV),)
-	(cd $(EXTDIR)/zlib/src; $(MAKE) $@)
+	$(MAKE) -C $(EXTDIR)/zlib/src $@
 endif
 ifneq ($(IDIO_SQLITE3_DEV),)
-	(cd $(EXTDIR)/sqlite3/src; $(MAKE) $@)
+	$(MAKE) -C $(EXTDIR)/sqlite3/src $@
 endif
 
 pre-compile: local-install
@@ -59,10 +67,33 @@ $(SRCDIR)/RFC6234/libsha.a :
 $(LI_BINDIR)/idio : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
 	ln -sf idio.${IDIO_SYSTEM_VERSION_MM} $@
 
-$(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(objects) $(SRCDIR)/RFC6234/libsha.a | Makefile.system $(LI_BINDIR) libc-api.h idio-system.h idio-config.h
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+$(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : \
+		$(EXEOBJS) \
+		$(LI_SHLIBDIR)/$(SHLIB_NAME) \
+		$(SRCDIR)/RFC6234/libsha.a \
+		| Makefile.system $(LI_BINDIR) libc-api.h idio-system.h idio-config.h
+	$(CC) $(LDFLAGS) -Wl,-rpath='$$ORIGIN/../lib' -o $@ $^ $(LIBS)
 
-$(LI_BINDIR) $(LI_LIBVERDIR) $(LI_LIBVERDIR)/bootstrap :
+$(LI_SHLIBDIR)/$(SHLIB_NAME) : $(LI_SHLIBDIR)/$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_M}
+	ln -sf $^ $@
+
+$(LI_SHLIBDIR)/$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_M} : $(LI_SHLIBDIR)/$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_MM}
+	ln -sf $^ $@
+
+$(LI_SHLIBDIR)/$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_MM} : $(SHLIB_NAME).${IDIO_SYSTEM_VERSION_MM} | $(LI_SHLIBDIR)
+	cp $^ $@
+
+$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_MM} : $(LIBOBJS)
+ifeq ($(OS),NetBSD)
+	# NetBSD doesn't like the Idio library having the same soname
+	# as the real sqlite3 library (and will not look for the
+	# symbols in the real library)
+	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(COVFLAGS) -o $@ $^ $(LIBS)
+else
+	$(CC) $(LDFLAGS) $(LD_DLFLAGS) $(IDIO_LD_SONAME_FLAGS) $(COVFLAGS) -o $@ $^ $(LIBS)
+endif
+
+$(LI_BINDIR) $(LI_SHLIBDIR) $(LI_LIBVERDIR) $(LI_LIBVERDIR)/bootstrap :
 	mkdir -p $@
 
 clean-local-install :
@@ -135,7 +166,7 @@ clean-rfc6234:
 	$(MAKE) -C RFC6234 clean
 
 build-clean:
-	rm -f *.o *.d *.so map
+	rm -f *.o *.d *.so *.so.* map
 	rm -rf $(EXTDIR)/*/gen/*
 
 run-clean :
