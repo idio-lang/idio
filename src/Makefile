@@ -71,7 +71,7 @@ $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : \
 		$(EXEOBJS) \
 		$(LI_SHLIBDIR)/$(SHLIB_NAME) \
 		| Makefile.system $(LI_BINDIR) libc-api.h idio-system.h idio-config.h
-	$(CC) $(LDFLAGS) -Wl,-rpath,'$$ORIGIN/../lib' -o $@ $^ $(LIBS)
+	$(CC) $(LDFLAGS) $(IDIO_LD_RPATH_FLAGS) -o $@ $^ $(LIBS)
 
 $(LI_SHLIBDIR)/$(SHLIB_NAME) : $(LI_SHLIBDIR)/$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_M}
 	ln -sf $(notdir $^) $@

@@ -61,6 +61,7 @@ endif
 
 IDIO_LD_SONAME_FLAGS	:=
 MODULE_LD_SONAME_FLAGS	:=
+IDIO_LD_RPATH_FLAGS	:= -Wl,-rpath,'$$ORIGIN/../lib'
 
 # Yes, I know there's an arithmetic shift left of a signed variable!
 # XXX older compilers (gcc-4?) don't support the option
@@ -187,6 +188,7 @@ LDFLAGS		:= -Xlinker --export-dynamic -L/usr/local/lib
 
 IDIO_LD_SONAME_FLAGS	:= -Wl,--soname=libidio.so.${IDIO_SYSTEM_VERSION_M}
 MODULE_LD_SONAME_FLAGS	:= -Wl,--soname=lib${MODULE_NAME}.so.${MODULE_SYSTEM_VERSION_M}
+IDIO_LD_RPATH_FLAGS	:= $(IDIO_LD_RPATH_FLAGS) -z origin
 
 CFLAGS		:= -DIDIO_DEV_FD $(CFLAGS)
 
