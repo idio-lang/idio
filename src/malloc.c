@@ -63,6 +63,10 @@
 
 #include <sys/mman.h>
 
+#include <strings.h>
+
+#include "error.h"
+#include "idio-string.h"
 #include "malloc.h"
 
 /*

@@ -6,8 +6,8 @@ CFLAGS		:= -std=c99 -Wall -Wno-unused-function -Wno-unused-variable -I$(TOPDIR) 
 LDFLAGS		:= $(LDFLAGS)
 LIBS		:= -lffi $(LIBS)
 
-ifneq ($(OS),Darwin)
-DLIBS		:= libos.so libposix-regex.so
+ifeq ($(OS),SunOS)
+CFLAGS		:= -D_POSIX_PTHREAD_SEMANTICS -D__EXTENSIONS__ $(CFLAGS)
 endif
 
 clean:

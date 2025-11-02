@@ -10,8 +10,8 @@ CFLAGS		:= -std=c99 -Wall -Wno-unused-function -Wno-shift-negative-value -fPIC -
 LDFLAGS		:= $(LDFLAGS)
 LIBS		:= $(LIBS)
 
-ifneq ($(OS),Darwin)
-DLIBS		:= libos.so libposix-regex.so
+ifeq ($(OS),SunOS)
+CFLAGS		:= -D_POSIX_PTHREAD_SEMANTICS -D__EXTENSIONS__ $(CFLAGS)
 endif
 
 # We'll build a bootstrap idio executable in $(BINDIR) in order that

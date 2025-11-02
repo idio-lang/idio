@@ -91,6 +91,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+
+#if defined (__sun) && defined (__SVR4)
+#include <stropts.h>
+#endif
+
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
