@@ -65,7 +65,7 @@ $(SRCDIR)/RFC6234/libsha.a :
 	$(MAKE) -C RFC6234 libsha.a
 
 $(LI_BINDIR)/idio : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
-	ln -sf idio.${IDIO_SYSTEM_VERSION_MM} $@
+	ln -sf $(notdir $^) $@
 
 $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : \
 		$(EXEOBJS) \
@@ -74,10 +74,10 @@ $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : \
 	$(CC) $(LDFLAGS) -Wl,-rpath,'$$ORIGIN/../lib' -o $@ $^ $(LIBS)
 
 $(LI_SHLIBDIR)/$(SHLIB_NAME) : $(LI_SHLIBDIR)/$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_M}
-	ln -sf $^ $@
+	ln -sf $(notdir $^) $@
 
 $(LI_SHLIBDIR)/$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_M} : $(LI_SHLIBDIR)/$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_MM}
-	ln -sf $^ $@
+	ln -sf $(notdir $^) $@
 
 $(LI_SHLIBDIR)/$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_MM} : $(SHLIB_NAME).${IDIO_SYSTEM_VERSION_MM} | $(LI_SHLIBDIR)
 	cp $^ $@
@@ -102,7 +102,7 @@ user-install : local-install $(UI_BINDIR)/idio pre-compile | $(UI_LIBVERDIR)
 	(cd $(LI_LIBDIR); tar cf - ${IDIO_SYSTEM_VERSION_MM}) | (cd $(UI_LIBDIR); tar xf -)
 
 $(UI_BINDIR)/idio : $(UI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
-	ln -sf idio.${IDIO_SYSTEM_VERSION_MM} $@
+	ln -sf $(notdir $^) $@
 
 $(UI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} | $(UI_BINDIR)
 ifeq ($(OS),SunOS)
@@ -126,7 +126,7 @@ system-install : local-install $(SI_BINDIR)/idio pre-compile | $(SI_LIBVERDIR)
 	(cd $(LI_LIBDIR); tar cf - ${IDIO_SYSTEM_VERSION_MM}) | (cd $(SI_LIBDIR); tar xf -)
 
 $(SI_BINDIR)/idio : $(SI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
-	ln -sf idio.${IDIO_SYSTEM_VERSION_MM} $@
+	ln -sf $(notdir $^) $@
 
 $(SI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
 ifeq ($(OS),SunOS)
