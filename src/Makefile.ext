@@ -11,6 +11,12 @@ MODULE_LI_LIBARCHDIR	:= $(MODULE_LI_LIBVERDIR)/$(IDIO_SYSTEM_ARCH)
 
 all : $(MODULE_LI_LIBARCHDIR)/$(SHLIB_NAME)
 
+lean :
+	$(MAKE) MAKE_LEAN=1
+
+debug :
+	$(MAKE) MAKE_DEBUG=1
+
 clean :
 	rm -f *.o *.d *.so *.so.*
 	rm -f $(MOD_NAME)-system.h Makefile.system
