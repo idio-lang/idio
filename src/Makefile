@@ -70,7 +70,6 @@ $(LI_BINDIR)/idio : $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM}
 $(LI_BINDIR)/idio.${IDIO_SYSTEM_VERSION_MM} : \
 		$(EXEOBJS) \
 		$(LI_SHLIBDIR)/$(SHLIB_NAME) \
-		$(SRCDIR)/RFC6234/libsha.a \
 		| Makefile.system $(LI_BINDIR) libc-api.h idio-system.h idio-config.h
 	$(CC) $(LDFLAGS) -Wl,-rpath,'$$ORIGIN/../lib' -o $@ $^ $(LIBS)
 
@@ -83,7 +82,7 @@ $(LI_SHLIBDIR)/$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_M} : $(LI_SHLIBDIR)/$(SHLIB_N
 $(LI_SHLIBDIR)/$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_MM} : $(SHLIB_NAME).${IDIO_SYSTEM_VERSION_MM} | $(LI_SHLIBDIR)
 	cp $^ $@
 
-$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_MM} : $(LIBOBJS)
+$(SHLIB_NAME).${IDIO_SYSTEM_VERSION_MM} : $(LIBOBJS) $(SRCDIR)/RFC6234/libsha.a
 ifeq ($(OS),NetBSD)
 	# NetBSD doesn't like the Idio library having the same soname
 	# as the real sqlite3 library (and will not look for the
