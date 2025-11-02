@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# Copyright (c) 2015-2022 Ian Fitchet <idf@idio-lang.org>
+# Copyright (c) 2015-2022, 2025 Ian Fitchet <idf@idio-lang.org>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License.  You
@@ -24,6 +24,8 @@ handle_EXIT ()
 	rm -f ${pfiles_file}
     fi
 }
+
+trap handle_EXIT EXIT
 
 usage ()
 {
@@ -92,7 +94,9 @@ done
 
 pfiles_file=/tmp/${0##*/}.$$.pfiles
 
-pfiles ${opt_p} > ${pfiles_file}
+if ! pfiles ${opt_p} > ${pfiles_file} ; then
+    exit 1
+fi
 
 # lsof generic output
 
@@ -196,16 +200,14 @@ fi
 	    ;;
 	S_IFDOOR)
 	    read rest # O_* flags
-	    case "${rest}" in
-	    *" door to nscd["*) ;;
-	    *)
-		read rest # filename
-		case "${OS_VER}" in
-		11.*)
-		    read peer
-		    ;;
-		esac
-		;;
+
+	    # sometimes there's no name and it's straight into offset
+	    offset=-
+	    read file
+	    case "${file}" in
+	    offset:*)
+		offset="${file}"
+		file=
 	    esac
 	    ;;
 	*)
@@ -237,5 +239,3 @@ fi
 	fi
     done
 ) < ${pfiles_file}
-
-rm -f ${pfiles_file}

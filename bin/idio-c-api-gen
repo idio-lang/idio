@@ -698,7 +698,6 @@ for-each (function (lib-n) {
 			    }))
 			 })
 			 ;; XXX FreeBSD-10 is prone to trailing TABs
-			 ;; OpenBSD-6 doesn't have the leading <id>
 
 			 (
 			   ;;     <3c>   DW_AT_byte_size   : 4
@@ -708,7 +707,7 @@ for-each (function (lib-n) {
 			     objdump-loop depth DIE
 			   })
 			 (
-			   ;; OpenBSD-6
+			   ;; OpenBSD-6 doesn't have the leading <id>
 			   ;;     DW_AT_byte_size   : 4
 			   ;;     DW_AT_encoding    : 7        (unsigned)
 			   "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]*: ([[:digit:]]+)" {
